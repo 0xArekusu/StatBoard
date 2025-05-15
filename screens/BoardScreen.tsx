@@ -1,5 +1,12 @@
-import React from "react";
-import { View, StyleSheet, Dimensions } from "react-native";
+import React, { useState } from "react";
+import {
+  View,
+  StyleSheet,
+  Dimensions,
+  TouchableWithoutFeedback,
+  Text,
+  Modal,
+} from "react-native";
 
 const MARGIN = 20;
 
@@ -17,35 +24,118 @@ const threePointArcSideWidth = courtWidth * 0.88;
 const threePointArcSideHeight = keyHeight - circleDiameter / 2.5;
 
 export default function BasketballCourt() {
+  const [popupVisible, setPopupVisible] = useState(false);
+  const [popupPosition, setPopupPosition] = useState({ x: 0, y: 0 });
+  const [shootingZone, setShootingZone] = useState("");
+
+  const showPopup = (zone: string, x: number, y: number) => {
+    setShootingZone(zone);
+    setPopupPosition({ x, y });
+    setPopupVisible(true);
+    setTimeout(() => setPopupVisible(false), 1500);
+  };
+
   return (
     <View style={styles.container}>
-      <View style={styles.court}>
-        {/* Lignes de fond */}
-        <View style={[styles.line, styles.baselineTop]} />
-        <View style={[styles.line, styles.baselineBottom]} />
+      <TouchableWithoutFeedback
+        onPress={(e) =>
+          showPopup("3 pts", e.nativeEvent.pageX, e.nativeEvent.pageY)
+        }
+      >
+        <View style={[styles.court, styles.touchableArea3pts]}>
+          {/* Lignes de fond */}
+          <View style={[styles.line, styles.baselineTop]} />
+          <View style={[styles.line, styles.baselineBottom]} />
 
-        {/* Ligne médiane */}
-        <View style={[styles.line, styles.midline]} />
+          {/* Ligne médiane */}
+          <View style={[styles.line, styles.midline]} />
 
-        {/* Cercle central */}
-        <View style={styles.centerCircle} />
+          {/* Cercle central */}
+          <View style={styles.centerCircle} />
 
-        {/* Raquettes */}
-        <View style={[styles.key, styles.keyTop]} />
-        <View style={[styles.key, styles.keyBottom]} />
+          {/* Raquettes avec zones tactiles */}
+          <TouchableWithoutFeedback
+            onPress={(e) =>
+              showPopup("Raquette", e.nativeEvent.pageX, e.nativeEvent.pageY)
+            }
+          >
+            <View
+              style={[styles.key, styles.keyTop, styles.touchableAreaPaint]}
+            />
+          </TouchableWithoutFeedback>
+          <TouchableWithoutFeedback
+            onPress={(e) =>
+              showPopup("Raquette", e.nativeEvent.pageX, e.nativeEvent.pageY)
+            }
+          >
+            <View
+              style={[styles.key, styles.keyBottom, styles.touchableAreaPaint]}
+            />
+          </TouchableWithoutFeedback>
 
-        {/* Arcs des 3 points */}
-        <View style={[styles.threePointArc, styles.arcTop]} />
-        <View style={[styles.threePointArc, styles.arcBottom]} />
+          {/* Zone à 3 points */}
+          <View style={[styles.threePointArea, styles.threePointAreaTop]} />
+          <View style={[styles.threePointArea, styles.threePointAreaBottom]} />
 
-        {/* Lignes de lancer franc */}
-        <View style={[styles.freeThrowLine, styles.freeThrowTop]} />
-        <View style={[styles.freeThrowLine, styles.freeThrowBottom]} />
+          {/* Arcs des 3 points (visuels) */}
+          <TouchableWithoutFeedback
+            onPress={(e) =>
+              showPopup("2 pts", e.nativeEvent.pageX, e.nativeEvent.pageY)
+            }
+          >
+            <View
+              style={[
+                styles.threePointArc,
+                styles.arcTop,
+                styles.touchableArea2pts,
+              ]}
+            />
+          </TouchableWithoutFeedback>
 
-        {/* Cercles de lancer franc */}
-        <View style={[styles.freeThrowCircle, styles.freeThrowCircleTop]} />
-        <View style={[styles.freeThrowCircle, styles.freeThrowCircleBottom]} />
-      </View>
+          <TouchableWithoutFeedback
+            onPress={(e) =>
+              showPopup("2 pts", e.nativeEvent.pageX, e.nativeEvent.pageY)
+            }
+          >
+            <View
+              style={[
+                styles.threePointArc,
+                styles.arcBottom,
+                styles.touchableArea2pts,
+              ]}
+            />
+          </TouchableWithoutFeedback>
+
+          {/* Lignes de lancer franc */}
+          <View style={[styles.freeThrowLine, styles.freeThrowTop]} />
+          <View style={[styles.freeThrowLine, styles.freeThrowBottom]} />
+
+          {/* Cercles de lancer franc */}
+          <View style={[styles.freeThrowCircle, styles.freeThrowCircleTop]} />
+          <View
+            style={[styles.freeThrowCircle, styles.freeThrowCircleBottom]}
+          />
+        </View>
+      </TouchableWithoutFeedback>
+
+      <Modal
+        transparent={true}
+        visible={popupVisible}
+        animationType="fade"
+        onRequestClose={() => setPopupVisible(false)}
+      >
+        <View
+          style={[
+            styles.popup,
+            {
+              left: popupPosition.x - 75,
+              top: popupPosition.y - 40,
+            },
+          ]}
+        >
+          <Text style={styles.popupText}>{shootingZone}</Text>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -157,5 +247,59 @@ const styles = StyleSheet.create({
   freeThrowCircleBottom: {
     left: courtWidth / 2 - circleDiameter / 2,
     bottom: keyHeight - circleDiameter / 2,
+  },
+
+  popup: {
+    position: "absolute",
+    backgroundColor: "rgba(0, 0, 0, 0.8)",
+    padding: 10,
+    borderRadius: 8,
+    width: 150,
+    alignItems: "center",
+  },
+  popupText: {
+    color: "white",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  touchableAreaPaint: {
+    position: "absolute",
+    zIndex: 99,
+  },
+  touchableArea2pts: {
+    position: "absolute",
+    zIndex: 98,
+  },
+  touchableArea3pts: {
+    position: "absolute",
+    zIndex: 97,
+  },
+  threePointArea: {
+    position: "absolute",
+    width: threePointArcWidth,
+    height: threePointArcHeight / 2,
+    zIndex: 1,
+  },
+  threePointAreaTop: {
+    left: (courtWidth - threePointArcWidth) / 2,
+    top: 0,
+  },
+  threePointAreaBottom: {
+    left: (courtWidth - threePointArcWidth) / 2,
+    bottom: 0,
+  },
+  twoPointArea: {
+    position: "absolute",
+    width: courtWidth - threePointArcWidth,
+    height: courtHeight / 2 - keyHeight,
+    zIndex: 1,
+  },
+  twoPointAreaTop: {
+    left: threePointArcWidth / 2,
+    top: keyHeight,
+  },
+  twoPointAreaBottom: {
+    left: threePointArcWidth / 2,
+    bottom: keyHeight,
   },
 });
