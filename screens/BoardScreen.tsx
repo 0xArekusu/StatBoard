@@ -3,9 +3,10 @@ import {
   View,
   StyleSheet,
   Dimensions,
-  TouchableWithoutFeedback,
   Text,
   Modal,
+  Pressable,
+  TouchableOpacity,
 } from "react-native";
 
 const MARGIN = 20;
@@ -14,7 +15,7 @@ const { width: windowWidth, height: windowHeight } = Dimensions.get("window");
 const courtWidth = windowWidth - MARGIN * 2;
 const courtHeight = windowHeight - MARGIN * 2;
 
-// Proportion pour le cercle central et les cercles de lancer franc
+// Proportions for the center circle and free throw circles
 const circleDiameter = courtWidth * 0.2;
 const keyWidth = courtWidth * 0.3;
 const keyHeight = courtHeight * 0.24;
@@ -23,118 +24,224 @@ const threePointArcHeight = courtHeight * 0.68;
 const threePointArcSideWidth = courtWidth * 0.88;
 const threePointArcSideHeight = keyHeight - circleDiameter / 2.5;
 
-export default function BasketballCourt() {
-  const [popupVisible, setPopupVisible] = useState(false);
-  const [popupPosition, setPopupPosition] = useState({ x: 0, y: 0 });
-  const [shootingZone, setShootingZone] = useState("");
+const MODAL_WIDTH = 200;
+const MODAL_HEIGHT = 180;
+const MODAL_PADDING = 20;
+const POINTER_SIZE = 8;
+const MODAL_OFFSET_TOP = 10;
+const MODAL_OFFSET_BOTTOM = 50;
+const MODAL_CONTENT_PADDING = 16; // Padding inside the modal
 
-  const showPopup = (zone: string, x: number, y: number) => {
-    setShootingZone(zone);
-    setPopupPosition({ x, y });
-    setPopupVisible(true);
-    setTimeout(() => setPopupVisible(false), 1500);
+export default function BasketballCourt() {
+  const [actionModalVisible, setActionModalVisible] = useState(false);
+  const [modalPosition, setModalPosition] = useState({
+    x: 0,
+    y: 0,
+    pointerX: 0,
+    showPointerOnTop: true,
+    clickX: 0,
+  });
+  const [selectedZone, setSelectedZone] = useState("");
+
+  const calculateModalPosition = (x: number, y: number) => {
+    // Determine if we need to show pointer on top or bottom
+    const showPointerOnTop = y < windowHeight / 2;
+
+    // Calculate initial position
+    let modalX = x - MODAL_WIDTH / 2;
+    let modalY;
+
+    if (showPointerOnTop) {
+      modalY = y - MODAL_OFFSET_TOP;
+    } else {
+      modalY = y - MODAL_HEIGHT - MODAL_OFFSET_BOTTOM;
+    }
+
+    // Ensure modal stays within screen bounds
+    modalX = Math.max(
+      MODAL_PADDING,
+      Math.min(windowWidth - MODAL_WIDTH - MODAL_PADDING, modalX)
+    );
+    modalY = Math.max(
+      MODAL_PADDING,
+      Math.min(windowHeight - MODAL_HEIGHT - MODAL_PADDING, modalY)
+    );
+
+    // Calculate pointer position relative to modal content
+    // We need to account for the modal's padding and the pointer's width
+    const clickXRelativeToModal = x - modalX;
+    const pointerX = Math.min(
+      Math.max(MODAL_CONTENT_PADDING, clickXRelativeToModal),
+      MODAL_WIDTH - MODAL_CONTENT_PADDING
+    );
+
+    return {
+      x: modalX,
+      y: modalY,
+      pointerX,
+      showPointerOnTop,
+      clickX: x, // Store the original click X position
+    };
+  };
+
+  const handleZonePress = (zone: string, x: number, y: number) => {
+    setSelectedZone(zone);
+    const position = calculateModalPosition(x, y);
+    setModalPosition(position);
+    setActionModalVisible(true);
+  };
+
+  const handleActionSelect = (action: string) => {
+    console.log(`Action: ${action} in zone: ${selectedZone}`);
+    setActionModalVisible(false);
   };
 
   return (
     <View style={styles.container}>
-      <TouchableWithoutFeedback
+      <Pressable
         onPress={(e) =>
-          showPopup("3 pts", e.nativeEvent.pageX, e.nativeEvent.pageY)
+          handleZonePress("3 pts", e.nativeEvent.pageX, e.nativeEvent.pageY)
         }
+        style={[styles.court, styles.touchableArea3pts]}
       >
         <View style={[styles.court, styles.touchableArea3pts]}>
-          {/* Lignes de fond */}
+          {/* Bottom line */}
           <View style={[styles.line, styles.baselineTop]} />
+          {/* Top line */}
           <View style={[styles.line, styles.baselineBottom]} />
 
-          {/* Ligne médiane */}
+          {/* Middle line */}
           <View style={[styles.line, styles.midline]} />
 
-          {/* Cercle central */}
+          {/* Center circle */}
           <View style={styles.centerCircle} />
 
-          {/* Raquettes avec zones tactiles */}
-          <TouchableWithoutFeedback
+          {/* PAINT AREA */}
+
+          {/* Paint top */}
+          <Pressable
             onPress={(e) =>
-              showPopup("Raquette", e.nativeEvent.pageX, e.nativeEvent.pageY)
+              handleZonePress(
+                "Raquette",
+                e.nativeEvent.pageX,
+                e.nativeEvent.pageY
+              )
             }
-          >
-            <View
-              style={[styles.key, styles.keyTop, styles.touchableAreaPaint]}
-            />
-          </TouchableWithoutFeedback>
-          <TouchableWithoutFeedback
+            style={[styles.key, styles.keyTop, styles.touchableAreaPaint]}
+          />
+
+          {/* Paint bottom */}
+          <Pressable
             onPress={(e) =>
-              showPopup("Raquette", e.nativeEvent.pageX, e.nativeEvent.pageY)
+              handleZonePress(
+                "Raquette",
+                e.nativeEvent.pageX,
+                e.nativeEvent.pageY
+              )
             }
-          >
-            <View
-              style={[styles.key, styles.keyBottom, styles.touchableAreaPaint]}
-            />
-          </TouchableWithoutFeedback>
+            style={[styles.key, styles.keyBottom, styles.touchableAreaPaint]}
+          />
 
-          {/* Zone à 3 points */}
-          <View style={[styles.threePointArea, styles.threePointAreaTop]} />
-          <View style={[styles.threePointArea, styles.threePointAreaBottom]} />
+          {/* 3 PTS AREA */}
 
-          {/* Arcs des 3 points (visuels) */}
-          <TouchableWithoutFeedback
+          {/* 3pts top */}
+          <Pressable
             onPress={(e) =>
-              showPopup("2 pts", e.nativeEvent.pageX, e.nativeEvent.pageY)
+              handleZonePress("2 pts", e.nativeEvent.pageX, e.nativeEvent.pageY)
             }
-          >
-            <View
-              style={[
-                styles.threePointArc,
-                styles.arcTop,
-                styles.touchableArea2pts,
-              ]}
-            />
-          </TouchableWithoutFeedback>
+            style={[
+              styles.threePointArc,
+              styles.arcTop,
+              styles.touchableArea2pts,
+            ]}
+          />
 
-          <TouchableWithoutFeedback
+          {/* 3pts bottom */}
+          <Pressable
             onPress={(e) =>
-              showPopup("2 pts", e.nativeEvent.pageX, e.nativeEvent.pageY)
+              handleZonePress("2 pts", e.nativeEvent.pageX, e.nativeEvent.pageY)
             }
-          >
-            <View
-              style={[
-                styles.threePointArc,
-                styles.arcBottom,
-                styles.touchableArea2pts,
-              ]}
-            />
-          </TouchableWithoutFeedback>
+            style={[
+              styles.threePointArc,
+              styles.arcBottom,
+              styles.touchableArea2pts,
+            ]}
+          />
 
-          {/* Lignes de lancer franc */}
-          <View style={[styles.freeThrowLine, styles.freeThrowTop]} />
-          <View style={[styles.freeThrowLine, styles.freeThrowBottom]} />
-
-          {/* Cercles de lancer franc */}
+          {/* Free throw circle */}
           <View style={[styles.freeThrowCircle, styles.freeThrowCircleTop]} />
           <View
             style={[styles.freeThrowCircle, styles.freeThrowCircleBottom]}
           />
         </View>
-      </TouchableWithoutFeedback>
+      </Pressable>
 
       <Modal
         transparent={true}
-        visible={popupVisible}
+        visible={actionModalVisible}
         animationType="fade"
-        onRequestClose={() => setPopupVisible(false)}
+        onRequestClose={() => setActionModalVisible(false)}
       >
-        <View
-          style={[
-            styles.popup,
-            {
-              left: popupPosition.x - 75,
-              top: popupPosition.y - 40,
-            },
-          ]}
+        <Pressable
+          style={styles.modalOverlay}
+          onPress={() => setActionModalVisible(false)}
         >
-          <Text style={styles.popupText}>{shootingZone}</Text>
-        </View>
+          <View
+            style={[
+              styles.actionModal,
+              {
+                left: modalPosition.x,
+                top: modalPosition.y,
+              },
+            ]}
+          >
+            {modalPosition.showPointerOnTop ? (
+              <View
+                style={[
+                  styles.pointer,
+                  styles.pointerTop,
+                  {
+                    left: modalPosition.pointerX - POINTER_SIZE,
+                    // Add a small adjustment to account for the pointer's width
+                    transform: [{ translateX: 0 }, { rotate: "180deg" }],
+                  },
+                ]}
+              />
+            ) : (
+              <View
+                style={[
+                  styles.pointer,
+                  styles.pointerBottom,
+                  {
+                    left: modalPosition.pointerX - POINTER_SIZE,
+                    transform: [{ translateX: 0 }],
+                  },
+                ]}
+              />
+            )}
+
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={() => handleActionSelect("tir")}
+            >
+              <Text style={styles.actionButtonText}>🏀 Tir</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={() => handleActionSelect("rebond")}
+            >
+              <Text style={styles.actionButtonText}>📥 Rebond</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={() => handleActionSelect("faute")}
+            >
+              <Text style={styles.actionButtonText}>⚠️ Faute</Text>
+            </TouchableOpacity>
+          </View>
+        </Pressable>
       </Modal>
     </View>
   );
@@ -301,5 +408,57 @@ const styles = StyleSheet.create({
   twoPointAreaBottom: {
     left: threePointArcWidth / 2,
     bottom: keyHeight,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+  },
+  actionModal: {
+    position: "absolute",
+    backgroundColor: "white",
+    borderRadius: 12,
+    padding: MODAL_CONTENT_PADDING,
+    width: MODAL_WIDTH,
+    minHeight: MODAL_HEIGHT,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  actionButton: {
+    backgroundColor: "#f0f0f0",
+    padding: 12,
+    borderRadius: 8,
+    marginVertical: 4,
+    alignItems: "center",
+  },
+  actionButtonText: {
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  pointer: {
+    position: "absolute",
+    width: 0,
+    height: 0,
+    borderLeftWidth: POINTER_SIZE,
+    borderRightWidth: POINTER_SIZE,
+    borderTopWidth: POINTER_SIZE,
+    borderStyle: "solid",
+    backgroundColor: "transparent",
+    borderLeftColor: "transparent",
+    borderRightColor: "transparent",
+    borderTopColor: "white",
+    zIndex: 1, // Ensure pointer is above the modal
+  },
+  pointerTop: {
+    top: -POINTER_SIZE,
+    transform: [{ rotate: "180deg" }],
+  },
+  pointerBottom: {
+    bottom: -POINTER_SIZE,
   },
 });
