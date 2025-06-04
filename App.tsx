@@ -4,6 +4,7 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import MainMenuScreen from "./screens/MainMenuScreen";
 import BoardScreen from "./screens/BoardScreen";
 import SplashScreen from "./screens/SplashScreen";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 const Stack = createNativeStackNavigator();
 
@@ -22,16 +23,18 @@ export default function App() {
   }
 
   return (
-    <NavigationContainer>
-      <Stack.Navigator
-        initialRouteName="MainMenu"
-        screenOptions={{
-          headerShown: false,
-        }}
-      >
-        <Stack.Screen name="MainMenu" component={MainMenuScreen} />
-        <Stack.Screen name="Board" component={BoardScreen} />
-      </Stack.Navigator>
-    </NavigationContainer>
+    <SafeAreaView style={{ flex: 1 }}>
+      <NavigationContainer>
+        <Stack.Navigator
+          initialRouteName="MainMenu"
+          screenOptions={{
+            headerShown: false,
+          }}
+        >
+          <Stack.Screen name="MainMenu" component={MainMenuScreen} />
+          <Stack.Screen name="Board" component={BoardScreen} />
+        </Stack.Navigator>
+      </NavigationContainer>
+    </SafeAreaView>
   );
 }
