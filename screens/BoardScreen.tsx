@@ -83,11 +83,6 @@ export default function BasketballCourt() {
       ? window.height - insets.top - insets.bottom - MARGIN_GLOBAL * 2
       : window.height - insets.top - insets.bottom;
 
-    console.log(courtHeight);
-    console.log(courtWidth);
-    console.log(window.height);
-    console.log(window.width);
-
     const circleDiameter = courtWidth * 0.2;
     const keyWidth = courtWidth * 0.3;
     const keyHeight = courtHeight * 0.24;
