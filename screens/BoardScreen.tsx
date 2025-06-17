@@ -7,7 +7,6 @@ import {
   Pressable,
   TouchableOpacity,
   useWindowDimensions,
-  Dimensions,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as ScreenOrientation from "expo-screen-orientation";
@@ -28,8 +27,6 @@ export default function BasketballCourt() {
   const [orientation, setOrientation] =
     useState<ScreenOrientation.Orientation | null>(null);
   const [isReady, setIsReady] = useState(false); // Used to delay rendering until orientation is locked
-  const [layoutHeight, setLayoutHeight] = useState(0);
-  const [navBarHeight, setNavBarHeight] = useState(0);
 
   useEffect(() => {
     const prepareOrientation = async () => {
@@ -91,12 +88,6 @@ export default function BasketballCourt() {
       ? window.height - insets.top - insets.bottom
       : window.height - insets.top - insets.bottom;
 
-    // console.log("------------------ ");
-    // console.log("court height: " + courtHeight);
-    // console.log("court height / 2 : " + courtHeight / 2);
-    // console.log("insets.top : " + insets.top);
-    // console.log("insets.bottom : " + insets.bottom);
-
     const circleDiameter = courtWidth * 0.2;
     const keyWidth = courtWidth * 0.3;
     const keyHeight = courtHeight * 0.24;
@@ -118,7 +109,6 @@ export default function BasketballCourt() {
       threePointArcSideHeight,
       CONTAINER_PADDING,
       isPortrait,
-      navBarHeight,
     });
 
     return {
@@ -133,7 +123,7 @@ export default function BasketballCourt() {
       threePointArcSideHeight,
       styles,
     };
-  }, [orientation, window, insets, navBarHeight]);
+  }, [orientation, window, insets]);
 
   // Modal state and position
   const [actionModalVisible, setActionModalVisible] = useState(false);
@@ -194,29 +184,11 @@ export default function BasketballCourt() {
 
   return (
     // <View style={styles.container}>
-    <View
-      style={{ flex: 1 }}
-      onLayout={(e) => {
-        setLayoutHeight(e.nativeEvent.layout.height);
-        console.log(
-          "e.nativeEvent.layout.height" + e.nativeEvent.layout.height
-        );
-        const navBarHeight =
-          Dimensions.get("window").height - e.nativeEvent.layout.height;
-        console.log("navBarHeight: " + navBarHeight);
-        setNavBarHeight(navBarHeight);
-      }}
-    >
+    <View style={{ flex: 1 }}>
       <Pressable
         onPress={(e) =>
           handleZonePress("3 pts", e.nativeEvent.pageX, e.nativeEvent.pageY)
         }
-        onLayout={(e) => {
-          const { width, height } = e.nativeEvent.layout;
-          console.log("layout");
-          console.log(width);
-          console.log(height / 2);
-        }}
         style={[styles.court, styles.touchableArea3pts]}
       />
 
@@ -297,7 +269,6 @@ const getStyles = ({
   threePointArcSideHeight,
   CONTAINER_PADDING,
   isPortrait,
-  navBarHeight,
 }: {
   courtWidth: number;
   courtHeight: number;
@@ -310,7 +281,6 @@ const getStyles = ({
   threePointArcSideHeight: number;
   CONTAINER_PADDING: number;
   isPortrait: boolean;
-  navBarHeight: number;
 }) =>
   StyleSheet.create({
     container: {
