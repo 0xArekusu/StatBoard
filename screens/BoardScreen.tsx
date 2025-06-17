@@ -7,6 +7,7 @@ import {
   Pressable,
   TouchableOpacity,
   useWindowDimensions,
+  Dimensions,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as ScreenOrientation from "expo-screen-orientation";
@@ -27,13 +28,15 @@ export default function BasketballCourt() {
   const [orientation, setOrientation] =
     useState<ScreenOrientation.Orientation | null>(null);
   const [isReady, setIsReady] = useState(false); // Used to delay rendering until orientation is locked
+  const [layoutHeight, setLayoutHeight] = useState(0);
+  const [navBarHeight, setNavBarHeight] = useState(0);
 
   useEffect(() => {
     const prepareOrientation = async () => {
       // Lock screen in landscape mode before calculating layout
-      await ScreenOrientation.lockAsync(
-        ScreenOrientation.OrientationLock.LANDSCAPE
-      );
+      // await ScreenOrientation.lockAsync(
+      //   ScreenOrientation.OrientationLock.LANDSCAPE
+      // );
       const current = await ScreenOrientation.getOrientationAsync();
       setOrientation(current);
       setIsReady(true); // Now safe to render
@@ -74,14 +77,25 @@ export default function BasketballCourt() {
     styles,
   } = useMemo(() => {
     const MARGIN_GLOBAL = 0;
+    const CONTAINER_PADDING = 20;
 
+    // Width without phone state bar and navigation bar
+    // use this width to position absolute element (padding included)
     const courtWidth = isPortrait
       ? window.width - insets.left - insets.right
-      : window.width - MARGIN_GLOBAL * 2;
+      : window.width;
 
+    // Height without phone state bar and navigation bar
+    // use this hgight to position absolute element (padding included)
     const courtHeight = isPortrait
-      ? window.height - insets.top - insets.bottom - MARGIN_GLOBAL * 2
+      ? window.height - insets.top - insets.bottom
       : window.height - insets.top - insets.bottom;
+
+    // console.log("------------------ ");
+    // console.log("court height: " + courtHeight);
+    // console.log("court height / 2 : " + courtHeight / 2);
+    // console.log("insets.top : " + insets.top);
+    // console.log("insets.bottom : " + insets.bottom);
 
     const circleDiameter = courtWidth * 0.2;
     const keyWidth = courtWidth * 0.3;
@@ -102,6 +116,9 @@ export default function BasketballCourt() {
       threePointArcHeight,
       threePointArcSideWidth,
       threePointArcSideHeight,
+      CONTAINER_PADDING,
+      isPortrait,
+      navBarHeight,
     });
 
     return {
@@ -116,7 +133,7 @@ export default function BasketballCourt() {
       threePointArcSideHeight,
       styles,
     };
-  }, [orientation, window, insets]);
+  }, [orientation, window, insets, navBarHeight]);
 
   // Modal state and position
   const [actionModalVisible, setActionModalVisible] = useState(false);
@@ -175,19 +192,39 @@ export default function BasketballCourt() {
     setActionModalVisible(false);
   };
 
-  // Delay rendering until orientation is set to LANDSCAPE
-  if (!isReady) {
-    return <View style={{ flex: 1, backgroundColor: "black" }} />;
-  }
-
   return (
-    <View style={styles.container}>
+    // <View style={styles.container}>
+    <View
+      style={{ flex: 1 }}
+      onLayout={(e) => {
+        setLayoutHeight(e.nativeEvent.layout.height);
+        console.log(
+          "e.nativeEvent.layout.height" + e.nativeEvent.layout.height
+        );
+        const navBarHeight =
+          Dimensions.get("window").height - e.nativeEvent.layout.height;
+        console.log("navBarHeight: " + navBarHeight);
+        setNavBarHeight(navBarHeight);
+      }}
+    >
       <Pressable
         onPress={(e) =>
           handleZonePress("3 pts", e.nativeEvent.pageX, e.nativeEvent.pageY)
         }
+        onLayout={(e) => {
+          const { width, height } = e.nativeEvent.layout;
+          console.log("layout");
+          console.log(width);
+          console.log(height / 2);
+        }}
         style={[styles.court, styles.touchableArea3pts]}
       />
+
+      {/* Middle line */}
+      <View style={[styles.line, styles.midline]} />
+
+      {/* Center circle */}
+      <View style={[styles.line, styles.centerCircle]} />
 
       <Modal
         transparent
@@ -258,6 +295,9 @@ const getStyles = ({
   threePointArcHeight,
   threePointArcSideWidth,
   threePointArcSideHeight,
+  CONTAINER_PADDING,
+  isPortrait,
+  navBarHeight,
 }: {
   courtWidth: number;
   courtHeight: number;
@@ -268,6 +308,9 @@ const getStyles = ({
   threePointArcHeight: number;
   threePointArcSideWidth: number;
   threePointArcSideHeight: number;
+  CONTAINER_PADDING: number;
+  isPortrait: boolean;
+  navBarHeight: number;
 }) =>
   StyleSheet.create({
     container: {
@@ -277,7 +320,8 @@ const getStyles = ({
       backgroundColor: "#2e7d32",
       width: courtWidth,
       height: courtHeight,
-      padding: 20,
+      padding: CONTAINER_PADDING,
+      position: "relative",
     },
     court: {
       width: "100%",
@@ -287,6 +331,7 @@ const getStyles = ({
       borderWidth: 4,
       borderColor: "#fff",
       overflow: "hidden",
+      position: "relative",
     },
     touchableArea3pts: {
       position: "absolute",
@@ -341,4 +386,66 @@ const getStyles = ({
     pointerBottom: {
       bottom: -POINTER_SIZE,
     },
+
+    line: {
+      position: "absolute",
+      backgroundColor: "#fff",
+      zIndex: 99,
+    },
+
+    linetest: {
+      position: "absolute",
+      backgroundColor: "red",
+      width: 2,
+      height: 2,
+      top: "50%",
+      left: "50%",
+      zIndex: 99,
+    },
+
+    midline: isPortrait
+      ? {
+          width: "100%",
+          height: 2,
+          top: "50%",
+          transform: [{ translateY: -1 }],
+        }
+      : {
+          width: 2,
+          height: "100%",
+          left: "50%",
+          transform: [{ translateX: -1 }],
+        },
+
+    centerCircle: isPortrait
+      ? {
+          position: "absolute",
+          borderWidth: 2,
+          borderColor: "#fff",
+          backgroundColor: "transparent",
+          top: "50%",
+          left: "50%",
+          transform: [
+            { translateY: -circleDiameter / 2 },
+            { translateX: -circleDiameter / 2 },
+          ],
+          width: circleDiameter,
+          height: circleDiameter,
+          borderRadius: circleDiameter / 2,
+        }
+      : {
+          position: "absolute",
+          borderWidth: 2,
+          borderColor: "#fff",
+          backgroundColor: "transparent",
+          top: "50%",
+          left: "50%",
+          transform: [
+            { translateY: -circleDiameter / 4 },
+            { translateX: -circleDiameter / 4 },
+          ],
+          width: circleDiameter / 2,
+          height: circleDiameter / 2,
+          borderRadius: circleDiameter / 2,
+        },
   });
