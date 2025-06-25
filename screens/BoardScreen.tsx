@@ -69,8 +69,6 @@ export default function BasketballCourt() {
     keyHeight,
     threePointArcWidth,
     threePointArcHeight,
-    threePointArcSideWidth,
-    threePointArcSideHeight,
     styles,
   } = useMemo(() => {
     const MARGIN_GLOBAL = 0;
@@ -97,13 +95,6 @@ export default function BasketballCourt() {
     const threePointArcHeight = isPortrait
       ? courtHeight * 0.68
       : courtWidth * 0.38;
-    const threePointArcSideWidth = courtWidth * 0.88;
-    const threePointArcSideHeight = keyHeight - circleDiameter / 2.5;
-
-    console.log("(courtWidth - threePointArcWidth) / 2)"),
-      console.log((courtWidth - threePointArcWidth) / 2),
-      console.log("-threePointArcHeight / 2");
-    console.log(-threePointArcHeight / 2);
 
     // Generate styles based on layout
     const styles = getStyles({
@@ -114,8 +105,6 @@ export default function BasketballCourt() {
       keyHeight,
       threePointArcWidth,
       threePointArcHeight,
-      threePointArcSideWidth,
-      threePointArcSideHeight,
       CONTAINER_PADDING,
       isPortrait,
     });
@@ -128,8 +117,6 @@ export default function BasketballCourt() {
       keyHeight,
       threePointArcWidth,
       threePointArcHeight,
-      threePointArcSideWidth,
-      threePointArcSideHeight,
       styles,
     };
   }, [orientation, window, insets]);
@@ -326,8 +313,6 @@ const getStyles = ({
   keyHeight,
   threePointArcWidth,
   threePointArcHeight,
-  threePointArcSideWidth,
-  threePointArcSideHeight,
   CONTAINER_PADDING,
   isPortrait,
 }: {
@@ -338,8 +323,6 @@ const getStyles = ({
   keyHeight: number;
   threePointArcWidth: number;
   threePointArcHeight: number;
-  threePointArcSideWidth: number;
-  threePointArcSideHeight: number;
   CONTAINER_PADDING: number;
   isPortrait: boolean;
 }) =>
@@ -537,6 +520,7 @@ const getStyles = ({
       borderRadius: circleDiameter / 2,
       borderWidth: 2,
       borderColor: "#fff",
+      zIndex: 98,
     },
 
     freeThrowCircleTopOrLeft: isPortrait
