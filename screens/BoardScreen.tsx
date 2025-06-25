@@ -89,16 +89,21 @@ export default function BasketballCourt() {
       : window.height - insets.top - insets.bottom;
 
     const circleDiameter = isPortrait ? courtWidth * 0.2 : courtHeight * 0.2;
-    const keyWidth = courtWidth * 0.3;
-    const keyHeight = courtHeight * 0.24;
+    const keyWidth = isPortrait ? courtWidth * 0.3 : courtWidth * 0.24;
+    const keyHeight = isPortrait ? courtHeight * 0.24 : courtHeight * 0.3;
     const threePointArcWidth = isPortrait
       ? courtWidth * 0.88
       : courtHeight * 0.88;
     const threePointArcHeight = isPortrait
       ? courtHeight * 0.68
-      : courtWidth * 0.68;
+      : courtWidth * 0.38;
     const threePointArcSideWidth = courtWidth * 0.88;
     const threePointArcSideHeight = keyHeight - circleDiameter / 2.5;
+
+    console.log("(courtWidth - threePointArcWidth) / 2)"),
+      console.log((courtWidth - threePointArcWidth) / 2),
+      console.log("-threePointArcHeight / 2");
+    console.log(-threePointArcHeight / 2);
 
     // Generate styles based on layout
     const styles = getStyles({
@@ -559,8 +564,8 @@ const getStyles = ({
     threePointArc: isPortrait
       ? {
           position: "absolute",
-          width: "87%",
-          height: "34%",
+          width: threePointArcWidth,
+          height: threePointArcHeight,
           borderWidth: 2,
           borderColor: "#fff",
           borderTopLeftRadius: threePointArcWidth / 2,
@@ -570,33 +575,35 @@ const getStyles = ({
         }
       : {
           position: "absolute",
-          width: "38%",
-          height: "86%",
+          width: "33%",
+          height: "83%",
           borderWidth: 2,
           borderColor: "#fff",
-          borderTopRightRadius: threePointArcHeight / 2,
-          borderBottomRightRadius: threePointArcHeight / 2,
+          // borderTopRightRadius: threePointArcHeight / 2,
+          // borderBottomRightRadius: threePointArcHeight / 2,
+          borderTopRightRadius: "90%",
+          borderBottomRightRadius: "90%",
           borderLeftWidth: 0,
           backgroundColor: "transparent",
         },
     arcTopOrLeft: isPortrait
       ? {
-          left: 45,
-          top: 0,
+          left: (courtWidth - threePointArcWidth) / 2,
+          top: -threePointArcHeight / 2,
           transform: [{ rotate: "180deg" }],
         }
       : {
-          left: 0,
-          top: 45,
+          top: "8%",
+          left: "0%",
         },
     arcBottomOrRight: isPortrait
       ? {
-          left: 45,
-          bottom: 0,
+          left: (courtWidth - threePointArcWidth) / 2,
+          bottom: -threePointArcHeight / 2,
         }
       : {
-          right: 0,
-          top: 45,
+          top: "8%",
+          right: "0%",
           transform: [{ rotate: "180deg" }],
         },
   });
