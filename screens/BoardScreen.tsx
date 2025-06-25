@@ -194,77 +194,71 @@ export default function BasketballCourt() {
   return (
     // <View style={styles.container}>
     <View style={{ flex: 1 }}>
+      {/* 3pts area (all court except other zone) */}
       <Pressable
         onPress={(e) =>
           handleZonePress("3 pts", e.nativeEvent.pageX, e.nativeEvent.pageY)
         }
         style={[styles.court, styles.touchableArea3pts]}
       />
-
-      {/* Free throw circle */}
-      <View style={[styles.freeThrowCircle, styles.freeThrowCircleTopOrLeft]} />
-      <View
-        style={[styles.freeThrowCircle, styles.freeThrowCircleBottomOrRight]}
-      />
-
       {/* Paint top or left */}
       <Pressable
         onPress={(e) =>
           handleZonePress("Raquette", e.nativeEvent.pageX, e.nativeEvent.pageY)
         }
         style={[
-          styles.keyBase,
-          styles.key,
-          styles.keyTopOrLeft,
+          styles.paintLine,
+          styles.paint,
+          styles.paintTopOrLeft,
           styles.touchableAreaPaint,
         ]}
       />
-
+      {/* Free throw circle top or left */}
+      <View style={[styles.freeThrowCircle, styles.freeThrowCircleTopOrLeft]} />
+      {/* 3pts line top or left */}
+      <Pressable
+        onPress={(e) =>
+          handleZonePress("2 pts", e.nativeEvent.pageX, e.nativeEvent.pageY)
+        }
+        style={[
+          styles.threePointLine,
+          styles.threePointArc,
+          styles.threePointArcTopOrLeft,
+          styles.touchableArea2pts,
+        ]}
+      />
       {/* Middle line */}
       <View style={[styles.line, styles.midline]} />
-
       {/* Center circle */}
       <View style={[styles.line, styles.centerCircle]} />
-
+      {/* 3pts line bottom or right */}
+      <Pressable
+        onPress={(e) =>
+          handleZonePress("2 pts", e.nativeEvent.pageX, e.nativeEvent.pageY)
+        }
+        style={[
+          styles.threePointLine,
+          styles.threePointArc,
+          styles.threePointArcBottomOrRight,
+          styles.touchableArea2pts,
+        ]}
+      />
+      {/* Free throw circle bottom or right */}
+      <View
+        style={[styles.freeThrowCircle, styles.freeThrowCircleBottomOrRight]}
+      />
       {/* Paint bottom */}
       <Pressable
         onPress={(e) =>
           handleZonePress("Raquette", e.nativeEvent.pageX, e.nativeEvent.pageY)
         }
         style={[
-          styles.keyBase,
-          styles.key,
-          styles.keyBottomOrRight,
+          styles.paintLine,
+          styles.paint,
+          styles.paintBottomOrRight,
           styles.touchableAreaPaint,
         ]}
       />
-
-      {/* 3 PTS AREA */}
-
-      {/* 3pts top */}
-      <Pressable
-        onPress={(e) =>
-          handleZonePress("2 pts", e.nativeEvent.pageX, e.nativeEvent.pageY)
-        }
-        style={[
-          styles.threePointArc,
-          styles.arcTopOrLeft,
-          styles.touchableArea2pts,
-        ]}
-      />
-
-      {/* 3pts bottom */}
-      <Pressable
-        onPress={(e) =>
-          handleZonePress("2 pts", e.nativeEvent.pageX, e.nativeEvent.pageY)
-        }
-        style={[
-          styles.threePointArc,
-          styles.arcBottomOrRight,
-          styles.touchableArea2pts,
-        ]}
-      />
-
       <Modal
         transparent
         visible={actionModalVisible}
@@ -439,74 +433,7 @@ const getStyles = ({
       left: "50%",
       zIndex: 99,
     },
-
-    keyBase: {
-      position: "absolute",
-      borderWidth: 2,
-      borderColor: "#fff",
-      backgroundColor: "transparent",
-    },
-
-    key: isPortrait
-      ? {
-          width: keyWidth,
-          height: keyHeight,
-        }
-      : {
-          width: keyWidth,
-          height: keyHeight,
-        },
-
-    keyTopOrLeft: isPortrait
-      ? {
-          borderTopWidth: 0,
-          left: courtWidth / 2 - keyWidth / 2,
-          top: 0,
-        }
-      : {
-          borderLeftWidth: 0,
-          top: courtHeight / 2 - keyHeight / 2,
-          left: 0,
-        },
-    keyBottomOrRight: isPortrait
-      ? {
-          borderBottomWidth: 0,
-          left: courtWidth / 2 - keyWidth / 2,
-          bottom: 0,
-        }
-      : {
-          top: courtHeight / 2 - keyHeight / 2,
-          right: 0,
-        },
-
-    freeThrowCircle: {
-      position: "absolute",
-      width: circleDiameter,
-      height: circleDiameter,
-      borderRadius: circleDiameter / 2,
-      borderWidth: 2,
-      borderColor: "#fff",
-      zIndex: 99,
-    },
-    freeThrowCircleTopOrLeft: isPortrait
-      ? {
-          left: courtWidth / 2 - circleDiameter / 2,
-          top: keyHeight - circleDiameter / 2,
-        }
-      : {
-          left: keyWidth - circleDiameter / 2,
-          top: courtHeight / 2 - circleDiameter / 2,
-        },
-    freeThrowCircleBottomOrRight: isPortrait
-      ? {
-          left: courtWidth / 2 - circleDiameter / 2,
-          bottom: keyHeight - circleDiameter / 2,
-        }
-      : {
-          right: keyWidth - circleDiameter / 2,
-          top: courtHeight / 2 - circleDiameter / 2,
-        },
-
+    // #region MIDLINE + CENTER CIRCLE
     midline: isPortrait
       ? {
           width: "100%",
@@ -552,39 +479,112 @@ const getStyles = ({
           height: circleDiameter,
           borderRadius: circleDiameter / 2,
         },
+    // #endregion
 
+    // #region PAINT AREA ZONE
     touchableAreaPaint: {
       position: "absolute",
       zIndex: 99,
     },
+
+    paintLine: {
+      position: "absolute",
+      borderWidth: 2,
+      borderColor: "#fff",
+      backgroundColor: "transparent",
+    },
+
+    paint: isPortrait
+      ? {
+          width: keyWidth,
+          height: keyHeight,
+        }
+      : {
+          width: keyWidth,
+          height: keyHeight,
+        },
+
+    paintTopOrLeft: isPortrait
+      ? {
+          borderTopWidth: 0,
+          left: courtWidth / 2 - keyWidth / 2,
+          top: 0,
+        }
+      : {
+          borderLeftWidth: 0,
+          top: courtHeight / 2 - keyHeight / 2,
+          left: 0,
+        },
+    paintBottomOrRight: isPortrait
+      ? {
+          borderBottomWidth: 0,
+          left: courtWidth / 2 - keyWidth / 2,
+          bottom: 0,
+        }
+      : {
+          top: courtHeight / 2 - keyHeight / 2,
+          right: 0,
+        },
+
+    // #endregion
+
+    // #region FREE THROW AREA
+
+    freeThrowCircle: {
+      position: "absolute",
+      width: circleDiameter,
+      height: circleDiameter,
+      borderRadius: circleDiameter / 2,
+      borderWidth: 2,
+      borderColor: "#fff",
+    },
+
+    freeThrowCircleTopOrLeft: isPortrait
+      ? {
+          left: courtWidth / 2 - circleDiameter / 2,
+          top: keyHeight - circleDiameter / 2,
+        }
+      : {
+          left: keyWidth - circleDiameter / 2,
+          top: courtHeight / 2 - circleDiameter / 2,
+        },
+    freeThrowCircleBottomOrRight: isPortrait
+      ? {
+          left: courtWidth / 2 - circleDiameter / 2,
+          bottom: keyHeight - circleDiameter / 2,
+        }
+      : {
+          right: keyWidth - circleDiameter / 2,
+          top: courtHeight / 2 - circleDiameter / 2,
+        },
+    // #endregion
+
+    // #region 3 PTS AREA STYLES
     touchableArea2pts: {
       position: "absolute",
       zIndex: 98,
     },
+    threePointLine: {
+      borderColor: "#fff",
+      borderWidth: 2,
+      backgroundColor: "transparent",
+    },
     threePointArc: isPortrait
       ? {
-          position: "absolute",
           width: "83%",
           height: "50%",
-          borderWidth: 2,
-          borderColor: "#fff",
           borderTopLeftRadius: "100%",
           borderTopRightRadius: "100%",
           borderBottomWidth: 0,
-          backgroundColor: "transparent",
         }
       : {
-          position: "absolute",
           width: "50%",
           height: "83%",
-          borderWidth: 2,
-          borderColor: "#fff",
           borderTopRightRadius: "100%",
           borderBottomRightRadius: "100%",
           borderLeftWidth: 0,
-          backgroundColor: "transparent",
         },
-    arcTopOrLeft: isPortrait
+    threePointArcTopOrLeft: isPortrait
       ? {
           left: "8%",
           top: "-16%",
@@ -594,7 +594,7 @@ const getStyles = ({
           top: "8%",
           left: "-17%",
         },
-    arcBottomOrRight: isPortrait
+    threePointArcBottomOrRight: isPortrait
       ? {
           left: "8%",
           bottom: "-16%",
@@ -604,4 +604,5 @@ const getStyles = ({
           right: "-17%",
           transform: [{ rotate: "180deg" }],
         },
+    // #endregion
   });
