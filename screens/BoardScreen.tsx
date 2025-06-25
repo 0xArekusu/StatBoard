@@ -564,46 +564,44 @@ const getStyles = ({
     threePointArc: isPortrait
       ? {
           position: "absolute",
-          width: threePointArcWidth,
-          height: threePointArcHeight,
+          width: "83%",
+          height: "50%",
           borderWidth: 2,
           borderColor: "#fff",
-          borderTopLeftRadius: threePointArcWidth / 2,
-          borderTopRightRadius: threePointArcWidth / 2,
+          borderTopLeftRadius: "100%",
+          borderTopRightRadius: "100%",
           borderBottomWidth: 0,
           backgroundColor: "transparent",
         }
       : {
           position: "absolute",
-          width: "33%",
+          width: "50%",
           height: "83%",
           borderWidth: 2,
           borderColor: "#fff",
-          // borderTopRightRadius: threePointArcHeight / 2,
-          // borderBottomRightRadius: threePointArcHeight / 2,
-          borderTopRightRadius: "90%",
-          borderBottomRightRadius: "90%",
+          borderTopRightRadius: "100%",
+          borderBottomRightRadius: "100%",
           borderLeftWidth: 0,
           backgroundColor: "transparent",
         },
     arcTopOrLeft: isPortrait
       ? {
-          left: (courtWidth - threePointArcWidth) / 2,
-          top: -threePointArcHeight / 2,
+          left: "8%",
+          top: "-16%",
           transform: [{ rotate: "180deg" }],
         }
       : {
           top: "8%",
-          left: "0%",
+          left: "-17%",
         },
     arcBottomOrRight: isPortrait
       ? {
-          left: (courtWidth - threePointArcWidth) / 2,
-          bottom: -threePointArcHeight / 2,
+          left: "8%",
+          bottom: "-16%",
         }
       : {
           top: "8%",
-          right: "0%",
+          right: "-17%",
           transform: [{ rotate: "180deg" }],
         },
   });
