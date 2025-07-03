@@ -369,6 +369,62 @@ export default function BasketballCourt() {
           </View>
         </Pressable>
       </Modal>
+
+      {/* Pastilles des joueurs */}
+      {[
+        // Meneur (tête de raquette)
+        {
+          num: 4,
+          left: courtWidth / 2 - 20,
+          top: keyHeight - 50,
+        },
+        // Ailier gauche
+        {
+          num: 5,
+          left: courtWidth / 2 - keyWidth / 2 - 40,
+          top: keyHeight,
+        },
+        // Ailier droit
+        {
+          num: 6,
+          left: courtWidth / 2 + keyWidth / 2,
+          top: keyHeight,
+        },
+        // Intérieur gauche
+        {
+          num: 7,
+          left: courtWidth / 2 - keyWidth / 4 - 30,
+          top: keyHeight + keyHeight / 2,
+        },
+        // Intérieur droit
+        {
+          num: 8,
+          left: courtWidth / 2 + keyWidth / 4 + 10,
+          top: keyHeight + keyHeight / 2,
+        },
+      ].map((player) => (
+        <View
+          key={player.num}
+          style={{
+            position: "absolute",
+            left: player.left,
+            top: player.top,
+            width: 40,
+            height: 40,
+            borderRadius: 20,
+            backgroundColor: "#1976d2",
+            alignItems: "center",
+            justifyContent: "center",
+            borderWidth: 2,
+            borderColor: "#fff",
+            zIndex: 200,
+          }}
+        >
+          <Text style={{ color: "#fff", fontWeight: "bold", fontSize: 18 }}>
+            {player.num}
+          </Text>
+        </View>
+      ))}
     </View>
   );
 }
