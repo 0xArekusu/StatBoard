@@ -44,6 +44,15 @@ export default function BasketballCourt() {
   const [teamA, setTeamA] = useState("Team A");
   const [teamB, setTeamB] = useState("Team B");
 
+  // État pour les noms des joueurs
+  const [playerNames, setPlayerNames] = useState({
+    1: "Joueur #1",
+    2: "Joueur #2",
+    3: "Joueur #3",
+    4: "Joueur #4",
+    5: "Joueur #5",
+  });
+
   // Sécurité : désactiver le bouton si un champ est vide
   const isConfirmDisabled = teamA.trim() === "" || teamB.trim() === "";
 
@@ -371,60 +380,80 @@ export default function BasketballCourt() {
       </Modal>
 
       {/* Pastilles des joueurs */}
-      {[
-        // Meneur (tête de raquette)
-        {
-          num: 4,
-          left: courtWidth / 2 - 20,
-          top: keyHeight - 50,
-        },
-        // Ailier gauche
-        {
-          num: 5,
-          left: courtWidth / 2 - keyWidth / 2 - 40,
-          top: keyHeight,
-        },
-        // Ailier droit
-        {
-          num: 6,
-          left: courtWidth / 2 + keyWidth / 2,
-          top: keyHeight,
-        },
-        // Intérieur gauche
-        {
-          num: 7,
-          left: courtWidth / 2 - keyWidth / 4 - 30,
-          top: keyHeight + keyHeight / 2,
-        },
-        // Intérieur droit
-        {
-          num: 8,
-          left: courtWidth / 2 + keyWidth / 4 + 10,
-          top: keyHeight + keyHeight / 2,
-        },
-      ].map((player) => (
-        <View
-          key={player.num}
-          style={{
-            position: "absolute",
-            left: player.left,
-            top: player.top,
-            width: 40,
-            height: 40,
-            borderRadius: 20,
-            backgroundColor: "#1976d2",
-            alignItems: "center",
-            justifyContent: "center",
-            borderWidth: 2,
-            borderColor: "#fff",
-            zIndex: 200,
-          }}
-        >
-          <Text style={{ color: "#fff", fontWeight: "bold", fontSize: 18 }}>
-            {player.num}
-          </Text>
-        </View>
-      ))}
+      {!initModalVisible &&
+        [
+          // Meneur (tête de raquette)
+          {
+            num: 1,
+            left: courtWidth / 2 - 20,
+            top: keyHeight - 50,
+          },
+          // Ailier gauche
+          {
+            num: 2,
+            left: courtWidth / 2 - keyWidth / 2 - 40,
+            top: keyHeight,
+          },
+          // Ailier droit
+          {
+            num: 3,
+            left: courtWidth / 2 + keyWidth / 2,
+            top: keyHeight,
+          },
+          // Intérieur gauche
+          {
+            num: 4,
+            left: courtWidth / 2 - keyWidth / 4 - 30,
+            top: keyHeight + keyHeight / 2,
+          },
+          // Intérieur droit
+          {
+            num: 5,
+            left: courtWidth / 2 + keyWidth / 4 + 10,
+            top: keyHeight + keyHeight / 2,
+          },
+        ].map((player) => (
+          <View key={player.num}>
+            <View
+              style={{
+                position: "absolute",
+                left: player.left,
+                top: player.top,
+                width: 40,
+                height: 40,
+                borderRadius: 20,
+                backgroundColor: "#1976d2",
+                alignItems: "center",
+                justifyContent: "center",
+                borderWidth: 2,
+                borderColor: "#fff",
+                zIndex: 200,
+              }}
+            >
+              <Text style={{ color: "#fff", fontWeight: "bold", fontSize: 18 }}>
+                {player.num}
+              </Text>
+            </View>
+            <Text
+              style={{
+                position: "absolute",
+                left: player.left - 10,
+                top: player.top + 45,
+                fontSize: 12,
+                color: "#fff",
+                backgroundColor: "rgba(0,0,0,0.6)",
+                paddingHorizontal: 4,
+                paddingVertical: 2,
+                borderRadius: 4,
+                textAlign: "center",
+                minWidth: 60,
+                zIndex: 200,
+              }}
+            >
+              {playerNames[player.num as keyof typeof playerNames]}
+            </Text>
+          </View>
+        ))}
     </View>
   );
 }
