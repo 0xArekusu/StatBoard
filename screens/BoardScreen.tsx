@@ -46,6 +46,9 @@ export default function BasketballCourt() {
   const [teamMode, setTeamMode] = useState<"A" | "B" | "both">("A");
   const [currentTeam, setCurrentTeam] = useState<"A" | "B">("A");
 
+  // Mode PreGame : désactive les interactions avec le terrain
+  const [preGameMode, setPreGameMode] = useState(true);
+
   // État pour les noms des joueurs
   const [playerNames, setPlayerNames] = useState({
     1: "Joueur #1",
@@ -255,7 +258,7 @@ export default function BasketballCourt() {
       />
 
       {/* Flèches pour switcher de côté */}
-      {!initModalVisible && (
+      {!initModalVisible && preGameMode && (
         <View
           style={{
             position: "absolute",
@@ -358,22 +361,43 @@ export default function BasketballCourt() {
 
       {/* 3pts area */}
       <Pressable
-        onPress={(e) =>
-          handleZonePress("3 pts", e.nativeEvent.pageX, e.nativeEvent.pageY)
+        onPress={
+          !preGameMode
+            ? (e) =>
+                handleZonePress(
+                  "3 pts",
+                  e.nativeEvent.pageX,
+                  e.nativeEvent.pageY
+                )
+            : undefined
         }
         style={[styles.court, styles.touchableArea3pts]}
       />
       {/* 3pts area (all court except other zone) */}
       <Pressable
-        onPress={(e) =>
-          handleZonePress("3 pts", e.nativeEvent.pageX, e.nativeEvent.pageY)
+        onPress={
+          !preGameMode
+            ? (e) =>
+                handleZonePress(
+                  "3 pts",
+                  e.nativeEvent.pageX,
+                  e.nativeEvent.pageY
+                )
+            : undefined
         }
         style={[styles.court, styles.touchableArea3pts]}
       />
       {/* Paint top or left */}
       <Pressable
-        onPress={(e) =>
-          handleZonePress("Raquette", e.nativeEvent.pageX, e.nativeEvent.pageY)
+        onPress={
+          !preGameMode
+            ? (e) =>
+                handleZonePress(
+                  "Raquette",
+                  e.nativeEvent.pageX,
+                  e.nativeEvent.pageY
+                )
+            : undefined
         }
         style={[
           styles.paintLine,
@@ -386,8 +410,15 @@ export default function BasketballCourt() {
       <View style={[styles.freeThrowCircle, styles.freeThrowCircleTopOrLeft]} />
       {/* 3pts line top or left */}
       <Pressable
-        onPress={(e) =>
-          handleZonePress("2 pts", e.nativeEvent.pageX, e.nativeEvent.pageY)
+        onPress={
+          !preGameMode
+            ? (e) =>
+                handleZonePress(
+                  "2 pts",
+                  e.nativeEvent.pageX,
+                  e.nativeEvent.pageY
+                )
+            : undefined
         }
         style={[
           styles.threePointLine,
@@ -402,8 +433,15 @@ export default function BasketballCourt() {
       <View style={[styles.line, styles.centerCircle]} />
       {/* 3pts line bottom or right */}
       <Pressable
-        onPress={(e) =>
-          handleZonePress("2 pts", e.nativeEvent.pageX, e.nativeEvent.pageY)
+        onPress={
+          !preGameMode
+            ? (e) =>
+                handleZonePress(
+                  "2 pts",
+                  e.nativeEvent.pageX,
+                  e.nativeEvent.pageY
+                )
+            : undefined
         }
         style={[
           styles.threePointLine,
@@ -418,8 +456,15 @@ export default function BasketballCourt() {
       />
       {/* Paint bottom */}
       <Pressable
-        onPress={(e) =>
-          handleZonePress("Raquette", e.nativeEvent.pageX, e.nativeEvent.pageY)
+        onPress={
+          !preGameMode
+            ? (e) =>
+                handleZonePress(
+                  "Raquette",
+                  e.nativeEvent.pageX,
+                  e.nativeEvent.pageY
+                )
+            : undefined
         }
         style={[
           styles.paintLine,
@@ -428,6 +473,32 @@ export default function BasketballCourt() {
           styles.touchableAreaPaint,
         ]}
       />
+
+      {/* Bouton pour démarrer le match */}
+      {!initModalVisible && preGameMode && (
+        <TouchableOpacity
+          style={{
+            position: "absolute",
+            bottom: 30,
+            right: 30,
+            backgroundColor: "#FF5722",
+            borderRadius: 25,
+            paddingHorizontal: 20,
+            paddingVertical: 12,
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.3,
+            shadowRadius: 4,
+            elevation: 5,
+            zIndex: 300,
+          }}
+          onPress={() => setPreGameMode(false)}
+        >
+          <Text style={{ color: "#fff", fontWeight: "bold", fontSize: 16 }}>
+            🏀 Démarrer le match
+          </Text>
+        </TouchableOpacity>
+      )}
 
       {/* Action Modal */}
       <Modal
@@ -479,6 +550,7 @@ export default function BasketballCourt() {
 
       {/* Pastilles des joueurs */}
       {!initModalVisible &&
+        preGameMode &&
         [
           // Positions selon l'équipe et l'orientation
           // Meneur
