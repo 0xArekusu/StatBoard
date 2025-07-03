@@ -7,6 +7,7 @@ import {
   Pressable,
   TouchableOpacity,
   useWindowDimensions,
+  TextInput,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as ScreenOrientation from "expo-screen-orientation";
@@ -23,10 +24,53 @@ const MODAL_CONTENT_PADDING = 16;
 export default function BasketballCourt() {
   const insets = useSafeAreaInsets(); // Provides status bar and notch margins
   const window = useWindowDimensions(); // Automatically reacts to rotation
+  const [showSheet, setShowSheet] = useState(true);
 
   const [orientation, setOrientation] =
-    useState<ScreenOrientation.Orientation | null>(null);
-  const [isReady, setIsReady] = useState(false); // Used to delay rendering until orientation is locked
+    useState<ScreenOrientation.Orientation | null>(null); // Used to delay rendering until orientation is locked
+  const [isReady, setIsReady] = useState(false);
+
+  // Markers state: stores events (tir, rebond, faute)
+  const [markers, setMarkers] = useState<
+    {
+      x: number;
+      y: number;
+      type: string;
+    }[]
+  >([]);
+
+  // Ajout du state pour le popup d'initialisation
+  const [initModalVisible, setInitModalVisible] = useState(true);
+  const [teamA, setTeamA] = useState("Team A");
+  const [teamB, setTeamB] = useState("Team B");
+
+  // Sécurité : désactiver le bouton si un champ est vide
+  const isConfirmDisabled = teamA.trim() === "" || teamB.trim() === "";
+
+  // Fonction pour formater la date en français
+  function getFormattedDate() {
+    const now = new Date();
+    return (
+      now.toLocaleDateString("fr-FR", {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      }) +
+      " à " +
+      now
+        .toLocaleTimeString("fr-FR", {
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: false,
+        })
+        .replace(":", "h")
+    );
+  }
+
+  useEffect(() => {
+    setShowSheet(true);
+  }, []);
 
   useEffect(() => {
     const prepareOrientation = async () => {
@@ -41,26 +85,22 @@ export default function BasketballCourt() {
 
     prepareOrientation();
 
-    // Subscribe to orientation changes (optional but helpful)
     const subscription = ScreenOrientation.addOrientationChangeListener(
       ({ orientationInfo }) => {
         setOrientation(orientationInfo.orientation);
       }
     );
 
-    // Cleanup
     return () => {
       ScreenOrientation.removeOrientationChangeListener(subscription);
-      ScreenOrientation.unlockAsync(); // Restore system default when leaving
+      ScreenOrientation.unlockAsync();
     };
   }, []);
 
-  // Determine if orientation is portrait (used for layout decisions)
   const isPortrait =
     orientation === ScreenOrientation.Orientation.PORTRAIT_UP ||
     orientation === ScreenOrientation.Orientation.PORTRAIT_DOWN;
 
-  // Calculate court and geometry layout based on screen size and orientation
   const {
     courtWidth,
     courtHeight,
@@ -71,15 +111,12 @@ export default function BasketballCourt() {
     threePointArcHeight,
     styles,
   } = useMemo(() => {
-    const MARGIN_GLOBAL = 0;
     const CONTAINER_PADDING = 20;
-
     // Width without phone state bar and navigation bar
     // use this width to position absolute element (padding included)
     const courtWidth = isPortrait
       ? window.width - insets.left - insets.right
       : window.width;
-
     // Height without phone state bar and navigation bar
     // use this hgight to position absolute element (padding included)
     const courtHeight = isPortrait
@@ -121,7 +158,7 @@ export default function BasketballCourt() {
     };
   }, [orientation, window, insets]);
 
-  // Modal state and position
+  // Modal and marker logic
   const [actionModalVisible, setActionModalVisible] = useState(false);
   const [modalPosition, setModalPosition] = useState({
     x: 0,
@@ -129,10 +166,11 @@ export default function BasketballCourt() {
     pointerX: 0,
     showPointerOnTop: true,
     clickX: 0,
+    clickY: 0,
   });
   const [selectedZone, setSelectedZone] = useState("");
 
-  // Calculate modal coordinates based on click position
+  // Calculate modal coordinates based on click
   const calculateModalPosition = (x: number, y: number) => {
     const showPointerOnTop = y < window.height / 2;
 
@@ -150,9 +188,9 @@ export default function BasketballCourt() {
       Math.min(window.height - MODAL_HEIGHT - MODAL_PADDING, modalY)
     );
 
-    const clickXRelativeToModal = x - modalX;
+    const clickXRelative = x - modalX;
     const pointerX = Math.min(
-      Math.max(MODAL_CONTENT_PADDING, clickXRelativeToModal),
+      Math.max(MODAL_CONTENT_PADDING, clickXRelative),
       MODAL_WIDTH - MODAL_CONTENT_PADDING
     );
 
@@ -162,25 +200,146 @@ export default function BasketballCourt() {
       pointerX,
       showPointerOnTop,
       clickX: x,
+      clickY: y,
     };
   };
 
-  // Handle zone press to open action modal
   const handleZonePress = (zone: string, x: number, y: number) => {
     setSelectedZone(zone);
-    const position = calculateModalPosition(x, y);
-    setModalPosition(position);
+    const pos = calculateModalPosition(x, y);
+    setModalPosition(pos);
     setActionModalVisible(true);
   };
 
   const handleActionSelect = (action: string) => {
-    console.log(`Action: ${action} in zone: ${selectedZone}`);
+    // Add marker at click position
+    setMarkers((prev) => [
+      ...prev,
+      {
+        x: modalPosition.clickX - 12,
+        y: modalPosition.clickY - 50,
+        type: action,
+      },
+    ]);
     setActionModalVisible(false);
   };
 
   return (
-    // <View style={styles.container}>
     <View style={{ flex: 1 }}>
+      {/* Popup d'initialisation des équipes */}
+      <Modal visible={initModalVisible} transparent animationType="fade">
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: "rgba(0,0,0,0.5)",
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
+          <View
+            style={{
+              backgroundColor: "white",
+              borderRadius: 16,
+              padding: 24,
+              minWidth: 300,
+              alignItems: "center",
+            }}
+          >
+            <Text
+              style={{
+                fontSize: 18,
+                fontWeight: "bold",
+                marginBottom: 16,
+                textAlign: "center",
+              }}
+            >
+              {getFormattedDate()}
+            </Text>
+            <TextInput
+              style={{
+                borderWidth: 1,
+                borderColor: "#ccc",
+                borderRadius: 8,
+                padding: 10,
+                width: 200,
+                marginBottom: 2,
+                textAlign: "center",
+                fontSize: 16,
+              }}
+              value={teamA}
+              onChangeText={setTeamA}
+              placeholder="Nom équipe A"
+              placeholderTextColor="#aaa"
+            />
+            <Text style={{ fontSize: 12, color: "#888", marginBottom: 8 }}>
+              Domicile
+            </Text>
+            <Text
+              style={{ fontSize: 16, fontWeight: "bold", marginVertical: 4 }}
+            >
+              VS
+            </Text>
+            <TextInput
+              style={{
+                borderWidth: 1,
+                borderColor: "#ccc",
+                borderRadius: 8,
+                padding: 10,
+                width: 200,
+                marginBottom: 2,
+                textAlign: "center",
+                fontSize: 16,
+              }}
+              value={teamB}
+              onChangeText={setTeamB}
+              placeholder="Nom équipe B"
+              placeholderTextColor="#aaa"
+            />
+            <Text style={{ fontSize: 12, color: "#888", marginBottom: 16 }}>
+              Extérieur
+            </Text>
+            <TouchableOpacity
+              style={{
+                backgroundColor: isConfirmDisabled ? "#aaa" : "#007AFF",
+                borderRadius: 8,
+                paddingVertical: 10,
+                paddingHorizontal: 32,
+                opacity: isConfirmDisabled ? 0.7 : 1,
+              }}
+              onPress={() => {
+                if (!isConfirmDisabled) setInitModalVisible(false);
+              }}
+              disabled={isConfirmDisabled}
+            >
+              <Text
+                style={{ color: "white", fontWeight: "bold", fontSize: 16 }}
+              >
+                Confirmer
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+      {/* Render markers */}
+      {markers.map((m, i) => {
+        let icon = "";
+        if (m.type === "tir") icon = "◯";
+        else if (m.type === "rebond") icon = "❌";
+        else if (m.type === "faute") icon = "⚠️";
+        return (
+          <Text key={i} style={[styles.marker, { left: m.x, top: m.y }]}>
+            {icon}
+          </Text>
+        );
+      })}
+
+      {/* 3pts area */}
+      <Pressable
+        onPress={(e) =>
+          handleZonePress("3 pts", e.nativeEvent.pageX, e.nativeEvent.pageY)
+        }
+        style={[styles.court, styles.touchableArea3pts]}
+      />
       {/* 3pts area (all court except other zone) */}
       <Pressable
         onPress={(e) =>
@@ -246,6 +405,8 @@ export default function BasketballCourt() {
           styles.touchableAreaPaint,
         ]}
       />
+
+      {/* Action Modal */}
       <Modal
         transparent
         visible={actionModalVisible}
@@ -259,10 +420,7 @@ export default function BasketballCourt() {
           <View
             style={[
               styles.actionModal,
-              {
-                left: modalPosition.x,
-                top: modalPosition.y,
-              },
+              { left: modalPosition.x, top: modalPosition.y },
             ]}
           >
             <View
@@ -271,12 +429,7 @@ export default function BasketballCourt() {
                 modalPosition.showPointerOnTop
                   ? styles.pointerTop
                   : styles.pointerBottom,
-                {
-                  left: modalPosition.pointerX - POINTER_SIZE,
-                  transform: modalPosition.showPointerOnTop
-                    ? [{ translateX: 0 }, { rotate: "180deg" }]
-                    : [{ translateX: 0 }],
-                },
+                { left: modalPosition.pointerX - POINTER_SIZE },
               ]}
             />
             <TouchableOpacity
@@ -589,4 +742,10 @@ const getStyles = ({
           transform: [{ rotate: "180deg" }],
         },
     // #endregion
+
+    marker: {
+      position: "absolute",
+      fontSize: 24,
+      zIndex: 100,
+    },
   });
