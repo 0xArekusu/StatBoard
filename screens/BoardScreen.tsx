@@ -7,10 +7,10 @@ import {
   Pressable,
   TouchableOpacity,
   useWindowDimensions,
-  TextInput,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as ScreenOrientation from "expo-screen-orientation";
+import InitTeamModal from "./InitTeamModal";
 
 // Modal layout constants
 const MODAL_WIDTH = 200;
@@ -226,100 +226,16 @@ export default function BasketballCourt() {
 
   return (
     <View style={{ flex: 1 }}>
-      {/* Popup d'initialisation des équipes */}
-      <Modal visible={initModalVisible} transparent animationType="fade">
-        <View
-          style={{
-            flex: 1,
-            backgroundColor: "rgba(0,0,0,0.5)",
-            justifyContent: "center",
-            alignItems: "center",
-          }}
-        >
-          <View
-            style={{
-              backgroundColor: "white",
-              borderRadius: 16,
-              padding: 24,
-              minWidth: 300,
-              alignItems: "center",
-            }}
-          >
-            <Text
-              style={{
-                fontSize: 18,
-                fontWeight: "bold",
-                marginBottom: 16,
-                textAlign: "center",
-              }}
-            >
-              {getFormattedDate()}
-            </Text>
-            <TextInput
-              style={{
-                borderWidth: 1,
-                borderColor: "#ccc",
-                borderRadius: 8,
-                padding: 10,
-                width: 200,
-                marginBottom: 2,
-                textAlign: "center",
-                fontSize: 16,
-              }}
-              value={teamA}
-              onChangeText={setTeamA}
-              placeholder="Nom équipe A"
-              placeholderTextColor="#aaa"
-            />
-            <Text style={{ fontSize: 12, color: "#888", marginBottom: 8 }}>
-              Domicile
-            </Text>
-            <Text
-              style={{ fontSize: 16, fontWeight: "bold", marginVertical: 4 }}
-            >
-              VS
-            </Text>
-            <TextInput
-              style={{
-                borderWidth: 1,
-                borderColor: "#ccc",
-                borderRadius: 8,
-                padding: 10,
-                width: 200,
-                marginBottom: 2,
-                textAlign: "center",
-                fontSize: 16,
-              }}
-              value={teamB}
-              onChangeText={setTeamB}
-              placeholder="Nom équipe B"
-              placeholderTextColor="#aaa"
-            />
-            <Text style={{ fontSize: 12, color: "#888", marginBottom: 16 }}>
-              Extérieur
-            </Text>
-            <TouchableOpacity
-              style={{
-                backgroundColor: isConfirmDisabled ? "#aaa" : "#007AFF",
-                borderRadius: 8,
-                paddingVertical: 10,
-                paddingHorizontal: 32,
-                opacity: isConfirmDisabled ? 0.7 : 1,
-              }}
-              onPress={() => {
-                if (!isConfirmDisabled) setInitModalVisible(false);
-              }}
-              disabled={isConfirmDisabled}
-            >
-              <Text
-                style={{ color: "white", fontWeight: "bold", fontSize: 16 }}
-              >
-                Confirmer
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
+      <InitTeamModal
+        visible={initModalVisible}
+        teamA={teamA}
+        setTeamA={setTeamA}
+        teamB={teamB}
+        setTeamB={setTeamB}
+        onConfirm={() => setInitModalVisible(false)}
+        isConfirmDisabled={isConfirmDisabled}
+        getFormattedDate={getFormattedDate}
+      />
       {/* Render markers */}
       {markers.map((m, i) => {
         let icon = "";
