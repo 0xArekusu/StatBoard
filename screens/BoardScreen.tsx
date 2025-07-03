@@ -43,6 +43,8 @@ export default function BasketballCourt() {
   const [initModalVisible, setInitModalVisible] = useState(true);
   const [teamA, setTeamA] = useState("Team A");
   const [teamB, setTeamB] = useState("Team B");
+  const [teamMode, setTeamMode] = useState<"A" | "B" | "both">("A");
+  const [currentTeam, setCurrentTeam] = useState<"A" | "B">("A");
 
   // État pour les noms des joueurs
   const [playerNames, setPlayerNames] = useState({
@@ -233,6 +235,12 @@ export default function BasketballCourt() {
     setActionModalVisible(false);
   };
 
+  const handleTeamModeConfirm = (selectedTeamMode: "A" | "B" | "both") => {
+    setTeamMode(selectedTeamMode);
+    setCurrentTeam(selectedTeamMode === "B" ? "B" : "A");
+    setInitModalVisible(false);
+  };
+
   return (
     <View style={{ flex: 1 }}>
       <InitTeamModal
@@ -241,10 +249,100 @@ export default function BasketballCourt() {
         setTeamA={setTeamA}
         teamB={teamB}
         setTeamB={setTeamB}
-        onConfirm={() => setInitModalVisible(false)}
+        onConfirm={handleTeamModeConfirm}
         isConfirmDisabled={isConfirmDisabled}
         getFormattedDate={getFormattedDate}
       />
+
+      {/* Flèches pour switcher de côté */}
+      {!initModalVisible && (
+        <View
+          style={{
+            position: "absolute",
+            top: isPortrait ? "50%" : "90%",
+            left: isPortrait ? "10%" : "50%",
+            transform: [
+              { translateX: isPortrait ? -24 : -55 },
+              { translateY: isPortrait ? -64 : -25 },
+            ],
+            zIndex: 300,
+            flexDirection: isPortrait ? "column" : "row",
+            alignItems: "center",
+          }}
+        >
+          <TouchableOpacity
+            style={{
+              backgroundColor:
+                currentTeam === "A" ? "#4CAF50" : "rgba(255,255,255,0.2)",
+              borderRadius: 20,
+              padding: 12,
+              marginBottom: isPortrait ? 6 : 0,
+              marginRight: isPortrait ? 0 : 6,
+              borderWidth: 2,
+              borderColor:
+                currentTeam === "A" ? "#388E3C" : "rgba(255,255,255,0.5)",
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.3,
+              shadowRadius: 4,
+              elevation: 5,
+              minWidth: 44,
+              minHeight: 44,
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+            onPress={() => setCurrentTeam("A")}
+          >
+            <Text
+              style={{
+                fontSize: 24,
+                color: currentTeam === "A" ? "#fff" : "rgba(255,255,255,0.8)",
+                fontWeight: "bold",
+                textShadowColor: "rgba(0,0,0,0.5)",
+                textShadowOffset: { width: 1, height: 1 },
+                textShadowRadius: 2,
+              }}
+            >
+              {isPortrait ? "▲" : "◀"}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={{
+              backgroundColor:
+                currentTeam === "B" ? "#4CAF50" : "rgba(255,255,255,0.2)",
+              borderRadius: 20,
+              padding: 12,
+              borderWidth: 2,
+              borderColor:
+                currentTeam === "B" ? "#388E3C" : "rgba(255,255,255,0.5)",
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.3,
+              shadowRadius: 4,
+              elevation: 5,
+              minWidth: 44,
+              minHeight: 44,
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+            onPress={() => setCurrentTeam("B")}
+          >
+            <Text
+              style={{
+                fontSize: 24,
+                color: currentTeam === "B" ? "#fff" : "rgba(255,255,255,0.8)",
+                fontWeight: "bold",
+                textShadowColor: "rgba(0,0,0,0.5)",
+                textShadowOffset: { width: 1, height: 1 },
+                textShadowRadius: 2,
+              }}
+            >
+              {isPortrait ? "▼" : "▶"}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
       {/* Render markers */}
       {markers.map((m, i) => {
         let icon = "";
@@ -382,35 +480,99 @@ export default function BasketballCourt() {
       {/* Pastilles des joueurs */}
       {!initModalVisible &&
         [
-          // Meneur (tête de raquette)
+          // Positions selon l'équipe et l'orientation
+          // Meneur
           {
             num: 1,
             left: courtWidth / 2 - 20,
-            top: keyHeight - 50,
+            top:
+              currentTeam === "A"
+                ? isPortrait
+                  ? keyHeight - 50
+                  : courtHeight / 2 - keyHeight / 2 - 50
+                : isPortrait
+                ? courtHeight - keyHeight - 50
+                : courtHeight / 2 + keyHeight / 2 + 10,
           },
           // Ailier gauche
           {
             num: 2,
-            left: courtWidth / 2 - keyWidth / 2 - 40,
-            top: keyHeight,
+            left:
+              currentTeam === "A"
+                ? isPortrait
+                  ? courtWidth / 2 - keyWidth / 2 - 40
+                  : courtWidth / 2 - keyWidth / 2 - 40
+                : isPortrait
+                ? courtWidth / 2 - keyWidth / 2 - 40
+                : courtWidth / 2 + keyWidth / 2 + 40,
+            top:
+              currentTeam === "A"
+                ? isPortrait
+                  ? keyHeight
+                  : courtHeight / 2 - keyHeight / 2
+                : isPortrait
+                ? courtHeight - keyHeight
+                : courtHeight / 2 + keyHeight / 2,
           },
           // Ailier droit
           {
             num: 3,
-            left: courtWidth / 2 + keyWidth / 2,
-            top: keyHeight,
+            left:
+              currentTeam === "A"
+                ? isPortrait
+                  ? courtWidth / 2 + keyWidth / 2
+                  : courtWidth / 2 + keyWidth / 2
+                : isPortrait
+                ? courtWidth / 2 + keyWidth / 2
+                : courtWidth / 2 - keyWidth / 2,
+            top:
+              currentTeam === "A"
+                ? isPortrait
+                  ? keyHeight
+                  : courtHeight / 2 - keyHeight / 2
+                : isPortrait
+                ? courtHeight - keyHeight
+                : courtHeight / 2 + keyHeight / 2,
           },
           // Intérieur gauche
           {
             num: 4,
-            left: courtWidth / 2 - keyWidth / 4 - 30,
-            top: keyHeight + keyHeight / 2,
+            left:
+              currentTeam === "A"
+                ? isPortrait
+                  ? courtWidth / 2 - keyWidth / 4 - 30
+                  : courtWidth / 2 - keyWidth / 4 - 30
+                : isPortrait
+                ? courtWidth / 2 - keyWidth / 4 - 30
+                : courtWidth / 2 + keyWidth / 4 + 30,
+            top:
+              currentTeam === "A"
+                ? isPortrait
+                  ? keyHeight + keyHeight / 2
+                  : courtHeight / 2 - keyHeight / 4
+                : isPortrait
+                ? courtHeight - keyHeight - keyHeight / 2
+                : courtHeight / 2 + keyHeight / 4,
           },
           // Intérieur droit
           {
             num: 5,
-            left: courtWidth / 2 + keyWidth / 4 + 10,
-            top: keyHeight + keyHeight / 2,
+            left:
+              currentTeam === "A"
+                ? isPortrait
+                  ? courtWidth / 2 + keyWidth / 4 + 10
+                  : courtWidth / 2 + keyWidth / 4 + 10
+                : isPortrait
+                ? courtWidth / 2 + keyWidth / 4 + 10
+                : courtWidth / 2 - keyWidth / 4 - 10,
+            top:
+              currentTeam === "A"
+                ? isPortrait
+                  ? keyHeight + keyHeight / 2
+                  : courtHeight / 2 - keyHeight / 4
+                : isPortrait
+                ? courtHeight - keyHeight - keyHeight / 2
+                : courtHeight / 2 + keyHeight / 4,
           },
         ].map((player) => (
           <View key={player.num}>

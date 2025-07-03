@@ -7,7 +7,7 @@ interface InitTeamModalProps {
   setTeamA: (v: string) => void;
   teamB: string;
   setTeamB: (v: string) => void;
-  onConfirm: () => void;
+  onConfirm: (teamMode: "A" | "B" | "both") => void;
   isConfirmDisabled: boolean;
   getFormattedDate: () => string;
 }
@@ -22,6 +22,12 @@ export default function InitTeamModal({
   isConfirmDisabled,
   getFormattedDate,
 }: InitTeamModalProps) {
+  const [selectedTeamMode, setSelectedTeamMode] = React.useState<
+    "A" | "B" | "both" | null
+  >(null);
+
+  const isFullyDisabled = isConfirmDisabled || selectedTeamMode === null;
+
   return (
     <Modal visible={visible} transparent animationType="fade">
       <View
@@ -92,16 +98,71 @@ export default function InitTeamModal({
           <Text style={{ fontSize: 12, color: "#888", marginBottom: 16 }}>
             Extérieur
           </Text>
+
+          <Text style={{ fontSize: 16, fontWeight: "bold", marginBottom: 12 }}>
+            Quelle équipe gérez-vous ?
+          </Text>
+
+          {[
+            { key: "A", label: `${teamA || "Team A"} (Domicile)` },
+            { key: "B", label: `${teamB || "Team B"} (Extérieur)` },
+            { key: "both", label: "Les deux équipes" },
+          ].map((option) => (
+            <TouchableOpacity
+              key={option.key}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                marginVertical: 4,
+                paddingVertical: 8,
+                paddingHorizontal: 12,
+                borderRadius: 8,
+                backgroundColor:
+                  selectedTeamMode === option.key ? "#e3f2fd" : "transparent",
+                borderWidth: 1,
+                borderColor:
+                  selectedTeamMode === option.key ? "#1976d2" : "#ddd",
+                minWidth: 250,
+              }}
+              onPress={() =>
+                setSelectedTeamMode(option.key as "A" | "B" | "both")
+              }
+            >
+              <View
+                style={{
+                  width: 20,
+                  height: 20,
+                  borderRadius: 10,
+                  borderWidth: 2,
+                  borderColor:
+                    selectedTeamMode === option.key ? "#1976d2" : "#ddd",
+                  backgroundColor:
+                    selectedTeamMode === option.key ? "#1976d2" : "transparent",
+                  marginRight: 10,
+                }}
+              />
+              <Text
+                style={{
+                  fontSize: 14,
+                  color: selectedTeamMode === option.key ? "#1976d2" : "#333",
+                }}
+              >
+                {option.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+
           <TouchableOpacity
             style={{
-              backgroundColor: isConfirmDisabled ? "#aaa" : "#007AFF",
+              backgroundColor: isFullyDisabled ? "#aaa" : "#007AFF",
               borderRadius: 8,
               paddingVertical: 10,
               paddingHorizontal: 32,
-              opacity: isConfirmDisabled ? 0.7 : 1,
+              opacity: isFullyDisabled ? 0.7 : 1,
+              marginTop: 16,
             }}
-            onPress={onConfirm}
-            disabled={isConfirmDisabled}
+            onPress={() => selectedTeamMode && onConfirm(selectedTeamMode)}
+            disabled={isFullyDisabled}
           >
             <Text style={{ color: "white", fontWeight: "bold", fontSize: 16 }}>
               Confirmer
