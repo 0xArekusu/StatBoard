@@ -11,6 +11,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as ScreenOrientation from "expo-screen-orientation";
 import InitTeamModal from "./InitTeamModal";
+import PlayerEditModal from "./PlayerEditModal";
 
 // Modal layout constants
 const MODAL_WIDTH = 200;
@@ -49,14 +50,18 @@ export default function BasketballCourt() {
   // Mode PreGame : désactive les interactions avec le terrain
   const [preGameMode, setPreGameMode] = useState(true);
 
-  // État pour les noms des joueurs
-  const [playerNames, setPlayerNames] = useState({
-    1: "Joueur #1",
-    2: "Joueur #2",
-    3: "Joueur #3",
-    4: "Joueur #4",
-    5: "Joueur #5",
-  });
+  // État pour l'édition des joueurs
+  const [playerEditModalVisible, setPlayerEditModalVisible] = useState(false);
+  const [editingPlayer, setEditingPlayer] = useState<number | null>(null);
+
+  // État pour les joueurs avec leurs positions
+  const [players, setPlayers] = useState([
+    { id: 1, num: 1, name: "Joueur #1" },
+    { id: 2, num: 2, name: "Joueur #2" },
+    { id: 3, num: 3, name: "Joueur #3" },
+    { id: 4, num: 4, name: "Joueur #4" },
+    { id: 5, num: 5, name: "Joueur #5" },
+  ]);
 
   // Sécurité : désactiver le bouton si un champ est vide
   const isConfirmDisabled = teamA.trim() === "" || teamB.trim() === "";
@@ -244,6 +249,126 @@ export default function BasketballCourt() {
     setInitModalVisible(false);
   };
 
+  const handlePlayerEdit = (playerId: number) => {
+    setEditingPlayer(playerId);
+    setPlayerEditModalVisible(true);
+  };
+
+  const handlePlayerEditConfirm = (newNumber: number, newName: string) => {
+    if (editingPlayer !== null) {
+      setPlayers((prevPlayers) =>
+        prevPlayers.map((player) =>
+          player.id === editingPlayer
+            ? { ...player, num: newNumber, name: newName }
+            : player
+        )
+      );
+    }
+    setPlayerEditModalVisible(false);
+    setEditingPlayer(null);
+  };
+
+  const handlePlayerEditCancel = () => {
+    setPlayerEditModalVisible(false);
+    setEditingPlayer(null);
+  };
+
+  // Fonction pour calculer les positions des joueurs
+  const getPlayerPosition = (playerId: number) => {
+    const positions = [
+      // Meneur (ID 1)
+      {
+        left: courtWidth / 2 - 20,
+        top:
+          currentTeam === "A"
+            ? isPortrait
+              ? keyHeight - 50
+              : courtHeight / 2 - keyHeight / 2 - 50
+            : isPortrait
+            ? courtHeight - keyHeight - 50
+            : courtHeight / 2 + keyHeight / 2 + 10,
+      },
+      // Ailier gauche (ID 2)
+      {
+        left:
+          currentTeam === "A"
+            ? isPortrait
+              ? courtWidth / 2 - keyWidth / 2 - 40
+              : courtWidth / 2 - keyWidth / 2 - 40
+            : isPortrait
+            ? courtWidth / 2 - keyWidth / 2 - 40
+            : courtWidth / 2 + keyWidth / 2 + 40,
+        top:
+          currentTeam === "A"
+            ? isPortrait
+              ? keyHeight
+              : courtHeight / 2 - keyHeight / 2
+            : isPortrait
+            ? courtHeight - keyHeight
+            : courtHeight / 2 + keyHeight / 2,
+      },
+      // Ailier droit (ID 3)
+      {
+        left:
+          currentTeam === "A"
+            ? isPortrait
+              ? courtWidth / 2 + keyWidth / 2
+              : courtWidth / 2 + keyWidth / 2
+            : isPortrait
+            ? courtWidth / 2 + keyWidth / 2
+            : courtWidth / 2 - keyWidth / 2,
+        top:
+          currentTeam === "A"
+            ? isPortrait
+              ? keyHeight
+              : courtHeight / 2 - keyHeight / 2
+            : isPortrait
+            ? courtHeight - keyHeight
+            : courtHeight / 2 + keyHeight / 2,
+      },
+      // Intérieur gauche (ID 4)
+      {
+        left:
+          currentTeam === "A"
+            ? isPortrait
+              ? courtWidth / 2 - keyWidth / 4 - 30
+              : courtWidth / 2 - keyWidth / 4 - 30
+            : isPortrait
+            ? courtWidth / 2 - keyWidth / 4 - 30
+            : courtWidth / 2 + keyWidth / 4 + 30,
+        top:
+          currentTeam === "A"
+            ? isPortrait
+              ? keyHeight + keyHeight / 2
+              : courtHeight / 2 - keyHeight / 4
+            : isPortrait
+            ? courtHeight - keyHeight - keyHeight / 2
+            : courtHeight / 2 + keyHeight / 4,
+      },
+      // Intérieur droit (ID 5)
+      {
+        left:
+          currentTeam === "A"
+            ? isPortrait
+              ? courtWidth / 2 + keyWidth / 4 + 10
+              : courtWidth / 2 + keyWidth / 4 + 10
+            : isPortrait
+            ? courtWidth / 2 + keyWidth / 4 + 10
+            : courtWidth / 2 - keyWidth / 4 - 10,
+        top:
+          currentTeam === "A"
+            ? isPortrait
+              ? keyHeight + keyHeight / 2
+              : courtHeight / 2 - keyHeight / 4
+            : isPortrait
+            ? courtHeight - keyHeight - keyHeight / 2
+            : courtHeight / 2 + keyHeight / 4,
+      },
+    ];
+
+    return positions[playerId - 1] || positions[0];
+  };
+
   return (
     <View style={{ flex: 1 }}>
       <InitTeamModal
@@ -255,6 +380,22 @@ export default function BasketballCourt() {
         onConfirm={handleTeamModeConfirm}
         isConfirmDisabled={isConfirmDisabled}
         getFormattedDate={getFormattedDate}
+      />
+
+      <PlayerEditModal
+        visible={playerEditModalVisible}
+        playerNumber={
+          editingPlayer
+            ? players.find((p) => p.id === editingPlayer)?.num || 1
+            : 1
+        }
+        playerName={
+          editingPlayer
+            ? players.find((p) => p.id === editingPlayer)?.name || ""
+            : ""
+        }
+        onConfirm={handlePlayerEditConfirm}
+        onCancel={handlePlayerEditCancel}
       />
 
       {/* Flèches pour switcher de côté */}
@@ -551,140 +692,60 @@ export default function BasketballCourt() {
       {/* Pastilles des joueurs */}
       {!initModalVisible &&
         preGameMode &&
-        [
-          // Positions selon l'équipe et l'orientation
-          // Meneur
-          {
-            num: 1,
-            left: courtWidth / 2 - 20,
-            top:
-              currentTeam === "A"
-                ? isPortrait
-                  ? keyHeight - 50
-                  : courtHeight / 2 - keyHeight / 2 - 50
-                : isPortrait
-                ? courtHeight - keyHeight - 50
-                : courtHeight / 2 + keyHeight / 2 + 10,
-          },
-          // Ailier gauche
-          {
-            num: 2,
-            left:
-              currentTeam === "A"
-                ? isPortrait
-                  ? courtWidth / 2 - keyWidth / 2 - 40
-                  : courtWidth / 2 - keyWidth / 2 - 40
-                : isPortrait
-                ? courtWidth / 2 - keyWidth / 2 - 40
-                : courtWidth / 2 + keyWidth / 2 + 40,
-            top:
-              currentTeam === "A"
-                ? isPortrait
-                  ? keyHeight
-                  : courtHeight / 2 - keyHeight / 2
-                : isPortrait
-                ? courtHeight - keyHeight
-                : courtHeight / 2 + keyHeight / 2,
-          },
-          // Ailier droit
-          {
-            num: 3,
-            left:
-              currentTeam === "A"
-                ? isPortrait
-                  ? courtWidth / 2 + keyWidth / 2
-                  : courtWidth / 2 + keyWidth / 2
-                : isPortrait
-                ? courtWidth / 2 + keyWidth / 2
-                : courtWidth / 2 - keyWidth / 2,
-            top:
-              currentTeam === "A"
-                ? isPortrait
-                  ? keyHeight
-                  : courtHeight / 2 - keyHeight / 2
-                : isPortrait
-                ? courtHeight - keyHeight
-                : courtHeight / 2 + keyHeight / 2,
-          },
-          // Intérieur gauche
-          {
-            num: 4,
-            left:
-              currentTeam === "A"
-                ? isPortrait
-                  ? courtWidth / 2 - keyWidth / 4 - 30
-                  : courtWidth / 2 - keyWidth / 4 - 30
-                : isPortrait
-                ? courtWidth / 2 - keyWidth / 4 - 30
-                : courtWidth / 2 + keyWidth / 4 + 30,
-            top:
-              currentTeam === "A"
-                ? isPortrait
-                  ? keyHeight + keyHeight / 2
-                  : courtHeight / 2 - keyHeight / 4
-                : isPortrait
-                ? courtHeight - keyHeight - keyHeight / 2
-                : courtHeight / 2 + keyHeight / 4,
-          },
-          // Intérieur droit
-          {
-            num: 5,
-            left:
-              currentTeam === "A"
-                ? isPortrait
-                  ? courtWidth / 2 + keyWidth / 4 + 10
-                  : courtWidth / 2 + keyWidth / 4 + 10
-                : isPortrait
-                ? courtWidth / 2 + keyWidth / 4 + 10
-                : courtWidth / 2 - keyWidth / 4 - 10,
-            top:
-              currentTeam === "A"
-                ? isPortrait
-                  ? keyHeight + keyHeight / 2
-                  : courtHeight / 2 - keyHeight / 4
-                : isPortrait
-                ? courtHeight - keyHeight - keyHeight / 2
-                : courtHeight / 2 + keyHeight / 4,
-          },
-        ].map((player) => (
-          <View key={player.num}>
-            <View
+        players.map((player) => (
+          <View key={player.id}>
+            <TouchableOpacity
+              onPress={() => handlePlayerEdit(player.id)}
               style={{
                 position: "absolute",
-                left: player.left,
-                top: player.top,
+                left: getPlayerPosition(player.id).left,
+                top: getPlayerPosition(player.id).top,
                 width: 40,
                 height: 40,
-                borderRadius: 20,
                 backgroundColor: "#1976d2",
-                alignItems: "center",
+                borderRadius: 20,
                 justifyContent: "center",
+                alignItems: "center",
                 borderWidth: 2,
                 borderColor: "#fff",
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.3,
+                shadowRadius: 4,
+                elevation: 5,
                 zIndex: 200,
               }}
             >
-              <Text style={{ color: "#fff", fontWeight: "bold", fontSize: 18 }}>
+              <Text
+                style={{
+                  color: "#fff",
+                  fontSize: 16,
+                  fontWeight: "bold",
+                  textShadowColor: "rgba(0,0,0,0.5)",
+                  textShadowOffset: { width: 1, height: 1 },
+                  textShadowRadius: 2,
+                }}
+              >
                 {player.num}
               </Text>
-            </View>
+            </TouchableOpacity>
             <Text
               style={{
                 position: "absolute",
-                left: player.left - 10,
-                top: player.top + 45,
-                fontSize: 12,
+                left: getPlayerPosition(player.id).left - 10,
+                top: getPlayerPosition(player.id).top + 45,
                 color: "#fff",
-                backgroundColor: "rgba(0,0,0,0.6)",
-                paddingHorizontal: 4,
-                paddingVertical: 2,
-                borderRadius: 4,
+                fontSize: 12,
+                fontWeight: "bold",
                 textAlign: "center",
-                minWidth: 60,
+                width: 60,
+                textShadowColor: "rgba(0,0,0,0.8)",
+                textShadowOffset: { width: 1, height: 1 },
+                textShadowRadius: 2,
                 zIndex: 200,
               }}
             >
-              {playerNames[player.num as keyof typeof playerNames]}
+              {player.name}
             </Text>
           </View>
         ))}
