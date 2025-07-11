@@ -3,7 +3,6 @@ import {
   View,
   StyleSheet,
   Text,
-  Modal,
   Pressable,
   TouchableOpacity,
   useWindowDimensions,
@@ -12,15 +11,19 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as ScreenOrientation from "expo-screen-orientation";
 import InitTeamModal from "./InitTeamModal";
 import PlayerEditModal from "./PlayerEditModal";
+import ActionSystemModal, {
+  ActionData,
+  getActionIcon,
+} from "../components/ActionSystemModal";
 
-// Modal layout constants
-const MODAL_WIDTH = 200;
-const MODAL_HEIGHT = 180;
+// Modal layout constants (pour le nouveau ActionModal)
+const MODAL_WIDTH = 240;
+const MODAL_HEIGHT = 220;
 const MODAL_PADDING = 20;
-const POINTER_SIZE = 8;
+const POINTER_SIZE = 12;
 const MODAL_OFFSET_TOP = 10;
 const MODAL_OFFSET_BOTTOM = 50;
-const MODAL_CONTENT_PADDING = 16;
+const MODAL_CONTENT_PADDING = 20;
 
 export default function BasketballCourt() {
   const insets = useSafeAreaInsets(); // Provides status bar and notch margins
@@ -31,14 +34,19 @@ export default function BasketballCourt() {
     useState<ScreenOrientation.Orientation | null>(null); // Used to delay rendering until orientation is locked
   const [isReady, setIsReady] = useState(false);
 
-  // Markers state: stores events (tir, rebond, faute)
+  // Markers state: stores events with detailed information
   const [markers, setMarkers] = useState<
     {
       x: number;
       y: number;
       type: string;
+      specification?: string;
+      player?: number;
     }[]
   >([]);
+
+  // New state for completed actions with detailed data
+  const [completedActions, setCompletedActions] = useState<ActionData[]>([]);
 
   // Ajout du state pour le popup d'initialisation
   const [initModalVisible, setInitModalVisible] = useState(true);
@@ -187,7 +195,6 @@ export default function BasketballCourt() {
     clickX: 0,
     clickY: 0,
   });
-  const [selectedZone, setSelectedZone] = useState("");
 
   // Calculate modal coordinates based on click
   const calculateModalPosition = (x: number, y: number) => {
@@ -223,24 +230,38 @@ export default function BasketballCourt() {
     };
   };
 
-  const handleZonePress = (zone: string, x: number, y: number) => {
-    setSelectedZone(zone);
+  const handleZonePress = (x: number, y: number) => {
     const pos = calculateModalPosition(x, y);
     setModalPosition(pos);
     setActionModalVisible(true);
   };
 
-  const handleActionSelect = (action: string) => {
+  const handleActionComplete = (actionData: ActionData) => {
     // Add marker at click position
     setMarkers((prev) => [
       ...prev,
       {
-        x: modalPosition.clickX - 12,
-        y: modalPosition.clickY - 50,
-        type: action,
+        x: actionData.position.x - 12,
+        y: actionData.position.y - 50,
+        type: actionData.type,
+        specification: actionData.specification,
+        player: actionData.player,
       },
     ]);
+
+    // Save detailed action data for future database storage
+    setCompletedActions((prev) => [...prev, actionData]);
+
     setActionModalVisible(false);
+
+    // Log the action for debugging
+    console.log("Action completed:", {
+      type: actionData.type,
+      specification: actionData.specification,
+      player: actionData.player,
+      timestamp: actionData.timestamp,
+      position: actionData.position,
+    });
   };
 
   const handleTeamModeConfirm = (selectedTeamMode: "A" | "B" | "both") => {
@@ -370,7 +391,8 @@ export default function BasketballCourt() {
   };
 
   return (
-    <View style={{ flex: 1 }}>
+    // <View style={[styles.container, { flex: 1 }]}>
+    <View style={[{ flex: 1 }]}>
       <InitTeamModal
         visible={initModalVisible}
         teamA={teamA}
@@ -489,14 +511,15 @@ export default function BasketballCourt() {
 
       {/* Render markers */}
       {markers.map((m, i) => {
-        let icon = "";
-        if (m.type === "tir") icon = "◯";
-        else if (m.type === "rebond") icon = "❌";
-        else if (m.type === "faute") icon = "⚠️";
+        const icon = getActionIcon(m.type, m.specification);
         return (
-          <Text key={i} style={[styles.marker, { left: m.x, top: m.y }]}>
-            {icon}
-          </Text>
+          <View
+            key={i}
+            style={[styles.markerContainer, { left: m.x, top: m.y }]}
+          >
+            <Text style={styles.markerIcon}>{icon}</Text>
+            {m.player && <Text style={styles.markerPlayer}>{m.player}</Text>}
+          </View>
         );
       })}
 
@@ -504,12 +527,7 @@ export default function BasketballCourt() {
       <Pressable
         onPress={
           !preGameMode
-            ? (e) =>
-                handleZonePress(
-                  "3 pts",
-                  e.nativeEvent.pageX,
-                  e.nativeEvent.pageY
-                )
+            ? (e) => handleZonePress(e.nativeEvent.pageX, e.nativeEvent.pageY)
             : undefined
         }
         style={[styles.court, styles.touchableArea3pts]}
@@ -518,12 +536,7 @@ export default function BasketballCourt() {
       <Pressable
         onPress={
           !preGameMode
-            ? (e) =>
-                handleZonePress(
-                  "3 pts",
-                  e.nativeEvent.pageX,
-                  e.nativeEvent.pageY
-                )
+            ? (e) => handleZonePress(e.nativeEvent.pageX, e.nativeEvent.pageY)
             : undefined
         }
         style={[styles.court, styles.touchableArea3pts]}
@@ -532,12 +545,7 @@ export default function BasketballCourt() {
       <Pressable
         onPress={
           !preGameMode
-            ? (e) =>
-                handleZonePress(
-                  "Raquette",
-                  e.nativeEvent.pageX,
-                  e.nativeEvent.pageY
-                )
+            ? (e) => handleZonePress(e.nativeEvent.pageX, e.nativeEvent.pageY)
             : undefined
         }
         style={[
@@ -553,12 +561,7 @@ export default function BasketballCourt() {
       <Pressable
         onPress={
           !preGameMode
-            ? (e) =>
-                handleZonePress(
-                  "2 pts",
-                  e.nativeEvent.pageX,
-                  e.nativeEvent.pageY
-                )
+            ? (e) => handleZonePress(e.nativeEvent.pageX, e.nativeEvent.pageY)
             : undefined
         }
         style={[
@@ -576,12 +579,7 @@ export default function BasketballCourt() {
       <Pressable
         onPress={
           !preGameMode
-            ? (e) =>
-                handleZonePress(
-                  "2 pts",
-                  e.nativeEvent.pageX,
-                  e.nativeEvent.pageY
-                )
+            ? (e) => handleZonePress(e.nativeEvent.pageX, e.nativeEvent.pageY)
             : undefined
         }
         style={[
@@ -599,12 +597,7 @@ export default function BasketballCourt() {
       <Pressable
         onPress={
           !preGameMode
-            ? (e) =>
-                handleZonePress(
-                  "Raquette",
-                  e.nativeEvent.pageX,
-                  e.nativeEvent.pageY
-                )
+            ? (e) => handleZonePress(e.nativeEvent.pageX, e.nativeEvent.pageY)
             : undefined
         }
         style={[
@@ -642,52 +635,22 @@ export default function BasketballCourt() {
       )}
 
       {/* Action Modal */}
-      <Modal
-        transparent
+      <ActionSystemModal
         visible={actionModalVisible}
-        animationType="fade"
-        onRequestClose={() => setActionModalVisible(false)}
-      >
-        <Pressable
-          style={styles.modalOverlay}
-          onPress={() => setActionModalVisible(false)}
-        >
-          <View
-            style={[
-              styles.actionModal,
-              { left: modalPosition.x, top: modalPosition.y },
-            ]}
-          >
-            <View
-              style={[
-                styles.pointer,
-                modalPosition.showPointerOnTop
-                  ? styles.pointerTop
-                  : styles.pointerBottom,
-                { left: modalPosition.pointerX - POINTER_SIZE },
-              ]}
-            />
-            <TouchableOpacity
-              style={styles.actionButton}
-              onPress={() => handleActionSelect("tir")}
-            >
-              <Text style={styles.actionButtonText}>🏀 Tir</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.actionButton}
-              onPress={() => handleActionSelect("rebond")}
-            >
-              <Text style={styles.actionButtonText}>📥 Rebond</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.actionButton}
-              onPress={() => handleActionSelect("faute")}
-            >
-              <Text style={styles.actionButtonText}>⚠️ Faute</Text>
-            </TouchableOpacity>
-          </View>
-        </Pressable>
-      </Modal>
+        onClose={() => setActionModalVisible(false)}
+        onActionComplete={handleActionComplete}
+        position={{
+          x: modalPosition.x,
+          y: modalPosition.y,
+          pointerX: modalPosition.pointerX,
+          showPointerOnTop: modalPosition.showPointerOnTop,
+        }}
+        clickPosition={{
+          x: modalPosition.clickX,
+          y: modalPosition.clickY,
+        }}
+        players={players}
+      />
 
       {/* Pastilles des joueurs */}
       {!initModalVisible &&
@@ -780,11 +743,11 @@ const getStyles = ({
       flex: 1,
       alignItems: "center",
       justifyContent: "center",
-      backgroundColor: "#2e7d32",
+      backgroundColor: "red",
       width: courtWidth,
       height: courtHeight,
       padding: CONTAINER_PADDING,
-      position: "relative",
+      position: "absolute",
     },
     court: {
       width: "100%",
@@ -800,55 +763,7 @@ const getStyles = ({
       position: "absolute",
       zIndex: 97,
     },
-    modalOverlay: {
-      flex: 1,
-      backgroundColor: "rgba(0, 0, 0, 0.5)",
-    },
-    actionModal: {
-      position: "absolute",
-      backgroundColor: "white",
-      borderRadius: 12,
-      padding: MODAL_CONTENT_PADDING,
-      width: MODAL_WIDTH,
-      minHeight: MODAL_HEIGHT,
-      shadowColor: "#000",
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.25,
-      shadowRadius: 3.84,
-      elevation: 5,
-    },
-    actionButton: {
-      backgroundColor: "#f0f0f0",
-      padding: 12,
-      borderRadius: 8,
-      marginVertical: 4,
-      alignItems: "center",
-    },
-    actionButtonText: {
-      fontSize: 16,
-      fontWeight: "600",
-    },
-    pointer: {
-      position: "absolute",
-      width: 0,
-      height: 0,
-      borderLeftWidth: POINTER_SIZE,
-      borderRightWidth: POINTER_SIZE,
-      borderTopWidth: POINTER_SIZE,
-      borderStyle: "solid",
-      backgroundColor: "transparent",
-      borderLeftColor: "transparent",
-      borderRightColor: "transparent",
-      borderTopColor: "white",
-      zIndex: 1,
-    },
-    pointerTop: {
-      top: -POINTER_SIZE,
-      transform: [{ rotate: "180deg" }],
-    },
-    pointerBottom: {
-      bottom: -POINTER_SIZE,
-    },
+    // Les styles de l'ancien modal sont maintenant dans ActionModal.tsx
 
     line: {
       position: "absolute",
@@ -1039,9 +954,23 @@ const getStyles = ({
         },
     // #endregion
 
-    marker: {
+    markerContainer: {
       position: "absolute",
-      fontSize: 24,
       zIndex: 100,
+    },
+    markerIcon: {
+      fontSize: 24,
+    },
+    markerPlayer: {
+      position: "absolute",
+      bottom: -15,
+      left: "50%",
+      transform: [{ translateX: -5 }],
+      fontSize: 12,
+      color: "#fff",
+      fontWeight: "bold",
+      textShadowColor: "rgba(0,0,0,0.8)",
+      textShadowOffset: { width: 1, height: 1 },
+      textShadowRadius: 2,
     },
   });
