@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import {
   View,
   StyleSheet,
@@ -6,6 +6,8 @@ import {
   Pressable,
   TouchableOpacity,
   useWindowDimensions,
+  Animated,
+  Modal,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as ScreenOrientation from "expo-screen-orientation";
@@ -42,11 +44,83 @@ export default function BasketballCourt() {
       type: string;
       specification?: string;
       player?: number;
+      id: string; // Add unique ID for each marker
+      opacity: Animated.Value; // Add animated opacity
     }[]
   >([]);
 
   // New state for completed actions with detailed data
   const [completedActions, setCompletedActions] = useState<ActionData[]>([]);
+
+  // State for showing all actions
+  const [showAllActions, setShowAllActions] = useState(false);
+
+  // State for undo confirmation popup
+  const [showUndoConfirmation, setShowUndoConfirmation] = useState(false);
+
+  // Ref to store marker animations
+  const markerAnimations = useRef<{ [key: string]: Animated.Value }>({});
+
+  // Function to toggle showing all actions
+  const toggleShowAllActions = () => {
+    setShowAllActions(!showAllActions);
+  };
+
+  // Function to handle undo last action
+  const handleUndoLastAction = () => {
+    if (completedActions.length > 0) {
+      setShowUndoConfirmation(true);
+    }
+  };
+
+  // Function to confirm undo action
+  const confirmUndoAction = () => {
+    if (completedActions.length > 0) {
+      // Remove the last action from completedActions
+      setCompletedActions((prev) => prev.slice(0, -1));
+
+      // Remove the corresponding marker if it exists (temporary markers)
+      const lastAction = completedActions[completedActions.length - 1];
+      setMarkers((prev) =>
+        prev.filter(
+          (marker) =>
+            !(
+              marker.x === lastAction.position.x - 12 &&
+              marker.y === lastAction.position.y - 50 &&
+              marker.type === lastAction.type &&
+              marker.specification === lastAction.specification &&
+              marker.player === lastAction.player
+            )
+        )
+      );
+    }
+    setShowUndoConfirmation(false);
+  };
+
+  // Function to cancel undo action
+  const cancelUndoAction = () => {
+    setShowUndoConfirmation(false);
+  };
+
+  // Function to remove a marker after delay with fade-out animation
+  const removeMarkerAfterDelay = (markerId: string, delay: number = 3000) => {
+    setTimeout(() => {
+      // Start fade-out animation
+      const opacityValue = markerAnimations.current[markerId];
+      if (opacityValue) {
+        Animated.timing(opacityValue, {
+          toValue: 0,
+          duration: 500, // 500ms fade-out
+          useNativeDriver: true,
+        }).start(() => {
+          // Remove marker after animation completes
+          setMarkers((prev) => prev.filter((m) => m.id !== markerId));
+          // Clean up the animation reference
+          delete markerAnimations.current[markerId];
+        });
+      }
+    }, delay);
+  };
 
   // Ajout du state pour le popup d'initialisation
   const [initModalVisible, setInitModalVisible] = useState(true);
@@ -237,6 +311,13 @@ export default function BasketballCourt() {
   };
 
   const handleActionComplete = (actionData: ActionData) => {
+    // Create unique ID for this marker
+    const markerId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+    // Create animated value for this marker
+    const opacityValue = new Animated.Value(1);
+    markerAnimations.current[markerId] = opacityValue;
+
     // Add marker at click position
     setMarkers((prev) => [
       ...prev,
@@ -246,8 +327,13 @@ export default function BasketballCourt() {
         type: actionData.type,
         specification: actionData.specification,
         player: actionData.player,
+        id: markerId,
+        opacity: opacityValue,
       },
     ]);
+
+    // Remove marker after 1 seconds
+    removeMarkerAfterDelay(markerId, 1000);
 
     // Save detailed action data for future database storage
     setCompletedActions((prev) => [...prev, actionData]);
@@ -513,15 +599,142 @@ export default function BasketballCourt() {
       {markers.map((m, i) => {
         const icon = getActionIcon(m.type, m.specification);
         return (
-          <View
-            key={i}
-            style={[styles.markerContainer, { left: m.x, top: m.y }]}
+          <Animated.View
+            key={m.id} // Use marker ID as key
+            style={[
+              styles.markerContainer,
+              { left: m.x, top: m.y, opacity: m.opacity },
+            ]}
           >
             <Text style={styles.markerIcon}>{icon}</Text>
             {m.player && <Text style={styles.markerPlayer}>{m.player}</Text>}
-          </View>
+          </Animated.View>
         );
       })}
+
+      {/* Render all completed actions when showAllActions is true */}
+      {showAllActions &&
+        completedActions.map((action, i) => {
+          const icon = getActionIcon(action.type, action.specification);
+          return (
+            <View
+              key={`permanent-${i}`}
+              style={[
+                styles.markerContainer,
+                {
+                  left: action.position.x - 12,
+                  top: action.position.y - 50,
+                },
+              ]}
+            >
+              <Text style={styles.markerIcon}>{icon}</Text>
+              {action.player && (
+                <Text style={styles.markerPlayer}>{action.player}</Text>
+              )}
+            </View>
+          );
+        })}
+
+      {/* Toolbar - positioned at middle right */}
+      {!initModalVisible && !preGameMode && (
+        <View style={styles.toolbar}>
+          <TouchableOpacity
+            style={[
+              styles.toolbarButton,
+              showAllActions && styles.toolbarButtonActive,
+            ]}
+            onPress={toggleShowAllActions}
+          >
+            <Text style={styles.toolbarButtonIcon}>
+              {showAllActions ? "👁️" : "🚫"}
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.toolbarButton,
+              styles.toolbarButtonSpacing,
+              completedActions.length === 0 && styles.toolbarButtonDisabled,
+            ]}
+            onPress={handleUndoLastAction}
+            disabled={completedActions.length === 0}
+          >
+            <Text style={styles.toolbarButtonIcon}>↶</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {/* Undo Confirmation Modal */}
+      <Modal
+        transparent
+        visible={showUndoConfirmation}
+        animationType="fade"
+        onRequestClose={cancelUndoAction}
+      >
+        <View style={styles.undoModalOverlay}>
+          <View style={styles.undoModalContainer}>
+            <Text style={styles.undoModalTitle}>Confirmer l'annulation</Text>
+            <Text style={styles.undoModalMessage}>
+              Êtes-vous sûr de vouloir annuler la dernière action ?
+            </Text>
+
+            {completedActions.length > 0 && (
+              <View style={styles.undoActionDetails}>
+                <Text style={styles.undoActionTitle}>Action à annuler :</Text>
+                <View style={styles.undoActionInfo}>
+                  <Text style={styles.undoActionIcon}>
+                    {getActionIcon(
+                      completedActions[completedActions.length - 1].type,
+                      completedActions[completedActions.length - 1]
+                        .specification
+                    )}
+                  </Text>
+                  <View style={styles.undoActionText}>
+                    <Text style={styles.undoActionType}>
+                      {completedActions[completedActions.length - 1].type
+                        .charAt(0)
+                        .toUpperCase() +
+                        completedActions[
+                          completedActions.length - 1
+                        ].type.slice(1)}{" "}
+                      -{" "}
+                      {
+                        completedActions[completedActions.length - 1]
+                          .specification
+                      }
+                    </Text>
+                    <Text style={styles.undoActionPlayer}>
+                      Joueur #
+                      {completedActions[completedActions.length - 1].player}
+                    </Text>
+                    <Text style={styles.undoActionTime}>
+                      {new Date(
+                        completedActions[completedActions.length - 1].timestamp
+                      ).toLocaleTimeString("fr-FR")}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+            )}
+
+            <View style={styles.undoModalButtons}>
+              <TouchableOpacity
+                style={[styles.undoModalButton, styles.undoModalButtonCancel]}
+                onPress={cancelUndoAction}
+              >
+                <Text style={styles.undoModalButtonTextCancel}>Annuler</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.undoModalButton, styles.undoModalButtonConfirm]}
+                onPress={confirmUndoAction}
+              >
+                <Text style={styles.undoModalButtonTextConfirm}>Confirmer</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       {/* 3pts area */}
       <Pressable
@@ -972,5 +1185,130 @@ const getStyles = ({
       textShadowColor: "rgba(0,0,0,0.8)",
       textShadowOffset: { width: 1, height: 1 },
       textShadowRadius: 2,
+    },
+    toolbar: {
+      position: "absolute",
+      top: "50%",
+      right: 20,
+      transform: [{ translateY: -20 }],
+      zIndex: 300,
+      flexDirection: "row", // Added for undo button
+    },
+    toolbarButton: {
+      backgroundColor: "rgba(255,255,255,0.2)",
+      borderRadius: 20,
+      padding: 10,
+      borderWidth: 2,
+      borderColor: "rgba(255,255,255,0.5)",
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.3,
+      shadowRadius: 4,
+      elevation: 5,
+      minWidth: 44,
+      minHeight: 44,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    toolbarButtonActive: {
+      backgroundColor: "rgba(255,255,255,0.5)",
+      borderColor: "rgba(255,255,255,1)",
+    },
+    toolbarButtonSpacing: {
+      marginLeft: 10, // Space between buttons
+    },
+    toolbarButtonDisabled: {
+      opacity: 0.5, // Make disabled button look faded
+    },
+    toolbarButtonIcon: {
+      fontSize: 24,
+    },
+    undoModalOverlay: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+      backgroundColor: "rgba(0,0,0,0.5)",
+    },
+    undoModalContainer: {
+      backgroundColor: "#fff",
+      borderRadius: 10,
+      padding: 20,
+      width: "80%",
+      alignItems: "center",
+    },
+    undoModalTitle: {
+      fontSize: 20,
+      fontWeight: "bold",
+      marginBottom: 10,
+    },
+    undoModalMessage: {
+      fontSize: 16,
+      color: "#333",
+      marginBottom: 20,
+      textAlign: "center",
+    },
+    undoActionDetails: {
+      marginBottom: 20,
+      alignItems: "center",
+    },
+    undoActionTitle: {
+      fontSize: 18,
+      fontWeight: "bold",
+      marginBottom: 5,
+    },
+    undoActionInfo: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginBottom: 5,
+    },
+    undoActionIcon: {
+      fontSize: 24,
+      marginRight: 10,
+    },
+    undoActionText: {
+      flex: 1,
+    },
+    undoActionType: {
+      fontSize: 14,
+      fontWeight: "bold",
+      color: "#555",
+    },
+    undoActionPlayer: {
+      fontSize: 14,
+      color: "#007bff",
+    },
+    undoActionTime: {
+      fontSize: 12,
+      color: "#888",
+      marginTop: 2,
+    },
+    undoModalButtons: {
+      flexDirection: "row",
+      justifyContent: "space-around",
+      width: "100%",
+    },
+    undoModalButton: {
+      paddingVertical: 10,
+      paddingHorizontal: 20,
+      borderRadius: 8,
+      minWidth: 100,
+    },
+    undoModalButtonCancel: {
+      backgroundColor: "#dc3545",
+      borderColor: "#dc3545",
+    },
+    undoModalButtonConfirm: {
+      backgroundColor: "#28a745",
+      borderColor: "#28a745",
+    },
+    undoModalButtonTextCancel: {
+      color: "#fff",
+      fontSize: 16,
+      fontWeight: "bold",
+    },
+    undoModalButtonTextConfirm: {
+      color: "#fff",
+      fontSize: 16,
+      fontWeight: "bold",
     },
   });
