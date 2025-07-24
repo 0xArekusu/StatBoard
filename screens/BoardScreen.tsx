@@ -17,6 +17,7 @@ import ActionSystemModal, {
   ActionData,
   getActionIcon,
 } from "../components/ActionSystemModal";
+import FilterBottomSheet from "../components/FilterBottomSheet";
 
 // Modal layout constants (pour le nouveau ActionModal)
 const MODAL_WIDTH = 240;
@@ -57,6 +58,20 @@ export default function BasketballCourt() {
 
   // State for undo confirmation popup
   const [showUndoConfirmation, setShowUndoConfirmation] = useState(false);
+
+  // State for filter bottom sheet
+  const [showFilterSheet, setShowFilterSheet] = useState(false);
+
+  // State for applied filters
+  const [appliedFilters, setAppliedFilters] = useState<{
+    teams: ("A" | "B")[];
+    players: number[];
+    actionTypes: string[];
+  }>({
+    teams: ["A", "B"],
+    players: [],
+    actionTypes: [],
+  });
 
   // Ref to store marker animations
   const markerAnimations = useRef<{ [key: string]: Animated.Value }>({});
@@ -120,6 +135,57 @@ export default function BasketballCourt() {
         });
       }
     }, delay);
+  };
+
+  // Function to handle filter application
+  const handleApplyFilters = (filters: {
+    teams: ("A" | "B")[];
+    players: number[];
+    actionTypes: string[];
+  }) => {
+    setAppliedFilters(filters);
+  };
+
+  // Function to reset filters
+  const handleResetFilters = () => {
+    setAppliedFilters({
+      teams: ["A", "B"],
+      players: [],
+      actionTypes: [],
+    });
+  };
+
+  // Function to filter completed actions based on applied filters
+  const getFilteredActions = () => {
+    if (!showAllActions) return [];
+
+    return completedActions.filter((action) => {
+      // Filter by teams (if any teams selected)
+      if (appliedFilters.teams.length > 0) {
+        // For now, we'll assume all actions are from team A - this would need to be enhanced
+        // based on your actual team logic
+        const actionTeam = "A"; // This should be determined from action data
+        if (!appliedFilters.teams.includes(actionTeam as "A" | "B")) {
+          return false;
+        }
+      }
+
+      // Filter by players (if any players selected)
+      if (appliedFilters.players.length > 0) {
+        if (!action.player || !appliedFilters.players.includes(action.player)) {
+          return false;
+        }
+      }
+
+      // Filter by action types (if any action types selected)
+      if (appliedFilters.actionTypes.length > 0) {
+        if (!appliedFilters.actionTypes.includes(action.type)) {
+          return false;
+        }
+      }
+
+      return true;
+    });
   };
 
   // Ajout du state pour le popup d'initialisation
@@ -614,7 +680,7 @@ export default function BasketballCourt() {
 
       {/* Render all completed actions when showAllActions is true */}
       {showAllActions &&
-        completedActions.map((action, i) => {
+        getFilteredActions().map((action, i) => {
           const icon = getActionIcon(action.type, action.specification);
           return (
             <View
@@ -649,6 +715,26 @@ export default function BasketballCourt() {
               {showAllActions ? "👁️" : "🚫"}
             </Text>
           </TouchableOpacity>
+
+          {/* Filter button - only visible when showAllActions is true */}
+          {showAllActions && (
+            <TouchableOpacity
+              style={[styles.toolbarButton, styles.toolbarButtonSpacing]}
+              onPress={() => setShowFilterSheet(true)}
+            >
+              <Text style={styles.toolbarButtonIcon}>🔍</Text>
+            </TouchableOpacity>
+          )}
+
+          {/* Reset filters button - only visible when showAllActions is true */}
+          {showAllActions && (
+            <TouchableOpacity
+              style={[styles.toolbarButton, styles.toolbarButtonSpacing]}
+              onPress={handleResetFilters}
+            >
+              <Text style={styles.toolbarButtonIcon}>🔄</Text>
+            </TouchableOpacity>
+          )}
 
           <TouchableOpacity
             style={[
@@ -735,6 +821,18 @@ export default function BasketballCourt() {
           </View>
         </View>
       </Modal>
+
+      {/* Filter Bottom Sheet */}
+      <FilterBottomSheet
+        visible={showFilterSheet}
+        onClose={() => setShowFilterSheet(false)}
+        players={players}
+        teamA={teamA}
+        teamB={teamB}
+        completedActions={completedActions}
+        onApplyFilters={handleApplyFilters}
+        appliedFilters={appliedFilters}
+      />
 
       {/* 3pts area */}
       <Pressable
@@ -1311,4 +1409,5 @@ const getStyles = ({
       fontSize: 16,
       fontWeight: "bold",
     },
+    // Filter Bottom Sheet styles - supprimés car maintenant dans FilterBottomSheet.tsx
   });
