@@ -18,6 +18,7 @@ import ActionSystemModal, {
   getActionIcon,
 } from "../components/ActionSystemModal";
 import FilterBottomSheet from "../components/FilterBottomSheet";
+import HistoryBottomSheet from "../components/HistoryBottomSheet";
 
 // Modal layout constants (pour le nouveau ActionModal)
 const MODAL_WIDTH = 240;
@@ -61,6 +62,9 @@ export default function BasketballCourt() {
 
   // State for filter bottom sheet
   const [showFilterSheet, setShowFilterSheet] = useState(false);
+
+  // State for history bottom sheet
+  const [showHistorySheet, setShowHistorySheet] = useState(false);
 
   // State for applied filters
   const [appliedFilters, setAppliedFilters] = useState<{
@@ -152,6 +156,15 @@ export default function BasketballCourt() {
       teams: ["A", "B"],
       players: [],
       actionTypes: [],
+    });
+  };
+
+  // Function to delete a specific action
+  const handleDeleteAction = (actionIndex: number) => {
+    setCompletedActions((prev) => {
+      const newActions = [...prev];
+      newActions.splice(actionIndex, 1);
+      return newActions;
     });
   };
 
@@ -736,6 +749,19 @@ export default function BasketballCourt() {
             </TouchableOpacity>
           )}
 
+          {/* History button */}
+          <TouchableOpacity
+            style={[
+              styles.toolbarButton,
+              styles.toolbarButtonSpacing,
+              completedActions.length === 0 && styles.toolbarButtonDisabled,
+            ]}
+            onPress={() => setShowHistorySheet(true)}
+            disabled={completedActions.length === 0}
+          >
+            <Text style={styles.toolbarButtonIcon}>📋</Text>
+          </TouchableOpacity>
+
           <TouchableOpacity
             style={[
               styles.toolbarButton,
@@ -832,6 +858,15 @@ export default function BasketballCourt() {
         completedActions={completedActions}
         onApplyFilters={handleApplyFilters}
         appliedFilters={appliedFilters}
+      />
+
+      {/* History Bottom Sheet */}
+      <HistoryBottomSheet
+        visible={showHistorySheet}
+        onClose={() => setShowHistorySheet(false)}
+        players={players}
+        completedActions={completedActions}
+        onDeleteAction={handleDeleteAction}
       />
 
       {/* 3pts area */}
