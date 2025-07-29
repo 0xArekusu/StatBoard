@@ -21,6 +21,10 @@ interface ActionSystemModalProps {
     num: number;
     name: string;
   }>;
+  teamMode: "A" | "B" | "both";
+  teamA: string;
+  teamB: string;
+  currentTeam: "A" | "B";
 }
 
 export default function ActionSystemModal({
@@ -30,10 +34,15 @@ export default function ActionSystemModal({
   position,
   clickPosition,
   players,
+  teamMode,
+  teamA,
+  teamB,
+  currentTeam,
 }: ActionSystemModalProps) {
   const {
     state,
     startAction,
+    selectTeam,
     selectActionType,
     selectActionSpec,
     selectPlayer,
@@ -45,7 +54,7 @@ export default function ActionSystemModal({
   // Start action when modal becomes visible
   React.useEffect(() => {
     if (visible && !state.isVisible) {
-      startAction(position, clickPosition);
+      startAction(position, clickPosition, teamMode, currentTeam);
     }
     if (!visible && state.isVisible) {
       closeAction();
@@ -57,20 +66,32 @@ export default function ActionSystemModal({
     closeAction,
     position,
     clickPosition,
+    teamMode,
+    currentTeam,
   ]);
 
   // Auto-complete action when player is selected
   React.useEffect(() => {
-    if (state.actionType && state.actionSpec && state.playerNumber) {
+    if (
+      state.actionType &&
+      state.actionSpec &&
+      state.playerNumber &&
+      state.selectedTeam
+    ) {
       completeAction(onActionComplete);
     }
   }, [
     state.actionType,
     state.actionSpec,
     state.playerNumber,
+    state.selectedTeam,
     completeAction,
     onActionComplete,
   ]);
+
+  const handleTeamSelect = (team: "A" | "B") => {
+    selectTeam(team);
+  };
 
   const handleActionSelect = (actionType: string) => {
     selectActionType(actionType);
@@ -98,15 +119,20 @@ export default function ActionSystemModal({
     <ActionModal
       visible={state.isVisible}
       onClose={handleClose}
+      onTeamSelect={handleTeamSelect}
       onActionSelect={handleActionSelect}
       onSpecificationSelect={handleSpecificationSelect}
       onPlayerSelect={handlePlayerSelect}
       onGoBack={handleGoBack}
       position={state.position}
       currentStep={state.currentStep}
+      selectedTeam={state.selectedTeam}
       selectedAction={state.actionType}
       selectedSpec={state.actionSpec}
       players={players}
+      teamMode={teamMode}
+      teamA={teamA}
+      teamB={teamB}
     />
   );
 }

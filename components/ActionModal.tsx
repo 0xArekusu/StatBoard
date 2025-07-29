@@ -13,6 +13,7 @@ import { ACTION_DEFINITIONS } from "./ActionSystem";
 interface ActionModalProps {
   visible: boolean;
   onClose: () => void;
+  onTeamSelect: (team: "A" | "B") => void;
   onActionSelect: (action: string) => void;
   onSpecificationSelect: (spec: string) => void;
   onPlayerSelect: (playerNum: number) => void;
@@ -24,6 +25,7 @@ interface ActionModalProps {
     showPointerOnTop: boolean;
   };
   currentStep: number;
+  selectedTeam: "A" | "B" | null;
   selectedAction: string | null;
   selectedSpec: string | null;
   players: Array<{
@@ -31,6 +33,9 @@ interface ActionModalProps {
     num: number;
     name: string;
   }>;
+  teamMode: "A" | "B" | "both";
+  teamA: string;
+  teamB: string;
 }
 
 const MODAL_WIDTH = 220;
@@ -41,15 +46,20 @@ const MODAL_CONTENT_PADDING = 16;
 export default function ActionModal({
   visible,
   onClose,
+  onTeamSelect,
   onActionSelect,
   onSpecificationSelect,
   onPlayerSelect,
   onGoBack,
   position,
   currentStep,
+  selectedTeam,
   selectedAction,
   selectedSpec,
   players,
+  teamMode,
+  teamA,
+  teamB,
 }: ActionModalProps) {
   const renderBackButton = () => {
     if (currentStep === 1) return null;
@@ -58,6 +68,30 @@ export default function ActionModal({
       <TouchableOpacity style={styles.backButton} onPress={onGoBack}>
         <Text style={styles.backButtonText}>← Retour</Text>
       </TouchableOpacity>
+    );
+  };
+
+  const renderTeamSelection = () => {
+    return (
+      <View style={styles.actionsContainer}>
+        <TouchableOpacity
+          style={[styles.actionButton, { backgroundColor: "#4CAF50" }]}
+          onPress={() => onTeamSelect("A")}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.actionIcon}>🏀</Text>
+          <Text style={styles.actionLabel}>{teamA}</Text>
+        </TouchableOpacity>
+        <View style={styles.actionButtonMargin} />
+        <TouchableOpacity
+          style={[styles.actionButton, { backgroundColor: "#2196F3" }]}
+          onPress={() => onTeamSelect("B")}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.actionIcon}>🏀</Text>
+          <Text style={styles.actionLabel}>{teamB}</Text>
+        </TouchableOpacity>
+      </View>
     );
   };
 
@@ -144,10 +178,15 @@ export default function ActionModal({
   const renderStepContent = () => {
     switch (currentStep) {
       case 1:
-        return renderActionSelection();
+        // Team selection step (only for "both" mode)
+        return teamMode === "both"
+          ? renderTeamSelection()
+          : renderActionSelection();
       case 2:
-        return renderSpecificationSelection();
+        return renderActionSelection();
       case 3:
+        return renderSpecificationSelection();
+      case 4:
         return renderPlayerSelection();
       default:
         return renderActionSelection();
@@ -168,7 +207,7 @@ export default function ActionModal({
             {
               left: position.x,
               top: position.y,
-              height: currentStep === 3 ? MODAL_HEIGHT + 40 : MODAL_HEIGHT,
+              height: currentStep === 4 ? MODAL_HEIGHT + 40 : MODAL_HEIGHT,
             },
           ]}
         >

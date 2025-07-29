@@ -22,6 +22,8 @@ interface HistoryBottomSheetProps {
   players: Player[];
   completedActions: ActionData[];
   onDeleteAction: (actionIndex: number) => void;
+  teamA: string;
+  teamB: string;
 }
 
 export default function HistoryBottomSheet({
@@ -30,6 +32,8 @@ export default function HistoryBottomSheet({
   players,
   completedActions,
   onDeleteAction,
+  teamA,
+  teamB,
 }: HistoryBottomSheetProps) {
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [actionToDelete, setActionToDelete] = useState<number | null>(null);
@@ -40,11 +44,22 @@ export default function HistoryBottomSheet({
     return player ? player.name : `Joueur #${playerNum}`;
   };
 
+  // Get team name by team code
+  const getTeamName = (team: "A" | "B") => {
+    return team === "A" ? teamA : teamB;
+  };
+
+  // Get team color
+  const getTeamColor = (team: "A" | "B") => {
+    return team === "A" ? "#4CAF50" : "#2196F3"; // Green for team A, Blue for team B
+  };
+
   // Format action description
   const formatActionDescription = (action: ActionData) => {
     const playerNum = action.player || 0;
     const playerName = getPlayerName(playerNum);
-    let description = `${playerName} - #${playerNum}`;
+    const teamName = getTeamName(action.team);
+    let description = `${teamName} - ${playerName} - #${playerNum}`;
 
     switch (action.type) {
       case "tir":
@@ -155,8 +170,21 @@ export default function HistoryBottomSheet({
                   key={`${action.timestamp}-${index}`}
                   style={styles.actionItem}
                 >
+                  {/* Color indicator bar */}
+                  <View
+                    style={[
+                      styles.teamColorBar,
+                      { backgroundColor: getTeamColor(action.team) },
+                    ]}
+                  />
+
                   <View style={styles.actionHeader}>
-                    <View style={styles.actionIconContainer}>
+                    <View
+                      style={[
+                        styles.actionIconContainer,
+                        { backgroundColor: `${getTeamColor(action.team)}20` },
+                      ]}
+                    >
                       <Text style={styles.actionIcon}>
                         {getActionIcon(action.type, action.specification)}
                       </Text>
@@ -208,13 +236,38 @@ export default function HistoryBottomSheet({
                 <Text style={styles.deleteActionTitle}>
                   Action à supprimer :
                 </Text>
-                <View style={styles.deleteActionInfo}>
-                  <Text style={styles.deleteActionIcon}>
-                    {getActionIcon(
-                      completedActions[actionToDelete].type,
-                      completedActions[actionToDelete].specification
-                    )}
-                  </Text>
+                <View
+                  style={[
+                    styles.deleteActionInfo,
+                    {
+                      borderLeftColor: getTeamColor(
+                        completedActions[actionToDelete].team
+                      ),
+                      borderLeftWidth: 6,
+                      paddingLeft: 16,
+                      backgroundColor: "rgba(255,255,255,0.9)",
+                      borderTopRightRadius: 8,
+                      borderBottomRightRadius: 8,
+                    },
+                  ]}
+                >
+                  <View
+                    style={[
+                      styles.deleteActionIconContainer,
+                      {
+                        backgroundColor: `${getTeamColor(
+                          completedActions[actionToDelete].team
+                        )}20`,
+                      },
+                    ]}
+                  >
+                    <Text style={styles.deleteActionIcon}>
+                      {getActionIcon(
+                        completedActions[actionToDelete].type,
+                        completedActions[actionToDelete].specification
+                      )}
+                    </Text>
+                  </View>
                   <View style={styles.deleteActionText}>
                     <Text style={styles.deleteActionType}>
                       {formatActionDescription(
@@ -432,6 +485,14 @@ const styles = StyleSheet.create({
     fontSize: 24,
     marginRight: 10,
   },
+  deleteActionIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 10,
+  },
   deleteActionText: {
     flex: 1,
   },
@@ -473,5 +534,13 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 16,
     fontWeight: "bold",
+  },
+  teamColorBar: {
+    position: "absolute",
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 6,
+    borderRadius: 3,
   },
 });

@@ -168,6 +168,16 @@ export default function BasketballCourt() {
     });
   };
 
+  // Function to get team color
+  const getTeamColor = (team: "A" | "B") => {
+    return team === "A" ? "#4CAF50" : "#2196F3"; // Green for team A, Blue for team B
+  };
+
+  // Function to get team name
+  const getTeamName = (team: "A" | "B") => {
+    return team === "A" ? teamA : teamB;
+  };
+
   // Function to filter completed actions based on applied filters
   const getFilteredActions = () => {
     if (!showAllActions) return [];
@@ -175,10 +185,7 @@ export default function BasketballCourt() {
     return completedActions.filter((action) => {
       // Filter by teams (if any teams selected)
       if (appliedFilters.teams.length > 0) {
-        // For now, we'll assume all actions are from team A - this would need to be enhanced
-        // based on your actual team logic
-        const actionTeam = "A"; // This should be determined from action data
-        if (!appliedFilters.teams.includes(actionTeam as "A" | "B")) {
+        if (!appliedFilters.teams.includes(action.team)) {
           return false;
         }
       }
@@ -677,6 +684,19 @@ export default function BasketballCourt() {
       {/* Render markers */}
       {markers.map((m, i) => {
         const icon = getActionIcon(m.type, m.specification);
+        // Find the action to get team information
+        const matchingAction = completedActions.find(
+          (action) =>
+            action.position.x - 12 === m.x &&
+            action.position.y - 50 === m.y &&
+            action.type === m.type &&
+            action.specification === m.specification &&
+            action.player === m.player
+        );
+        const teamColor = matchingAction
+          ? getTeamColor(matchingAction.team)
+          : "#fff";
+
         return (
           <Animated.View
             key={m.id} // Use marker ID as key
@@ -686,7 +706,11 @@ export default function BasketballCourt() {
             ]}
           >
             <Text style={styles.markerIcon}>{icon}</Text>
-            {m.player && <Text style={styles.markerPlayer}>{m.player}</Text>}
+            {m.player && (
+              <Text style={[styles.markerPlayer, { color: teamColor }]}>
+                {m.player}
+              </Text>
+            )}
           </Animated.View>
         );
       })}
@@ -695,6 +719,8 @@ export default function BasketballCourt() {
       {showAllActions &&
         getFilteredActions().map((action, i) => {
           const icon = getActionIcon(action.type, action.specification);
+          const teamColor = getTeamColor(action.team);
+
           return (
             <View
               key={`permanent-${i}`}
@@ -708,7 +734,9 @@ export default function BasketballCourt() {
             >
               <Text style={styles.markerIcon}>{icon}</Text>
               {action.player && (
-                <Text style={styles.markerPlayer}>{action.player}</Text>
+                <Text style={[styles.markerPlayer, { color: teamColor }]}>
+                  {action.player}
+                </Text>
               )}
             </View>
           );
@@ -793,16 +821,45 @@ export default function BasketballCourt() {
             {completedActions.length > 0 && (
               <View style={styles.undoActionDetails}>
                 <Text style={styles.undoActionTitle}>Action à annuler :</Text>
-                <View style={styles.undoActionInfo}>
-                  <Text style={styles.undoActionIcon}>
-                    {getActionIcon(
-                      completedActions[completedActions.length - 1].type,
-                      completedActions[completedActions.length - 1]
-                        .specification
-                    )}
-                  </Text>
+                <View
+                  style={[
+                    styles.undoActionInfo,
+                    {
+                      borderLeftColor: getTeamColor(
+                        completedActions[completedActions.length - 1].team
+                      ),
+                      borderLeftWidth: 6,
+                      paddingLeft: 16,
+                      backgroundColor: "rgba(255,255,255,0.9)",
+                      borderTopRightRadius: 8,
+                      borderBottomRightRadius: 8,
+                    },
+                  ]}
+                >
+                  <View
+                    style={[
+                      styles.undoActionIconContainer,
+                      {
+                        backgroundColor: `${getTeamColor(
+                          completedActions[completedActions.length - 1].team
+                        )}20`,
+                      },
+                    ]}
+                  >
+                    <Text style={styles.undoActionIcon}>
+                      {getActionIcon(
+                        completedActions[completedActions.length - 1].type,
+                        completedActions[completedActions.length - 1]
+                          .specification
+                      )}
+                    </Text>
+                  </View>
                   <View style={styles.undoActionText}>
                     <Text style={styles.undoActionType}>
+                      {getTeamName(
+                        completedActions[completedActions.length - 1].team
+                      )}{" "}
+                      -{" "}
                       {completedActions[completedActions.length - 1].type
                         .charAt(0)
                         .toUpperCase() +
@@ -867,6 +924,8 @@ export default function BasketballCourt() {
         players={players}
         completedActions={completedActions}
         onDeleteAction={handleDeleteAction}
+        teamA={teamA}
+        teamB={teamB}
       />
 
       {/* 3pts area */}
@@ -996,6 +1055,10 @@ export default function BasketballCourt() {
           y: modalPosition.clickY,
         }}
         players={players}
+        teamMode={teamMode}
+        teamA={teamA}
+        teamB={teamB}
+        currentTeam={currentTeam}
       />
 
       {/* Pastilles des joueurs */}
@@ -1396,6 +1459,14 @@ const getStyles = ({
     },
     undoActionIcon: {
       fontSize: 24,
+      marginRight: 10,
+    },
+    undoActionIconContainer: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      justifyContent: "center",
+      alignItems: "center",
       marginRight: 10,
     },
     undoActionText: {

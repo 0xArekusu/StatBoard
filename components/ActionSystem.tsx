@@ -11,6 +11,7 @@ export interface ActionData {
   type: string;
   specification?: string;
   player?: number;
+  team: "A" | "B"; // Add team information
   timestamp: Date;
   position: {
     x: number;
@@ -38,6 +39,7 @@ export interface ActionSystemState {
   actionType: string | null;
   actionSpec: string | null;
   playerNumber: number | null;
+  selectedTeam: "A" | "B" | null; // Add selected team
   position: {
     x: number;
     y: number;
@@ -69,6 +71,10 @@ export interface ActionSystemProps {
     num: number;
     name: string;
   }>;
+  teamMode: "A" | "B" | "both"; // Add team mode
+  teamA: string;
+  teamB: string;
+  currentTeam: "A" | "B"; // Current team for single team mode
 }
 
 // Action definitions with sub-specifications
@@ -161,6 +167,7 @@ export const useActionSystem = () => {
     actionType: null,
     actionSpec: null,
     playerNumber: null,
+    selectedTeam: null,
     position: {
       x: 0,
       y: 0,
@@ -178,14 +185,17 @@ export const useActionSystem = () => {
   const startAction = useCallback(
     (
       position: ActionSystemState["position"],
-      clickPosition: ActionSystemState["clickPosition"]
+      clickPosition: ActionSystemState["clickPosition"],
+      teamMode: "A" | "B" | "both",
+      currentTeam: "A" | "B"
     ) => {
       setState({
         isVisible: true,
-        currentStep: 1,
+        currentStep: teamMode === "both" ? 1 : 2, // Start with team selection if both, otherwise skip to action
         actionType: null,
         actionSpec: null,
         playerNumber: null,
+        selectedTeam: teamMode === "both" ? null : currentTeam, // Pre-select team if single team mode
         position,
         clickPosition,
       });
@@ -193,11 +203,19 @@ export const useActionSystem = () => {
     []
   );
 
+  const selectTeam = useCallback((team: "A" | "B") => {
+    setState((prev) => ({
+      ...prev,
+      selectedTeam: team,
+      currentStep: 2, // Move to action selection
+    }));
+  }, []);
+
   const selectActionType = useCallback((actionType: string) => {
     setState((prev) => ({
       ...prev,
       actionType,
-      currentStep: 2,
+      currentStep: 3,
     }));
   }, []);
 
@@ -205,7 +223,7 @@ export const useActionSystem = () => {
     setState((prev) => ({
       ...prev,
       actionSpec,
-      currentStep: 3,
+      currentStep: 4,
     }));
   }, []);
 
@@ -225,12 +243,21 @@ export const useActionSystem = () => {
           currentStep: newStep,
           // Reset data for steps we're going back from
           ...(newStep === 1 && {
+            selectedTeam: null,
             actionType: null,
             actionSpec: null,
             playerNumber: null,
           }),
-          ...(newStep === 2 && { actionSpec: null, playerNumber: null }),
-          ...(newStep === 3 && { playerNumber: null }),
+          ...(newStep === 2 && {
+            actionType: null,
+            actionSpec: null,
+            playerNumber: null,
+          }),
+          ...(newStep === 3 && {
+            actionSpec: null,
+            playerNumber: null,
+          }),
+          ...(newStep === 4 && { playerNumber: null }),
         };
       }
       return prev;
@@ -239,11 +266,17 @@ export const useActionSystem = () => {
 
   const completeAction = useCallback(
     (onActionComplete: (actionData: ActionData) => void) => {
-      if (state.actionType && state.actionSpec && state.playerNumber) {
+      if (
+        state.actionType &&
+        state.actionSpec &&
+        state.playerNumber &&
+        state.selectedTeam
+      ) {
         const actionData: ActionData = {
           type: state.actionType,
           specification: state.actionSpec,
           player: state.playerNumber,
+          team: state.selectedTeam,
           timestamp: new Date(),
           position: state.clickPosition,
         };
@@ -258,6 +291,7 @@ export const useActionSystem = () => {
           actionType: null,
           actionSpec: null,
           playerNumber: null,
+          selectedTeam: null,
           position: {
             x: 0,
             y: 0,
@@ -281,6 +315,7 @@ export const useActionSystem = () => {
       actionType: null,
       actionSpec: null,
       playerNumber: null,
+      selectedTeam: null,
       position: {
         x: 0,
         y: 0,
@@ -298,6 +333,7 @@ export const useActionSystem = () => {
     state,
     completedActions,
     startAction,
+    selectTeam,
     selectActionType,
     selectActionSpec,
     selectPlayer,
