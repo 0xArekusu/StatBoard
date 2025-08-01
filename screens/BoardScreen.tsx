@@ -3,11 +3,11 @@ import {
   View,
   StyleSheet,
   Text,
-  Pressable,
   TouchableOpacity,
   useWindowDimensions,
   Animated,
   Modal,
+  Pressable,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as ScreenOrientation from "expo-screen-orientation";
@@ -19,6 +19,7 @@ import ActionSystemModal, {
 } from "../components/ActionSystemModal";
 import FilterBottomSheet from "../components/FilterBottomSheet";
 import HistoryBottomSheet from "../components/HistoryBottomSheet";
+import BasketballCourtSVG from "../components/BasketballCourtSVG";
 
 // Modal layout constants (pour le nouveau ActionModal)
 const MODAL_WIDTH = 240;
@@ -928,90 +929,22 @@ export default function BasketballCourt() {
         teamB={teamB}
       />
 
-      {/* 3pts area */}
+      {/* Basketball Court SVG */}
       <Pressable
         onPress={
           !preGameMode
-            ? (e) => handleZonePress(e.nativeEvent.pageX, e.nativeEvent.pageY)
+            ? (e) => {
+                // Get the location from the event
+                const locationX = e.nativeEvent.pageX;
+                const locationY = e.nativeEvent.pageY;
+                handleZonePress(locationX, locationY);
+              }
             : undefined
         }
-        style={[styles.court, styles.touchableArea3pts]}
-      />
-      {/* 3pts area (all court except other zone) */}
-      <Pressable
-        onPress={
-          !preGameMode
-            ? (e) => handleZonePress(e.nativeEvent.pageX, e.nativeEvent.pageY)
-            : undefined
-        }
-        style={[styles.court, styles.touchableArea3pts]}
-      />
-      {/* Paint top or left */}
-      <Pressable
-        onPress={
-          !preGameMode
-            ? (e) => handleZonePress(e.nativeEvent.pageX, e.nativeEvent.pageY)
-            : undefined
-        }
-        style={[
-          styles.paintLine,
-          styles.paint,
-          styles.paintTopOrLeft,
-          styles.touchableAreaPaint,
-        ]}
-      />
-      {/* Free throw circle top or left */}
-      <View style={[styles.freeThrowCircle, styles.freeThrowCircleTopOrLeft]} />
-      {/* 3pts line top or left */}
-      <Pressable
-        onPress={
-          !preGameMode
-            ? (e) => handleZonePress(e.nativeEvent.pageX, e.nativeEvent.pageY)
-            : undefined
-        }
-        style={[
-          styles.threePointLine,
-          styles.threePointArc,
-          styles.threePointArcTopOrLeft,
-          styles.touchableArea2pts,
-        ]}
-      />
-      {/* Middle line */}
-      <View style={[styles.line, styles.midline]} />
-      {/* Center circle */}
-      <View style={[styles.line, styles.centerCircle]} />
-      {/* 3pts line bottom or right */}
-      <Pressable
-        onPress={
-          !preGameMode
-            ? (e) => handleZonePress(e.nativeEvent.pageX, e.nativeEvent.pageY)
-            : undefined
-        }
-        style={[
-          styles.threePointLine,
-          styles.threePointArc,
-          styles.threePointArcBottomOrRight,
-          styles.touchableArea2pts,
-        ]}
-      />
-      {/* Free throw circle bottom or right */}
-      <View
-        style={[styles.freeThrowCircle, styles.freeThrowCircleBottomOrRight]}
-      />
-      {/* Paint bottom */}
-      <Pressable
-        onPress={
-          !preGameMode
-            ? (e) => handleZonePress(e.nativeEvent.pageX, e.nativeEvent.pageY)
-            : undefined
-        }
-        style={[
-          styles.paintLine,
-          styles.paint,
-          styles.paintBottomOrRight,
-          styles.touchableAreaPaint,
-        ]}
-      />
+        style={{ position: "absolute", top: 0, left: 0 }}
+      >
+        <BasketballCourtSVG width={courtWidth} height={courtHeight} />
+      </Pressable>
 
       {/* Bouton pour démarrer le match */}
       {!initModalVisible && preGameMode && (
@@ -1158,211 +1091,6 @@ const getStyles = ({
       padding: CONTAINER_PADDING,
       position: "absolute",
     },
-    court: {
-      width: "100%",
-      height: "100%",
-      backgroundColor: "orange",
-      borderRadius: 20,
-      borderWidth: 4,
-      borderColor: "#fff",
-      overflow: "hidden",
-      position: "relative",
-    },
-    touchableArea3pts: {
-      position: "absolute",
-      zIndex: 97,
-    },
-    // Les styles de l'ancien modal sont maintenant dans ActionModal.tsx
-
-    line: {
-      position: "absolute",
-      backgroundColor: "#fff",
-      zIndex: 99,
-    },
-
-    linetest: {
-      position: "absolute",
-      backgroundColor: "red",
-      width: 2,
-      height: 2,
-      top: "50%",
-      left: "50%",
-      zIndex: 99,
-    },
-    // #region MIDLINE + CENTER CIRCLE
-    midline: isPortrait
-      ? {
-          width: "100%",
-          height: 2,
-          top: "50%",
-          transform: [{ translateY: -1 }],
-        }
-      : {
-          width: 2,
-          height: "100%",
-          left: "50%",
-          transform: [{ translateX: -1 }],
-        },
-
-    centerCircle: isPortrait
-      ? {
-          position: "absolute",
-          borderWidth: 2,
-          borderColor: "#fff",
-          backgroundColor: "transparent",
-          top: "50%",
-          left: "50%",
-          transform: [
-            { translateY: -circleDiameter / 2 },
-            { translateX: -circleDiameter / 2 },
-          ],
-          width: circleDiameter,
-          height: circleDiameter,
-          borderRadius: circleDiameter / 2,
-        }
-      : {
-          position: "absolute",
-          borderWidth: 2,
-          borderColor: "#fff",
-          backgroundColor: "transparent",
-          top: "50%",
-          left: "50%",
-          transform: [
-            { translateY: -circleDiameter / 2 },
-            { translateX: -circleDiameter / 2 },
-          ],
-          width: circleDiameter,
-          height: circleDiameter,
-          borderRadius: circleDiameter / 2,
-        },
-    // #endregion
-
-    // #region PAINT AREA ZONE
-    touchableAreaPaint: {
-      position: "absolute",
-      zIndex: 99,
-    },
-
-    paintLine: {
-      position: "absolute",
-      borderWidth: 2,
-      borderColor: "#fff",
-      backgroundColor: "transparent",
-    },
-
-    paint: isPortrait
-      ? {
-          width: keyWidth,
-          height: keyHeight,
-        }
-      : {
-          width: keyWidth,
-          height: keyHeight,
-        },
-
-    paintTopOrLeft: isPortrait
-      ? {
-          borderTopWidth: 0,
-          left: courtWidth / 2 - keyWidth / 2,
-          top: 0,
-        }
-      : {
-          borderLeftWidth: 0,
-          top: courtHeight / 2 - keyHeight / 2,
-          left: 0,
-        },
-    paintBottomOrRight: isPortrait
-      ? {
-          borderBottomWidth: 0,
-          left: courtWidth / 2 - keyWidth / 2,
-          bottom: 0,
-        }
-      : {
-          top: courtHeight / 2 - keyHeight / 2,
-          right: 0,
-        },
-
-    // #endregion
-
-    // #region FREE THROW AREA
-
-    freeThrowCircle: {
-      position: "absolute",
-      width: circleDiameter,
-      height: circleDiameter,
-      borderRadius: circleDiameter / 2,
-      borderWidth: 2,
-      borderColor: "#fff",
-      zIndex: 98,
-    },
-
-    freeThrowCircleTopOrLeft: isPortrait
-      ? {
-          left: courtWidth / 2 - circleDiameter / 2,
-          top: keyHeight - circleDiameter / 2,
-        }
-      : {
-          left: keyWidth - circleDiameter / 2,
-          top: courtHeight / 2 - circleDiameter / 2,
-        },
-    freeThrowCircleBottomOrRight: isPortrait
-      ? {
-          left: courtWidth / 2 - circleDiameter / 2,
-          bottom: keyHeight - circleDiameter / 2,
-        }
-      : {
-          right: keyWidth - circleDiameter / 2,
-          top: courtHeight / 2 - circleDiameter / 2,
-        },
-    // #endregion
-
-    // #region 3 PTS AREA STYLES
-    touchableArea2pts: {
-      position: "absolute",
-      zIndex: 98,
-    },
-    threePointLine: {
-      borderColor: "#fff",
-      borderWidth: 2,
-      backgroundColor: "transparent",
-    },
-    threePointArc: isPortrait
-      ? {
-          width: "83%",
-          height: "50%",
-          borderTopLeftRadius: "100%",
-          borderTopRightRadius: "100%",
-          borderBottomWidth: 0,
-        }
-      : {
-          width: "50%",
-          height: "83%",
-          borderTopRightRadius: "100%",
-          borderBottomRightRadius: "100%",
-          borderLeftWidth: 0,
-        },
-    threePointArcTopOrLeft: isPortrait
-      ? {
-          left: "8%",
-          top: "-16%",
-          transform: [{ rotate: "180deg" }],
-        }
-      : {
-          top: "8%",
-          left: "-17%",
-        },
-    threePointArcBottomOrRight: isPortrait
-      ? {
-          left: "8%",
-          bottom: "-16%",
-        }
-      : {
-          top: "8%",
-          right: "-17%",
-          transform: [{ rotate: "180deg" }],
-        },
-    // #endregion
-
     markerContainer: {
       position: "absolute",
       zIndex: 100,
@@ -1515,5 +1243,4 @@ const getStyles = ({
       fontSize: 16,
       fontWeight: "bold",
     },
-    // Filter Bottom Sheet styles - supprimés car maintenant dans FilterBottomSheet.tsx
   });
