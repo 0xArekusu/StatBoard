@@ -300,16 +300,28 @@ export default function BasketballCourt() {
     styles,
   } = useMemo(() => {
     const CONTAINER_PADDING = 20;
-    // Width without phone state bar and navigation bar
-    // use this width to position absolute element (padding included)
-    const courtWidth = isPortrait
-      ? window.width - insets.left - insets.right
-      : window.width;
-    // Height without phone state bar and navigation bar
-    // use this hgight to position absolute element (padding included)
-    const courtHeight = isPortrait
-      ? window.height - insets.top - insets.bottom
-      : window.height - insets.top - insets.bottom;
+    const TOOLBAR_SPACE = 50; // Space reserved for toolbar
+
+    // Width without phone state bar and navigation bar, with toolbar space
+    const availableWidth = isPortrait
+      ? window.width - insets.left - insets.right - 2 * CONTAINER_PADDING
+      : window.width -
+        insets.left -
+        insets.right -
+        2 * CONTAINER_PADDING -
+        TOOLBAR_SPACE;
+
+    // Height without phone state bar and navigation bar, with toolbar space
+    const availableHeight = isPortrait
+      ? window.height -
+        insets.top -
+        insets.bottom -
+        2 * CONTAINER_PADDING -
+        TOOLBAR_SPACE
+      : window.height - insets.top - insets.bottom - 2 * CONTAINER_PADDING;
+
+    const courtWidth = availableWidth;
+    const courtHeight = availableHeight;
 
     const circleDiameter = isPortrait ? courtWidth * 0.2 : courtHeight * 0.2;
     const keyWidth = isPortrait ? courtWidth * 0.3 : courtWidth * 0.24;
@@ -331,7 +343,10 @@ export default function BasketballCourt() {
       threePointArcWidth,
       threePointArcHeight,
       CONTAINER_PADDING,
+      TOOLBAR_SPACE,
       isPortrait,
+      window,
+      insets,
     });
 
     return {
@@ -598,11 +613,11 @@ export default function BasketballCourt() {
         <View
           style={{
             position: "absolute",
-            top: isPortrait ? "50%" : "90%",
-            left: isPortrait ? "10%" : "50%",
+            top: isPortrait ? "50%" : "20%",
+            left: isPortrait ? "10%" : courtWidth / 2 - 55,
             transform: [
-              { translateX: isPortrait ? -24 : -55 },
-              { translateY: isPortrait ? -64 : -25 },
+              { translateX: isPortrait ? -24 : 0 },
+              { translateY: isPortrait ? -64 : 0 },
             ],
             zIndex: 300,
             flexDirection: isPortrait ? "column" : "row",
@@ -743,7 +758,7 @@ export default function BasketballCourt() {
           );
         })}
 
-      {/* Toolbar - positioned at middle right */}
+      {/* Toolbar - positioned at bottom (portrait) or right (landscape) */}
       {!initModalVisible && !preGameMode && (
         <View style={styles.toolbar}>
           <TouchableOpacity
@@ -941,7 +956,7 @@ export default function BasketballCourt() {
               }
             : undefined
         }
-        style={{ position: "absolute", top: 0, left: 0 }}
+        style={styles.courtContainer}
       >
         <BasketballCourtSVG width={courtWidth} height={courtHeight} />
       </Pressable>
@@ -951,8 +966,9 @@ export default function BasketballCourt() {
         <TouchableOpacity
           style={{
             position: "absolute",
-            bottom: 30,
-            right: 30,
+            bottom: isPortrait ? 100 : 30, // Leave space for toolbar in portrait
+            right: isPortrait ? "50%" : 100, // Adjust for toolbar in landscape
+            transform: isPortrait ? [{ translateX: 75 }] : undefined,
             backgroundColor: "#FF5722",
             borderRadius: 25,
             paddingHorizontal: 20,
@@ -1068,7 +1084,10 @@ const getStyles = ({
   threePointArcWidth,
   threePointArcHeight,
   CONTAINER_PADDING,
+  TOOLBAR_SPACE,
   isPortrait,
+  window,
+  insets,
 }: {
   courtWidth: number;
   courtHeight: number;
@@ -1078,7 +1097,10 @@ const getStyles = ({
   threePointArcWidth: number;
   threePointArcHeight: number;
   CONTAINER_PADDING: number;
+  TOOLBAR_SPACE: number;
   isPortrait: boolean;
+  window: { width: number; height: number };
+  insets: { top: number; left: number; right: number; bottom: number };
 }) =>
   StyleSheet.create({
     container: {
@@ -1112,11 +1134,25 @@ const getStyles = ({
     },
     toolbar: {
       position: "absolute",
-      top: "50%",
-      right: 20,
-      transform: [{ translateY: -20 }],
+      ...(isPortrait
+        ? {
+            // Portrait: bottom center
+            bottom: CONTAINER_PADDING,
+            left: CONTAINER_PADDING,
+            right: CONTAINER_PADDING,
+            flexDirection: "row",
+            justifyContent: "center",
+            alignItems: "center",
+          }
+        : {
+            // Landscape: right center
+            right: CONTAINER_PADDING,
+            top: "50%",
+            transform: [{ translateY: -40 }],
+            flexDirection: "column",
+            alignItems: "center",
+          }),
       zIndex: 300,
-      flexDirection: "row", // Added for undo button
     },
     toolbarButton: {
       backgroundColor: "rgba(255,255,255,0.2)",
@@ -1139,7 +1175,9 @@ const getStyles = ({
       borderColor: "rgba(255,255,255,1)",
     },
     toolbarButtonSpacing: {
-      marginLeft: 10, // Space between buttons
+      ...(isPortrait
+        ? { marginLeft: 10 } // Portrait: space between buttons horizontally
+        : { marginTop: 10 }), // Landscape: space between buttons vertically
     },
     toolbarButtonDisabled: {
       opacity: 0.5, // Make disabled button look faded
@@ -1242,5 +1280,14 @@ const getStyles = ({
       color: "#fff",
       fontSize: 16,
       fontWeight: "bold",
+    },
+    courtContainer: {
+      position: "absolute",
+      top: CONTAINER_PADDING,
+      left: CONTAINER_PADDING,
+      right: isPortrait ? CONTAINER_PADDING : CONTAINER_PADDING + TOOLBAR_SPACE,
+      bottom: isPortrait
+        ? CONTAINER_PADDING + TOOLBAR_SPACE
+        : CONTAINER_PADDING,
     },
   });
