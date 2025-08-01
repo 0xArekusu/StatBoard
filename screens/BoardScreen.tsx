@@ -931,6 +931,7 @@ export default function BasketballCourt() {
         completedActions={completedActions}
         onApplyFilters={handleApplyFilters}
         appliedFilters={appliedFilters}
+        isPortrait={isPortrait}
       />
 
       {/* History Bottom Sheet */}
@@ -942,6 +943,7 @@ export default function BasketballCourt() {
         onDeleteAction={handleDeleteAction}
         teamA={teamA}
         teamB={teamB}
+        isPortrait={isPortrait}
       />
 
       {/* Basketball Court SVG */}

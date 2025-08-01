@@ -24,6 +24,7 @@ interface FilterBottomSheetProps {
   completedActions: ActionData[];
   onApplyFilters: (filters: FilterOptions) => void;
   appliedFilters: FilterOptions;
+  isPortrait: boolean; // Add orientation prop
 }
 
 interface FilterOptions {
@@ -51,6 +52,7 @@ export default function FilterBottomSheet({
   completedActions,
   onApplyFilters,
   appliedFilters,
+  isPortrait,
 }: FilterBottomSheetProps) {
   const [selectedTeams, setSelectedTeams] = useState<("A" | "B")[]>(["A", "B"]);
   const [selectedPlayers, setSelectedPlayers] = useState<number[]>([]);
@@ -114,15 +116,27 @@ export default function FilterBottomSheet({
     <Modal
       transparent
       visible={visible}
-      animationType="slide"
+      animationType={isPortrait ? "slide" : "fade"}
       onRequestClose={onClose}
     >
-      <View style={styles.filterSheetOverlay}>
+      <View
+        style={
+          isPortrait
+            ? styles.filterSheetOverlay
+            : styles.filterSheetOverlayLandscape
+        }
+      >
         <TouchableOpacity
           style={styles.filterSheetBackdrop}
           onPress={onClose}
         />
-        <View style={styles.filterSheetContainer}>
+        <View
+          style={
+            isPortrait
+              ? styles.filterSheetContainer
+              : styles.filterSheetContainerLandscape
+          }
+        >
           <View style={styles.filterSheetHandle} />
           <Text style={styles.filterSheetTitle}>Filtrer les actions</Text>
 
@@ -264,14 +278,19 @@ export default function FilterBottomSheet({
 const styles = StyleSheet.create({
   filterSheetOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.3)",
+    backgroundColor: "transparent", // Remove dark overlay
     justifyContent: "flex-end",
+  },
+  filterSheetOverlayLandscape: {
+    flex: 1,
+    backgroundColor: "transparent", // Remove dark overlay
+    justifyContent: "center",
   },
   filterSheetBackdrop: {
     flex: 1,
   },
   filterSheetContainer: {
-    backgroundColor: "rgba(255,255,255,0.7)",
+    backgroundColor: "rgba(255,255,255,0.9)", // Increase opacity since no dark overlay
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     padding: 20,
@@ -284,6 +303,24 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 8,
     elevation: 10,
+  },
+  filterSheetContainerLandscape: {
+    backgroundColor: "rgba(255,255,255,0.9)", // Increase opacity since no dark overlay
+    borderTopLeftRadius: 20,
+    borderBottomLeftRadius: 20,
+    padding: 20,
+    minWidth: "40%",
+    maxWidth: "60%",
+    height: "100%",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.3)",
+    shadowColor: "#000",
+    shadowOffset: { width: -2, height: 0 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 10,
+    position: "absolute",
+    right: 0,
   },
   filterSheetHandle: {
     width: 40,

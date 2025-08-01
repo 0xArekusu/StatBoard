@@ -24,6 +24,7 @@ interface HistoryBottomSheetProps {
   onDeleteAction: (actionIndex: number) => void;
   teamA: string;
   teamB: string;
+  isPortrait: boolean; // Add orientation prop
 }
 
 export default function HistoryBottomSheet({
@@ -34,6 +35,7 @@ export default function HistoryBottomSheet({
   onDeleteAction,
   teamA,
   teamB,
+  isPortrait,
 }: HistoryBottomSheetProps) {
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [actionToDelete, setActionToDelete] = useState<number | null>(null);
@@ -138,15 +140,27 @@ export default function HistoryBottomSheet({
     <Modal
       transparent
       visible={visible}
-      animationType="slide"
+      animationType={isPortrait ? "slide" : "fade"}
       onRequestClose={onClose}
     >
-      <View style={styles.historySheetOverlay}>
+      <View
+        style={
+          isPortrait
+            ? styles.historySheetOverlay
+            : styles.historySheetOverlayLandscape
+        }
+      >
         <TouchableOpacity
           style={styles.historySheetBackdrop}
           onPress={onClose}
         />
-        <View style={styles.historySheetContainer}>
+        <View
+          style={
+            isPortrait
+              ? styles.historySheetContainer
+              : styles.historySheetContainerLandscape
+          }
+        >
           <View style={styles.historySheetHandle} />
           <Text style={styles.historySheetTitle}>Historique des actions</Text>
 
@@ -215,7 +229,7 @@ export default function HistoryBottomSheet({
         </View>
       </View>
 
-      {/* Delete Confirmation Modal */}
+      {/* Delete Confirmation Modal - same for both orientations */}
       <Modal
         transparent
         visible={showDeleteConfirmation}
@@ -317,14 +331,14 @@ export default function HistoryBottomSheet({
 const styles = StyleSheet.create({
   historySheetOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.3)",
+    backgroundColor: "transparent", // Remove dark overlay
     justifyContent: "flex-end",
   },
   historySheetBackdrop: {
     flex: 1,
   },
   historySheetContainer: {
-    backgroundColor: "rgba(255,255,255,0.7)",
+    backgroundColor: "rgba(255,255,255,0.9)", // Increase opacity since no dark overlay
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     padding: 20,
@@ -542,5 +556,28 @@ const styles = StyleSheet.create({
     bottom: 0,
     width: 6,
     borderRadius: 3,
+  },
+  historySheetOverlayLandscape: {
+    flex: 1,
+    backgroundColor: "transparent", // Remove dark overlay
+    justifyContent: "center",
+  },
+  historySheetContainerLandscape: {
+    backgroundColor: "rgba(255,255,255,0.9)", // Increase opacity since no dark overlay
+    borderTopLeftRadius: 20,
+    borderBottomLeftRadius: 20,
+    padding: 20,
+    minWidth: "40%",
+    maxWidth: "60%",
+    height: "100%",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.3)",
+    shadowColor: "#000",
+    shadowOffset: { width: -2, height: 0 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 10,
+    position: "absolute",
+    right: 0,
   },
 });
