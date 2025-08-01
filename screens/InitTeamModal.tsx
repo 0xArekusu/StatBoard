@@ -28,6 +28,13 @@ export default function InitTeamModal({
 
   const isFullyDisabled = isConfirmDisabled || selectedTeamMode === null;
 
+  // Function to swap team names
+  const swapTeams = () => {
+    const tempTeamA = teamA;
+    setTeamA(teamB);
+    setTeamB(tempTeamA);
+  };
+
   return (
     <Modal visible={visible} transparent animationType="fade">
       <View
@@ -76,9 +83,40 @@ export default function InitTeamModal({
           <Text style={{ fontSize: 12, color: "#888", marginBottom: 8 }}>
             Domicile
           </Text>
-          <Text style={{ fontSize: 16, fontWeight: "bold", marginVertical: 4 }}>
-            VS
-          </Text>
+
+          {/* VS with swap button */}
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              marginVertical: 4,
+              width: 200,
+              justifyContent: "space-between",
+            }}
+          >
+            <TouchableOpacity
+              style={{
+                backgroundColor: "#f0f0f0",
+                borderRadius: 20,
+                padding: 4,
+                borderWidth: 1,
+                borderColor: "#ddd",
+                minWidth: 30,
+                minHeight: 30,
+                alignItems: "center",
+                justifyContent: "center",
+                marginTop: -25,
+              }}
+              onPress={swapTeams}
+            >
+              <Text style={{ fontSize: 14, color: "#666", fontWeight: "bold" }}>
+                ⇅
+              </Text>
+            </TouchableOpacity>
+            <Text style={{ fontSize: 16, fontWeight: "bold" }}>VS</Text>
+            <View style={{ width: 30 }} />
+          </View>
+
           <TextInput
             style={{
               borderWidth: 1,
