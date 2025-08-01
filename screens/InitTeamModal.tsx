@@ -10,6 +10,7 @@ interface InitTeamModalProps {
   onConfirm: (teamMode: "A" | "B" | "both") => void;
   isConfirmDisabled: boolean;
   getFormattedDate: () => string;
+  onRequestClose: () => void; // Add onRequestClose prop
 }
 
 export default function InitTeamModal({
@@ -21,6 +22,7 @@ export default function InitTeamModal({
   onConfirm,
   isConfirmDisabled,
   getFormattedDate,
+  onRequestClose,
 }: InitTeamModalProps) {
   const [selectedTeamMode, setSelectedTeamMode] = React.useState<
     "A" | "B" | "both" | null
@@ -36,7 +38,12 @@ export default function InitTeamModal({
   };
 
   return (
-    <Modal visible={visible} transparent animationType="fade">
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+      onRequestClose={onRequestClose}
+    >
       <View
         style={{
           flex: 1,

@@ -8,9 +8,12 @@ import {
   Animated,
   Modal,
   Pressable,
+  BackHandler,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as ScreenOrientation from "expo-screen-orientation";
+import { useNavigation } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import InitTeamModal from "./InitTeamModal";
 import PlayerEditModal from "./PlayerEditModal";
 import ActionSystemModal, {
@@ -30,7 +33,15 @@ const MODAL_OFFSET_TOP = 10;
 const MODAL_OFFSET_BOTTOM = 50;
 const MODAL_CONTENT_PADDING = 20;
 
+type RootStackParamList = {
+  MainMenu: undefined;
+  Board: undefined;
+};
+
+type NavigationProp = NativeStackNavigationProp<RootStackParamList, "Board">;
+
 export default function BasketballCourt() {
+  const navigation = useNavigation<NavigationProp>();
   const insets = useSafeAreaInsets(); // Provides status bar and notch margins
   const window = useWindowDimensions(); // Automatically reacts to rotation
   const [showSheet, setShowSheet] = useState(true);
@@ -578,6 +589,22 @@ export default function BasketballCourt() {
     return positions[playerId - 1] || positions[0];
   };
 
+  // Handle back button press during match
+  useEffect(() => {
+    const backHandler = BackHandler.addEventListener(
+      "hardwareBackPress",
+      () => {
+        // If match is started and init modal is not visible, prevent going back
+        if (!preGameMode && !initModalVisible) {
+          return true; // Prevent default behavior (going back)
+        }
+        return false; // Allow default behavior
+      }
+    );
+
+    return () => backHandler.remove();
+  }, [preGameMode, initModalVisible]);
+
   return (
     // <View style={[styles.container, { flex: 1 }]}>
     <View style={[{ flex: 1 }]}>
@@ -590,6 +617,7 @@ export default function BasketballCourt() {
         onConfirm={handleTeamModeConfirm}
         isConfirmDisabled={isConfirmDisabled}
         getFormattedDate={getFormattedDate}
+        onRequestClose={() => navigation.goBack()}
       />
 
       <PlayerEditModal
