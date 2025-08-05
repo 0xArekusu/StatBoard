@@ -17,6 +17,11 @@ export interface ActionData {
     x: number;
     y: number;
   };
+  // Position sémantique normalisée pour la portabilité entre orientations et appareils
+  semanticPosition: {
+    xNormalized: number; // Position normalisée dans le terrain logique (0.0 à 1.0)
+    yNormalized: number; // Position normalisée dans le terrain logique (0.0 à 1.0)
+  };
 }
 
 export interface ActionDefinition {
@@ -279,6 +284,8 @@ export const useActionSystem = () => {
           team: state.selectedTeam,
           timestamp: new Date(),
           position: state.clickPosition,
+          // Les coordonnées sémantiques seront calculées dans BoardScreen.tsx
+          semanticPosition: { xNormalized: 0, yNormalized: 0 },
         };
 
         setCompletedActions((prev) => [...prev, actionData]);

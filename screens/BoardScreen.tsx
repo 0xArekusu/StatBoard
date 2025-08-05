@@ -1,4 +1,10 @@
-import React, { useState, useMemo, useEffect, useRef } from "react";
+import React, {
+  useState,
+  useMemo,
+  useEffect,
+  useRef,
+  useCallback,
+} from "react";
 import {
   View,
   StyleSheet,
@@ -40,11 +46,76 @@ type RootStackParamList = {
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, "Board">;
 
+/**
+ * Système de coordonnées sémantiques pour terrain de basket
+ * Comprend que le terrain a des raquettes qui changent d'orientation
+ */
+
+interface SemanticPosition {
+  // Position normalisée dans le terrain logique (toujours même orientation)
+  // 0,0 = coin supérieur gauche du terrain logique
+  // 1,1 = coin inférieur droit du terrain logique
+  xNormalized: number; // 0.0 à 1.0
+  yNormalized: number; // 0.0 à 1.0
+}
+
+/**
+ * Convertir une position de clic en position sémantique normalisée
+ */
+const convertClickToSemantic = (
+  clickPosition: { x: number; y: number },
+  isPortrait: boolean,
+  courtDimensions: { width: number; height: number }
+): SemanticPosition => {
+  if (isPortrait) {
+    // Portrait : le terrain est dans son orientation "naturelle"
+    return {
+      xNormalized: clickPosition.x / courtDimensions.width,
+      yNormalized: clickPosition.y / courtDimensions.height,
+    };
+  } else {
+    // Paysage : rotation 90° sens anti-horaire
+    // Raquette haut (portrait) → Raquette gauche (paysage)
+    // Raquette bas (portrait) → Raquette droite (paysage)
+    return {
+      xNormalized: 1 - clickPosition.y / courtDimensions.height, // Y inversé devient X
+      yNormalized: clickPosition.x / courtDimensions.width, // X devient Y
+    };
+  }
+};
+
+/**
+ * Convertir une position sémantique en position d'affichage
+ */
+const convertSemanticToDisplay = (
+  semanticPosition: SemanticPosition,
+  isPortrait: boolean,
+  courtDimensions: { width: number; height: number }
+) => {
+  if (isPortrait) {
+    // Portrait : orientation naturelle
+    return {
+      x: semanticPosition.xNormalized * courtDimensions.width,
+      y: semanticPosition.yNormalized * courtDimensions.height,
+    };
+  } else {
+    // Paysage : rotation 90° sens horaire (inverse de la transformation)
+    return {
+      x: semanticPosition.yNormalized * courtDimensions.width,
+      y: (1 - semanticPosition.xNormalized) * courtDimensions.height,
+    };
+  }
+};
+
 export default function BasketballCourt() {
   const navigation = useNavigation<NavigationProp>();
   const insets = useSafeAreaInsets(); // Provides status bar and notch margins
   const window = useWindowDimensions(); // Automatically reacts to rotation
   const [showSheet, setShowSheet] = useState(true);
+
+  // Constantes pour les dimensions et offsets
+  const CONTAINER_PADDING = 20;
+  const TOOLBAR_SPACE = 50;
 
   const [orientation, setOrientation] =
     useState<ScreenOrientation.Orientation | null>(null); // Used to delay rendering until orientation is locked
@@ -60,6 +131,11 @@ export default function BasketballCourt() {
       player?: number;
       id: string; // Add unique ID for each marker
       opacity: Animated.Value; // Add animated opacity
+      // Position sémantique pour repositionnement lors des rotations
+      semanticPosition: {
+        xNormalized: number; // Position normalisée dans le terrain logique
+        yNormalized: number; // Position normalisée dans le terrain logique
+      };
     }[]
   >([]);
 
@@ -107,17 +183,25 @@ export default function BasketballCourt() {
   // Function to confirm undo action
   const confirmUndoAction = () => {
     if (completedActions.length > 0) {
+      const lastAction = completedActions[completedActions.length - 1];
+
       // Remove the last action from completedActions
       setCompletedActions((prev) => prev.slice(0, -1));
 
       // Remove the corresponding marker if it exists (temporary markers)
-      const lastAction = completedActions[completedActions.length - 1];
+      // Utiliser les coordonnées sémantiques pour la comparaison
       setMarkers((prev) =>
         prev.filter(
           (marker) =>
             !(
-              marker.x === lastAction.position.x - 12 &&
-              marker.y === lastAction.position.y - 50 &&
+              Math.abs(
+                marker.semanticPosition.xNormalized -
+                  lastAction.semanticPosition.xNormalized
+              ) < 0.001 &&
+              Math.abs(
+                marker.semanticPosition.yNormalized -
+                  lastAction.semanticPosition.yNormalized
+              ) < 0.001 &&
               marker.type === lastAction.type &&
               marker.specification === lastAction.specification &&
               marker.player === lastAction.player
@@ -310,9 +394,6 @@ export default function BasketballCourt() {
     threePointArcHeight,
     styles,
   } = useMemo(() => {
-    const CONTAINER_PADDING = 20;
-    const TOOLBAR_SPACE = 50; // Space reserved for toolbar
-
     // Width without phone state bar and navigation bar, with toolbar space
     const availableWidth = isPortrait
       ? window.width - insets.left - insets.right - 2 * CONTAINER_PADDING
@@ -431,35 +512,78 @@ export default function BasketballCourt() {
     const opacityValue = new Animated.Value(1);
     markerAnimations.current[markerId] = opacityValue;
 
-    // Add marker at click position
+    // Calculer les coordonnées sémantiques normalisées
+    const courtDimensions = { width: courtWidth, height: courtHeight };
+
+    const semanticPosition = convertClickToSemantic(
+      actionData.position,
+      isPortrait,
+      courtDimensions
+    );
+
+    // Pour l'affichage immédiat, utiliser les coordonnées de clic actuelles
+    const courtX = actionData.position.x;
+    const courtY = actionData.position.y;
+
+    // Add marker at calculated position
     setMarkers((prev) => [
       ...prev,
       {
-        x: actionData.position.x - 12,
-        y: actionData.position.y - 50,
+        x: courtX - 12,
+        y: courtY - 50,
         type: actionData.type,
         specification: actionData.specification,
         player: actionData.player,
         id: markerId,
         opacity: opacityValue,
+        semanticPosition,
       },
     ]);
 
     // Remove marker after 1 seconds
     removeMarkerAfterDelay(markerId, 1000);
 
+    // Créer l'action avec les coordonnées sémantiques calculées
+    const actionWithSemanticPosition: ActionData = {
+      ...actionData,
+      semanticPosition,
+    };
+
     // Save detailed action data for future database storage
-    setCompletedActions((prev) => [...prev, actionData]);
+    setCompletedActions((prev) => [...prev, actionWithSemanticPosition]);
 
     setActionModalVisible(false);
 
     // Log the action for debugging
-    console.log("Action completed:", {
+    console.log("🏀 Action completed:", {
       type: actionData.type,
       specification: actionData.specification,
       player: actionData.player,
       timestamp: actionData.timestamp,
-      position: actionData.position,
+      terrainPosition: actionData.position, // locationX/Y (relatif au terrain)
+      courtDimensions,
+      isPortrait,
+      semanticPosition,
+      calculatedAbsolute: convertSemanticToDisplay(
+        semanticPosition,
+        isPortrait,
+        courtDimensions
+      ),
+      debug: {
+        clickPercentages: {
+          x:
+            ((actionData.position.x / courtDimensions.width) * 100).toFixed(1) +
+            "%",
+          y:
+            ((actionData.position.y / courtDimensions.height) * 100).toFixed(
+              1
+            ) + "%",
+        },
+        semanticPercentages: {
+          x: (semanticPosition.xNormalized * 100).toFixed(1) + "%",
+          y: (semanticPosition.yNormalized * 100).toFixed(1) + "%",
+        },
+      },
     });
   };
 
@@ -588,6 +712,53 @@ export default function BasketballCourt() {
 
     return positions[playerId - 1] || positions[0];
   };
+
+  // Fonction pour recalculer les positions des markers lors des changements d'orientation
+  const recalculateMarkerPositions = useCallback(() => {
+    const courtDimensions = { width: courtWidth, height: courtHeight };
+
+    setMarkers((prevMarkers) =>
+      prevMarkers.map((marker) => {
+        const absolutePosition = convertSemanticToDisplay(
+          marker.semanticPosition,
+          isPortrait,
+          courtDimensions
+        );
+        return {
+          ...marker,
+          x: absolutePosition.x - 12,
+          y: absolutePosition.y - 50,
+        };
+      })
+    );
+  }, [courtWidth, courtHeight, isPortrait]);
+
+  // Recalculer les positions des markers lors des changements de dimensions
+  useEffect(() => {
+    if (isReady && markers.length > 0) {
+      console.log(
+        "🔄 Recalculating marker positions due to dimension change:",
+        {
+          courtWidth,
+          courtHeight,
+          isPortrait,
+          markersCount: markers.length,
+          markersSemanticPositions: markers.map((m) => ({
+            id: m.id.slice(-4),
+            semantic: m.semanticPosition,
+            currentDisplay: { x: m.x + 12, y: m.y + 50 },
+          })),
+        }
+      );
+      recalculateMarkerPositions();
+    }
+  }, [
+    courtWidth,
+    courtHeight,
+    isReady,
+    recalculateMarkerPositions,
+    markers.length,
+  ]);
 
   // Handle back button press during match
   useEffect(() => {
@@ -765,14 +936,23 @@ export default function BasketballCourt() {
           const icon = getActionIcon(action.type, action.specification);
           const teamColor = getTeamColor(action.team);
 
+          // Calculer la position absolue basée sur les coordonnées sémantiques
+          const courtDimensions = { width: courtWidth, height: courtHeight };
+
+          const absolutePosition = convertSemanticToDisplay(
+            action.semanticPosition,
+            isPortrait,
+            courtDimensions
+          );
+
           return (
             <View
               key={`permanent-${i}`}
               style={[
                 styles.markerContainer,
                 {
-                  left: action.position.x - 12,
-                  top: action.position.y - 50,
+                  left: absolutePosition.x - 12,
+                  top: absolutePosition.y - 50,
                 },
               ]}
             >
@@ -979,9 +1159,24 @@ export default function BasketballCourt() {
         onPress={
           !preGameMode
             ? (e) => {
-                // Get the location from the event
-                const locationX = e.nativeEvent.pageX;
-                const locationY = e.nativeEvent.pageY;
+                // Utiliser locationX/Y qui sont relatifs au terrain, pas pageX/Y
+                const locationX = e.nativeEvent.locationX;
+                const locationY = e.nativeEvent.locationY;
+                const pageX = e.nativeEvent.pageX;
+                const pageY = e.nativeEvent.pageY;
+
+                console.log("🖱️ Click coordinates:", {
+                  pageX: pageX,
+                  pageY: pageY,
+                  locationX: locationX,
+                  locationY: locationY,
+                  windowDimensions: window,
+                  courtDimensions: { width: courtWidth, height: courtHeight },
+                  isPortrait,
+                  orientationState: orientation,
+                });
+
+                // Utiliser locationX/Y au lieu de pageX/Y
                 handleZonePress(locationX, locationY);
               }
             : undefined
