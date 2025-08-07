@@ -32,7 +32,7 @@ import BasketballCourtSVG from "../components/BasketballCourtSVG";
 
 // Modal layout constants (pour le nouveau ActionModal)
 const MODAL_WIDTH = 240;
-const MODAL_HEIGHT = 220;
+const MODAL_HEIGHT = 180; // ⬇️ Réduit de 220 à 180 (moins haute)
 const MODAL_PADDING = 20;
 const POINTER_SIZE = 12;
 const MODAL_OFFSET_TOP = 10;
@@ -116,6 +116,21 @@ export default function BasketballCourt() {
   // Constantes pour les dimensions et offsets
   const CONTAINER_PADDING = 20;
   const TOOLBAR_SPACE = 50;
+
+  // 🎯 CONSTANTES DE CENTRAGE - Facile à ajuster !
+  const ICON_OFFSET_X = 6; // Offset horizontal de l'icône
+  const ICON_OFFSET_Y = 0; // Offset vertical de l'icône
+  const DEBUG_DOT_OFFSET_X = 17; // Offset horizontal du point rouge debug
+  const DEBUG_DOT_OFFSET_Y = 17; // Offset vertical du point rouge debug
+
+  // 🎯 CONSTANTES DE CENTRAGE MODAL - Correction position indicateur
+  // Modal AU-DESSUS du clic (clic en bas d'écran → pointeur en bas de modal)
+  const MODAL_POINTER_OFFSET_X_TOP = 20; // Offset horizontal quand modal au-dessus
+  const MODAL_POINTER_OFFSET_Y_TOP = 75; // Offset vertical quand modal au-dessus
+
+  // Modal EN-DESSOUS du clic (clic en haut d'écran → pointeur en haut de modal)
+  const MODAL_POINTER_OFFSET_X_BOTTOM = 18; // Offset horizontal quand modal en-dessous
+  const MODAL_POINTER_OFFSET_Y_BOTTOM = 45; // Offset vertical quand modal en-dessous (plus petit !)
 
   const [orientation, setOrientation] =
     useState<ScreenOrientation.Orientation | null>(null); // Used to delay rendering until orientation is locked
@@ -466,12 +481,29 @@ export default function BasketballCourt() {
 
   // Calculate modal coordinates based on click
   const calculateModalPosition = (x: number, y: number) => {
-    const showPointerOnTop = y < window.height / 2;
+    // 🎯 D'abord déterminer si la modal sera au-dessus ou en-dessous (position originale)
+    const willShowOnTop = y < window.height / 2;
 
-    let modalX = x - MODAL_WIDTH / 2;
+    // 🎯 Appliquer les bons offsets selon le cas
+    // willShowOnTop = true → pointeur EN HAUT de modal → modal EN-DESSOUS du clic → utiliser offsets BOTTOM
+    // willShowOnTop = false → pointeur EN BAS de modal → modal AU-DESSUS du clic → utiliser offsets TOP
+    const adjustedX =
+      x +
+      (willShowOnTop
+        ? MODAL_POINTER_OFFSET_X_BOTTOM
+        : MODAL_POINTER_OFFSET_X_TOP);
+    const adjustedY =
+      y +
+      (willShowOnTop
+        ? MODAL_POINTER_OFFSET_Y_BOTTOM
+        : MODAL_POINTER_OFFSET_Y_TOP);
+
+    const showPointerOnTop = willShowOnTop;
+
+    let modalX = adjustedX - MODAL_WIDTH / 2;
     let modalY = showPointerOnTop
-      ? y - MODAL_OFFSET_TOP
-      : y - MODAL_HEIGHT - MODAL_OFFSET_BOTTOM;
+      ? adjustedY - MODAL_OFFSET_TOP
+      : adjustedY - MODAL_HEIGHT - MODAL_OFFSET_BOTTOM;
 
     modalX = Math.max(
       MODAL_PADDING,
@@ -482,7 +514,7 @@ export default function BasketballCourt() {
       Math.min(window.height - MODAL_HEIGHT - MODAL_PADDING, modalY)
     );
 
-    const clickXRelative = x - modalX;
+    const clickXRelative = adjustedX - modalX;
     const pointerX = Math.min(
       Math.max(MODAL_CONTENT_PADDING, clickXRelative),
       MODAL_WIDTH - MODAL_CONTENT_PADDING
@@ -493,8 +525,8 @@ export default function BasketballCourt() {
       y: modalY,
       pointerX,
       showPointerOnTop,
-      clickX: x,
-      clickY: y,
+      clickX: adjustedX, // 🎯 Position corrigée pour l'indicateur
+      clickY: adjustedY, // 🎯 Position corrigée pour l'indicateur
     };
   };
 
@@ -526,11 +558,12 @@ export default function BasketballCourt() {
     const courtY = actionData.position.y;
 
     // Add marker at calculated position
+    // Ajuster les offsets pour compenser le rendu réel de l'emoji
     setMarkers((prev) => [
       ...prev,
       {
-        x: courtX - 12,
-        y: courtY - 50,
+        x: courtX + ICON_OFFSET_X, // Utilise la constante ICON_OFFSET_X
+        y: courtY + ICON_OFFSET_Y, // Utilise la constante ICON_OFFSET_Y
         type: actionData.type,
         specification: actionData.specification,
         player: actionData.player,
@@ -570,6 +603,12 @@ export default function BasketballCourt() {
         courtDimensions
       ),
       debug: {
+        clickPosition: { x: courtX, y: courtY },
+        markerPosition: {
+          x: courtX + ICON_OFFSET_X,
+          y: courtY + ICON_OFFSET_Y,
+        },
+        offset: { x: ICON_OFFSET_X, y: ICON_OFFSET_Y },
         clickPercentages: {
           x:
             ((actionData.position.x / courtDimensions.width) * 100).toFixed(1) +
@@ -726,8 +765,8 @@ export default function BasketballCourt() {
         );
         return {
           ...marker,
-          x: absolutePosition.x - 12,
-          y: absolutePosition.y - 50,
+          x: absolutePosition.x + ICON_OFFSET_X, // Utilise la constante ICON_OFFSET_X
+          y: absolutePosition.y + ICON_OFFSET_Y, // Utilise la constante ICON_OFFSET_Y
         };
       })
     );
@@ -738,17 +777,31 @@ export default function BasketballCourt() {
     if (isReady && markers.length > 0) {
       console.log(
         "🔄 Recalculating marker positions due to dimension change:",
-        {
-          courtWidth,
-          courtHeight,
-          isPortrait,
-          markersCount: markers.length,
-          markersSemanticPositions: markers.map((m) => ({
-            id: m.id.slice(-4),
-            semantic: m.semanticPosition,
-            currentDisplay: { x: m.x + 12, y: m.y + 50 },
-          })),
-        }
+        JSON.stringify(
+          {
+            courtWidth,
+            courtHeight,
+            isPortrait,
+            markersCount: markers.length,
+            markersSemanticPositions: markers.map((m) => ({
+              id: m.id.slice(-4),
+              semantic: {
+                xNormalized: parseFloat(
+                  m.semanticPosition.xNormalized.toFixed(4)
+                ),
+                yNormalized: parseFloat(
+                  m.semanticPosition.yNormalized.toFixed(4)
+                ),
+              },
+              currentDisplay: {
+                x: parseFloat((m.x - ICON_OFFSET_X).toFixed(1)),
+                y: parseFloat((m.y - ICON_OFFSET_Y).toFixed(1)),
+              }, // Offsets définis par les constantes
+            })),
+          },
+          null,
+          2
+        )
       );
       recalculateMarkerPositions();
     }
@@ -896,17 +949,62 @@ export default function BasketballCourt() {
         </View>
       )}
 
+      {/* Debug: Render click point (temporary) */}
+      {markers.map((m, i) => {
+        // Retrouver la position de clic originale
+        const matchingAction = completedActions.find(
+          (action) =>
+            Math.abs(
+              action.semanticPosition.xNormalized -
+                m.semanticPosition.xNormalized
+            ) < 0.001 &&
+            Math.abs(
+              action.semanticPosition.yNormalized -
+                m.semanticPosition.yNormalized
+            ) < 0.001
+        );
+
+        if (matchingAction) {
+          return (
+            <View
+              key={`debug-${m.id}`}
+              style={[
+                styles.markerContainer,
+                {
+                  left: matchingAction.position.x + DEBUG_DOT_OFFSET_X, // Utilise la constante DEBUG_DOT_OFFSET_X
+                  top: matchingAction.position.y + DEBUG_DOT_OFFSET_Y, // Utilise la constante DEBUG_DOT_OFFSET_Y
+                  zIndex: 9999, // Point rouge toujours visible par-dessus tout
+                },
+              ]}
+            >
+              <View
+                style={{
+                  width: 6, // Plus visible
+                  height: 6, // Plus visible
+                  backgroundColor: "red",
+                  borderRadius: 3, // Rond parfait
+                }}
+              />
+            </View>
+          );
+        }
+        return null;
+      })}
+
       {/* Render markers */}
       {markers.map((m, i) => {
         const icon = getActionIcon(m.type, m.specification);
         // Find the action to get team information
         const matchingAction = completedActions.find(
           (action) =>
-            action.position.x - 12 === m.x &&
-            action.position.y - 50 === m.y &&
-            action.type === m.type &&
-            action.specification === m.specification &&
-            action.player === m.player
+            Math.abs(
+              action.semanticPosition.xNormalized -
+                m.semanticPosition.xNormalized
+            ) < 0.001 &&
+            Math.abs(
+              action.semanticPosition.yNormalized -
+                m.semanticPosition.yNormalized
+            ) < 0.001
         );
         const teamColor = matchingAction
           ? getTeamColor(matchingAction.team)
@@ -951,8 +1049,8 @@ export default function BasketballCourt() {
               style={[
                 styles.markerContainer,
                 {
-                  left: absolutePosition.x - 12,
-                  top: absolutePosition.y - 50,
+                  left: absolutePosition.x + ICON_OFFSET_X, // Utilise la constante ICON_OFFSET_X
+                  top: absolutePosition.y + ICON_OFFSET_Y, // Utilise la constante ICON_OFFSET_Y
                 },
               ]}
             >
