@@ -66,7 +66,7 @@ export default function ActionModal({
 
     return (
       <TouchableOpacity style={styles.backButton} onPress={onGoBack}>
-        <Text style={styles.backButtonText}>← Retour</Text>
+        <Text style={styles.backButtonText}>←</Text>
       </TouchableOpacity>
     );
   };
@@ -82,7 +82,6 @@ export default function ActionModal({
           <Text style={styles.actionIcon}>🏀</Text>
           <Text style={styles.actionLabel}>{teamA}</Text>
         </TouchableOpacity>
-        <View style={styles.actionButtonMargin} />
         <TouchableOpacity
           style={[styles.actionButton, { backgroundColor: "#2196F3" }]}
           onPress={() => onTeamSelect("B")}
@@ -98,22 +97,28 @@ export default function ActionModal({
   const renderActionSelection = () => {
     return (
       <View style={styles.actionsContainer}>
-        {ACTION_DEFINITIONS.map((action, index) => (
-          <TouchableOpacity
-            key={action.id}
-            style={[
-              styles.actionButton,
-              { backgroundColor: action.backgroundColor },
-              index < ACTION_DEFINITIONS.length - 1 &&
-                styles.actionButtonMargin,
-            ]}
-            onPress={() => onActionSelect(action.id)}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.actionIcon}>{action.icon}</Text>
-            <Text style={styles.actionLabel}>{action.label}</Text>
-          </TouchableOpacity>
-        ))}
+        <ScrollView
+          style={styles.actionScrollView}
+          showsVerticalScrollIndicator={true}
+          contentContainerStyle={styles.actionScrollContent}
+        >
+          {ACTION_DEFINITIONS.map((action, index) => (
+            <TouchableOpacity
+              key={action.id}
+              style={[
+                styles.actionButton,
+                { backgroundColor: action.backgroundColor },
+                index < ACTION_DEFINITIONS.length - 1 &&
+                  styles.actionButtonMargin,
+              ]}
+              onPress={() => onActionSelect(action.id)}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.actionIcon}>{action.icon}</Text>
+              <Text style={styles.actionLabel}>{action.label}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
       </View>
     );
   };
@@ -126,22 +131,28 @@ export default function ActionModal({
 
     return (
       <View style={styles.actionsContainer}>
-        {currentAction.specifications.map((spec, index) => (
-          <TouchableOpacity
-            key={spec.id}
-            style={[
-              styles.actionButton,
-              { backgroundColor: spec.color },
-              index < currentAction.specifications.length - 1 &&
-                styles.actionButtonMargin,
-            ]}
-            onPress={() => onSpecificationSelect(spec.id)}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.actionIcon}>{spec.icon}</Text>
-            <Text style={styles.actionLabel}>{spec.label}</Text>
-          </TouchableOpacity>
-        ))}
+        <ScrollView
+          style={styles.actionScrollView}
+          showsVerticalScrollIndicator={true}
+          contentContainerStyle={styles.actionScrollContent}
+        >
+          {currentAction.specifications.map((spec, index) => (
+            <TouchableOpacity
+              key={spec.id}
+              style={[
+                styles.actionButton,
+                { backgroundColor: spec.color },
+                index < currentAction.specifications.length - 1 &&
+                  styles.actionButtonMargin,
+              ]}
+              onPress={() => onSpecificationSelect(spec.id)}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.actionIcon}>{spec.icon}</Text>
+              <Text style={styles.actionLabel}>{spec.label}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
       </View>
     );
   };
@@ -151,7 +162,7 @@ export default function ActionModal({
       <View style={styles.actionsContainer}>
         <ScrollView
           style={styles.playerScrollView}
-          showsVerticalScrollIndicator={false}
+          showsVerticalScrollIndicator={true}
           contentContainerStyle={styles.playerScrollContent}
         >
           {players.map((player, index) => (
@@ -201,15 +212,19 @@ export default function ActionModal({
       onRequestClose={onClose}
     >
       <Pressable style={styles.modalOverlay} onPress={onClose}>
-        <View
+        <Pressable
           style={[
             styles.actionModal,
             {
               left: position.x,
               top: position.y,
-              height: currentStep === 4 ? MODAL_HEIGHT + 40 : MODAL_HEIGHT,
+              height: MODAL_HEIGHT, // 🎯 Taille constante, plus de changement à l'étape 4
             },
           ]}
+          onPress={(e) => {
+            // 🎯 Empêcher la propagation de l'événement pour éviter la fermeture
+            e.stopPropagation();
+          }}
         >
           {/* Pointer */}
           <View
@@ -222,12 +237,12 @@ export default function ActionModal({
             ]}
           />
 
+          {/* Bouton retour en position absolue */}
+          {renderBackButton()}
+
           {/* Modal Content */}
-          <View style={styles.modalContent}>
-            {renderBackButton()}
-            {renderStepContent()}
-          </View>
-        </View>
+          <View style={styles.modalContent}>{renderStepContent()}</View>
+        </Pressable>
       </Pressable>
     </Modal>
   );
@@ -255,17 +270,27 @@ const styles = StyleSheet.create({
     padding: MODAL_CONTENT_PADDING,
   },
   backButton: {
-    alignSelf: "flex-start",
-    marginBottom: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    position: "absolute", // 🎯 Position absolue pour flotter au-dessus
+    top: 8, // 🎯 8px du haut de la modal
+    left: 8, // 🎯 8px du côté gauche de la modal
+    width: 28, // 🎯 Bouton rond compact
+    height: 28,
+    justifyContent: "center",
+    alignItems: "center",
     backgroundColor: "#F5F5F5",
-    borderRadius: 12,
+    borderRadius: 14, // 🎯 Complètement rond
+    zIndex: 10, // 🎯 Au-dessus du contenu
+    shadowColor: "#000", // 🎯 Ombre légère pour le détacher du fond
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2, // 🎯 Élévation pour Android
   },
   backButtonText: {
-    fontSize: 12,
+    fontSize: 14,
+    marginBottom: 5, // 🎯 Légèrement plus petit dans le coin
     color: "#666",
-    fontWeight: "500",
+    fontWeight: "900", // 🎯 Épais pour la visibilité
   },
   actionsContainer: {
     gap: 6,
@@ -295,8 +320,16 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 2,
   },
+  // 🎯 SCROLLVIEW ACTIONS - Ajustable !
+  actionScrollView: {
+    maxHeight: 130, // Hauteur max pour les actions (ajustable ici)
+  },
+  actionScrollContent: {
+    flexGrow: 1,
+  },
+  // 🎯 SCROLLVIEW JOUEURS - Ajustable !
   playerScrollView: {
-    maxHeight: 100,
+    maxHeight: 130, // 👈 AJUSTE ICI la taille de la scrollview des joueurs !
   },
   playerScrollContent: {
     flexGrow: 1,
