@@ -525,8 +525,8 @@ export default function BasketballCourt() {
       y: modalY,
       pointerX,
       showPointerOnTop,
-      clickX: adjustedX, // 🎯 Position corrigée pour l'indicateur
-      clickY: adjustedY, // 🎯 Position corrigée pour l'indicateur
+      clickX: x, // 🎯 Position ORIGINALE pour les icônes (pas d'offset)
+      clickY: y, // 🎯 Position ORIGINALE pour les icônes (pas d'offset)
     };
   };
 
