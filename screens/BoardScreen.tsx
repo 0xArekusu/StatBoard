@@ -332,6 +332,7 @@ export default function BasketballCourt() {
   // État pour l'édition des joueurs
   const [playerEditModalVisible, setPlayerEditModalVisible] = useState(false);
   const [editingPlayer, setEditingPlayer] = useState<number | null>(null);
+  const [editingTeam, setEditingTeam] = useState<"A" | "B">("A"); // 🏀 Équipe en cours d'édition
 
   // État pour les joueurs avec leurs positions
   const [players, setPlayers] = useState([
@@ -340,6 +341,15 @@ export default function BasketballCourt() {
     { id: 3, num: 3, name: "Joueur #3" },
     { id: 4, num: 4, name: "Joueur #4" },
     { id: 5, num: 5, name: "Joueur #5" },
+  ]);
+
+  // 🏀 État pour les joueurs de l'équipe B (mode "both")
+  const [playersTeamB, setPlayersTeamB] = useState([
+    { id: 6, num: 1, name: "Joueur B #1" },
+    { id: 7, num: 2, name: "Joueur B #2" },
+    { id: 8, num: 3, name: "Joueur B #3" },
+    { id: 9, num: 4, name: "Joueur B #4" },
+    { id: 10, num: 5, name: "Joueur B #5" },
   ]);
 
   // Sécurité : désactiver le bouton si un champ est vide
@@ -632,120 +642,128 @@ export default function BasketballCourt() {
     setInitModalVisible(false);
   };
 
-  const handlePlayerEdit = (playerId: number) => {
+  const handlePlayerEdit = (playerId: number, team: "A" | "B" = "A") => {
     setEditingPlayer(playerId);
+    setEditingTeam(team); // 🏀 Mémoriser l'équipe en cours d'édition
     setPlayerEditModalVisible(true);
   };
 
   const handlePlayerEditConfirm = (newNumber: number, newName: string) => {
     if (editingPlayer !== null) {
-      setPlayers((prevPlayers) =>
-        prevPlayers.map((player) =>
-          player.id === editingPlayer
-            ? { ...player, num: newNumber, name: newName }
-            : player
-        )
-      );
+      // 🏀 Mettre à jour la bonne équipe selon editingTeam
+      if (editingTeam === "A") {
+        setPlayers((prevPlayers) =>
+          prevPlayers.map((player) =>
+            player.id === editingPlayer
+              ? { ...player, num: newNumber, name: newName }
+              : player
+          )
+        );
+      } else {
+        setPlayersTeamB((prevPlayers) =>
+          prevPlayers.map((player) =>
+            player.id === editingPlayer
+              ? { ...player, num: newNumber, name: newName }
+              : player
+          )
+        );
+      }
     }
     setPlayerEditModalVisible(false);
     setEditingPlayer(null);
+    setEditingTeam("A"); // 🏀 Reset à l'équipe A
   };
 
   const handlePlayerEditCancel = () => {
     setPlayerEditModalVisible(false);
     setEditingPlayer(null);
+    setEditingTeam("A"); // 🏀 Reset à l'équipe A
   };
 
-  // Fonction pour calculer les positions des joueurs
-  const getPlayerPosition = (playerId: number) => {
+  // 🏀 Fonction pour calculer les positions des joueurs (compatible équipe A et B)
+  const getPlayerPosition = (playerId: number, team: "A" | "B" = "A") => {
+    // 🔄 Détermine si cette équipe doit être du côté "proche" selon currentTeam
+    const isTeamOnNearSide = currentTeam === team;
+
     const positions = [
       // Meneur (ID 1)
       {
         left: courtWidth / 2 - 20,
-        top:
-          currentTeam === "A"
-            ? isPortrait
-              ? keyHeight - 50
-              : courtHeight / 2 - keyHeight / 2 - 50
-            : isPortrait
-            ? courtHeight - keyHeight - 50
-            : courtHeight / 2 + keyHeight / 2 + 10,
+        top: isTeamOnNearSide
+          ? isPortrait
+            ? keyHeight - 50
+            : courtHeight / 2 - keyHeight / 2 - 50
+          : isPortrait
+          ? courtHeight - keyHeight - 50
+          : courtHeight / 2 + keyHeight / 2 + 10,
       },
       // Ailier gauche (ID 2)
       {
-        left:
-          currentTeam === "A"
-            ? isPortrait
-              ? courtWidth / 2 - keyWidth / 2 - 40
-              : courtWidth / 2 - keyWidth / 2 - 40
-            : isPortrait
+        left: isTeamOnNearSide
+          ? isPortrait
             ? courtWidth / 2 - keyWidth / 2 - 40
-            : courtWidth / 2 + keyWidth / 2 + 40,
-        top:
-          currentTeam === "A"
-            ? isPortrait
-              ? keyHeight
-              : courtHeight / 2 - keyHeight / 2
-            : isPortrait
-            ? courtHeight - keyHeight
-            : courtHeight / 2 + keyHeight / 2,
+            : courtWidth / 2 - keyWidth / 2 - 40
+          : isPortrait
+          ? courtWidth / 2 - keyWidth / 2 - 40
+          : courtWidth / 2 + keyWidth / 2 + 40,
+        top: isTeamOnNearSide
+          ? isPortrait
+            ? keyHeight
+            : courtHeight / 2 - keyHeight / 2
+          : isPortrait
+          ? courtHeight - keyHeight
+          : courtHeight / 2 + keyHeight / 2,
       },
       // Ailier droit (ID 3)
       {
-        left:
-          currentTeam === "A"
-            ? isPortrait
-              ? courtWidth / 2 + keyWidth / 2
-              : courtWidth / 2 + keyWidth / 2
-            : isPortrait
+        left: isTeamOnNearSide
+          ? isPortrait
             ? courtWidth / 2 + keyWidth / 2
-            : courtWidth / 2 - keyWidth / 2,
-        top:
-          currentTeam === "A"
-            ? isPortrait
-              ? keyHeight
-              : courtHeight / 2 - keyHeight / 2
-            : isPortrait
-            ? courtHeight - keyHeight
-            : courtHeight / 2 + keyHeight / 2,
+            : courtWidth / 2 + keyWidth / 2
+          : isPortrait
+          ? courtWidth / 2 + keyWidth / 2
+          : courtWidth / 2 - keyWidth / 2,
+        top: isTeamOnNearSide
+          ? isPortrait
+            ? keyHeight
+            : courtHeight / 2 - keyHeight / 2
+          : isPortrait
+          ? courtHeight - keyHeight
+          : courtHeight / 2 + keyHeight / 2,
       },
       // Intérieur gauche (ID 4)
       {
-        left:
-          currentTeam === "A"
-            ? isPortrait
-              ? courtWidth / 2 - keyWidth / 4 - 30
-              : courtWidth / 2 - keyWidth / 4 - 30
-            : isPortrait
+        left: isTeamOnNearSide
+          ? isPortrait
             ? courtWidth / 2 - keyWidth / 4 - 30
-            : courtWidth / 2 + keyWidth / 4 + 30,
-        top:
-          currentTeam === "A"
-            ? isPortrait
-              ? keyHeight + keyHeight / 2
-              : courtHeight / 2 - keyHeight / 4
-            : isPortrait
-            ? courtHeight - keyHeight - keyHeight / 2
-            : courtHeight / 2 + keyHeight / 4,
+            : courtWidth / 2 - keyWidth / 4 - 30
+          : isPortrait
+          ? courtWidth / 2 - keyWidth / 4 - 30
+          : courtWidth / 2 + keyWidth / 4 + 30,
+        top: isTeamOnNearSide
+          ? isPortrait
+            ? keyHeight + keyHeight / 2
+            : courtHeight / 2 - keyHeight / 4
+          : isPortrait
+          ? courtHeight - keyHeight - keyHeight / 2
+          : courtHeight / 2 + keyHeight / 4,
       },
       // Intérieur droit (ID 5)
       {
-        left:
-          currentTeam === "A"
-            ? isPortrait
-              ? courtWidth / 2 + keyWidth / 4 + 10
-              : courtWidth / 2 + keyWidth / 4 + 10
-            : isPortrait
+        left: isTeamOnNearSide
+          ? isPortrait
             ? courtWidth / 2 + keyWidth / 4 + 10
-            : courtWidth / 2 - keyWidth / 4 - 10,
-        top:
-          currentTeam === "A"
-            ? isPortrait
-              ? keyHeight + keyHeight / 2
-              : courtHeight / 2 - keyHeight / 4
-            : isPortrait
-            ? courtHeight - keyHeight - keyHeight / 2
-            : courtHeight / 2 + keyHeight / 4,
+            : courtWidth / 2 + keyWidth / 4 + 10
+          : isPortrait
+          ? courtWidth / 2 + keyWidth / 4 + 10
+          : courtWidth / 2 - keyWidth / 4 - 10,
+        top: isTeamOnNearSide
+          ? isPortrait
+            ? keyHeight + keyHeight / 2
+            : courtHeight / 2 - keyHeight / 4
+          : isPortrait
+          ? courtHeight - keyHeight - keyHeight / 2
+          : courtHeight / 2 + keyHeight / 4,
       },
     ];
 
@@ -848,105 +866,56 @@ export default function BasketballCourt() {
         visible={playerEditModalVisible}
         playerNumber={
           editingPlayer
-            ? players.find((p) => p.id === editingPlayer)?.num || 1
+            ? editingTeam === "A"
+              ? players.find((p) => p.id === editingPlayer)?.num || 1
+              : playersTeamB.find((p) => p.id === editingPlayer)?.num || 1
             : 1
         }
         playerName={
           editingPlayer
-            ? players.find((p) => p.id === editingPlayer)?.name || ""
+            ? editingTeam === "A"
+              ? players.find((p) => p.id === editingPlayer)?.name || ""
+              : playersTeamB.find((p) => p.id === editingPlayer)?.name || ""
             : ""
         }
         onConfirm={handlePlayerEditConfirm}
         onCancel={handlePlayerEditCancel}
       />
 
-      {/* Flèches pour switcher de côté */}
+      {/* 🏀 Bouton double flèche au centre du terrain pour changer de côté */}
       {!initModalVisible && preGameMode && (
-        <View
+        <TouchableOpacity
           style={{
             position: "absolute",
-            top: isPortrait ? "50%" : "20%",
-            left: isPortrait ? "10%" : courtWidth / 2 - 55,
-            transform: [
-              { translateX: isPortrait ? -24 : 0 },
-              { translateY: isPortrait ? -64 : 0 },
-            ],
-            zIndex: 300,
-            flexDirection: isPortrait ? "column" : "row",
+            top: isPortrait ? courtHeight / 2 - 25 : courtHeight / 2 - 25,
+            left: isPortrait ? courtWidth / 2 - 25 : courtWidth / 2 - 25,
+            backgroundColor: "rgba(255,255,255,0.9)",
+            borderRadius: 25,
+            width: 50,
+            height: 50,
+            borderWidth: 2,
+            borderColor: "#ddd",
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.3,
+            shadowRadius: 4,
+            elevation: 5,
             alignItems: "center",
+            justifyContent: "center",
+            zIndex: 300,
           }}
+          onPress={() => setCurrentTeam(currentTeam === "A" ? "B" : "A")}
         >
-          <TouchableOpacity
+          <Text
             style={{
-              backgroundColor:
-                currentTeam === "A" ? "#4CAF50" : "rgba(255,255,255,0.2)",
-              borderRadius: 20,
-              padding: 12,
-              marginBottom: isPortrait ? 6 : 0,
-              marginRight: isPortrait ? 0 : 6,
-              borderWidth: 2,
-              borderColor:
-                currentTeam === "A" ? "#388E3C" : "rgba(255,255,255,0.5)",
-              shadowColor: "#000",
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.3,
-              shadowRadius: 4,
-              elevation: 5,
-              minWidth: 44,
-              minHeight: 44,
-              alignItems: "center",
-              justifyContent: "center",
+              fontSize: 24,
+              color: "#666",
+              fontWeight: "bold",
             }}
-            onPress={() => setCurrentTeam("A")}
           >
-            <Text
-              style={{
-                fontSize: 24,
-                color: currentTeam === "A" ? "#fff" : "rgba(255,255,255,0.8)",
-                fontWeight: "bold",
-                textShadowColor: "rgba(0,0,0,0.5)",
-                textShadowOffset: { width: 1, height: 1 },
-                textShadowRadius: 2,
-              }}
-            >
-              {isPortrait ? "▲" : "◀"}
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={{
-              backgroundColor:
-                currentTeam === "B" ? "#4CAF50" : "rgba(255,255,255,0.2)",
-              borderRadius: 20,
-              padding: 12,
-              borderWidth: 2,
-              borderColor:
-                currentTeam === "B" ? "#388E3C" : "rgba(255,255,255,0.5)",
-              shadowColor: "#000",
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.3,
-              shadowRadius: 4,
-              elevation: 5,
-              minWidth: 44,
-              minHeight: 44,
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-            onPress={() => setCurrentTeam("B")}
-          >
-            <Text
-              style={{
-                fontSize: 24,
-                color: currentTeam === "B" ? "#fff" : "rgba(255,255,255,0.8)",
-                fontWeight: "bold",
-                textShadowColor: "rgba(0,0,0,0.5)",
-                textShadowOffset: { width: 1, height: 1 },
-                textShadowRadius: 2,
-              }}
-            >
-              {isPortrait ? "▼" : "▶"}
-            </Text>
-          </TouchableOpacity>
-        </View>
+            {isPortrait ? "⇅" : "⇄"}
+          </Text>
+        </TouchableOpacity>
       )}
 
       {/* Debug: Render click point (temporary) */}
@@ -1333,17 +1302,18 @@ export default function BasketballCourt() {
         currentTeam={currentTeam}
       />
 
-      {/* Pastilles des joueurs */}
+      {/* 🏀 Pastilles des joueurs - Équipe A */}
       {!initModalVisible &&
         preGameMode &&
+        (teamMode === "A" || teamMode === "both") &&
         players.map((player) => (
           <View key={player.id}>
             <TouchableOpacity
-              onPress={() => handlePlayerEdit(player.id)}
+              onPress={() => handlePlayerEdit(player.id, "A")}
               style={{
                 position: "absolute",
-                left: getPlayerPosition(player.id).left,
-                top: getPlayerPosition(player.id).top,
+                left: getPlayerPosition(player.id, "A").left,
+                top: getPlayerPosition(player.id, "A").top,
                 width: 40,
                 height: 40,
                 backgroundColor: "#1976d2",
@@ -1376,8 +1346,70 @@ export default function BasketballCourt() {
             <Text
               style={{
                 position: "absolute",
-                left: getPlayerPosition(player.id).left - 10,
-                top: getPlayerPosition(player.id).top + 45,
+                left: getPlayerPosition(player.id, "A").left - 10,
+                top: getPlayerPosition(player.id, "A").top + 45,
+                color: "#fff",
+                fontSize: 12,
+                fontWeight: "bold",
+                textAlign: "center",
+                width: 60,
+                textShadowColor: "rgba(0,0,0,0.8)",
+                textShadowOffset: { width: 1, height: 1 },
+                textShadowRadius: 2,
+                zIndex: 200,
+              }}
+            >
+              {player.name}
+            </Text>
+          </View>
+        ))}
+
+      {/* 🏀 Pastilles des joueurs - Équipe B */}
+      {!initModalVisible &&
+        preGameMode &&
+        (teamMode === "B" || teamMode === "both") &&
+        playersTeamB.map((player) => (
+          <View key={player.id}>
+            <TouchableOpacity
+              onPress={() => handlePlayerEdit(player.id, "B")}
+              style={{
+                position: "absolute",
+                left: getPlayerPosition(player.id - 5, "B").left, // 🏀 IDs 6-10 → positions 1-5
+                top: getPlayerPosition(player.id - 5, "B").top,
+                width: 40,
+                height: 40,
+                backgroundColor: "#2196F3", // 🏀 Couleur différente pour l'équipe B
+                borderRadius: 20,
+                justifyContent: "center",
+                alignItems: "center",
+                borderWidth: 2,
+                borderColor: "#fff",
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.3,
+                shadowRadius: 4,
+                elevation: 5,
+                zIndex: 200,
+              }}
+            >
+              <Text
+                style={{
+                  color: "#fff",
+                  fontSize: 16,
+                  fontWeight: "bold",
+                  textShadowColor: "rgba(0,0,0,0.5)",
+                  textShadowOffset: { width: 1, height: 1 },
+                  textShadowRadius: 2,
+                }}
+              >
+                {player.num}
+              </Text>
+            </TouchableOpacity>
+            <Text
+              style={{
+                position: "absolute",
+                left: getPlayerPosition(player.id - 5, "B").left - 10, // 🏀 IDs 6-10 → positions 1-5
+                top: getPlayerPosition(player.id - 5, "B").top + 45,
                 color: "#fff",
                 fontSize: 12,
                 fontWeight: "bold",
