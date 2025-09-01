@@ -32,6 +32,8 @@ interface ActionModalProps {
     id: number;
     num: number;
     name: string;
+    team: "A" | "B";
+    isSubstitute: boolean;
   }>;
   teamMode: "A" | "B" | "both";
   teamA: string;
@@ -158,6 +160,11 @@ export default function ActionModal({
   };
 
   const renderPlayerSelection = () => {
+    // Filtrer les joueurs selon l'équipe sélectionnée
+    const filteredPlayers = selectedTeam
+      ? players.filter((player) => player.team === selectedTeam)
+      : players;
+
     return (
       <View style={styles.actionsContainer}>
         <ScrollView
@@ -165,12 +172,12 @@ export default function ActionModal({
           showsVerticalScrollIndicator={true}
           contentContainerStyle={styles.playerScrollContent}
         >
-          {players.map((player, index) => (
+          {filteredPlayers.map((player, index) => (
             <TouchableOpacity
               key={player.id}
               style={[
                 styles.playerButton,
-                index < players.length - 1 && styles.actionButtonMargin,
+                index < filteredPlayers.length - 1 && styles.actionButtonMargin,
               ]}
               onPress={() => onPlayerSelect(player.num)}
               activeOpacity={0.8}

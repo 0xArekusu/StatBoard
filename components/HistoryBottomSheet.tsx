@@ -14,6 +14,7 @@ interface Player {
   id: number;
   num: number;
   name: string;
+  isSubstitute: boolean;
 }
 
 interface HistoryBottomSheetProps {

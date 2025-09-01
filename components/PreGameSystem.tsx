@@ -1,11 +1,13 @@
 import React from "react";
 import { View, Text, TouchableOpacity } from "react-native";
 import PlayerEditModal from "./PlayerEditModal";
+import SubstitutesManager from "./SubstitutesManager";
 
 interface Player {
   id: number;
   num: number;
   name: string;
+  isSubstitute: boolean;
 }
 
 interface PreGameSystemProps {
@@ -24,6 +26,15 @@ interface PreGameSystemProps {
   setPlayerEditModalVisible: (visible: boolean) => void;
   editingPlayer: number | null;
   setEditingPlayer: (player: number | null) => void;
+  // Propriétés pour les remplaçants
+  substitutesTeamA: Player[];
+  substitutesTeamB: Player[];
+  onAddSubstitute: (team: "A" | "B") => void;
+  onRemoveSubstitute: (team: "A" | "B") => void;
+  onSubstituteEdit: (substituteId: number, team: "A" | "B") => void;
+  // Propriétés pour l'édition des joueurs
+  onPlayerEditConfirm: (number: number, name: string) => void;
+  onPlayerEditCancel: () => void;
 }
 
 export default function PreGameSystem({
@@ -42,6 +53,13 @@ export default function PreGameSystem({
   setPlayerEditModalVisible,
   editingPlayer,
   setEditingPlayer,
+  substitutesTeamA,
+  substitutesTeamB,
+  onAddSubstitute,
+  onRemoveSubstitute,
+  onSubstituteEdit,
+  onPlayerEditConfirm,
+  onPlayerEditCancel,
 }: PreGameSystemProps) {
   // Fonction pour calculer les positions des joueurs
   const getPlayerPosition = (playerId: number) => {
@@ -274,7 +292,10 @@ export default function PreGameSystem({
       {players.map((player) => (
         <View key={player.id}>
           <TouchableOpacity
-            onPress={() => handlePlayerEdit(player.id)}
+            onPress={() => {
+              setEditingPlayer(player.id);
+              setPlayerEditModalVisible(true);
+            }}
             style={{
               position: "absolute",
               left: getPlayerPosition(player.id).left,
@@ -329,6 +350,16 @@ export default function PreGameSystem({
         </View>
       ))}
 
+      {/* Gestionnaire des remplaçants */}
+      <SubstitutesManager
+        substitutes={currentTeam === "A" ? substitutesTeamA : substitutesTeamB}
+        onSubstituteEdit={(id) => onSubstituteEdit(id, currentTeam)}
+        onAddSubstitute={() => onAddSubstitute(currentTeam)}
+        onRemoveSubstitute={() => onRemoveSubstitute(currentTeam)}
+        currentTeam={currentTeam}
+        maxSubstitutes={8}
+      />
+
       {/* Bouton démarrer le match */}
       <TouchableOpacity
         style={{
@@ -361,6 +392,51 @@ export default function PreGameSystem({
           🏀 Démarrer le match
         </Text>
       </TouchableOpacity>
+
+      {/* Modal d'édition des joueurs */}
+      <PlayerEditModal
+        visible={playerEditModalVisible}
+        playerNumber={
+          editingPlayer
+            ? (() => {
+                // Chercher dans les titulaires
+                const playerInStarters = players.find(
+                  (p) => p.id === editingPlayer
+                );
+                if (playerInStarters) return playerInStarters.num;
+
+                // Chercher dans les remplaçants
+                const substitutes =
+                  currentTeam === "A" ? substitutesTeamA : substitutesTeamB;
+                const playerInSubstitutes = substitutes.find(
+                  (p) => p.id === editingPlayer
+                );
+                return playerInSubstitutes?.num || 0;
+              })()
+            : 0
+        }
+        playerName={
+          editingPlayer
+            ? (() => {
+                // Chercher dans les titulaires
+                const playerInStarters = players.find(
+                  (p) => p.id === editingPlayer
+                );
+                if (playerInStarters) return playerInStarters.name;
+
+                // Chercher dans les remplaçants
+                const substitutes =
+                  currentTeam === "A" ? substitutesTeamA : substitutesTeamB;
+                const playerInSubstitutes = substitutes.find(
+                  (p) => p.id === editingPlayer
+                );
+                return playerInSubstitutes?.name || "";
+              })()
+            : ""
+        }
+        onConfirm={onPlayerEditConfirm}
+        onCancel={onPlayerEditCancel}
+      />
     </>
   );
 }
