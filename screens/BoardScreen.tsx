@@ -31,6 +31,9 @@ import HistoryBottomSheet from "../components/HistoryBottomSheet";
 import BasketballCourtSVG from "../components/BasketballCourtSVG";
 import SubstitutesManager from "../components/SubstitutesManager";
 import CoachEditModal from "../components/CoachEditModal";
+import ResumeMatchModal from "../components/ResumeMatchModal";
+import { MatchManager } from "../src/services/match/MatchManager";
+import { Match } from "../src/models/types";
 
 // Modal layout constants (pour le nouveau ActionModal)
 const MODAL_WIDTH = 240;
@@ -330,6 +333,14 @@ export default function BasketballCourt() {
 
   // Mode PreGame : désactive les interactions avec le terrain
   const [preGameMode, setPreGameMode] = useState(true);
+  
+  // État pour le match en cours
+  const [currentMatch, setCurrentMatch] = useState<Match | null>(null);
+  const [matchManager] = useState(() => new MatchManager());
+  
+  // État pour le modal de reprise de match
+  const [resumeModalVisible, setResumeModalVisible] = useState(false);
+  const [foundMatch, setFoundMatch] = useState<Match | null>(null);
 
   // État pour l'édition des joueurs
   const [playerEditModalVisible, setPlayerEditModalVisible] = useState(false);
@@ -411,6 +422,25 @@ export default function BasketballCourt() {
   useEffect(() => {
     setShowSheet(true);
   }, []);
+
+  // Vérifier s'il y a un match en cours au démarrage
+  useEffect(() => {
+    const checkActiveMatch = async () => {
+      try {
+        const activeMatch = await matchManager.getActiveMatch();
+        if (activeMatch) {
+          console.log("🔄 Active match found:", activeMatch);
+          setFoundMatch(activeMatch);
+          setResumeModalVisible(true);
+          setInitModalVisible(false);
+        }
+      } catch (error) {
+        console.error("❌ Error checking active match:", error);
+      }
+    };
+
+    checkActiveMatch();
+  }, [matchManager]);
 
   useEffect(() => {
     const prepareOrientation = async () => {
@@ -673,6 +703,61 @@ export default function BasketballCourt() {
     setCurrentTeam(selectedTeamMode === "B" ? "B" : "A");
     setInitModalVisible(false);
   };
+
+  const handleStartMatch = async () => {
+    try {
+      console.log("🏀 Starting match...");
+      
+      const matchData = {
+        team_a_name: teamA,
+        team_b_name: teamB,
+        team_mode: teamMode,
+      };
+
+      const match = await matchManager.startMatch(matchData);
+      setCurrentMatch(match);
+      setPreGameMode(false);
+
+      console.log("✅ Match started successfully:", match.id);
+    } catch (error) {
+      console.error("❌ Error starting match:", error);
+      // En cas d'erreur, on peut continuer sans la base de données
+      setPreGameMode(false);
+    }
+  };
+
+  const handleResumeMatch = () => {
+    if (!foundMatch) return;
+    
+    console.log("🔄 Resuming match:", foundMatch.id);
+    setCurrentMatch(foundMatch);
+    setTeamA(foundMatch.team_a_name);
+    setTeamB(foundMatch.team_b_name);
+    setTeamMode(foundMatch.team_mode);
+    setCurrentTeam(foundMatch.team_mode === "B" ? "B" : "A");
+    setPreGameMode(false);
+    setResumeModalVisible(false);
+    // TODO: Charger les actions existantes du match
+  };
+
+  const handleDiscardMatch = async () => {
+    if (!foundMatch) return;
+    
+    try {
+      console.log("🗑️ Abandoning match:", foundMatch.id);
+      await matchManager.abandonMatch(foundMatch.id);
+      setFoundMatch(null);
+      setResumeModalVisible(false);
+      setInitModalVisible(true); // Retour au modal d'initialisation
+    } catch (error) {
+      console.error("❌ Error abandoning match:", error);
+      // En cas d'erreur, on ferme quand même le modal
+      setFoundMatch(null);
+      setResumeModalVisible(false);
+      setInitModalVisible(true);
+    }
+  };
+
 
   const handlePlayerEdit = (playerId: number, team: "A" | "B" = "A") => {
     setEditingPlayer(playerId);
@@ -1145,6 +1230,14 @@ export default function BasketballCourt() {
         onCancel={handleCoachEditCancel}
       />
 
+      {/* Modal de reprise de match */}
+      <ResumeMatchModal
+        visible={resumeModalVisible}
+        match={foundMatch}
+        onResumeMatch={handleResumeMatch}
+        onDiscardMatch={handleDiscardMatch}
+      />
+
       {/* 🏀 Bouton double flèche au centre du terrain pour changer de côté */}
       {!initModalVisible && preGameMode && (
         <TouchableOpacity
@@ -1535,7 +1628,7 @@ export default function BasketballCourt() {
             elevation: 5,
             zIndex: 300,
           }}
-          onPress={() => setPreGameMode(false)}
+          onPress={handleStartMatch}
         >
           <Text style={{ color: "#fff", fontWeight: "bold", fontSize: 16 }}>
             🏀 Démarrer le match
