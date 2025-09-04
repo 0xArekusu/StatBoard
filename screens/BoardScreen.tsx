@@ -33,6 +33,8 @@ import SubstitutesManager from "../components/SubstitutesManager";
 import CoachEditModal from "../components/CoachEditModal";
 import ResumeMatchModal from "../components/ResumeMatchModal";
 import { MatchManager } from "../src/services/match/MatchManager";
+import { ActionQueue, ActionObserver } from "../src/services/match/ActionQueue";
+import { ActionRepository } from "../src/services/database/ActionRepository";
 import { Match } from "../src/models/types";
 
 // Modal layout constants (pour le nouveau ActionModal)
@@ -341,6 +343,11 @@ export default function BasketballCourt() {
   // État pour le modal de reprise de match
   const [resumeModalVisible, setResumeModalVisible] = useState(false);
   const [foundMatch, setFoundMatch] = useState<Match | null>(null);
+  
+  // État pour la queue d'actions
+  const [actionQueue] = useState(() => new ActionQueue());
+  const [actionRepository] = useState(() => new ActionRepository());
+  const [actionCounter, setActionCounter] = useState(0); // Pour générer action_order
 
   // État pour l'édition des joueurs
   const [playerEditModalVisible, setPlayerEditModalVisible] = useState(false);
@@ -441,6 +448,27 @@ export default function BasketballCourt() {
 
     checkActiveMatch();
   }, [matchManager]);
+
+  // Configurer l'observer de la queue d'actions
+  useEffect(() => {
+    const observer: ActionObserver = {
+      onActionsSaved: (savedCount: number) => {
+        console.log(`✅ ${savedCount} actions saved to database`);
+      },
+      onError: (error: Error) => {
+        console.error("❌ Action queue error:", error);
+        // TODO: Afficher un toast d'erreur à l'utilisateur
+      },
+    };
+
+    actionQueue.subscribe(observer);
+
+    // Cleanup
+    return () => {
+      actionQueue.unsubscribe(observer);
+      actionQueue.destroy(); // Nettoyer les timers
+    };
+  }, [actionQueue]);
 
   useEffect(() => {
     const prepareOrientation = async () => {
@@ -609,6 +637,11 @@ export default function BasketballCourt() {
   };
 
   const handleActionComplete = (actionData: ActionData) => {
+    if (!currentMatch) {
+      console.warn('⚠️ No current match - action not saved');
+      return;
+    }
+
     // Create unique ID for this marker
     const markerId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
@@ -634,8 +667,8 @@ export default function BasketballCourt() {
     setMarkers((prev) => [
       ...prev,
       {
-        x: courtX + ICON_OFFSET_X, // Utilise la constante ICON_OFFSET_X
-        y: courtY + ICON_OFFSET_Y, // Utilise la constante ICON_OFFSET_Y
+        x: courtX + ICON_OFFSET_X,
+        y: courtY + ICON_OFFSET_Y,
         type: actionData.type,
         specification: actionData.specification,
         player: actionData.player,
@@ -654,7 +687,25 @@ export default function BasketballCourt() {
       semanticPosition,
     };
 
-    // Save detailed action data for future database storage
+    // 📊 NOUVELLE LOGIQUE - Ajout à la queue d'actions pour BDD
+    const nextActionOrder = actionCounter + 1;
+    setActionCounter(nextActionOrder);
+
+    const actionForDB = {
+      match_id: currentMatch.id,
+      team: actionData.team,
+      player_number: actionData.player || 0,
+      action_type: actionData.type,
+      specification: actionData.specification || '',
+      semantic_x: semanticPosition.xNormalized,
+      semantic_y: semanticPosition.yNormalized,
+      action_order: nextActionOrder,
+    };
+
+    // Ajouter à la queue (traitement asynchrone)
+    actionQueue.enqueue(actionForDB);
+
+    // Save detailed action data for immediate UI updates
     setCompletedActions((prev) => [...prev, actionWithSemanticPosition]);
 
     setActionModalVisible(false);
@@ -726,7 +777,7 @@ export default function BasketballCourt() {
     }
   };
 
-  const handleResumeMatch = () => {
+  const handleResumeMatch = async () => {
     if (!foundMatch) return;
     
     console.log("🔄 Resuming match:", foundMatch.id);
@@ -737,7 +788,42 @@ export default function BasketballCourt() {
     setCurrentTeam(foundMatch.team_mode === "B" ? "B" : "A");
     setPreGameMode(false);
     setResumeModalVisible(false);
-    // TODO: Charger les actions existantes du match
+    
+    // Charger les actions existantes du match
+    await loadExistingActions(foundMatch.id);
+  };
+
+  const loadExistingActions = async (matchId: number) => {
+    try {
+      console.log("📊 Loading existing actions for match:", matchId);
+      const actions = await actionRepository.getActionsForMatch(matchId);
+      
+      if (actions.length > 0) {
+        // Convertir les actions BDD en format ActionData pour l'UI
+        const actionDataList = actions.map(action => ({
+          type: action.action_type,
+          specification: action.specification,
+          player: action.player_number,
+          team: action.team,
+          timestamp: action.timestamp,
+          position: { x: 0, y: 0 }, // Position recalculée plus bas
+          semanticPosition: {
+            xNormalized: action.semantic_x,
+            yNormalized: action.semantic_y,
+          },
+        }));
+
+        setCompletedActions(actionDataList);
+        
+        // Mettre à jour le compteur d'actions
+        const maxOrder = Math.max(...actions.map(a => a.action_order), 0);
+        setActionCounter(maxOrder);
+
+        console.log(`✅ Loaded ${actions.length} existing actions`);
+      }
+    } catch (error) {
+      console.error("❌ Error loading existing actions:", error);
+    }
   };
 
   const handleDiscardMatch = async () => {
@@ -756,6 +842,13 @@ export default function BasketballCourt() {
       setResumeModalVisible(false);
       setInitModalVisible(true);
     }
+  };
+
+  const handleGoBackToMenu = () => {
+    console.log("🏠 Going back to main menu");
+    setResumeModalVisible(false);
+    setFoundMatch(null);
+    navigation.goBack(); // Retour au MainMenuScreen
   };
 
 
@@ -1236,6 +1329,7 @@ export default function BasketballCourt() {
         match={foundMatch}
         onResumeMatch={handleResumeMatch}
         onDiscardMatch={handleDiscardMatch}
+        onGoBack={handleGoBackToMenu}
       />
 
       {/* 🏀 Bouton double flèche au centre du terrain pour changer de côté */}

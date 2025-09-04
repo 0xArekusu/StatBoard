@@ -14,6 +14,7 @@ interface ResumeMatchModalProps {
   match: Match | null;
   onResumeMatch: () => void;
   onDiscardMatch: () => void;
+  onGoBack: () => void;
 }
 
 export default function ResumeMatchModal({
@@ -21,6 +22,7 @@ export default function ResumeMatchModal({
   match,
   onResumeMatch,
   onDiscardMatch,
+  onGoBack,
 }: ResumeMatchModalProps) {
   const [showDiscardConfirmation, setShowDiscardConfirmation] = useState(false);
 
@@ -56,7 +58,7 @@ export default function ResumeMatchModal({
         transparent
         visible={visible}
         animationType="fade"
-        onRequestClose={() => {}} // Pas de fermeture possible
+        onRequestClose={cancelDiscard}
       >
         <View style={styles.overlay}>
           <View style={styles.confirmationContainer}>
@@ -97,7 +99,7 @@ export default function ResumeMatchModal({
       transparent
       visible={visible}
       animationType="fade"
-      onRequestClose={() => {}} // Pas de fermeture possible
+      onRequestClose={onGoBack}
     >
       <View style={styles.overlay}>
         <View style={styles.container}>
@@ -139,6 +141,15 @@ export default function ResumeMatchModal({
             >
               <Text style={styles.newMatchButtonText}>
                 🆕 Nouveau match
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.button, styles.backButton]}
+              onPress={onGoBack}
+            >
+              <Text style={styles.backButtonText}>
+                ← Menu principal
               </Text>
             </TouchableOpacity>
           </View>
@@ -288,5 +299,13 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 16,
     fontWeight: "bold",
+  },
+  backButton: {
+    backgroundColor: "#6c757d",
+  },
+  backButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "600",
   },
 });
