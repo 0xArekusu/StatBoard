@@ -10,6 +10,12 @@ interface Player {
   isSubstitute: boolean;
 }
 
+interface Coach {
+  id: number;
+  name: string;
+  isCoach: boolean;
+}
+
 interface PreGameSystemProps {
   visible: boolean;
   isPortrait: boolean;
@@ -32,6 +38,10 @@ interface PreGameSystemProps {
   onAddSubstitute: (team: "A" | "B") => void;
   onRemoveSubstitute: (team: "A" | "B") => void;
   onSubstituteEdit: (substituteId: number, team: "A" | "B") => void;
+  // Propriétés pour les coachs
+  coachTeamA: Coach;
+  coachTeamB: Coach;
+  onCoachEdit: (coachId: number, team: "A" | "B") => void;
   // Propriétés pour l'édition des joueurs
   onPlayerEditConfirm: (number: number, name: string) => void;
   onPlayerEditCancel: () => void;
@@ -58,6 +68,9 @@ export default function PreGameSystem({
   onAddSubstitute,
   onRemoveSubstitute,
   onSubstituteEdit,
+  coachTeamA,
+  coachTeamB,
+  onCoachEdit,
   onPlayerEditConfirm,
   onPlayerEditCancel,
 }: PreGameSystemProps) {
@@ -353,10 +366,13 @@ export default function PreGameSystem({
       {/* Gestionnaire des remplaçants */}
       <SubstitutesManager
         substitutes={currentTeam === "A" ? substitutesTeamA : substitutesTeamB}
+        coach={currentTeam === "A" ? coachTeamA : coachTeamB}
         onSubstituteEdit={(id) => onSubstituteEdit(id, currentTeam)}
+        onCoachEdit={(id) => onCoachEdit(id, currentTeam)}
         onAddSubstitute={() => onAddSubstitute(currentTeam)}
         onRemoveSubstitute={() => onRemoveSubstitute(currentTeam)}
         currentTeam={currentTeam}
+        teamLetter={currentTeam}
         maxSubstitutes={8}
       />
 

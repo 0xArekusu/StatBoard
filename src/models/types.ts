@@ -1,6 +1,7 @@
 export type MatchStatus = 'in_progress' | 'completed' | 'paused' | 'abandoned';
 export type TeamMode = 'A' | 'B' | 'both';
 export type Team = 'A' | 'B';
+export type MatchFormat = '2_halves' | '4_quarters';
 
 export interface Match {
   id: number;
@@ -11,12 +12,16 @@ export interface Match {
   started_at: string | null;
   ended_at: string | null;
   team_mode: TeamMode;
+  match_format: MatchFormat;
+  period_duration: number;
 }
 
 export interface CreateMatchData {
   team_a_name: string;
   team_b_name: string;
   team_mode: TeamMode;
+  match_format: MatchFormat;
+  period_duration: number;
 }
 
 export interface Action {

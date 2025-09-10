@@ -110,10 +110,6 @@ export default function ResumeMatchModal({
               {match.team_a_name} vs {match.team_b_name}
             </Text>
             
-            <Text style={styles.matchDate}>
-              Commencé le {formatDate(match.created_at)}
-            </Text>
-            
             {match.started_at && (
               <Text style={styles.matchStarted}>
                 Match démarré le {formatDate(match.started_at)}
@@ -217,11 +213,6 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#333",
     marginBottom: 8,
-  },
-  matchDate: {
-    fontSize: 14,
-    color: "#666",
-    marginBottom: 4,
   },
   matchStarted: {
     fontSize: 14,

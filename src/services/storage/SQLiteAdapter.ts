@@ -13,7 +13,7 @@ export class SQLiteAdapter implements IStorageAdapter {
     this.db = SQLite.openDatabaseSync(databaseName);
 
     // 🔄 RESET TEMPORAIRE - À supprimer après test !
-    // this.resetDatabaseTables();
+    this.resetDatabaseTables();
 
     this.initializeTables();
   }
@@ -42,7 +42,9 @@ export class SQLiteAdapter implements IStorageAdapter {
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         started_at DATETIME,
         ended_at DATETIME,
-        team_mode TEXT NOT NULL CHECK(team_mode IN ('A', 'B', 'both'))
+        team_mode TEXT NOT NULL CHECK(team_mode IN ('A', 'B', 'both')),
+        match_format TEXT NOT NULL DEFAULT '2_halves' CHECK(match_format IN ('2_halves', '4_quarters')),
+        period_duration INTEGER NOT NULL DEFAULT 1200
       );
     `);
 

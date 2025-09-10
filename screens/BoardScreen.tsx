@@ -21,6 +21,7 @@ import * as ScreenOrientation from "expo-screen-orientation";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import InitTeamModal from "./InitTeamModal";
+import MatchConfigModal from "./MatchConfigModal";
 import PlayerEditModal from "./PlayerEditModal";
 import ActionSystemModal, {
   ActionData,
@@ -326,8 +327,9 @@ export default function BasketballCourt() {
     });
   };
 
-  // Ajout du state pour le popup d'initialisation
+  // Ajout du state pour les popups d'initialisation
   const [initModalVisible, setInitModalVisible] = useState(true);
+  const [matchConfigModalVisible, setMatchConfigModalVisible] = useState(false);
   const [teamA, setTeamA] = useState("Team A");
   const [teamB, setTeamB] = useState("Team B");
   const [teamMode, setTeamMode] = useState<"A" | "B" | "both">("A");
@@ -335,15 +337,15 @@ export default function BasketballCourt() {
 
   // Mode PreGame : désactive les interactions avec le terrain
   const [preGameMode, setPreGameMode] = useState(true);
-  
+
   // État pour le match en cours
   const [currentMatch, setCurrentMatch] = useState<Match | null>(null);
   const [matchManager] = useState(() => new MatchManager());
-  
+
   // État pour le modal de reprise de match
   const [resumeModalVisible, setResumeModalVisible] = useState(false);
   const [foundMatch, setFoundMatch] = useState<Match | null>(null);
-  
+
   // État pour la queue d'actions
   const [actionQueue] = useState(() => new ActionQueue());
   const [actionRepository] = useState(() => new ActionRepository());
@@ -638,7 +640,7 @@ export default function BasketballCourt() {
 
   const handleActionComplete = (actionData: ActionData) => {
     if (!currentMatch) {
-      console.warn('⚠️ No current match - action not saved');
+      console.warn("⚠️ No current match - action not saved");
       return;
     }
 
@@ -696,7 +698,7 @@ export default function BasketballCourt() {
       team: actionData.team,
       player_number: actionData.player || 0,
       action_type: actionData.type,
-      specification: actionData.specification || '',
+      specification: actionData.specification || "",
       semantic_x: semanticPosition.xNormalized,
       semantic_y: semanticPosition.yNormalized,
       action_order: nextActionOrder,
@@ -749,20 +751,43 @@ export default function BasketballCourt() {
     });
   };
 
+  const [matchFormat, setMatchFormat] = useState<string>("2_halves");
+  const [periodDuration, setPeriodDuration] = useState<number>(1200);
+
   const handleTeamModeConfirm = (selectedTeamMode: "A" | "B" | "both") => {
     setTeamMode(selectedTeamMode);
     setCurrentTeam(selectedTeamMode === "B" ? "B" : "A");
     setInitModalVisible(false);
+    setMatchConfigModalVisible(true);
+  };
+
+  const handleMatchConfigConfirm = (format: string, duration: number) => {
+    setMatchFormat(format);
+    setPeriodDuration(duration);
+    setMatchConfigModalVisible(false);
+  };
+
+  const handleMatchConfigBack = () => {
+    setMatchConfigModalVisible(false);
+    setInitModalVisible(true);
   };
 
   const handleStartMatch = async () => {
     try {
       console.log("🏀 Starting match...");
-      
+
+      // Protection contre les valeurs null
+      if (!teamA || !teamB || !teamMode || !matchFormat || !periodDuration) {
+        console.warn("⚠️ Missing required match data");
+        return;
+      }
+
       const matchData = {
         team_a_name: teamA,
         team_b_name: teamB,
         team_mode: teamMode,
+        match_format: matchFormat as "2_halves" | "4_quarters",
+        period_duration: periodDuration,
       };
 
       const match = await matchManager.startMatch(matchData);
@@ -779,7 +804,7 @@ export default function BasketballCourt() {
 
   const handleResumeMatch = async () => {
     if (!foundMatch) return;
-    
+
     console.log("🔄 Resuming match:", foundMatch.id);
     setCurrentMatch(foundMatch);
     setTeamA(foundMatch.team_a_name);
@@ -788,7 +813,7 @@ export default function BasketballCourt() {
     setCurrentTeam(foundMatch.team_mode === "B" ? "B" : "A");
     setPreGameMode(false);
     setResumeModalVisible(false);
-    
+
     // Charger les actions existantes du match
     await loadExistingActions(foundMatch.id);
   };
@@ -797,15 +822,15 @@ export default function BasketballCourt() {
     try {
       console.log("📊 Loading existing actions for match:", matchId);
       const actions = await actionRepository.getActionsForMatch(matchId);
-      
+
       if (actions.length > 0) {
         // Convertir les actions BDD en format ActionData pour l'UI
-        const actionDataList = actions.map(action => ({
+        const actionDataList = actions.map((action) => ({
           type: action.action_type,
           specification: action.specification,
           player: action.player_number,
           team: action.team,
-          timestamp: action.timestamp,
+          timestamp: new Date(action.timestamp),
           position: { x: 0, y: 0 }, // Position recalculée plus bas
           semanticPosition: {
             xNormalized: action.semantic_x,
@@ -814,9 +839,9 @@ export default function BasketballCourt() {
         }));
 
         setCompletedActions(actionDataList);
-        
+
         // Mettre à jour le compteur d'actions
-        const maxOrder = Math.max(...actions.map(a => a.action_order), 0);
+        const maxOrder = Math.max(...actions.map((a) => a.action_order), 0);
         setActionCounter(maxOrder);
 
         console.log(`✅ Loaded ${actions.length} existing actions`);
@@ -828,7 +853,7 @@ export default function BasketballCourt() {
 
   const handleDiscardMatch = async () => {
     if (!foundMatch) return;
-    
+
     try {
       console.log("🗑️ Abandoning match:", foundMatch.id);
       await matchManager.abandonMatch(foundMatch.id);
@@ -850,7 +875,6 @@ export default function BasketballCourt() {
     setFoundMatch(null);
     navigation.goBack(); // Retour au MainMenuScreen
   };
-
 
   const handlePlayerEdit = (playerId: number, team: "A" | "B" = "A") => {
     setEditingPlayer(playerId);
@@ -1235,8 +1259,8 @@ export default function BasketballCourt() {
     const backHandler = BackHandler.addEventListener(
       "hardwareBackPress",
       () => {
-        // If match is started and init modal is not visible, prevent going back
-        if (!preGameMode && !initModalVisible) {
+        // If match is started and no modal is visible, prevent going back
+        if (!preGameMode && !initModalVisible && !matchConfigModalVisible) {
           return true; // Prevent default behavior (going back)
         }
         return false; // Allow default behavior
@@ -1244,7 +1268,7 @@ export default function BasketballCourt() {
     );
 
     return () => backHandler.remove();
-  }, [preGameMode, initModalVisible]);
+  }, [preGameMode, initModalVisible, matchConfigModalVisible]);
 
   return (
     // <View style={[styles.container, { flex: 1 }]}>
@@ -1259,6 +1283,12 @@ export default function BasketballCourt() {
         isConfirmDisabled={isConfirmDisabled}
         getFormattedDate={getFormattedDate}
         onRequestClose={() => navigation.goBack()}
+      />
+
+      <MatchConfigModal
+        visible={matchConfigModalVisible}
+        onConfirm={handleMatchConfigConfirm}
+        onRequestClose={handleMatchConfigBack}
       />
 
       <PlayerEditModal
@@ -1333,7 +1363,7 @@ export default function BasketballCourt() {
       />
 
       {/* 🏀 Bouton double flèche au centre du terrain pour changer de côté */}
-      {!initModalVisible && preGameMode && (
+      {!initModalVisible && !matchConfigModalVisible && preGameMode && (
         <TouchableOpacity
           style={{
             position: "absolute",
@@ -1704,13 +1734,13 @@ export default function BasketballCourt() {
       </Pressable>
 
       {/* Bouton pour démarrer le match */}
-      {!initModalVisible && preGameMode && (
+      {!initModalVisible && !matchConfigModalVisible && preGameMode && (
         <TouchableOpacity
           style={{
             position: "absolute",
-            bottom: isPortrait ? 100 : 30, // Leave space for toolbar in portrait
-            right: isPortrait ? "50%" : 100, // Adjust for toolbar in landscape
-            transform: isPortrait ? [{ translateX: 75 }] : undefined,
+            bottom: isPortrait ? 100 : 40, // Leave space for toolbar in portrait
+            right: "50%", // Adjust for toolbar in landscape
+            transform: [{ translateX: 75 }],
             backgroundColor: "#FF5722",
             borderRadius: 25,
             paddingHorizontal: 20,
@@ -1754,6 +1784,7 @@ export default function BasketballCourt() {
 
       {/* 🏀 Pastilles des joueurs - Équipe A */}
       {!initModalVisible &&
+        !matchConfigModalVisible &&
         preGameMode &&
         (teamMode === "A" || teamMode === "both") &&
         players.map((player) => (
@@ -1816,6 +1847,7 @@ export default function BasketballCourt() {
 
       {/* 🏀 Pastilles des joueurs - Équipe B */}
       {!initModalVisible &&
+        !matchConfigModalVisible &&
         preGameMode &&
         (teamMode === "B" || teamMode === "both") &&
         playersTeamB.map((player) => (
@@ -1878,6 +1910,7 @@ export default function BasketballCourt() {
 
       {/* 🔄 Gestionnaire des remplaçants - Équipe A */}
       {!initModalVisible &&
+        !matchConfigModalVisible &&
         preGameMode &&
         (teamMode === "A" || teamMode === "both") && (
           <SubstitutesManager
@@ -1895,6 +1928,7 @@ export default function BasketballCourt() {
 
       {/* 🔄 Gestionnaire des remplaçants - Équipe B */}
       {!initModalVisible &&
+        !matchConfigModalVisible &&
         preGameMode &&
         (teamMode === "B" || teamMode === "both") && (
           <SubstitutesManager

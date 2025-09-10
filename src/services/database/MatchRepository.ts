@@ -20,15 +20,17 @@ export class MatchRepository implements IMatchRepository {
 
   async create(data: CreateMatchData): Promise<Match> {
     const sql = `
-      INSERT INTO matches (team_a_name, team_b_name, team_mode, status)
-      VALUES (?, ?, ?, 'in_progress')
+      INSERT INTO matches (team_a_name, team_b_name, team_mode, status, match_format, period_duration)
+      VALUES (?, ?, ?, 'in_progress', ?, ?)
     `;
     
     try {
       await this.db.execute(sql, [
         data.team_a_name,
         data.team_b_name,
-        data.team_mode
+        data.team_mode,
+        data.match_format,
+        data.period_duration
       ]);
 
       // Get the created match
