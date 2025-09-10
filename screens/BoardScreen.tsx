@@ -33,6 +33,7 @@ import BasketballCourtSVG from "../components/BasketballCourtSVG";
 import SubstitutesManager from "../components/SubstitutesManager";
 import CoachEditModal from "../components/CoachEditModal";
 import ResumeMatchModal from "../components/ResumeMatchModal";
+import MatchStatusBar from "../components/MatchStatusBar";
 import { MatchManager } from "../src/services/match/MatchManager";
 import { ActionQueue, ActionObserver } from "../src/services/match/ActionQueue";
 import { ActionRepository } from "../src/services/database/ActionRepository";
@@ -497,6 +498,7 @@ export default function BasketballCourt() {
     };
   }, []);
 
+
   const isPortrait =
     orientation === ScreenOrientation.Orientation.PORTRAIT_UP ||
     orientation === ScreenOrientation.Orientation.PORTRAIT_DOWN;
@@ -754,6 +756,13 @@ export default function BasketballCourt() {
   const [matchFormat, setMatchFormat] = useState<string>("2_halves");
   const [periodDuration, setPeriodDuration] = useState<number>(1200);
 
+  // États pour l'affichage de la barre de statut et la gestion du chrono
+  const [currentPeriod, setCurrentPeriod] = useState<number>(1);
+  const [timeElapsed, setTimeElapsed] = useState<number>(0);
+  const [isPaused, setIsPaused] = useState<boolean>(true);
+  const [isMatchStarted, setIsMatchStarted] = useState<boolean>(false);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+
   const handleTeamModeConfirm = (selectedTeamMode: "A" | "B" | "both") => {
     setTeamMode(selectedTeamMode);
     setCurrentTeam(selectedTeamMode === "B" ? "B" : "A");
@@ -799,6 +808,64 @@ export default function BasketballCourt() {
       console.error("❌ Error starting match:", error);
       // En cas d'erreur, on peut continuer sans la base de données
       setPreGameMode(false);
+    }
+  };
+
+  // Fonction pour démarrer/arrêter le chrono
+  const startTimer = useCallback(() => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+    }
+    
+    timerRef.current = setInterval(() => {
+      setTimeElapsed((prev) => {
+        const newTime = prev + 1;
+        // Vérifier si la période est terminée
+        if (newTime >= periodDuration) {
+          // Arrêter le timer à la fin de la période
+          if (timerRef.current) {
+            clearInterval(timerRef.current);
+            timerRef.current = null;
+          }
+          setIsPaused(true);
+          return periodDuration;
+        }
+        return newTime;
+      });
+    }, 1000);
+    
+    setIsPaused(false);
+    setIsMatchStarted(true);
+  }, [periodDuration]);
+
+  const stopTimer = useCallback(() => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+    setIsPaused(true);
+  }, []);
+
+  // Nettoyer le timer à la destruction du composant
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+    };
+  }, []);
+
+  // Fonctions pour la barre de statut
+  const handlePauseMatch = () => {
+    console.log('Pause clicked');
+    stopTimer();
+  };
+
+  const handleResumeTimer = () => {
+    console.log('Resume clicked');
+    // Si le match n'a pas encore commencé ou si on est en pause, démarrer le chrono
+    if (!isMatchStarted || isPaused) {
+      startTimer();
     }
   };
 
@@ -1273,6 +1340,23 @@ export default function BasketballCourt() {
   return (
     // <View style={[styles.container, { flex: 1 }]}>
     <View style={[{ flex: 1 }]}>
+      {/* 📊 Barre de statut du match en haut */}
+      {!initModalVisible && !matchConfigModalVisible && !preGameMode && (
+        <MatchStatusBar
+          teamA={teamA}
+          teamB={teamB}
+          currentPeriod={currentPeriod}
+          timeElapsed={timeElapsed}
+          matchFormat={matchFormat as "2_halves" | "4_quarters"}
+          periodDuration={periodDuration}
+          isPaused={isPaused}
+          isPortrait={isPortrait}
+          onPress={() => console.log('Options clicked')}
+          onPause={handlePauseMatch}
+          onResume={handleResumeTimer}
+        />
+      )}
+
       <InitTeamModal
         visible={initModalVisible}
         teamA={teamA}
@@ -1397,6 +1481,7 @@ export default function BasketballCourt() {
           </Text>
         </TouchableOpacity>
       )}
+
 
       {/* Debug: Render click point (temporary) */}
       {markers.map((m, i) => {
@@ -1781,6 +1866,7 @@ export default function BasketballCourt() {
         teamB={teamB}
         currentTeam={currentTeam}
       />
+
 
       {/* 🏀 Pastilles des joueurs - Équipe A */}
       {!initModalVisible &&

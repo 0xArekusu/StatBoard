@@ -1,0 +1,211 @@
+import React from "react";
+import { View, Text, TouchableOpacity } from "react-native";
+import { MatchFormat } from "../src/models/types";
+
+interface MatchStatusBarProps {
+  teamA: string;
+  teamB: string;
+  currentPeriod: number;
+  timeElapsed: number; // en secondes
+  matchFormat: MatchFormat;
+  periodDuration: number; // en secondes
+  isPaused: boolean;
+  isPortrait: boolean;
+  onPress: () => void;
+  onPause: () => void;
+  onResume: () => void;
+}
+
+export default function MatchStatusBar({
+  teamA,
+  teamB,
+  currentPeriod,
+  timeElapsed,
+  matchFormat,
+  periodDuration,
+  isPaused,
+  isPortrait,
+  onPress,
+  onPause,
+  onResume,
+}: MatchStatusBarProps) {
+  const formatTime = (seconds: number): string => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const getPeriodName = (): string => {
+    if (matchFormat === "2_halves") {
+      return currentPeriod === 1 ? "1ère MT" : "2ème MT";
+    } else {
+      return `Q${currentPeriod}`;
+    }
+  };
+
+  const timeRemaining = Math.max(0, periodDuration - timeElapsed);
+
+  return (
+    <View
+      style={{
+        position: "absolute",
+        top: 0,
+        left: 0,
+        right: 0,
+        backgroundColor: "rgba(0, 0, 0, 0.9)",
+        paddingHorizontal: 16,
+        paddingVertical: 10,
+        paddingTop: 14, // Espace pour la barre de statut du téléphone
+        zIndex: 400,
+        borderBottomWidth: isPaused ? 2 : 0,
+        borderBottomColor: "#FF9800",
+      }}
+    >
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "space-between",
+        }}
+      >
+        {/* Équipes */}
+        <TouchableOpacity
+          onPress={onPress}
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            flex: 1,
+          }}
+        >
+          <Text
+            style={{
+              color: "#4CAF50",
+              fontSize: 15,
+              fontWeight: "bold",
+            }}
+          >
+            {teamA}
+          </Text>
+          
+          <Text
+            style={{
+              color: "#fff",
+              fontSize: 14,
+              fontWeight: "600",
+              marginHorizontal: 8,
+            }}
+          >
+            vs
+          </Text>
+          
+          <Text
+            style={{
+              color: "#2196F3",
+              fontSize: 15,
+              fontWeight: "bold",
+            }}
+          >
+            {teamB}
+          </Text>
+        </TouchableOpacity>
+
+        {/* Période et temps restant */}
+        <TouchableOpacity
+          onPress={onPress}
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            backgroundColor: "rgba(255, 255, 255, 0.1)",
+            borderRadius: 16,
+            paddingHorizontal: 12,
+            paddingVertical: 6,
+            marginHorizontal: 12,
+          }}
+        >
+          <Text
+            style={{
+              color: "#fff",
+              fontSize: 13,
+              fontWeight: "600",
+              marginRight: 8,
+            }}
+          >
+            {getPeriodName()}
+          </Text>
+          
+          <Text
+            style={{
+              color: timeRemaining <= 60 ? "#F44336" : timeRemaining <= 300 ? "#FF9800" : "#4CAF50",
+              fontSize: 16,
+              fontWeight: "bold",
+              fontFamily: "monospace",
+            }}
+          >
+            {formatTime(timeRemaining)}
+          </Text>
+        </TouchableOpacity>
+
+        {/* Boutons de contrôle discrets */}
+        <View style={{ flexDirection: "row", alignItems: "center" }}>
+          {isPaused ? (
+            <TouchableOpacity
+              onPress={onResume}
+              style={{
+                backgroundColor: "#4CAF50",
+                borderRadius: 16,
+                paddingHorizontal: 12,
+                paddingVertical: 6,
+                marginLeft: 4,
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 1 },
+                shadowOpacity: 0.2,
+                shadowRadius: 2,
+                elevation: 3,
+              }}
+            >
+              <Text style={{ color: "#fff", fontSize: 14, fontWeight: "bold" }}>
+                ▶ Resume
+              </Text>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity
+              onPress={onPause}
+              style={{
+                backgroundColor: "#FF9800",
+                borderRadius: 16,
+                paddingHorizontal: 12,
+                paddingVertical: 6,
+                marginLeft: 4,
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 1 },
+                shadowOpacity: 0.2,
+                shadowRadius: 2,
+                elevation: 3,
+              }}
+            >
+              <Text style={{ color: "#fff", fontSize: 14, fontWeight: "bold" }}>
+                ⏸ Pause
+              </Text>
+            </TouchableOpacity>
+          )}
+
+          {/* Bouton d'options (3 points) */}
+          <TouchableOpacity
+            onPress={onPress}
+            style={{
+              backgroundColor: "rgba(255, 255, 255, 0.1)",
+              borderRadius: 16,
+              paddingHorizontal: 10,
+              paddingVertical: 6,
+              marginLeft: 4,
+            }}
+          >
+            <Text style={{ color: "#fff", fontSize: 12, fontWeight: "bold" }}>
+              ⚙️
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </View>
+  );
+}
