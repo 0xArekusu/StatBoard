@@ -24,6 +24,7 @@ interface SubstitutesManagerProps {
   currentTeam: "A" | "B";
   teamLetter: "A" | "B"; // L'équipe réelle de ces remplaçants
   maxSubstitutes: number; // 8 maximum
+  isPortrait: boolean;
 }
 
 export default function SubstitutesManager({
@@ -36,48 +37,49 @@ export default function SubstitutesManager({
   currentTeam,
   teamLetter,
   maxSubstitutes = 8,
+  isPortrait,
 }: SubstitutesManagerProps) {
   const canAddSubstitute = substitutes.length < maxSubstitutes;
   const canRemoveSubstitute = substitutes.length > 0;
 
-  // Calculer la position : l'équipe du currentTeam est en haut, l'autre en bas
+  // Calculer la position selon l'orientation
   const isTeamOnTop = teamLetter === currentTeam;
-  const topPosition = isTeamOnTop ? 60 : 620;
+
+  // En portrait : position verticale (haut/bas), à gauche
+  // En paysage : position horizontale (gauche/droite), en bas
+  const getPosition = () => {
+    if (isPortrait) {
+      // Portrait : position à gauche, verticalement selon l'équipe
+      return {
+        left: 10,
+        top: isTeamOnTop ? 60 : 620,
+        width: 100,
+        height: 400,
+      };
+    } else {
+      // Paysage : position en bas, horizontalement selon l'équipe
+      return {
+        left: isTeamOnTop ? 60 : 700,
+        bottom: 10,
+        width: 400,
+        height: 100,
+      };
+    }
+  };
+
+  const position = getPosition();
 
   const renderButtons = () => (
     <View
       style={{
-        flexDirection: "row",
+        flexDirection: isPortrait ? "row" : "column",
         justifyContent: "center",
         alignItems: "center",
-        marginBottom: 8,
+        marginBottom: isPortrait ? 8 : 0,
+        marginRight: isPortrait ? 0 : 8,
         gap: 8,
       }}
     >
-      <TouchableOpacity
-        onPress={onRemoveSubstitute}
-        disabled={!canRemoveSubstitute}
-        style={{
-          width: 32,
-          height: 32,
-          borderRadius: 16,
-          backgroundColor: canRemoveSubstitute ? "#f44336" : "#666",
-          justifyContent: "center",
-          alignItems: "center",
-        }}
-      >
-        <Text
-          style={{
-            color: "#fff",
-            fontSize: 18,
-            fontWeight: "bold",
-            lineHeight: 20,
-          }}
-        >
-          -
-        </Text>
-      </TouchableOpacity>
-
       <TouchableOpacity
         onPress={onAddSubstitute}
         disabled={!canAddSubstitute}
@@ -99,6 +101,30 @@ export default function SubstitutesManager({
           }}
         >
           +
+        </Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        onPress={onRemoveSubstitute}
+        disabled={!canRemoveSubstitute}
+        style={{
+          width: 32,
+          height: 32,
+          borderRadius: 16,
+          backgroundColor: canRemoveSubstitute ? "#f44336" : "#666",
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+      >
+        <Text
+          style={{
+            color: "#fff",
+            fontSize: 18,
+            fontWeight: "bold",
+            lineHeight: 20,
+          }}
+        >
+          -
         </Text>
       </TouchableOpacity>
     </View>
@@ -124,8 +150,13 @@ export default function SubstitutesManager({
   const renderSubstitutesList = () => (
     <ScrollView
       style={{ flex: 1 }}
-      showsVerticalScrollIndicator={true}
-      contentContainerStyle={{ gap: 8 }}
+      horizontal={!isPortrait}
+      showsVerticalScrollIndicator={isPortrait}
+      showsHorizontalScrollIndicator={!isPortrait}
+      contentContainerStyle={{
+        gap: 8,
+        flexDirection: isPortrait ? "column" : "row",
+      }}
     >
       {substitutes.map((substitute, index) => (
         <View key={substitute.id} style={{ alignItems: "center" }}>
@@ -235,32 +266,62 @@ export default function SubstitutesManager({
     <View
       style={{
         position: "absolute",
-        left: 10,
-        top: topPosition,
-        width: 100,
-        height: 400,
+        ...position,
         backgroundColor: "rgba(0,0,0,0.1)",
         borderRadius: 12,
         padding: 8,
+        flexDirection: isPortrait ? "column" : "row",
       }}
     >
-      {/* Structure pour équipe en haut : Boutons → Indicateur → Liste → Coach */}
-      {isTeamOnTop && (
+      {isPortrait ? (
+        // Mode Portrait : Structure verticale
         <>
-          {renderButtons()}
-          {renderIndicator({ marginBottom: 8 })}
-          {renderSubstitutesList()}
-          {renderCoach({ marginTop: 8 })}
-        </>
-      )}
+          {/* Structure pour équipe en haut : Boutons → Indicateur → Liste → Coach */}
+          {isTeamOnTop && (
+            <>
+              {renderButtons()}
+              {renderIndicator({ marginBottom: 8 })}
+              {renderSubstitutesList()}
+              {renderCoach({ marginTop: 8 })}
+            </>
+          )}
 
-      {/* Structure pour équipe en bas : Coach → Liste → Indicateur → Boutons */}
-      {!isTeamOnTop && (
+          {/* Structure pour équipe en bas : Coach → Liste → Indicateur → Boutons */}
+          {!isTeamOnTop && (
+            <>
+              {renderCoach({ marginBottom: 8 })}
+              {renderSubstitutesList()}
+              {renderIndicator({ marginTop: 8, marginBottom: 8 })}
+              {renderButtons()}
+            </>
+          )}
+        </>
+      ) : (
+        // Mode Paysage : Structure horizontale
         <>
-          {renderCoach({ marginBottom: 8 })}
-          {renderSubstitutesList()}
-          {renderIndicator({ marginTop: 8, marginBottom: 8 })}
-          {renderButtons()}
+          {/* Structure pour équipe à gauche : Boutons → Indicateur → Liste → Coach */}
+          {isTeamOnTop && (
+            <>
+              {renderButtons()}
+              {renderIndicator({ marginRight: 8, alignSelf: "center" })}
+              {renderSubstitutesList()}
+              {renderCoach({ marginLeft: 8 })}
+            </>
+          )}
+
+          {/* Structure pour équipe à droite : Coach → Liste → Indicateur → Boutons */}
+          {!isTeamOnTop && (
+            <>
+              {renderCoach({ marginRight: 8 })}
+              {renderSubstitutesList()}
+              {renderIndicator({
+                marginLeft: 8,
+                marginRight: 8,
+                alignSelf: "center",
+              })}
+              {renderButtons()}
+            </>
+          )}
         </>
       )}
     </View>

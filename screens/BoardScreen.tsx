@@ -1923,6 +1923,7 @@ export default function BasketballCourt() {
             currentTeam={currentTeam}
             teamLetter="A"
             maxSubstitutes={8}
+            isPortrait={isPortrait}
           />
         )}
 
@@ -1941,6 +1942,7 @@ export default function BasketballCourt() {
             currentTeam={currentTeam}
             teamLetter="B"
             maxSubstitutes={8}
+            isPortrait={isPortrait}
           />
         )}
     </View>
