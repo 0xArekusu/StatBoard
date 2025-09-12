@@ -14,6 +14,8 @@ interface MatchStatusBarProps {
   onPress: () => void;
   onPause: () => void;
   onResume: () => void;
+  onNextPeriod?: () => void;
+  onEndMatch?: () => void;
 }
 
 export default function MatchStatusBar({
@@ -28,6 +30,8 @@ export default function MatchStatusBar({
   onPress,
   onPause,
   onResume,
+  onNextPeriod,
+  onEndMatch,
 }: MatchStatusBarProps) {
   const formatTime = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
@@ -44,6 +48,13 @@ export default function MatchStatusBar({
   };
 
   const timeRemaining = Math.max(0, periodDuration - timeElapsed);
+  const isTimeUp = timeRemaining === 0;
+  
+  const getTotalPeriods = (): number => {
+    return matchFormat === "2_halves" ? 2 : 4;
+  };
+  
+  const isLastPeriod = currentPeriod >= getTotalPeriods();
 
   return (
     <View
@@ -149,18 +160,20 @@ export default function MatchStatusBar({
         <View style={{ flexDirection: "row", alignItems: "center" }}>
           {isPaused ? (
             <TouchableOpacity
-              onPress={onResume}
+              onPress={isTimeUp ? undefined : onResume}
+              disabled={isTimeUp}
               style={{
-                backgroundColor: "#4CAF50",
+                backgroundColor: isTimeUp ? "#666" : "#4CAF50",
                 borderRadius: 16,
                 paddingHorizontal: 12,
                 paddingVertical: 6,
                 marginLeft: 4,
                 shadowColor: "#000",
                 shadowOffset: { width: 0, height: 1 },
-                shadowOpacity: 0.2,
+                shadowOpacity: isTimeUp ? 0.1 : 0.2,
                 shadowRadius: 2,
-                elevation: 3,
+                elevation: isTimeUp ? 1 : 3,
+                opacity: isTimeUp ? 0.5 : 1,
               }}
             >
               <Text style={{ color: "#fff", fontSize: 14, fontWeight: "bold" }}>
@@ -169,22 +182,74 @@ export default function MatchStatusBar({
             </TouchableOpacity>
           ) : (
             <TouchableOpacity
-              onPress={onPause}
+              onPress={isTimeUp ? undefined : onPause}
+              disabled={isTimeUp}
               style={{
-                backgroundColor: "#FF9800",
+                backgroundColor: isTimeUp ? "#666" : "#FF9800",
                 borderRadius: 16,
                 paddingHorizontal: 12,
                 paddingVertical: 6,
                 marginLeft: 4,
                 shadowColor: "#000",
                 shadowOffset: { width: 0, height: 1 },
-                shadowOpacity: 0.2,
+                shadowOpacity: isTimeUp ? 0.1 : 0.2,
                 shadowRadius: 2,
-                elevation: 3,
+                elevation: isTimeUp ? 1 : 3,
+                opacity: isTimeUp ? 0.5 : 1,
               }}
             >
               <Text style={{ color: "#fff", fontSize: 14, fontWeight: "bold" }}>
                 ⏸ Pause
+              </Text>
+            </TouchableOpacity>
+          )}
+
+          {/* Bouton Période suivante - affiché seulement si pas la dernière période */}
+          {!isLastPeriod && onNextPeriod && (
+            <TouchableOpacity
+              onPress={(isPaused || isTimeUp) ? onNextPeriod : undefined}
+              disabled={!(isPaused || isTimeUp)}
+              style={{
+                backgroundColor: !(isPaused || isTimeUp) ? "#666" : "#2196F3",
+                borderRadius: 16,
+                paddingHorizontal: 10,
+                paddingVertical: 6,
+                marginLeft: 4,
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 1 },
+                shadowOpacity: !(isPaused || isTimeUp) ? 0.1 : 0.2,
+                shadowRadius: 2,
+                elevation: !(isPaused || isTimeUp) ? 1 : 3,
+                opacity: !(isPaused || isTimeUp) ? 0.5 : 1,
+              }}
+            >
+              <Text style={{ color: "#fff", fontSize: 12, fontWeight: "bold" }}>
+                ⏭ Suivant
+              </Text>
+            </TouchableOpacity>
+          )}
+
+          {/* Bouton Terminer le match - affiché seulement dans la dernière période */}
+          {isLastPeriod && onEndMatch && (
+            <TouchableOpacity
+              onPress={(isPaused || isTimeUp) ? onEndMatch : undefined}
+              disabled={!(isPaused || isTimeUp)}
+              style={{
+                backgroundColor: !(isPaused || isTimeUp) ? "#666" : "#F44336",
+                borderRadius: 16,
+                paddingHorizontal: 10,
+                paddingVertical: 6,
+                marginLeft: 4,
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 1 },
+                shadowOpacity: !(isPaused || isTimeUp) ? 0.1 : 0.2,
+                shadowRadius: 2,
+                elevation: !(isPaused || isTimeUp) ? 1 : 3,
+                opacity: !(isPaused || isTimeUp) ? 0.5 : 1,
+              }}
+            >
+              <Text style={{ color: "#fff", fontSize: 12, fontWeight: "bold" }}>
+                🏁 Fin
               </Text>
             </TouchableOpacity>
           )}

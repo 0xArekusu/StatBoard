@@ -34,6 +34,7 @@ import SubstitutesManager from "../components/SubstitutesManager";
 import CoachEditModal from "../components/CoachEditModal";
 import ResumeMatchModal from "../components/ResumeMatchModal";
 import MatchStatusBar from "../components/MatchStatusBar";
+import MatchConfirmationModal from "../components/MatchConfirmationModal";
 import { MatchManager } from "../src/services/match/MatchManager";
 import { ActionQueue, ActionObserver } from "../src/services/match/ActionQueue";
 import { ActionRepository } from "../src/services/database/ActionRepository";
@@ -763,6 +764,23 @@ export default function BasketballCourt() {
   const [isMatchStarted, setIsMatchStarted] = useState<boolean>(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
+  // États pour les modals de confirmation
+  const [showNextPeriodModal, setShowNextPeriodModal] = useState<boolean>(false);
+  const [showEndMatchModal, setShowEndMatchModal] = useState<boolean>(false);
+
+  // Fonctions utilitaires pour la gestion des périodes
+  const getTotalPeriods = () => {
+    return matchFormat === "2_halves" ? 2 : 4;
+  };
+
+  const isLastPeriod = () => {
+    return currentPeriod >= getTotalPeriods();
+  };
+
+  const getTimeRemaining = () => {
+    return Math.max(0, periodDuration - timeElapsed);
+  };
+
   const handleTeamModeConfirm = (selectedTeamMode: "A" | "B" | "both") => {
     setTeamMode(selectedTeamMode);
     setCurrentTeam(selectedTeamMode === "B" ? "B" : "A");
@@ -867,6 +885,91 @@ export default function BasketballCourt() {
     if (!isMatchStarted || isPaused) {
       startTimer();
     }
+  };
+
+  // Fonctions pour la gestion des périodes
+  const handleNextPeriodRequest = () => {
+    const timeRemaining = getTimeRemaining();
+    
+    if (timeRemaining > 0) {
+      // Il reste du temps, demander confirmation
+      setShowNextPeriodModal(true);
+    } else {
+      // Pas de temps restant, passer directement
+      goToNextPeriod();
+    }
+  };
+
+  const goToNextPeriod = () => {
+    const nextPeriod = currentPeriod + 1;
+    const maxPeriods = getTotalPeriods();
+    
+    if (nextPeriod <= maxPeriods) {
+      console.log(`🏀 Passage à la période ${nextPeriod}`);
+      
+      // Arrêter le chrono actuel
+      stopTimer();
+      
+      // Passer à la période suivante et reset le chrono
+      setCurrentPeriod(nextPeriod);
+      setTimeElapsed(0);
+      setIsPaused(true);
+      
+      console.log(`✅ Période ${nextPeriod} commencée`);
+    }
+  };
+
+  const handleEndMatchRequest = () => {
+    const timeRemaining = getTimeRemaining();
+    
+    if (timeRemaining > 0) {
+      // Il reste du temps, demander confirmation
+      setShowEndMatchModal(true);
+    } else {
+      // Pas de temps restant, terminer directement
+      endMatch();
+    }
+  };
+
+  const endMatch = async () => {
+    try {
+      console.log("🏁 Fin de match");
+      
+      // Arrêter le chrono
+      stopTimer();
+      
+      // Marquer le match comme terminé dans la base de données
+      if (currentMatch) {
+        await matchManager.endMatch(currentMatch.id);
+        console.log("✅ Match terminé et sauvegardé");
+      }
+      
+      // TODO: Afficher un écran de résumé ou rediriger vers le menu principal
+      // Pour l'instant, on peut rester sur l'écran actuel
+      
+    } catch (error) {
+      console.error("❌ Error ending match:", error);
+      // Même en cas d'erreur, arrêter le chrono
+    }
+  };
+
+  // Fonctions pour les modals de confirmation
+  const confirmNextPeriod = () => {
+    setShowNextPeriodModal(false);
+    goToNextPeriod();
+  };
+
+  const cancelNextPeriod = () => {
+    setShowNextPeriodModal(false);
+  };
+
+  const confirmEndMatch = () => {
+    setShowEndMatchModal(false);
+    endMatch();
+  };
+
+  const cancelEndMatch = () => {
+    setShowEndMatchModal(false);
   };
 
   const handleResumeMatch = async () => {
@@ -1354,6 +1457,8 @@ export default function BasketballCourt() {
           onPress={() => console.log('Options clicked')}
           onPause={handlePauseMatch}
           onResume={handleResumeTimer}
+          onNextPeriod={handleNextPeriodRequest}
+          onEndMatch={handleEndMatchRequest}
         />
       )}
 
@@ -1444,6 +1549,30 @@ export default function BasketballCourt() {
         onResumeMatch={handleResumeMatch}
         onDiscardMatch={handleDiscardMatch}
         onGoBack={handleGoBackToMenu}
+      />
+
+      {/* Modal de confirmation pour passer à la période suivante */}
+      <MatchConfirmationModal
+        visible={showNextPeriodModal}
+        title="Passer à la période suivante"
+        message={`Voulez-vous vraiment passer à la ${matchFormat === "2_halves" ? "mi-temps" : "quart-temps"} suivant${matchFormat === "2_halves" ? "e" : ""} ?`}
+        timeRemaining={getTimeRemaining()}
+        onConfirm={confirmNextPeriod}
+        onCancel={cancelNextPeriod}
+        confirmButtonText="Passer"
+        cancelButtonText="Annuler"
+      />
+
+      {/* Modal de confirmation pour terminer le match */}
+      <MatchConfirmationModal
+        visible={showEndMatchModal}
+        title="Terminer le match"
+        message="Voulez-vous vraiment terminer le match ?"
+        timeRemaining={getTimeRemaining()}
+        onConfirm={confirmEndMatch}
+        onCancel={cancelEndMatch}
+        confirmButtonText="Terminer"
+        cancelButtonText="Annuler"
       />
 
       {/* 🏀 Bouton double flèche au centre du terrain pour changer de côté */}
