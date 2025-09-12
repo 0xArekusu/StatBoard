@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, TouchableOpacity } from "react-native";
+import { View, Text, TouchableOpacity, Platform } from "react-native";
 import { MatchFormat } from "../src/models/types";
 
 interface MatchStatusBarProps {
@@ -16,6 +16,9 @@ interface MatchStatusBarProps {
   onResume: () => void;
   onNextPeriod?: () => void;
   onEndMatch?: () => void;
+  scoreA?: number;
+  scoreB?: number;
+  teamMode: "A" | "B" | "both";
 }
 
 export default function MatchStatusBar({
@@ -32,6 +35,9 @@ export default function MatchStatusBar({
   onResume,
   onNextPeriod,
   onEndMatch,
+  scoreA = 0,
+  scoreB = 0,
+  teamMode,
 }: MatchStatusBarProps) {
   const formatTime = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
@@ -79,7 +85,7 @@ export default function MatchStatusBar({
           justifyContent: "space-between",
         }}
       >
-        {/* Équipes */}
+        {/* Équipes avec scores style digital */}
         <TouchableOpacity
           onPress={onPress}
           style={{
@@ -88,15 +94,52 @@ export default function MatchStatusBar({
             flex: 1,
           }}
         >
-          <Text
-            style={{
-              color: "#4CAF50",
-              fontSize: 15,
-              fontWeight: "bold",
-            }}
-          >
-            {teamA}
-          </Text>
+          {/* Team A avec score à droite */}
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
+            <Text
+              style={{
+                color: "#4CAF50",
+                fontSize: 15,
+                fontWeight: "bold",
+              }}
+            >
+              {teamA}
+            </Text>
+            {(teamMode === "both" || teamMode === "A") && (
+              <View
+                style={{
+                  backgroundColor: "#0A0A0A",
+                  borderRadius: 3,
+                  paddingHorizontal: 8,
+                  paddingVertical: 3,
+                  marginLeft: 8,
+                  borderWidth: 1,
+                  borderColor: "#1A1A1A",
+                  shadowColor: "#000",
+                  shadowOffset: { width: 0, height: 1 },
+                  shadowOpacity: 0.8,
+                  shadowRadius: 2,
+                  elevation: 2,
+                }}
+              >
+                <Text
+                  style={{
+                    color: "#4CAF50",
+                    fontSize: 16,
+                    fontWeight: "900",
+                    fontFamily: Platform.OS === "ios" ? "Courier New" : "monospace",
+                    textShadowColor: "#4CAF50",
+                    textShadowOffset: { width: 0, height: 0 },
+                    textShadowRadius: 4,
+                    letterSpacing: 1,
+                    textAlign: "center",
+                  }}
+                >
+                  {scoreA.toString().padStart(2, '0')}
+                </Text>
+              </View>
+            )}
+          </View>
           
           <Text
             style={{
@@ -109,15 +152,52 @@ export default function MatchStatusBar({
             vs
           </Text>
           
-          <Text
-            style={{
-              color: "#2196F3",
-              fontSize: 15,
-              fontWeight: "bold",
-            }}
-          >
-            {teamB}
-          </Text>
+          {/* Team B avec score à gauche */}
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
+            {(teamMode === "both" || teamMode === "B") && (
+              <View
+                style={{
+                  backgroundColor: "#0A0A0A",
+                  borderRadius: 3,
+                  paddingHorizontal: 8,
+                  paddingVertical: 3,
+                  marginRight: 8,
+                  borderWidth: 1,
+                  borderColor: "#1A1A1A",
+                  shadowColor: "#000",
+                  shadowOffset: { width: 0, height: 1 },
+                  shadowOpacity: 0.8,
+                  shadowRadius: 2,
+                  elevation: 2,
+                }}
+              >
+                <Text
+                  style={{
+                    color: "#2196F3",
+                    fontSize: 16,
+                    fontWeight: "900",
+                    fontFamily: Platform.OS === "ios" ? "Courier New" : "monospace",
+                    textShadowColor: "#2196F3",
+                    textShadowOffset: { width: 0, height: 0 },
+                    textShadowRadius: 4,
+                    letterSpacing: 1,
+                    textAlign: "center",
+                  }}
+                >
+                  {scoreB.toString().padStart(2, '0')}
+                </Text>
+              </View>
+            )}
+            <Text
+              style={{
+                color: "#2196F3",
+                fontSize: 15,
+                fontWeight: "bold",
+              }}
+            >
+              {teamB}
+            </Text>
+          </View>
         </TouchableOpacity>
 
         {/* Période et temps restant */}

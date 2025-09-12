@@ -768,6 +768,10 @@ export default function BasketballCourt() {
   const [showNextPeriodModal, setShowNextPeriodModal] = useState<boolean>(false);
   const [showEndMatchModal, setShowEndMatchModal] = useState<boolean>(false);
 
+  // États pour les scores
+  const [scoreA, setScoreA] = useState<number>(0);
+  const [scoreB, setScoreB] = useState<number>(0);
+
   // Fonctions utilitaires pour la gestion des périodes
   const getTotalPeriods = () => {
     return matchFormat === "2_halves" ? 2 : 4;
@@ -780,6 +784,35 @@ export default function BasketballCourt() {
   const getTimeRemaining = () => {
     return Math.max(0, periodDuration - timeElapsed);
   };
+
+  // Fonction pour calculer les scores à partir des actions
+  const calculateScores = useCallback(() => {
+    let newScoreA = 0;
+    let newScoreB = 0;
+
+    completedActions.forEach((action) => {
+      // Un tir réussi rapporte des points
+      if (action.type === "tir" && action.specification === "reussi") {
+        // TODO: Déterminer le nombre de points selon la position (2 ou 3 points)
+        // Pour l'instant, tous les tirs réussis rapportent 2 points
+        const points = 2;
+        
+        if (action.team === "A") {
+          newScoreA += points;
+        } else if (action.team === "B") {
+          newScoreB += points;
+        }
+      }
+    });
+
+    setScoreA(newScoreA);
+    setScoreB(newScoreB);
+  }, [completedActions]);
+
+  // Recalculer les scores à chaque changement d'actions
+  useEffect(() => {
+    calculateScores();
+  }, [calculateScores]);
 
   const handleTeamModeConfirm = (selectedTeamMode: "A" | "B" | "both") => {
     setTeamMode(selectedTeamMode);
@@ -821,6 +854,10 @@ export default function BasketballCourt() {
       setCurrentMatch(match);
       setPreGameMode(false);
 
+      // Réinitialiser les scores au début d'un nouveau match
+      setScoreA(0);
+      setScoreB(0);
+      
       console.log("✅ Match started successfully:", match.id);
     } catch (error) {
       console.error("❌ Error starting match:", error);
@@ -914,6 +951,8 @@ export default function BasketballCourt() {
       setCurrentPeriod(nextPeriod);
       setTimeElapsed(0);
       setIsPaused(true);
+      
+      // Note: Les scores sont conservés entre les périodes
       
       console.log(`✅ Période ${nextPeriod} commencée`);
     }
@@ -1459,6 +1498,9 @@ export default function BasketballCourt() {
           onResume={handleResumeTimer}
           onNextPeriod={handleNextPeriodRequest}
           onEndMatch={handleEndMatchRequest}
+          scoreA={scoreA}
+          scoreB={scoreB}
+          teamMode={teamMode}
         />
       )}
 
