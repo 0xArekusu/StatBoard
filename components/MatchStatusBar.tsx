@@ -84,8 +84,7 @@ export default function MatchStatusBar({
         }}
       >
         {/* Équipes avec scores style digital */}
-        <TouchableOpacity
-          onPress={onPress}
+        <View
           style={{
             flexDirection: "row",
             alignItems: "center",
@@ -196,11 +195,10 @@ export default function MatchStatusBar({
               {teamB}
             </Text>
           </View>
-        </TouchableOpacity>
+        </View>
 
         {/* Période et temps restant */}
-        <TouchableOpacity
-          onPress={onPress}
+        <View
           style={{
             flexDirection: "row",
             alignItems: "center",
@@ -232,7 +230,7 @@ export default function MatchStatusBar({
           >
             {formatTime(timeRemaining)}
           </Text>
-        </TouchableOpacity>
+        </View>
 
         {/* Boutons de contrôle discrets */}
         <View style={{ flexDirection: "row", alignItems: "center" }}>
