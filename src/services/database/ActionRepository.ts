@@ -20,8 +20,8 @@ export class ActionRepository implements IActionRepository {
     const sql = `
       INSERT INTO match_actions (
         match_id, team, player_number, action_type, specification, 
-        semantic_x, semantic_y, action_order
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        semantic_x, semantic_y, action_order, period_number, time_in_period
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
     
     try {
@@ -33,7 +33,9 @@ export class ActionRepository implements IActionRepository {
         data.specification,
         data.semantic_x,
         data.semantic_y,
-        data.action_order
+        data.action_order,
+        data.period_number,
+        data.time_in_period
       ]);
 
       // Récupérer l'action créée
@@ -49,7 +51,12 @@ export class ActionRepository implements IActionRepository {
       console.log('📊 Action created in DB:', {
         id: actions[0].id,
         type: actions[0].action_type,
-        player: actions[0].player_number
+        specification: actions[0].specification,
+        player: actions[0].player_number,
+        team: actions[0].team,
+        period: actions[0].period_number,
+        timeInPeriod: `${Math.floor(actions[0].time_in_period / 60)}:${(actions[0].time_in_period % 60).toString().padStart(2, '0')}`,
+        order: actions[0].action_order
       });
 
       return actions[0] as Action;
@@ -69,8 +76,8 @@ export class ActionRepository implements IActionRepository {
         const sql = `
           INSERT INTO match_actions (
             match_id, team, player_number, action_type, specification, 
-            semantic_x, semantic_y, action_order
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            semantic_x, semantic_y, action_order, period_number, time_in_period
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `;
 
         for (const action of actions) {
@@ -82,7 +89,9 @@ export class ActionRepository implements IActionRepository {
             action.specification,
             action.semantic_x,
             action.semantic_y,
-            action.action_order
+            action.action_order,
+            action.period_number,
+            action.time_in_period
           ]);
         }
       });

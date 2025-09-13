@@ -9,6 +9,7 @@ export interface IMatchRepository {
   startMatch(id: number): Promise<void>;
   abandonMatch(id: number): Promise<void>;
   completeMatch(id: number): Promise<void>;
+  updateMatchState(id: number, currentPeriod: number, timeElapsed: number): Promise<void>;
 }
 
 export class MatchRepository implements IMatchRepository {
@@ -128,6 +129,18 @@ export class MatchRepository implements IMatchRepository {
       );
     } catch (error) {
       console.error('Error completing match:', error);
+      throw error;
+    }
+  }
+
+  async updateMatchState(id: number, currentPeriod: number, timeElapsed: number): Promise<void> {
+    try {
+      await this.db.execute(
+        'UPDATE matches SET current_period = ?, time_elapsed = ?, last_updated = ? WHERE id = ?',
+        [currentPeriod, timeElapsed, new Date().toISOString(), id]
+      );
+    } catch (error) {
+      console.error('Error updating match state:', error);
       throw error;
     }
   }

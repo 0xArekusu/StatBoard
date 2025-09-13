@@ -137,4 +137,18 @@ export class MatchManager {
       throw error;
     }
   }
+
+  /**
+   * Update the current match state (period, time, pause status)
+   */
+  async updateMatchState(matchId: number, currentPeriod: number, timeElapsed: number): Promise<void> {
+    try {
+      await this.matchRepository.updateMatchState(matchId, currentPeriod, timeElapsed);
+      
+      // Log supprimé pour éviter le spam lors des ticks du chrono
+    } catch (error) {
+      console.error('❌ Error updating match state:', error);
+      throw error;
+    }
+  }
 }

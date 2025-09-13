@@ -18,7 +18,7 @@ export class SQLiteAdapter implements IStorageAdapter {
     this.initializeTables();
   }
 
-  // 🔄 MÉTHODE TEMPORAIRE - À supprimer après test !
+  // 🔄 MÉTHODE TEMPORAIRE - À supprimer après test !wip
   private resetDatabaseTables(): void {
     try {
       console.log("🔄 Resetting database tables...");
@@ -44,7 +44,10 @@ export class SQLiteAdapter implements IStorageAdapter {
         ended_at DATETIME,
         team_mode TEXT NOT NULL CHECK(team_mode IN ('A', 'B', 'both')),
         match_format TEXT NOT NULL DEFAULT '2_halves' CHECK(match_format IN ('2_halves', '4_quarters')),
-        period_duration INTEGER NOT NULL DEFAULT 1200
+        period_duration INTEGER NOT NULL DEFAULT 1200,
+        current_period INTEGER DEFAULT 1,
+        time_elapsed INTEGER DEFAULT 0,
+        last_updated DATETIME DEFAULT CURRENT_TIMESTAMP
       );
     `);
 
@@ -61,6 +64,8 @@ export class SQLiteAdapter implements IStorageAdapter {
         semantic_y REAL NOT NULL,
         timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
         action_order INTEGER NOT NULL,
+        period_number INTEGER NOT NULL,
+        time_in_period INTEGER NOT NULL,
         FOREIGN KEY (match_id) REFERENCES matches (id) ON DELETE CASCADE
       );
     `);

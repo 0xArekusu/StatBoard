@@ -584,6 +584,12 @@ export default function BasketballCourt() {
     clickY: 0,
   });
 
+  // State pour stocker le temps au moment du clic sur le terrain
+  const [clickTime, setClickTime] = useState({
+    period: 1,
+    timeInPeriod: 0,
+  });
+
   // Calculate modal coordinates based on click
   const calculateModalPosition = (x: number, y: number) => {
     // 🎯 D'abord déterminer si la modal sera au-dessus ou en-dessous (position originale)
@@ -636,6 +642,12 @@ export default function BasketballCourt() {
   };
 
   const handleZonePress = (x: number, y: number) => {
+    // Capturer le temps exact au moment du clic
+    setClickTime({
+      period: currentPeriod,
+      timeInPeriod: timeElapsed,
+    });
+    
     const pos = calculateModalPosition(x, y);
     setModalPosition(pos);
     setActionModalVisible(true);
@@ -705,6 +717,8 @@ export default function BasketballCourt() {
       semantic_x: semanticPosition.xNormalized,
       semantic_y: semanticPosition.yNormalized,
       action_order: nextActionOrder,
+      period_number: clickTime.period, // période au moment du clic
+      time_in_period: clickTime.timeInPeriod, // temps au moment du clic sur le terrain
     };
 
     // Ajouter à la queue (traitement asynchrone)
@@ -813,6 +827,33 @@ export default function BasketballCourt() {
   useEffect(() => {
     calculateScores();
   }, [calculateScores]);
+
+  // Fonction pour sauvegarder l'état actuel du match
+  const saveMatchState = useCallback(async () => {
+    if (currentMatch) {
+      try {
+        await matchManager.updateMatchState(
+          currentMatch.id,
+          currentPeriod,
+          timeElapsed
+        );
+      } catch (error) {
+        console.error('❌ Error saving match state:', error);
+      }
+    }
+  }, [currentMatch, currentPeriod, timeElapsed, matchManager]);
+
+  // Sauvegarder automatiquement l'état du match
+  useEffect(() => {
+    if (currentMatch && !preGameMode) {
+      const timeoutId = setTimeout(() => {
+        saveMatchState();
+      }, 1000); // Debounce de 1 seconde
+
+      return () => clearTimeout(timeoutId);
+    }
+  }, [currentPeriod, timeElapsed, saveMatchState, currentMatch, preGameMode]);
+
 
   const handleTeamModeConfirm = (selectedTeamMode: "A" | "B" | "both") => {
     setTeamMode(selectedTeamMode);
@@ -954,6 +995,13 @@ export default function BasketballCourt() {
       
       // Note: Les scores sont conservés entre les périodes
       
+      // Sauvegarder immédiatement l'état de la nouvelle période
+      if (currentMatch) {
+        setTimeout(() => {
+          matchManager.updateMatchState(currentMatch.id, nextPeriod, 0);
+        }, 100);
+      }
+      
       console.log(`✅ Période ${nextPeriod} commencée`);
     }
   };
@@ -1020,11 +1068,29 @@ export default function BasketballCourt() {
     setTeamB(foundMatch.team_b_name);
     setTeamMode(foundMatch.team_mode);
     setCurrentTeam(foundMatch.team_mode === "B" ? "B" : "A");
+    
+    // Restaurer l'état du chrono depuis la base de données
+    setCurrentPeriod(foundMatch.current_period);
+    setTimeElapsed(foundMatch.time_elapsed);
+    setIsPaused(true); // Toujours en pause lors de la reprise pour que l'utilisateur décide
+    setIsMatchStarted(foundMatch.time_elapsed > 0); // Si du temps a été écoulé, le match a été démarré
+    
+    // Restaurer les paramètres du match
+    setMatchFormat(foundMatch.match_format);
+    setPeriodDuration(foundMatch.period_duration);
+    
     setPreGameMode(false);
     setResumeModalVisible(false);
 
     // Charger les actions existantes du match
     await loadExistingActions(foundMatch.id);
+    
+    console.log(`✅ Match state restored:`, {
+      period: foundMatch.current_period,
+      timeElapsed: foundMatch.time_elapsed,
+      format: foundMatch.match_format,
+      duration: foundMatch.period_duration
+    });
   };
 
   const loadExistingActions = async (matchId: number) => {
@@ -1493,7 +1559,6 @@ export default function BasketballCourt() {
           periodDuration={periodDuration}
           isPaused={isPaused}
           isPortrait={isPortrait}
-          onPress={() => console.log('Options clicked')}
           onPause={handlePauseMatch}
           onResume={handleResumeTimer}
           onNextPeriod={handleNextPeriodRequest}

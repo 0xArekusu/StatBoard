@@ -11,7 +11,6 @@ interface MatchStatusBarProps {
   periodDuration: number; // en secondes
   isPaused: boolean;
   isPortrait: boolean;
-  onPress: () => void;
   onPause: () => void;
   onResume: () => void;
   onNextPeriod?: () => void;
@@ -30,7 +29,6 @@ export default function MatchStatusBar({
   periodDuration,
   isPaused,
   isPortrait,
-  onPress,
   onPause,
   onResume,
   onNextPeriod,
@@ -334,21 +332,6 @@ export default function MatchStatusBar({
             </TouchableOpacity>
           )}
 
-          {/* Bouton d'options (3 points) */}
-          <TouchableOpacity
-            onPress={onPress}
-            style={{
-              backgroundColor: "rgba(255, 255, 255, 0.1)",
-              borderRadius: 16,
-              paddingHorizontal: 10,
-              paddingVertical: 6,
-              marginLeft: 4,
-            }}
-          >
-            <Text style={{ color: "#fff", fontSize: 12, fontWeight: "bold" }}>
-              ⚙️
-            </Text>
-          </TouchableOpacity>
         </View>
       </View>
     </View>

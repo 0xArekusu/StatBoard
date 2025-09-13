@@ -14,6 +14,9 @@ export interface Match {
   team_mode: TeamMode;
   match_format: MatchFormat;
   period_duration: number;
+  current_period: number;
+  time_elapsed: number;
+  last_updated: string;
 }
 
 export interface CreateMatchData {
@@ -35,6 +38,8 @@ export interface Action {
   semantic_y: number;
   timestamp: string;
   action_order: number;
+  period_number: number;
+  time_in_period: number; // temps en secondes depuis le début de la période
 }
 
 export interface CreateActionData {
@@ -46,4 +51,6 @@ export interface CreateActionData {
   semantic_x: number;
   semantic_y: number;
   action_order: number;
+  period_number: number;
+  time_in_period: number; // temps en secondes depuis le début de la période
 }

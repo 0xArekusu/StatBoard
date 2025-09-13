@@ -31,8 +31,12 @@ export class ActionQueue {
     
     console.log(`📊 Action queued (${this.queue.length} in queue):`, {
       type: action.action_type,
+      specification: action.specification,
       player: action.player_number,
-      team: action.team
+      team: action.team,
+      period: action.period_number,
+      timeInPeriod: `${Math.floor(action.time_in_period / 60)}:${(action.time_in_period % 60).toString().padStart(2, '0')}`,
+      order: action.action_order
     });
 
     // Si on atteint la taille de batch, traiter immédiatement
