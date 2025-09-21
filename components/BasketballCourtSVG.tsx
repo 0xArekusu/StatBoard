@@ -14,10 +14,6 @@ export default function BasketballCourtSVGG({
   onCourtPress,
   backgroundColor = "#fccb54",
 }: BasketballCourtSVGProps) {
-  // Court dimensions (proportional to container)
-  const courtWidth = width;
-  const courtHeight = height - 20;
-
   // Calculate court elements proportionally
   const isPortrait = height > width;
 
@@ -356,12 +352,7 @@ export default function BasketballCourtSVGG({
       </G>
     </Svg>
   ) : (
-    <Svg
-      viewBox="0 0 1146.749971 615.75"
-      width="100%"
-      height="100%"
-      // width="100%" viewBox="0 0 615.75 1146.749971" height="100%"
-    >
+    <Svg viewBox="0 0 1146.749971 615.75" width="100%" height="100%">
       <Defs>
         <ClipPath id="a">
           <Path d="M.434.164H1145.84v614.75H.434zm0 0" />

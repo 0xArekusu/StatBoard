@@ -124,7 +124,8 @@ export default function BasketballCourt() {
 
   // Constantes pour les dimensions et offsets
   const CONTAINER_PADDING = 20;
-  const BOTTOM_NAV_HEIGHT = 60; // Hauteur de la bottom navigation bar (réduite)
+  const BOTTOM_NAV_HEIGHT = 50; // Hauteur de la bottom navigation bar en portrait
+  const BOTTOM_NAV_WIDTH = 70; // Largeur de la bottom navigation bar en paysage
 
   // 🎯 CONSTANTES DE CENTRAGE - Facile à ajuster !
   const ICON_OFFSET_X = 6; // Offset horizontal de l'icône
@@ -519,7 +520,7 @@ export default function BasketballCourt() {
         insets.left -
         insets.right -
         2 * CONTAINER_PADDING -
-        80; // Space for vertical bottom nav in landscape (réduit)
+        BOTTOM_NAV_WIDTH; // Space for vertical bottom nav in landscape
 
     // Height without phone state bar and navigation bar, with bottom nav space
     const availableHeight = isPortrait
@@ -554,6 +555,7 @@ export default function BasketballCourt() {
       threePointArcHeight,
       CONTAINER_PADDING,
       BOTTOM_NAV_HEIGHT,
+      BOTTOM_NAV_WIDTH,
       isPortrait,
       window,
       insets,
@@ -1904,7 +1906,9 @@ export default function BasketballCourt() {
               {completedActions.length > 0 && (
                 <View style={styles.navBadgeCounter}>
                   <Text style={styles.navBadgeCounterText}>
-                    {completedActions.length > 99 ? "99+" : completedActions.length}
+                    {completedActions.length > 99
+                      ? "99+"
+                      : completedActions.length}
                   </Text>
                 </View>
               )}
@@ -2292,6 +2296,7 @@ const getStyles = ({
   threePointArcHeight,
   CONTAINER_PADDING,
   BOTTOM_NAV_HEIGHT,
+  BOTTOM_NAV_WIDTH,
   isPortrait,
   window,
   insets,
@@ -2305,6 +2310,7 @@ const getStyles = ({
   threePointArcHeight: number;
   CONTAINER_PADDING: number;
   BOTTOM_NAV_HEIGHT: number;
+  BOTTOM_NAV_WIDTH: number;
   isPortrait: boolean;
   window: { width: number; height: number };
   insets: { top: number; left: number; right: number; bottom: number };
@@ -2344,18 +2350,19 @@ const getStyles = ({
       backgroundColor: "rgba(0, 0, 0, 0.9)",
       ...(isPortrait
         ? {
-            // Portrait: bottom full width - hauteur réduite
+            // Portrait: bottom full width - utilise BOTTOM_NAV_HEIGHT
             bottom: 0,
             left: 0,
             right: 0,
+            height: BOTTOM_NAV_HEIGHT,
             flexDirection: "row",
           }
         : {
-            // Landscape: right side - prend toute la hauteur disponible
+            // Landscape: right side - utilise BOTTOM_NAV_WIDTH
             right: 0,
             top: 0,
             bottom: 0,
-            width: 70, // Largeur réduite
+            width: BOTTOM_NAV_WIDTH,
             flexDirection: "column",
             justifyContent: "center",
           }),
@@ -2525,12 +2532,11 @@ const getStyles = ({
     courtContainer: {
       backgroundColor: "green",
       position: "absolute",
-      paddingTop: 60,
-      top: CONTAINER_PADDING,
+      paddingTop: 80,
+      paddingBottom: 20,
+      top: 0,
       left: 0,
-      right: isPortrait ? 0 : 80, // Space for vertical bottom nav in landscape (réduit)
-      bottom: isPortrait
-        ? BOTTOM_NAV_HEIGHT
-        : CONTAINER_PADDING,
+      right: isPortrait ? 0 : BOTTOM_NAV_WIDTH, // Space for vertical bottom nav in landscape
+      bottom: isPortrait ? BOTTOM_NAV_HEIGHT : 0,
     },
   });
