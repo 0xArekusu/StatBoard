@@ -72,8 +72,6 @@ export default function MatchStatusBar({
         paddingVertical: 10,
         paddingTop: 14, // Espace pour la barre de statut du téléphone
         zIndex: 400,
-        borderBottomWidth: isPaused ? 2 : 0,
-        borderBottomColor: "#FF9800",
       }}
     >
       <View

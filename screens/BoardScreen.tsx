@@ -123,7 +123,6 @@ export default function BasketballCourt() {
   const [showSheet, setShowSheet] = useState(true);
 
   // Constantes pour les dimensions et offsets
-  const CONTAINER_PADDING = 20;
   const BOTTOM_NAV_HEIGHT = 50; // Hauteur de la bottom navigation bar en portrait
   const BOTTOM_NAV_WIDTH = 70; // Largeur de la bottom navigation bar en paysage
 
@@ -515,21 +514,13 @@ export default function BasketballCourt() {
   } = useMemo(() => {
     // Width without phone state bar and navigation bar, with bottom nav space
     const availableWidth = isPortrait
-      ? window.width - insets.left - insets.right - 2 * CONTAINER_PADDING
-      : window.width -
-        insets.left -
-        insets.right -
-        2 * CONTAINER_PADDING -
-        BOTTOM_NAV_WIDTH; // Space for vertical bottom nav in landscape
+      ? window.width - insets.left - insets.right
+      : window.width - insets.left - insets.right - BOTTOM_NAV_WIDTH; // Space for vertical bottom nav in landscape
 
     // Height without phone state bar and navigation bar, with bottom nav space
     const availableHeight = isPortrait
-      ? window.height -
-        insets.top -
-        insets.bottom -
-        2 * CONTAINER_PADDING -
-        BOTTOM_NAV_HEIGHT
-      : window.height - insets.top - insets.bottom - 2 * CONTAINER_PADDING;
+      ? window.height - insets.top - insets.bottom - BOTTOM_NAV_HEIGHT
+      : window.height - insets.top - insets.bottom;
 
     const courtWidth = availableWidth;
     const courtHeight = availableHeight;
@@ -548,17 +539,9 @@ export default function BasketballCourt() {
     const styles = getStyles({
       courtWidth,
       courtHeight,
-      circleDiameter,
-      keyWidth,
-      keyHeight,
-      threePointArcWidth,
-      threePointArcHeight,
-      CONTAINER_PADDING,
       BOTTOM_NAV_HEIGHT,
       BOTTOM_NAV_WIDTH,
       isPortrait,
-      window,
-      insets,
     });
 
     return {
@@ -2289,43 +2272,17 @@ export default function BasketballCourt() {
 const getStyles = ({
   courtWidth,
   courtHeight,
-  circleDiameter,
-  keyWidth,
-  keyHeight,
-  threePointArcWidth,
-  threePointArcHeight,
-  CONTAINER_PADDING,
   BOTTOM_NAV_HEIGHT,
   BOTTOM_NAV_WIDTH,
   isPortrait,
-  window,
-  insets,
 }: {
   courtWidth: number;
   courtHeight: number;
-  circleDiameter: number;
-  keyWidth: number;
-  keyHeight: number;
-  threePointArcWidth: number;
-  threePointArcHeight: number;
-  CONTAINER_PADDING: number;
   BOTTOM_NAV_HEIGHT: number;
   BOTTOM_NAV_WIDTH: number;
   isPortrait: boolean;
-  window: { width: number; height: number };
-  insets: { top: number; left: number; right: number; bottom: number };
 }) =>
   StyleSheet.create({
-    container: {
-      flex: 1,
-      alignItems: "center",
-      justifyContent: "center",
-      backgroundColor: "red",
-      width: courtWidth,
-      height: courtHeight,
-      padding: 30,
-      position: "absolute",
-    },
     markerContainer: {
       position: "absolute",
       zIndex: 100,
