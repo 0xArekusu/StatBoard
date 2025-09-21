@@ -124,7 +124,7 @@ export default function BasketballCourt() {
 
   // Constantes pour les dimensions et offsets
   const CONTAINER_PADDING = 20;
-  const TOOLBAR_SPACE = 50;
+  const BOTTOM_NAV_HEIGHT = 60; // Hauteur de la bottom navigation bar (réduite)
 
   // 🎯 CONSTANTES DE CENTRAGE - Facile à ajuster !
   const ICON_OFFSET_X = 6; // Offset horizontal de l'icône
@@ -512,22 +512,22 @@ export default function BasketballCourt() {
     threePointArcHeight,
     styles,
   } = useMemo(() => {
-    // Width without phone state bar and navigation bar, with toolbar space
+    // Width without phone state bar and navigation bar, with bottom nav space
     const availableWidth = isPortrait
       ? window.width - insets.left - insets.right - 2 * CONTAINER_PADDING
       : window.width -
         insets.left -
         insets.right -
         2 * CONTAINER_PADDING -
-        TOOLBAR_SPACE;
+        80; // Space for vertical bottom nav in landscape (réduit)
 
-    // Height without phone state bar and navigation bar, with toolbar space
+    // Height without phone state bar and navigation bar, with bottom nav space
     const availableHeight = isPortrait
       ? window.height -
         insets.top -
         insets.bottom -
         2 * CONTAINER_PADDING -
-        TOOLBAR_SPACE
+        BOTTOM_NAV_HEIGHT
       : window.height - insets.top - insets.bottom - 2 * CONTAINER_PADDING;
 
     const courtWidth = availableWidth;
@@ -553,7 +553,7 @@ export default function BasketballCourt() {
       threePointArcWidth,
       threePointArcHeight,
       CONTAINER_PADDING,
-      TOOLBAR_SPACE,
+      BOTTOM_NAV_HEIGHT,
       isPortrait,
       window,
       insets,
@@ -1832,64 +1832,99 @@ export default function BasketballCourt() {
           );
         })}
 
-      {/* Toolbar - positioned at bottom (portrait) or right (landscape) */}
+      {/* Bottom Navigation Bar - positioned at bottom (portrait) or right (landscape) */}
       {!initModalVisible && !preGameMode && (
-        <View style={styles.toolbar}>
+        <View style={styles.bottomNavBar}>
+          {/* Actions Button */}
           <TouchableOpacity
-            style={[
-              styles.toolbarButton,
-              showAllActions && styles.toolbarButtonActive,
-            ]}
+            style={styles.navButton}
             onPress={toggleShowAllActions}
           >
-            <Text style={styles.toolbarButtonIcon}>
-              {showAllActions ? "👁️" : "🚫"}
-            </Text>
+            <View style={styles.navButtonContent}>
+              <Text style={styles.navButtonIcon}>
+                {showAllActions ? "👁️" : "🚫"}
+              </Text>
+              {showAllActions && (
+                <View style={styles.navBadge}>
+                  <View style={styles.navBadgeDot} />
+                </View>
+              )}
+              <Text style={styles.navButtonLabel}>Actions</Text>
+            </View>
           </TouchableOpacity>
 
-          {/* Filter button - only visible when showAllActions is true */}
-          {showAllActions && (
-            <TouchableOpacity
-              style={[styles.toolbarButton, styles.toolbarButtonSpacing]}
-              onPress={() => setShowFilterSheet(true)}
-            >
-              <Text style={styles.toolbarButtonIcon}>🔍</Text>
-            </TouchableOpacity>
-          )}
+          {/* Filter button */}
+          <TouchableOpacity
+            style={[
+              styles.navButton,
+              !showAllActions && styles.navButtonDisabled,
+            ]}
+            onPress={() => setShowFilterSheet(true)}
+            disabled={!showAllActions}
+          >
+            <View style={styles.navButtonContent}>
+              <Text style={styles.navButtonIcon}>🔍</Text>
+              {(appliedFilters.teams.length < 2 ||
+                appliedFilters.players.length > 0 ||
+                appliedFilters.actionTypes.length > 0) && (
+                <View style={styles.navBadge}>
+                  <View style={styles.navBadgeDot} />
+                </View>
+              )}
+              <Text style={styles.navButtonLabel}>Filtres</Text>
+            </View>
+          </TouchableOpacity>
 
-          {/* Reset filters button - only visible when showAllActions is true */}
-          {showAllActions && (
-            <TouchableOpacity
-              style={[styles.toolbarButton, styles.toolbarButtonSpacing]}
-              onPress={handleResetFilters}
-            >
-              <Text style={styles.toolbarButtonIcon}>🔄</Text>
-            </TouchableOpacity>
-          )}
+          {/* Reset filters button */}
+          <TouchableOpacity
+            style={[
+              styles.navButton,
+              !showAllActions && styles.navButtonDisabled,
+            ]}
+            onPress={handleResetFilters}
+            disabled={!showAllActions}
+          >
+            <View style={styles.navButtonContent}>
+              <Text style={styles.navButtonIcon}>🔄</Text>
+              <Text style={styles.navButtonLabel}>Reset</Text>
+            </View>
+          </TouchableOpacity>
 
           {/* History button */}
           <TouchableOpacity
             style={[
-              styles.toolbarButton,
-              styles.toolbarButtonSpacing,
-              completedActions.length === 0 && styles.toolbarButtonDisabled,
+              styles.navButton,
+              completedActions.length === 0 && styles.navButtonDisabled,
             ]}
             onPress={() => setShowHistorySheet(true)}
             disabled={completedActions.length === 0}
           >
-            <Text style={styles.toolbarButtonIcon}>📋</Text>
+            <View style={styles.navButtonContent}>
+              <Text style={styles.navButtonIcon}>📋</Text>
+              {completedActions.length > 0 && (
+                <View style={styles.navBadgeCounter}>
+                  <Text style={styles.navBadgeCounterText}>
+                    {completedActions.length > 99 ? "99+" : completedActions.length}
+                  </Text>
+                </View>
+              )}
+              <Text style={styles.navButtonLabel}>Histoire</Text>
+            </View>
           </TouchableOpacity>
 
+          {/* Undo button */}
           <TouchableOpacity
             style={[
-              styles.toolbarButton,
-              styles.toolbarButtonSpacing,
-              completedActions.length === 0 && styles.toolbarButtonDisabled,
+              styles.navButton,
+              completedActions.length === 0 && styles.navButtonDisabled,
             ]}
             onPress={handleUndoLastAction}
             disabled={completedActions.length === 0}
           >
-            <Text style={styles.toolbarButtonIcon}>↶</Text>
+            <View style={styles.navButtonContent}>
+              <Text style={styles.navButtonIcon}>⏪</Text>
+              <Text style={styles.navButtonLabel}>Annuler</Text>
+            </View>
           </TouchableOpacity>
         </View>
       )}
@@ -2256,7 +2291,7 @@ const getStyles = ({
   threePointArcWidth,
   threePointArcHeight,
   CONTAINER_PADDING,
-  TOOLBAR_SPACE,
+  BOTTOM_NAV_HEIGHT,
   isPortrait,
   window,
   insets,
@@ -2269,7 +2304,7 @@ const getStyles = ({
   threePointArcWidth: number;
   threePointArcHeight: number;
   CONTAINER_PADDING: number;
-  TOOLBAR_SPACE: number;
+  BOTTOM_NAV_HEIGHT: number;
   isPortrait: boolean;
   window: { width: number; height: number };
   insets: { top: number; left: number; right: number; bottom: number };
@@ -2304,58 +2339,92 @@ const getStyles = ({
       textShadowOffset: { width: 1, height: 1 },
       textShadowRadius: 2,
     },
-    toolbar: {
+    bottomNavBar: {
       position: "absolute",
+      backgroundColor: "rgba(0, 0, 0, 0.9)",
       ...(isPortrait
         ? {
-            // Portrait: bottom center
-            bottom: CONTAINER_PADDING,
-            left: CONTAINER_PADDING,
-            right: CONTAINER_PADDING,
+            // Portrait: bottom full width - hauteur réduite
+            bottom: 0,
+            left: 0,
+            right: 0,
             flexDirection: "row",
-            justifyContent: "center",
-            alignItems: "center",
           }
         : {
-            // Landscape: right center
-            right: CONTAINER_PADDING,
-            top: "50%",
-            transform: [{ translateY: -40 }],
+            // Landscape: right side - prend toute la hauteur disponible
+            right: 0,
+            top: 0,
+            bottom: 0,
+            width: 70, // Largeur réduite
             flexDirection: "column",
-            alignItems: "center",
+            justifyContent: "center",
           }),
       zIndex: 300,
     },
-    toolbarButton: {
-      backgroundColor: "rgba(255,255,255,0.2)",
-      borderRadius: 20,
-      padding: 10,
-      borderWidth: 2,
-      borderColor: "rgba(255,255,255,0.5)",
-      shadowColor: "#000",
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.3,
-      shadowRadius: 4,
-      elevation: 5,
-      minWidth: 44,
-      minHeight: 44,
+    navButton: {
+      flex: isPortrait ? 1 : 0,
       alignItems: "center",
       justifyContent: "center",
-    },
-    toolbarButtonActive: {
-      backgroundColor: "rgba(255,255,255,0.5)",
-      borderColor: "rgba(255,255,255,1)",
-    },
-    toolbarButtonSpacing: {
+      paddingVertical: isPortrait ? 6 : 8,
+      paddingHorizontal: isPortrait ? 4 : 2,
+      borderRadius: 12,
       ...(isPortrait
-        ? { marginLeft: 10 } // Portrait: space between buttons horizontally
-        : { marginTop: 10 }), // Landscape: space between buttons vertically
+        ? { marginHorizontal: 2 }
+        : { marginVertical: 6, minWidth: 50 }),
     },
-    toolbarButtonDisabled: {
-      opacity: 0.5, // Make disabled button look faded
+    navButtonContent: {
+      alignItems: "center",
+      justifyContent: "center",
+      position: "relative",
     },
-    toolbarButtonIcon: {
-      fontSize: 24,
+    navButtonIcon: {
+      fontSize: isPortrait ? 18 : 16,
+      marginBottom: isPortrait ? 3 : 2,
+    },
+    navButtonLabel: {
+      fontSize: isPortrait ? 9 : 8,
+      color: "#fff",
+      fontWeight: "600",
+      textAlign: "center",
+      opacity: 0.9,
+    },
+    navButtonDisabled: {
+      opacity: 0.4,
+    },
+    navBadge: {
+      position: "absolute",
+      top: -2,
+      right: -2,
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+      backgroundColor: "#FF5722",
+      zIndex: 1,
+    },
+    navBadgeDot: {
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+      backgroundColor: "#FF5722",
+    },
+    navBadgeCounter: {
+      position: "absolute",
+      top: -6,
+      right: -6,
+      backgroundColor: "#FF5722",
+      borderRadius: 10,
+      minWidth: 20,
+      height: 20,
+      alignItems: "center",
+      justifyContent: "center",
+      paddingHorizontal: 4,
+      zIndex: 1,
+    },
+    navBadgeCounterText: {
+      color: "#fff",
+      fontSize: 10,
+      fontWeight: "bold",
+      textAlign: "center",
     },
     undoModalOverlay: {
       flex: 1,
@@ -2459,9 +2528,9 @@ const getStyles = ({
       paddingTop: 60,
       top: CONTAINER_PADDING,
       left: 0,
-      right: isPortrait ? 0 : CONTAINER_PADDING + TOOLBAR_SPACE,
+      right: isPortrait ? 0 : 80, // Space for vertical bottom nav in landscape (réduit)
       bottom: isPortrait
-        ? CONTAINER_PADDING + TOOLBAR_SPACE
+        ? BOTTOM_NAV_HEIGHT
         : CONTAINER_PADDING,
     },
   });
