@@ -13,7 +13,6 @@ import {
   useWindowDimensions,
   Animated,
   Modal,
-  Pressable,
   BackHandler,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -499,7 +498,6 @@ export default function BasketballCourt() {
     };
   }, []);
 
-
   const isPortrait =
     orientation === ScreenOrientation.Orientation.PORTRAIT_UP ||
     orientation === ScreenOrientation.Orientation.PORTRAIT_DOWN;
@@ -647,7 +645,7 @@ export default function BasketballCourt() {
       period: currentPeriod,
       timeInPeriod: timeElapsed,
     });
-    
+
     const pos = calculateModalPosition(x, y);
     setModalPosition(pos);
     setActionModalVisible(true);
@@ -779,7 +777,8 @@ export default function BasketballCourt() {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   // États pour les modals de confirmation
-  const [showNextPeriodModal, setShowNextPeriodModal] = useState<boolean>(false);
+  const [showNextPeriodModal, setShowNextPeriodModal] =
+    useState<boolean>(false);
   const [showEndMatchModal, setShowEndMatchModal] = useState<boolean>(false);
 
   // États pour les scores
@@ -810,7 +809,7 @@ export default function BasketballCourt() {
         // TODO: Déterminer le nombre de points selon la position (2 ou 3 points)
         // Pour l'instant, tous les tirs réussis rapportent 2 points
         const points = 2;
-        
+
         if (action.team === "A") {
           newScoreA += points;
         } else if (action.team === "B") {
@@ -838,7 +837,7 @@ export default function BasketballCourt() {
           timeElapsed
         );
       } catch (error) {
-        console.error('❌ Error saving match state:', error);
+        console.error("❌ Error saving match state:", error);
       }
     }
   }, [currentMatch, currentPeriod, timeElapsed, matchManager]);
@@ -853,7 +852,6 @@ export default function BasketballCourt() {
       return () => clearTimeout(timeoutId);
     }
   }, [currentPeriod, timeElapsed, saveMatchState, currentMatch, preGameMode]);
-
 
   const handleTeamModeConfirm = (selectedTeamMode: "A" | "B" | "both") => {
     setTeamMode(selectedTeamMode);
@@ -898,7 +896,7 @@ export default function BasketballCourt() {
       // Réinitialiser les scores au début d'un nouveau match
       setScoreA(0);
       setScoreB(0);
-      
+
       console.log("✅ Match started successfully:", match.id);
     } catch (error) {
       console.error("❌ Error starting match:", error);
@@ -912,7 +910,7 @@ export default function BasketballCourt() {
     if (timerRef.current) {
       clearInterval(timerRef.current);
     }
-    
+
     timerRef.current = setInterval(() => {
       setTimeElapsed((prev) => {
         const newTime = prev + 1;
@@ -929,7 +927,7 @@ export default function BasketballCourt() {
         return newTime;
       });
     }, 1000);
-    
+
     setIsPaused(false);
     setIsMatchStarted(true);
   }, [periodDuration]);
@@ -953,12 +951,12 @@ export default function BasketballCourt() {
 
   // Fonctions pour la barre de statut
   const handlePauseMatch = () => {
-    console.log('Pause clicked');
+    console.log("Pause clicked");
     stopTimer();
   };
 
   const handleResumeTimer = () => {
-    console.log('Resume clicked');
+    console.log("Resume clicked");
     // Si le match n'a pas encore commencé ou si on est en pause, démarrer le chrono
     if (!isMatchStarted || isPaused) {
       startTimer();
@@ -968,7 +966,7 @@ export default function BasketballCourt() {
   // Fonctions pour la gestion des périodes
   const handleNextPeriodRequest = () => {
     const timeRemaining = getTimeRemaining();
-    
+
     if (timeRemaining > 0) {
       // Il reste du temps, demander confirmation
       setShowNextPeriodModal(true);
@@ -981,34 +979,34 @@ export default function BasketballCourt() {
   const goToNextPeriod = () => {
     const nextPeriod = currentPeriod + 1;
     const maxPeriods = getTotalPeriods();
-    
+
     if (nextPeriod <= maxPeriods) {
       console.log(`🏀 Passage à la période ${nextPeriod}`);
-      
+
       // Arrêter le chrono actuel
       stopTimer();
-      
+
       // Passer à la période suivante et reset le chrono
       setCurrentPeriod(nextPeriod);
       setTimeElapsed(0);
       setIsPaused(true);
-      
+
       // Note: Les scores sont conservés entre les périodes
-      
+
       // Sauvegarder immédiatement l'état de la nouvelle période
       if (currentMatch) {
         setTimeout(() => {
           matchManager.updateMatchState(currentMatch.id, nextPeriod, 0);
         }, 100);
       }
-      
+
       console.log(`✅ Période ${nextPeriod} commencée`);
     }
   };
 
   const handleEndMatchRequest = () => {
     const timeRemaining = getTimeRemaining();
-    
+
     if (timeRemaining > 0) {
       // Il reste du temps, demander confirmation
       setShowEndMatchModal(true);
@@ -1021,19 +1019,18 @@ export default function BasketballCourt() {
   const endMatch = async () => {
     try {
       console.log("🏁 Fin de match");
-      
+
       // Arrêter le chrono
       stopTimer();
-      
+
       // Marquer le match comme terminé dans la base de données
       if (currentMatch) {
         await matchManager.endMatch(currentMatch.id);
         console.log("✅ Match terminé et sauvegardé");
       }
-      
+
       // TODO: Afficher un écran de résumé ou rediriger vers le menu principal
       // Pour l'instant, on peut rester sur l'écran actuel
-      
     } catch (error) {
       console.error("❌ Error ending match:", error);
       // Même en cas d'erreur, arrêter le chrono
@@ -1068,28 +1065,28 @@ export default function BasketballCourt() {
     setTeamB(foundMatch.team_b_name);
     setTeamMode(foundMatch.team_mode);
     setCurrentTeam(foundMatch.team_mode === "B" ? "B" : "A");
-    
+
     // Restaurer l'état du chrono depuis la base de données
     setCurrentPeriod(foundMatch.current_period);
     setTimeElapsed(foundMatch.time_elapsed);
     setIsPaused(true); // Toujours en pause lors de la reprise pour que l'utilisateur décide
     setIsMatchStarted(foundMatch.time_elapsed > 0); // Si du temps a été écoulé, le match a été démarré
-    
+
     // Restaurer les paramètres du match
     setMatchFormat(foundMatch.match_format);
     setPeriodDuration(foundMatch.period_duration);
-    
+
     setPreGameMode(false);
     setResumeModalVisible(false);
 
     // Charger les actions existantes du match
     await loadExistingActions(foundMatch.id);
-    
+
     console.log(`✅ Match state restored:`, {
       period: foundMatch.current_period,
       timeElapsed: foundMatch.time_elapsed,
       format: foundMatch.match_format,
-      duration: foundMatch.period_duration
+      duration: foundMatch.period_duration,
     });
   };
 
@@ -1662,7 +1659,9 @@ export default function BasketballCourt() {
       <MatchConfirmationModal
         visible={showNextPeriodModal}
         title="Passer à la période suivante"
-        message={`Voulez-vous vraiment passer à la ${matchFormat === "2_halves" ? "mi-temps" : "quart-temps"} suivant${matchFormat === "2_halves" ? "e" : ""} ?`}
+        message={`Voulez-vous vraiment passer à la ${
+          matchFormat === "2_halves" ? "mi-temps" : "quart-temps"
+        } suivant${matchFormat === "2_halves" ? "e" : ""} ?`}
         timeRemaining={getTimeRemaining()}
         onConfirm={confirmNextPeriod}
         onCancel={cancelNextPeriod}
@@ -1717,7 +1716,6 @@ export default function BasketballCourt() {
           </Text>
         </TouchableOpacity>
       )}
-
 
       {/* Debug: Render click point (temporary) */}
       {markers.map((m, i) => {
@@ -2023,36 +2021,14 @@ export default function BasketballCourt() {
       />
 
       {/* Basketball Court SVG */}
-      <Pressable
-        onPress={
-          !preGameMode
-            ? (e) => {
-                // Utiliser locationX/Y qui sont relatifs au terrain, pas pageX/Y
-                const locationX = e.nativeEvent.locationX;
-                const locationY = e.nativeEvent.locationY;
-                const pageX = e.nativeEvent.pageX;
-                const pageY = e.nativeEvent.pageY;
-
-                console.log("🖱️ Click coordinates:", {
-                  pageX: pageX,
-                  pageY: pageY,
-                  locationX: locationX,
-                  locationY: locationY,
-                  windowDimensions: window,
-                  courtDimensions: { width: courtWidth, height: courtHeight },
-                  isPortrait,
-                  orientationState: orientation,
-                });
-
-                // Utiliser locationX/Y au lieu de pageX/Y
-                handleZonePress(locationX, locationY);
-              }
-            : undefined
-        }
-        style={styles.courtContainer}
-      >
-        <BasketballCourtSVG width={courtWidth} height={courtHeight} />
-      </Pressable>
+      <View style={styles.courtContainer}>
+        <BasketballCourtSVG
+          width={courtWidth}
+          height={courtHeight}
+          onCourtPress={!preGameMode ? handleZonePress : undefined}
+          backgroundColor="green"
+        />
+      </View>
 
       {/* Bouton pour démarrer le match */}
       {!initModalVisible && !matchConfigModalVisible && preGameMode && (
@@ -2102,7 +2078,6 @@ export default function BasketballCourt() {
         teamB={teamB}
         currentTeam={currentTeam}
       />
-
 
       {/* 🏀 Pastilles des joueurs - Équipe A */}
       {!initModalVisible &&
@@ -2307,7 +2282,7 @@ const getStyles = ({
       backgroundColor: "red",
       width: courtWidth,
       height: courtHeight,
-      padding: CONTAINER_PADDING,
+      padding: 30,
       position: "absolute",
     },
     markerContainer: {
@@ -2479,10 +2454,12 @@ const getStyles = ({
       fontWeight: "bold",
     },
     courtContainer: {
+      backgroundColor: "green",
       position: "absolute",
+      paddingTop: 60,
       top: CONTAINER_PADDING,
-      left: CONTAINER_PADDING,
-      right: isPortrait ? CONTAINER_PADDING : CONTAINER_PADDING + TOOLBAR_SPACE,
+      left: 0,
+      right: isPortrait ? 0 : CONTAINER_PADDING + TOOLBAR_SPACE,
       bottom: isPortrait
         ? CONTAINER_PADDING + TOOLBAR_SPACE
         : CONTAINER_PADDING,
