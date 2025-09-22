@@ -285,7 +285,7 @@ export const useActionSystem = () => {
           timestamp: new Date(),
           position: state.clickPosition,
           // Les coordonnées sémantiques seront calculées dans BoardScreen.tsx
-          semanticPosition: { xNormalized: 0, yNormalized: 0 },
+          semanticPosition: { xNormalized: 0, yNormalized: 0, capturedInPortrait: true },
         };
 
         setCompletedActions((prev) => [...prev, actionData]);

@@ -66,52 +66,60 @@ interface SemanticPosition {
   // 1,1 = coin inférieur droit du terrain logique
   xNormalized: number; // 0.0 à 1.0
   yNormalized: number; // 0.0 à 1.0
+  // Ajout : orientation dans laquelle la position a été capturée
+  capturedInPortrait: boolean;
 }
 
 /**
  * Convertir une position de clic en position sémantique normalisée
+ * Approche simplifiée : on sauvegarde les coordonnées relatives telles quelles
+ * avec l'information de l'orientation de capture
  */
 const convertClickToSemantic = (
   clickPosition: { x: number; y: number },
   isPortrait: boolean,
   courtDimensions: { width: number; height: number }
 ): SemanticPosition => {
-  if (isPortrait) {
-    // Portrait : le terrain est dans son orientation "naturelle"
-    return {
-      xNormalized: clickPosition.x / courtDimensions.width,
-      yNormalized: clickPosition.y / courtDimensions.height,
-    };
-  } else {
-    // Paysage : rotation 90° sens anti-horaire
-    // Raquette haut (portrait) → Raquette gauche (paysage)
-    // Raquette bas (portrait) → Raquette droite (paysage)
-    return {
-      xNormalized: 1 - clickPosition.y / courtDimensions.height, // Y inversé devient X
-      yNormalized: clickPosition.x / courtDimensions.width, // X devient Y
-    };
-  }
+  // Toujours sauvegarder les coordonnées relatives directement
+  // sans transformation de rotation
+  return {
+    xNormalized: clickPosition.x / courtDimensions.width,
+    yNormalized: clickPosition.y / courtDimensions.height,
+    capturedInPortrait: isPortrait,
+  };
 };
 
 /**
  * Convertir une position sémantique en position d'affichage
+ * Gère la conversion entre orientations de manière symétrique
  */
 const convertSemanticToDisplay = (
   semanticPosition: SemanticPosition,
   isPortrait: boolean,
   courtDimensions: { width: number; height: number }
 ) => {
-  if (isPortrait) {
-    // Portrait : orientation naturelle
+  // Si l'orientation actuelle correspond à celle de capture, conversion directe
+  if (semanticPosition.capturedInPortrait === isPortrait) {
     return {
       x: semanticPosition.xNormalized * courtDimensions.width,
       y: semanticPosition.yNormalized * courtDimensions.height,
     };
-  } else {
-    // Paysage : rotation 90° sens horaire (inverse de la transformation)
+  }
+
+  // Sinon, il faut transformer les coordonnées pour l'autre orientation
+  if (isPortrait) {
+    // Afficher en portrait un marqueur capturé en paysage
+    // Version de test - remettons celle qui fonctionnait avant
     return {
       x: semanticPosition.yNormalized * courtDimensions.width,
       y: (1 - semanticPosition.xNormalized) * courtDimensions.height,
+    };
+  } else {
+    // Afficher en paysage un marqueur capturé en portrait
+    // L'icône est légèrement trop haute, on ajuste le Y
+    return {
+      x: semanticPosition.yNormalized * courtDimensions.width,
+      y: (1 - semanticPosition.xNormalized + 0.045) * courtDimensions.height,
     };
   }
 };
@@ -127,7 +135,7 @@ export default function BasketballCourt() {
   const BOTTOM_NAV_WIDTH = 70; // Largeur de la bottom navigation bar en paysage
 
   // 🎯 CONSTANTES DE CENTRAGE - Facile à ajuster !
-  const ICON_OFFSET_X = 6; // Offset horizontal de l'icône
+  const ICON_OFFSET_X = -14; // Offset horizontal de l'icône
   const ICON_OFFSET_Y = 0; // Offset vertical de l'icône
   const DEBUG_DOT_OFFSET_X = 17; // Offset horizontal du point rouge debug
   const DEBUG_DOT_OFFSET_Y = 17; // Offset vertical du point rouge debug
@@ -159,6 +167,7 @@ export default function BasketballCourt() {
       semanticPosition: {
         xNormalized: number; // Position normalisée dans le terrain logique
         yNormalized: number; // Position normalisée dans le terrain logique
+        capturedInPortrait: boolean; // Orientation de capture
       };
     }[]
   >([]);
@@ -580,22 +589,28 @@ export default function BasketballCourt() {
     const screenY = y;
 
     // Calculer les marges de sécurité
-    const statusBarHeight = !initModalVisible && !matchConfigModalVisible && !preGameMode ? 80 : 0;
+    const statusBarHeight =
+      !initModalVisible && !matchConfigModalVisible && !preGameMode ? 80 : 0;
     const safeAreaTop = insets.top + statusBarHeight;
     const safeAreaBottom = isPortrait ? BOTTOM_NAV_HEIGHT : 0;
     const safeAreaRight = isPortrait ? 0 : BOTTOM_NAV_WIDTH;
 
     const availableHeight = window.height - safeAreaTop - safeAreaBottom;
-    const availableWidth = window.width - insets.left - insets.right - safeAreaRight;
+    const availableWidth =
+      window.width - insets.left - insets.right - safeAreaRight;
 
     // Position absolue dans l'écran
+    // Les coordonnées viennent du TouchableOpacity qui est relatif au terrain SVG
+    // Il faut ajouter le padding du courtContainer (80px) mais pas les autres marges
     const absoluteX = screenX + insets.left;
-    const absoluteY = screenY + safeAreaTop;
+    const absoluteY = screenY + 60; // Ajouter le paddingTop du courtContainer
 
     // Décider si la modale doit être au-dessus ou en-dessous
-    const spaceAbove = absoluteY - safeAreaTop;
-    const spaceBelow = availableHeight - (absoluteY - safeAreaTop);
-    const showModalAbove = spaceBelow < MODAL_HEIGHT + MODAL_PADDING && spaceAbove > MODAL_HEIGHT + MODAL_PADDING;
+    const spaceAbove = absoluteY;
+    const spaceBelow = window.height - absoluteY;
+    const showModalAbove =
+      spaceBelow < MODAL_HEIGHT + MODAL_PADDING &&
+      spaceAbove > MODAL_HEIGHT + MODAL_PADDING;
 
     // Calculer la position de la modale
     let modalX = absoluteX - MODAL_WIDTH / 2;
@@ -604,8 +619,14 @@ export default function BasketballCourt() {
       : absoluteY + MODAL_OFFSET_BOTTOM;
 
     // S'assurer que la modale reste dans les limites de l'écran
-    modalX = Math.max(MODAL_PADDING, Math.min(modalX, window.width - MODAL_WIDTH - MODAL_PADDING));
-    modalY = Math.max(safeAreaTop + MODAL_PADDING, Math.min(modalY, window.height - safeAreaBottom - MODAL_HEIGHT - MODAL_PADDING));
+    modalX = Math.max(
+      MODAL_PADDING,
+      Math.min(modalX, window.width - MODAL_WIDTH - MODAL_PADDING)
+    );
+    modalY = Math.max(
+      MODAL_PADDING,
+      Math.min(modalY, window.height - MODAL_HEIGHT - MODAL_PADDING)
+    );
 
     // Calculer la position du pointeur (relatif à la position de la modale)
     const pointerX = absoluteX - modalX;
@@ -615,8 +636,8 @@ export default function BasketballCourt() {
       y: modalY,
       pointerX: Math.max(20, Math.min(pointerX, MODAL_WIDTH - 20)), // Garder le pointeur dans les limites
       showPointerOnTop: !showModalAbove,
-      clickX: screenX,
-      clickY: screenY,
+      clickX: absoluteX, // Coordonnées absolues dans l'écran pour l'icône
+      clickY: absoluteY, // Coordonnées absolues dans l'écran pour l'icône
     };
   };
 
@@ -1091,6 +1112,7 @@ export default function BasketballCourt() {
           semanticPosition: {
             xNormalized: action.semantic_x,
             yNormalized: action.semantic_y,
+            capturedInPortrait: true, // Par défaut, considérer comme capturé en portrait pour les anciennes données
           },
         }));
 
@@ -1716,30 +1738,6 @@ export default function BasketballCourt() {
             ) < 0.001
         );
 
-        if (matchingAction) {
-          return (
-            <View
-              key={`debug-${m.id}`}
-              style={[
-                styles.markerContainer,
-                {
-                  left: matchingAction.position.x + DEBUG_DOT_OFFSET_X, // Utilise la constante DEBUG_DOT_OFFSET_X
-                  top: matchingAction.position.y + DEBUG_DOT_OFFSET_Y, // Utilise la constante DEBUG_DOT_OFFSET_Y
-                  zIndex: 9999, // Point rouge toujours visible par-dessus tout
-                },
-              ]}
-            >
-              <View
-                style={{
-                  width: 6, // Plus visible
-                  height: 6, // Plus visible
-                  backgroundColor: "red",
-                  borderRadius: 3, // Rond parfait
-                }}
-              />
-            </View>
-          );
-        }
         return null;
       })}
 
