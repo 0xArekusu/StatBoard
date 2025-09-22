@@ -575,56 +575,54 @@ export default function BasketballCourt() {
 
   // Calculate modal coordinates based on click
   const calculateModalPosition = (x: number, y: number) => {
-    // 🎯 D'abord déterminer si la modal sera au-dessus ou en-dessous (position originale)
-    const willShowOnTop = y < window.height / 2;
+    // Les coordonnées viennent maintenant du TouchableOpacity et sont déjà en pixels écran (relatifs au terrain)
+    const screenX = x;
+    const screenY = y;
 
-    // 🎯 Appliquer les bons offsets selon le cas
-    // willShowOnTop = true → pointeur EN HAUT de modal → modal EN-DESSOUS du clic → utiliser offsets BOTTOM
-    // willShowOnTop = false → pointeur EN BAS de modal → modal AU-DESSUS du clic → utiliser offsets TOP
-    const adjustedX =
-      x +
-      (willShowOnTop
-        ? MODAL_POINTER_OFFSET_X_BOTTOM
-        : MODAL_POINTER_OFFSET_X_TOP);
-    const adjustedY =
-      y +
-      (willShowOnTop
-        ? MODAL_POINTER_OFFSET_Y_BOTTOM
-        : MODAL_POINTER_OFFSET_Y_TOP);
+    // Calculer les marges de sécurité
+    const statusBarHeight = !initModalVisible && !matchConfigModalVisible && !preGameMode ? 80 : 0;
+    const safeAreaTop = insets.top + statusBarHeight;
+    const safeAreaBottom = isPortrait ? BOTTOM_NAV_HEIGHT : 0;
+    const safeAreaRight = isPortrait ? 0 : BOTTOM_NAV_WIDTH;
 
-    const showPointerOnTop = willShowOnTop;
+    const availableHeight = window.height - safeAreaTop - safeAreaBottom;
+    const availableWidth = window.width - insets.left - insets.right - safeAreaRight;
 
-    let modalX = adjustedX - MODAL_WIDTH / 2;
-    let modalY = showPointerOnTop
-      ? adjustedY - MODAL_OFFSET_TOP
-      : adjustedY - MODAL_HEIGHT - MODAL_OFFSET_BOTTOM;
+    // Position absolue dans l'écran
+    const absoluteX = screenX + insets.left;
+    const absoluteY = screenY + safeAreaTop;
 
-    modalX = Math.max(
-      MODAL_PADDING,
-      Math.min(window.width - MODAL_WIDTH - MODAL_PADDING, modalX)
-    );
-    modalY = Math.max(
-      MODAL_PADDING,
-      Math.min(window.height - MODAL_HEIGHT - MODAL_PADDING, modalY)
-    );
+    // Décider si la modale doit être au-dessus ou en-dessous
+    const spaceAbove = absoluteY - safeAreaTop;
+    const spaceBelow = availableHeight - (absoluteY - safeAreaTop);
+    const showModalAbove = spaceBelow < MODAL_HEIGHT + MODAL_PADDING && spaceAbove > MODAL_HEIGHT + MODAL_PADDING;
 
-    const clickXRelative = adjustedX - modalX;
-    const pointerX = Math.min(
-      Math.max(MODAL_CONTENT_PADDING, clickXRelative),
-      MODAL_WIDTH - MODAL_CONTENT_PADDING
-    );
+    // Calculer la position de la modale
+    let modalX = absoluteX - MODAL_WIDTH / 2;
+    let modalY = showModalAbove
+      ? absoluteY - MODAL_HEIGHT - MODAL_OFFSET_TOP
+      : absoluteY + MODAL_OFFSET_BOTTOM;
+
+    // S'assurer que la modale reste dans les limites de l'écran
+    modalX = Math.max(MODAL_PADDING, Math.min(modalX, window.width - MODAL_WIDTH - MODAL_PADDING));
+    modalY = Math.max(safeAreaTop + MODAL_PADDING, Math.min(modalY, window.height - safeAreaBottom - MODAL_HEIGHT - MODAL_PADDING));
+
+    // Calculer la position du pointeur (relatif à la position de la modale)
+    const pointerX = absoluteX - modalX;
 
     return {
       x: modalX,
       y: modalY,
-      pointerX,
-      showPointerOnTop,
-      clickX: x, // 🎯 Position ORIGINALE pour les icônes (pas d'offset)
-      clickY: y, // 🎯 Position ORIGINALE pour les icônes (pas d'offset)
+      pointerX: Math.max(20, Math.min(pointerX, MODAL_WIDTH - 20)), // Garder le pointeur dans les limites
+      showPointerOnTop: !showModalAbove,
+      clickX: screenX,
+      clickY: screenY,
     };
   };
 
   const handleZonePress = (x: number, y: number) => {
+    console.log("🏀 Clic détecté sur le terrain !", { x, y, preGameMode });
+
     // Capturer le temps exact au moment du clic
     setClickTime({
       period: currentPeriod,
@@ -632,6 +630,7 @@ export default function BasketballCourt() {
     });
 
     const pos = calculateModalPosition(x, y);
+    console.log("📍 Position modale calculée :", pos);
     setModalPosition(pos);
     setActionModalVisible(true);
   };

@@ -1,5 +1,6 @@
 import React from "react";
 import Svg, { Path, G, ClipPath, Defs } from "react-native-svg";
+import { TouchableOpacity, View } from "react-native";
 
 interface BasketballCourtSVGProps {
   width: number;
@@ -18,7 +19,8 @@ export default function BasketballCourtSVGG({
   const isPortrait = height > width;
 
   return isPortrait ? (
-    <Svg width="100%" viewBox="0 0 615.75 1146.749971" height="100%">
+    <View style={{ width: "100%", height: "100%", position: "relative" }}>
+      <Svg width="100%" viewBox="0 0 615.75 1146.749971" height="100%">
       <Defs>
         <ClipPath id="a">
           <Path d="M.164.11h614.75v1145.406H.164zm0 0" />
@@ -351,8 +353,30 @@ export default function BasketballCourtSVGG({
         </G>
       </G>
     </Svg>
+      {/* Zone de clic invisible pour capturer les événements sur le terrain */}
+      {onCourtPress && (
+        <TouchableOpacity
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "transparent",
+          }}
+          activeOpacity={1}
+          onPress={(event) => {
+            // Récupérer les coordonnées relatives au composant
+            const { locationX, locationY } = event.nativeEvent;
+            console.log("🎯 TouchableOpacity clic:", { locationX, locationY });
+            onCourtPress(locationX, locationY);
+          }}
+        />
+      )}
+    </View>
   ) : (
-    <Svg viewBox="0 0 1146.749971 615.75" width="100%" height="100%">
+    <View style={{ width: "100%", height: "100%", position: "relative" }}>
+      <Svg viewBox="0 0 1146.749971 615.75" width="100%" height="100%">
       <Defs>
         <ClipPath id="a">
           <Path d="M.434.164H1145.84v614.75H.434zm0 0" />
@@ -688,5 +712,26 @@ export default function BasketballCourtSVGG({
         </G>
       </G>
     </Svg>
+      {/* Zone de clic invisible pour capturer les événements sur le terrain */}
+      {onCourtPress && (
+        <TouchableOpacity
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "transparent",
+          }}
+          activeOpacity={1}
+          onPress={(event) => {
+            // Récupérer les coordonnées relatives au composant
+            const { locationX, locationY } = event.nativeEvent;
+            console.log("🎯 TouchableOpacity clic:", { locationX, locationY });
+            onCourtPress(locationX, locationY);
+          }}
+        />
+      )}
+    </View>
   );
 }
