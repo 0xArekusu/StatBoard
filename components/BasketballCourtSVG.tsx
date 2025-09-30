@@ -1,10 +1,11 @@
-import React from "react";
+import React, { useRef } from "react";
 import Svg, { Path, G, ClipPath, Defs } from "react-native-svg";
+import { Dimensions } from "react-native";
 
 interface BasketballCourtSVGProps {
   width: number;
   height: number;
-  onCourtPress?: (x: number, y: number) => void;
+  onCourtPress?: (svgX: number, svgY: number, screenX: number, screenY: number) => void;
   backgroundColor?: string;
 }
 
@@ -14,11 +15,46 @@ export default function BasketballCourtSVGG({
   onCourtPress,
   backgroundColor = "#fccb54",
 }: BasketballCourtSVGProps) {
+  const svgRef = useRef<any>(null);
+  const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
+
   // Calculate court elements proportionally
   const isPortrait = height > width;
 
+  // SVG viewBox dimensions for different orientations
+  const SVG_WIDTH = isPortrait ? 615.75 : 1146.749971;
+  const SVG_HEIGHT = isPortrait ? 1146.749971 : 615.75;
+
+  const handlePress = (event: any) => {
+    if (!onCourtPress) return;
+
+    const { locationX, locationY } = event.nativeEvent;
+
+    // Convert screen coordinates to SVG coordinates
+    // Get the actual display dimensions of the SVG
+    const actualWidth = Math.min(screenWidth, width);
+    const actualHeight = Math.min(screenHeight, height);
+
+    // Calculate scale factors
+    const scaleX = SVG_WIDTH / actualWidth;
+    const scaleY = SVG_HEIGHT / actualHeight;
+
+    // Convert coordinates
+    const svgX = locationX * scaleX;
+    const svgY = locationY * scaleY;
+
+    // Pass both SVG coordinates and screen coordinates
+    onCourtPress(svgX, svgY, locationX, locationY);
+  };
+
   return isPortrait ? (
-    <Svg width="100%" viewBox="0 0 615.75 1146.749971" height="100%">
+    <Svg
+      ref={svgRef}
+      width="100%"
+      viewBox="0 0 615.75 1146.749971"
+      height="100%"
+      onPress={handlePress}
+    >
       <Defs>
         <ClipPath id="a">
           <Path d="M.164.11h614.75v1145.406H.164zm0 0" />
@@ -177,7 +213,10 @@ export default function BasketballCourtSVGG({
           <G clipPath="url(#h)" transform="translate(231 497)">
             <G clipPath="url(#i)">
               <G clipPath="url(#j)">
-                <Path fill="#ff3131" d="M151.977.29v151.042H.934V.289zm0 0" />
+                <Path
+                  fill={backgroundColor}
+                  d="M151.977.29v151.042H.934V.289zm0 0"
+                />
               </G>
             </G>
           </G>
@@ -352,7 +391,13 @@ export default function BasketballCourtSVGG({
       </G>
     </Svg>
   ) : (
-    <Svg viewBox="0 0 1146.749971 615.75" width="100%" height="100%">
+    <Svg
+      ref={svgRef}
+      viewBox="0 0 1146.749971 615.75"
+      width="100%"
+      height="100%"
+      onPress={handlePress}
+    >
       <Defs>
         <ClipPath id="a">
           <Path d="M.434.164H1145.84v614.75H.434zm0 0" />
@@ -512,7 +557,7 @@ export default function BasketballCourtSVGG({
             <G clipPath="url(#i)">
               <G clipPath="url(#j)">
                 <Path
-                  fill="#ff3131"
+                  fill={backgroundColor}
                   d="M151.656 151.977H.613V.934h151.043zm0 0"
                 />
               </G>
