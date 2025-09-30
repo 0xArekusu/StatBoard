@@ -31,19 +31,27 @@ export default function BasketballCourtSVGG({
     const { locationX, locationY } = event.nativeEvent;
 
     // Convert screen coordinates to SVG coordinates
-    // Get the actual display dimensions of the SVG
-    const actualWidth = Math.min(screenWidth, width);
-    const actualHeight = Math.min(screenHeight, height);
-
-    // Calculate scale factors
-    const scaleX = SVG_WIDTH / actualWidth;
-    const scaleY = SVG_HEIGHT / actualHeight;
+    // Calculate scale factors based on the actual rendered dimensions
+    const scaleX = SVG_WIDTH / width;
+    const scaleY = SVG_HEIGHT / height;
 
     // Convert coordinates
-    const svgX = locationX * scaleX;
-    const svgY = locationY * scaleY;
+    let svgX = locationX * scaleX;
+    let svgY = locationY * scaleY;
 
-    // Pass both SVG coordinates and screen coordinates
+    // Normalize to portrait coordinates (so landscape and portrait use same coordinate system)
+    // Landscape viewBox is rotated 90° clockwise from portrait
+    if (!isPortrait) {
+      // Transform landscape coords -> portrait coords
+      // Landscape (0,0) = Portrait (615.75, 0)
+      // Landscape (1146.75, 615.75) = Portrait (0, 1146.75)
+      const portraitX = 615.75 - svgY;
+      const portraitY = svgX;
+      svgX = portraitX;
+      svgY = portraitY;
+    }
+
+    // Pass both SVG coordinates (normalized to portrait) and screen coordinates
     onCourtPress(svgX, svgY, locationX, locationY);
   };
 
