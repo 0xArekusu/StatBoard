@@ -1,12 +1,20 @@
 import React, { useRef } from "react";
-import Svg, { Path, G, ClipPath, Defs } from "react-native-svg";
+import Svg, { Path, G, ClipPath, Defs, Circle, Text as SvgText } from "react-native-svg";
 import { Dimensions } from "react-native";
+
+export interface CourtMarker {
+  id: string;
+  // SVG coordinates in portrait orientation (0-615.75 x 0-1146.75)
+  svgX: number;
+  svgY: number;
+}
 
 interface BasketballCourtSVGProps {
   width: number;
   height: number;
   onCourtPress?: (svgX: number, svgY: number, screenX: number, screenY: number) => void;
   backgroundColor?: string;
+  markers?: CourtMarker[];
 }
 
 export default function BasketballCourtSVGG({
@@ -14,6 +22,7 @@ export default function BasketballCourtSVGG({
   height,
   onCourtPress,
   backgroundColor = "#fccb54",
+  markers = [],
 }: BasketballCourtSVGProps) {
   const svgRef = useRef<any>(null);
   const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
@@ -69,6 +78,63 @@ export default function BasketballCourtSVGG({
 
     // Pass normalized coordinates (portrait) and original screen coordinates
     onCourtPress(svgX, svgY, locationX, locationY);
+  };
+
+  /**
+   * Convert portrait SVG coordinates to current orientation
+   *
+   * @param portraitX - X in portrait space (0-615.75)
+   * @param portraitY - Y in portrait space (0-1146.75)
+   * @returns {x, y} in current orientation's SVG space
+   */
+  const portraitToCurrentOrientation = (portraitX: number, portraitY: number) => {
+    if (isPortrait) {
+      return { x: portraitX, y: portraitY };
+    }
+
+    // Convert portrait → landscape (inverse of the rotation we do on clicks)
+    // Portrait (x, y) → Landscape (y, 615.75 - x)
+    return {
+      x: portraitY,
+      y: 615.75 - portraitX
+    };
+  };
+
+  /**
+   * Render markers in SVG space
+   * Markers are stored in portrait coordinates, we convert them to current orientation
+   */
+  const renderMarkers = () => {
+    return markers.map((marker) => {
+      const pos = portraitToCurrentOrientation(marker.svgX, marker.svgY);
+
+      return (
+        <G key={marker.id}>
+          {/* Red circle marker */}
+          <Circle
+            cx={pos.x}
+            cy={pos.y}
+            r="8"
+            fill="#FF0000"
+            stroke="#FFFFFF"
+            strokeWidth="2"
+          />
+          {/* Coordinates label */}
+          <SvgText
+            x={pos.x}
+            y={pos.y - 15}
+            fontSize="12"
+            fill="#000"
+            fontWeight="bold"
+            textAnchor="middle"
+            stroke="#FFF"
+            strokeWidth="0.5"
+          >
+            {`${marker.svgX.toFixed(0)},${marker.svgY.toFixed(0)}`}
+          </SvgText>
+        </G>
+      );
+    });
   };
 
   return isPortrait ? (
@@ -413,6 +479,9 @@ export default function BasketballCourtSVGG({
           />
         </G>
       </G>
+
+      {/* Render markers on top of court */}
+      {renderMarkers()}
     </Svg>
   ) : (
     <Svg
@@ -756,6 +825,9 @@ export default function BasketballCourtSVGG({
           />
         </G>
       </G>
+
+      {/* Render markers on top of court */}
+      {renderMarkers()}
     </Svg>
   );
 }

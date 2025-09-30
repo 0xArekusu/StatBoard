@@ -1,22 +1,17 @@
 import React, { useState, useEffect } from "react";
 import {
   View,
-  Text,
   StyleSheet,
   Dimensions,
   TouchableOpacity,
+  Text,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import BasketballCourtSVG from "./components/BasketballCourtSVG";
+import BasketballCourtSVG, { CourtMarker } from "./components/BasketballCourtSVG";
 
-interface ClickMarker {
-  id: string;
-  // SVG semantic coordinates (invariant across orientation/device)
-  // These are always normalized to portrait orientation (615.75 x 1146.75 viewBox)
-  // Can be saved to database and displayed on any device
-  svgX: number;
-  svgY: number;
-  // Debug data
+// Extend CourtMarker with debug data for testing
+interface ClickMarker extends CourtMarker {
+  // Debug data (not needed in production, only for testing)
   originalScreenX: number;
   originalScreenY: number;
   originalOrientation: "portrait" | "landscape";
@@ -71,83 +66,11 @@ export default function TestCourtClick() {
   const courtHeight = dimensions.height - insets.top - insets.bottom;
   const isPortrait = dimensions.height > dimensions.width;
 
-  // SVG viewBox dimensions change based on orientation
-  // Portrait: 615.75 x 1146.75 (narrow and tall)
-  // Landscape: 1146.75 x 615.75 (wide and short)
-  const SVG_WIDTH = isPortrait ? 615.75 : 1146.749971;
-  const SVG_HEIGHT = isPortrait ? 1146.749971 : 615.75;
-
-  /**
-   * Convert SVG coordinates (normalized to portrait) → screen coordinates
-   *
-   * All stored coordinates are in portrait SVG space (615.75 x 1146.75)
-   * This function transforms them to the current orientation and scales to screen
-   *
-   * @param portraitSvgX - X coordinate in portrait SVG space (0-615.75)
-   * @param portraitSvgY - Y coordinate in portrait SVG space (0-1146.75)
-   * @returns Screen coordinates {x, y} for the current orientation
-   */
-  const convertSvgToScreen = (
-    portraitSvgX: number,
-    portraitSvgY: number,
-    debugIndex?: number
-  ) => {
-    // Start with portrait coordinates
-    let svgX = portraitSvgX;
-    let svgY = portraitSvgY;
-
-    // If in landscape, transform portrait → landscape coordinate space
-    // The landscape SVG is rotated 90° clockwise from portrait
-    if (!isPortrait) {
-      // Rotation transformation: Portrait (x, y) → Landscape (y, 615.75 - x)
-      const landscapeX = portraitSvgY;
-      const landscapeY = 615.75 - portraitSvgX;
-      svgX = landscapeX;
-      svgY = landscapeY;
-    }
-
-    // Scale from SVG coordinates to screen coordinates
-    // SVG is displayed with width/height: 100%, so it scales proportionally
-    const scaleX = courtWidth / SVG_WIDTH;
-    const scaleY = courtHeight / SVG_HEIGHT;
-
-    console.log("insets.top");
-    console.log(insets.top);
-
-    console.log("insets.bottom");
-    console.log(insets.bottom);
-
-    console.log("insets.left");
-    console.log(insets.left);
-
-    console.log("insets.right");
-    console.log(insets.right);
-
-    const result = {
-      x: svgX * scaleX,
-      y: svgY * scaleY + insets.top - 5, // Add top inset (status bar)
-    };
-
-    if (debugIndex !== undefined) {
-      console.log(`🎯 Conversion marqueur ${debugIndex + 1}:`, {
-        orientation: isPortrait ? "Portrait" : "Paysage",
-        portraitSvg: { x: portraitSvgX.toFixed(1), y: portraitSvgY.toFixed(1) },
-        currentSvg: { x: svgX.toFixed(1), y: svgY.toFixed(1) },
-        svgDimensions: { w: SVG_WIDTH, h: SVG_HEIGHT },
-        courtDimensions: { w: courtWidth, h: courtHeight },
-        scale: { x: scaleX.toFixed(3), y: scaleY.toFixed(3) },
-        screenCoords: { x: result.x.toFixed(1), y: result.y.toFixed(1) },
-      });
-    }
-
-    return result;
-  };
-
   /**
    * Handle press events on the basketball court
    *
    * Receives coordinates from BasketballCourtSVG which are already normalized to portrait orientation
-   * Stores them directly as they are device/orientation-independent
+   * These coordinates are device/orientation-independent and can be saved to database
    */
   const handleCourtPress = (
     svgX: number,
@@ -156,19 +79,19 @@ export default function TestCourtClick() {
     screenY: number
   ) => {
     console.log(
-      `🎯 Clic détecté - SVG: (${svgX.toFixed(2)}, ${svgY.toFixed(
+      `🎯 Click detected - SVG: (${svgX.toFixed(2)}, ${svgY.toFixed(
         2
-      )}) - Écran: (${screenX.toFixed(2)}, ${screenY.toFixed(2)}) (${
-        isPortrait ? "Portrait" : "Paysage"
+      )}) - Screen: (${screenX.toFixed(2)}, ${screenY.toFixed(2)}) (${
+        isPortrait ? "Portrait" : "Landscape"
       })`
     );
 
     // Create new marker with semantic SVG coordinates (normalized to portrait)
-    // These coordinates can be saved to database and will work on any device/orientation
+    // These coordinates work on any device/orientation - ready for database!
     const newMarker: ClickMarker = {
       id: `${Date.now()}-${Math.random()}`,
-      svgX, // Already normalized to portrait orientation by BasketballCourtSVG
-      svgY, // Already normalized to portrait orientation by BasketballCourtSVG
+      svgX, // Normalized to portrait by BasketballCourtSVG
+      svgY, // Normalized to portrait by BasketballCourtSVG
       originalScreenX: screenX,
       originalScreenY: screenY,
       originalOrientation: isPortrait ? "portrait" : "landscape",
@@ -185,42 +108,16 @@ export default function TestCourtClick() {
 
   return (
     <View style={styles.fullscreenContainer}>
-      {/* Terrain en plein écran */}
+      {/* Full-screen basketball court with markers rendered inside SVG */}
       <BasketballCourtSVG
         width={courtWidth}
         height={courtHeight}
         onCourtPress={handleCourtPress}
         backgroundColor="#fccb54"
+        markers={clickMarkers} // Pass markers to SVG - they'll be rendered natively!
       />
 
-      {/* Marqueurs de clic */}
-      {clickMarkers.map((marker, index) => {
-        // Convertir les coordonnées SVG sémantiques → écran selon l'orientation actuelle
-        const position = convertSvgToScreen(marker.svgX, marker.svgY, index);
-
-        return (
-          <View
-            key={marker.id}
-            style={[
-              styles.clickMarker,
-              {
-                left: position.x - 16, // Centrer l'icône (32/2)
-                top: position.y - 25, // Centrer l'icône (50/2)
-              },
-            ]}
-          >
-            <Text style={styles.markerIcon}>❌</Text>
-            <Text style={styles.markerCoords}>
-              {marker.svgX.toFixed(0)},{marker.svgY.toFixed(0)}
-            </Text>
-            <Text style={styles.markerOrientation}>
-              {marker.originalOrientation[0].toUpperCase()}
-            </Text>
-          </View>
-        );
-      })}
-
-      {/* Bouton d'effacement en overlay */}
+      {/* Clear button overlay */}
       {clickMarkers.length > 0 && (
         <TouchableOpacity
           onPress={clearMarkers}
@@ -237,43 +134,6 @@ const styles = StyleSheet.create({
   fullscreenContainer: {
     flex: 1,
     backgroundColor: "#fff",
-    position: "relative",
-  },
-  clickMarker: {
-    position: "absolute",
-    width: 32,
-    height: 50,
-    justifyContent: "center",
-    alignItems: "center",
-    zIndex: 1000,
-  },
-  markerIcon: {
-    fontSize: 20,
-    color: "#FF0000",
-    textShadowColor: "#fff",
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 2,
-  },
-  markerCoords: {
-    fontSize: 8,
-    color: "#fff",
-    backgroundColor: "rgba(0,0,0,0.8)",
-    paddingHorizontal: 3,
-    paddingVertical: 2,
-    borderRadius: 3,
-    textAlign: "center",
-    marginTop: 2,
-    fontWeight: "bold",
-  },
-  markerOrientation: {
-    fontSize: 7,
-    color: "#FFD700",
-    backgroundColor: "rgba(0,0,0,0.6)",
-    paddingHorizontal: 2,
-    borderRadius: 2,
-    textAlign: "center",
-    marginTop: 1,
-    fontWeight: "bold",
   },
   floatingClearButton: {
     position: "absolute",
