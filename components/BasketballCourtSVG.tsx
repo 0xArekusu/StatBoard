@@ -47,14 +47,39 @@ export default function BasketballCourtSVGG({
 
     const { locationX, locationY } = event.nativeEvent;
 
-    // Convert screen coordinates to SVG coordinates
-    // The SVG scales to fit width/height, so we need to reverse that scaling
-    const scaleX = SVG_WIDTH / width;
-    const scaleY = SVG_HEIGHT / height;
+    // The SVG preserves aspect ratio, so it may not fill the entire width/height
+    // Calculate the actual rendered dimensions
+    const svgAspectRatio = SVG_WIDTH / SVG_HEIGHT;
+    const containerAspectRatio = width / height;
 
-    // Get coordinates in current SVG viewBox space
-    let svgX = locationX * scaleX;
-    let svgY = locationY * scaleY;
+    let actualWidth, actualHeight, offsetX, offsetY;
+
+    if (containerAspectRatio > svgAspectRatio) {
+      // Container is wider - SVG fills height, centered horizontally
+      actualHeight = height;
+      actualWidth = height * svgAspectRatio;
+      offsetX = (width - actualWidth) / 2;
+      offsetY = 0;
+    } else {
+      // Container is taller - SVG fills width, centered vertically
+      actualWidth = width;
+      actualHeight = width / svgAspectRatio;
+      offsetX = 0;
+      offsetY = (height - actualHeight) / 2;
+    }
+
+    // Adjust touch coordinates for SVG offset
+    const adjustedX = locationX - offsetX;
+    const adjustedY = locationY - offsetY;
+
+    // Convert to SVG coordinates
+    const scaleX = SVG_WIDTH / actualWidth;
+    const scaleY = SVG_HEIGHT / actualHeight;
+
+    let svgX = adjustedX * scaleX;
+    let svgY = adjustedY * scaleY;
+
+    console.log(`📐 Container: ${width.toFixed(0)}x${height.toFixed(0)}, Actual SVG: ${actualWidth.toFixed(0)}x${actualHeight.toFixed(0)}, Offset: (${offsetX.toFixed(0)}, ${offsetY.toFixed(0)})`);
 
     // Normalize to portrait coordinates (so landscape and portrait use same coordinate system)
     // This allows us to save one set of coordinates that works for both orientations
@@ -107,6 +132,8 @@ export default function BasketballCourtSVGG({
   const renderMarkers = () => {
     return markers.map((marker) => {
       const pos = portraitToCurrentOrientation(marker.svgX, marker.svgY);
+
+      console.log(`📍 Rendering marker: portrait(${marker.svgX.toFixed(0)}, ${marker.svgY.toFixed(0)}) → current(${pos.x.toFixed(0)}, ${pos.y.toFixed(0)})`);
 
       return (
         <G key={marker.id}>
