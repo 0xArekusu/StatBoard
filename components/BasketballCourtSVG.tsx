@@ -25,33 +25,49 @@ export default function BasketballCourtSVGG({
   const SVG_WIDTH = isPortrait ? 615.75 : 1146.749971;
   const SVG_HEIGHT = isPortrait ? 1146.749971 : 615.75;
 
+  /**
+   * Handle press events on the basketball court SVG
+   *
+   * Converts screen touch coordinates to semantic SVG coordinates that are:
+   * - Device-independent (work on any screen size)
+   * - Orientation-independent (normalized to portrait coordinate system)
+   * - Database-ready (can be saved and restored on any device)
+   */
   const handlePress = (event: any) => {
     if (!onCourtPress) return;
 
     const { locationX, locationY } = event.nativeEvent;
 
     // Convert screen coordinates to SVG coordinates
-    // Calculate scale factors based on the actual rendered dimensions
+    // The SVG scales to fit width/height, so we need to reverse that scaling
     const scaleX = SVG_WIDTH / width;
     const scaleY = SVG_HEIGHT / height;
 
-    // Convert coordinates
+    // Get coordinates in current SVG viewBox space
     let svgX = locationX * scaleX;
     let svgY = locationY * scaleY;
 
     // Normalize to portrait coordinates (so landscape and portrait use same coordinate system)
-    // Landscape viewBox is rotated 90° clockwise from portrait
+    // This allows us to save one set of coordinates that works for both orientations
+    //
+    // Portrait viewBox: 0 0 615.75 1146.75 (narrow and tall)
+    // Landscape viewBox: 0 0 1146.75 615.75 (wide and short)
+    //
+    // The landscape SVG is the portrait SVG rotated 90° clockwise
     if (!isPortrait) {
-      // Transform landscape coords -> portrait coords
-      // Landscape (0,0) = Portrait (615.75, 0)
-      // Landscape (1146.75, 615.75) = Portrait (0, 1146.75)
+      // Transform landscape coords → portrait coords
+      // Rotation: Landscape (x, y) → Portrait (615.75 - y, x)
+      //
+      // Example points:
+      // - Top-left in landscape (0, 0) → Bottom-left in portrait (615.75, 0)
+      // - Bottom-right in landscape (1146.75, 615.75) → Top-right in portrait (0, 1146.75)
       const portraitX = 615.75 - svgY;
       const portraitY = svgX;
       svgX = portraitX;
       svgY = portraitY;
     }
 
-    // Pass both SVG coordinates (normalized to portrait) and screen coordinates
+    // Pass normalized coordinates (portrait) and original screen coordinates
     onCourtPress(svgX, svgY, locationX, locationY);
   };
 
