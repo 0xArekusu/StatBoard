@@ -56,6 +56,26 @@ type RootStackParamList = {
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, "Board">;
 
 /**
+ * Get marker color based on action type and specification
+ */
+const getMarkerColor = (actionType: string, specification?: string): string => {
+  // Tir
+  if (actionType === "tir") {
+    return specification === "reussi" ? "#4CAF50" : "#F44336"; // vert si réussi, rouge si raté
+  }
+  // Rebond
+  if (actionType === "rebond") {
+    return specification === "offensif" ? "#FF9800" : "#2196F3"; // orange si offensif, bleu si défensif
+  }
+  // Faute
+  if (actionType === "faute") {
+    return specification === "technique" ? "#9C27B0" : "#E74C3C"; // violet si technique, rouge si personnelle
+  }
+  // Couleur par défaut
+  return "#757575";
+};
+
+/**
  * Système de coordonnées sémantiques pour terrain de basket
  * Comprend que le terrain a des raquettes qui changent d'orientation
  */
@@ -171,6 +191,23 @@ export default function BasketballCourt() {
       };
     }[]
   >([]);
+
+  // Simple click markers for testing (will merge with markers later)
+  const [clickMarkers, setClickMarkers] = useState<
+    { id: string; svgX: number; svgY: number; color?: string }[]
+  >([]);
+
+  // Actual container layout (measured after SafeAreaView padding)
+  const [containerLayout, setContainerLayout] = useState({
+    width: 0,
+    height: 0,
+  });
+
+  // Temporary storage for SVG coordinates during action modal flow
+  const [tempSvgCoords, setTempSvgCoords] = useState<{
+    svgX: number;
+    svgY: number;
+  } | null>(null);
 
   // New state for completed actions with detailed data
   const [completedActions, setCompletedActions] = useState<ActionData[]>([]);
@@ -584,41 +621,20 @@ export default function BasketballCourt() {
 
   // Calculate modal coordinates based on click
   const calculateModalPosition = (x: number, y: number) => {
-    // Les coordonnées viennent maintenant du TouchableOpacity et sont déjà en pixels écran (relatifs au terrain)
-    const screenX = x;
-    const screenY = y;
+    // Determine if modal will be above or below the click
+    const showPointerOnTop = y < window.height / 2;
 
-    // Calculer les marges de sécurité
-    const statusBarHeight =
-      !initModalVisible && !matchConfigModalVisible && !preGameMode ? 80 : 0;
-    const safeAreaTop = insets.top + statusBarHeight;
-    const safeAreaBottom = isPortrait ? BOTTOM_NAV_HEIGHT : 0;
-    const safeAreaRight = isPortrait ? 0 : BOTTOM_NAV_WIDTH;
+    // Center modal horizontally on click point
+    let modalX = x - MODAL_WIDTH / 2;
 
-    const availableHeight = window.height - safeAreaTop - safeAreaBottom;
-    const availableWidth =
-      window.width - insets.left - insets.right - safeAreaRight;
+    // Position modal vertically relative to click point:
+    // The pointer extends POINTER_SIZE pixels outside the modal (top: -POINTER_SIZE or bottom: -POINTER_SIZE)
+    // So we don't need to add/subtract POINTER_SIZE here - the pointer naturally reaches the click point
+    let modalY = showPointerOnTop
+      ? y + POINTER_SIZE + 10 // Pointer at top extends up to click point
+      : y - MODAL_HEIGHT + 10; // Pointer at bottom extends down to click point
 
-    // Position absolue dans l'écran
-    // Les coordonnées viennent du TouchableOpacity qui est relatif au terrain SVG
-    // Il faut ajouter le padding du courtContainer (80px) mais pas les autres marges
-    const absoluteX = screenX + insets.left;
-    const absoluteY = screenY + 60; // Ajouter le paddingTop du courtContainer
-
-    // Décider si la modale doit être au-dessus ou en-dessous
-    const spaceAbove = absoluteY;
-    const spaceBelow = window.height - absoluteY;
-    const showModalAbove =
-      spaceBelow < MODAL_HEIGHT + MODAL_PADDING &&
-      spaceAbove > MODAL_HEIGHT + MODAL_PADDING;
-
-    // Calculer la position de la modale
-    let modalX = absoluteX - MODAL_WIDTH / 2;
-    let modalY = showModalAbove
-      ? absoluteY - MODAL_HEIGHT - MODAL_OFFSET_TOP
-      : absoluteY + MODAL_OFFSET_BOTTOM;
-
-    // S'assurer que la modale reste dans les limites de l'écran
+    // Keep modal within screen bounds
     modalX = Math.max(
       MODAL_PADDING,
       Math.min(modalX, window.width - MODAL_WIDTH - MODAL_PADDING)
@@ -628,21 +644,40 @@ export default function BasketballCourt() {
       Math.min(modalY, window.height - MODAL_HEIGHT - MODAL_PADDING)
     );
 
-    // Calculer la position du pointeur (relatif à la position de la modale)
-    const pointerX = absoluteX - modalX;
+    // Calculate pointer X position relative to modal (where the click happened)
+    const pointerX = x - modalX;
 
     return {
       x: modalX,
       y: modalY,
-      pointerX: Math.max(20, Math.min(pointerX, MODAL_WIDTH - 20)), // Garder le pointeur dans les limites
-      showPointerOnTop: !showModalAbove,
-      clickX: absoluteX, // Coordonnées absolues dans l'écran pour l'icône
-      clickY: absoluteY, // Coordonnées absolues dans l'écran pour l'icône
+      pointerX,
+      showPointerOnTop,
+      clickX: x,
+      clickY: y,
     };
   };
 
-  const handleZonePress = (x: number, y: number) => {
-    console.log("🏀 Clic détecté sur le terrain !", { x, y, preGameMode });
+  // Convert completed actions to SVG markers
+  const getAllActionMarkers = useCallback(() => {
+    return getFilteredActions().map((action) => ({
+      id: `action-${action.timestamp.getTime()}`,
+      svgX: action.semanticPosition.xNormalized * 615.75,
+      svgY: action.semanticPosition.yNormalized * 1146.749971,
+      color: getMarkerColor(action.type, action.specification),
+    }));
+  }, [completedActions, appliedFilters, showAllActions]);
+
+  // Determine which markers to display
+  const displayMarkers = showAllActions ? getAllActionMarkers() : clickMarkers;
+
+  const handleZonePress = (
+    svgX: number,
+    svgY: number,
+    screenX: number,
+    screenY: number
+  ) => {
+    // Store SVG coordinates for later use in handleActionComplete
+    setTempSvgCoords({ svgX, svgY });
 
     // Capturer le temps exact au moment du clic
     setClickTime({
@@ -650,8 +685,12 @@ export default function BasketballCourt() {
       timeInPeriod: timeElapsed,
     });
 
-    const pos = calculateModalPosition(x, y);
-    console.log("📍 Position modale calculée :", pos);
+    // Adjust screen coordinates to account for court container offset
+    // courtContainer starts at top: 80
+    const absoluteScreenX = screenX;
+    const absoluteScreenY = screenY + 80; // Add top offset of courtContainer
+
+    const pos = calculateModalPosition(absoluteScreenX, absoluteScreenY);
     setModalPosition(pos);
     setActionModalVisible(true);
   };
@@ -662,44 +701,48 @@ export default function BasketballCourt() {
       return;
     }
 
+    if (!tempSvgCoords) {
+      console.warn("⚠️ No SVG coordinates stored");
+      return;
+    }
+
     // Create unique ID for this marker
     const markerId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
-    // Create animated value for this marker
-    const opacityValue = new Animated.Value(1);
-    markerAnimations.current[markerId] = opacityValue;
-
-    // Calculer les coordonnées sémantiques normalisées
-    const courtDimensions = { width: courtWidth, height: courtHeight };
-
-    const semanticPosition = convertClickToSemantic(
-      actionData.position,
-      isPortrait,
-      courtDimensions
+    // Get marker color based on action type
+    const markerColor = getMarkerColor(
+      actionData.type,
+      actionData.specification
     );
 
-    // Pour l'affichage immédiat, utiliser les coordonnées de clic actuelles
-    const courtX = actionData.position.x;
-    const courtY = actionData.position.y;
+    // Save SVG coordinates before clearing
+    const svgX = tempSvgCoords.svgX;
+    const svgY = tempSvgCoords.svgY;
 
-    // Add marker at calculated position
-    // Ajuster les offsets pour compenser le rendu réel de l'emoji
-    setMarkers((prev) => [
+    // Add marker to clickMarkers with SVG coordinates and color
+    setClickMarkers((prev) => [
       ...prev,
       {
-        x: courtX + ICON_OFFSET_X,
-        y: courtY + ICON_OFFSET_Y,
-        type: actionData.type,
-        specification: actionData.specification,
-        player: actionData.player,
         id: markerId,
-        opacity: opacityValue,
-        semanticPosition,
+        svgX,
+        svgY,
+        color: markerColor,
       },
     ]);
 
-    // Remove marker after 1 seconds
-    removeMarkerAfterDelay(markerId, 1000);
+    // Remove temporary marker after 1 second
+    setTimeout(() => {
+      setClickMarkers((prev) => prev.filter((m) => m.id !== markerId));
+    }, 1000);
+
+    // Clear temporary coordinates
+    setTempSvgCoords(null);
+
+    // Use SVG coordinates directly (no need to convert from old system)
+    const semanticPosition = {
+      xNormalized: svgX / 615.75, // Normalize to 0-1 range
+      yNormalized: svgY / 1146.749971, // Normalize to 0-1 range
+    };
 
     // Créer l'action avec les coordonnées sémantiques calculées
     const actionWithSemanticPosition: ActionData = {
@@ -733,13 +776,13 @@ export default function BasketballCourt() {
     setActionModalVisible(false);
 
     // Log the action for debugging
+    const courtDimensions = { width: courtWidth, height: courtHeight };
     console.log("🏀 Action completed:", {
       type: actionData.type,
       specification: actionData.specification,
       player: actionData.player,
       timestamp: actionData.timestamp,
-      terrainPosition: actionData.position, // locationX/Y (relatif au terrain)
-      courtDimensions,
+      svgCoordinates: { svgX, svgY },
       isPortrait,
       semanticPosition,
       calculatedAbsolute: convertSemanticToDisplay(
@@ -748,21 +791,6 @@ export default function BasketballCourt() {
         courtDimensions
       ),
       debug: {
-        clickPosition: { x: courtX, y: courtY },
-        markerPosition: {
-          x: courtX + ICON_OFFSET_X,
-          y: courtY + ICON_OFFSET_Y,
-        },
-        offset: { x: ICON_OFFSET_X, y: ICON_OFFSET_Y },
-        clickPercentages: {
-          x:
-            ((actionData.position.x / courtDimensions.width) * 100).toFixed(1) +
-            "%",
-          y:
-            ((actionData.position.y / courtDimensions.height) * 100).toFixed(
-              1
-            ) + "%",
-        },
         semanticPercentages: {
           x: (semanticPosition.xNormalized * 100).toFixed(1) + "%",
           y: (semanticPosition.yNormalized * 100).toFixed(1) + "%",
@@ -2040,12 +2068,19 @@ export default function BasketballCourt() {
       />
 
       {/* Basketball Court SVG */}
-      <View style={styles.courtContainer}>
+      <View
+        style={styles.courtContainer}
+        onLayout={(event) => {
+          const { width, height } = event.nativeEvent.layout;
+          setContainerLayout({ width, height });
+        }}
+      >
         <BasketballCourtSVG
-          width={courtWidth}
-          height={courtHeight}
+          width={containerLayout.width || courtWidth}
+          height={containerLayout.height || courtHeight}
           onCourtPress={!preGameMode ? handleZonePress : undefined}
           backgroundColor="green"
+          markers={displayMarkers}
         />
       </View>
 
@@ -2486,11 +2521,9 @@ const getStyles = ({
     courtContainer: {
       backgroundColor: "green",
       position: "absolute",
-      paddingTop: 80,
-      paddingBottom: 20,
-      top: 0,
+      top: 80, // Space for MatchStatusBar
       left: 0,
       right: isPortrait ? 0 : BOTTOM_NAV_WIDTH, // Space for vertical bottom nav in landscape
-      bottom: isPortrait ? BOTTOM_NAV_HEIGHT : 0,
+      bottom: isPortrait ? BOTTOM_NAV_HEIGHT + 20 : 20, // Space for bottom nav + margin
     },
   });

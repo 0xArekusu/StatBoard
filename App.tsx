@@ -27,13 +27,14 @@ export default function App() {
       <SafeAreaView style={{ flex: 1 }}>
         <NavigationContainer>
           <Stack.Navigator
-            initialRouteName="MainMenu"
+            initialRouteName="DebugCourtClick"
             screenOptions={{
               headerShown: false,
             }}
           >
             <Stack.Screen name="MainMenu" component={MainMenuScreen} />
             <Stack.Screen name="Board" component={BoardScreen} />
+            {/* <Stack.Screen name="DebugCourtClick" component={DebugCourtClick} /> */}
           </Stack.Navigator>
         </NavigationContainer>
       </SafeAreaView>
