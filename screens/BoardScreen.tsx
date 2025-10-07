@@ -665,6 +665,19 @@ export default function BasketballCourt() {
     };
   };
 
+  // Convert completed actions to SVG markers
+  const getAllActionMarkers = useCallback(() => {
+    return getFilteredActions().map((action) => ({
+      id: `action-${action.timestamp.getTime()}`,
+      svgX: action.semanticPosition.xNormalized * 615.75,
+      svgY: action.semanticPosition.yNormalized * 1146.749971,
+      color: getMarkerColor(action.type, action.specification),
+    }));
+  }, [completedActions, appliedFilters, showAllActions]);
+
+  // Determine which markers to display
+  const displayMarkers = showAllActions ? getAllActionMarkers() : clickMarkers;
+
   const handleZonePress = (
     svgX: number,
     svgY: number,
@@ -710,55 +723,34 @@ export default function BasketballCourt() {
       actionData.specification
     );
 
+    // Save SVG coordinates before clearing
+    const svgX = tempSvgCoords.svgX;
+    const svgY = tempSvgCoords.svgY;
+
     // Add marker to clickMarkers with SVG coordinates and color
     setClickMarkers((prev) => [
       ...prev,
       {
         id: markerId,
-        svgX: tempSvgCoords.svgX,
-        svgY: tempSvgCoords.svgY,
+        svgX,
+        svgY,
         color: markerColor,
       },
     ]);
 
+    // Remove temporary marker after 1 second
+    setTimeout(() => {
+      setClickMarkers((prev) => prev.filter((m) => m.id !== markerId));
+    }, 1000);
+
     // Clear temporary coordinates
     setTempSvgCoords(null);
 
-    // Create animated value for old marker system (keep for compatibility)
-    const opacityValue = new Animated.Value(1);
-    markerAnimations.current[markerId] = opacityValue;
-
-    // Calculer les coordonnées sémantiques normalisées
-    const courtDimensions = { width: courtWidth, height: courtHeight };
-
-    const semanticPosition = convertClickToSemantic(
-      actionData.position,
-      isPortrait,
-      courtDimensions
-    );
-
-    // Pour l'affichage immédiat, utiliser les coordonnées de clic actuelles
-    const courtX = actionData.position.x;
-    const courtY = actionData.position.y;
-
-    // Add marker at calculated position (old system - keep for now)
-    // Ajuster les offsets pour compenser le rendu réel de l'emoji
-    setMarkers((prev) => [
-      ...prev,
-      {
-        x: courtX + ICON_OFFSET_X,
-        y: courtY + ICON_OFFSET_Y,
-        type: actionData.type,
-        specification: actionData.specification,
-        player: actionData.player,
-        id: markerId,
-        opacity: opacityValue,
-        semanticPosition,
-      },
-    ]);
-
-    // Remove marker after 1 seconds
-    removeMarkerAfterDelay(markerId, 1000);
+    // Use SVG coordinates directly (no need to convert from old system)
+    const semanticPosition = {
+      xNormalized: svgX / 615.75, // Normalize to 0-1 range
+      yNormalized: svgY / 1146.749971, // Normalize to 0-1 range
+    };
 
     // Créer l'action avec les coordonnées sémantiques calculées
     const actionWithSemanticPosition: ActionData = {
@@ -792,13 +784,13 @@ export default function BasketballCourt() {
     setActionModalVisible(false);
 
     // Log the action for debugging
+    const courtDimensions = { width: courtWidth, height: courtHeight };
     console.log("🏀 Action completed:", {
       type: actionData.type,
       specification: actionData.specification,
       player: actionData.player,
       timestamp: actionData.timestamp,
-      terrainPosition: actionData.position, // locationX/Y (relatif au terrain)
-      courtDimensions,
+      svgCoordinates: { svgX, svgY },
       isPortrait,
       semanticPosition,
       calculatedAbsolute: convertSemanticToDisplay(
@@ -807,21 +799,6 @@ export default function BasketballCourt() {
         courtDimensions
       ),
       debug: {
-        clickPosition: { x: courtX, y: courtY },
-        markerPosition: {
-          x: courtX + ICON_OFFSET_X,
-          y: courtY + ICON_OFFSET_Y,
-        },
-        offset: { x: ICON_OFFSET_X, y: ICON_OFFSET_Y },
-        clickPercentages: {
-          x:
-            ((actionData.position.x / courtDimensions.width) * 100).toFixed(1) +
-            "%",
-          y:
-            ((actionData.position.y / courtDimensions.height) * 100).toFixed(
-              1
-            ) + "%",
-        },
         semanticPercentages: {
           x: (semanticPosition.xNormalized * 100).toFixed(1) + "%",
           y: (semanticPosition.yNormalized * 100).toFixed(1) + "%",
@@ -1781,120 +1758,7 @@ export default function BasketballCourt() {
         </TouchableOpacity>
       )}
 
-      {/* Debug: Render click point (temporary) */}
-      {markers.map((m, i) => {
-        // Retrouver la position de clic originale
-        const matchingAction = completedActions.find(
-          (action) =>
-            Math.abs(
-              action.semanticPosition.xNormalized -
-                m.semanticPosition.xNormalized
-            ) < 0.001 &&
-            Math.abs(
-              action.semanticPosition.yNormalized -
-                m.semanticPosition.yNormalized
-            ) < 0.001
-        );
 
-        if (matchingAction) {
-          return (
-            <View
-              key={`debug-${m.id}`}
-              style={[
-                styles.markerContainer,
-                {
-                  left: matchingAction.position.x + DEBUG_DOT_OFFSET_X, // Utilise la constante DEBUG_DOT_OFFSET_X
-                  top: matchingAction.position.y + DEBUG_DOT_OFFSET_Y, // Utilise la constante DEBUG_DOT_OFFSET_Y
-                  zIndex: 9999, // Point rouge toujours visible par-dessus tout
-                },
-              ]}
-            >
-              <View
-                style={{
-                  width: 6, // Plus visible
-                  height: 6, // Plus visible
-                  backgroundColor: "red",
-                  borderRadius: 3, // Rond parfait
-                }}
-              />
-            </View>
-          );
-        }
-        return null;
-      })}
-
-      {/* Render markers */}
-      {markers.map((m, i) => {
-        const icon = getActionIcon(m.type, m.specification);
-        // Find the action to get team information
-        const matchingAction = completedActions.find(
-          (action) =>
-            Math.abs(
-              action.semanticPosition.xNormalized -
-                m.semanticPosition.xNormalized
-            ) < 0.001 &&
-            Math.abs(
-              action.semanticPosition.yNormalized -
-                m.semanticPosition.yNormalized
-            ) < 0.001
-        );
-        const teamColor = matchingAction
-          ? getTeamColor(matchingAction.team)
-          : "#fff";
-
-        return (
-          <Animated.View
-            key={m.id} // Use marker ID as key
-            style={[
-              styles.markerContainer,
-              { left: m.x, top: m.y, opacity: m.opacity },
-            ]}
-          >
-            <Text style={styles.markerIcon}>{icon}</Text>
-            {m.player && (
-              <Text style={[styles.markerPlayer, { color: teamColor }]}>
-                {m.player}
-              </Text>
-            )}
-          </Animated.View>
-        );
-      })}
-
-      {/* Render all completed actions when showAllActions is true */}
-      {showAllActions &&
-        getFilteredActions().map((action, i) => {
-          const icon = getActionIcon(action.type, action.specification);
-          const teamColor = getTeamColor(action.team);
-
-          // Calculer la position absolue basée sur les coordonnées sémantiques
-          const courtDimensions = { width: courtWidth, height: courtHeight };
-
-          const absolutePosition = convertSemanticToDisplay(
-            action.semanticPosition,
-            isPortrait,
-            courtDimensions
-          );
-
-          return (
-            <View
-              key={`permanent-${i}`}
-              style={[
-                styles.markerContainer,
-                {
-                  left: absolutePosition.x + ICON_OFFSET_X, // Utilise la constante ICON_OFFSET_X
-                  top: absolutePosition.y + ICON_OFFSET_Y, // Utilise la constante ICON_OFFSET_Y
-                },
-              ]}
-            >
-              <Text style={styles.markerIcon}>{icon}</Text>
-              {action.player && (
-                <Text style={[styles.markerPlayer, { color: teamColor }]}>
-                  {action.player}
-                </Text>
-              )}
-            </View>
-          );
-        })}
 
       {/* Bottom Navigation Bar - positioned at bottom (portrait) or right (landscape) */}
       {!initModalVisible && !preGameMode && (
@@ -2134,7 +1998,7 @@ export default function BasketballCourt() {
           height={containerLayout.height || courtHeight}
           onCourtPress={!preGameMode ? handleZonePress : undefined}
           backgroundColor="green"
-          markers={clickMarkers}
+          markers={displayMarkers}
         />
       </View>
 
