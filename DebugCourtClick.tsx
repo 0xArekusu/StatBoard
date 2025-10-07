@@ -147,7 +147,6 @@ export default function DebugCourtClick() {
         onCourtPress={handleCourtPress}
         backgroundColor="#fccb54"
         markers={clickMarkers} // Pass markers to SVG - they'll be rendered natively!
-        insets={insets}
       />
 
       {/* Clear button overlay */}

@@ -1,4 +1,4 @@
-import React, { useRef } from "react";
+import React from "react";
 import Svg, {
   Path,
   G,
@@ -7,7 +7,6 @@ import Svg, {
   Circle,
   Text as SvgText,
 } from "react-native-svg";
-import { Dimensions } from "react-native";
 
 export interface CourtMarker {
   id: string;
@@ -27,7 +26,6 @@ interface BasketballCourtSVGProps {
   ) => void;
   backgroundColor?: string;
   markers?: CourtMarker[];
-  insets?: { top: number; bottom: number; left: number; right: number };
 }
 
 const DEBUG = true; // Set to true to enable dimension logs
@@ -38,11 +36,7 @@ export default function BasketballCourtSVG({
   onCourtPress,
   backgroundColor = "#fccb54",
   markers = [],
-  insets = { top: 0, bottom: 0, left: 0, right: 0 },
 }: BasketballCourtSVGProps) {
-  const svgRef = useRef<any>(null);
-  const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
-
   if (DEBUG)
     console.log("SVG props received - width:", width, "height:", height);
 
@@ -69,7 +63,6 @@ export default function BasketballCourtSVG({
     if (DEBUG) {
       console.log("***TOUCH EVENT***");
       console.log("locationX:", locationX, "locationY:", locationY);
-      console.log("Insets received:", insets);
     }
 
     // The SVG preserves aspect ratio, so it may not fill the entire width/height
@@ -231,7 +224,6 @@ export default function BasketballCourtSVG({
 
   return isPortrait ? (
     <Svg
-      ref={svgRef}
       width="100%"
       viewBox="0 0 615.75 1146.749971"
       height="100%"
@@ -577,7 +569,6 @@ export default function BasketballCourtSVG({
     </Svg>
   ) : (
     <Svg
-      ref={svgRef}
       viewBox="0 0 1146.749971 615.75"
       width="100%"
       height="100%"
