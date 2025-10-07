@@ -159,6 +159,43 @@ export default function MatchSummaryModal({
   const foulsA = calculateFoulsStats("A");
   const foulsB = calculateFoulsStats("B");
 
+  // Calculate scores by period
+  const calculateScoresByPeriod = () => {
+    const totalPeriods = matchFormat === "2_halves" ? 2 : 4;
+    const periodScoresA: number[] = Array(totalPeriods).fill(0);
+    const periodScoresB: number[] = Array(totalPeriods).fill(0);
+
+    // Sort actions by timestamp
+    const sortedActions = [...actions].sort(
+      (a, b) => a.timestamp.getTime() - b.timestamp.getTime()
+    );
+
+    // Divide actions into periods based on their position in the timeline
+    const actionsPerPeriod = Math.ceil(sortedActions.length / totalPeriods);
+
+    sortedActions.forEach((action, index) => {
+      // Determine which period this action belongs to
+      const periodIndex = Math.min(
+        Math.floor(index / actionsPerPeriod),
+        totalPeriods - 1
+      );
+
+      // Only count successful shots for scoring
+      if (action.type === "tir" && action.specification === "reussi") {
+        const points = action.points || 2;
+        if (action.team === "A") {
+          periodScoresA[periodIndex] += points;
+        } else if (action.team === "B") {
+          periodScoresB[periodIndex] += points;
+        }
+      }
+    });
+
+    return { periodScoresA, periodScoresB, totalPeriods };
+  };
+
+  const { periodScoresA, periodScoresB, totalPeriods } = calculateScoresByPeriod();
+
   return (
     <Modal
       visible={visible}
@@ -258,6 +295,90 @@ export default function MatchSummaryModal({
                   <Text style={styles.drawText}>Match nul</Text>
                 </View>
               )}
+
+              {/* Period Scores Table */}
+              <View style={styles.periodTable}>
+                <View style={styles.periodTableHeader}>
+                  <View style={styles.periodTableCellTeam}>
+                    <Text style={styles.periodTableHeaderText}></Text>
+                  </View>
+                  {Array.from({ length: totalPeriods }).map((_, index) => (
+                    <View key={index} style={styles.periodTableCell}>
+                      <Text style={styles.periodTableHeaderText}>
+                        {matchFormat === "2_halves" ? `MT${index + 1}` : `Q${index + 1}`}
+                      </Text>
+                    </View>
+                  ))}
+                  <View style={styles.periodTableCell}>
+                    <Text style={styles.periodTableHeaderText}>Total</Text>
+                  </View>
+                </View>
+
+                {/* Team A Row */}
+                <View style={styles.periodTableRow}>
+                  <View style={styles.periodTableCellTeam}>
+                    <Text style={styles.periodTableTeamText}>{teamA}</Text>
+                  </View>
+                  {periodScoresA.map((score, index) => {
+                    // Only highlight winner if managing both teams
+                    const isWinner = teamMode === "both" && score > periodScoresB[index];
+                    return (
+                      <View
+                        key={index}
+                        style={[
+                          styles.periodTableCell,
+                          isWinner && styles.periodWinnerCell,
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.periodTableScoreText,
+                            isWinner && styles.periodWinnerText,
+                          ]}
+                        >
+                          {score}
+                        </Text>
+                      </View>
+                    );
+                  })}
+                  <View style={styles.periodTableCell}>
+                    <Text style={styles.periodTableTotalText}>{adjustedScoreA}</Text>
+                  </View>
+                </View>
+
+                {/* Team B Row - Only show if managing both teams */}
+                {teamMode === "both" && (
+                  <View style={styles.periodTableRow}>
+                    <View style={styles.periodTableCellTeam}>
+                      <Text style={styles.periodTableTeamText}>{teamB}</Text>
+                    </View>
+                    {periodScoresB.map((score, index) => {
+                      const isWinner = score > periodScoresA[index];
+                      return (
+                        <View
+                          key={index}
+                          style={[
+                            styles.periodTableCell,
+                            isWinner && styles.periodWinnerCell,
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              styles.periodTableScoreText,
+                              isWinner && styles.periodWinnerText,
+                            ]}
+                          >
+                            {score}
+                          </Text>
+                        </View>
+                      );
+                    })}
+                    <View style={styles.periodTableCell}>
+                      <Text style={styles.periodTableTotalText}>{adjustedScoreB}</Text>
+                    </View>
+                  </View>
+                )}
+              </View>
             </View>
 
             {/* Shooting Statistics */}
@@ -534,6 +655,65 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "bold",
     color: "#fff",
+  },
+  periodTable: {
+    marginTop: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#ddd",
+    overflow: "hidden",
+  },
+  periodTableHeader: {
+    flexDirection: "row",
+    backgroundColor: "#f5f5f5",
+    borderBottomWidth: 2,
+    borderBottomColor: "#ddd",
+  },
+  periodTableRow: {
+    flexDirection: "row",
+    borderBottomWidth: 1,
+    borderBottomColor: "#eee",
+  },
+  periodTableCell: {
+    flex: 1,
+    padding: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    borderLeftWidth: 1,
+    borderLeftColor: "#e0e0e0",
+  },
+  periodTableCellTeam: {
+    flex: 1.5,
+    padding: 8,
+    justifyContent: "center",
+    paddingLeft: 12,
+  },
+  periodWinnerCell: {
+    backgroundColor: "#e8f5e9",
+  },
+  periodTableHeaderText: {
+    fontSize: 12,
+    fontWeight: "bold",
+    color: "#666",
+  },
+  periodTableTeamText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#333",
+  },
+  periodTableScoreText: {
+    fontSize: 14,
+    fontWeight: "500",
+    color: "#333",
+  },
+  periodWinnerText: {
+    fontWeight: "bold",
+    color: "#4CAF50",
+  },
+  periodTableTotalText: {
+    fontSize: 14,
+    fontWeight: "bold",
+    color: "#333",
   },
   statsSection: {
     marginBottom: 16,
