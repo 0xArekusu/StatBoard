@@ -1,18 +1,13 @@
 import React from "react";
-import Svg, {
-  Path,
-  G,
-  ClipPath,
-  Defs,
-  Circle,
-  Text as SvgText,
-} from "react-native-svg";
+import Svg, { Path, G, ClipPath, Defs, Circle } from "react-native-svg";
 
 export interface CourtMarker {
   id: string;
   // SVG coordinates in portrait orientation (0-615.75 x 0-1146.75)
   svgX: number;
   svgY: number;
+  // Optional color for the marker
+  color?: string;
 }
 
 interface BasketballCourtSVGProps {
@@ -195,28 +190,15 @@ export default function BasketballCourtSVG({
 
       return (
         <G key={marker.id}>
-          {/* Red circle marker */}
+          {/* Colored circle marker */}
           <Circle
             cx={pos.x}
             cy={pos.y}
             r="8"
-            fill="#FF0000"
+            fill={marker.color || "#FF0000"}
             stroke="#FFFFFF"
             strokeWidth="2"
           />
-          {/* Coordinates label */}
-          <SvgText
-            x={pos.x}
-            y={pos.y - 15}
-            fontSize="12"
-            fill="#000"
-            fontWeight="bold"
-            textAnchor="middle"
-            stroke="#FFF"
-            strokeWidth="0.5"
-          >
-            {`${marker.svgX.toFixed(0)},${marker.svgY.toFixed(0)}`}
-          </SvgText>
         </G>
       );
     });

@@ -13,9 +13,9 @@ export class SQLiteAdapter implements IStorageAdapter {
     this.db = SQLite.openDatabaseSync(databaseName);
 
     // 🔄 RESET TEMPORAIRE - À supprimer après test !
-    // this.resetDatabaseTables();
+    //this.resetDatabaseTables();
 
-    // this.initializeTables();
+    //this.initializeTables();
   }
 
   // 🔄 MÉTHODE TEMPORAIRE - À supprimer après test !wip
