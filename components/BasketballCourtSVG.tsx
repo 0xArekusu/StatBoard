@@ -30,7 +30,9 @@ interface BasketballCourtSVGProps {
   insets?: { top: number; bottom: number; left: number; right: number };
 }
 
-export default function BasketballCourtSVGG({
+const DEBUG = true; // Set to true to enable dimension logs
+
+export default function BasketballCourtSVG({
   width,
   height,
   onCourtPress,
@@ -41,7 +43,8 @@ export default function BasketballCourtSVGG({
   const svgRef = useRef<any>(null);
   const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 
-  console.log("SVG PROPS RECEIVED - width:", width, "height:", height);
+  if (DEBUG)
+    console.log("SVG props received - width:", width, "height:", height);
 
   // Calculate court elements proportionally
   const isPortrait = height > width;
@@ -49,10 +52,7 @@ export default function BasketballCourtSVGG({
   // SVG viewBox dimensions for different orientations
   const SVG_WIDTH = isPortrait ? 615.75 : 1146.749971;
   const SVG_HEIGHT = isPortrait ? 1146.749971 : 615.75;
-  // console.log("width", width);
-  // console.log("height", height);
-  // const SVG_WIDTH = isPortrait ? height : width;
-  // const SVG_HEIGHT = isPortrait ? width : height;
+
   /**
    * Handle press events on the basketball court SVG
    *
@@ -66,9 +66,11 @@ export default function BasketballCourtSVGG({
 
     const { locationX, locationY } = event.nativeEvent;
 
-    console.log("***TOUCH EVENT***");
-    console.log("locationX:", locationX, "locationY:", locationY);
-    console.log("Insets received:", insets);
+    if (DEBUG) {
+      console.log("***TOUCH EVENT***");
+      console.log("locationX:", locationX, "locationY:", locationY);
+      console.log("Insets received:", insets);
+    }
 
     // The SVG preserves aspect ratio, so it may not fill the entire width/height
     // Calculate the actual rendered dimensions
@@ -78,14 +80,14 @@ export default function BasketballCourtSVGG({
     let actualWidth, actualHeight, offsetX, offsetY;
 
     if (containerAspectRatio > svgAspectRatio) {
-      console.log(">>> BRANCHE IF : Container plus large");
+      if (DEBUG) console.log(">>> Branch: Container wider");
       // Container is wider - SVG fills height, centered horizontally
       actualHeight = height;
       actualWidth = height * svgAspectRatio;
       offsetX = (width - actualWidth) / 2;
       offsetY = 0;
     } else {
-      console.log(">>> BRANCHE ELSE : Container plus haut");
+      if (DEBUG) console.log(">>> Branch: Container taller");
       // Container is taller - SVG fills width, centered vertically
       actualWidth = width;
       actualHeight = width / svgAspectRatio;
@@ -93,25 +95,28 @@ export default function BasketballCourtSVGG({
       offsetY = (height - actualHeight) / 2;
     }
 
-    console.log("***DIMENSIONS***");
-    console.log("Container:", width, "x", height);
-    console.log("SVG viewBox:", SVG_WIDTH, "x", SVG_HEIGHT);
-    console.log("svgAspectRatio:", svgAspectRatio);
-    console.log("containerAspectRatio:", containerAspectRatio);
-    console.log("actualWidth:", actualWidth, "actualHeight:", actualHeight);
+    if (DEBUG) {
+      console.log("***DIMENSIONS***");
+      console.log("Container:", width, "x", height);
+      console.log("SVG viewBox:", SVG_WIDTH, "x", SVG_HEIGHT);
+      console.log("svgAspectRatio:", svgAspectRatio);
+      console.log("containerAspectRatio:", containerAspectRatio);
+      console.log("actualWidth:", actualWidth, "actualHeight:", actualHeight);
 
-    console.log("***offset***");
-    console.log("offsetY", offsetY);
-    console.log("offsetX", offsetX);
+      console.log("***OFFSET***");
+      console.log("offsetX:", offsetX, "offsetY:", offsetY);
+    }
 
     // Adjust touch coordinates for SVG offset
     const adjustedX = locationX - offsetX;
     const adjustedY = locationY - offsetY;
 
-    console.log("***AVANT ajustement***");
-    console.log("locationX", locationX, "locationY", locationY);
-    console.log("***APRÈS ajustement***");
-    console.log("adjustedX", adjustedX, "adjustedY", adjustedY);
+    if (DEBUG) {
+      console.log("***BEFORE adjustment***");
+      console.log("locationX:", locationX, "locationY:", locationY);
+      console.log("***AFTER adjustment***");
+      console.log("adjustedX:", adjustedX, "adjustedY:", adjustedY);
+    }
 
     // Convert to SVG coordinates
     const scaleX = SVG_WIDTH / actualWidth;
@@ -120,13 +125,15 @@ export default function BasketballCourtSVGG({
     let svgX = adjustedX * scaleX;
     let svgY = adjustedY * scaleY;
 
-    console.log(
-      `📐 Container: ${width.toFixed(0)}x${height.toFixed(
-        0
-      )}, Actual SVG: ${actualWidth.toFixed(0)}x${actualHeight.toFixed(
-        0
-      )}, Offset: (${offsetX.toFixed(0)}, ${offsetY.toFixed(0)})`
-    );
+    if (DEBUG) {
+      console.log(
+        `📐 Container: ${width.toFixed(0)}x${height.toFixed(
+          0
+        )}, Actual SVG: ${actualWidth.toFixed(0)}x${actualHeight.toFixed(
+          0
+        )}, Offset: (${offsetX.toFixed(0)}, ${offsetY.toFixed(0)})`
+      );
+    }
 
     // Normalize to portrait coordinates (so landscape and portrait use same coordinate system)
     // This allows us to save one set of coordinates that works for both orientations
@@ -183,13 +190,15 @@ export default function BasketballCourtSVGG({
     return markers.map((marker) => {
       const pos = portraitToCurrentOrientation(marker.svgX, marker.svgY);
 
-      console.log(
-        `📍 Rendering marker: portrait(${marker.svgX.toFixed(
-          0
-        )}, ${marker.svgY.toFixed(0)}) → current(${pos.x.toFixed(
-          0
-        )}, ${pos.y.toFixed(0)})`
-      );
+      if (DEBUG) {
+        console.log(
+          `📍 Rendering marker: portrait(${marker.svgX.toFixed(
+            0
+          )}, ${marker.svgY.toFixed(0)}) → current(${pos.x.toFixed(
+            0
+          )}, ${pos.y.toFixed(0)})`
+        );
+      }
 
       return (
         <G key={marker.id}>

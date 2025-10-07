@@ -20,7 +20,7 @@ interface ClickMarker extends CourtMarker {
   originalOrientation: "portrait" | "landscape";
 }
 
-export default function TestCourtClick() {
+export default function DebugCourtClick() {
   const [lastClick, setLastClick] = useState<{ x: number; y: number } | null>(
     null
   );

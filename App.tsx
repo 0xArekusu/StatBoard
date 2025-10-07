@@ -4,7 +4,7 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import MainMenuScreen from "./screens/MainMenuScreen";
 import BoardScreen from "./screens/BoardScreen";
 import SplashScreen from "./screens/SplashScreen";
-import TestCourtClick from "./test-court-click";
+import DebugCourtClick from "./DebugCourtClick";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 
 const Stack = createNativeStackNavigator();
@@ -28,14 +28,14 @@ export default function App() {
       <SafeAreaView style={{ flex: 1 }}>
         <NavigationContainer>
           <Stack.Navigator
-            initialRouteName="TestClick"
+            initialRouteName="DebugCourtClick"
             screenOptions={{
               headerShown: false,
             }}
           >
             <Stack.Screen name="MainMenu" component={MainMenuScreen} />
             <Stack.Screen name="Board" component={BoardScreen} />
-            <Stack.Screen name="TestClick" component={TestCourtClick} />
+            <Stack.Screen name="DebugCourtClick" component={DebugCourtClick} />
           </Stack.Navigator>
         </NavigationContainer>
       </SafeAreaView>
