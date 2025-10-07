@@ -103,6 +103,14 @@ export default function BasketballCourtSVG({
       console.log("adjustedX:", adjustedX, "adjustedY:", adjustedY);
     }
 
+    // Check if click is outside SVG bounds
+    if (adjustedX < 0 || adjustedX > actualWidth || adjustedY < 0 || adjustedY > actualHeight) {
+      if (DEBUG) {
+        console.log("❌ Click outside SVG bounds - ignoring");
+      }
+      return; // Ignore clicks outside the court
+    }
+
     // Convert to SVG coordinates
     const scaleX = SVG_WIDTH / actualWidth;
     const scaleY = SVG_HEIGHT / actualHeight;
