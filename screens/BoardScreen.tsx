@@ -2559,11 +2559,9 @@ const getStyles = ({
     courtContainer: {
       backgroundColor: "green",
       position: "absolute",
-      paddingTop: 80,
-      paddingBottom: 20,
-      top: 0,
+      top: 80, // Space for MatchStatusBar
       left: 0,
       right: isPortrait ? 0 : BOTTOM_NAV_WIDTH, // Space for vertical bottom nav in landscape
-      bottom: isPortrait ? BOTTOM_NAV_HEIGHT : 0,
+      bottom: isPortrait ? BOTTOM_NAV_HEIGHT + 20 : 20, // Space for bottom nav + margin
     },
   });
