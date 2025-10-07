@@ -67,23 +67,23 @@ export default function HistoryBottomSheet({
     switch (action.type) {
       case "tir":
         if (action.specification === "reussi") {
-          description += " - Tir réussi"; // TODO: Add point value based on position
+          description += " - Successful shot"; // TODO: Add point value based on position
         } else if (action.specification === "rate") {
-          description += " - Tir raté";
+          description += " - Missed shot";
         }
         break;
       case "rebond":
         if (action.specification === "offensif") {
-          description += " - Rebond offensif";
+          description += " - Offensive rebound";
         } else if (action.specification === "defensif") {
-          description += " - Rebond défensif";
+          description += " - Defensive rebound";
         }
         break;
       case "faute":
         if (action.specification === "personnelle") {
-          description += " - Faute personnelle";
+          description += " - Personal foul";
         } else if (action.specification === "technique") {
-          description += " - Faute technique";
+          description += " - Technical foul";
         }
         break;
       default:

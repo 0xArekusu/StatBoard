@@ -70,7 +70,7 @@ export default function MatchStatusBar({
         backgroundColor: "rgba(0, 0, 0, 0.9)",
         paddingHorizontal: 16,
         paddingVertical: 10,
-        paddingTop: 14, // Espace pour la barre de statut du téléphone
+        paddingTop: 14, // Space for phone status bar
         zIndex: 400,
       }}
     >
@@ -81,7 +81,7 @@ export default function MatchStatusBar({
           justifyContent: "space-between",
         }}
       >
-        {/* Équipes avec scores style digital */}
+        {/* Teams with digital-style scores */}
         <View
           style={{
             flexDirection: "row",
@@ -89,7 +89,7 @@ export default function MatchStatusBar({
             flex: 1,
           }}
         >
-          {/* Team A avec score à droite */}
+          {/* Team A with score on the right */}
           <View style={{ flexDirection: "row", alignItems: "center" }}>
             <Text
               style={{
@@ -146,8 +146,8 @@ export default function MatchStatusBar({
           >
             vs
           </Text>
-          
-          {/* Team B avec score à gauche */}
+
+          {/* Team B with score on the left */}
           <View style={{ flexDirection: "row", alignItems: "center" }}>
             {(teamMode === "both" || teamMode === "B") && (
               <View
@@ -195,7 +195,7 @@ export default function MatchStatusBar({
           </View>
         </View>
 
-        {/* Période et temps restant */}
+        {/* Period and remaining time */}
         <View
           style={{
             flexDirection: "row",
@@ -230,7 +230,7 @@ export default function MatchStatusBar({
           </Text>
         </View>
 
-        {/* Boutons de contrôle discrets */}
+        {/* Discreet control buttons */}
         <View style={{ flexDirection: "row", alignItems: "center" }}>
           {isPaused ? (
             <TouchableOpacity
@@ -278,7 +278,7 @@ export default function MatchStatusBar({
             </TouchableOpacity>
           )}
 
-          {/* Bouton Période suivante - affiché seulement si pas la dernière période */}
+          {/* Next Period button - shown only if not the last period */}
           {!isLastPeriod && onNextPeriod && (
             <TouchableOpacity
               onPress={(isPaused || isTimeUp) ? onNextPeriod : undefined}
@@ -303,7 +303,7 @@ export default function MatchStatusBar({
             </TouchableOpacity>
           )}
 
-          {/* Bouton Terminer le match - affiché seulement dans la dernière période */}
+          {/* End match button - shown only in the last period */}
           {isLastPeriod && onEndMatch && (
             <TouchableOpacity
               onPress={(isPaused || isTimeUp) ? onEndMatch : undefined}

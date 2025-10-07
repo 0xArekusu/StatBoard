@@ -29,7 +29,7 @@ export default function DebugCourtClick() {
   const [containerLayout, setContainerLayout] = useState({ width: 0, height: 0 });
   const insets = useSafeAreaInsets();
 
-  // Écouter les changements d'orientation
+  // Listen to orientation changes
   useEffect(() => {
     const subscription = Dimensions.addEventListener("change", ({ window }) => {
       const newIsPortrait = window.height > window.width;
@@ -41,16 +41,16 @@ export default function DebugCourtClick() {
       console.log(
         `📐 Anciennes dimensions: ${dimensions.width}x${dimensions.height}`
       );
-      console.log(`📐 Nouvelles dimensions: ${window.width}x${window.height}`);
+      console.log(`📐 New dimensions: ${window.width}x${window.height}`);
       console.log(
         `📱 Insets: top=${insets.top}, bottom=${insets.bottom}, left=${insets.left}, right=${insets.right}`
       );
 
       setDimensions(window);
 
-      // Logs des marqueurs existants pour debugging
+      // Logs of existing markers for debugging
       if (clickMarkers.length > 0) {
-        console.log(`🎯 Repositionnement de ${clickMarkers.length} marqueurs:`);
+        console.log(`🎯 Repositioning ${clickMarkers.length} markers:`);
         clickMarkers.forEach((marker, index) => {
           console.log(`  Marqueur ${index + 1}:`, {
             id: marker.id.slice(-6),

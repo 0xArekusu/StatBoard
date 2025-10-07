@@ -16,7 +16,7 @@ export default function CoachEditModal({
 }: CoachEditModalProps) {
   const [editName, setEditName] = useState(coachName);
 
-  // Réinitialiser les champs quand le modal s'ouvre
+  // Reset fields when modal opens
   useEffect(() => {
     if (visible) {
       setEditName(coachName);
@@ -76,7 +76,7 @@ export default function CoachEditModal({
             </Text>
           </View>
 
-          {/* Champ nom */}
+          {/* Name field */}
           <TextInput
             style={{
               borderWidth: 2,
@@ -96,7 +96,7 @@ export default function CoachEditModal({
             maxLength={30}
           />
 
-          {/* Boutons */}
+          {/* Buttons */}
           <View
             style={{
               flexDirection: "row",

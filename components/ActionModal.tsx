@@ -64,11 +64,11 @@ export default function ActionModal({
   teamB,
 }: ActionModalProps) {
   const renderBackButton = () => {
-    // Ne pas afficher le bouton retour si on est à l'étape 1
+    // Don't show back button if we're at step 1
     if (currentStep === 1) return null;
 
-    // Si teamMode n'est pas "both", ne pas afficher le bouton retour à l'étape 2
-    // (car l'étape 1 de sélection d'équipe a été sautée)
+    // If teamMode is not "both", don't show back button at step 2
+    // (because step 1 team selection was skipped)
     if (teamMode !== "both" && currentStep === 2) return null;
 
     return (
@@ -165,7 +165,7 @@ export default function ActionModal({
   };
 
   const renderPlayerSelection = () => {
-    // Filtrer les joueurs selon l'équipe sélectionnée
+    // Filter players according to selected team
     const filteredPlayers = selectedTeam
       ? players.filter((player) => player.team === selectedTeam)
       : players;
@@ -230,11 +230,11 @@ export default function ActionModal({
             {
               left: position.x,
               top: position.y,
-              height: MODAL_HEIGHT, // 🎯 Taille constante, plus de changement à l'étape 4
+              height: MODAL_HEIGHT, // 🎯 Constant size, no more changes at step 4
             },
           ]}
           onPress={(e) => {
-            // 🎯 Empêcher la propagation de l'événement pour éviter la fermeture
+            // 🎯 Prevent event propagation to avoid closing
             e.stopPropagation();
           }}
         >
@@ -249,7 +249,7 @@ export default function ActionModal({
             ]}
           />
 
-          {/* Bouton retour en position absolue */}
+          {/* Back button in absolute position */}
           {renderBackButton()}
 
           {/* Modal Content */}
@@ -282,27 +282,27 @@ const styles = StyleSheet.create({
     padding: MODAL_CONTENT_PADDING,
   },
   backButton: {
-    position: "absolute", // 🎯 Position absolue pour flotter au-dessus
-    top: 8, // 🎯 8px du haut de la modal
-    left: 8, // 🎯 8px du côté gauche de la modal
-    width: 28, // 🎯 Bouton rond compact
+    position: "absolute", // 🎯 Absolute position to float above
+    top: 8, // 🎯 8px from top of modal
+    left: 8, // 🎯 8px from left side of modal
+    width: 28, // 🎯 Compact round button
     height: 28,
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: "#F5F5F5",
-    borderRadius: 14, // 🎯 Complètement rond
-    zIndex: 10, // 🎯 Au-dessus du contenu
-    shadowColor: "#000", // 🎯 Ombre légère pour le détacher du fond
+    borderRadius: 14, // 🎯 Completely round
+    zIndex: 10, // 🎯 Above content
+    shadowColor: "#000", // 🎯 Light shadow to separate from background
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 2,
-    elevation: 2, // 🎯 Élévation pour Android
+    elevation: 2, // 🎯 Elevation for Android
   },
   backButtonText: {
     fontSize: 14,
-    marginBottom: 5, // 🎯 Légèrement plus petit dans le coin
+    marginBottom: 5, // 🎯 Slightly smaller in the corner
     color: "#666",
-    fontWeight: "900", // 🎯 Épais pour la visibilité
+    fontWeight: "900", // 🎯 Thick for visibility
   },
   actionsContainer: {
     gap: 6,
@@ -332,16 +332,16 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 2,
   },
-  // 🎯 SCROLLVIEW ACTIONS - Ajustable !
+  // 🎯 SCROLLVIEW ACTIONS - Adjustable!
   actionScrollView: {
-    maxHeight: 130, // Hauteur max pour les actions (ajustable ici)
+    maxHeight: 130, // Max height for actions (adjustable here)
   },
   actionScrollContent: {
     flexGrow: 1,
   },
-  // 🎯 SCROLLVIEW JOUEURS - Ajustable !
+  // 🎯 SCROLLVIEW PLAYERS - Adjustable!
   playerScrollView: {
-    maxHeight: 130, // 👈 AJUSTE ICI la taille de la scrollview des joueurs !
+    maxHeight: 130, // 👈 ADJUST HERE the size of the players scrollview!
   },
   playerScrollContent: {
     flexGrow: 1,

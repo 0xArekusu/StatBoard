@@ -19,7 +19,7 @@ export default function PlayerEditModal({
   const [editNumber, setEditNumber] = useState(playerNumber);
   const [editName, setEditName] = useState(playerName);
 
-  // Réinitialiser les champs quand le modal s'ouvre
+  // Reset fields when modal opens
   useEffect(() => {
     if (visible) {
       setEditNumber(playerNumber);
@@ -52,7 +52,7 @@ export default function PlayerEditModal({
   };
 
   const handleNumberChange = (text: string) => {
-    // Permettre seulement les chiffres
+    // Allow only digits
     const numericValue = text.replace(/[^0-9]/g, "");
     if (numericValue === "") {
       setEditNumber(0);
@@ -109,7 +109,7 @@ export default function PlayerEditModal({
             <Text style={{ fontSize: 40, color: "#bbb" }}>👤</Text>
           </View>
 
-          {/* Champ nom sans label */}
+          {/* Name field without label */}
           <TextInput
             style={{
               borderWidth: 2,
@@ -129,7 +129,7 @@ export default function PlayerEditModal({
             maxLength={20}
           />
 
-          {/* Champ numérique avec boutons + et - */}
+          {/* Numeric field with + and - buttons */}
           <View style={{ marginBottom: 32 }}>
             <Text
               style={{
@@ -230,7 +230,7 @@ export default function PlayerEditModal({
             </View>
           </View>
 
-          {/* Boutons d'action */}
+          {/* Action buttons */}
           <View style={{ flexDirection: "row", gap: 16 }}>
             <TouchableOpacity
               style={{

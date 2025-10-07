@@ -14,8 +14,8 @@ export class ActionQueue {
   private isProcessing = false;
   
   // Configuration
-  private readonly BATCH_SIZE = 10; // Traiter par lots de 10 actions
-  private readonly PROCESS_INTERVAL = 3000; // Toutes les 3 secondes
+  private readonly BATCH_SIZE = 10; // Process in batches of 10 actions
+  private readonly PROCESS_INTERVAL = 3000; // Every 3 seconds
   private readonly MAX_RETRY_ATTEMPTS = 3;
 
   constructor() {
@@ -24,7 +24,7 @@ export class ActionQueue {
   }
 
   /**
-   * Ajouter une action à la queue
+   * Add an action to the queue
    */
   enqueue(action: CreateActionData): void {
     this.queue.push(action);
@@ -39,28 +39,28 @@ export class ActionQueue {
       order: action.action_order
     });
 
-    // Si on atteint la taille de batch, traiter immédiatement
+    // If batch size is reached, process immediately
     if (this.queue.length >= this.BATCH_SIZE) {
       this.processQueueImmediate();
     }
   }
 
   /**
-   * S'abonner aux événements de la queue
+   * Subscribe to queue events
    */
   subscribe(observer: ActionObserver): void {
     this.observers.push(observer);
   }
 
   /**
-   * Se désabonner des événements
+   * Unsubscribe from events
    */
   unsubscribe(observer: ActionObserver): void {
     this.observers = this.observers.filter(obs => obs !== observer);
   }
 
   /**
-   * Traiter la queue immédiatement
+   * Process queue immediately
    */
   async processQueueImmediate(): Promise<void> {
     if (this.isProcessing || this.queue.length === 0) {
@@ -71,7 +71,7 @@ export class ActionQueue {
   }
 
   /**
-   * Vider complètement la queue (pour arrêt propre)
+   * Completely flush the queue (for clean shutdown)
    */
   async flush(): Promise<void> {
     if (this.processingTimer) {
@@ -83,7 +83,7 @@ export class ActionQueue {
   }
 
   /**
-   * Obtenir la taille actuelle de la queue
+   * Get current queue size
    */
   getQueueSize(): number {
     return this.queue.length;
@@ -105,13 +105,13 @@ export class ActionQueue {
     this.isProcessing = true;
 
     try {
-      // Prendre tous les éléments de la queue
+      // Take all elements from the queue
       const actionsToProcess = [...this.queue];
-      this.queue = []; // Vider la queue immédiatement
+      this.queue = []; // Empty queue immediately
 
       console.log(`🔄 Processing ${actionsToProcess.length} actions...`);
 
-      // Traiter par batch
+      // Process in batches
       const batches = this.createBatches(actionsToProcess, this.BATCH_SIZE);
       let totalProcessed = 0;
 
@@ -120,7 +120,7 @@ export class ActionQueue {
         totalProcessed += batch.length;
       }
 
-      // Notifier les observateurs
+      // Notify observers
       this.notifyObservers('success', totalProcessed);
 
       console.log(`✅ Successfully processed ${totalProcessed} actions`);
@@ -135,7 +135,7 @@ export class ActionQueue {
           this.processQueue(retryCount + 1);
         }, 1000);
       } else {
-        // Échec définitif - notifier les observateurs
+        // Final failure - notify observers
         this.notifyObservers('error', 0, error as Error);
         console.error('❌ Max retry attempts reached. Actions lost.');
       }
@@ -167,7 +167,7 @@ export class ActionQueue {
   }
 
   /**
-   * Nettoyer les ressources
+   * Clean up resources
    */
   destroy(): void {
     if (this.processingTimer) {

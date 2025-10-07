@@ -12,12 +12,12 @@ export class SQLiteAdapter implements IStorageAdapter {
   constructor(databaseName: string = "statboard.db") {
     this.db = SQLite.openDatabaseSync(databaseName);
 
-    // 🔄 RESET TEMPORAIRE - À supprimer après test !
+    // 🔄 TEMPORARY RESET - Remove after testing!
     //this.resetDatabaseTables();
     //this.initializeTables();
   }
 
-  // 🔄 MÉTHODE TEMPORAIRE - À supprimer après test !wip
+  // 🔄 TEMPORARY METHOD - Remove after testing! wip
   private resetDatabaseTables(): void {
     try {
       console.log("🔄 Resetting database tables...");

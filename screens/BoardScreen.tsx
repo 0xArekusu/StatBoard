@@ -40,9 +40,9 @@ import { ActionRepository } from "../src/services/database/ActionRepository";
 import { Match } from "../src/models/types";
 import { DEBUG } from "../src/config/debug";
 
-// Modal layout constants (pour le nouveau ActionModal)
+// Modal layout constants (for the new ActionModal)
 const MODAL_WIDTH = 240;
-const MODAL_HEIGHT = 180; // ⬇️ Réduit de 220 à 180 (moins haute)
+const MODAL_HEIGHT = 180; // ⬇️ Reduced from 220 to 180 (less tall)
 const MODAL_PADDING = 20;
 const POINTER_SIZE = 12;
 const MODAL_OFFSET_TOP = 10;
@@ -60,49 +60,49 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList, "Board">;
  * Get marker color based on action type and specification
  */
 const getMarkerColor = (actionType: string, specification?: string): string => {
-  // Tir
+  // Shot
   if (actionType === "tir") {
-    return specification === "reussi" ? "#4CAF50" : "#F44336"; // vert si réussi, rouge si raté
+    return specification === "reussi" ? "#4CAF50" : "#F44336"; // green if successful, red if missed
   }
-  // Rebond
+  // Rebound
   if (actionType === "rebond") {
-    return specification === "offensif" ? "#FF9800" : "#2196F3"; // orange si offensif, bleu si défensif
+    return specification === "offensif" ? "#FF9800" : "#2196F3"; // orange if offensive, blue if defensive
   }
-  // Faute
+  // Foul
   if (actionType === "faute") {
-    return specification === "technique" ? "#9C27B0" : "#E74C3C"; // violet si technique, rouge si personnelle
+    return specification === "technique" ? "#9C27B0" : "#E74C3C"; // purple if technical, red if personal
   }
-  // Couleur par défaut
+  // Default color
   return "#757575";
 };
 
 /**
- * Système de coordonnées sémantiques pour terrain de basket
- * Comprend que le terrain a des raquettes qui changent d'orientation
+ * Semantic coordinate system for basketball court
+ * Understands that the court has paint areas that change orientation
  */
 
 interface SemanticPosition {
-  // Position normalisée dans le terrain logique (toujours même orientation)
-  // 0,0 = coin supérieur gauche du terrain logique
-  // 1,1 = coin inférieur droit du terrain logique
-  xNormalized: number; // 0.0 à 1.0
-  yNormalized: number; // 0.0 à 1.0
-  // Ajout : orientation dans laquelle la position a été capturée
+  // Normalized position in logical court (always same orientation)
+  // 0,0 = top left corner of logical court
+  // 1,1 = bottom right corner of logical court
+  xNormalized: number; // 0.0 to 1.0
+  yNormalized: number; // 0.0 to 1.0
+  // Added: orientation in which the position was captured
   capturedInPortrait: boolean;
 }
 
 /**
- * Convertir une position de clic en position sémantique normalisée
- * Approche simplifiée : on sauvegarde les coordonnées relatives telles quelles
- * avec l'information de l'orientation de capture
+ * Convert a click position to normalized semantic position
+ * Simplified approach: we save the relative coordinates as-is
+ * with the capture orientation information
  */
 const convertClickToSemantic = (
   clickPosition: { x: number; y: number },
   isPortrait: boolean,
   courtDimensions: { width: number; height: number }
 ): SemanticPosition => {
-  // Toujours sauvegarder les coordonnées relatives directement
-  // sans transformation de rotation
+  // Always save relative coordinates directly
+  // without rotation transformation
   return {
     xNormalized: clickPosition.x / courtDimensions.width,
     yNormalized: clickPosition.y / courtDimensions.height,
@@ -111,15 +111,15 @@ const convertClickToSemantic = (
 };
 
 /**
- * Convertir une position sémantique en position d'affichage
- * Gère la conversion entre orientations de manière symétrique
+ * Convert a semantic position to display position
+ * Handles conversion between orientations symmetrically
  */
 const convertSemanticToDisplay = (
   semanticPosition: SemanticPosition,
   isPortrait: boolean,
   courtDimensions: { width: number; height: number }
 ) => {
-  // Si l'orientation actuelle correspond à celle de capture, conversion directe
+  // If current orientation matches capture orientation, direct conversion
   if (semanticPosition.capturedInPortrait === isPortrait) {
     return {
       x: semanticPosition.xNormalized * courtDimensions.width,
@@ -127,17 +127,17 @@ const convertSemanticToDisplay = (
     };
   }
 
-  // Sinon, il faut transformer les coordonnées pour l'autre orientation
+  // Otherwise, transform coordinates for the other orientation
   if (isPortrait) {
-    // Afficher en portrait un marqueur capturé en paysage
-    // Version de test - remettons celle qui fonctionnait avant
+    // Display in portrait a marker captured in landscape
+    // Test version - restore the one that worked before
     return {
       x: semanticPosition.yNormalized * courtDimensions.width,
       y: (1 - semanticPosition.xNormalized) * courtDimensions.height,
     };
   } else {
-    // Afficher en paysage un marqueur capturé en portrait
-    // L'icône est légèrement trop haute, on ajuste le Y
+    // Display in landscape a marker captured in portrait
+    // Icon is slightly too high, adjust Y
     return {
       x: semanticPosition.yNormalized * courtDimensions.width,
       y: (1 - semanticPosition.xNormalized + 0.045) * courtDimensions.height,
@@ -151,24 +151,24 @@ export default function BasketballCourt() {
   const window = useWindowDimensions(); // Automatically reacts to rotation
   const [showSheet, setShowSheet] = useState(true);
 
-  // Constantes pour les dimensions et offsets
-  const BOTTOM_NAV_HEIGHT = 50; // Hauteur de la bottom navigation bar en portrait
-  const BOTTOM_NAV_WIDTH = 70; // Largeur de la bottom navigation bar en paysage
+  // Constants for dimensions and offsets
+  const BOTTOM_NAV_HEIGHT = 50; // Height of bottom navigation bar in portrait
+  const BOTTOM_NAV_WIDTH = 70; // Width of bottom navigation bar in landscape
 
-  // 🎯 CONSTANTES DE CENTRAGE - Facile à ajuster !
-  const ICON_OFFSET_X = -14; // Offset horizontal de l'icône
-  const ICON_OFFSET_Y = 0; // Offset vertical de l'icône
-  const DEBUG_DOT_OFFSET_X = 17; // Offset horizontal du point rouge debug
-  const DEBUG_DOT_OFFSET_Y = 17; // Offset vertical du point rouge debug
+  // 🎯 CENTERING CONSTANTS - Easy to adjust!
+  const ICON_OFFSET_X = -14; // Horizontal offset of icon
+  const ICON_OFFSET_Y = 0; // Vertical offset of icon
+  const DEBUG_DOT_OFFSET_X = 17; // Horizontal offset of debug red dot
+  const DEBUG_DOT_OFFSET_Y = 17; // Vertical offset of debug red dot
 
-  // 🎯 CONSTANTES DE CENTRAGE MODAL - Correction position indicateur
-  // Modal AU-DESSUS du clic (clic en bas d'écran → pointeur en bas de modal)
-  const MODAL_POINTER_OFFSET_X_TOP = 20; // Offset horizontal quand modal au-dessus
-  const MODAL_POINTER_OFFSET_Y_TOP = 75; // Offset vertical quand modal au-dessus
+  // 🎯 MODAL CENTERING CONSTANTS - Pointer position correction
+  // Modal ABOVE click (click at bottom of screen → pointer at bottom of modal)
+  const MODAL_POINTER_OFFSET_X_TOP = 20; // Horizontal offset when modal above
+  const MODAL_POINTER_OFFSET_Y_TOP = 75; // Vertical offset when modal above
 
-  // Modal EN-DESSOUS du clic (clic en haut d'écran → pointeur en haut de modal)
-  const MODAL_POINTER_OFFSET_X_BOTTOM = 18; // Offset horizontal quand modal en-dessous
-  const MODAL_POINTER_OFFSET_Y_BOTTOM = 45; // Offset vertical quand modal en-dessous (plus petit !)
+  // Modal BELOW click (click at top of screen → pointer at top of modal)
+  const MODAL_POINTER_OFFSET_X_BOTTOM = 18; // Horizontal offset when modal below
+  const MODAL_POINTER_OFFSET_Y_BOTTOM = 45; // Vertical offset when modal below (smaller!)
 
   const [orientation, setOrientation] =
     useState<ScreenOrientation.Orientation | null>(null); // Used to delay rendering until orientation is locked
@@ -184,11 +184,11 @@ export default function BasketballCourt() {
       player?: number;
       id: string; // Add unique ID for each marker
       opacity: Animated.Value; // Add animated opacity
-      // Position sémantique pour repositionnement lors des rotations
+      // Semantic position for repositioning during rotations
       semanticPosition: {
-        xNormalized: number; // Position normalisée dans le terrain logique
-        yNormalized: number; // Position normalisée dans le terrain logique
-        capturedInPortrait: boolean; // Orientation de capture
+        xNormalized: number; // Normalized position in logical court
+        yNormalized: number; // Normalized position in logical court
+        capturedInPortrait: boolean; // Capture orientation
       };
     }[]
   >([]);
@@ -260,7 +260,7 @@ export default function BasketballCourt() {
       setCompletedActions((prev) => prev.slice(0, -1));
 
       // Remove the corresponding marker if it exists (temporary markers)
-      // Utiliser les coordonnées sémantiques pour la comparaison
+      // Use semantic coordinates for comparison
       setMarkers((prev) =>
         prev.filter(
           (marker) =>
@@ -375,7 +375,7 @@ export default function BasketballCourt() {
     });
   };
 
-  // Ajout du state pour les popups d'initialisation
+  // Added state for initialization popups
   const [initModalVisible, setInitModalVisible] = useState(true);
   const [matchConfigModalVisible, setMatchConfigModalVisible] = useState(false);
   const [teamA, setTeamA] = useState("Team A");
@@ -383,28 +383,28 @@ export default function BasketballCourt() {
   const [teamMode, setTeamMode] = useState<"A" | "B" | "both">("A");
   const [currentTeam, setCurrentTeam] = useState<"A" | "B">("A");
 
-  // Mode PreGame : désactive les interactions avec le terrain
+  // PreGame mode: disables court interactions
   const [preGameMode, setPreGameMode] = useState(true);
 
-  // État pour le match en cours
+  // State for current match
   const [currentMatch, setCurrentMatch] = useState<Match | null>(null);
   const [matchManager] = useState(() => new MatchManager());
 
-  // État pour le modal de reprise de match
+  // State for resume match modal
   const [resumeModalVisible, setResumeModalVisible] = useState(false);
   const [foundMatch, setFoundMatch] = useState<Match | null>(null);
 
-  // État pour la queue d'actions
+  // State for action queue
   const [actionQueue] = useState(() => new ActionQueue());
   const [actionRepository] = useState(() => new ActionRepository());
-  const [actionCounter, setActionCounter] = useState(0); // Pour générer action_order
+  const [actionCounter, setActionCounter] = useState(0); // To generate action_order
 
-  // État pour l'édition des joueurs
+  // State for player editing
   const [playerEditModalVisible, setPlayerEditModalVisible] = useState(false);
   const [editingPlayer, setEditingPlayer] = useState<number | null>(null);
-  const [editingTeam, setEditingTeam] = useState<"A" | "B">("A"); // 🏀 Équipe en cours d'édition
+  const [editingTeam, setEditingTeam] = useState<"A" | "B">("A"); // 🏀 Team being edited
 
-  // État pour les joueurs avec leurs positions
+  // State for players with their positions
   const [players, setPlayers] = useState([
     { id: 1, num: 1, name: "Joueur #1", isSubstitute: false },
     { id: 2, num: 2, name: "Joueur #2", isSubstitute: false },
@@ -413,7 +413,7 @@ export default function BasketballCourt() {
     { id: 5, num: 5, name: "Joueur #5", isSubstitute: false },
   ]);
 
-  // 🏀 État pour les joueurs de l'équipe B (mode "both")
+  // 🏀 State for team B players ("both" mode)
   const [playersTeamB, setPlayersTeamB] = useState([
     { id: 6, num: 1, name: "Joueur B #1", isSubstitute: false },
     { id: 7, num: 2, name: "Joueur B #2", isSubstitute: false },
@@ -422,7 +422,7 @@ export default function BasketballCourt() {
     { id: 10, num: 5, name: "Joueur B #5", isSubstitute: false },
   ]);
 
-  // États pour les remplaçants
+  // States for substitutes
   const [substitutesTeamA, setSubstitutesTeamA] = useState([
     { id: 11, num: 6, name: "Remplaçant A #1", isSubstitute: true },
     { id: 12, num: 7, name: "Remplaçant A #2", isSubstitute: true },
@@ -439,7 +439,7 @@ export default function BasketballCourt() {
     { id: 20, num: 10, name: "Remplaçant B #5", isSubstitute: true },
   ]);
 
-  // États pour les coaches
+  // States for coaches
   const [coachTeamA, setCoachTeamA] = useState({
     id: 21,
     name: "Coach Équipe A",
@@ -452,10 +452,10 @@ export default function BasketballCourt() {
     isCoach: true,
   });
 
-  // Sécurité : désactiver le bouton si un champ est vide
+  // Safety: disable button if a field is empty
   const isConfirmDisabled = teamA.trim() === "" || teamB.trim() === "";
 
-  // Fonction pour formater la date en français
+  // Function to format date in French
   function getFormattedDate() {
     const now = new Date();
     return (
@@ -480,7 +480,7 @@ export default function BasketballCourt() {
     setShowSheet(true);
   }, []);
 
-  // Vérifier s'il y a un match en cours au démarrage
+  // Check if there is an active match at startup
   useEffect(() => {
     const checkActiveMatch = async () => {
       try {
@@ -499,7 +499,7 @@ export default function BasketballCourt() {
     checkActiveMatch();
   }, [matchManager]);
 
-  // Configurer l'observer de la queue d'actions
+  // Configure action queue observer
   useEffect(() => {
     const observer: ActionObserver = {
       onActionsSaved: (savedCount: number) => {
@@ -507,7 +507,7 @@ export default function BasketballCourt() {
       },
       onError: (error: Error) => {
         console.error("❌ Action queue error:", error);
-        // TODO: Afficher un toast d'erreur à l'utilisateur
+        // TODO: Display an error toast to the user
       },
     };
 
@@ -516,7 +516,7 @@ export default function BasketballCourt() {
     // Cleanup
     return () => {
       actionQueue.unsubscribe(observer);
-      actionQueue.destroy(); // Nettoyer les timers
+      actionQueue.destroy(); // Clean up timers
     };
   }, [actionQueue]);
 
@@ -804,23 +804,23 @@ export default function BasketballCourt() {
   const [matchFormat, setMatchFormat] = useState<string>("2_halves");
   const [periodDuration, setPeriodDuration] = useState<number>(1200);
 
-  // États pour l'affichage de la barre de statut et la gestion du chrono
+  // States for status bar display and timer management
   const [currentPeriod, setCurrentPeriod] = useState<number>(1);
   const [timeElapsed, setTimeElapsed] = useState<number>(0);
   const [isPaused, setIsPaused] = useState<boolean>(true);
   const [isMatchStarted, setIsMatchStarted] = useState<boolean>(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // États pour les modals de confirmation
+  // States for confirmation modals
   const [showNextPeriodModal, setShowNextPeriodModal] =
     useState<boolean>(false);
   const [showEndMatchModal, setShowEndMatchModal] = useState<boolean>(false);
 
-  // États pour les scores
+  // States for scores
   const [scoreA, setScoreA] = useState<number>(0);
   const [scoreB, setScoreB] = useState<number>(0);
 
-  // Fonctions utilitaires pour la gestion des périodes
+  // Utility functions for period management
   const getTotalPeriods = () => {
     return matchFormat === "2_halves" ? 2 : 4;
   };
@@ -833,16 +833,16 @@ export default function BasketballCourt() {
     return Math.max(0, periodDuration - timeElapsed);
   };
 
-  // Fonction pour calculer les scores à partir des actions
+  // Function to calculate scores from actions
   const calculateScores = useCallback(() => {
     let newScoreA = 0;
     let newScoreB = 0;
 
     completedActions.forEach((action) => {
-      // Un tir réussi rapporte des points
+      // A successful shot scores points
       if (action.type === "tir" && action.specification === "reussi") {
-        // TODO: Déterminer le nombre de points selon la position (2 ou 3 points)
-        // Pour l'instant, tous les tirs réussis rapportent 2 points
+        // TODO: Determine number of points based on position (2 or 3 points)
+        // For now, all successful shots score 2 points
         const points = 2;
 
         if (action.team === "A") {
@@ -857,12 +857,12 @@ export default function BasketballCourt() {
     setScoreB(newScoreB);
   }, [completedActions]);
 
-  // Recalculer les scores à chaque changement d'actions
+  // Recalculate scores on each action change
   useEffect(() => {
     calculateScores();
   }, [calculateScores]);
 
-  // Fonction pour sauvegarder l'état actuel du match
+  // Function to save current match state
   const saveMatchState = useCallback(async () => {
     if (currentMatch) {
       try {
@@ -877,12 +877,12 @@ export default function BasketballCourt() {
     }
   }, [currentMatch, currentPeriod, timeElapsed, matchManager]);
 
-  // Sauvegarder automatiquement l'état du match
+  // Automatically save match state
   useEffect(() => {
     if (currentMatch && !preGameMode) {
       const timeoutId = setTimeout(() => {
         saveMatchState();
-      }, 1000); // Debounce de 1 seconde
+      }, 1000); // 1 second debounce
 
       return () => clearTimeout(timeoutId);
     }
