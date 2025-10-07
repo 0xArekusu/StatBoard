@@ -1756,6 +1756,7 @@ export default function BasketballCourt() {
         actions={completedActions}
         matchFormat={matchFormat}
         periodDuration={periodDuration}
+        teamMode={teamMode}
         onViewDetails={handleViewDetails}
         onBackToMenu={handleBackToMenu}
       />

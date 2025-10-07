@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
+  TextInput,
 } from "react-native";
 import { ActionData } from "./ActionSystem";
 
@@ -18,6 +19,7 @@ interface MatchSummaryModalProps {
   actions: ActionData[];
   matchFormat: "2_halves" | "4_quarters";
   periodDuration: number;
+  teamMode: "A" | "B" | "both";
   onViewDetails: () => void;
   onBackToMenu: () => void;
 }
@@ -31,12 +33,27 @@ export default function MatchSummaryModal({
   actions,
   matchFormat,
   periodDuration,
+  teamMode,
   onViewDetails,
   onBackToMenu,
 }: MatchSummaryModalProps) {
-  // Calculate winner
+  // Local state for adjustable scores
+  const [adjustedScoreA, setAdjustedScoreA] = React.useState(scoreA);
+  const [adjustedScoreB, setAdjustedScoreB] = React.useState(scoreB);
+
+  // Update local scores when props change
+  React.useEffect(() => {
+    setAdjustedScoreA(scoreA);
+    setAdjustedScoreB(scoreB);
+  }, [scoreA, scoreB]);
+
+  // Calculate winner based on adjusted scores
   const winner =
-    scoreA > scoreB ? teamA : scoreB > scoreA ? teamB : null;
+    adjustedScoreA > adjustedScoreB
+      ? teamA
+      : adjustedScoreB > adjustedScoreA
+      ? teamB
+      : null;
 
   // Calculate shooting statistics
   const calculateShootingStats = (team: "A" | "B") => {
@@ -55,19 +72,41 @@ export default function MatchSummaryModal({
     const percentage =
       totalShots > 0 ? Math.round((madeShots.length / totalShots) * 100) : 0;
 
-    // Count by points
-    const onePointers = madeShots.filter((action) => action.points === 1).length;
-    const twoPointers = madeShots.filter((action) => action.points === 2).length;
-    const threePointers = madeShots.filter((action) => action.points === 3).length;
+    // Count by points (made)
+    const onePointersMade = madeShots.filter((action) => action.points === 1).length;
+    const twoPointersMade = madeShots.filter((action) => action.points === 2).length;
+    const threePointersMade = madeShots.filter((action) => action.points === 3).length;
+
+    // Count by points (total attempts)
+    const onePtShots = teamShots.filter((action) => action.points === 1);
+    const twoPtShots = teamShots.filter((action) => action.points === 2);
+    const threePtShots = teamShots.filter((action) => action.points === 3);
+
+    // Calculate percentages by point type
+    const onePtPercentage = onePtShots.length > 0
+      ? Math.round((onePointersMade / onePtShots.length) * 100)
+      : 0;
+    const twoPtPercentage = twoPtShots.length > 0
+      ? Math.round((twoPointersMade / twoPtShots.length) * 100)
+      : 0;
+    const threePtPercentage = threePtShots.length > 0
+      ? Math.round((threePointersMade / threePtShots.length) * 100)
+      : 0;
 
     return {
       made: madeShots.length,
       missed: missedShots.length,
       total: totalShots,
       percentage,
-      onePointers,
-      twoPointers,
-      threePointers,
+      onePointersMade,
+      twoPointersMade,
+      threePointersMade,
+      onePtTotal: onePtShots.length,
+      twoPtTotal: twoPtShots.length,
+      threePtTotal: threePtShots.length,
+      onePtPercentage,
+      twoPtPercentage,
+      threePtPercentage,
     };
   };
 
@@ -140,30 +179,70 @@ export default function MatchSummaryModal({
               <Text style={styles.sectionTitle}>Score Final</Text>
 
               <View style={styles.scoreContainer}>
+                {/* Team A Score */}
                 <View style={styles.teamScore}>
                   <Text style={styles.teamName}>{teamA}</Text>
-                  <Text
-                    style={[
-                      styles.score,
-                      winner === teamA && styles.winnerScore,
-                    ]}
-                  >
-                    {scoreA}
-                  </Text>
+                  <View style={styles.scoreAdjustContainer}>
+                    <TouchableOpacity
+                      style={styles.adjustButton}
+                      onPress={() => setAdjustedScoreA(Math.max(0, adjustedScoreA - 1))}
+                    >
+                      <Text style={styles.adjustButtonText}>−</Text>
+                    </TouchableOpacity>
+                    <TextInput
+                      style={[
+                        styles.scoreInput,
+                        winner === teamA && styles.winnerScore,
+                      ]}
+                      value={adjustedScoreA.toString()}
+                      onChangeText={(text) => {
+                        const value = parseInt(text) || 0;
+                        setAdjustedScoreA(Math.max(0, value));
+                      }}
+                      keyboardType="number-pad"
+                      selectTextOnFocus
+                    />
+                    <TouchableOpacity
+                      style={styles.adjustButton}
+                      onPress={() => setAdjustedScoreA(adjustedScoreA + 1)}
+                    >
+                      <Text style={styles.adjustButtonText}>+</Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
 
                 <Text style={styles.scoreSeparator}>-</Text>
 
+                {/* Team B Score */}
                 <View style={styles.teamScore}>
                   <Text style={styles.teamName}>{teamB}</Text>
-                  <Text
-                    style={[
-                      styles.score,
-                      winner === teamB && styles.winnerScore,
-                    ]}
-                  >
-                    {scoreB}
-                  </Text>
+                  <View style={styles.scoreAdjustContainer}>
+                    <TouchableOpacity
+                      style={styles.adjustButton}
+                      onPress={() => setAdjustedScoreB(Math.max(0, adjustedScoreB - 1))}
+                    >
+                      <Text style={styles.adjustButtonText}>−</Text>
+                    </TouchableOpacity>
+                    <TextInput
+                      style={[
+                        styles.scoreInput,
+                        winner === teamB && styles.winnerScore,
+                      ]}
+                      value={adjustedScoreB.toString()}
+                      onChangeText={(text) => {
+                        const value = parseInt(text) || 0;
+                        setAdjustedScoreB(Math.max(0, value));
+                      }}
+                      keyboardType="number-pad"
+                      selectTextOnFocus
+                    />
+                    <TouchableOpacity
+                      style={styles.adjustButton}
+                      onPress={() => setAdjustedScoreB(adjustedScoreB + 1)}
+                    >
+                      <Text style={styles.adjustButtonText}>+</Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
               </View>
 
@@ -189,43 +268,61 @@ export default function MatchSummaryModal({
               <View style={styles.teamStatsContainer}>
                 <Text style={styles.teamStatsName}>{teamA}</Text>
                 <View style={styles.statRow}>
-                  <Text style={styles.statLabel}>Tirs réussis/total</Text>
+                  <Text style={styles.statLabel}>Total</Text>
                   <Text style={styles.statValue}>
-                    {statsA.made}/{statsA.total}
+                    {statsA.made}/{statsA.total} ({statsA.percentage}%)
                   </Text>
                 </View>
                 <View style={styles.statRow}>
-                  <Text style={styles.statLabel}>Pourcentage de réussite</Text>
-                  <Text style={styles.statValue}>{statsA.percentage}%</Text>
+                  <Text style={styles.statLabel}>1 point</Text>
+                  <Text style={styles.statValue}>
+                    {statsA.onePointersMade}/{statsA.onePtTotal} ({statsA.onePtPercentage}%)
+                  </Text>
                 </View>
                 <View style={styles.statRow}>
-                  <Text style={styles.statLabel}>Répartition</Text>
+                  <Text style={styles.statLabel}>2 points</Text>
                   <Text style={styles.statValue}>
-                    1pt: {statsA.onePointers} | 2pts: {statsA.twoPointers} | 3pts: {statsA.threePointers}
+                    {statsA.twoPointersMade}/{statsA.twoPtTotal} ({statsA.twoPtPercentage}%)
+                  </Text>
+                </View>
+                <View style={styles.statRow}>
+                  <Text style={styles.statLabel}>3 points</Text>
+                  <Text style={styles.statValue}>
+                    {statsA.threePointersMade}/{statsA.threePtTotal} ({statsA.threePtPercentage}%)
                   </Text>
                 </View>
               </View>
 
-              {/* Team B Stats */}
-              <View style={[styles.teamStatsContainer, styles.teamStatsMargin]}>
-                <Text style={styles.teamStatsName}>{teamB}</Text>
-                <View style={styles.statRow}>
-                  <Text style={styles.statLabel}>Tirs réussis/total</Text>
-                  <Text style={styles.statValue}>
-                    {statsB.made}/{statsB.total}
-                  </Text>
+              {/* Team B Stats - Only show if managing both teams */}
+              {teamMode === "both" && (
+                <View style={[styles.teamStatsContainer, styles.teamStatsMargin]}>
+                  <Text style={styles.teamStatsName}>{teamB}</Text>
+                  <View style={styles.statRow}>
+                    <Text style={styles.statLabel}>Total</Text>
+                    <Text style={styles.statValue}>
+                      {statsB.made}/{statsB.total} ({statsB.percentage}%)
+                    </Text>
+                  </View>
+                  <View style={styles.statRow}>
+                    <Text style={styles.statLabel}>1 point</Text>
+                    <Text style={styles.statValue}>
+                      {statsB.onePointersMade}/{statsB.onePtTotal} ({statsB.onePtPercentage}%)
+                    </Text>
+                  </View>
+                  <View style={styles.statRow}>
+                    <Text style={styles.statLabel}>2 points</Text>
+                    <Text style={styles.statValue}>
+                      {statsB.twoPointersMade}/{statsB.twoPtTotal} ({statsB.twoPtPercentage}%)
+                    </Text>
+                  </View>
+                  <View style={styles.statRow}>
+                    <Text style={styles.statLabel}>3 points</Text>
+                    <Text style={styles.statValue}>
+                      {statsB.threePointersMade}/{statsB.threePtTotal} ({statsB.threePtPercentage}%)
+                    </Text>
+                  </View>
                 </View>
-                <View style={styles.statRow}>
-                  <Text style={styles.statLabel}>Pourcentage de réussite</Text>
-                  <Text style={styles.statValue}>{statsB.percentage}%</Text>
-                </View>
-                <View style={styles.statRow}>
-                  <Text style={styles.statLabel}>Répartition</Text>
-                  <Text style={styles.statValue}>
-                    1pt: {statsB.onePointers} | 2pts: {statsB.twoPointers} | 3pts: {statsB.threePointers}
-                  </Text>
-                </View>
-              </View>
+              )}
             </View>
 
             {/* Rebounds and Fouls Statistics */}
@@ -254,29 +351,31 @@ export default function MatchSummaryModal({
                   </View>
                 </View>
 
-                {/* Separator */}
-                <View style={styles.compactSeparator} />
+                {/* Separator - Only show if managing both teams */}
+                {teamMode === "both" && <View style={styles.compactSeparator} />}
 
-                {/* Team B */}
-                <View style={styles.compactTeamStats}>
-                  <Text style={styles.compactTeamName}>{teamB}</Text>
+                {/* Team B - Only show if managing both teams */}
+                {teamMode === "both" && (
+                  <View style={styles.compactTeamStats}>
+                    <Text style={styles.compactTeamName}>{teamB}</Text>
 
-                  <View style={styles.compactStatItem}>
-                    <Text style={styles.compactStatLabel}>Rebonds</Text>
-                    <Text style={styles.compactStatValue}>{reboundsB.total}</Text>
-                    <Text style={styles.compactStatDetail}>
-                      (Off: {reboundsB.offensive} | Def: {reboundsB.defensive})
-                    </Text>
+                    <View style={styles.compactStatItem}>
+                      <Text style={styles.compactStatLabel}>Rebonds</Text>
+                      <Text style={styles.compactStatValue}>{reboundsB.total}</Text>
+                      <Text style={styles.compactStatDetail}>
+                        (Off: {reboundsB.offensive} | Def: {reboundsB.defensive})
+                      </Text>
+                    </View>
+
+                    <View style={styles.compactStatItem}>
+                      <Text style={styles.compactStatLabel}>Fautes</Text>
+                      <Text style={styles.compactStatValue}>{foulsB.total}</Text>
+                      <Text style={styles.compactStatDetail}>
+                        (Pers: {foulsB.personal} | Tech: {foulsB.technical})
+                      </Text>
+                    </View>
                   </View>
-
-                  <View style={styles.compactStatItem}>
-                    <Text style={styles.compactStatLabel}>Fautes</Text>
-                    <Text style={styles.compactStatValue}>{foulsB.total}</Text>
-                    <Text style={styles.compactStatDetail}>
-                      (Pers: {foulsB.personal} | Tech: {foulsB.technical})
-                    </Text>
-                  </View>
-                </View>
+                )}
               </View>
             </View>
           </ScrollView>
@@ -364,13 +463,49 @@ const styles = StyleSheet.create({
     color: "#666",
     marginBottom: 8,
   },
+  scoreAdjustContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  adjustButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#f0f0f0",
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#ddd",
+  },
+  adjustButtonText: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#333",
+  },
   score: {
     fontSize: 48,
     fontWeight: "bold",
     color: "#333",
+    minWidth: 80,
+    textAlign: "center",
+  },
+  scoreInput: {
+    fontSize: 48,
+    fontWeight: "bold",
+    color: "#333",
+    minWidth: 80,
+    textAlign: "center",
+    borderWidth: 2,
+    borderColor: "#ddd",
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    backgroundColor: "#f9f9f9",
   },
   winnerScore: {
     color: "#4CAF50",
+    borderColor: "#4CAF50",
   },
   scoreSeparator: {
     fontSize: 36,
