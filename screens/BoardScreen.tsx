@@ -34,6 +34,7 @@ import CoachEditModal from "../components/CoachEditModal";
 import ResumeMatchModal from "../components/ResumeMatchModal";
 import MatchStatusBar from "../components/MatchStatusBar";
 import MatchConfirmationModal from "../components/MatchConfirmationModal";
+import MatchSummaryModal from "../components/MatchSummaryModal";
 import { MatchManager } from "../src/services/match/MatchManager";
 import { ActionQueue, ActionObserver } from "../src/services/match/ActionQueue";
 import { ActionRepository } from "../src/services/database/ActionRepository";
@@ -801,8 +802,8 @@ export default function BasketballCourt() {
     });
   };
 
-  const [matchFormat, setMatchFormat] = useState<string>("2_halves");
-  const [periodDuration, setPeriodDuration] = useState<number>(1200);
+  const [matchFormat, setMatchFormat] = useState<"2_halves" | "4_quarters">("4_quarters");
+  const [periodDuration, setPeriodDuration] = useState<number>(600);
 
   // States for status bar display and timer management
   const [currentPeriod, setCurrentPeriod] = useState<number>(1);
@@ -815,6 +816,7 @@ export default function BasketballCourt() {
   const [showNextPeriodModal, setShowNextPeriodModal] =
     useState<boolean>(false);
   const [showEndMatchModal, setShowEndMatchModal] = useState<boolean>(false);
+  const [showMatchSummaryModal, setShowMatchSummaryModal] = useState<boolean>(false);
 
   // States for scores
   const [scoreA, setScoreA] = useState<number>(0);
@@ -1063,8 +1065,9 @@ export default function BasketballCourt() {
         console.log("✅ Match terminé et sauvegardé");
       }
 
-      // TODO: Afficher un écran de résumé ou rediriger vers le menu principal
-      // Pour l'instant, on peut rester sur l'écran actuel
+      // Show match summary modal
+      setShowEndMatchModal(false);
+      setShowMatchSummaryModal(true);
     } catch (error) {
       console.error("❌ Error ending match:", error);
       // Même en cas d'erreur, arrêter le chrono
@@ -1088,6 +1091,33 @@ export default function BasketballCourt() {
 
   const cancelEndMatch = () => {
     setShowEndMatchModal(false);
+  };
+
+  // Handlers for MatchSummaryModal
+  const handleViewDetails = () => {
+    setShowMatchSummaryModal(false);
+    setShowSheet(true); // Open history bottom sheet
+  };
+
+  const handleNewMatch = () => {
+    setShowMatchSummaryModal(false);
+    // Reset everything for a new match
+    setInitModalVisible(true);
+    setPreGameMode(true);
+    setCompletedActions([]);
+    setMarkers([]);
+    setCurrentPeriod(1);
+    setTimeElapsed(0);
+    setIsPaused(true);
+    setIsMatchStarted(false);
+    setScoreA(0);
+    setScoreB(0);
+    setCurrentMatch(null);
+  };
+
+  const handleBackToMenu = () => {
+    setShowMatchSummaryModal(false);
+    navigation.navigate("MainMenu");
   };
 
   const handleResumeMatch = async () => {
@@ -1714,6 +1744,20 @@ export default function BasketballCourt() {
         onCancel={cancelEndMatch}
         confirmButtonText="Terminer"
         cancelButtonText="Annuler"
+      />
+
+      {/* Match Summary Modal */}
+      <MatchSummaryModal
+        visible={showMatchSummaryModal}
+        teamA={teamA}
+        teamB={teamB}
+        scoreA={scoreA}
+        scoreB={scoreB}
+        actions={completedActions}
+        matchFormat={matchFormat}
+        periodDuration={periodDuration}
+        onViewDetails={handleViewDetails}
+        onBackToMenu={handleBackToMenu}
       />
 
       {/* 🏀 Bouton double flèche au centre du terrain pour changer de côté */}
