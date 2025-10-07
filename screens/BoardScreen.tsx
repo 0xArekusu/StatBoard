@@ -164,6 +164,14 @@ export default function BasketballCourt() {
     }[]
   >([]);
 
+  // Simple click markers for testing (will merge with markers later)
+  const [clickMarkers, setClickMarkers] = useState<
+    { id: string; svgX: number; svgY: number }[]
+  >([]);
+
+  // Actual container layout (measured after SafeAreaView padding)
+  const [containerLayout, setContainerLayout] = useState({ width: 0, height: 0 });
+
   // New state for completed actions with detailed data
   const [completedActions, setCompletedActions] = useState<ActionData[]>([]);
 
@@ -641,16 +649,28 @@ export default function BasketballCourt() {
     };
   };
 
-  const handleZonePress = (x: number, y: number) => {
-    // Capturer le temps exact au moment du clic
-    setClickTime({
-      period: currentPeriod,
-      timeInPeriod: timeElapsed,
-    });
+  const handleZonePress = (
+    svgX: number,
+    svgY: number,
+    screenX: number,
+    screenY: number
+  ) => {
+    // For now, just add a marker at the click position
+    const newMarker = {
+      id: `${Date.now()}-${Math.random()}`,
+      svgX,
+      svgY,
+    };
+    setClickMarkers((prev) => [...prev, newMarker]);
 
-    const pos = calculateModalPosition(x, y);
-    setModalPosition(pos);
-    setActionModalVisible(true);
+    // TODO: Re-enable modal later
+    // setClickTime({
+    //   period: currentPeriod,
+    //   timeInPeriod: timeElapsed,
+    // });
+    // const pos = calculateModalPosition(screenX, screenY);
+    // setModalPosition(pos);
+    // setActionModalVisible(true);
   };
 
   const handleActionComplete = (actionData: ActionData) => {
@@ -2060,12 +2080,19 @@ export default function BasketballCourt() {
       />
 
       {/* Basketball Court SVG */}
-      <View style={styles.courtContainer}>
+      <View
+        style={styles.courtContainer}
+        onLayout={(event) => {
+          const { width, height } = event.nativeEvent.layout;
+          setContainerLayout({ width, height });
+        }}
+      >
         <BasketballCourtSVG
-          width={courtWidth}
-          height={courtHeight}
+          width={containerLayout.width || courtWidth}
+          height={containerLayout.height || courtHeight}
           onCourtPress={!preGameMode ? handleZonePress : undefined}
           backgroundColor="green"
+          markers={clickMarkers}
         />
       </View>
 
