@@ -15,6 +15,7 @@ interface ActionModalProps {
   onClose: () => void;
   onTeamSelect: (team: "A" | "B") => void;
   onActionSelect: (action: string) => void;
+  onPointsSelect: (points: number) => void;
   onSpecificationSelect: (spec: string) => void;
   onPlayerSelect: (playerNum: number) => void;
   onGoBack: () => void;
@@ -27,6 +28,7 @@ interface ActionModalProps {
   currentStep: number;
   selectedTeam: "A" | "B" | null;
   selectedAction: string | null;
+  selectedPoints: number | null;
   selectedSpec: string | null;
   players: Array<{
     id: number;
@@ -50,6 +52,7 @@ export default function ActionModal({
   onClose,
   onTeamSelect,
   onActionSelect,
+  onPointsSelect,
   onSpecificationSelect,
   onPlayerSelect,
   onGoBack,
@@ -57,6 +60,7 @@ export default function ActionModal({
   currentStep,
   selectedTeam,
   selectedAction,
+  selectedPoints,
   selectedSpec,
   players,
   teamMode,
@@ -123,6 +127,40 @@ export default function ActionModal({
             >
               <Text style={styles.actionIcon}>{action.icon}</Text>
               <Text style={styles.actionLabel}>{action.label}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
+    );
+  };
+
+  const renderPointsSelection = () => {
+    const currentAction = ACTION_DEFINITIONS.find(
+      (a) => a.id === selectedAction
+    );
+    if (!currentAction || !currentAction.pointsOptions) return null;
+
+    return (
+      <View style={styles.actionsContainer}>
+        <ScrollView
+          style={styles.actionScrollView}
+          showsVerticalScrollIndicator={true}
+          contentContainerStyle={styles.actionScrollContent}
+        >
+          {currentAction.pointsOptions.map((pointOption, index) => (
+            <TouchableOpacity
+              key={pointOption.id}
+              style={[
+                styles.actionButton,
+                { backgroundColor: pointOption.color },
+                index < currentAction.pointsOptions!.length - 1 &&
+                  styles.actionButtonMargin,
+              ]}
+              onPress={() => onPointsSelect(pointOption.id)}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.actionIcon}>{pointOption.icon}</Text>
+              <Text style={styles.actionLabel}>{pointOption.label}</Text>
             </TouchableOpacity>
           ))}
         </ScrollView>
@@ -208,8 +246,11 @@ export default function ActionModal({
       case 2:
         return renderActionSelection();
       case 3:
-        return renderSpecificationSelection();
+        // Points selection (only for shots)
+        return renderPointsSelection();
       case 4:
+        return renderSpecificationSelection();
+      case 5:
         return renderPlayerSelection();
       default:
         return renderActionSelection();

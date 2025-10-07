@@ -44,6 +44,7 @@ export default function ActionSystemModal({
     startAction,
     selectTeam,
     selectActionType,
+    selectActionPoints,
     selectActionSpec,
     selectPlayer,
     goBack,
@@ -97,6 +98,10 @@ export default function ActionSystemModal({
     selectActionType(actionType);
   };
 
+  const handlePointsSelect = (points: number) => {
+    selectActionPoints(points);
+  };
+
   const handleSpecificationSelect = (spec: string) => {
     selectActionSpec(spec);
   };
@@ -121,6 +126,7 @@ export default function ActionSystemModal({
       onClose={handleClose}
       onTeamSelect={handleTeamSelect}
       onActionSelect={handleActionSelect}
+      onPointsSelect={handlePointsSelect}
       onSpecificationSelect={handleSpecificationSelect}
       onPlayerSelect={handlePlayerSelect}
       onGoBack={handleGoBack}
@@ -128,6 +134,7 @@ export default function ActionSystemModal({
       currentStep={state.currentStep}
       selectedTeam={state.selectedTeam}
       selectedAction={state.actionType}
+      selectedPoints={state.actionPoints}
       selectedSpec={state.actionSpec}
       players={players}
       teamMode={teamMode}

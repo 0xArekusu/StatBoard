@@ -10,6 +10,7 @@ export interface ActionStep {
 export interface ActionData {
   type: string;
   specification?: string;
+  points?: number; // Number of points for shots (1, 2, or 3)
   player?: number;
   team: "A" | "B"; // Add team information
   timestamp: Date;
@@ -30,6 +31,13 @@ export interface ActionDefinition {
   label: string;
   backgroundColor: string;
   description: string;
+  hasPointsSelection?: boolean; // Whether this action needs points selection (shots)
+  pointsOptions?: {
+    id: number;
+    label: string;
+    icon: string;
+    color: string;
+  }[];
   specifications: {
     id: string;
     label: string;
@@ -42,6 +50,7 @@ export interface ActionSystemState {
   isVisible: boolean;
   currentStep: number;
   actionType: string | null;
+  actionPoints: number | null; // Points for shots (1, 2, or 3)
   actionSpec: string | null;
   playerNumber: number | null;
   selectedTeam: "A" | "B" | null; // Add selected team
@@ -90,6 +99,27 @@ export const ACTION_DEFINITIONS: ActionDefinition[] = [
     label: "Tir",
     backgroundColor: "#FF6B35",
     description: "Enregistrer un tir",
+    hasPointsSelection: true,
+    pointsOptions: [
+      {
+        id: 1,
+        label: "1 point",
+        icon: "1️⃣",
+        color: "#9C27B0",
+      },
+      {
+        id: 2,
+        label: "2 points",
+        icon: "2️⃣",
+        color: "#2196F3",
+      },
+      {
+        id: 3,
+        label: "3 points",
+        icon: "3️⃣",
+        color: "#FF9800",
+      },
+    ],
     specifications: [
       {
         id: "reussi",
@@ -170,6 +200,7 @@ export const useActionSystem = () => {
     isVisible: false,
     currentStep: 1,
     actionType: null,
+    actionPoints: null,
     actionSpec: null,
     playerNumber: null,
     selectedTeam: null,
@@ -198,6 +229,7 @@ export const useActionSystem = () => {
         isVisible: true,
         currentStep: teamMode === "both" ? 1 : 2, // Start with team selection if both, otherwise skip to action
         actionType: null,
+        actionPoints: null,
         actionSpec: null,
         playerNumber: null,
         selectedTeam: teamMode === "both" ? null : currentTeam, // Pre-select team if single team mode
@@ -217,10 +249,22 @@ export const useActionSystem = () => {
   }, []);
 
   const selectActionType = useCallback((actionType: string) => {
+    const action = ACTION_DEFINITIONS.find((a) => a.id === actionType);
+    const hasPointsSelection = action?.hasPointsSelection || false;
+
     setState((prev) => ({
       ...prev,
       actionType,
-      currentStep: 3,
+      // If action has points selection (shot), go to step 3 (points), otherwise skip to step 4 (spec)
+      currentStep: hasPointsSelection ? 3 : 4,
+    }));
+  }, []);
+
+  const selectActionPoints = useCallback((points: number) => {
+    setState((prev) => ({
+      ...prev,
+      actionPoints: points,
+      currentStep: 4, // Move to specification selection
     }));
   }, []);
 
@@ -228,7 +272,7 @@ export const useActionSystem = () => {
     setState((prev) => ({
       ...prev,
       actionSpec,
-      currentStep: 4,
+      currentStep: 5, // Move to player selection
     }));
   }, []);
 
@@ -242,7 +286,16 @@ export const useActionSystem = () => {
   const goBack = useCallback(() => {
     setState((prev) => {
       if (prev.currentStep > 1) {
-        const newStep = prev.currentStep - 1;
+        let newStep = prev.currentStep - 1;
+
+        // If going back from step 4 (spec) and action doesn't have points, skip to step 2 (action type)
+        if (newStep === 3 && prev.actionType) {
+          const action = ACTION_DEFINITIONS.find((a) => a.id === prev.actionType);
+          if (!action?.hasPointsSelection) {
+            newStep = 2;
+          }
+        }
+
         return {
           ...prev,
           currentStep: newStep,
@@ -250,19 +303,26 @@ export const useActionSystem = () => {
           ...(newStep === 1 && {
             selectedTeam: null,
             actionType: null,
+            actionPoints: null,
             actionSpec: null,
             playerNumber: null,
           }),
           ...(newStep === 2 && {
             actionType: null,
+            actionPoints: null,
             actionSpec: null,
             playerNumber: null,
           }),
           ...(newStep === 3 && {
+            actionPoints: null,
             actionSpec: null,
             playerNumber: null,
           }),
-          ...(newStep === 4 && { playerNumber: null }),
+          ...(newStep === 4 && {
+            actionSpec: null,
+            playerNumber: null,
+          }),
+          ...(newStep === 5 && { playerNumber: null }),
         };
       }
       return prev;
@@ -280,6 +340,7 @@ export const useActionSystem = () => {
         const actionData: ActionData = {
           type: state.actionType,
           specification: state.actionSpec,
+          points: state.actionPoints || undefined, // Include points if selected
           player: state.playerNumber,
           team: state.selectedTeam,
           timestamp: new Date(),
@@ -296,6 +357,7 @@ export const useActionSystem = () => {
           isVisible: false,
           currentStep: 1,
           actionType: null,
+          actionPoints: null,
           actionSpec: null,
           playerNumber: null,
           selectedTeam: null,
@@ -320,6 +382,7 @@ export const useActionSystem = () => {
       isVisible: false,
       currentStep: 1,
       actionType: null,
+      actionPoints: null,
       actionSpec: null,
       playerNumber: null,
       selectedTeam: null,
@@ -342,6 +405,7 @@ export const useActionSystem = () => {
     startAction,
     selectTeam,
     selectActionType,
+    selectActionPoints,
     selectActionSpec,
     selectPlayer,
     goBack,

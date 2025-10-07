@@ -841,9 +841,8 @@ export default function BasketballCourt() {
     completedActions.forEach((action) => {
       // A successful shot scores points
       if (action.type === "tir" && action.specification === "reussi") {
-        // TODO: Determine number of points based on position (2 or 3 points)
-        // For now, all successful shots score 2 points
-        const points = 2;
+        // Use the points field from the action (1, 2, or 3 points)
+        const points = action.points || 2; // Default to 2 if not specified
 
         if (action.team === "A") {
           newScoreA += points;
