@@ -64,7 +64,12 @@ export default function ActionModal({
   teamB,
 }: ActionModalProps) {
   const renderBackButton = () => {
+    // Ne pas afficher le bouton retour si on est à l'étape 1
     if (currentStep === 1) return null;
+
+    // Si teamMode n'est pas "both", ne pas afficher le bouton retour à l'étape 2
+    // (car l'étape 1 de sélection d'équipe a été sautée)
+    if (teamMode !== "both" && currentStep === 2) return null;
 
     return (
       <TouchableOpacity style={styles.backButton} onPress={onGoBack}>
