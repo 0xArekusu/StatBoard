@@ -1,5 +1,12 @@
 import React, { useRef } from "react";
-import Svg, { Path, G, ClipPath, Defs, Circle, Text as SvgText } from "react-native-svg";
+import Svg, {
+  Path,
+  G,
+  ClipPath,
+  Defs,
+  Circle,
+  Text as SvgText,
+} from "react-native-svg";
 import { Dimensions } from "react-native";
 
 export interface CourtMarker {
@@ -12,9 +19,15 @@ export interface CourtMarker {
 interface BasketballCourtSVGProps {
   width: number;
   height: number;
-  onCourtPress?: (svgX: number, svgY: number, screenX: number, screenY: number) => void;
+  onCourtPress?: (
+    svgX: number,
+    svgY: number,
+    screenX: number,
+    screenY: number
+  ) => void;
   backgroundColor?: string;
   markers?: CourtMarker[];
+  insets?: { top: number; bottom: number; left: number; right: number };
 }
 
 export default function BasketballCourtSVGG({
@@ -23,9 +36,12 @@ export default function BasketballCourtSVGG({
   onCourtPress,
   backgroundColor = "#fccb54",
   markers = [],
+  insets = { top: 0, bottom: 0, left: 0, right: 0 },
 }: BasketballCourtSVGProps) {
   const svgRef = useRef<any>(null);
   const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
+
+  console.log("SVG PROPS RECEIVED - width:", width, "height:", height);
 
   // Calculate court elements proportionally
   const isPortrait = height > width;
@@ -33,7 +49,10 @@ export default function BasketballCourtSVGG({
   // SVG viewBox dimensions for different orientations
   const SVG_WIDTH = isPortrait ? 615.75 : 1146.749971;
   const SVG_HEIGHT = isPortrait ? 1146.749971 : 615.75;
-
+  // console.log("width", width);
+  // console.log("height", height);
+  // const SVG_WIDTH = isPortrait ? height : width;
+  // const SVG_HEIGHT = isPortrait ? width : height;
   /**
    * Handle press events on the basketball court SVG
    *
@@ -43,9 +62,13 @@ export default function BasketballCourtSVGG({
    * - Database-ready (can be saved and restored on any device)
    */
   const handlePress = (event: any) => {
-    if (!onCourtPress) return;
+    // if (!onCourtPress) return;
 
     const { locationX, locationY } = event.nativeEvent;
+
+    console.log("***TOUCH EVENT***");
+    console.log("locationX:", locationX, "locationY:", locationY);
+    console.log("Insets received:", insets);
 
     // The SVG preserves aspect ratio, so it may not fill the entire width/height
     // Calculate the actual rendered dimensions
@@ -55,12 +78,14 @@ export default function BasketballCourtSVGG({
     let actualWidth, actualHeight, offsetX, offsetY;
 
     if (containerAspectRatio > svgAspectRatio) {
+      console.log(">>> BRANCHE IF : Container plus large");
       // Container is wider - SVG fills height, centered horizontally
       actualHeight = height;
       actualWidth = height * svgAspectRatio;
       offsetX = (width - actualWidth) / 2;
       offsetY = 0;
     } else {
+      console.log(">>> BRANCHE ELSE : Container plus haut");
       // Container is taller - SVG fills width, centered vertically
       actualWidth = width;
       actualHeight = width / svgAspectRatio;
@@ -68,9 +93,25 @@ export default function BasketballCourtSVGG({
       offsetY = (height - actualHeight) / 2;
     }
 
+    console.log("***DIMENSIONS***");
+    console.log("Container:", width, "x", height);
+    console.log("SVG viewBox:", SVG_WIDTH, "x", SVG_HEIGHT);
+    console.log("svgAspectRatio:", svgAspectRatio);
+    console.log("containerAspectRatio:", containerAspectRatio);
+    console.log("actualWidth:", actualWidth, "actualHeight:", actualHeight);
+
+    console.log("***offset***");
+    console.log("offsetY", offsetY);
+    console.log("offsetX", offsetX);
+
     // Adjust touch coordinates for SVG offset
     const adjustedX = locationX - offsetX;
     const adjustedY = locationY - offsetY;
+
+    console.log("***AVANT ajustement***");
+    console.log("locationX", locationX, "locationY", locationY);
+    console.log("***APRÈS ajustement***");
+    console.log("adjustedX", adjustedX, "adjustedY", adjustedY);
 
     // Convert to SVG coordinates
     const scaleX = SVG_WIDTH / actualWidth;
@@ -79,7 +120,13 @@ export default function BasketballCourtSVGG({
     let svgX = adjustedX * scaleX;
     let svgY = adjustedY * scaleY;
 
-    console.log(`📐 Container: ${width.toFixed(0)}x${height.toFixed(0)}, Actual SVG: ${actualWidth.toFixed(0)}x${actualHeight.toFixed(0)}, Offset: (${offsetX.toFixed(0)}, ${offsetY.toFixed(0)})`);
+    console.log(
+      `📐 Container: ${width.toFixed(0)}x${height.toFixed(
+        0
+      )}, Actual SVG: ${actualWidth.toFixed(0)}x${actualHeight.toFixed(
+        0
+      )}, Offset: (${offsetX.toFixed(0)}, ${offsetY.toFixed(0)})`
+    );
 
     // Normalize to portrait coordinates (so landscape and portrait use same coordinate system)
     // This allows us to save one set of coordinates that works for both orientations
@@ -112,7 +159,10 @@ export default function BasketballCourtSVGG({
    * @param portraitY - Y in portrait space (0-1146.75)
    * @returns {x, y} in current orientation's SVG space
    */
-  const portraitToCurrentOrientation = (portraitX: number, portraitY: number) => {
+  const portraitToCurrentOrientation = (
+    portraitX: number,
+    portraitY: number
+  ) => {
     if (isPortrait) {
       return { x: portraitX, y: portraitY };
     }
@@ -121,7 +171,7 @@ export default function BasketballCourtSVGG({
     // Portrait (x, y) → Landscape (y, 615.75 - x)
     return {
       x: portraitY,
-      y: 615.75 - portraitX
+      y: 615.75 - portraitX,
     };
   };
 
@@ -133,7 +183,13 @@ export default function BasketballCourtSVGG({
     return markers.map((marker) => {
       const pos = portraitToCurrentOrientation(marker.svgX, marker.svgY);
 
-      console.log(`📍 Rendering marker: portrait(${marker.svgX.toFixed(0)}, ${marker.svgY.toFixed(0)}) → current(${pos.x.toFixed(0)}, ${pos.y.toFixed(0)})`);
+      console.log(
+        `📍 Rendering marker: portrait(${marker.svgX.toFixed(
+          0
+        )}, ${marker.svgY.toFixed(0)}) → current(${pos.x.toFixed(
+          0
+        )}, ${pos.y.toFixed(0)})`
+      );
 
       return (
         <G key={marker.id}>

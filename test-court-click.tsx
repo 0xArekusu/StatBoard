@@ -5,9 +5,12 @@ import {
   Dimensions,
   TouchableOpacity,
   Text,
+  useWindowDimensions,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import BasketballCourtSVG, { CourtMarker } from "./components/BasketballCourtSVG";
+import BasketballCourtSVG, {
+  CourtMarker,
+} from "./components/BasketballCourtSVG";
 
 // Extend CourtMarker with debug data for testing
 interface ClickMarker extends CourtMarker {
@@ -23,6 +26,7 @@ export default function TestCourtClick() {
   );
   const [clickMarkers, setClickMarkers] = useState<ClickMarker[]>([]);
   const [dimensions, setDimensions] = useState(Dimensions.get("window"));
+  const [containerLayout, setContainerLayout] = useState({ width: 0, height: 0 });
   const insets = useSafeAreaInsets();
 
   // Écouter les changements d'orientation
@@ -38,6 +42,9 @@ export default function TestCourtClick() {
         `📐 Anciennes dimensions: ${dimensions.width}x${dimensions.height}`
       );
       console.log(`📐 Nouvelles dimensions: ${window.width}x${window.height}`);
+      console.log(
+        `📱 Insets: top=${insets.top}, bottom=${insets.bottom}, left=${insets.left}, right=${insets.right}`
+      );
 
       setDimensions(window);
 
@@ -61,10 +68,28 @@ export default function TestCourtClick() {
     return () => subscription?.remove();
   }, [dimensions, clickMarkers]);
 
-  // Calculate actual court dimensions with safe area insets
-  const courtWidth = dimensions.width;
-  const courtHeight = dimensions.height - insets.top - insets.bottom;
+  // Use actual container layout (measured after SafeAreaView padding)
   const isPortrait = dimensions.height > dimensions.width;
+  const courtWidth = containerLayout.width || dimensions.width - insets.left - insets.right;
+  const courtHeight = containerLayout.height || dimensions.height - insets.top - insets.bottom;
+
+  if (isPortrait) {
+    if (dimensions.width > 600) console.log("[TABLET]");
+    else console.log("[PHONE]");
+  } else {
+    if (dimensions.width > 900) console.log("[TABLET]");
+    else console.log("[PHONE]");
+  }
+
+  console.log("isPortrait", isPortrait);
+  console.log("dimensions.height", dimensions.height);
+  console.log("dimensions.width", dimensions.width);
+  console.log("insets.top", insets.top);
+  console.log("insets.bottom", insets.bottom);
+  console.log("insets.right", insets.right);
+  console.log("insets.left", insets.left);
+  console.log("courtWidth", courtWidth);
+  console.log("courtHeight", courtHeight);
 
   /**
    * Handle press events on the basketball court
@@ -107,7 +132,14 @@ export default function TestCourtClick() {
   };
 
   return (
-    <View style={styles.fullscreenContainer}>
+    <View
+      style={styles.fullscreenContainer}
+      onLayout={(event) => {
+        const { width, height } = event.nativeEvent.layout;
+        setContainerLayout({ width, height });
+        console.log("***CONTAINER LAYOUT***", width, height);
+      }}
+    >
       {/* Full-screen basketball court with markers rendered inside SVG */}
       <BasketballCourtSVG
         width={courtWidth}
@@ -115,6 +147,7 @@ export default function TestCourtClick() {
         onCourtPress={handleCourtPress}
         backgroundColor="#fccb54"
         markers={clickMarkers} // Pass markers to SVG - they'll be rendered natively!
+        insets={insets}
       />
 
       {/* Clear button overlay */}
@@ -133,7 +166,7 @@ export default function TestCourtClick() {
 const styles = StyleSheet.create({
   fullscreenContainer: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: "yellow",
   },
   floatingClearButton: {
     position: "absolute",
