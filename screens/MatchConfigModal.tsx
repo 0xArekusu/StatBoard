@@ -13,8 +13,8 @@ export default function MatchConfigModal({
   onConfirm,
   onRequestClose,
 }: MatchConfigModalProps) {
-  const [matchFormat, setMatchFormat] = React.useState<MatchFormat>("2_halves");
-  const [periodDuration, setPeriodDuration] = React.useState<number>(1200);
+  const [matchFormat, setMatchFormat] = React.useState<MatchFormat>("4_quarters");
+  const [periodDuration, setPeriodDuration] = React.useState<number>(600);
 
   // Update period duration when format changes
   React.useEffect(() => {
@@ -78,8 +78,8 @@ export default function MatchConfigModal({
             
             <View style={{ flexDirection: "row", marginBottom: 16 }}>
               {[
-                { key: "2_halves", label: "2 mi-temps", icon: "⏱️" },
                 { key: "4_quarters", label: "4 quart-temps", icon: "🏀" },
+                { key: "2_halves", label: "2 mi-temps", icon: "⏱️" },
               ].map((format) => (
                 <TouchableOpacity
                   key={format.key}
