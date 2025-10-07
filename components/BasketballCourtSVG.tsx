@@ -62,7 +62,7 @@ export default function BasketballCourtSVG({
    * - Database-ready (can be saved and restored on any device)
    */
   const handlePress = (event: any) => {
-    // if (!onCourtPress) return;
+    if (!onCourtPress) return;
 
     const { locationX, locationY } = event.nativeEvent;
 
