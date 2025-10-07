@@ -38,6 +38,7 @@ import { MatchManager } from "../src/services/match/MatchManager";
 import { ActionQueue, ActionObserver } from "../src/services/match/ActionQueue";
 import { ActionRepository } from "../src/services/database/ActionRepository";
 import { Match } from "../src/models/types";
+import { DEBUG } from "../src/config/debug";
 
 // Modal layout constants (pour le nouveau ActionModal)
 const MODAL_WIDTH = 240;
@@ -739,9 +740,10 @@ export default function BasketballCourt() {
     setTempSvgCoords(null);
 
     // Use SVG coordinates directly (no need to convert from old system)
-    const semanticPosition = {
+    const semanticPosition: SemanticPosition = {
       xNormalized: svgX / 615.75, // Normalize to 0-1 range
       yNormalized: svgY / 1146.749971, // Normalize to 0-1 range
+      capturedInPortrait: isPortrait,
     };
 
     // Créer l'action avec les coordonnées sémantiques calculées
@@ -1751,96 +1753,6 @@ export default function BasketballCourt() {
         </TouchableOpacity>
       )}
 
-      {/* Debug: Render click point (temporary) */}
-      {markers.map((m, i) => {
-        // Retrouver la position de clic originale
-        const matchingAction = completedActions.find(
-          (action) =>
-            Math.abs(
-              action.semanticPosition.xNormalized -
-                m.semanticPosition.xNormalized
-            ) < 0.001 &&
-            Math.abs(
-              action.semanticPosition.yNormalized -
-                m.semanticPosition.yNormalized
-            ) < 0.001
-        );
-
-        return null;
-      })}
-
-      {/* Render markers */}
-      {markers.map((m, i) => {
-        const icon = getActionIcon(m.type, m.specification);
-        // Find the action to get team information
-        const matchingAction = completedActions.find(
-          (action) =>
-            Math.abs(
-              action.semanticPosition.xNormalized -
-                m.semanticPosition.xNormalized
-            ) < 0.001 &&
-            Math.abs(
-              action.semanticPosition.yNormalized -
-                m.semanticPosition.yNormalized
-            ) < 0.001
-        );
-        const teamColor = matchingAction
-          ? getTeamColor(matchingAction.team)
-          : "#fff";
-
-        return (
-          <Animated.View
-            key={m.id} // Use marker ID as key
-            style={[
-              styles.markerContainer,
-              { left: m.x, top: m.y, opacity: m.opacity },
-            ]}
-          >
-            <Text style={styles.markerIcon}>{icon}</Text>
-            {m.player && (
-              <Text style={[styles.markerPlayer, { color: teamColor }]}>
-                {m.player}
-              </Text>
-            )}
-          </Animated.View>
-        );
-      })}
-
-      {/* Render all completed actions when showAllActions is true */}
-      {showAllActions &&
-        getFilteredActions().map((action, i) => {
-          const icon = getActionIcon(action.type, action.specification);
-          const teamColor = getTeamColor(action.team);
-
-          // Calculer la position absolue basée sur les coordonnées sémantiques
-          const courtDimensions = { width: courtWidth, height: courtHeight };
-
-          const absolutePosition = convertSemanticToDisplay(
-            action.semanticPosition,
-            isPortrait,
-            courtDimensions
-          );
-
-          return (
-            <View
-              key={`permanent-${i}`}
-              style={[
-                styles.markerContainer,
-                {
-                  left: absolutePosition.x + ICON_OFFSET_X, // Utilise la constante ICON_OFFSET_X
-                  top: absolutePosition.y + ICON_OFFSET_Y, // Utilise la constante ICON_OFFSET_Y
-                },
-              ]}
-            >
-              <Text style={styles.markerIcon}>{icon}</Text>
-              {action.player && (
-                <Text style={[styles.markerPlayer, { color: teamColor }]}>
-                  {action.player}
-                </Text>
-              )}
-            </View>
-          );
-        })}
 
       {/* Bottom Navigation Bar - positioned at bottom (portrait) or right (landscape) */}
       {!initModalVisible && !preGameMode && (

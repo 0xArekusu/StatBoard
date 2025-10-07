@@ -14,7 +14,6 @@ export class SQLiteAdapter implements IStorageAdapter {
 
     // 🔄 RESET TEMPORAIRE - À supprimer après test !
     //this.resetDatabaseTables();
-
     //this.initializeTables();
   }
 

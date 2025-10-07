@@ -32,9 +32,6 @@ export default function BasketballCourtSVG({
   backgroundColor = "#fccb54",
   markers = [],
 }: BasketballCourtSVGProps) {
-  if (DEBUG)
-    console.log("SVG props received - width:", width, "height:", height);
-
   // Calculate court elements proportionally
   const isPortrait = height > width;
 
@@ -177,16 +174,6 @@ export default function BasketballCourtSVG({
   const renderMarkers = () => {
     return markers.map((marker) => {
       const pos = portraitToCurrentOrientation(marker.svgX, marker.svgY);
-
-      if (DEBUG) {
-        console.log(
-          `📍 Rendering marker: portrait(${marker.svgX.toFixed(
-            0
-          )}, ${marker.svgY.toFixed(0)}) → current(${pos.x.toFixed(
-            0
-          )}, ${pos.y.toFixed(0)})`
-        );
-      }
 
       return (
         <G key={marker.id}>
