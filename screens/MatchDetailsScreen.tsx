@@ -49,6 +49,9 @@ export default function MatchDetailsScreen() {
   const [sortBy, setSortBy] = useState<SortOption>("points");
   const [selectedTeam, setSelectedTeam] = useState<"A" | "B" | "both">("both");
 
+  // Tab state
+  const [activeTab, setActiveTab] = useState<"court" | "players">("court");
+
   // Court filters
   const [courtFilterTeam, setCourtFilterTeam] = useState<"A" | "B" | "both">("both");
   const [courtFilterPlayers, setCourtFilterPlayers] = useState<number[]>([]); // Player IDs
@@ -285,8 +288,39 @@ export default function MatchDetailsScreen() {
           </View>
         </View>
 
-        {/* Court Visualization Section */}
-        <View style={styles.courtSection}>
+        {/* Tabs */}
+        <View style={styles.tabsContainer}>
+          <TouchableOpacity
+            style={[styles.tab, activeTab === "court" && styles.tabActive]}
+            onPress={() => setActiveTab("court")}
+          >
+            <Text
+              style={[
+                styles.tabText,
+                activeTab === "court" && styles.tabTextActive,
+              ]}
+            >
+              🏀 Terrain
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.tab, activeTab === "players" && styles.tabActive]}
+            onPress={() => setActiveTab("players")}
+          >
+            <Text
+              style={[
+                styles.tabText,
+                activeTab === "players" && styles.tabTextActive,
+              ]}
+            >
+              👥 Joueurs
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Court Tab Content */}
+        {activeTab === "court" && (
+          <View style={styles.courtSection}>
           <Text style={styles.sectionTitle}>Visualisation du terrain</Text>
 
           {/* Court Filters */}
@@ -553,14 +587,16 @@ export default function MatchDetailsScreen() {
               {/* Empty for now */}
             </View>
           </View>
-        </View>
+          </View>
+        )}
 
-        {/* Player Stats Section */}
-        <View style={styles.playerStatsSection}>
-          <Text style={styles.sectionTitle}>Statistiques des joueurs</Text>
+        {/* Players Tab Content */}
+        {activeTab === "players" && (
+          <View style={styles.playerStatsSection}>
+            <Text style={styles.sectionTitle}>Statistiques des joueurs</Text>
 
-          {/* Filters */}
-          <View style={styles.filtersContainer}>
+            {/* Filters */}
+            <View style={styles.filtersContainer}>
             {/* Team filter */}
         {teamMode === "both" && (
           <View style={styles.teamFilter}>
@@ -764,13 +800,14 @@ export default function MatchDetailsScreen() {
           </View>
         ))}
 
-          {sortedPlayers.length === 0 && (
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyStateText}>Aucune statistique disponible</Text>
-            </View>
-          )}
+            {sortedPlayers.length === 0 && (
+              <View style={styles.emptyState}>
+                <Text style={styles.emptyStateText}>Aucune statistique disponible</Text>
+              </View>
+            )}
           </View>
-        </View>
+          </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -812,7 +849,31 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     padding: 20,
     backgroundColor: "#fff",
+  },
+  tabsContainer: {
+    flexDirection: "row",
+    backgroundColor: "#fff",
+    borderBottomWidth: 1,
+    borderBottomColor: "#e0e0e0",
     marginBottom: 16,
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: 16,
+    alignItems: "center",
+    borderBottomWidth: 3,
+    borderBottomColor: "transparent",
+  },
+  tabActive: {
+    borderBottomColor: "#4CAF50",
+  },
+  tabText: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#999",
+  },
+  tabTextActive: {
+    color: "#4CAF50",
   },
   teamScoreContainer: {
     alignItems: "center",
