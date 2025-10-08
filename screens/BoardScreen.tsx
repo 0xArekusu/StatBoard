@@ -17,7 +17,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as ScreenOrientation from "expo-screen-orientation";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useRoute } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import InitTeamModal from "./InitTeamModal";
 import MatchConfigModal from "./MatchConfigModal";
@@ -34,7 +34,6 @@ import CoachEditModal from "../components/CoachEditModal";
 import ResumeMatchModal from "../components/ResumeMatchModal";
 import MatchStatusBar from "../components/MatchStatusBar";
 import MatchConfirmationModal from "../components/MatchConfirmationModal";
-import MatchSummaryModal from "../components/MatchSummaryModal";
 import { MatchManager } from "../src/services/match/MatchManager";
 import { ActionQueue, ActionObserver } from "../src/services/match/ActionQueue";
 import { ActionRepository } from "../src/services/database/ActionRepository";
@@ -148,9 +147,11 @@ const convertSemanticToDisplay = (
 
 export default function BasketballCourt() {
   const navigation = useNavigation<NavigationProp>();
+  const route = useRoute();
   const insets = useSafeAreaInsets(); // Provides status bar and notch margins
   const window = useWindowDimensions(); // Automatically reacts to rotation
   const [showSheet, setShowSheet] = useState(true);
+
 
   // Constants for dimensions and offsets
   const BOTTOM_NAV_HEIGHT = 50; // Height of bottom navigation bar in portrait
@@ -816,7 +817,6 @@ export default function BasketballCourt() {
   const [showNextPeriodModal, setShowNextPeriodModal] =
     useState<boolean>(false);
   const [showEndMatchModal, setShowEndMatchModal] = useState<boolean>(false);
-  const [showMatchSummaryModal, setShowMatchSummaryModal] = useState<boolean>(false);
 
   // States for scores
   const [scoreA, setScoreA] = useState<number>(0);
@@ -1065,9 +1065,29 @@ export default function BasketballCourt() {
         console.log("✅ Match terminé et sauvegardé");
       }
 
-      // Show match summary modal
+      // Navigate to MatchSummaryScreen
       setShowEndMatchModal(false);
-      setShowMatchSummaryModal(true);
+
+      // Prepare all players with their team info
+      const allPlayers = [
+        ...players.map(p => ({ ...p, team: "A" as const })),
+        ...(teamMode === "both" ? playersTeamB.map(p => ({ ...p, team: "B" as const })) : []),
+        // Include substitutes
+        ...substitutesTeamA.map(s => ({ ...s, team: "A" as const })),
+        ...(teamMode === "both" ? substitutesTeamB.map(s => ({ ...s, team: "B" as const })) : []),
+      ];
+
+      navigation.navigate("MatchSummary" as never, {
+        teamA,
+        teamB,
+        scoreA,
+        scoreB,
+        actions: completedActions,
+        matchFormat,
+        periodDuration,
+        teamMode,
+        players: allPlayers,
+      } as never);
     } catch (error) {
       console.error("❌ Error ending match:", error);
       // Même en cas d'erreur, arrêter le chrono
@@ -1091,33 +1111,6 @@ export default function BasketballCourt() {
 
   const cancelEndMatch = () => {
     setShowEndMatchModal(false);
-  };
-
-  // Handlers for MatchSummaryModal
-  const handleViewDetails = () => {
-    setShowMatchSummaryModal(false);
-    setShowSheet(true); // Open history bottom sheet
-  };
-
-  const handleNewMatch = () => {
-    setShowMatchSummaryModal(false);
-    // Reset everything for a new match
-    setInitModalVisible(true);
-    setPreGameMode(true);
-    setCompletedActions([]);
-    setMarkers([]);
-    setCurrentPeriod(1);
-    setTimeElapsed(0);
-    setIsPaused(true);
-    setIsMatchStarted(false);
-    setScoreA(0);
-    setScoreB(0);
-    setCurrentMatch(null);
-  };
-
-  const handleBackToMenu = () => {
-    setShowMatchSummaryModal(false);
-    navigation.navigate("MainMenu");
   };
 
   const handleResumeMatch = async () => {
@@ -1746,20 +1739,6 @@ export default function BasketballCourt() {
         cancelButtonText="Annuler"
       />
 
-      {/* Match Summary Modal */}
-      <MatchSummaryModal
-        visible={showMatchSummaryModal}
-        teamA={teamA}
-        teamB={teamB}
-        scoreA={scoreA}
-        scoreB={scoreB}
-        actions={completedActions}
-        matchFormat={matchFormat}
-        periodDuration={periodDuration}
-        teamMode={teamMode}
-        onViewDetails={handleViewDetails}
-        onBackToMenu={handleBackToMenu}
-      />
 
       {/* 🏀 Bouton double flèche au centre du terrain pour changer de côté */}
       {!initModalVisible && !matchConfigModalVisible && preGameMode && (
