@@ -7,11 +7,12 @@ import {
   ScrollView,
   TextInput,
   Alert,
+  Dimensions,
 } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { ActionData } from "../components/ActionSystem";
-import BasketballCourtSVG from "../components/BasketballCourtSVG";
 import { PDFExportService } from "../src/services/export/PDFExportService";
+import { LineChart } from "react-native-chart-kit";
 
 interface MatchSummaryScreenProps {}
 
@@ -216,42 +217,16 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
   const { periodScoresA, periodScoresB, totalPeriods } =
     calculateScoresByPeriod();
 
-  // State for court filter
-  const [courtFilter, setCourtFilter] = React.useState<"both" | "A" | "B">(
-    "both"
-  );
+  // Calculate cumulative scores for chart
+  const cumulativeScoresA = periodScoresA.reduce((acc, score, index) => {
+    acc.push((acc[index - 1] || 0) + score);
+    return acc;
+  }, [] as number[]);
 
-  // Helper to get marker color based on action
-  const getMarkerColor = (
-    actionType: string,
-    specification?: string
-  ): string => {
-    if (actionType === "tir") {
-      return specification === "reussi" ? "#4CAF50" : "#F44336";
-    }
-    if (actionType === "rebond") {
-      return specification === "offensif" ? "#FF9800" : "#2196F3";
-    }
-    if (actionType === "faute") {
-      return specification === "technique" ? "#9C27B0" : "#E74C3C";
-    }
-    return "#757575";
-  };
-
-  // Convert actions to markers format
-  const actionMarkers = actions.map((action, index) => ({
-    id: `marker-${index}`,
-    svgX: action.semanticPosition.xNormalized * 615.75,
-    svgY: action.semanticPosition.yNormalized * 1146.749971,
-    color: getMarkerColor(action.type, action.specification),
-    team: action.team,
-  }));
-
-  // Filter markers based on selected filter
-  const filteredMarkers = actionMarkers.filter((marker) => {
-    if (courtFilter === "both") return true;
-    return marker.team === courtFilter;
-  });
+  const cumulativeScoresB = periodScoresB.reduce((acc, score, index) => {
+    acc.push((acc[index - 1] || 0) + score);
+    return acc;
+  }, [] as number[]);
 
   const handleViewDetails = () => {
     navigation.navigate("MatchDetails" as never, {
@@ -473,6 +448,57 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
           </View>
         </View>
 
+        {/* Score Evolution Chart */}
+        <View style={styles.chartSection}>
+          <Text style={styles.sectionTitle}>Évolution du score</Text>
+          <LineChart
+            data={{
+              labels: [
+                "Début",
+                ...Array.from({ length: totalPeriods }).map((_, i) =>
+                  matchFormat === "2_halves" ? `MT${i + 1}` : `Q${i + 1}`
+                ),
+              ],
+              datasets: [
+                {
+                  data: [0, ...cumulativeScoresA],
+                  color: () => "#FF6B35",
+                  strokeWidth: 3,
+                },
+                ...(teamMode === "both"
+                  ? [
+                      {
+                        data: [0, ...cumulativeScoresB],
+                        color: () => "#004E89",
+                        strokeWidth: 3,
+                      },
+                    ]
+                  : []),
+              ],
+              legend: [teamA, ...(teamMode === "both" ? [teamB] : [])],
+            }}
+            width={Dimensions.get("window").width - 40}
+            height={220}
+            chartConfig={{
+              backgroundColor: "#fff",
+              backgroundGradientFrom: "#fff",
+              backgroundGradientTo: "#fff",
+              decimalPlaces: 0,
+              color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+              labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+              style: {
+                borderRadius: 16,
+              },
+              propsForDots: {
+                r: "5",
+                strokeWidth: "2",
+              },
+            }}
+            bezier
+            style={styles.chart}
+          />
+        </View>
+
         {/* Shooting Statistics */}
         <View style={styles.statsSection}>
           <Text style={styles.sectionTitle}>Statistiques de tir</Text>
@@ -609,116 +635,6 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
           </View>
         </View>
 
-        {/* Court Visualization */}
-        <View style={styles.courtSection}>
-          <Text style={styles.sectionTitle}>Visualisation du match</Text>
-
-          {/* Filter buttons */}
-          <View style={styles.filterButtons}>
-            <TouchableOpacity
-              style={[
-                styles.filterButton,
-                courtFilter === "both" && styles.filterButtonActive,
-              ]}
-              onPress={() => setCourtFilter("both")}
-            >
-              <Text
-                style={[
-                  styles.filterButtonText,
-                  courtFilter === "both" && styles.filterButtonTextActive,
-                ]}
-              >
-                Les deux
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[
-                styles.filterButton,
-                courtFilter === "A" && styles.filterButtonActive,
-              ]}
-              onPress={() => setCourtFilter("A")}
-            >
-              <Text
-                style={[
-                  styles.filterButtonText,
-                  courtFilter === "A" && styles.filterButtonTextActive,
-                ]}
-              >
-                {teamA}
-              </Text>
-            </TouchableOpacity>
-            {teamMode === "both" && (
-              <TouchableOpacity
-                style={[
-                  styles.filterButton,
-                  courtFilter === "B" && styles.filterButtonActive,
-                ]}
-                onPress={() => setCourtFilter("B")}
-              >
-                <Text
-                  style={[
-                    styles.filterButtonText,
-                    courtFilter === "B" && styles.filterButtonTextActive,
-                  ]}
-                >
-                  {teamB}
-                </Text>
-              </TouchableOpacity>
-            )}
-          </View>
-
-          {/* Court with markers */}
-          <View style={styles.courtContainer}>
-            <View style={{ width: 250, height: 465 }}>
-              <BasketballCourtSVG
-                width={300}
-                height={558}
-                onCourtPress={() => {}}
-                markers={filteredMarkers}
-              />
-            </View>
-          </View>
-
-          {/* Legend */}
-          <View style={styles.courtLegend}>
-            <View style={styles.legendItem}>
-              <View
-                style={[styles.legendDot, { backgroundColor: "#4CAF50" }]}
-              />
-              <Text style={styles.legendText}>Tir réussi</Text>
-            </View>
-            <View style={styles.legendItem}>
-              <View
-                style={[styles.legendDot, { backgroundColor: "#F44336" }]}
-              />
-              <Text style={styles.legendText}>Tir raté</Text>
-            </View>
-            <View style={styles.legendItem}>
-              <View
-                style={[styles.legendDot, { backgroundColor: "#FF9800" }]}
-              />
-              <Text style={styles.legendText}>Rebond Off.</Text>
-            </View>
-            <View style={styles.legendItem}>
-              <View
-                style={[styles.legendDot, { backgroundColor: "#2196F3" }]}
-              />
-              <Text style={styles.legendText}>Rebond Def.</Text>
-            </View>
-            <View style={styles.legendItem}>
-              <View
-                style={[styles.legendDot, { backgroundColor: "#E74C3C" }]}
-              />
-              <Text style={styles.legendText}>Faute Pers.</Text>
-            </View>
-            <View style={styles.legendItem}>
-              <View
-                style={[styles.legendDot, { backgroundColor: "#9C27B0" }]}
-              />
-              <Text style={styles.legendText}>Faute Tech.</Text>
-            </View>
-          </View>
-        </View>
       </ScrollView>
 
       {/* Action buttons */}
@@ -992,66 +908,6 @@ const styles = StyleSheet.create({
     color: "#999",
     marginTop: 2,
   },
-  courtSection: {
-    marginBottom: 16,
-  },
-  courtContainer: {
-    alignItems: "center",
-    backgroundColor: "#f9f9f9",
-    borderRadius: 12,
-    padding: 16,
-    marginVertical: 12,
-    overflow: "visible",
-  },
-  filterButtons: {
-    flexDirection: "row",
-    gap: 8,
-    marginBottom: 12,
-  },
-  filterButton: {
-    flex: 1,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    backgroundColor: "#f0f0f0",
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#ddd",
-  },
-  filterButtonActive: {
-    backgroundColor: "#4CAF50",
-    borderColor: "#4CAF50",
-  },
-  filterButtonText: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: "#666",
-  },
-  filterButtonTextActive: {
-    color: "#fff",
-  },
-  courtLegend: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 12,
-    justifyContent: "center",
-    marginTop: 0,
-    marginBottom: 20,
-  },
-  legendItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  legendDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-  },
-  legendText: {
-    fontSize: 11,
-    color: "#666",
-  },
   buttonContainer: {
     flexDirection: "row",
     justifyContent: "space-around",
@@ -1084,5 +940,13 @@ const styles = StyleSheet.create({
     color: "#333",
     fontSize: 14,
     fontWeight: "600",
+  },
+  chartSection: {
+    marginBottom: 24,
+    alignItems: "center",
+  },
+  chart: {
+    borderRadius: 16,
+    marginVertical: 8,
   },
 });
