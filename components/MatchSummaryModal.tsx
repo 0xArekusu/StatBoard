@@ -9,6 +9,7 @@ import {
   TextInput,
 } from "react-native";
 import { ActionData } from "./ActionSystem";
+import BasketballCourtSVG from "./BasketballCourtSVG";
 
 interface MatchSummaryModalProps {
   visible: boolean;
@@ -73,9 +74,15 @@ export default function MatchSummaryModal({
       totalShots > 0 ? Math.round((madeShots.length / totalShots) * 100) : 0;
 
     // Count by points (made)
-    const onePointersMade = madeShots.filter((action) => action.points === 1).length;
-    const twoPointersMade = madeShots.filter((action) => action.points === 2).length;
-    const threePointersMade = madeShots.filter((action) => action.points === 3).length;
+    const onePointersMade = madeShots.filter(
+      (action) => action.points === 1
+    ).length;
+    const twoPointersMade = madeShots.filter(
+      (action) => action.points === 2
+    ).length;
+    const threePointersMade = madeShots.filter(
+      (action) => action.points === 3
+    ).length;
 
     // Count by points (total attempts)
     const onePtShots = teamShots.filter((action) => action.points === 1);
@@ -83,15 +90,18 @@ export default function MatchSummaryModal({
     const threePtShots = teamShots.filter((action) => action.points === 3);
 
     // Calculate percentages by point type
-    const onePtPercentage = onePtShots.length > 0
-      ? Math.round((onePointersMade / onePtShots.length) * 100)
-      : 0;
-    const twoPtPercentage = twoPtShots.length > 0
-      ? Math.round((twoPointersMade / twoPtShots.length) * 100)
-      : 0;
-    const threePtPercentage = threePtShots.length > 0
-      ? Math.round((threePointersMade / threePtShots.length) * 100)
-      : 0;
+    const onePtPercentage =
+      onePtShots.length > 0
+        ? Math.round((onePointersMade / onePtShots.length) * 100)
+        : 0;
+    const twoPtPercentage =
+      twoPtShots.length > 0
+        ? Math.round((twoPointersMade / twoPtShots.length) * 100)
+        : 0;
+    const threePtPercentage =
+      threePtShots.length > 0
+        ? Math.round((threePointersMade / threePtShots.length) * 100)
+        : 0;
 
     return {
       made: madeShots.length,
@@ -194,7 +204,45 @@ export default function MatchSummaryModal({
     return { periodScoresA, periodScoresB, totalPeriods };
   };
 
-  const { periodScoresA, periodScoresB, totalPeriods } = calculateScoresByPeriod();
+  const { periodScoresA, periodScoresB, totalPeriods } =
+    calculateScoresByPeriod();
+
+  // State for court filter
+  const [courtFilter, setCourtFilter] = React.useState<"both" | "A" | "B">(
+    "both"
+  );
+
+  // Helper to get marker color based on action
+  const getMarkerColor = (
+    actionType: string,
+    specification?: string
+  ): string => {
+    if (actionType === "tir") {
+      return specification === "reussi" ? "#4CAF50" : "#F44336";
+    }
+    if (actionType === "rebond") {
+      return specification === "offensif" ? "#FF9800" : "#2196F3";
+    }
+    if (actionType === "faute") {
+      return specification === "technique" ? "#9C27B0" : "#E74C3C";
+    }
+    return "#757575";
+  };
+
+  // Convert actions to markers format
+  const actionMarkers = actions.map((action, index) => ({
+    id: `marker-${index}`,
+    svgX: action.semanticPosition.xNormalized * 615.75,
+    svgY: action.semanticPosition.yNormalized * 1146.749971,
+    color: getMarkerColor(action.type, action.specification),
+    team: action.team,
+  }));
+
+  // Filter markers based on selected filter
+  const filteredMarkers = actionMarkers.filter((marker) => {
+    if (courtFilter === "both") return true;
+    return marker.team === courtFilter;
+  });
 
   return (
     <Modal
@@ -222,7 +270,9 @@ export default function MatchSummaryModal({
                   <View style={styles.scoreAdjustContainer}>
                     <TouchableOpacity
                       style={styles.adjustButton}
-                      onPress={() => setAdjustedScoreA(Math.max(0, adjustedScoreA - 1))}
+                      onPress={() =>
+                        setAdjustedScoreA(Math.max(0, adjustedScoreA - 1))
+                      }
                     >
                       <Text style={styles.adjustButtonText}>−</Text>
                     </TouchableOpacity>
@@ -256,7 +306,9 @@ export default function MatchSummaryModal({
                   <View style={styles.scoreAdjustContainer}>
                     <TouchableOpacity
                       style={styles.adjustButton}
-                      onPress={() => setAdjustedScoreB(Math.max(0, adjustedScoreB - 1))}
+                      onPress={() =>
+                        setAdjustedScoreB(Math.max(0, adjustedScoreB - 1))
+                      }
                     >
                       <Text style={styles.adjustButtonText}>−</Text>
                     </TouchableOpacity>
@@ -305,7 +357,9 @@ export default function MatchSummaryModal({
                   {Array.from({ length: totalPeriods }).map((_, index) => (
                     <View key={index} style={styles.periodTableCell}>
                       <Text style={styles.periodTableHeaderText}>
-                        {matchFormat === "2_halves" ? `MT${index + 1}` : `Q${index + 1}`}
+                        {matchFormat === "2_halves"
+                          ? `MT${index + 1}`
+                          : `Q${index + 1}`}
                       </Text>
                     </View>
                   ))}
@@ -321,7 +375,8 @@ export default function MatchSummaryModal({
                   </View>
                   {periodScoresA.map((score, index) => {
                     // Only highlight winner if managing both teams
-                    const isWinner = teamMode === "both" && score > periodScoresB[index];
+                    const isWinner =
+                      teamMode === "both" && score > periodScoresB[index];
                     return (
                       <View
                         key={index}
@@ -342,7 +397,9 @@ export default function MatchSummaryModal({
                     );
                   })}
                   <View style={styles.periodTableCell}>
-                    <Text style={styles.periodTableTotalText}>{adjustedScoreA}</Text>
+                    <Text style={styles.periodTableTotalText}>
+                      {adjustedScoreA}
+                    </Text>
                   </View>
                 </View>
 
@@ -374,7 +431,9 @@ export default function MatchSummaryModal({
                       );
                     })}
                     <View style={styles.periodTableCell}>
-                      <Text style={styles.periodTableTotalText}>{adjustedScoreB}</Text>
+                      <Text style={styles.periodTableTotalText}>
+                        {adjustedScoreB}
+                      </Text>
                     </View>
                   </View>
                 )}
@@ -397,26 +456,31 @@ export default function MatchSummaryModal({
                 <View style={styles.statRow}>
                   <Text style={styles.statLabel}>1 point</Text>
                   <Text style={styles.statValue}>
-                    {statsA.onePointersMade}/{statsA.onePtTotal} ({statsA.onePtPercentage}%)
+                    {statsA.onePointersMade}/{statsA.onePtTotal} (
+                    {statsA.onePtPercentage}%)
                   </Text>
                 </View>
                 <View style={styles.statRow}>
                   <Text style={styles.statLabel}>2 points</Text>
                   <Text style={styles.statValue}>
-                    {statsA.twoPointersMade}/{statsA.twoPtTotal} ({statsA.twoPtPercentage}%)
+                    {statsA.twoPointersMade}/{statsA.twoPtTotal} (
+                    {statsA.twoPtPercentage}%)
                   </Text>
                 </View>
                 <View style={styles.statRow}>
                   <Text style={styles.statLabel}>3 points</Text>
                   <Text style={styles.statValue}>
-                    {statsA.threePointersMade}/{statsA.threePtTotal} ({statsA.threePtPercentage}%)
+                    {statsA.threePointersMade}/{statsA.threePtTotal} (
+                    {statsA.threePtPercentage}%)
                   </Text>
                 </View>
               </View>
 
               {/* Team B Stats - Only show if managing both teams */}
               {teamMode === "both" && (
-                <View style={[styles.teamStatsContainer, styles.teamStatsMargin]}>
+                <View
+                  style={[styles.teamStatsContainer, styles.teamStatsMargin]}
+                >
                   <Text style={styles.teamStatsName}>{teamB}</Text>
                   <View style={styles.statRow}>
                     <Text style={styles.statLabel}>Total</Text>
@@ -427,19 +491,22 @@ export default function MatchSummaryModal({
                   <View style={styles.statRow}>
                     <Text style={styles.statLabel}>1 point</Text>
                     <Text style={styles.statValue}>
-                      {statsB.onePointersMade}/{statsB.onePtTotal} ({statsB.onePtPercentage}%)
+                      {statsB.onePointersMade}/{statsB.onePtTotal} (
+                      {statsB.onePtPercentage}%)
                     </Text>
                   </View>
                   <View style={styles.statRow}>
                     <Text style={styles.statLabel}>2 points</Text>
                     <Text style={styles.statValue}>
-                      {statsB.twoPointersMade}/{statsB.twoPtTotal} ({statsB.twoPtPercentage}%)
+                      {statsB.twoPointersMade}/{statsB.twoPtTotal} (
+                      {statsB.twoPtPercentage}%)
                     </Text>
                   </View>
                   <View style={styles.statRow}>
                     <Text style={styles.statLabel}>3 points</Text>
                     <Text style={styles.statValue}>
-                      {statsB.threePointersMade}/{statsB.threePtTotal} ({statsB.threePtPercentage}%)
+                      {statsB.threePointersMade}/{statsB.threePtTotal} (
+                      {statsB.threePtPercentage}%)
                     </Text>
                   </View>
                 </View>
@@ -457,7 +524,9 @@ export default function MatchSummaryModal({
 
                   <View style={styles.compactStatItem}>
                     <Text style={styles.compactStatLabel}>Rebonds</Text>
-                    <Text style={styles.compactStatValue}>{reboundsA.total}</Text>
+                    <Text style={styles.compactStatValue}>
+                      {reboundsA.total}
+                    </Text>
                     <Text style={styles.compactStatDetail}>
                       (Off: {reboundsA.offensive} | Def: {reboundsA.defensive})
                     </Text>
@@ -473,7 +542,9 @@ export default function MatchSummaryModal({
                 </View>
 
                 {/* Separator - Only show if managing both teams */}
-                {teamMode === "both" && <View style={styles.compactSeparator} />}
+                {teamMode === "both" && (
+                  <View style={styles.compactSeparator} />
+                )}
 
                 {/* Team B - Only show if managing both teams */}
                 {teamMode === "both" && (
@@ -482,21 +553,137 @@ export default function MatchSummaryModal({
 
                     <View style={styles.compactStatItem}>
                       <Text style={styles.compactStatLabel}>Rebonds</Text>
-                      <Text style={styles.compactStatValue}>{reboundsB.total}</Text>
+                      <Text style={styles.compactStatValue}>
+                        {reboundsB.total}
+                      </Text>
                       <Text style={styles.compactStatDetail}>
-                        (Off: {reboundsB.offensive} | Def: {reboundsB.defensive})
+                        (Off: {reboundsB.offensive} | Def: {reboundsB.defensive}
+                        )
                       </Text>
                     </View>
 
                     <View style={styles.compactStatItem}>
                       <Text style={styles.compactStatLabel}>Fautes</Text>
-                      <Text style={styles.compactStatValue}>{foulsB.total}</Text>
+                      <Text style={styles.compactStatValue}>
+                        {foulsB.total}
+                      </Text>
                       <Text style={styles.compactStatDetail}>
                         (Pers: {foulsB.personal} | Tech: {foulsB.technical})
                       </Text>
                     </View>
                   </View>
                 )}
+              </View>
+            </View>
+
+            {/* Court Visualization */}
+            <View style={styles.courtSection}>
+              <Text style={styles.sectionTitle}>Visualisation du match</Text>
+
+              {/* Filter buttons */}
+              <View style={styles.filterButtons}>
+                <TouchableOpacity
+                  style={[
+                    styles.filterButton,
+                    courtFilter === "both" && styles.filterButtonActive,
+                  ]}
+                  onPress={() => setCourtFilter("both")}
+                >
+                  <Text
+                    style={[
+                      styles.filterButtonText,
+                      courtFilter === "both" && styles.filterButtonTextActive,
+                    ]}
+                  >
+                    Les deux
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.filterButton,
+                    courtFilter === "A" && styles.filterButtonActive,
+                  ]}
+                  onPress={() => setCourtFilter("A")}
+                >
+                  <Text
+                    style={[
+                      styles.filterButtonText,
+                      courtFilter === "A" && styles.filterButtonTextActive,
+                    ]}
+                  >
+                    {teamA}
+                  </Text>
+                </TouchableOpacity>
+                {teamMode === "both" && (
+                  <TouchableOpacity
+                    style={[
+                      styles.filterButton,
+                      courtFilter === "B" && styles.filterButtonActive,
+                    ]}
+                    onPress={() => setCourtFilter("B")}
+                  >
+                    <Text
+                      style={[
+                        styles.filterButtonText,
+                        courtFilter === "B" && styles.filterButtonTextActive,
+                      ]}
+                    >
+                      {teamB}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+
+              {/* Court with markers */}
+              <View style={styles.courtContainer}>
+                <View style={{ width: 250, height: 465 }}>
+                  <BasketballCourtSVG
+                    width={300}
+                    height={558}
+                    onCourtPress={() => {}}
+                    markers={filteredMarkers}
+                  />
+                </View>
+              </View>
+
+              {/* Legend */}
+              <View style={styles.courtLegend}>
+                <View style={styles.legendItem}>
+                  <View
+                    style={[styles.legendDot, { backgroundColor: "#4CAF50" }]}
+                  />
+                  <Text style={styles.legendText}>Tir réussi</Text>
+                </View>
+                <View style={styles.legendItem}>
+                  <View
+                    style={[styles.legendDot, { backgroundColor: "#F44336" }]}
+                  />
+                  <Text style={styles.legendText}>Tir raté</Text>
+                </View>
+                <View style={styles.legendItem}>
+                  <View
+                    style={[styles.legendDot, { backgroundColor: "#FF9800" }]}
+                  />
+                  <Text style={styles.legendText}>Rebond Off.</Text>
+                </View>
+                <View style={styles.legendItem}>
+                  <View
+                    style={[styles.legendDot, { backgroundColor: "#2196F3" }]}
+                  />
+                  <Text style={styles.legendText}>Rebond Def.</Text>
+                </View>
+                <View style={styles.legendItem}>
+                  <View
+                    style={[styles.legendDot, { backgroundColor: "#E74C3C" }]}
+                  />
+                  <Text style={styles.legendText}>Faute Pers.</Text>
+                </View>
+                <View style={styles.legendItem}>
+                  <View
+                    style={[styles.legendDot, { backgroundColor: "#9C27B0" }]}
+                  />
+                  <Text style={styles.legendText}>Faute Tech.</Text>
+                </View>
               </View>
             </View>
           </ScrollView>
@@ -789,6 +976,66 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: "#999",
     marginTop: 2,
+  },
+  courtSection: {
+    marginBottom: 16,
+  },
+  courtContainer: {
+    alignItems: "center",
+    backgroundColor: "#f9f9f9",
+    borderRadius: 12,
+    padding: 16,
+    marginVertical: 12,
+    overflow: "visible",
+  },
+  filterButtons: {
+    flexDirection: "row",
+    gap: 8,
+    marginBottom: 12,
+  },
+  filterButton: {
+    flex: 1,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    backgroundColor: "#f0f0f0",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#ddd",
+  },
+  filterButtonActive: {
+    backgroundColor: "#4CAF50",
+    borderColor: "#4CAF50",
+  },
+  filterButtonText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#666",
+  },
+  filterButtonTextActive: {
+    color: "#fff",
+  },
+  courtLegend: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 12,
+    justifyContent: "center",
+    marginTop: 0,
+    marginBottom: 20,
+  },
+  legendItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  legendDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+  },
+  legendText: {
+    fontSize: 11,
+    color: "#666",
   },
   buttonContainer: {
     flexDirection: "row",

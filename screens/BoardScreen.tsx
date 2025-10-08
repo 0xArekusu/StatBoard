@@ -896,7 +896,7 @@ export default function BasketballCourt() {
     setMatchConfigModalVisible(true);
   };
 
-  const handleMatchConfigConfirm = (format: string, duration: number) => {
+  const handleMatchConfigConfirm = (format: "2_halves" | "4_quarters", duration: number) => {
     setMatchFormat(format);
     setPeriodDuration(duration);
     setMatchConfigModalVisible(false);
