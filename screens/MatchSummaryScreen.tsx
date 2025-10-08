@@ -6,10 +6,12 @@ import {
   StyleSheet,
   ScrollView,
   TextInput,
+  Alert,
 } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { ActionData } from "../components/ActionSystem";
 import BasketballCourtSVG from "../components/BasketballCourtSVG";
+import { PDFExportService } from "../src/services/export/PDFExportService";
 
 interface MatchSummaryScreenProps {}
 
@@ -261,6 +263,25 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
 
   const handleBackToMenu = () => {
     navigation.navigate("MainMenu" as never);
+  };
+
+  const handleExportPDF = async () => {
+    try {
+      await PDFExportService.generateMatchPDF({
+        teamA,
+        teamB,
+        scoreA: adjustedScoreA,
+        scoreB: adjustedScoreB,
+        actions,
+        matchFormat,
+        periodDuration,
+        teamMode,
+        players,
+      });
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      Alert.alert("Erreur", "Impossible de générer le PDF");
+    }
   };
 
   return (
@@ -702,6 +723,13 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
 
       {/* Action buttons */}
       <View style={styles.buttonContainer}>
+        <TouchableOpacity
+          style={[styles.button, styles.secondaryButton]}
+          onPress={handleExportPDF}
+        >
+          <Text style={styles.secondaryButtonText}>📄 Export PDF</Text>
+        </TouchableOpacity>
+
         <TouchableOpacity
           style={[styles.button, styles.secondaryButton]}
           onPress={handleViewDetails}
