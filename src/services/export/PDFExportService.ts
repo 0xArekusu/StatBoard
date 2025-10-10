@@ -48,6 +48,19 @@ export class PDFExportService {
       totalPeriods
     );
 
+    // Calculate cumulative scores for chart
+    const cumulativeScoresA: number[] = [];
+    const cumulativeScoresB: number[] = [];
+    let sumA = 0;
+    let sumB = 0;
+
+    for (let i = 0; i < totalPeriods; i++) {
+      sumA += periodScoresA[i];
+      sumB += periodScoresB[i];
+      cumulativeScoresA.push(sumA);
+      cumulativeScoresB.push(sumB);
+    }
+
     // Calculate player stats
     const playersTeamA = players.filter((p) => p.team === "A");
     const playersTeamB = players.filter((p) => p.team === "B");
@@ -73,6 +86,8 @@ export class PDFExportService {
       totalPeriods,
       periodScoresA,
       periodScoresB,
+      cumulativeScoresA,
+      cumulativeScoresB,
       statsTeamA,
       statsTeamB,
       teamMode,
@@ -152,6 +167,7 @@ export class PDFExportService {
     // Fouls
     const fouls = playerActions.filter((a) => a.type === "faute");
     const personalFouls = fouls.filter((a) => a.specification === "personnelle").length;
+    const technicalFouls = fouls.filter((a) => a.specification === "technique").length;
 
     return {
       points: totalPoints,
@@ -167,7 +183,125 @@ export class PDFExportService {
       drb: defRebounds,
       trb: offRebounds + defRebounds,
       pf: personalFouls,
+      tf: technicalFouls,
     };
+  }
+
+  /**
+   * Generate score evolution SVG chart
+   */
+  private static generateScoreChart(
+    cumulativeScoresA: number[],
+    cumulativeScoresB: number[],
+    periodLabel: string,
+    totalPeriods: number,
+    teamMode: "A" | "B" | "both",
+    teamA: string,
+    teamB: string
+  ): string {
+    const width = 500;
+    const height = 200;
+    const padding = { top: 30, right: 30, bottom: 30, left: 40 };
+    const chartWidth = width - padding.left - padding.right;
+    const chartHeight = height - padding.top - padding.bottom;
+
+    const maxScore = Math.max(
+      ...cumulativeScoresA,
+      ...(teamMode === "both" ? cumulativeScoresB : [0])
+    );
+    const yScale = chartHeight / (maxScore || 1);
+
+    // Include 0 at start
+    const allScoresA = [0, ...cumulativeScoresA];
+    const allScoresB = [0, ...cumulativeScoresB];
+
+    // Generate path for team A
+    let pathA = `M ${padding.left} ${padding.top + chartHeight}`;
+    allScoresA.forEach((score, i) => {
+      const x = padding.left + (i * chartWidth) / totalPeriods;
+      const y = padding.top + chartHeight - score * yScale;
+      pathA += ` L ${x} ${y}`;
+    });
+
+    // Generate path for team B
+    let pathB = `M ${padding.left} ${padding.top + chartHeight}`;
+    if (teamMode === "both") {
+      allScoresB.forEach((score, i) => {
+        const x = padding.left + (i * chartWidth) / totalPeriods;
+        const y = padding.top + chartHeight - score * yScale;
+        pathB += ` L ${x} ${y}`;
+      });
+    }
+
+    // Generate X-axis labels with "FIN" above period labels
+    const xLabelsHTML = Array.from({ length: totalPeriods + 1 }, (_, i) => {
+      const x = padding.left + (i * chartWidth) / totalPeriods;
+      if (i === 0) {
+        return `<text x="${x}" y="${height - 10}" text-anchor="middle" font-size="10">Début</text>`;
+      }
+      return `
+        <text x="${x}" y="${height - 18}" text-anchor="middle" font-size="9">FIN</text>
+        <text x="${x}" y="${height - 8}" text-anchor="middle" font-size="10" font-weight="bold">${periodLabel}${i}</text>
+      `;
+    }).join("");
+
+    // Generate Y-axis labels
+    const ySteps = 5;
+    const yLabelsHTML = Array.from({ length: ySteps + 1 }, (_, i) => {
+      const value = Math.round((maxScore / ySteps) * i);
+      const y = padding.top + chartHeight - (value * yScale);
+      return `<text x="${padding.left - 5}" y="${y + 3}" text-anchor="end" font-size="9">${value}</text>`;
+    }).join("");
+
+    return `
+      <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <style>
+            text { font-family: Arial, sans-serif; fill: #333; }
+          </style>
+        </defs>
+
+        <!-- Grid lines -->
+        ${Array.from({ length: ySteps + 1 }, (_, i) => {
+          const y = padding.top + chartHeight - (chartHeight / ySteps) * i;
+          return `<line x1="${padding.left}" y1="${y}" x2="${width - padding.right}" y2="${y}" stroke="#e0e0e0" stroke-width="1"/>`;
+        }).join("")}
+
+        <!-- Axes -->
+        <line x1="${padding.left}" y1="${padding.top}" x2="${padding.left}" y2="${padding.top + chartHeight}" stroke="#333" stroke-width="2"/>
+        <line x1="${padding.left}" y1="${padding.top + chartHeight}" x2="${width - padding.right}" y2="${padding.top + chartHeight}" stroke="#333" stroke-width="2"/>
+
+        <!-- Team A line -->
+        <path d="${pathA}" fill="none" stroke="#FF6B35" stroke-width="3"/>
+        ${allScoresA.map((score, i) => {
+          const x = padding.left + (i * chartWidth) / totalPeriods;
+          const y = padding.top + chartHeight - score * yScale;
+          return `<circle cx="${x}" cy="${y}" r="4" fill="#FF6B35"/>`;
+        }).join("")}
+
+        ${teamMode === "both" ? `
+        <!-- Team B line -->
+        <path d="${pathB}" fill="none" stroke="#004E89" stroke-width="3"/>
+        ${allScoresB.map((score, i) => {
+          const x = padding.left + (i * chartWidth) / totalPeriods;
+          const y = padding.top + chartHeight - score * yScale;
+          return `<circle cx="${x}" cy="${y}" r="4" fill="#004E89"/>`;
+        }).join("")}
+        ` : ""}
+
+        <!-- Labels -->
+        ${xLabelsHTML}
+        ${yLabelsHTML}
+
+        <!-- Legend -->
+        <circle cx="50" cy="15" r="4" fill="#FF6B35"/>
+        <text x="58" y="18" font-size="10">${teamA}</text>
+        ${teamMode === "both" ? `
+        <circle cx="150" cy="15" r="4" fill="#004E89"/>
+        <text x="158" y="18" font-size="10">${teamB}</text>
+        ` : ""}
+      </svg>
+    `;
   }
 
   /**
@@ -183,6 +317,8 @@ export class PDFExportService {
     totalPeriods: number;
     periodScoresA: number[];
     periodScoresB: number[];
+    cumulativeScoresA: number[];
+    cumulativeScoresB: number[];
     statsTeamA: any[];
     statsTeamB: any[];
     teamMode: "A" | "B" | "both";
@@ -197,10 +333,23 @@ export class PDFExportService {
       totalPeriods,
       periodScoresA,
       periodScoresB,
+      cumulativeScoresA,
+      cumulativeScoresB,
       statsTeamA,
       statsTeamB,
       teamMode,
     } = data;
+
+    // Generate the score chart SVG
+    const chartSVG = this.generateScoreChart(
+      cumulativeScoresA,
+      cumulativeScoresB,
+      periodLabel,
+      totalPeriods,
+      teamMode,
+      teamA,
+      teamB
+    );
 
     const dateStr = matchDate.toLocaleDateString("fr-FR", {
       day: "2-digit",
@@ -364,6 +513,12 @@ export class PDFExportService {
     </tbody>
   </table>
 
+  <!-- Score Evolution Chart -->
+  <div style="text-align: center; margin: 30px 0;">
+    <h2 style="font-size: 14px; margin-bottom: 15px;">Évolution du score</h2>
+    ${chartSVG}
+  </div>
+
   <!-- Team A Stats -->
   <div class="stats-section">
     <h2>${teamA} - Statistiques individuelles</h2>
@@ -373,50 +528,55 @@ export class PDFExportService {
           <th class="player-number">#</th>
           <th class="player-name">Joueur</th>
           <th>PTS</th>
-          <th>2PM-A</th>
-          <th>3PM-A</th>
-          <th>LFM-A</th>
+          <th>2PM</th>
+          <th>3PM</th>
+          <th>LFM</th>
           <th>RO</th>
           <th>RD</th>
           <th>RT</th>
-          <th>FP</th>
+          <th>F</th>
         </tr>
       </thead>
       <tbody>
         ${statsTeamA
           .map(
-            (player) => `
+            (player) => {
+              const foulDisplay = player.stats.tf > 0
+                ? `${player.stats.pf + player.stats.tf} (${player.stats.tf}T)`
+                : `${player.stats.pf}`;
+              return `
         <tr>
           <td class="player-number">${player.num}</td>
           <td class="player-name">${player.name}</td>
           <td>${player.stats.points}</td>
-          <td>${player.stats.twopm}-${player.stats.twopa}</td>
-          <td>${player.stats.threepm}-${player.stats.threepa}</td>
-          <td>${player.stats.ftm}-${player.stats.fta}</td>
+          <td>${player.stats.twopm}/${player.stats.twopa}</td>
+          <td>${player.stats.threepm}/${player.stats.threepa}</td>
+          <td>${player.stats.ftm}/${player.stats.fta}</td>
           <td>${player.stats.orb}</td>
           <td>${player.stats.drb}</td>
           <td>${player.stats.trb}</td>
-          <td>${player.stats.pf}</td>
+          <td>${foulDisplay}</td>
         </tr>
-        `
+        `;
+            }
           )
           .join("")}
         <tr class="totals-row">
           <td colspan="2">TOTAL</td>
           <td>${statsTeamA.reduce((sum, p) => sum + p.stats.points, 0)}</td>
-          <td>${statsTeamA.reduce((sum, p) => sum + p.stats.twopm, 0)}-${statsTeamA.reduce((sum, p) => sum + p.stats.twopa, 0)}</td>
-          <td>${statsTeamA.reduce((sum, p) => sum + p.stats.threepm, 0)}-${statsTeamA.reduce((sum, p) => sum + p.stats.threepa, 0)}</td>
-          <td>${statsTeamA.reduce((sum, p) => sum + p.stats.ftm, 0)}-${statsTeamA.reduce((sum, p) => sum + p.stats.fta, 0)}</td>
+          <td>${statsTeamA.reduce((sum, p) => sum + p.stats.twopm, 0)}/${statsTeamA.reduce((sum, p) => sum + p.stats.twopa, 0)}</td>
+          <td>${statsTeamA.reduce((sum, p) => sum + p.stats.threepm, 0)}/${statsTeamA.reduce((sum, p) => sum + p.stats.threepa, 0)}</td>
+          <td>${statsTeamA.reduce((sum, p) => sum + p.stats.ftm, 0)}/${statsTeamA.reduce((sum, p) => sum + p.stats.fta, 0)}</td>
           <td>${statsTeamA.reduce((sum, p) => sum + p.stats.orb, 0)}</td>
           <td>${statsTeamA.reduce((sum, p) => sum + p.stats.drb, 0)}</td>
           <td>${statsTeamA.reduce((sum, p) => sum + p.stats.trb, 0)}</td>
-          <td>${statsTeamA.reduce((sum, p) => sum + p.stats.pf, 0)}</td>
+          <td>${statsTeamA.reduce((sum, p) => sum + p.stats.pf + p.stats.tf, 0)}</td>
         </tr>
       </tbody>
     </table>
     <div class="legend">
-      PTS: Points | 2PM-A: 2 points marqués-tentés | 3PM-A: 3 points marqués-tentés | LFM-A: Lancers francs marqués-tentés<br>
-      RO: Rebonds offensifs | RD: Rebonds défensifs | RT: Rebonds totaux | FP: Fautes personnelles
+      PTS: Points | 2PM: 2 points (marqués/tentés) | 3PM: 3 points | LFM: Lancers francs<br>
+      RO: Rebonds offensifs | RD: Rebonds défensifs | RT: Rebonds totaux | F: Fautes (avec T pour technique)
     </div>
   </div>
 
@@ -430,50 +590,55 @@ export class PDFExportService {
           <th class="player-number">#</th>
           <th class="player-name">Joueur</th>
           <th>PTS</th>
-          <th>2PM-A</th>
-          <th>3PM-A</th>
-          <th>LFM-A</th>
+          <th>2PM</th>
+          <th>3PM</th>
+          <th>LFM</th>
           <th>RO</th>
           <th>RD</th>
           <th>RT</th>
-          <th>FP</th>
+          <th>F</th>
         </tr>
       </thead>
       <tbody>
         ${statsTeamB
           .map(
-            (player) => `
+            (player) => {
+              const foulDisplay = player.stats.tf > 0
+                ? `${player.stats.pf + player.stats.tf} (${player.stats.tf}T)`
+                : `${player.stats.pf}`;
+              return `
         <tr>
           <td class="player-number">${player.num}</td>
           <td class="player-name">${player.name}</td>
           <td>${player.stats.points}</td>
-          <td>${player.stats.twopm}-${player.stats.twopa}</td>
-          <td>${player.stats.threepm}-${player.stats.threepa}</td>
-          <td>${player.stats.ftm}-${player.stats.fta}</td>
+          <td>${player.stats.twopm}/${player.stats.twopa}</td>
+          <td>${player.stats.threepm}/${player.stats.threepa}</td>
+          <td>${player.stats.ftm}/${player.stats.fta}</td>
           <td>${player.stats.orb}</td>
           <td>${player.stats.drb}</td>
           <td>${player.stats.trb}</td>
-          <td>${player.stats.pf}</td>
+          <td>${foulDisplay}</td>
         </tr>
-        `
+        `;
+            }
           )
           .join("")}
         <tr class="totals-row">
           <td colspan="2">TOTAL</td>
           <td>${statsTeamB.reduce((sum, p) => sum + p.stats.points, 0)}</td>
-          <td>${statsTeamB.reduce((sum, p) => sum + p.stats.twopm, 0)}-${statsTeamB.reduce((sum, p) => sum + p.stats.twopa, 0)}</td>
-          <td>${statsTeamB.reduce((sum, p) => sum + p.stats.threepm, 0)}-${statsTeamB.reduce((sum, p) => sum + p.stats.threepa, 0)}</td>
-          <td>${statsTeamB.reduce((sum, p) => sum + p.stats.ftm, 0)}-${statsTeamB.reduce((sum, p) => sum + p.stats.fta, 0)}</td>
+          <td>${statsTeamB.reduce((sum, p) => sum + p.stats.twopm, 0)}/${statsTeamB.reduce((sum, p) => sum + p.stats.twopa, 0)}</td>
+          <td>${statsTeamB.reduce((sum, p) => sum + p.stats.threepm, 0)}/${statsTeamB.reduce((sum, p) => sum + p.stats.threepa, 0)}</td>
+          <td>${statsTeamB.reduce((sum, p) => sum + p.stats.ftm, 0)}/${statsTeamB.reduce((sum, p) => sum + p.stats.fta, 0)}</td>
           <td>${statsTeamB.reduce((sum, p) => sum + p.stats.orb, 0)}</td>
           <td>${statsTeamB.reduce((sum, p) => sum + p.stats.drb, 0)}</td>
           <td>${statsTeamB.reduce((sum, p) => sum + p.stats.trb, 0)}</td>
-          <td>${statsTeamB.reduce((sum, p) => sum + p.stats.pf, 0)}</td>
+          <td>${statsTeamB.reduce((sum, p) => sum + p.stats.pf + p.stats.tf, 0)}</td>
         </tr>
       </tbody>
     </table>
     <div class="legend">
-      PTS: Points | 2PM-A: 2 points marqués-tentés | 3PM-A: 3 points marqués-tentés | LFM-A: Lancers francs marqués-tentés<br>
-      RO: Rebonds offensifs | RD: Rebonds défensifs | RT: Rebonds totaux | FP: Fautes personnelles
+      PTS: Points | 2PM: 2 points (marqués/tentés) | 3PM: 3 points | LFM: Lancers francs<br>
+      RO: Rebonds offensifs | RD: Rebonds défensifs | RT: Rebonds totaux | F: Fautes (avec T pour technique)
     </div>
   </div>
   ` : ""}
