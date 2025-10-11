@@ -203,8 +203,8 @@ export default function ActionModal({
   };
 
   const renderPlayerSelection = () => {
-    // Filter players according to selected team
-    const filteredPlayers = selectedTeam
+    // Filter players according to selected team only if in "both" mode
+    const filteredPlayers = teamMode === "both" && selectedTeam
       ? players.filter((player) => player.team === selectedTeam)
       : players;
 

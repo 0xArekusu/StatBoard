@@ -225,6 +225,10 @@ export const useActionSystem = () => {
       teamMode: "A" | "B" | "both",
       currentTeam: "A" | "B"
     ) => {
+      console.log("🔍 startAction called:", { teamMode, currentTeam }); // 🔍 DEBUG
+      const selectedTeam = teamMode === "both" ? null : currentTeam;
+      console.log("🔍 selectedTeam will be:", selectedTeam); // 🔍 DEBUG
+
       setState({
         isVisible: true,
         currentStep: teamMode === "both" ? 1 : 2, // Start with team selection if both, otherwise skip to action
@@ -232,7 +236,7 @@ export const useActionSystem = () => {
         actionPoints: null,
         actionSpec: null,
         playerNumber: null,
-        selectedTeam: teamMode === "both" ? null : currentTeam, // Pre-select team if single team mode
+        selectedTeam: selectedTeam, // Pre-select team if single team mode
         position,
         clickPosition,
       });
@@ -331,6 +335,8 @@ export const useActionSystem = () => {
 
   const completeAction = useCallback(
     (onActionComplete: (actionData: ActionData) => void) => {
+      console.log("🔍 completeAction - state.selectedTeam:", state.selectedTeam); // 🔍 DEBUG
+
       if (
         state.actionType &&
         state.actionSpec &&
@@ -348,6 +354,8 @@ export const useActionSystem = () => {
           // Semantic coordinates will be calculated in BoardScreen.tsx
           semanticPosition: { xNormalized: 0, yNormalized: 0, capturedInPortrait: true },
         };
+
+        console.log("🔍 completeAction - actionData.team:", actionData.team); // 🔍 DEBUG
 
         setCompletedActions((prev) => [...prev, actionData]);
         onActionComplete(actionData);

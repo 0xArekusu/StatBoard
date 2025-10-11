@@ -785,6 +785,7 @@ export default function BasketballCourt() {
       type: actionData.type,
       specification: actionData.specification,
       player: actionData.player,
+      team: actionData.team, // 🔍 DEBUG: Log team
       timestamp: actionData.timestamp,
       svgCoordinates: { svgX, svgY },
       isPortrait,
@@ -846,6 +847,8 @@ export default function BasketballCourt() {
         // Use the points field from the action (1, 2, or 3 points)
         const points = action.points || 2; // Default to 2 if not specified
 
+        console.log("🔍 Scoring action:", { team: action.team, points, player: action.player }); // 🔍 DEBUG
+
         if (action.team === "A") {
           newScoreA += points;
         } else if (action.team === "B") {
@@ -853,6 +856,8 @@ export default function BasketballCourt() {
         }
       }
     });
+
+    console.log("📊 Updated scores:", { scoreA: newScoreA, scoreB: newScoreB }); // 🔍 DEBUG
 
     setScoreA(newScoreA);
     setScoreB(newScoreB);
@@ -1069,15 +1074,23 @@ export default function BasketballCourt() {
       setShowEndMatchModal(false);
 
       // Prepare all players with their team info
-      const allPlayers = [
-        ...players.map(p => ({ ...p, team: "A" as const })),
-        ...(teamMode === "both" ? playersTeamB.map(p => ({ ...p, team: "B" as const })) : []),
-        // Include substitutes
-        ...substitutesTeamA.map(s => ({ ...s, team: "A" as const })),
-        ...(teamMode === "both" ? substitutesTeamB.map(s => ({ ...s, team: "B" as const })) : []),
-      ];
+      const teamAPlayers = teamMode === "A" || teamMode === "both"
+        ? [
+            ...players.map(p => ({ ...p, team: "A" as const })),
+            ...substitutesTeamA.map(s => ({ ...s, team: "A" as const })),
+          ]
+        : [];
 
-      navigation.navigate("MatchSummary" as never, {
+      const teamBPlayersEnd = teamMode === "B" || teamMode === "both"
+        ? [
+            ...playersTeamB.map(p => ({ ...p, team: "B" as const })),
+            ...substitutesTeamB.map(s => ({ ...s, team: "B" as const })),
+          ]
+        : [];
+
+      const allPlayers = [...teamAPlayers, ...teamBPlayersEnd];
+
+      navigation.navigate("MatchSummary" as any, {
         teamA,
         teamB,
         scoreA,
@@ -1087,7 +1100,7 @@ export default function BasketballCourt() {
         periodDuration,
         teamMode,
         players: allPlayers,
-      } as never);
+      });
     } catch (error) {
       console.error("❌ Error ending match:", error);
       // Même en cas d'erreur, arrêter le chrono
@@ -1415,12 +1428,21 @@ export default function BasketballCourt() {
 
   // Fonction pour obtenir tous les joueurs de toutes les équipes avec leur équipe
   const getAllPlayers = () => {
-    return [
-      ...players.map((p) => ({ ...p, team: "A" as const })),
-      ...playersTeamB.map((p) => ({ ...p, team: "B" as const })),
-      ...substitutesTeamA.map((p) => ({ ...p, team: "A" as const })),
-      ...substitutesTeamB.map((p) => ({ ...p, team: "B" as const })),
-    ].sort((a, b) => {
+    const teamAPlayers = teamMode === "A" || teamMode === "both"
+      ? [
+          ...players.map((p) => ({ ...p, team: "A" as const })),
+          ...substitutesTeamA.map((p) => ({ ...p, team: "A" as const })),
+        ]
+      : [];
+
+    const teamBPlayers = teamMode === "B" || teamMode === "both"
+      ? [
+          ...playersTeamB.map((p) => ({ ...p, team: "B" as const })),
+          ...substitutesTeamB.map((p) => ({ ...p, team: "B" as const })),
+        ]
+      : [];
+
+    return [...teamAPlayers, ...teamBPlayers].sort((a, b) => {
       // Trier par équipe puis par type (titulaires d'abord) puis par numéro
       if (a.team !== b.team) {
         return a.team === "A" ? -1 : 1; // Team A en premier

@@ -20,6 +20,8 @@ interface ActionSystemModalProps {
     id: number;
     num: number;
     name: string;
+    team: "A" | "B";
+    isSubstitute: boolean;
   }>;
   teamMode: "A" | "B" | "both";
   teamA: string;
