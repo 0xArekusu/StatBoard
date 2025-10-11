@@ -1,5 +1,5 @@
-import { DatabaseService } from './DatabaseService';
-import { Action, CreateActionData } from '../../models/types';
+import { DatabaseService } from "./DatabaseService";
+import { Action, CreateActionData } from "../../models/types";
 
 export interface IActionRepository {
   create(data: CreateActionData): Promise<Action>;
@@ -19,11 +19,11 @@ export class ActionRepository implements IActionRepository {
   async create(data: CreateActionData): Promise<Action> {
     const sql = `
       INSERT INTO match_actions (
-        match_id, team, player_number, action_type, specification, 
+        match_id, team, player_number, action_type, specification, points,
         semantic_x, semantic_y, action_order, period_number, time_in_period
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
-    
+
     try {
       await this.db.execute(sql, [
         data.match_id,
@@ -31,37 +31,42 @@ export class ActionRepository implements IActionRepository {
         data.player_number,
         data.action_type,
         data.specification,
+        data.points || null,
         data.semantic_x,
         data.semantic_y,
         data.action_order,
         data.period_number,
-        data.time_in_period
+        data.time_in_period,
       ]);
 
       // Récupérer l'action créée
       const actions = await this.db.query(
-        'SELECT * FROM match_actions WHERE match_id = ? ORDER BY id DESC LIMIT 1',
+        "SELECT * FROM match_actions WHERE match_id = ? ORDER BY id DESC LIMIT 1",
         [data.match_id]
       );
-      
+
       if (actions.length === 0) {
-        throw new Error('Failed to create action');
+        throw new Error("Failed to create action");
       }
 
-      console.log('📊 Action created in DB:', {
+      console.log("📊 Action created in DB:", {
         id: actions[0].id,
         type: actions[0].action_type,
         specification: actions[0].specification,
         player: actions[0].player_number,
         team: actions[0].team,
         period: actions[0].period_number,
-        timeInPeriod: `${Math.floor(actions[0].time_in_period / 60)}:${(actions[0].time_in_period % 60).toString().padStart(2, '0')}`,
-        order: actions[0].action_order
+        timeInPeriod: `${Math.floor(actions[0].time_in_period / 60)}:${(
+          actions[0].time_in_period % 60
+        )
+          .toString()
+          .padStart(2, "0")}`,
+        order: actions[0].action_order,
       });
 
       return actions[0] as Action;
     } catch (error) {
-      console.error('❌ Error creating action:', error);
+      console.error("❌ Error creating action:", error);
       throw error;
     }
   }
@@ -71,13 +76,13 @@ export class ActionRepository implements IActionRepository {
 
     try {
       console.log(`📊 Creating batch of ${actions.length} actions...`);
-      
+
       await this.db.transaction(async (adapter) => {
         const sql = `
           INSERT INTO match_actions (
-            match_id, team, player_number, action_type, specification, 
+            match_id, team, player_number, action_type, specification, points,
             semantic_x, semantic_y, action_order, period_number, time_in_period
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `;
 
         for (const action of actions) {
@@ -87,11 +92,12 @@ export class ActionRepository implements IActionRepository {
             action.player_number,
             action.action_type,
             action.specification,
+            action.points || null,
             action.semantic_x,
             action.semantic_y,
             action.action_order,
             action.period_number,
-            action.time_in_period
+            action.time_in_period,
           ]);
         }
       });
@@ -109,7 +115,7 @@ export class ActionRepository implements IActionRepository {
       console.log(`✅ Batch of ${actions.length} actions created successfully`);
       return createdActions as Action[];
     } catch (error) {
-      console.error('❌ Error creating action batch:', error);
+      console.error("❌ Error creating action batch:", error);
       throw error;
     }
   }
@@ -122,11 +128,10 @@ export class ActionRepository implements IActionRepository {
          ORDER BY action_order ASC, timestamp ASC`,
         [matchId]
       );
-      
-      console.log(`📊 Loaded ${actions.length} actions for match ${matchId}`);
+
       return actions as Action[];
     } catch (error) {
-      console.error('❌ Error getting actions for match:', error);
+      console.error("❌ Error getting actions for match:", error);
       throw error;
     }
   }
@@ -134,7 +139,7 @@ export class ActionRepository implements IActionRepository {
   async deleteAction(actionId: number): Promise<void> {
     try {
       const result = await this.db.query(
-        'SELECT * FROM match_actions WHERE id = ?',
+        "SELECT * FROM match_actions WHERE id = ?",
         [actionId]
       );
 
@@ -142,14 +147,13 @@ export class ActionRepository implements IActionRepository {
         throw new Error(`Action with id ${actionId} not found`);
       }
 
-      await this.db.execute(
-        'DELETE FROM match_actions WHERE id = ?',
-        [actionId]
-      );
+      await this.db.execute("DELETE FROM match_actions WHERE id = ?", [
+        actionId,
+      ]);
 
-      console.log('🗑️ Action deleted from DB:', actionId);
+      console.log("🗑️ Action deleted from DB:", actionId);
     } catch (error) {
-      console.error('❌ Error deleting action:', error);
+      console.error("❌ Error deleting action:", error);
       throw error;
     }
   }
@@ -157,13 +161,13 @@ export class ActionRepository implements IActionRepository {
   async getActionCount(matchId: number): Promise<number> {
     try {
       const result = await this.db.query(
-        'SELECT COUNT(*) as count FROM match_actions WHERE match_id = ?',
+        "SELECT COUNT(*) as count FROM match_actions WHERE match_id = ?",
         [matchId]
       );
-      
+
       return result[0]?.count || 0;
     } catch (error) {
-      console.error('❌ Error getting action count:', error);
+      console.error("❌ Error getting action count:", error);
       return 0;
     }
   }
@@ -171,13 +175,13 @@ export class ActionRepository implements IActionRepository {
   async getLastActionOrder(matchId: number): Promise<number> {
     try {
       const result = await this.db.query(
-        'SELECT MAX(action_order) as max_order FROM match_actions WHERE match_id = ?',
+        "SELECT MAX(action_order) as max_order FROM match_actions WHERE match_id = ?",
         [matchId]
       );
-      
+
       return result[0]?.max_order || 0;
     } catch (error) {
-      console.error('❌ Error getting last action order:', error);
+      console.error("❌ Error getting last action order:", error);
       return 0;
     }
   }

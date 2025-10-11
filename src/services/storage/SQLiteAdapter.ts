@@ -13,8 +13,8 @@ export class SQLiteAdapter implements IStorageAdapter {
     this.db = SQLite.openDatabaseSync(databaseName);
 
     // 🔄 TEMPORARY RESET - Remove after testing!
-    this.resetDatabaseTables();
-    this.initializeTables();
+    // this.resetDatabaseTables();
+    // this.initializeTables();
   }
 
   // 🔄 TEMPORARY METHOD - Remove after testing! wip
@@ -59,6 +59,7 @@ export class SQLiteAdapter implements IStorageAdapter {
         player_number INTEGER NOT NULL,
         action_type TEXT NOT NULL,
         specification TEXT NOT NULL,
+        points INTEGER,
         semantic_x REAL NOT NULL,
         semantic_y REAL NOT NULL,
         timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -68,6 +69,15 @@ export class SQLiteAdapter implements IStorageAdapter {
         FOREIGN KEY (match_id) REFERENCES matches (id) ON DELETE CASCADE
       );
     `);
+
+    // Add points column if it doesn't exist (migration for existing databases)
+    try {
+      this.db.execSync(`
+        ALTER TABLE match_actions ADD COLUMN points INTEGER;
+      `);
+    } catch (error) {
+      // Column might already exist, ignore error
+    }
 
     // Create indexes
     this.db.execSync(`

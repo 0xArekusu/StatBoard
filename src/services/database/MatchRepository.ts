@@ -5,6 +5,7 @@ export interface IMatchRepository {
   create(data: CreateMatchData): Promise<Match>;
   findById(id: number): Promise<Match | null>;
   findActiveMatch(): Promise<Match | null>;
+  getAllMatches(): Promise<Match[]>;
   updateStatus(id: number, status: MatchStatus, endedAt?: Date): Promise<void>;
   startMatch(id: number): Promise<void>;
   abandonMatch(id: number): Promise<void>;
@@ -69,10 +70,23 @@ export class MatchRepository implements IMatchRepository {
       const matches = await this.db.query(
         "SELECT * FROM matches WHERE status = 'in_progress' ORDER BY created_at DESC LIMIT 1"
       );
-      
+
       return matches.length > 0 ? matches[0] as Match : null;
     } catch (error) {
       console.error('Error finding active match:', error);
+      throw error;
+    }
+  }
+
+  async getAllMatches(): Promise<Match[]> {
+    try {
+      const matches = await this.db.query(
+        'SELECT * FROM matches ORDER BY created_at DESC'
+      );
+
+      return matches as Match[];
+    } catch (error) {
+      console.error('Error getting all matches:', error);
       throw error;
     }
   }

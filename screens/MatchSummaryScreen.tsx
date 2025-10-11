@@ -34,6 +34,7 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
       name: string;
       team: "A" | "B";
     }>;
+    fromHistory?: boolean; // Indicates if coming from history (read-only)
   };
 
   const {
@@ -46,6 +47,7 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
     periodDuration,
     teamMode,
     players,
+    fromHistory = false,
   } = params;
 
   // Local state for adjustable scores
@@ -276,33 +278,41 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
             <View style={styles.teamScore}>
               <Text style={styles.teamName}>{teamA}</Text>
               <View style={styles.scoreAdjustContainer}>
-                <TouchableOpacity
-                  style={styles.adjustButton}
-                  onPress={() =>
-                    setAdjustedScoreA(Math.max(0, adjustedScoreA - 1))
-                  }
-                >
-                  <Text style={styles.adjustButtonText}>−</Text>
-                </TouchableOpacity>
+                {!fromHistory && (
+                  <TouchableOpacity
+                    style={styles.adjustButton}
+                    onPress={() =>
+                      setAdjustedScoreA(Math.max(0, adjustedScoreA - 1))
+                    }
+                  >
+                    <Text style={styles.adjustButtonText}>−</Text>
+                  </TouchableOpacity>
+                )}
                 <TextInput
                   style={[
                     styles.scoreInput,
+                    fromHistory && styles.scoreInputReadOnly,
                     winner === teamA && styles.winnerScore,
                   ]}
                   value={adjustedScoreA.toString()}
                   onChangeText={(text) => {
-                    const value = parseInt(text) || 0;
-                    setAdjustedScoreA(Math.max(0, value));
+                    if (!fromHistory) {
+                      const value = parseInt(text) || 0;
+                      setAdjustedScoreA(Math.max(0, value));
+                    }
                   }}
                   keyboardType="number-pad"
                   selectTextOnFocus
+                  editable={!fromHistory}
                 />
-                <TouchableOpacity
-                  style={styles.adjustButton}
-                  onPress={() => setAdjustedScoreA(adjustedScoreA + 1)}
-                >
-                  <Text style={styles.adjustButtonText}>+</Text>
-                </TouchableOpacity>
+                {!fromHistory && (
+                  <TouchableOpacity
+                    style={styles.adjustButton}
+                    onPress={() => setAdjustedScoreA(adjustedScoreA + 1)}
+                  >
+                    <Text style={styles.adjustButtonText}>+</Text>
+                  </TouchableOpacity>
+                )}
               </View>
             </View>
 
@@ -312,33 +322,41 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
             <View style={styles.teamScore}>
               <Text style={styles.teamName}>{teamB}</Text>
               <View style={styles.scoreAdjustContainer}>
-                <TouchableOpacity
-                  style={styles.adjustButton}
-                  onPress={() =>
-                    setAdjustedScoreB(Math.max(0, adjustedScoreB - 1))
-                  }
-                >
-                  <Text style={styles.adjustButtonText}>−</Text>
-                </TouchableOpacity>
+                {!fromHistory && (
+                  <TouchableOpacity
+                    style={styles.adjustButton}
+                    onPress={() =>
+                      setAdjustedScoreB(Math.max(0, adjustedScoreB - 1))
+                    }
+                  >
+                    <Text style={styles.adjustButtonText}>−</Text>
+                  </TouchableOpacity>
+                )}
                 <TextInput
                   style={[
                     styles.scoreInput,
+                    fromHistory && styles.scoreInputReadOnly,
                     winner === teamB && styles.winnerScore,
                   ]}
                   value={adjustedScoreB.toString()}
                   onChangeText={(text) => {
-                    const value = parseInt(text) || 0;
-                    setAdjustedScoreB(Math.max(0, value));
+                    if (!fromHistory) {
+                      const value = parseInt(text) || 0;
+                      setAdjustedScoreB(Math.max(0, value));
+                    }
                   }}
                   keyboardType="number-pad"
                   selectTextOnFocus
+                  editable={!fromHistory}
                 />
-                <TouchableOpacity
-                  style={styles.adjustButton}
-                  onPress={() => setAdjustedScoreB(adjustedScoreB + 1)}
-                >
-                  <Text style={styles.adjustButtonText}>+</Text>
-                </TouchableOpacity>
+                {!fromHistory && (
+                  <TouchableOpacity
+                    style={styles.adjustButton}
+                    onPress={() => setAdjustedScoreB(adjustedScoreB + 1)}
+                  >
+                    <Text style={styles.adjustButtonText}>+</Text>
+                  </TouchableOpacity>
+                )}
               </View>
             </View>
           </View>
@@ -754,6 +772,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
     backgroundColor: "#f9f9f9",
+  },
+  scoreInputReadOnly: {
+    backgroundColor: "#e0e0e0",
+    borderColor: "#999",
+    color: "#666",
   },
   winnerScore: {
     color: "#4CAF50",

@@ -764,6 +764,7 @@ export default function BasketballCourt() {
       player_number: actionData.player || 0,
       action_type: actionData.type,
       specification: actionData.specification || "",
+      points: actionData.points, // Include points for shots (1, 2, or 3)
       semantic_x: semanticPosition.xNormalized,
       semantic_y: semanticPosition.yNormalized,
       action_order: nextActionOrder,

@@ -34,6 +34,7 @@ export interface Action {
   player_number: number;
   action_type: string;
   specification: string;
+  points?: number; // Number of points for shots (1, 2, or 3)
   semantic_x: number;
   semantic_y: number;
   timestamp: string;
@@ -48,6 +49,7 @@ export interface CreateActionData {
   player_number: number;
   action_type: string;
   specification: string;
+  points?: number; // Number of points for shots (1, 2, or 3)
   semantic_x: number;
   semantic_y: number;
   action_order: number;

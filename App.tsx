@@ -5,6 +5,7 @@ import MainMenuScreen from "./screens/MainMenuScreen";
 import BoardScreen from "./screens/BoardScreen";
 import MatchDetailsScreen from "./screens/MatchDetailsScreen";
 import MatchSummaryScreen from "./screens/MatchSummaryScreen";
+import MatchHistoryScreen from "./screens/MatchHistoryScreen";
 import SplashScreen from "./screens/SplashScreen";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 
@@ -29,13 +30,14 @@ export default function App() {
       <SafeAreaView style={{ flex: 1 }}>
         <NavigationContainer>
           <Stack.Navigator
-            initialRouteName="DebugCourtClick"
+            initialRouteName="MainMenu"
             screenOptions={{
               headerShown: false,
             }}
           >
             <Stack.Screen name="MainMenu" component={MainMenuScreen} />
             <Stack.Screen name="Board" component={BoardScreen} />
+            <Stack.Screen name="MatchHistory" component={MatchHistoryScreen} />
             <Stack.Screen name="MatchSummary" component={MatchSummaryScreen} />
             <Stack.Screen name="MatchDetails" component={MatchDetailsScreen} />
             {/* <Stack.Screen name="DebugCourtClick" component={DebugCourtClick} /> */}
