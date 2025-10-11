@@ -79,6 +79,21 @@ export class SQLiteAdapter implements IStorageAdapter {
       // Column might already exist, ignore error
     }
 
+    // Create match_players table
+    this.db.execSync(`
+      CREATE TABLE IF NOT EXISTS match_players (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        match_id INTEGER NOT NULL,
+        player_number INTEGER NOT NULL,
+        player_name TEXT NOT NULL,
+        team TEXT NOT NULL CHECK(team IN ('A', 'B')),
+        is_starter INTEGER NOT NULL DEFAULT 1,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (match_id) REFERENCES matches (id) ON DELETE CASCADE,
+        UNIQUE(match_id, player_number, team)
+      );
+    `);
+
     // Create indexes
     this.db.execSync(`
       CREATE INDEX IF NOT EXISTS idx_match_actions_match_id ON match_actions(match_id);
@@ -86,6 +101,10 @@ export class SQLiteAdapter implements IStorageAdapter {
 
     this.db.execSync(`
       CREATE INDEX IF NOT EXISTS idx_match_actions_timestamp ON match_actions(timestamp);
+    `);
+
+    this.db.execSync(`
+      CREATE INDEX IF NOT EXISTS idx_match_players_match_id ON match_players(match_id);
     `);
   }
 

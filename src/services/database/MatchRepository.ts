@@ -11,6 +11,7 @@ export interface IMatchRepository {
   abandonMatch(id: number): Promise<void>;
   completeMatch(id: number): Promise<void>;
   updateMatchState(id: number, currentPeriod: number, timeElapsed: number): Promise<void>;
+  delete(id: number): Promise<void>;
 }
 
 export class MatchRepository implements IMatchRepository {
@@ -155,6 +156,19 @@ export class MatchRepository implements IMatchRepository {
       );
     } catch (error) {
       console.error('Error updating match state:', error);
+      throw error;
+    }
+  }
+
+  async delete(id: number): Promise<void> {
+    try {
+      await this.db.execute(
+        'DELETE FROM matches WHERE id = ?',
+        [id]
+      );
+      console.log('🗑️ Match deleted from local DB:', id);
+    } catch (error) {
+      console.error('Error deleting match:', error);
       throw error;
     }
   }

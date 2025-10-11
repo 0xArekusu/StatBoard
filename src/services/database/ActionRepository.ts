@@ -5,6 +5,7 @@ export interface IActionRepository {
   create(data: CreateActionData): Promise<Action>;
   getActionsForMatch(matchId: number): Promise<Action[]>;
   deleteAction(actionId: number): Promise<void>;
+  deleteActionsForMatch(matchId: number): Promise<void>;
   createBatch(actions: CreateActionData[]): Promise<Action[]>;
   getActionCount(matchId: number): Promise<number>;
 }
@@ -154,6 +155,19 @@ export class ActionRepository implements IActionRepository {
       console.log("🗑️ Action deleted from DB:", actionId);
     } catch (error) {
       console.error("❌ Error deleting action:", error);
+      throw error;
+    }
+  }
+
+  async deleteActionsForMatch(matchId: number): Promise<void> {
+    try {
+      await this.db.execute(
+        "DELETE FROM match_actions WHERE match_id = ?",
+        [matchId]
+      );
+      console.log("🗑️ All actions deleted for match:", matchId);
+    } catch (error) {
+      console.error("❌ Error deleting actions for match:", error);
       throw error;
     }
   }
