@@ -164,18 +164,6 @@ export default function MatchDetailsScreen() {
 
   // Calculate period for each action
   const totalPeriods = matchFormat === "2_halves" ? 2 : 4;
-  const sortedActions = [...actions].sort(
-    (a, b) => a.timestamp.getTime() - b.timestamp.getTime()
-  );
-  const actionsPerPeriod = Math.ceil(sortedActions.length / totalPeriods);
-
-  const getActionPeriod = (action: ActionData): number => {
-    const actionIndex = sortedActions.findIndex(
-      (a) => a.timestamp.getTime() === action.timestamp.getTime()
-    );
-    if (actionIndex === -1) return 1;
-    return Math.min(Math.floor(actionIndex / actionsPerPeriod) + 1, totalPeriods);
-  };
 
   // Filter actions for court visualization
   const filteredCourtActions = useMemo(() => {
@@ -195,10 +183,9 @@ export default function MatchDetailsScreen() {
         return false;
       }
 
-      // Period filter
+      // Period filter - Use the period_number from the action
       if (courtFilterPeriod.length > 0) {
-        const actionPeriod = getActionPeriod(action);
-        if (!courtFilterPeriod.includes(actionPeriod)) {
+        if (!courtFilterPeriod.includes(action.period_number)) {
           return false;
         }
       }

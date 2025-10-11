@@ -27,6 +27,8 @@ interface ActionSystemModalProps {
   teamA: string;
   teamB: string;
   currentTeam: "A" | "B";
+  currentPeriod: number;
+  timeElapsed: number;
 }
 
 export default function ActionSystemModal({
@@ -40,6 +42,8 @@ export default function ActionSystemModal({
   teamA,
   teamB,
   currentTeam,
+  currentPeriod,
+  timeElapsed,
 }: ActionSystemModalProps) {
   const {
     state,
@@ -81,7 +85,7 @@ export default function ActionSystemModal({
       state.playerNumber &&
       state.selectedTeam
     ) {
-      completeAction(onActionComplete);
+      completeAction(onActionComplete, currentPeriod, timeElapsed);
     }
   }, [
     state.actionType,
@@ -90,6 +94,8 @@ export default function ActionSystemModal({
     state.selectedTeam,
     completeAction,
     onActionComplete,
+    currentPeriod,
+    timeElapsed,
   ]);
 
   const handleTeamSelect = (team: "A" | "B") => {

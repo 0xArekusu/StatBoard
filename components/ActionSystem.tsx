@@ -14,6 +14,8 @@ export interface ActionData {
   player?: number;
   team: "A" | "B"; // Add team information
   timestamp: Date;
+  period_number: number; // Period number when the action occurred
+  time_in_period?: number; // Time in seconds since the beginning of the period
   position: {
     x: number;
     y: number;
@@ -89,6 +91,8 @@ export interface ActionSystemProps {
   teamA: string;
   teamB: string;
   currentTeam: "A" | "B"; // Current team for single team mode
+  currentPeriod: number; // Current period number
+  timeElapsed: number; // Time elapsed in current period
 }
 
 // Action definitions with sub-specifications
@@ -334,7 +338,7 @@ export const useActionSystem = () => {
   }, []);
 
   const completeAction = useCallback(
-    (onActionComplete: (actionData: ActionData) => void) => {
+    (onActionComplete: (actionData: ActionData) => void, currentPeriod: number, timeElapsed: number) => {
       console.log("🔍 completeAction - state.selectedTeam:", state.selectedTeam); // 🔍 DEBUG
 
       if (
@@ -350,6 +354,8 @@ export const useActionSystem = () => {
           player: state.playerNumber,
           team: state.selectedTeam,
           timestamp: new Date(),
+          period_number: currentPeriod,
+          time_in_period: timeElapsed,
           position: state.clickPosition,
           // Semantic coordinates will be calculated in BoardScreen.tsx
           semanticPosition: { xNormalized: 0, yNormalized: 0, capturedInPortrait: true },

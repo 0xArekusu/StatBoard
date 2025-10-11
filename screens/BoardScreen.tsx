@@ -1173,6 +1173,8 @@ export default function BasketballCourt() {
           player: action.player_number,
           team: action.team,
           timestamp: new Date(action.timestamp),
+          period_number: action.period_number,
+          time_in_period: action.time_in_period,
           position: { x: 0, y: 0 }, // Position recalculée plus bas
           semanticPosition: {
             xNormalized: action.semantic_x,
@@ -2088,6 +2090,8 @@ export default function BasketballCourt() {
         teamA={teamA}
         teamB={teamB}
         currentTeam={currentTeam}
+        currentPeriod={currentPeriod}
+        timeElapsed={timeElapsed}
       />
 
       {/* 🏀 Pastilles des joueurs - Équipe A */}
