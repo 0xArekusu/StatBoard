@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "StatBoard",
-    "slug": "StatBoard",
+    "name": "Coach Assistant",
+    "slug": "coach-assistant",
     "version": "1.0.0",
     "orientation": "default",
     "icon": "./assets/icon.png",
@@ -13,13 +13,15 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.coachassistant.basketball"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
+      "package": "com.coachassistant.basketball",
       "edgeToEdgeEnabled": true
     },
     "web": {

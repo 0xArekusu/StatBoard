@@ -1,9 +1,9 @@
-import { MatchRepository } from '../database/MatchRepository';
-import { ActionRepository } from '../database/ActionRepository';
-import { MatchPlayerRepository } from '../database/MatchPlayerRepository';
-import { IMatchApiService } from '../api/types/IMatchApiService';
-import { IPayloadAdapter } from '../api/types/IPayloadAdapter';
-import { MatchData } from '../api/types/MatchData';
+import { MatchRepository } from "../database/MatchRepository";
+import { ActionRepository } from "../database/ActionRepository";
+import { MatchPlayerRepository } from "../database/MatchPlayerRepository";
+import { IMatchApiService } from "../api/types/IMatchApiService";
+import { IPayloadAdapter } from "../api/types/IPayloadAdapter";
+import { MatchData } from "../api/types/MatchData";
 
 /**
  * Service for uploading matches to server and cleaning up local storage
@@ -30,7 +30,7 @@ export class MatchUploadService {
    */
   async uploadAndCleanup(matchId: number): Promise<void> {
     try {
-      console.log('🚀 Starting upload process for match:', matchId);
+      console.log("🚀 Starting upload process for match:", matchId);
 
       // 1. Load match from local database
       const match = await this.matchRepository.findById(matchId);
@@ -40,11 +40,12 @@ export class MatchUploadService {
 
       // 2. Load actions from local database
       const actions = await this.actionRepository.getActionsForMatch(matchId);
-      console.log(`📊 Loaded ${actions.length} actions for match`);
 
       // 3. Load players from local database
-      const matchPlayers = await this.matchPlayerRepository.getPlayersForMatch(matchId);
-      const players = matchPlayers.map(mp => ({
+      const matchPlayers = await this.matchPlayerRepository.getPlayersForMatch(
+        matchId
+      );
+      const players = matchPlayers.map((mp) => ({
         num: mp.player_number,
         name: mp.player_name,
         team: mp.team,
@@ -59,22 +60,22 @@ export class MatchUploadService {
       };
 
       // 5. Transform to API-specific format using adapter
-      console.log('🔄 Transforming data with payload adapter...');
+      console.log("🔄 Transforming data with payload adapter...");
       const payload = this.payloadAdapter.adapt(matchData);
 
       // 6. Upload to server
-      console.log('📤 Uploading to server...');
+      console.log("📤 Uploading to server...");
       await this.apiService.uploadMatch(payload);
 
       // 7. Clean up local storage (only on successful upload)
-      console.log('🧹 Cleaning up local storage...');
+      console.log("🧹 Cleaning up local storage...");
       await this.actionRepository.deleteActionsForMatch(matchId);
       await this.matchPlayerRepository.deletePlayersForMatch(matchId);
       await this.matchRepository.delete(matchId);
 
-      console.log('✅ Match uploaded and cleaned up successfully!');
+      console.log("✅ Match uploaded and cleaned up successfully!");
     } catch (error) {
-      console.error('❌ Upload and cleanup failed:', error);
+      console.error("❌ Upload and cleanup failed:", error);
       throw error;
     }
   }
@@ -87,9 +88,9 @@ export class MatchUploadService {
   async canUpload(matchId: number): Promise<boolean> {
     try {
       const match = await this.matchRepository.findById(matchId);
-      return match !== null && match.status === 'completed';
+      return match !== null && match.status === "completed";
     } catch (error) {
-      console.error('Error checking upload eligibility:', error);
+      console.error("Error checking upload eligibility:", error);
       return false;
     }
   }

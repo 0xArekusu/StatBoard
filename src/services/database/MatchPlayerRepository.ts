@@ -1,11 +1,11 @@
-import { DatabaseService } from './DatabaseService';
+import { DatabaseService } from "./DatabaseService";
 
 export interface MatchPlayer {
   id: number;
   match_id: number;
   player_number: number;
   player_name: string;
-  team: 'A' | 'B';
+  team: "A" | "B";
   is_starter: boolean;
   created_at: string;
 }
@@ -14,7 +14,7 @@ export interface CreateMatchPlayerData {
   match_id: number;
   player_number: number;
   player_name: string;
-  team: 'A' | 'B';
+  team: "A" | "B";
   is_starter: boolean;
 }
 
@@ -49,17 +49,17 @@ export class MatchPlayerRepository implements IMatchPlayerRepository {
       ]);
 
       const players = await this.db.query(
-        'SELECT * FROM match_players WHERE match_id = ? ORDER BY id DESC LIMIT 1',
+        "SELECT * FROM match_players WHERE match_id = ? ORDER BY id DESC LIMIT 1",
         [data.match_id]
       );
 
       if (players.length === 0) {
-        throw new Error('Failed to create match player');
+        throw new Error("Failed to create match player");
       }
 
       return players[0] as MatchPlayer;
     } catch (error) {
-      console.error('Error creating match player:', error);
+      console.error("Error creating match player:", error);
       throw error;
     }
   }
@@ -90,14 +90,14 @@ export class MatchPlayerRepository implements IMatchPlayerRepository {
 
       const matchId = players[0].match_id;
       const createdPlayers = await this.db.query(
-        'SELECT * FROM match_players WHERE match_id = ? ORDER BY team, is_starter DESC, player_number',
+        "SELECT * FROM match_players WHERE match_id = ? ORDER BY team, is_starter DESC, player_number",
         [matchId]
       );
 
       console.log(`✅ Batch of ${players.length} match players created`);
       return createdPlayers as MatchPlayer[];
     } catch (error) {
-      console.error('❌ Error creating match player batch:', error);
+      console.error("❌ Error creating match player batch:", error);
       throw error;
     }
   }
@@ -105,27 +105,25 @@ export class MatchPlayerRepository implements IMatchPlayerRepository {
   async getPlayersForMatch(matchId: number): Promise<MatchPlayer[]> {
     try {
       const players = await this.db.query(
-        'SELECT * FROM match_players WHERE match_id = ? ORDER BY team, is_starter DESC, player_number',
+        "SELECT * FROM match_players WHERE match_id = ? ORDER BY team, is_starter DESC, player_number",
         [matchId]
       );
 
-      console.log(`📊 Loaded ${players.length} players for match ${matchId}`);
       return players as MatchPlayer[];
     } catch (error) {
-      console.error('❌ Error getting players for match:', error);
+      console.error("❌ Error getting players for match:", error);
       throw error;
     }
   }
 
   async deletePlayersForMatch(matchId: number): Promise<void> {
     try {
-      await this.db.execute(
-        'DELETE FROM match_players WHERE match_id = ?',
-        [matchId]
-      );
-      console.log('🗑️ All players deleted for match:', matchId);
+      await this.db.execute("DELETE FROM match_players WHERE match_id = ?", [
+        matchId,
+      ]);
+      console.log("🗑️ All players deleted for match:", matchId);
     } catch (error) {
-      console.error('❌ Error deleting players for match:', error);
+      console.error("❌ Error deleting players for match:", error);
       throw error;
     }
   }
