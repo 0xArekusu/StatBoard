@@ -37,6 +37,7 @@ import MatchConfirmationModal from "../components/MatchConfirmationModal";
 import { MatchManager } from "../src/services/match/MatchManager";
 import { ActionQueue, ActionObserver } from "../src/services/match/ActionQueue";
 import { ActionRepository } from "../src/services/database/ActionRepository";
+import { MatchPlayerRepository } from "../src/services/database/MatchPlayerRepository";
 import { Match } from "../src/models/types";
 import { DEBUG } from "../src/config/debug";
 
@@ -933,6 +934,24 @@ export default function BasketballCourt() {
 
       const match = await matchManager.startMatch(matchData);
       setCurrentMatch(match);
+
+      // Sauvegarder les joueurs dans la base de données
+      const matchPlayerRepository = new MatchPlayerRepository();
+      const allPlayers = getAllPlayers();
+
+      const playersToSave = allPlayers.map(player => ({
+        match_id: match.id,
+        player_number: player.num,
+        player_name: player.name,
+        team: player.team,
+        is_starter: !player.isSubstitute,
+      }));
+
+      if (playersToSave.length > 0) {
+        await matchPlayerRepository.createBatch(playersToSave);
+        console.log(`✅ Saved ${playersToSave.length} players for match ${match.id}`);
+      }
+
       setPreGameMode(false);
 
       // Réinitialiser les scores au début d'un nouveau match

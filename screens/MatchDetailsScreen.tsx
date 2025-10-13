@@ -54,7 +54,7 @@ export default function MatchDetailsScreen() {
 
   // Court filters
   const [courtFilterTeam, setCourtFilterTeam] = useState<"A" | "B" | "both">(teamMode);
-  const [courtFilterPlayers, setCourtFilterPlayers] = useState<number[]>([]); // Player numbers (num)
+  const [courtFilterPlayers, setCourtFilterPlayers] = useState<string[]>([]); // Player identifiers "team-num" (e.g., "A-5", "B-7")
   const [courtFilterActionType, setCourtFilterActionType] = useState<string[]>([]); // ["tir", "rebond", "faute"]
   const [courtFilterPeriod, setCourtFilterPeriod] = useState<number[]>([]); // [1, 2, 3, 4] or [1, 2]
 
@@ -173,9 +173,12 @@ export default function MatchDetailsScreen() {
         return false;
       }
 
-      // Player filter
-      if (courtFilterPlayers.length > 0 && !courtFilterPlayers.includes(action.player!)) {
-        return false;
+      // Player filter - Check both team and player number
+      if (courtFilterPlayers.length > 0) {
+        const playerIdentifier = `${action.team}-${action.player}`;
+        if (!courtFilterPlayers.includes(playerIdentifier)) {
+          return false;
+        }
       }
 
       // Action type filter
@@ -221,11 +224,12 @@ export default function MatchDetailsScreen() {
   }));
 
   // Toggle helpers
-  const togglePlayerFilter = (playerNum: number) => {
+  const togglePlayerFilter = (playerNum: number, team: "A" | "B") => {
+    const playerIdentifier = `${team}-${playerNum}`;
     setCourtFilterPlayers((prev) =>
-      prev.includes(playerNum)
-        ? prev.filter((num) => num !== playerNum)
-        : [...prev, playerNum]
+      prev.includes(playerIdentifier)
+        ? prev.filter((id) => id !== playerIdentifier)
+        : [...prev, playerIdentifier]
     );
   };
 
@@ -449,25 +453,28 @@ export default function MatchDetailsScreen() {
                     {players
                       .filter((p) => p.team === "A")
                       .sort((a, b) => a.num - b.num)
-                      .map((player) => (
-                        <TouchableOpacity
-                          key={player.id}
-                          style={[
-                            styles.filterCard,
-                            courtFilterPlayers.includes(player.num) && styles.filterCardActive,
-                          ]}
-                          onPress={() => togglePlayerFilter(player.num)}
-                        >
-                          <Text
+                      .map((player) => {
+                        const playerIdentifier = `A-${player.num}`;
+                        return (
+                          <TouchableOpacity
+                            key={player.id}
                             style={[
-                              styles.filterCardText,
-                              courtFilterPlayers.includes(player.num) && styles.filterCardTextActive,
+                              styles.filterCard,
+                              courtFilterPlayers.includes(playerIdentifier) && styles.filterCardActive,
                             ]}
+                            onPress={() => togglePlayerFilter(player.num, "A")}
                           >
-                            #{player.num} {player.name}
-                          </Text>
-                        </TouchableOpacity>
-                      ))}
+                            <Text
+                              style={[
+                                styles.filterCardText,
+                                courtFilterPlayers.includes(playerIdentifier) && styles.filterCardTextActive,
+                              ]}
+                            >
+                              #{player.num} {player.name}
+                            </Text>
+                          </TouchableOpacity>
+                        );
+                      })}
                   </ScrollView>
                 </>
               )}
@@ -484,25 +491,28 @@ export default function MatchDetailsScreen() {
                     {players
                       .filter((p) => p.team === "B")
                       .sort((a, b) => a.num - b.num)
-                      .map((player) => (
-                        <TouchableOpacity
-                          key={player.id}
-                          style={[
-                            styles.filterCard,
-                            courtFilterPlayers.includes(player.num) && styles.filterCardActive,
-                          ]}
-                          onPress={() => togglePlayerFilter(player.num)}
-                        >
-                          <Text
+                      .map((player) => {
+                        const playerIdentifier = `B-${player.num}`;
+                        return (
+                          <TouchableOpacity
+                            key={player.id}
                             style={[
-                              styles.filterCardText,
-                              courtFilterPlayers.includes(player.num) && styles.filterCardTextActive,
+                              styles.filterCard,
+                              courtFilterPlayers.includes(playerIdentifier) && styles.filterCardActive,
                             ]}
+                            onPress={() => togglePlayerFilter(player.num, "B")}
                           >
-                            #{player.num} {player.name}
-                          </Text>
-                        </TouchableOpacity>
-                      ))}
+                            <Text
+                              style={[
+                                styles.filterCardText,
+                                courtFilterPlayers.includes(playerIdentifier) && styles.filterCardTextActive,
+                              ]}
+                            >
+                              #{player.num} {player.name}
+                            </Text>
+                          </TouchableOpacity>
+                        );
+                      })}
                   </ScrollView>
                 </>
               )}

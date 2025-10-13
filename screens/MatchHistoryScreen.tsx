@@ -11,6 +11,7 @@ import {
 import { useNavigation } from "@react-navigation/native";
 import { MatchRepository } from "../src/services/database/MatchRepository";
 import { ActionRepository } from "../src/services/database/ActionRepository";
+import { MatchPlayerRepository } from "../src/services/database/MatchPlayerRepository";
 import { Match } from "../src/models/types";
 import { ActionData } from "../components/ActionSystem";
 
@@ -98,9 +99,11 @@ export default function MatchHistoryScreen() {
   const handleMatchPress = async (match: MatchWithDetails) => {
     try {
       const actionRepository = new ActionRepository();
+      const matchPlayerRepository = new MatchPlayerRepository();
 
       // Load actions and players for this match
       const actions = await actionRepository.getActionsForMatch(match.id);
+      const matchPlayers = await matchPlayerRepository.getPlayersForMatch(match.id);
 
       // Convert actions to ActionData format
       const actionDataList: ActionData[] = actions.map((action) => ({
@@ -119,6 +122,15 @@ export default function MatchHistoryScreen() {
         },
       }));
 
+      // Convert match players to expected format
+      const players = matchPlayers.map(mp => ({
+        id: mp.id,
+        num: mp.player_number,
+        name: mp.player_name,
+        team: mp.team,
+        isSubstitute: mp.is_starter === 0,
+      }));
+
       // Navigate to MatchSummary
       navigation.navigate(
         "MatchSummary" as never,
@@ -131,7 +143,7 @@ export default function MatchHistoryScreen() {
           matchFormat: match.match_format,
           periodDuration: match.period_duration,
           teamMode: match.team_mode,
-          players: [], // TODO: Load players from DB if stored
+          players,
           fromHistory: true, // Indicate this is from history (read-only mode)
         } as never
       );
