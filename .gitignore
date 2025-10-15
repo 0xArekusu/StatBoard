@@ -38,3 +38,5 @@ yarn-error.*
 
 # claude code
 *claude
+
+*.env

@@ -9,9 +9,12 @@
     "web": "expo start --web"
   },
   "dependencies": {
+    "@babel/runtime": "^7.28.4",
+    "@react-native-async-storage/async-storage": "^2.2.0",
     "@react-native-picker/picker": "^2.11.1",
     "@react-navigation/native": "^6.1.18",
     "@react-navigation/native-stack": "^6.11.0",
+    "@supabase/supabase-js": "^2.75.0",
     "expo": "~53.0.8",
     "expo-print": "~14.1.4",
     "expo-screen-orientation": "~8.1.6",
@@ -27,6 +30,7 @@
     "react-native-safe-area-context": "^5.4.1",
     "react-native-screens": "~4.10.0",
     "react-native-svg": "^15.11.2",
+    "react-native-url-polyfill": "^3.0.0",
     "react-native-vector-icons": "^10.2.0"
   },
   "devDependencies": {
