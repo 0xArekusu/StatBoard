@@ -8,6 +8,7 @@ type RootStackParamList = {
   MainMenu: undefined;
   Board: undefined;
   MatchHistory: undefined;
+  Login: undefined;
 };
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, "MainMenu">;
@@ -30,10 +31,21 @@ export default function MainMenuScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.userEmail}>{user?.email}</Text>
-        <TouchableOpacity onPress={handleSignOut} style={styles.logoutButton}>
-          <Text style={styles.logoutText}>Déconnexion</Text>
-        </TouchableOpacity>
+        {user ? (
+          <>
+            <Text style={styles.userEmail}>{user.email}</Text>
+            <TouchableOpacity onPress={handleSignOut} style={styles.logoutButton}>
+              <Text style={styles.logoutText}>Déconnexion</Text>
+            </TouchableOpacity>
+          </>
+        ) : (
+          <TouchableOpacity
+            onPress={() => navigation.navigate("Login")}
+            style={styles.loginButton}
+          >
+            <Text style={styles.loginText}>Se connecter</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       <Text style={styles.title}>🏀 StatBoard</Text>
@@ -51,6 +63,12 @@ export default function MainMenuScreen() {
       >
         <Text style={styles.buttonText}>📊 Historique des matchs</Text>
       </TouchableOpacity>
+
+      {!user && (
+        <Text style={styles.guestNote}>
+          Mode invité : vos données sont sauvegardées localement
+        </Text>
+      )}
 
       <StatusBar style="auto" />
     </View>
@@ -86,6 +104,17 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600",
   },
+  loginButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    backgroundColor: "#007AFF",
+    borderRadius: 8,
+  },
+  loginText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
   title: {
     fontSize: 36,
     fontWeight: "bold",
@@ -108,5 +137,13 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 18,
     fontWeight: "bold",
+  },
+  guestNote: {
+    marginTop: 30,
+    fontSize: 12,
+    color: "#999",
+    fontStyle: "italic",
+    textAlign: "center",
+    paddingHorizontal: 40,
   },
 });

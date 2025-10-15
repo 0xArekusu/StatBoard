@@ -46,7 +46,7 @@ function MainStack() {
 }
 
 function Navigation() {
-  const { user, loading } = useAuth();
+  const { loading } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -62,7 +62,20 @@ function Navigation() {
 
   return (
     <NavigationContainer>
-      {user ? <MainStack /> : <AuthStack />}
+      <Stack.Navigator
+        initialRouteName="MainMenu"
+        screenOptions={{
+          headerShown: false,
+        }}
+      >
+        <Stack.Screen name="MainMenu" component={MainMenuScreen} />
+        <Stack.Screen name="Board" component={BoardScreen} />
+        <Stack.Screen name="MatchHistory" component={MatchHistoryScreen} />
+        <Stack.Screen name="MatchSummary" component={MatchSummaryScreen} />
+        <Stack.Screen name="MatchDetails" component={MatchDetailsScreen} />
+        <Stack.Screen name="Login" component={LoginScreen} />
+        <Stack.Screen name="SignUp" component={SignUpScreen} />
+      </Stack.Navigator>
     </NavigationContainer>
   );
 }
