@@ -14,37 +14,6 @@ import { AuthProvider, useAuth } from "./src/contexts/AuthContext";
 
 const Stack = createNativeStackNavigator();
 
-function AuthStack() {
-  return (
-    <Stack.Navigator
-      screenOptions={{
-        headerShown: false,
-      }}
-    >
-      <Stack.Screen name="Login" component={LoginScreen} />
-      <Stack.Screen name="SignUp" component={SignUpScreen} />
-    </Stack.Navigator>
-  );
-}
-
-function MainStack() {
-  return (
-    <Stack.Navigator
-      initialRouteName="MainMenu"
-      screenOptions={{
-        headerShown: false,
-      }}
-    >
-      <Stack.Screen name="MainMenu" component={MainMenuScreen} />
-      <Stack.Screen name="Board" component={BoardScreen} />
-      <Stack.Screen name="MatchHistory" component={MatchHistoryScreen} />
-      <Stack.Screen name="MatchSummary" component={MatchSummaryScreen} />
-      <Stack.Screen name="MatchDetails" component={MatchDetailsScreen} />
-      {/* <Stack.Screen name="DebugCourtClick" component={DebugCourtClick} /> */}
-    </Stack.Navigator>
-  );
-}
-
 function Navigation() {
   const { loading } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
@@ -53,7 +22,7 @@ function Navigation() {
     // Simuler un temps de chargement
     setTimeout(() => {
       setIsLoading(false);
-    }, 2000);
+    }, 500);
   }, []);
 
   if (isLoading || loading) {
