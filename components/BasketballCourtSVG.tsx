@@ -1,5 +1,5 @@
 import React from "react";
-import Svg, { Path, G, ClipPath, Defs, Circle } from "react-native-svg";
+import Svg, { Path, G, ClipPath, Defs, Circle, Image } from "react-native-svg";
 
 export interface CourtMarker {
   id: string;
@@ -21,6 +21,7 @@ interface BasketballCourtSVGProps {
   ) => void;
   backgroundColor?: string;
   markers?: CourtMarker[];
+  logoUri?: string | null;
 }
 
 const DEBUG = true; // Set to true to enable dimension logs
@@ -31,6 +32,7 @@ export default function BasketballCourtSVG({
   onCourtPress,
   backgroundColor = "#fccb54",
   markers = [],
+  logoUri = null,
 }: BasketballCourtSVGProps) {
   // Calculate court elements proportionally
   const isPortrait = height > width;
@@ -202,6 +204,64 @@ export default function BasketballCourtSVG({
         </G>
       );
     });
+  };
+
+  /**
+   * Render center court logo if provided
+   * Center coordinates: (307, 573) in portrait (231+76, 497+76 from transform)
+   * Center circle radius: 76 (152/2 from clipPath size)
+   */
+  const renderCenterLogo = () => {
+    if (!logoUri) return null;
+
+    const radius = 76; // Match the filled circle radius (152/2)
+    const logoSize = radius * 2;
+
+    if (isPortrait) {
+      // Portrait mode: center at (231+76, 497+76) = (307, 573)
+      const centerX = 307;
+      const centerY = 573;
+      return (
+        <G>
+          <Defs>
+            <ClipPath id="logoClipPortrait">
+              <Circle cx={centerX} cy={centerY} r={radius} />
+            </ClipPath>
+          </Defs>
+          <Image
+            href={logoUri}
+            x={centerX - logoSize / 2}
+            y={centerY - logoSize / 2}
+            width={logoSize}
+            height={logoSize}
+            preserveAspectRatio="xMidYMid slice"
+            clipPath="url(#logoClipPortrait)"
+          />
+        </G>
+      );
+    } else {
+      // Landscape mode: center at (497+76, 231+76) = (573, 307)
+      const centerX = 573;
+      const centerY = 307;
+      return (
+        <G>
+          <Defs>
+            <ClipPath id="logoClipLandscape">
+              <Circle cx={centerX} cy={centerY} r={radius} />
+            </ClipPath>
+          </Defs>
+          <Image
+            href={logoUri}
+            x={centerX - logoSize / 2}
+            y={centerY - logoSize / 2}
+            width={logoSize}
+            height={logoSize}
+            preserveAspectRatio="xMidYMid slice"
+            clipPath="url(#logoClipLandscape)"
+          />
+        </G>
+      );
+    }
   };
 
   return isPortrait ? (
@@ -548,6 +608,9 @@ export default function BasketballCourtSVG({
 
       {/* Render markers on top of court */}
       {renderMarkers()}
+
+      {/* Render center court logo if provided */}
+      {renderCenterLogo()}
     </Svg>
   ) : (
     <Svg
@@ -893,6 +956,9 @@ export default function BasketballCourtSVG({
 
       {/* Render markers on top of court */}
       {renderMarkers()}
+
+      {/* Render center court logo if provided */}
+      {renderCenterLogo()}
     </Svg>
   );
 }

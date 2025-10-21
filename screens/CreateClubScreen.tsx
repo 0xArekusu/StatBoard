@@ -267,6 +267,7 @@ export default function CreateClubScreen() {
                 width={320}
                 height={180}
                 backgroundColor="#1a472a"
+                logoUri={logoUri}
               />
             </View>
             {clubName && (
