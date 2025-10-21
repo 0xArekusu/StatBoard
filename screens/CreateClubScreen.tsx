@@ -22,27 +22,49 @@ import { LinearGradient } from "expo-linear-gradient";
 import * as ImagePicker from "expo-image-picker";
 
 const PRESET_COLORS = [
-  "#FF6B35",
-  "#4CAF50",
-  "#2196F3",
-  "#9C27B0",
-  "#FFC107",
-  "#E91E63",
-  "#00BCD4",
-  "#FF5722",
-  "#607D8B",
-  "#8BC34A",
+  "#000000", // Noir
+  "#FFFFFF", // Blanc
+  "#FF0000", // Rouge
+  "#0000FF", // Bleu
+  "#FFFF00", // Jaune
+  "#00FF00", // Vert
+  "#FFA500", // Orange
+  "#800080", // Violet
+  "#808080", // Gris
+  "#FFC0CB", // Rose
+];
+
+const COURT_BACKGROUND_COLORS = [
+  "#1a472a", // Vert foncé (défaut)
+  "#8B4513", // Marron (parquet)
+  "#D2691E", // Marron clair (parquet clair)
+  "#2C3E50", // Bleu foncé
+  "#1C1C1C", // Noir grisâtre
+  "#4A90E2", // Bleu
+];
+
+const COURT_LINE_COLORS = [
+  "#FFFFFF", // Blanc (défaut)
+  "#000000", // Noir
+  "#FFD700", // Or
+  "#FF0000", // Rouge
+  "#00FF00", // Vert fluo
+  "#FFFF00", // Jaune
 ];
 
 export default function CreateClubScreen() {
   const navigation = useNavigation();
   const [clubName, setClubName] = useState("");
   const [sigle, setSigle] = useState("");
-  const [primaryColor, setPrimaryColor] = useState("#FF6B35");
-  const [secondaryColor, setSecondaryColor] = useState("#4CAF50");
+  const [primaryColor, setPrimaryColor] = useState("#FF0000");
+  const [secondaryColor, setSecondaryColor] = useState("#0000FF");
+  const [courtBackgroundColor, setCourtBackgroundColor] = useState("#1a472a");
+  const [courtLineColor, setCourtLineColor] = useState("#FFFFFF");
   const [logoUri, setLogoUri] = useState<string | null>(null);
   const [showPrimaryPicker, setShowPrimaryPicker] = useState(false);
   const [showSecondaryPicker, setShowSecondaryPicker] = useState(false);
+  const [showCourtBgPicker, setShowCourtBgPicker] = useState(false);
+  const [showCourtLinePicker, setShowCourtLinePicker] = useState(false);
   const [isCustomPrimary, setIsCustomPrimary] = useState(false);
   const [isCustomSecondary, setIsCustomSecondary] = useState(false);
 
@@ -54,6 +76,14 @@ export default function CreateClubScreen() {
   const onSecondaryColorChange = useCallback((colors: ColorFormatsObject) => {
     setSecondaryColor(colors.hex);
     setIsCustomSecondary(true);
+  }, []);
+
+  const onCourtBgColorChange = useCallback((colors: ColorFormatsObject) => {
+    setCourtBackgroundColor(colors.hex);
+  }, []);
+
+  const onCourtLineColorChange = useCallback((colors: ColorFormatsObject) => {
+    setCourtLineColor(colors.hex);
   }, []);
 
   const handlePickImage = async () => {
@@ -261,20 +291,40 @@ export default function CreateClubScreen() {
         {/* Prévisualisation */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Aperçu du terrain</Text>
-          <View style={styles.courtPreview}>
-            <View style={styles.courtContainer}>
-              <BasketballCourtSVG
-                width={320}
-                height={180}
-                backgroundColor="#1a472a"
-                logoUri={logoUri}
-              />
+          <View style={styles.courtPreviewContainer}>
+            {/* Color pickers on the left */}
+            <View style={styles.courtColorPickers}>
+              <TouchableOpacity
+                style={[styles.courtColorButton, { backgroundColor: courtBackgroundColor }]}
+                onPress={() => setShowCourtBgPicker(true)}
+              >
+                <Ionicons name="color-palette" size={20} color="#fff" />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.courtColorButton, { backgroundColor: courtLineColor }]}
+                onPress={() => setShowCourtLinePicker(true)}
+              >
+                <Ionicons name="brush" size={20} color={courtLineColor === "#FFFFFF" ? "#000" : "#fff"} />
+              </TouchableOpacity>
             </View>
-            {clubName && (
-              <Text style={styles.clubNamePreview}>
-                {clubName} {sigle && `(${sigle})`}
-              </Text>
-            )}
+
+            {/* Court preview */}
+            <View style={styles.courtPreview}>
+              <View style={styles.courtContainer}>
+                <BasketballCourtSVG
+                  width={320}
+                  height={180}
+                  backgroundColor={courtBackgroundColor}
+                  lineColor={courtLineColor}
+                  logoUri={logoUri}
+                />
+              </View>
+              {clubName && (
+                <Text style={styles.clubNamePreview}>
+                  {clubName} {sigle && `(${sigle})`}
+                </Text>
+              )}
+            </View>
           </View>
         </View>
 
@@ -333,6 +383,60 @@ export default function CreateClubScreen() {
             <TouchableOpacity
               style={styles.modalConfirmButton}
               onPress={() => setShowSecondaryPicker(false)}
+            >
+              <Text style={styles.modalConfirmText}>Confirmer</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Color Picker Modal - Court Background */}
+      <Modal visible={showCourtBgPicker} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Couleur du fond du terrain</Text>
+              <TouchableOpacity onPress={() => setShowCourtBgPicker(false)}>
+                <Ionicons name="close" size={28} color="#333" />
+              </TouchableOpacity>
+            </View>
+            <ColorPicker
+              value={courtBackgroundColor}
+              onCompleteJS={onCourtBgColorChange}
+            >
+              <Panel1 style={styles.colorPanel} />
+              <HueSlider style={styles.hueSlider} />
+            </ColorPicker>
+            <TouchableOpacity
+              style={styles.modalConfirmButton}
+              onPress={() => setShowCourtBgPicker(false)}
+            >
+              <Text style={styles.modalConfirmText}>Confirmer</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Color Picker Modal - Court Lines */}
+      <Modal visible={showCourtLinePicker} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Couleur des lignes du terrain</Text>
+              <TouchableOpacity onPress={() => setShowCourtLinePicker(false)}>
+                <Ionicons name="close" size={28} color="#333" />
+              </TouchableOpacity>
+            </View>
+            <ColorPicker
+              value={courtLineColor}
+              onCompleteJS={onCourtLineColorChange}
+            >
+              <Panel1 style={styles.colorPanel} />
+              <HueSlider style={styles.hueSlider} />
+            </ColorPicker>
+            <TouchableOpacity
+              style={styles.modalConfirmButton}
+              onPress={() => setShowCourtLinePicker(false)}
             >
               <Text style={styles.modalConfirmText}>Confirmer</Text>
             </TouchableOpacity>
@@ -463,7 +567,26 @@ const styles = StyleSheet.create({
     width: "100%",
     height: "100%",
   },
+  courtPreviewContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 15,
+  },
+  courtColorPickers: {
+    flexDirection: "column",
+    gap: 10,
+  },
+  courtColorButton: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 2,
+    borderColor: "#ddd",
+  },
   courtPreview: {
+    flex: 1,
     alignItems: "center",
     padding: 20,
     backgroundColor: "#f8f8f8",
