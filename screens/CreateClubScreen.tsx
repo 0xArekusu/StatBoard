@@ -16,9 +16,10 @@ import BasketballCourtSVG from "../components/BasketballCourtSVG";
 import ColorPicker, {
   Panel1,
   HueSlider,
-  returnedResults,
+  type ColorFormatsObject,
 } from "reanimated-color-picker";
 import { LinearGradient } from "expo-linear-gradient";
+import * as ImagePicker from "expo-image-picker";
 
 const PRESET_COLORS = [
   "#FF6B35",
@@ -45,19 +46,36 @@ export default function CreateClubScreen() {
   const [isCustomPrimary, setIsCustomPrimary] = useState(false);
   const [isCustomSecondary, setIsCustomSecondary] = useState(false);
 
-  const onPrimaryColorChange = useCallback((colors: returnedResults) => {
+  const onPrimaryColorChange = useCallback((colors: ColorFormatsObject) => {
     setPrimaryColor(colors.hex);
     setIsCustomPrimary(true);
   }, []);
 
-  const onSecondaryColorChange = useCallback((colors: returnedResults) => {
+  const onSecondaryColorChange = useCallback((colors: ColorFormatsObject) => {
     setSecondaryColor(colors.hex);
     setIsCustomSecondary(true);
   }, []);
 
   const handlePickImage = async () => {
-    Alert.alert("Logo", "Fonctionnalité bientôt disponible");
-    // TODO: Implémenter expo-image-picker
+    // Request media library permission
+    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+    if (permissionResult.granted === false) {
+      Alert.alert("Permission requise", "Vous devez autoriser l'accès à vos photos pour importer un logo.");
+      return;
+    }
+
+    // Open image picker
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: "images",
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets && result.assets.length > 0) {
+      setLogoUri(result.assets[0].uri);
+    }
   };
 
   const handleCreateClub = () => {
