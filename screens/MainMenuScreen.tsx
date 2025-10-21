@@ -3,12 +3,18 @@ import { StatusBar } from "expo-status-bar";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useAuth } from "../src/contexts/AuthContext";
+import { Ionicons } from "@expo/vector-icons";
+import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
+import { useState } from "react";
+import ClubChoiceModal from "../components/ClubChoiceModal";
 
 type RootStackParamList = {
   MainMenu: undefined;
   Board: undefined;
   MatchHistory: undefined;
   Login: undefined;
+  CreateClub: undefined;
+  JoinClub: undefined;
 };
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, "MainMenu">;
@@ -16,16 +22,13 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList, "MainMenu">;
 export default function MainMenuScreen() {
   const navigation = useNavigation<NavigationProp>();
   const { signOut, user } = useAuth();
+  const [clubModalVisible, setClubModalVisible] = useState(false);
 
   const handleSignOut = () => {
-    Alert.alert(
-      "Déconnexion",
-      "Voulez-vous vraiment vous déconnecter ?",
-      [
-        { text: "Annuler", style: "cancel" },
-        { text: "Déconnexion", onPress: () => signOut(), style: "destructive" },
-      ]
-    );
+    Alert.alert("Déconnexion", "Voulez-vous vraiment vous déconnecter ?", [
+      { text: "Annuler", style: "cancel" },
+      { text: "Déconnexion", onPress: () => signOut(), style: "destructive" },
+    ]);
   };
 
   return (
@@ -34,7 +37,10 @@ export default function MainMenuScreen() {
         {user ? (
           <>
             <Text style={styles.userEmail}>{user.email}</Text>
-            <TouchableOpacity onPress={handleSignOut} style={styles.logoutButton}>
+            <TouchableOpacity
+              onPress={handleSignOut}
+              style={styles.logoutButton}
+            >
               <Text style={styles.logoutText}>Déconnexion</Text>
             </TouchableOpacity>
           </>
@@ -54,14 +60,28 @@ export default function MainMenuScreen() {
         style={styles.button}
         onPress={() => navigation.navigate("Board")}
       >
-        <Text style={styles.buttonText}>🎯 Nouveau match</Text>
+        <Ionicons name="add-circle-outline" size={24} color="#fff" />
+        <Text style={styles.buttonText}>Nouveau match</Text>
       </TouchableOpacity>
 
       <TouchableOpacity
         style={[styles.button, styles.secondaryButton]}
         onPress={() => navigation.navigate("MatchHistory")}
       >
-        <Text style={styles.buttonText}>📊 Historique des matchs</Text>
+        <MaterialCommunityIcons
+          name="clipboard-list-outline"
+          size={24}
+          color="#fff"
+        />
+        <Text style={styles.buttonText}>Historique des matchs</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={[styles.button, styles.clubButton]}
+        onPress={() => setClubModalVisible(true)}
+      >
+        <Ionicons name="people-outline" size={24} color="#fff" />
+        <Text style={styles.buttonText}>Créer/Rejoindre un club</Text>
       </TouchableOpacity>
 
       {!user && (
@@ -69,6 +89,19 @@ export default function MainMenuScreen() {
           Mode invité : vos données sont sauvegardées localement
         </Text>
       )}
+
+      <ClubChoiceModal
+        visible={clubModalVisible}
+        onClose={() => setClubModalVisible(false)}
+        onCreatePress={() => {
+          setClubModalVisible(false);
+          navigation.navigate("CreateClub");
+        }}
+        onJoinPress={() => {
+          setClubModalVisible(false);
+          navigation.navigate("JoinClub");
+        }}
+      />
 
       <StatusBar style="auto" />
     </View>
@@ -129,9 +162,15 @@ const styles = StyleSheet.create({
     marginVertical: 10,
     width: "80%",
     alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 10,
   },
   secondaryButton: {
     backgroundColor: "#4CAF50",
+  },
+  clubButton: {
+    backgroundColor: "#9C27B0",
   },
   buttonText: {
     color: "#fff",

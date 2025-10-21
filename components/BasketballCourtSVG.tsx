@@ -104,7 +104,12 @@ export default function BasketballCourtSVG({
     }
 
     // Check if click is outside SVG bounds
-    if (adjustedX < 0 || adjustedX > actualWidth || adjustedY < 0 || adjustedY > actualHeight) {
+    if (
+      adjustedX < 0 ||
+      adjustedX > actualWidth ||
+      adjustedY < 0 ||
+      adjustedY > actualHeight
+    ) {
       if (DEBUG) {
         console.log("❌ Click outside SVG bounds - ignoring");
       }
@@ -204,7 +209,7 @@ export default function BasketballCourtSVG({
       width="100%"
       viewBox="0 0 615.75 1146.749971"
       height="100%"
-      onPress={handlePress}
+      onPress={onCourtPress ? handlePress : undefined}
     >
       <Defs>
         <ClipPath id="a">
@@ -549,7 +554,7 @@ export default function BasketballCourtSVG({
       viewBox="0 0 1146.749971 615.75"
       width="100%"
       height="100%"
-      onPress={handlePress}
+      onPress={onCourtPress ? handlePress : undefined}
     >
       <Defs>
         <ClipPath id="a">

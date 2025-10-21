@@ -9,6 +9,8 @@ import MatchHistoryScreen from "./screens/MatchHistoryScreen";
 import SplashScreen from "./screens/SplashScreen";
 import LoginScreen from "./screens/LoginScreen";
 import SignUpScreen from "./screens/SignUpScreen";
+import CreateClubScreen from "./screens/CreateClubScreen";
+import JoinClubScreen from "./screens/JoinClubScreen";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { AuthProvider, useAuth } from "./src/contexts/AuthContext";
 
@@ -44,6 +46,8 @@ function Navigation() {
         <Stack.Screen name="MatchDetails" component={MatchDetailsScreen} />
         <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="SignUp" component={SignUpScreen} />
+        <Stack.Screen name="CreateClub" component={CreateClubScreen} />
+        <Stack.Screen name="JoinClub" component={JoinClubScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );
