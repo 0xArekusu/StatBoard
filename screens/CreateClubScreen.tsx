@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -8,10 +8,17 @@ import {
   ScrollView,
   Alert,
   Image,
+  Modal,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import BasketballCourtSVG from "../components/BasketballCourtSVG";
+import ColorPicker, {
+  Panel1,
+  HueSlider,
+  returnedResults,
+} from "reanimated-color-picker";
+import { LinearGradient } from "expo-linear-gradient";
 
 const PRESET_COLORS = [
   "#FF6B35",
@@ -33,6 +40,20 @@ export default function CreateClubScreen() {
   const [primaryColor, setPrimaryColor] = useState("#FF6B35");
   const [secondaryColor, setSecondaryColor] = useState("#4CAF50");
   const [logoUri, setLogoUri] = useState<string | null>(null);
+  const [showPrimaryPicker, setShowPrimaryPicker] = useState(false);
+  const [showSecondaryPicker, setShowSecondaryPicker] = useState(false);
+  const [isCustomPrimary, setIsCustomPrimary] = useState(false);
+  const [isCustomSecondary, setIsCustomSecondary] = useState(false);
+
+  const onPrimaryColorChange = useCallback((colors: returnedResults) => {
+    setPrimaryColor(colors.hex);
+    setIsCustomPrimary(true);
+  }, []);
+
+  const onSecondaryColorChange = useCallback((colors: returnedResults) => {
+    setSecondaryColor(colors.hex);
+    setIsCustomSecondary(true);
+  }, []);
 
   const handlePickImage = async () => {
     Alert.alert("Logo", "Fonctionnalité bientôt disponible");
@@ -114,13 +135,43 @@ export default function CreateClubScreen() {
                   { backgroundColor: color },
                   primaryColor === color && styles.colorOptionSelected,
                 ]}
-                onPress={() => setPrimaryColor(color)}
+                onPress={() => {
+                  setPrimaryColor(color);
+                  setIsCustomPrimary(false);
+                }}
               >
                 {primaryColor === color && (
                   <Ionicons name="checkmark" size={20} color="#fff" />
                 )}
               </TouchableOpacity>
             ))}
+            <TouchableOpacity
+              style={styles.gradientContainer}
+              onPress={() => setShowPrimaryPicker(true)}
+            >
+              <View style={[styles.gradientBorder, isCustomPrimary && styles.gradientBorderSelected]}>
+                <LinearGradient
+                  colors={[
+                    "#FF0000",
+                    "#FFFF00",
+                    "#00FF00",
+                    "#00FFFF",
+                    "#0000FF",
+                    "#FF00FF",
+                    "#FF0000",
+                  ]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.gradientButton}
+                >
+                  {isCustomPrimary ? (
+                    <Ionicons name="checkmark" size={20} color="#fff" />
+                  ) : (
+                    <Ionicons name="color-palette" size={24} color="#fff" />
+                  )}
+                </LinearGradient>
+              </View>
+            </TouchableOpacity>
           </View>
 
           <Text style={styles.label}>Couleur secondaire</Text>
@@ -133,13 +184,43 @@ export default function CreateClubScreen() {
                   { backgroundColor: color },
                   secondaryColor === color && styles.colorOptionSelected,
                 ]}
-                onPress={() => setSecondaryColor(color)}
+                onPress={() => {
+                  setSecondaryColor(color);
+                  setIsCustomSecondary(false);
+                }}
               >
                 {secondaryColor === color && (
                   <Ionicons name="checkmark" size={20} color="#fff" />
                 )}
               </TouchableOpacity>
             ))}
+            <TouchableOpacity
+              style={styles.gradientContainer}
+              onPress={() => setShowSecondaryPicker(true)}
+            >
+              <View style={[styles.gradientBorder, isCustomSecondary && styles.gradientBorderSelected]}>
+                <LinearGradient
+                  colors={[
+                    "#FF0000",
+                    "#FFFF00",
+                    "#00FF00",
+                    "#00FFFF",
+                    "#0000FF",
+                    "#FF00FF",
+                    "#FF0000",
+                  ]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.gradientButton}
+                >
+                  {isCustomSecondary ? (
+                    <Ionicons name="checkmark" size={20} color="#fff" />
+                  ) : (
+                    <Ionicons name="color-palette" size={24} color="#fff" />
+                  )}
+                </LinearGradient>
+              </View>
+            </TouchableOpacity>
           </View>
 
           <Text style={styles.label}>Logo du club</Text>
@@ -185,6 +266,60 @@ export default function CreateClubScreen() {
           <Text style={styles.createButtonText}>Créer mon club</Text>
         </TouchableOpacity>
       </ScrollView>
+
+      {/* Color Picker Modal - Primary */}
+      <Modal visible={showPrimaryPicker} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Couleur principale</Text>
+              <TouchableOpacity onPress={() => setShowPrimaryPicker(false)}>
+                <Ionicons name="close" size={28} color="#333" />
+              </TouchableOpacity>
+            </View>
+            <ColorPicker
+              value={primaryColor}
+              onCompleteJS={onPrimaryColorChange}
+            >
+              <Panel1 style={styles.colorPanel} />
+              <HueSlider style={styles.hueSlider} />
+            </ColorPicker>
+            <TouchableOpacity
+              style={styles.modalConfirmButton}
+              onPress={() => setShowPrimaryPicker(false)}
+            >
+              <Text style={styles.modalConfirmText}>Confirmer</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Color Picker Modal - Secondary */}
+      <Modal visible={showSecondaryPicker} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Couleur secondaire</Text>
+              <TouchableOpacity onPress={() => setShowSecondaryPicker(false)}>
+                <Ionicons name="close" size={28} color="#333" />
+              </TouchableOpacity>
+            </View>
+            <ColorPicker
+              value={secondaryColor}
+              onCompleteJS={onSecondaryColorChange}
+            >
+              <Panel1 style={styles.colorPanel} />
+              <HueSlider style={styles.hueSlider} />
+            </ColorPicker>
+            <TouchableOpacity
+              style={styles.modalConfirmButton}
+              onPress={() => setShowSecondaryPicker(false)}
+            >
+              <Text style={styles.modalConfirmText}>Confirmer</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -254,6 +389,29 @@ const styles = StyleSheet.create({
   colorOptionSelected: {
     borderColor: "#333",
   },
+  gradientContainer: {
+    width: 50,
+    height: 50,
+  },
+  gradientBorder: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    borderWidth: 3,
+    borderColor: "transparent",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  gradientBorderSelected: {
+    borderColor: "#333",
+  },
+  gradientButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: "center",
+    alignItems: "center",
+  },
   logoSection: {
     flexDirection: "row",
     alignItems: "center",
@@ -313,5 +471,51 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 18,
     fontWeight: "bold",
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "flex-end",
+  },
+  modalContent: {
+    backgroundColor: "#fff",
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 20,
+    paddingBottom: 40,
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 20,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#333",
+  },
+  colorPanel: {
+    width: "100%",
+    height: 200,
+    marginBottom: 20,
+    borderRadius: 10,
+  },
+  hueSlider: {
+    width: "100%",
+    height: 40,
+    borderRadius: 20,
+    marginBottom: 20,
+  },
+  modalConfirmButton: {
+    backgroundColor: "#9C27B0",
+    padding: 15,
+    borderRadius: 10,
+    alignItems: "center",
+  },
+  modalConfirmText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "600",
   },
 });
