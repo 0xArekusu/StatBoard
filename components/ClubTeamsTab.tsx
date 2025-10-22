@@ -12,15 +12,18 @@ import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "@react-navigation/native";
 import { supabase } from "../src/config/supabase";
 import { ServiceFactory } from "../services/ServiceFactory";
+import { useAuth } from "../src/contexts/AuthContext";
 import type { Team } from "../models/Team";
 
 interface ClubTeamsTabProps {
   clubId: string;
   isOwner: boolean;
   onCreateTeam: () => void;
+  onEditTeam: (teamId: string) => void;
 }
 
-export default function ClubTeamsTab({ clubId, isOwner, onCreateTeam }: ClubTeamsTabProps) {
+export default function ClubTeamsTab({ clubId, isOwner, onCreateTeam, onEditTeam }: ClubTeamsTabProps) {
+  const { user } = useAuth();
   const [pendingTeams, setPendingTeams] = useState<Team[]>([]);
   const [approvedTeams, setApprovedTeams] = useState<Team[]>([]);
   const [loading, setLoading] = useState(true);
@@ -103,6 +106,7 @@ export default function ClubTeamsTab({ clubId, isOwner, onCreateTeam }: ClubTeam
   const renderTeam = (team: Team, isPending: boolean) => {
     const categoryLabel = team.category ? ` - ${team.category.toUpperCase()}` : "";
     const genderLabel = team.gender ? ` - ${team.gender === "male" ? "M" : team.gender === "female" ? "F" : "Mixte"}` : "";
+    const isTeamOwner = user && team.ownerId === user.id;
 
     return (
       <View key={team.id} style={styles.teamCard}>
@@ -138,7 +142,17 @@ export default function ClubTeamsTab({ clubId, isOwner, onCreateTeam }: ClubTeam
         )}
 
         {!isPending && (
-          <Ionicons name="checkmark-circle" size={24} color="#4CAF50" />
+          <View style={styles.approvedActions}>
+            {isTeamOwner && (
+              <TouchableOpacity
+                style={styles.editButton}
+                onPress={() => onEditTeam(team.id)}
+              >
+                <Ionicons name="create-outline" size={22} color="#9C27B0" />
+              </TouchableOpacity>
+            )}
+            <Ionicons name="checkmark-circle" size={24} color="#4CAF50" />
+          </View>
         )}
       </View>
     );
@@ -313,6 +327,14 @@ const styles = StyleSheet.create({
     padding: 5,
   },
   rejectButton: {
+    padding: 5,
+  },
+  approvedActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  editButton: {
     padding: 5,
   },
   emptyState: {

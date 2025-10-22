@@ -7,29 +7,21 @@ import {
   StyleSheet,
   ScrollView,
   Alert,
+  ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { supabase } from "../src/config/supabase";
 import { ServiceFactory } from "../services/ServiceFactory";
 import { useAuth } from "../src/contexts/AuthContext";
-import type { TeamCategory, TeamGender } from "../models/Team";
+import type { TeamGender, Team } from "../models/Team";
+import TeamPlayersManager from "../components/TeamPlayersManager";
 
 type RootStackParamList = {
-  TeamForm: { clubId: string };
+  TeamForm: { clubId?: string; teamId?: string };
 };
 
 type TeamFormRouteProp = RouteProp<RootStackParamList, "TeamForm">;
-
-const CATEGORIES: { value: TeamCategory; label: string }[] = [
-  { value: "senior", label: "Senior" },
-  { value: "u18", label: "U18" },
-  { value: "u15", label: "U15" },
-  { value: "u13", label: "U13" },
-  { value: "u11", label: "U11" },
-  { value: "u9", label: "U9" },
-  { value: "u7", label: "U7" },
-];
 
 const GENDERS: { value: TeamGender; label: string }[] = [
   { value: "male", label: "Masculin" },
@@ -41,12 +33,51 @@ export default function TeamFormScreen() {
   const navigation = useNavigation();
   const route = useRoute<TeamFormRouteProp>();
   const { user } = useAuth();
-  const clubId = route.params.clubId;
+  const teamId = route.params?.teamId;
+  const clubId = route.params?.clubId;
+  const isEditMode = !!teamId;
 
+  const [team, setTeam] = useState<Team | null>(null);
+  const [loading, setLoading] = useState(isEditMode);
   const [teamName, setTeamName] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState<TeamCategory | undefined>(undefined);
   const [selectedGender, setSelectedGender] = useState<TeamGender | undefined>(undefined);
   const [saving, setSaving] = useState(false);
+  const [players, setPlayers] = useState<any[]>([
+    { id: "temp-1", name: "Player 1", jerseyNumber: 1, position: 1, isStarter: true },
+    { id: "temp-2", name: "Player 2", jerseyNumber: 2, position: 2, isStarter: true },
+    { id: "temp-3", name: "Player 3", jerseyNumber: 3, position: 3, isStarter: true },
+    { id: "temp-4", name: "Player 4", jerseyNumber: 4, position: 4, isStarter: true },
+    { id: "temp-5", name: "Player 5", jerseyNumber: 5, position: 5, isStarter: true },
+  ]);
+
+  // Load team data if in edit mode
+  React.useEffect(() => {
+    if (isEditMode && teamId) {
+      loadTeam();
+    }
+  }, [teamId]);
+
+  const loadTeam = async () => {
+    try {
+      setLoading(true);
+      const teamService = ServiceFactory.getTeamService(supabase);
+      const teamData = await teamService.getTeamById(teamId!);
+
+      if (teamData) {
+        setTeam(teamData);
+        setTeamName(teamData.name);
+        setSelectedGender(teamData.gender);
+      } else {
+        Alert.alert("Erreur", "Équipe introuvable");
+        navigation.goBack();
+      }
+    } catch (error) {
+      console.error("Error loading team:", error);
+      Alert.alert("Erreur", "Impossible de charger l'équipe");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSave = async () => {
     if (!user) {
@@ -59,37 +90,96 @@ export default function TeamFormScreen() {
       return;
     }
 
+    // Validate player count
+    if (players.length < 5) {
+      Alert.alert("Erreur", "Votre équipe doit avoir au moins 5 joueurs");
+      return;
+    }
+
     setSaving(true);
 
     try {
       const teamService = ServiceFactory.getTeamService(supabase);
-      const result = await teamService.createTeam(
-        {
-          name: teamName.trim(),
-          clubId,
-          category: selectedCategory,
-          gender: selectedGender,
-        },
-        user.id
-      );
 
-      if (!result.success) {
-        Alert.alert("Erreur", result.error || "Impossible de créer l'équipe");
-        setSaving(false);
-        return;
+      if (isEditMode && teamId) {
+        // Update existing team
+        const result = await teamService.updateTeam(
+          teamId,
+          {
+            name: teamName.trim(),
+            gender: selectedGender,
+          },
+          user.id
+        );
+
+        if (!result.success) {
+          Alert.alert("Erreur", result.error || "Impossible de modifier l'équipe");
+          setSaving(false);
+          return;
+        }
+
+        Alert.alert("Succès", "L'équipe a été modifiée");
+        loadTeam();
+      } else {
+        // Create new team
+        const result = await teamService.createTeam(
+          {
+            name: teamName.trim(),
+            clubId: clubId!,
+            gender: selectedGender,
+          },
+          user.id
+        );
+
+        if (!result.success) {
+          Alert.alert("Erreur", result.error || "Impossible de créer l'équipe");
+          setSaving(false);
+          return;
+        }
+
+        const newTeamId = result.team?.id;
+        if (!newTeamId) {
+          Alert.alert("Erreur", "Impossible de récupérer l'ID de l'équipe");
+          setSaving(false);
+          return;
+        }
+
+        // Create players from state
+        const playerService = ServiceFactory.getPlayerService(supabase);
+        for (const player of players) {
+          await playerService.createPlayer({
+            teamId: newTeamId,
+            name: player.name,
+            jerseyNumber: player.jerseyNumber,
+            position: player.position,
+            isStarter: player.isStarter,
+            photoUrl: player.photoUrl,
+          });
+        }
+
+        Alert.alert(
+          "Succès",
+          "Votre équipe a été créée et est en attente de validation par le responsable du club.",
+          [{ text: "OK", onPress: () => navigation.goBack() }]
+        );
       }
-
-      Alert.alert(
-        "Succès",
-        "Votre équipe a été créée et est en attente de validation par le responsable du club.",
-        [{ text: "OK", onPress: () => navigation.goBack() }]
-      );
     } catch (error) {
-      console.error("Error creating team:", error);
+      console.error("Error saving team:", error);
       Alert.alert("Erreur", "Une erreur est survenue");
+    } finally {
       setSaving(false);
     }
   };
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#9C27B0" />
+      </View>
+    );
+  }
+
+  const isOwner = team && user && team.ownerId === user.id;
 
   return (
     <View style={styles.container}>
@@ -97,7 +187,9 @@ export default function TeamFormScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={28} color="#333" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Créer une équipe</Text>
+        <Text style={styles.headerTitle}>
+          {isEditMode ? team?.name || "Mon équipe" : "Créer une équipe"}
+        </Text>
         <View style={{ width: 28 }} />
       </View>
 
@@ -111,33 +203,6 @@ export default function TeamFormScreen() {
             onChangeText={setTeamName}
             maxLength={50}
           />
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.label}>Catégorie (optionnel)</Text>
-          <View style={styles.optionGrid}>
-            {CATEGORIES.map((cat) => (
-              <TouchableOpacity
-                key={cat.value}
-                style={[
-                  styles.optionButton,
-                  selectedCategory === cat.value && styles.optionButtonSelected,
-                ]}
-                onPress={() =>
-                  setSelectedCategory(selectedCategory === cat.value ? undefined : cat.value)
-                }
-              >
-                <Text
-                  style={[
-                    styles.optionText,
-                    selectedCategory === cat.value && styles.optionTextSelected,
-                  ]}
-                >
-                  {cat.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
         </View>
 
         <View style={styles.section}>
@@ -167,19 +232,33 @@ export default function TeamFormScreen() {
           </View>
         </View>
 
-        <View style={styles.infoBox}>
-          <Ionicons name="information-circle-outline" size={24} color="#2196F3" />
-          <Text style={styles.infoText}>
-            Votre équipe sera en attente de validation par le responsable du club avant d'être active.
-          </Text>
+        {/* Players section */}
+        <View style={styles.section}>
+          <TeamPlayersManager
+            teamId={teamId}
+            canEdit={isEditMode ? !!isOwner : true}
+            initialPlayers={!isEditMode ? players : undefined}
+            onPlayersChange={(newPlayers) => setPlayers(newPlayers)}
+          />
         </View>
+
+        {!isEditMode && (
+          <View style={styles.infoBox}>
+            <Ionicons name="information-circle-outline" size={24} color="#2196F3" />
+            <Text style={styles.infoText}>
+              Votre équipe sera créée et en attente de validation par le responsable du club.
+            </Text>
+          </View>
+        )}
 
         <TouchableOpacity
           style={[styles.saveButton, saving && styles.saveButtonDisabled]}
           onPress={handleSave}
           disabled={saving}
         >
-          <Text style={styles.saveButtonText}>{saving ? "Création..." : "Créer l'équipe"}</Text>
+          <Text style={styles.saveButtonText}>
+            {saving ? (isEditMode ? "Sauvegarde..." : "Création...") : (isEditMode ? "Sauvegarder" : "Créer l'équipe")}
+          </Text>
         </TouchableOpacity>
       </ScrollView>
     </View>
@@ -280,5 +359,10 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 18,
     fontWeight: "bold",
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
   },
 });

@@ -256,6 +256,10 @@ export default function ClubFormScreen() {
     (navigation as any).navigate("TeamForm", { clubId });
   };
 
+  const handleEditTeam = (teamId: string) => {
+    (navigation as any).navigate("TeamForm", { teamId });
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -309,7 +313,7 @@ export default function ClubFormScreen() {
 
       {/* Teams Tab Content */}
       {activeTab === "teams" && isEditMode ? (
-        <ClubTeamsTab clubId={clubId!} isOwner={!!isOwner} onCreateTeam={handleCreateTeam} />
+        <ClubTeamsTab clubId={clubId!} isOwner={!!isOwner} onCreateTeam={handleCreateTeam} onEditTeam={handleEditTeam} />
       ) : (
         <ScrollView
           style={{ flex: 1 }}

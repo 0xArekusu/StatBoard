@@ -2,9 +2,11 @@ import { SupabaseClient } from "@supabase/supabase-js";
 import { SupabaseClubRepository } from "../repositories/SupabaseClubRepository";
 import { SupabaseClubMemberRepository } from "../repositories/SupabaseClubMemberRepository";
 import { SupabaseTeamRepository } from "../repositories/SupabaseTeamRepository";
+import { SupabasePlayerRepository } from "../repositories/SupabasePlayerRepository";
 import { ClubService } from "./ClubService";
 import { ClubMemberService } from "./ClubMemberService";
 import { TeamService } from "./TeamService";
+import { PlayerService } from "./PlayerService";
 
 /**
  * Factory Pattern + Singleton Pattern
@@ -14,6 +16,7 @@ export class ServiceFactory {
   private static clubServiceInstance: ClubService | null = null;
   private static clubMemberServiceInstance: ClubMemberService | null = null;
   private static teamServiceInstance: TeamService | null = null;
+  private static playerServiceInstance: PlayerService | null = null;
 
   /**
    * Get ClubService singleton instance
@@ -53,11 +56,24 @@ export class ServiceFactory {
   }
 
   /**
+   * Get PlayerService singleton instance
+   * @param supabase Supabase client instance
+   */
+  static getPlayerService(supabase: SupabaseClient): PlayerService {
+    if (!this.playerServiceInstance) {
+      const playerRepository = new SupabasePlayerRepository(supabase);
+      this.playerServiceInstance = new PlayerService(playerRepository);
+    }
+    return this.playerServiceInstance;
+  }
+
+  /**
    * Reset singleton instances (useful for testing)
    */
   static reset(): void {
     this.clubServiceInstance = null;
     this.clubMemberServiceInstance = null;
     this.teamServiceInstance = null;
+    this.playerServiceInstance = null;
   }
 }
