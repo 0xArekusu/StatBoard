@@ -8,6 +8,7 @@ export interface Player {
   photoUrl?: string;
   position?: PlayerPosition;
   isStarter: boolean;
+  displayOrder?: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -27,4 +28,5 @@ export interface UpdatePlayerData {
   photoUrl?: string;
   position?: PlayerPosition;
   isStarter?: boolean;
+  displayOrder?: number;
 }

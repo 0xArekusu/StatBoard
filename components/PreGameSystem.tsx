@@ -374,6 +374,7 @@ export default function PreGameSystem({
         currentTeam={currentTeam}
         teamLetter={currentTeam}
         maxSubstitutes={8}
+        isPortrait={isPortrait}
       />
 
       {/* Bouton démarrer le match */}

@@ -128,25 +128,22 @@ export default function MatchHistoryScreen() {
         num: mp.player_number,
         name: mp.player_name,
         team: mp.team,
-        isSubstitute: mp.is_starter === 0,
+        isSubstitute: !mp.is_starter,
       }));
 
       // Navigate to MatchSummary
-      navigation.navigate(
-        "MatchSummary" as never,
-        {
-          teamA: match.team_a_name,
-          teamB: match.team_b_name,
-          scoreA: match.scoreA,
-          scoreB: match.scoreB,
-          actions: actionDataList,
-          matchFormat: match.match_format,
-          periodDuration: match.period_duration,
-          teamMode: match.team_mode,
-          players,
-          fromHistory: true, // Indicate this is from history (read-only mode)
-        } as never
-      );
+      (navigation.navigate as any)("MatchSummary", {
+        teamA: match.team_a_name,
+        teamB: match.team_b_name,
+        scoreA: match.scoreA,
+        scoreB: match.scoreB,
+        actions: actionDataList,
+        matchFormat: match.match_format,
+        periodDuration: match.period_duration,
+        teamMode: match.team_mode,
+        players,
+        fromHistory: true, // Indicate this is from history (read-only mode)
+      });
     } catch (error) {
       console.error("Error loading match details:", error);
     }

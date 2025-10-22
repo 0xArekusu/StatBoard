@@ -55,11 +55,11 @@ export default function TeamPlayersManager({
     }
   }, [loadPlayers]);
 
-  const handleAddPlayer = async (data: any) => {
+  const handleAddPlayer = async (data: any): Promise<boolean> => {
     // Check jersey number uniqueness
     if (players.some(p => p.jerseyNumber === data.jerseyNumber)) {
       Alert.alert("Erreur", "Ce numéro est déjà attribué à un autre joueur");
-      return;
+      return false;
     }
 
     // Check max starters (5)
@@ -67,7 +67,7 @@ export default function TeamPlayersManager({
       const startersCount = players.filter(p => p.isStarter).length;
       if (startersCount >= 5) {
         Alert.alert("Erreur", "Vous ne pouvez avoir que 5 joueurs titulaires maximum");
-        return;
+        return false;
       }
     }
 
@@ -81,7 +81,7 @@ export default function TeamPlayersManager({
       setPlayers(newPlayers);
       onPlayersChange?.(newPlayers);
       setShowAddForm(false);
-      return;
+      return true;
     }
 
     // API mode (edit)
@@ -93,12 +93,13 @@ export default function TeamPlayersManager({
 
     if (!result.success) {
       Alert.alert("Erreur", result.error);
-      return;
+      return false;
     }
 
     Alert.alert("Succès", "Joueur ajouté");
     setShowAddForm(false);
     loadPlayers();
+    return true;
   };
 
   const handleUpdatePlayer = async (playerId: string, data: any): Promise<boolean> => {

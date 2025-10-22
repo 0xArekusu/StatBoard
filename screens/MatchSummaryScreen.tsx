@@ -231,11 +231,7 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
   }, [] as number[]);
 
   const handleViewDetails = () => {
-    navigation.navigate("MatchDetails" as never, {
-      ...params,
-      scoreA: adjustedScoreA,
-      scoreB: adjustedScoreB,
-    } as never);
+    (navigation.navigate as any)("MatchDetails", { ...params, scoreA: adjustedScoreA, scoreB: adjustedScoreB });
   };
 
   const handleBackToMenu = () => {

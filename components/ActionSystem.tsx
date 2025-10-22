@@ -24,6 +24,7 @@ export interface ActionData {
   semanticPosition: {
     xNormalized: number; // Normalized position in logical court (0.0 to 1.0)
     yNormalized: number; // Normalized position in logical court (0.0 to 1.0)
+    capturedInPortrait?: boolean; // Whether the position was captured in portrait mode
   };
 }
 
