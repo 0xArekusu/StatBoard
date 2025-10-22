@@ -111,7 +111,7 @@ export default function MainMenuScreen() {
         style={[styles.button, styles.clubButton]}
         onPress={() => {
           if (userClub) {
-            navigation.navigate(ROUTES.CLUB_FORM as never, { clubId: userClub.id } as never);
+            (navigation as any).navigate(ROUTES.CLUB_FORM, { clubId: userClub.id });
           } else {
             setClubModalVisible(true);
           }
@@ -141,11 +141,11 @@ export default function MainMenuScreen() {
         onClose={() => setClubModalVisible(false)}
         onCreatePress={() => {
           setClubModalVisible(false);
-          navigation.navigate(ROUTES.CLUB_FORM as never);
+          (navigation as any).navigate(ROUTES.CLUB_FORM);
         }}
         onJoinPress={() => {
           setClubModalVisible(false);
-          navigation.navigate(ROUTES.JOIN_CLUB as never);
+          (navigation as any).navigate(ROUTES.JOIN_CLUB);
         }}
       />
 
