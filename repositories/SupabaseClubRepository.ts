@@ -33,6 +33,7 @@ export class SupabaseClubRepository implements IClubRepository {
       courtBackgroundColor: row.court_background_color,
       courtLineColor: row.court_line_color,
       ownerId: row.owner_id,
+      ownerEmail: row.owner_email,
       createdAt: new Date(row.created_at),
       updatedAt: new Date(row.updated_at),
     };
@@ -82,6 +83,7 @@ export class SupabaseClubRepository implements IClubRepository {
           court_background_color: data.courtBackgroundColor,
           court_line_color: data.courtLineColor,
           owner_id: user.id,
+          owner_email: user.email,
         })
         .select()
         .single();
@@ -142,6 +144,26 @@ export class SupabaseClubRepository implements IClubRepository {
       return data ? data.map((row) => this.mapToClub(row)) : [];
     } catch (error) {
       console.error("Error finding clubs by owner:", error);
+      return [];
+    }
+  }
+
+  async findByMemberId(userId: string): Promise<Club[]> {
+    try {
+      const { data, error } = await this.supabase
+        .from(this.tableName)
+        .select(`
+          *,
+          club_members!inner(user_id)
+        `)
+        .eq("club_members.user_id", userId)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+
+      return data ? data.map((row) => this.mapToClub(row)) : [];
+    } catch (error) {
+      console.error("Error finding clubs by member:", error);
       return [];
     }
   }

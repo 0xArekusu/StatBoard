@@ -10,6 +10,7 @@ import SplashScreen from "./screens/SplashScreen";
 import LoginScreen from "./screens/LoginScreen";
 import SignUpScreen from "./screens/SignUpScreen";
 import ClubFormScreen from "./screens/ClubFormScreen";
+import TeamFormScreen from "./screens/TeamFormScreen";
 import JoinClubScreen from "./screens/JoinClubScreen";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { AuthProvider, useAuth } from "./src/contexts/AuthContext";
@@ -48,6 +49,7 @@ function Navigation() {
         <Stack.Screen name={ROUTES.LOGIN} component={LoginScreen} />
         <Stack.Screen name={ROUTES.SIGN_UP} component={SignUpScreen} />
         <Stack.Screen name={ROUTES.CLUB_FORM} component={ClubFormScreen} />
+        <Stack.Screen name={ROUTES.TEAM_FORM} component={TeamFormScreen} />
         <Stack.Screen name={ROUTES.JOIN_CLUB} component={JoinClubScreen} />
       </Stack.Navigator>
     </NavigationContainer>

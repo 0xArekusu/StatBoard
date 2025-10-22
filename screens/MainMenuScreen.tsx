@@ -40,7 +40,8 @@ export default function MainMenuScreen() {
     try {
       setLoadingClub(true);
       const clubService = ServiceFactory.getClubService(supabase);
-      const clubs = await clubService.getUserClubs(user.id);
+      // Get clubs where user is member (includes owned clubs via trigger)
+      const clubs = await clubService.getUserMemberClubs(user.id);
       setUserClub(clubs.length > 0 ? clubs[0] : null);
     } catch (error) {
       console.error("Error loading user club:", error);
@@ -107,28 +108,30 @@ export default function MainMenuScreen() {
         <Text style={styles.buttonText}>Historique des matchs</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity
-        style={[styles.button, styles.clubButton]}
-        onPress={() => {
-          if (userClub) {
-            (navigation as any).navigate(ROUTES.CLUB_FORM, { clubId: userClub.id });
-          } else {
-            setClubModalVisible(true);
-          }
-        }}
-        disabled={loadingClub}
-      >
-        {loadingClub ? (
-          <ActivityIndicator color="#fff" />
-        ) : (
-          <>
-            <Ionicons name="people-outline" size={24} color="#fff" />
-            <Text style={styles.buttonText}>
-              {userClub ? "Mon club" : "Créer/Rejoindre un club"}
-            </Text>
-          </>
-        )}
-      </TouchableOpacity>
+      {user && (
+        <TouchableOpacity
+          style={[styles.button, styles.clubButton]}
+          onPress={() => {
+            if (userClub) {
+              (navigation as any).navigate(ROUTES.CLUB_FORM, { clubId: userClub.id });
+            } else {
+              setClubModalVisible(true);
+            }
+          }}
+          disabled={loadingClub}
+        >
+          {loadingClub ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <>
+              <Ionicons name="people-outline" size={24} color="#fff" />
+              <Text style={styles.buttonText}>
+                {userClub ? "Mon club" : "Créer/Rejoindre un club"}
+              </Text>
+            </>
+          )}
+        </TouchableOpacity>
+      )}
 
       {!user && (
         <Text style={styles.guestNote}>

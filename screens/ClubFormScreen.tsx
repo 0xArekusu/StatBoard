@@ -15,6 +15,7 @@ import Clipboard from "@react-native-clipboard/clipboard";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import BasketballCourtSVG from "../components/BasketballCourtSVG";
+import ClubTeamsTab from "../components/ClubTeamsTab";
 import ColorPicker, {
   Panel1,
   HueSlider,
@@ -26,6 +27,7 @@ import { supabase } from "../src/config/supabase";
 import { ServiceFactory } from "../services/ServiceFactory";
 import type { Club } from "../models/Club";
 import { ROUTES } from "../constants/routes";
+import { useAuth } from "../src/contexts/AuthContext";
 
 const PRESET_COLORS = [
   "#000000",
@@ -49,10 +51,13 @@ type ClubFormRouteProp = RouteProp<RootStackParamList, "ClubForm">;
 export default function ClubFormScreen() {
   const navigation = useNavigation();
   const route = useRoute<ClubFormRouteProp>();
+  const { user } = useAuth();
   const clubId = route.params?.clubId;
   const isEditMode = !!clubId;
 
   const [club, setClub] = useState<Club | null>(null);
+  const isOwner = club && user && club.ownerId === user.id;
+  const [activeTab, setActiveTab] = useState<"info" | "teams">(isOwner ? "info" : "teams");
   const [loading, setLoading] = useState(isEditMode);
   const [saving, setSaving] = useState(false);
 
@@ -92,6 +97,11 @@ export default function ClubFormScreen() {
         setCourtBackgroundColor(clubData.courtBackgroundColor);
         setCourtLineColor(clubData.courtLineColor);
         setLogoUri(clubData.logoUrl || null);
+
+        // If user is not owner, force teams tab
+        if (user && clubData.ownerId !== user.id) {
+          setActiveTab("teams");
+        }
       } else {
         Alert.alert("Erreur", "Club introuvable");
         navigation.goBack();
@@ -241,6 +251,11 @@ export default function ClubFormScreen() {
     );
   }
 
+  const handleCreateTeam = () => {
+    if (!clubId) return;
+    (navigation as any).navigate("TeamForm", { clubId });
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -253,11 +268,54 @@ export default function ClubFormScreen() {
         <View style={{ width: 28 }} />
       </View>
 
-      <ScrollView
-        style={{ flex: 1 }}
-        contentContainerStyle={styles.scrollView}
-        showsVerticalScrollIndicator={false}
-      >
+      {/* Tabs - Only in edit mode */}
+      {isEditMode && (
+        <View style={styles.tabsContainer}>
+          {/* Only show Info tab if user is owner */}
+          {isOwner && (
+            <TouchableOpacity
+              style={[styles.tab, activeTab === "info" && styles.tabActive]}
+              onPress={() => setActiveTab("info")}
+            >
+              <Ionicons
+                name="information-circle-outline"
+                size={20}
+                color={activeTab === "info" ? "#9C27B0" : "#999"}
+              />
+              <Text style={[styles.tabText, activeTab === "info" && styles.tabTextActive]}>
+                Infos
+              </Text>
+            </TouchableOpacity>
+          )}
+          <TouchableOpacity
+            style={[
+              styles.tab,
+              activeTab === "teams" && styles.tabActive,
+              !isOwner && styles.tabFullWidth,
+            ]}
+            onPress={() => setActiveTab("teams")}
+          >
+            <Ionicons
+              name="people-outline"
+              size={20}
+              color={activeTab === "teams" ? "#9C27B0" : "#999"}
+            />
+            <Text style={[styles.tabText, activeTab === "teams" && styles.tabTextActive]}>
+              Équipes
+            </Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {/* Teams Tab Content */}
+      {activeTab === "teams" && isEditMode ? (
+        <ClubTeamsTab clubId={clubId!} isOwner={!!isOwner} onCreateTeam={handleCreateTeam} />
+      ) : (
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={styles.scrollView}
+          showsVerticalScrollIndicator={false}
+        >
         {/* Club code - Only in edit mode */}
         {isEditMode && club && (
           <View style={styles.codeSection}>
@@ -492,7 +550,8 @@ export default function ClubFormScreen() {
             </Text>
           )}
         </TouchableOpacity>
-      </ScrollView>
+        </ScrollView>
+      )}
 
       {/* Color Picker Modals */}
       <Modal visible={showPrimaryPicker} transparent animationType="slide">
@@ -634,6 +693,36 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: "bold",
     color: "#333",
+  },
+  tabsContainer: {
+    flexDirection: "row",
+    borderBottomWidth: 1,
+    borderBottomColor: "#eee",
+    backgroundColor: "#fff",
+  },
+  tab: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 15,
+    gap: 8,
+    borderBottomWidth: 2,
+    borderBottomColor: "transparent",
+  },
+  tabActive: {
+    borderBottomColor: "#9C27B0",
+  },
+  tabText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#999",
+  },
+  tabTextActive: {
+    color: "#9C27B0",
+  },
+  tabFullWidth: {
+    flex: 1,
   },
   scrollView: {
     padding: 20,

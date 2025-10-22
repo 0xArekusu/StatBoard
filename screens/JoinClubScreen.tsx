@@ -9,28 +9,61 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import { supabase } from '../src/config/supabase';
+import { ServiceFactory } from '../services/ServiceFactory';
+import { useAuth } from '../src/contexts/AuthContext';
 
 export default function JoinClubScreen() {
   const navigation = useNavigation();
+  const { user } = useAuth();
   const [clubCode, setClubCode] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleJoinClub = async () => {
+    if (!user) {
+      Alert.alert('Erreur', 'Vous devez être connecté pour rejoindre un club');
+      return;
+    }
+
     if (!clubCode.trim() || clubCode.length !== 6) {
       Alert.alert('Erreur', 'Veuillez entrer un code à 6 chiffres');
       return;
     }
 
     setLoading(true);
-    // TODO: Vérifier le code dans Supabase et rejoindre le club
-    setTimeout(() => {
-      setLoading(false);
+
+    try {
+      // Find club by code
+      const clubService = ServiceFactory.getClubService(supabase);
+      const club = await clubService.getClubByCode(clubCode);
+
+      if (!club) {
+        Alert.alert('Erreur', 'Aucun club trouvé avec ce code');
+        setLoading(false);
+        return;
+      }
+
+      // Join the club
+      const clubMemberService = ServiceFactory.getClubMemberService(supabase);
+      const result = await clubMemberService.joinClub(club.id, user.id, user.email!);
+
+      if (!result.success) {
+        Alert.alert('Erreur', result.error || 'Impossible de rejoindre le club');
+        setLoading(false);
+        return;
+      }
+
       Alert.alert(
         'Succès',
-        'Vous avez rejoint le club !',
+        `Vous avez rejoint le club "${club.name}" !`,
         [{ text: 'OK', onPress: () => navigation.goBack() }]
       );
-    }, 1000);
+    } catch (error) {
+      console.error('Error joining club:', error);
+      Alert.alert('Erreur', 'Une erreur est survenue');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const formatCode = (text: string) => {

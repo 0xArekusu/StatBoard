@@ -11,6 +11,7 @@ export const ROUTES = {
   LOGIN: "Login",
   SIGN_UP: "SignUp",
   CLUB_FORM: "ClubForm",
+  TEAM_FORM: "TeamForm",
   JOIN_CLUB: "JoinClub",
 } as const;
 

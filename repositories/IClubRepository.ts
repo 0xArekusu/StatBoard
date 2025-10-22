@@ -34,6 +34,13 @@ export interface IClubRepository {
   findByOwnerId(userId: string): Promise<Club[]>;
 
   /**
+   * Find clubs where user is a member (via club_members)
+   * @param userId User UUID
+   * @returns Array of clubs
+   */
+  findByMemberId(userId: string): Promise<Club[]>;
+
+  /**
    * Update a club
    * @param id Club UUID
    * @param data Update data

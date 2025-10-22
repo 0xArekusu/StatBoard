@@ -13,6 +13,7 @@ export interface Club {
   courtBackgroundColor: string;
   courtLineColor: string;
   ownerId: string;
+  ownerEmail: string;
   createdAt: Date;
   updatedAt: Date;
 }

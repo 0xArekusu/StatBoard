@@ -74,6 +74,13 @@ export class ClubService {
   }
 
   /**
+   * Get all clubs where user is a member
+   */
+  async getUserMemberClubs(userId: string): Promise<Club[]> {
+    return await this.clubRepository.findByMemberId(userId);
+  }
+
+  /**
    * Update a club with validation
    */
   async updateClub(
