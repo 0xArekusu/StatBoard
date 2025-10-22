@@ -456,7 +456,7 @@ export default function BasketballCourtSVG({
       <Path
         fill="none"
         d="M231.926 572.812H-.012"
-        stroke="#000"
+        stroke={lineColor}
         strokeWidth={4.498200000000001}
       />
       <G clipPath="url(#m)">
@@ -497,13 +497,13 @@ export default function BasketballCourtSVG({
       <Path
         fill="none"
         d="M307.453 56.469V45.44"
-        stroke="#000"
+        stroke={lineColor}
         strokeWidth={4.498200000000001}
       />
       <Path
         fill="none"
         d="M343.637 48.809h-72.383"
-        stroke="#000"
+        stroke={lineColor}
         strokeWidth={6.7473}
       />
       <G clipPath="url(#u)">
@@ -583,13 +583,13 @@ export default function BasketballCourtSVG({
       <Path
         fill="none"
         d="M307.457 1089.477v11.027"
-        stroke="#000"
+        stroke={lineColor}
         strokeWidth={4.498200000000001}
       />
       <Path
         fill="none"
         d="M271.27 1097.137h72.382"
-        stroke="#000"
+        stroke={lineColor}
         strokeWidth={6.7473}
       />
       <G clipPath="url(#J)">
@@ -807,7 +807,7 @@ export default function BasketballCourtSVG({
       <Path
         fill="none"
         d="M573.133 231.93V-.004"
-        stroke="#000"
+        stroke={lineColor}
         strokeWidth={4.498200000000001}
       />
       <G clipPath="url(#m)">
@@ -851,13 +851,13 @@ export default function BasketballCourtSVG({
       <Path
         fill="none"
         d="M1089.477 307.457h11.03"
-        stroke="#000"
+        stroke={lineColor}
         strokeWidth={4.498200000000001}
       />
       <Path
         fill="none"
         d="M1097.137 343.64v-72.378"
-        stroke="#000"
+        stroke={lineColor}
         strokeWidth={6.7473}
       />
       <G clipPath="url(#u)">
@@ -934,13 +934,13 @@ export default function BasketballCourtSVG({
       <Path
         fill="none"
         d="M56.469 307.453H45.44"
-        stroke="#000"
+        stroke={lineColor}
         strokeWidth={4.498200000000001}
       />
       <Path
         fill="none"
         d="M48.809 271.27v72.382"
-        stroke="#000"
+        stroke={lineColor}
         strokeWidth={6.7473}
       />
       <G clipPath="url(#J)">

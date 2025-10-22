@@ -34,24 +34,6 @@ const PRESET_COLORS = [
   "#FFC0CB", // Rose
 ];
 
-const COURT_BACKGROUND_COLORS = [
-  "#1a472a", // Vert foncé (défaut)
-  "#8B4513", // Marron (parquet)
-  "#D2691E", // Marron clair (parquet clair)
-  "#2C3E50", // Bleu foncé
-  "#1C1C1C", // Noir grisâtre
-  "#4A90E2", // Bleu
-];
-
-const COURT_LINE_COLORS = [
-  "#FFFFFF", // Blanc (défaut)
-  "#000000", // Noir
-  "#FFD700", // Or
-  "#FF0000", // Rouge
-  "#00FF00", // Vert fluo
-  "#FFFF00", // Jaune
-];
-
 export default function CreateClubScreen() {
   const navigation = useNavigation();
   const [clubName, setClubName] = useState("");
@@ -88,10 +70,14 @@ export default function CreateClubScreen() {
 
   const handlePickImage = async () => {
     // Request media library permission
-    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    const permissionResult =
+      await ImagePicker.requestMediaLibraryPermissionsAsync();
 
     if (permissionResult.granted === false) {
-      Alert.alert("Permission requise", "Vous devez autoriser l'accès à vos photos pour importer un logo.");
+      Alert.alert(
+        "Permission requise",
+        "Vous devez autoriser l'accès à vos photos pour importer un logo."
+      );
       return;
     }
 
@@ -197,7 +183,12 @@ export default function CreateClubScreen() {
               style={styles.gradientContainer}
               onPress={() => setShowPrimaryPicker(true)}
             >
-              <View style={[styles.gradientBorder, isCustomPrimary && styles.gradientBorderSelected]}>
+              <View
+                style={[
+                  styles.gradientBorder,
+                  isCustomPrimary && styles.gradientBorderSelected,
+                ]}
+              >
                 <LinearGradient
                   colors={[
                     "#FF0000",
@@ -246,7 +237,12 @@ export default function CreateClubScreen() {
               style={styles.gradientContainer}
               onPress={() => setShowSecondaryPicker(true)}
             >
-              <View style={[styles.gradientBorder, isCustomSecondary && styles.gradientBorderSelected]}>
+              <View
+                style={[
+                  styles.gradientBorder,
+                  isCustomSecondary && styles.gradientBorderSelected,
+                ]}
+              >
                 <LinearGradient
                   colors={[
                     "#FF0000",
@@ -291,40 +287,49 @@ export default function CreateClubScreen() {
         {/* Prévisualisation */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Aperçu du terrain</Text>
-          <View style={styles.courtPreviewContainer}>
-            {/* Color pickers on the left */}
+
+          {/* Court preview */}
+          <View style={styles.courtPreview}>
+            {/* Color pickers overlay */}
             <View style={styles.courtColorPickers}>
               <TouchableOpacity
-                style={[styles.courtColorButton, { backgroundColor: courtBackgroundColor }]}
+                style={[
+                  styles.courtColorButton,
+                  { backgroundColor: courtBackgroundColor },
+                ]}
                 onPress={() => setShowCourtBgPicker(true)}
               >
                 <Ionicons name="color-palette" size={20} color="#fff" />
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.courtColorButton, { backgroundColor: courtLineColor }]}
+                style={[
+                  styles.courtColorButton,
+                  { backgroundColor: courtLineColor },
+                ]}
                 onPress={() => setShowCourtLinePicker(true)}
               >
-                <Ionicons name="brush" size={20} color={courtLineColor === "#FFFFFF" ? "#000" : "#fff"} />
+                <Ionicons
+                  name="brush"
+                  size={20}
+                  color={courtLineColor === "#FFFFFF" ? "#000" : "#fff"}
+                />
               </TouchableOpacity>
             </View>
 
-            {/* Court preview */}
-            <View style={styles.courtPreview}>
-              <View style={styles.courtContainer}>
-                <BasketballCourtSVG
-                  width={320}
-                  height={180}
-                  backgroundColor={courtBackgroundColor}
-                  lineColor={courtLineColor}
-                  logoUri={logoUri}
-                />
-              </View>
-              {clubName && (
-                <Text style={styles.clubNamePreview}>
-                  {clubName} {sigle && `(${sigle})`}
-                </Text>
-              )}
+            <View style={styles.courtContainer}>
+              <BasketballCourtSVG
+                width={320}
+                height={180}
+                backgroundColor={courtBackgroundColor}
+                lineColor={courtLineColor}
+                logoUri={logoUri}
+              />
             </View>
+            {clubName && (
+              <Text style={styles.clubNamePreview}>
+                {clubName} {sigle && `(${sigle})`}
+              </Text>
+            )}
           </View>
         </View>
 
@@ -422,7 +427,9 @@ export default function CreateClubScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Couleur des lignes du terrain</Text>
+              <Text style={styles.modalTitle}>
+                Couleur des lignes du terrain
+              </Text>
               <TouchableOpacity onPress={() => setShowCourtLinePicker(false)}>
                 <Ionicons name="close" size={28} color="#333" />
               </TouchableOpacity>
@@ -567,14 +574,15 @@ const styles = StyleSheet.create({
     width: "100%",
     height: "100%",
   },
-  courtPreviewContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 15,
-  },
   courtColorPickers: {
+    position: "absolute",
+    top: 0,
+    bottom: 0,
+    left: 40,
     flexDirection: "column",
+    justifyContent: "center",
     gap: 10,
+    zIndex: 10,
   },
   courtColorButton: {
     width: 50,
@@ -584,9 +592,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderWidth: 2,
     borderColor: "#ddd",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
   courtPreview: {
-    flex: 1,
+    position: "relative",
     alignItems: "center",
     padding: 20,
     backgroundColor: "#f8f8f8",
