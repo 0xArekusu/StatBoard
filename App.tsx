@@ -9,10 +9,11 @@ import MatchHistoryScreen from "./screens/MatchHistoryScreen";
 import SplashScreen from "./screens/SplashScreen";
 import LoginScreen from "./screens/LoginScreen";
 import SignUpScreen from "./screens/SignUpScreen";
-import CreateClubScreen from "./screens/CreateClubScreen";
+import ClubFormScreen from "./screens/ClubFormScreen";
 import JoinClubScreen from "./screens/JoinClubScreen";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { AuthProvider, useAuth } from "./src/contexts/AuthContext";
+import { ROUTES } from "./constants/routes";
 
 const Stack = createNativeStackNavigator();
 
@@ -34,20 +35,20 @@ function Navigation() {
   return (
     <NavigationContainer>
       <Stack.Navigator
-        initialRouteName="MainMenu"
+        initialRouteName={ROUTES.MAIN_MENU}
         screenOptions={{
           headerShown: false,
         }}
       >
-        <Stack.Screen name="MainMenu" component={MainMenuScreen} />
-        <Stack.Screen name="Board" component={BoardScreen} />
-        <Stack.Screen name="MatchHistory" component={MatchHistoryScreen} />
-        <Stack.Screen name="MatchSummary" component={MatchSummaryScreen} />
-        <Stack.Screen name="MatchDetails" component={MatchDetailsScreen} />
-        <Stack.Screen name="Login" component={LoginScreen} />
-        <Stack.Screen name="SignUp" component={SignUpScreen} />
-        <Stack.Screen name="CreateClub" component={CreateClubScreen} />
-        <Stack.Screen name="JoinClub" component={JoinClubScreen} />
+        <Stack.Screen name={ROUTES.MAIN_MENU} component={MainMenuScreen} />
+        <Stack.Screen name={ROUTES.BOARD} component={BoardScreen} />
+        <Stack.Screen name={ROUTES.MATCH_HISTORY} component={MatchHistoryScreen} />
+        <Stack.Screen name={ROUTES.MATCH_SUMMARY} component={MatchSummaryScreen} />
+        <Stack.Screen name={ROUTES.MATCH_DETAILS} component={MatchDetailsScreen} />
+        <Stack.Screen name={ROUTES.LOGIN} component={LoginScreen} />
+        <Stack.Screen name={ROUTES.SIGN_UP} component={SignUpScreen} />
+        <Stack.Screen name={ROUTES.CLUB_FORM} component={ClubFormScreen} />
+        <Stack.Screen name={ROUTES.JOIN_CLUB} component={JoinClubScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

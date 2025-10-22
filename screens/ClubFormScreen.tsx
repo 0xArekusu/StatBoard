@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import {
   View,
   Text,
@@ -9,9 +9,11 @@ import {
   Alert,
   Image,
   Modal,
+  ActivityIndicator,
 } from "react-native";
+import Clipboard from "@react-native-clipboard/clipboard";
 import { Ionicons } from "@expo/vector-icons";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import BasketballCourtSVG from "../components/BasketballCourtSVG";
 import ColorPicker, {
   Panel1,
@@ -20,22 +22,40 @@ import ColorPicker, {
 } from "reanimated-color-picker";
 import { LinearGradient } from "expo-linear-gradient";
 import * as ImagePicker from "expo-image-picker";
+import { supabase } from "../src/config/supabase";
+import { ServiceFactory } from "../services/ServiceFactory";
+import type { Club } from "../models/Club";
+import { ROUTES } from "../constants/routes";
 
 const PRESET_COLORS = [
-  "#000000", // Noir
-  "#FFFFFF", // Blanc
-  "#FF0000", // Rouge
-  "#0000FF", // Bleu
-  "#FFFF00", // Jaune
-  "#00FF00", // Vert
-  "#FFA500", // Orange
-  "#800080", // Violet
-  "#808080", // Gris
-  "#FFC0CB", // Rose
+  "#000000",
+  "#FFFFFF",
+  "#FF0000",
+  "#0000FF",
+  "#FFFF00",
+  "#00FF00",
+  "#FFA500",
+  "#800080",
+  "#808080",
+  "#FFC0CB",
 ];
 
-export default function CreateClubScreen() {
+type RootStackParamList = {
+  ClubForm: { clubId?: string };
+};
+
+type ClubFormRouteProp = RouteProp<RootStackParamList, "ClubForm">;
+
+export default function ClubFormScreen() {
   const navigation = useNavigation();
+  const route = useRoute<ClubFormRouteProp>();
+  const clubId = route.params?.clubId;
+  const isEditMode = !!clubId;
+
+  const [club, setClub] = useState<Club | null>(null);
+  const [loading, setLoading] = useState(isEditMode);
+  const [saving, setSaving] = useState(false);
+
   const [clubName, setClubName] = useState("");
   const [sigle, setSigle] = useState("");
   const [primaryColor, setPrimaryColor] = useState("#FF0000");
@@ -49,6 +69,40 @@ export default function CreateClubScreen() {
   const [showCourtLinePicker, setShowCourtLinePicker] = useState(false);
   const [isCustomPrimary, setIsCustomPrimary] = useState(false);
   const [isCustomSecondary, setIsCustomSecondary] = useState(false);
+
+  // Load club data if in edit mode
+  useEffect(() => {
+    if (isEditMode) {
+      loadClub();
+    }
+  }, [clubId]);
+
+  const loadClub = async () => {
+    try {
+      setLoading(true);
+      const clubService = ServiceFactory.getClubService(supabase);
+      const clubData = await clubService.getClubById(clubId!);
+
+      if (clubData) {
+        setClub(clubData);
+        setClubName(clubData.name);
+        setSigle(clubData.acronym);
+        setPrimaryColor(clubData.primaryColor);
+        setSecondaryColor(clubData.secondaryColor);
+        setCourtBackgroundColor(clubData.courtBackgroundColor);
+        setCourtLineColor(clubData.courtLineColor);
+        setLogoUri(clubData.logoUrl || null);
+      } else {
+        Alert.alert("Erreur", "Club introuvable");
+        navigation.goBack();
+      }
+    } catch (error) {
+      console.error("Error loading club:", error);
+      Alert.alert("Erreur", "Impossible de charger le club");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const onPrimaryColorChange = useCallback((colors: ColorFormatsObject) => {
     setPrimaryColor(colors.hex);
@@ -69,7 +123,6 @@ export default function CreateClubScreen() {
   }, []);
 
   const handlePickImage = async () => {
-    // Request media library permission
     const permissionResult =
       await ImagePicker.requestMediaLibraryPermissionsAsync();
 
@@ -81,7 +134,6 @@ export default function CreateClubScreen() {
       return;
     }
 
-    // Open image picker
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: "images",
       allowsEditing: true,
@@ -94,27 +146,100 @@ export default function CreateClubScreen() {
     }
   };
 
-  const handleCreateClub = () => {
-    if (!clubName.trim()) {
-      Alert.alert("Erreur", "Veuillez entrer un nom de club");
-      return;
-    }
-    if (!sigle.trim()) {
-      Alert.alert("Erreur", "Veuillez entrer un sigle");
-      return;
-    }
+  const handleSave = async () => {
+    if (saving) return;
 
-    // TODO: Créer le club dans Supabase
-    const clubCode = Math.floor(100000 + Math.random() * 900000).toString();
-    Alert.alert(
-      "Club créé !",
-      `Votre code de club : ${clubCode}\nPartagez-le avec vos membres.`,
-      [
-        { text: "Copier le code", onPress: () => {} },
-        { text: "OK", onPress: () => navigation.goBack() },
-      ]
-    );
+    try {
+      setSaving(true);
+      const clubService = ServiceFactory.getClubService(supabase);
+
+      if (isEditMode) {
+        // Update existing club
+        const result = await clubService.updateClub(clubId!, {
+          name: clubName,
+          acronym: sigle,
+          logoUrl: logoUri || undefined,
+          primaryColor,
+          secondaryColor,
+          courtBackgroundColor,
+          courtLineColor,
+        });
+
+        if (!result.success) {
+          Alert.alert(
+            "Erreur",
+            result.error || "Impossible de sauvegarder le club"
+          );
+          return;
+        }
+
+        Alert.alert("Succès", "Le club a été mis à jour", [
+          { text: "OK", onPress: () => navigation.goBack() },
+        ]);
+      } else {
+        // Create new club
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+
+        if (!user) {
+          Alert.alert("Erreur", "Vous devez être connecté pour créer un club");
+          return;
+        }
+
+        const result = await clubService.createClub(
+          {
+            name: clubName,
+            acronym: sigle,
+            logoUrl: logoUri || undefined,
+            primaryColor,
+            secondaryColor,
+            courtBackgroundColor,
+            courtLineColor,
+          },
+          user.id
+        );
+
+        if (!result.success) {
+          Alert.alert("Erreur", result.error || "Impossible de créer le club");
+          return;
+        }
+
+        const clubCode = result.club!.code;
+
+        // Copy code to clipboard immediately
+        Clipboard.setString(clubCode);
+
+        // Success
+        Alert.alert(
+          "Club créé !",
+          `Votre code de club : ${clubCode}\n\n✓ Code copié dans le presse-papier\n\nPartagez-le avec vos membres.`,
+          [
+            {
+              text: "OK",
+              onPress: () => {
+                navigation.navigate(ROUTES.MAIN_MENU as never);
+              },
+            },
+          ]
+        );
+      }
+    } catch (error) {
+      console.error("Error saving club:", error);
+      Alert.alert("Erreur", "Une erreur inattendue s'est produite");
+    } finally {
+      setSaving(false);
+    }
   };
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#9C27B0" />
+        <Text style={styles.loadingText}>Chargement...</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -122,7 +247,9 @@ export default function CreateClubScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={28} color="#333" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Créer un club</Text>
+        <Text style={styles.headerTitle}>
+          {isEditMode ? "Mon club" : "Créer un club"}
+        </Text>
         <View style={{ width: 28 }} />
       </View>
 
@@ -131,6 +258,27 @@ export default function CreateClubScreen() {
         contentContainerStyle={styles.scrollView}
         showsVerticalScrollIndicator={false}
       >
+        {/* Club code - Only in edit mode */}
+        {isEditMode && club && (
+          <View style={styles.codeSection}>
+            <Text style={styles.codeLabel}>Code du club</Text>
+            <View style={styles.codeRow}>
+              <Text style={styles.codeText}>{club.code}</Text>
+              <TouchableOpacity
+                style={styles.copyButton}
+                onPress={() => {
+                  Clipboard.setString(club.code);
+                }}
+              >
+                <Ionicons name="copy-outline" size={24} color="#9C27B0" />
+              </TouchableOpacity>
+            </View>
+            <Text style={styles.codeHint}>
+              Partagez ce code pour inviter des membres
+            </Text>
+          </View>
+        )}
+
         {/* Informations de base */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Informations</Text>
@@ -147,7 +295,7 @@ export default function CreateClubScreen() {
           <Text style={styles.label}>Sigle *</Text>
           <TextInput
             style={styles.input}
-            placeholder="Ex: LAL, LAL, CHI"
+            placeholder="Ex: LAL, GSW, CHI"
             value={sigle}
             onChangeText={setSigle}
             maxLength={5}
@@ -288,9 +436,7 @@ export default function CreateClubScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Aperçu du terrain</Text>
 
-          {/* Court preview */}
           <View style={styles.courtPreview}>
-            {/* Color pickers overlay */}
             <View style={styles.courtColorPickers}>
               <TouchableOpacity
                 style={[
@@ -334,14 +480,21 @@ export default function CreateClubScreen() {
         </View>
 
         <TouchableOpacity
-          style={styles.createButton}
-          onPress={handleCreateClub}
+          style={[styles.saveButton, saving && styles.saveButtonDisabled]}
+          onPress={handleSave}
+          disabled={saving}
         >
-          <Text style={styles.createButtonText}>Créer mon club</Text>
+          {saving ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.saveButtonText}>
+              {isEditMode ? "Sauvegarder" : "Créer mon club"}
+            </Text>
+          )}
         </TouchableOpacity>
       </ScrollView>
 
-      {/* Color Picker Modal - Primary */}
+      {/* Color Picker Modals */}
       <Modal visible={showPrimaryPicker} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
@@ -368,7 +521,6 @@ export default function CreateClubScreen() {
         </View>
       </Modal>
 
-      {/* Color Picker Modal - Secondary */}
       <Modal visible={showSecondaryPicker} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
@@ -395,7 +547,6 @@ export default function CreateClubScreen() {
         </View>
       </Modal>
 
-      {/* Color Picker Modal - Court Background */}
       <Modal visible={showCourtBgPicker} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
@@ -422,7 +573,6 @@ export default function CreateClubScreen() {
         </View>
       </Modal>
 
-      {/* Color Picker Modal - Court Lines */}
       <Modal visible={showCourtLinePicker} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
@@ -459,13 +609,24 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#fff",
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#fff",
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: "#666",
+  },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     paddingHorizontal: 20,
-    paddingTop: 50,
-    paddingBottom: 15,
+    paddingTop: 45,
+    paddingBottom: 12,
     borderBottomWidth: 1,
     borderBottomColor: "#eee",
   },
@@ -476,6 +637,43 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     padding: 20,
+    paddingTop: 15,
+  },
+  codeSection: {
+    backgroundColor: "#f8f8f8",
+    padding: 20,
+    borderRadius: 15,
+    marginBottom: 30,
+    alignItems: "center",
+  },
+  codeLabel: {
+    fontSize: 14,
+    color: "#666",
+    marginBottom: 5,
+  },
+  codeRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 15,
+  },
+  codeText: {
+    fontSize: 32,
+    fontWeight: "bold",
+    color: "#9C27B0",
+    letterSpacing: 4,
+  },
+  copyButton: {
+    padding: 8,
+    backgroundColor: "#fff",
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#9C27B0",
+  },
+  codeHint: {
+    fontSize: 12,
+    color: "#999",
+    marginTop: 5,
+    fontStyle: "italic",
   },
   section: {
     marginBottom: 30,
@@ -615,14 +813,17 @@ const styles = StyleSheet.create({
     marginTop: 12,
     color: "#333",
   },
-  createButton: {
+  saveButton: {
     backgroundColor: "#9C27B0",
     padding: 18,
     borderRadius: 10,
     alignItems: "center",
     marginBottom: 30,
   },
-  createButtonText: {
+  saveButtonDisabled: {
+    backgroundColor: "#999",
+  },
+  saveButtonText: {
     color: "#fff",
     fontSize: 18,
     fontWeight: "bold",

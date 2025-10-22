@@ -1,20 +1,24 @@
-import { StyleSheet, Text, View, TouchableOpacity, Alert } from "react-native";
+import { StyleSheet, Text, View, TouchableOpacity, Alert, ActivityIndicator } from "react-native";
 import { StatusBar } from "expo-status-bar";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useAuth } from "../src/contexts/AuthContext";
 import { Ionicons } from "@expo/vector-icons";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import ClubChoiceModal from "../components/ClubChoiceModal";
+import { supabase } from "../src/config/supabase";
+import { ServiceFactory } from "../services/ServiceFactory";
+import type { Club } from "../models/Club";
+import { ROUTES } from "../constants/routes";
 
 type RootStackParamList = {
-  MainMenu: undefined;
-  Board: undefined;
-  MatchHistory: undefined;
-  Login: undefined;
-  CreateClub: undefined;
-  JoinClub: undefined;
+  [ROUTES.MAIN_MENU]: undefined;
+  [ROUTES.BOARD]: undefined;
+  [ROUTES.MATCH_HISTORY]: undefined;
+  [ROUTES.LOGIN]: undefined;
+  [ROUTES.CLUB_FORM]: { clubId?: string };
+  [ROUTES.JOIN_CLUB]: undefined;
 };
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, "MainMenu">;
@@ -23,6 +27,33 @@ export default function MainMenuScreen() {
   const navigation = useNavigation<NavigationProp>();
   const { signOut, user } = useAuth();
   const [clubModalVisible, setClubModalVisible] = useState(false);
+  const [userClub, setUserClub] = useState<Club | null>(null);
+  const [loadingClub, setLoadingClub] = useState(false);
+
+  // Load user's club when screen is focused
+  const loadUserClub = useCallback(async () => {
+    if (!user) {
+      setUserClub(null);
+      return;
+    }
+
+    try {
+      setLoadingClub(true);
+      const clubService = ServiceFactory.getClubService(supabase);
+      const clubs = await clubService.getUserClubs(user.id);
+      setUserClub(clubs.length > 0 ? clubs[0] : null);
+    } catch (error) {
+      console.error("Error loading user club:", error);
+    } finally {
+      setLoadingClub(false);
+    }
+  }, [user]);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadUserClub();
+    }, [loadUserClub])
+  );
 
   const handleSignOut = () => {
     Alert.alert("Déconnexion", "Voulez-vous vraiment vous déconnecter ?", [
@@ -46,7 +77,7 @@ export default function MainMenuScreen() {
           </>
         ) : (
           <TouchableOpacity
-            onPress={() => navigation.navigate("Login")}
+            onPress={() => navigation.navigate(ROUTES.LOGIN as never)}
             style={styles.loginButton}
           >
             <Text style={styles.loginText}>Se connecter</Text>
@@ -58,7 +89,7 @@ export default function MainMenuScreen() {
 
       <TouchableOpacity
         style={styles.button}
-        onPress={() => navigation.navigate("Board")}
+        onPress={() => navigation.navigate(ROUTES.BOARD as never)}
       >
         <Ionicons name="add-circle-outline" size={24} color="#fff" />
         <Text style={styles.buttonText}>Nouveau match</Text>
@@ -66,7 +97,7 @@ export default function MainMenuScreen() {
 
       <TouchableOpacity
         style={[styles.button, styles.secondaryButton]}
-        onPress={() => navigation.navigate("MatchHistory")}
+        onPress={() => navigation.navigate(ROUTES.MATCH_HISTORY as never)}
       >
         <MaterialCommunityIcons
           name="clipboard-list-outline"
@@ -78,10 +109,25 @@ export default function MainMenuScreen() {
 
       <TouchableOpacity
         style={[styles.button, styles.clubButton]}
-        onPress={() => setClubModalVisible(true)}
+        onPress={() => {
+          if (userClub) {
+            navigation.navigate(ROUTES.CLUB_FORM as never, { clubId: userClub.id } as never);
+          } else {
+            setClubModalVisible(true);
+          }
+        }}
+        disabled={loadingClub}
       >
-        <Ionicons name="people-outline" size={24} color="#fff" />
-        <Text style={styles.buttonText}>Créer/Rejoindre un club</Text>
+        {loadingClub ? (
+          <ActivityIndicator color="#fff" />
+        ) : (
+          <>
+            <Ionicons name="people-outline" size={24} color="#fff" />
+            <Text style={styles.buttonText}>
+              {userClub ? "Mon club" : "Créer/Rejoindre un club"}
+            </Text>
+          </>
+        )}
       </TouchableOpacity>
 
       {!user && (
@@ -95,11 +141,11 @@ export default function MainMenuScreen() {
         onClose={() => setClubModalVisible(false)}
         onCreatePress={() => {
           setClubModalVisible(false);
-          navigation.navigate("CreateClub");
+          navigation.navigate(ROUTES.CLUB_FORM as never);
         }}
         onJoinPress={() => {
           setClubModalVisible(false);
-          navigation.navigate("JoinClub");
+          navigation.navigate(ROUTES.JOIN_CLUB as never);
         }}
       />
 
