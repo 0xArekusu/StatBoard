@@ -15,6 +15,9 @@ export class SupabaseTeamRepository implements ITeamRepository {
       category: row.category,
       gender: row.gender,
       status: row.status,
+      isActive: row.is_active ?? true,
+      isDeleted: row.is_deleted ?? false,
+      deletedAt: row.deleted_at ? new Date(row.deleted_at) : undefined,
       createdAt: new Date(row.created_at),
       updatedAt: new Date(row.updated_at),
     };
@@ -61,6 +64,7 @@ export class SupabaseTeamRepository implements ITeamRepository {
       .from("teams")
       .select("*")
       .eq("club_id", clubId)
+      .eq("is_deleted", false)
       .order("created_at", { ascending: false });
 
     if (error) {
@@ -78,6 +82,7 @@ export class SupabaseTeamRepository implements ITeamRepository {
       .select("*")
       .eq("club_id", clubId)
       .eq("status", status)
+      .eq("is_deleted", false)
       .order("created_at", { ascending: false });
 
     if (teamsError) {
@@ -119,6 +124,7 @@ export class SupabaseTeamRepository implements ITeamRepository {
       .from("teams")
       .select("*")
       .eq("owner_id", ownerId)
+      .eq("is_deleted", false)
       .order("created_at", { ascending: false });
 
     if (error) {
@@ -135,6 +141,7 @@ export class SupabaseTeamRepository implements ITeamRepository {
     if (data.category !== undefined) updateData.category = data.category;
     if (data.gender !== undefined) updateData.gender = data.gender;
     if (data.status !== undefined) updateData.status = data.status;
+    if (data.isActive !== undefined) updateData.is_active = data.isActive;
 
     const { data: team, error } = await this.supabase
       .from("teams")
@@ -152,9 +159,13 @@ export class SupabaseTeamRepository implements ITeamRepository {
   }
 
   async delete(id: string): Promise<boolean> {
+    // Soft delete - mark as deleted instead of physical deletion
     const { error } = await this.supabase
       .from("teams")
-      .delete()
+      .update({
+        is_deleted: true,
+        deleted_at: new Date().toISOString(),
+      })
       .eq("id", id);
 
     return !error;
@@ -165,7 +176,8 @@ export class SupabaseTeamRepository implements ITeamRepository {
       .from("teams")
       .select("*", { count: "exact", head: true })
       .eq("owner_id", ownerId)
-      .eq("club_id", clubId);
+      .eq("club_id", clubId)
+      .eq("is_deleted", false);
 
     if (error) {
       console.error("Error counting teams:", error);

@@ -79,6 +79,39 @@ export default function TeamFormScreen() {
     }
   };
 
+  const handleDelete = async () => {
+    if (!user || !teamId) return;
+
+    Alert.alert(
+      "Supprimer l'équipe",
+      "Êtes-vous sûr de vouloir supprimer cette équipe ? Cette action est définitive.",
+      [
+        { text: "Annuler", style: "cancel" },
+        {
+          text: "Supprimer",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              const teamService = ServiceFactory.getTeamService(supabase);
+              const result = await teamService.deleteTeam(teamId, user.id);
+
+              if (result.success) {
+                Alert.alert("Succès", "L'équipe a été supprimée", [
+                  { text: "OK", onPress: () => navigation.goBack() },
+                ]);
+              } else {
+                Alert.alert("Erreur", result.error || "Impossible de supprimer l'équipe");
+              }
+            } catch (error) {
+              console.error("Error deleting team:", error);
+              Alert.alert("Erreur", "Une erreur est survenue");
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const handleSave = async () => {
     if (!user) {
       Alert.alert("Erreur", "Vous devez être connecté");
@@ -193,6 +226,19 @@ export default function TeamFormScreen() {
         <View style={{ width: 28 }} />
       </View>
 
+      {/* Inactive team banner */}
+      {isEditMode && team && !team.isActive && (
+        <View style={styles.inactiveBanner}>
+          <Ionicons name="warning-outline" size={24} color="#F57C00" />
+          <View style={styles.inactiveBannerText}>
+            <Text style={styles.inactiveBannerTitle}>Équipe désactivée</Text>
+            <Text style={styles.inactiveBannerSubtitle}>
+              Cette équipe a été désactivée par le responsable du club
+            </Text>
+          </View>
+        </View>
+      )}
+
       <ScrollView style={styles.content}>
         <View style={styles.section}>
           <Text style={styles.label}>Nom de l'équipe *</Text>
@@ -260,6 +306,17 @@ export default function TeamFormScreen() {
             {saving ? (isEditMode ? "Sauvegarde..." : "Création...") : (isEditMode ? "Sauvegarder" : "Créer l'équipe")}
           </Text>
         </TouchableOpacity>
+
+        {/* Delete button - only for team owner in edit mode */}
+        {isEditMode && isOwner && (
+          <TouchableOpacity
+            style={styles.deleteButton}
+            onPress={handleDelete}
+          >
+            <Ionicons name="trash-outline" size={20} color="#F44336" />
+            <Text style={styles.deleteButtonText}>Supprimer l'équipe</Text>
+          </TouchableOpacity>
+        )}
       </ScrollView>
     </View>
   );
@@ -364,5 +421,44 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+  },
+  inactiveBanner: {
+    backgroundColor: "#FFF3E0",
+    padding: 15,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#FFE0B2",
+  },
+  inactiveBannerText: {
+    flex: 1,
+  },
+  inactiveBannerTitle: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#F57C00",
+    marginBottom: 4,
+  },
+  inactiveBannerSubtitle: {
+    fontSize: 13,
+    color: "#E65100",
+  },
+  deleteButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#fff",
+    padding: 15,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: "#F44336",
+    marginBottom: 30,
+    gap: 8,
+  },
+  deleteButtonText: {
+    color: "#F44336",
+    fontSize: 16,
+    fontWeight: "bold",
   },
 });

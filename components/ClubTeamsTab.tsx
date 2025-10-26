@@ -121,15 +121,72 @@ export default function ClubTeamsTab({ clubId, isOwner, onCreateTeam, onEditTeam
     );
   };
 
+  const handleToggleActive = async (team: Team) => {
+    const action = team.isActive ? "désactiver" : "activer";
+    Alert.alert(
+      `${action.charAt(0).toUpperCase() + action.slice(1)} l'équipe`,
+      `Voulez-vous ${action} l'équipe "${team.name}" ?`,
+      [
+        { text: "Annuler", style: "cancel" },
+        {
+          text: action.charAt(0).toUpperCase() + action.slice(1),
+          onPress: async () => {
+            const teamService = ServiceFactory.getTeamService(supabase);
+            const result = await teamService.toggleTeamActive(team.id, "");
+
+            if (result.success) {
+              Alert.alert("Succès", `L'équipe a été ${team.isActive ? "désactivée" : "activée"}`);
+              loadTeams();
+            } else {
+              Alert.alert("Erreur", result.error || `Impossible de ${action} l'équipe`);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleDeleteTeam = async (team: Team) => {
+    Alert.alert(
+      "Supprimer l'équipe",
+      `Êtes-vous sûr de vouloir supprimer l'équipe "${team.name}" ?\n\nCette action libérera une place dans votre abonnement mais les données seront archivées.`,
+      [
+        { text: "Annuler", style: "cancel" },
+        {
+          text: "Supprimer",
+          style: "destructive",
+          onPress: async () => {
+            const teamService = ServiceFactory.getTeamService(supabase);
+            const result = await teamService.deleteTeam(team.id, user!.id);
+
+            if (result.success) {
+              Alert.alert("Succès", "L'équipe a été supprimée");
+              loadTeams();
+            } else {
+              Alert.alert("Erreur", result.error || "Impossible de supprimer l'équipe");
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const renderTeam = (team: Team, isPending: boolean) => {
     const categoryLabel = team.category ? ` - ${team.category.toUpperCase()}` : "";
     const genderLabel = team.gender ? ` - ${team.gender === "male" ? "M" : team.gender === "female" ? "F" : "Mixte"}` : "";
     const isTeamOwner = user && team.ownerId === user.id;
 
     return (
-      <View key={team.id} style={styles.teamCard}>
+      <View key={team.id} style={[styles.teamCard, !team.isActive && styles.teamCardInactive]}>
         <View style={styles.teamInfo}>
-          <Text style={styles.teamName}>{team.name}</Text>
+          <View style={styles.teamNameRow}>
+            <Text style={styles.teamName}>{team.name}</Text>
+            {!team.isActive && (
+              <View style={styles.inactiveBadge}>
+                <Text style={styles.inactiveBadgeText}>Désactivée</Text>
+              </View>
+            )}
+          </View>
           {(team.category || team.gender) && (
             <Text style={styles.teamDetails}>
               {categoryLabel}{genderLabel}
@@ -168,6 +225,26 @@ export default function ClubTeamsTab({ clubId, isOwner, onCreateTeam, onEditTeam
               >
                 <Ionicons name="create-outline" size={22} color="#9C27B0" />
               </TouchableOpacity>
+            )}
+            {isOwner && (
+              <>
+                <TouchableOpacity
+                  style={styles.toggleActiveButton}
+                  onPress={() => handleToggleActive(team)}
+                >
+                  <Ionicons
+                    name={team.isActive ? "eye-off-outline" : "eye-outline"}
+                    size={22}
+                    color={team.isActive ? "#FF9800" : "#4CAF50"}
+                  />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.deleteButton}
+                  onPress={() => handleDeleteTeam(team)}
+                >
+                  <Ionicons name="trash-outline" size={22} color="#F44336" />
+                </TouchableOpacity>
+              </>
             )}
             <Ionicons name="checkmark-circle" size={24} color="#4CAF50" />
           </View>
@@ -380,14 +457,36 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#eee",
   },
+  teamCardInactive: {
+    backgroundColor: "#FFF3E0",
+    borderColor: "#FF9800",
+    borderWidth: 2,
+    borderStyle: "dashed",
+  },
   teamInfo: {
     flex: 1,
+  },
+  teamNameRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 4,
   },
   teamName: {
     fontSize: 16,
     fontWeight: "600",
     color: "#333",
-    marginBottom: 4,
+  },
+  inactiveBadge: {
+    backgroundColor: "#FF9800",
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  inactiveBadgeText: {
+    color: "#fff",
+    fontSize: 10,
+    fontWeight: "bold",
   },
   teamDetails: {
     fontSize: 14,
@@ -415,6 +514,12 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   editButton: {
+    padding: 5,
+  },
+  toggleActiveButton: {
+    padding: 5,
+  },
+  deleteButton: {
     padding: 5,
   },
   emptyState: {

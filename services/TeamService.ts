@@ -87,6 +87,24 @@ export class TeamService {
     return { success: true, team: updatedTeam };
   }
 
+  async toggleTeamActive(teamId: string, clubOwnerId: string) {
+    const team = await this.teamRepository.findById(teamId);
+    if (!team) {
+      return { success: false, error: "Équipe introuvable" };
+    }
+
+    // Toggle the active status
+    const updatedTeam = await this.teamRepository.update(teamId, {
+      isActive: !team.isActive
+    });
+
+    if (!updatedTeam) {
+      return { success: false, error: "Erreur lors de la modification du statut de l'équipe" };
+    }
+
+    return { success: true, team: updatedTeam };
+  }
+
   async deleteTeam(id: string, userId: string) {
     const team = await this.teamRepository.findById(id);
     if (!team) {

@@ -11,6 +11,9 @@ export interface Team {
   category?: TeamCategory;
   gender?: TeamGender;
   status: TeamStatus;
+  isActive: boolean; // Club owner can activate/deactivate teams
+  isDeleted: boolean; // Soft delete - archived but not physically removed
+  deletedAt?: Date; // When team was deleted/archived
   createdAt: Date;
   updatedAt: Date;
 }
@@ -27,4 +30,5 @@ export interface UpdateTeamData {
   category?: TeamCategory;
   gender?: TeamGender;
   status?: TeamStatus;
+  isActive?: boolean;
 }

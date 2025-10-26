@@ -43,12 +43,13 @@ export class SubscriptionService {
       const tier = club.subscription_tier as SubscriptionTier;
       const limits = this.getLimitsForTier(tier);
 
-      // Count current approved teams
+      // Count current approved teams (excluding deleted)
       const { count, error: countError } = await this.supabase
         .from("teams")
         .select("*", { count: "exact", head: true })
         .eq("club_id", clubId)
-        .eq("status", "approved");
+        .eq("status", "approved")
+        .eq("is_deleted", false);
 
       if (countError) {
         return {
@@ -110,7 +111,8 @@ export class SubscriptionService {
         .from("teams")
         .select("*", { count: "exact", head: true })
         .eq("club_id", clubId)
-        .eq("status", "approved");
+        .eq("status", "approved")
+        .eq("is_deleted", false);
 
       return {
         tier,
