@@ -11,6 +11,8 @@ interface InitTeamModalProps {
   isConfirmDisabled: boolean;
   getFormattedDate: () => string;
   onRequestClose: () => void;
+  onBack?: () => void; // Callback to go back to team selection
+  canGoBack?: boolean; // Show back button only if team was selected
 }
 
 export default function InitTeamModal({
@@ -23,6 +25,8 @@ export default function InitTeamModal({
   isConfirmDisabled,
   getFormattedDate,
   onRequestClose,
+  onBack,
+  canGoBack = false,
 }: InitTeamModalProps) {
   const [selectedTeamMode, setSelectedTeamMode] = React.useState<
     "A" | "B" | "both" | null
@@ -197,22 +201,41 @@ export default function InitTeamModal({
             </TouchableOpacity>
           ))}
 
-          <TouchableOpacity
-            style={{
-              backgroundColor: isFullyDisabled ? "#aaa" : "#007AFF",
-              borderRadius: 8,
-              paddingVertical: 10,
-              paddingHorizontal: 32,
-              opacity: isFullyDisabled ? 0.7 : 1,
-              marginTop: 16,
-            }}
-            onPress={() => selectedTeamMode && onConfirm(selectedTeamMode)}
-            disabled={isFullyDisabled}
-          >
-            <Text style={{ color: "white", fontWeight: "bold", fontSize: 16 }}>
-              Confirmer
-            </Text>
-          </TouchableOpacity>
+          <View style={{ flexDirection: "row", gap: 12, marginTop: 16, justifyContent: "center" }}>
+            {canGoBack && onBack && (
+              <TouchableOpacity
+                style={{
+                  backgroundColor: "#f0f0f0",
+                  borderRadius: 8,
+                  paddingVertical: 10,
+                  paddingHorizontal: 20,
+                  borderWidth: 1,
+                  borderColor: "#ddd",
+                }}
+                onPress={onBack}
+              >
+                <Text style={{ color: "#666", fontWeight: "600", fontSize: 16 }}>
+                  Retour
+                </Text>
+              </TouchableOpacity>
+            )}
+
+            <TouchableOpacity
+              style={{
+                backgroundColor: isFullyDisabled ? "#aaa" : "#007AFF",
+                borderRadius: 8,
+                paddingVertical: 10,
+                paddingHorizontal: 32,
+                opacity: isFullyDisabled ? 0.7 : 1,
+              }}
+              onPress={() => selectedTeamMode && onConfirm(selectedTeamMode)}
+              disabled={isFullyDisabled}
+            >
+              <Text style={{ color: "white", fontWeight: "bold", fontSize: 16 }}>
+                Confirmer
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
     </Modal>

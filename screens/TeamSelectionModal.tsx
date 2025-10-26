@@ -50,7 +50,9 @@ export default function TeamSelectionModal({
       const userTeams = await teamService.getUserTeams(user.id);
 
       // Filter only approved and active teams
-      const activeTeams = userTeams.filter(t => t.status === 'approved' && t.isActive);
+      const activeTeams = userTeams.filter(
+        (t) => t.status === "approved" && t.isActive
+      );
       setTeams(activeTeams);
 
       // Auto-select if only one team
@@ -84,7 +86,11 @@ export default function TeamSelectionModal({
         <Text style={styles.teamName}>{item.name}</Text>
         {item.gender && (
           <Text style={styles.teamGender}>
-            {item.gender === "male" ? "Masculin" : item.gender === "female" ? "Féminin" : "Mixte"}
+            {item.gender === "male"
+              ? "Masculin"
+              : item.gender === "female"
+              ? "Féminin"
+              : "Mixte"}
           </Text>
         )}
       </View>
@@ -121,12 +127,15 @@ export default function TeamSelectionModal({
             </View>
           ) : (
             <>
-              <FlatList
-                data={teams}
-                renderItem={renderTeam}
-                keyExtractor={(item) => item.id}
-                contentContainerStyle={styles.list}
-              />
+              <View style={styles.flatListContainer}>
+                <FlatList
+                  data={teams}
+                  renderItem={renderTeam}
+                  keyExtractor={(item) => item.id}
+                  contentContainerStyle={styles.list}
+                  showsVerticalScrollIndicator={true}
+                />
+              </View>
               <TouchableOpacity style={styles.skipButton} onPress={onSkip}>
                 <Text style={styles.skipButtonText}>Continuer sans équipe</Text>
               </TouchableOpacity>
@@ -192,6 +201,9 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginBottom: 30,
   },
+  flatListContainer: {
+    height: 300,
+  },
   list: {
     padding: 20,
   },
@@ -200,9 +212,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     backgroundColor: "#f9f9f9",
-    padding: 20,
-    borderRadius: 12,
-    marginBottom: 12,
+    padding: 14,
+    borderRadius: 10,
+    marginBottom: 10,
     borderWidth: 1,
     borderColor: "#eee",
   },
@@ -210,26 +222,26 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   teamName: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: "600",
     color: "#333",
-    marginBottom: 4,
+    marginBottom: 3,
   },
   teamGender: {
-    fontSize: 14,
+    fontSize: 13,
     color: "#666",
   },
   skipButton: {
     marginHorizontal: 20,
     marginTop: 10,
     padding: 15,
-    backgroundColor: "#f0f0f0",
+    backgroundColor: "#2196F3",
     borderRadius: 10,
     alignItems: "center",
   },
   skipButtonText: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#666",
+    color: "#fff",
   },
 });

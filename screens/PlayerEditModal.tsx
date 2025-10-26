@@ -1,11 +1,21 @@
 import React, { useState, useEffect } from "react";
-import { Modal, View, Text, TextInput, TouchableOpacity } from "react-native";
+import { Modal, View, Text, TextInput, TouchableOpacity, ScrollView } from "react-native";
+
+interface AvailablePlayer {
+  id: number;
+  num: number;
+  name: string;
+  isSubstitute: boolean;
+}
 
 interface PlayerEditModalProps {
   visible: boolean;
   playerNumber: number;
   playerName: string;
+  isFromClub?: boolean; // Is this player from the configured club team?
+  availablePlayers?: AvailablePlayer[]; // List of all players to swap with
   onConfirm: (newNumber: number, newName: string) => void;
+  onSwap?: (targetPlayerId: number) => void; // Callback to swap with another player
   onCancel: () => void;
 }
 
@@ -13,17 +23,22 @@ export default function PlayerEditModal({
   visible,
   playerNumber,
   playerName,
+  isFromClub = false,
+  availablePlayers = [],
   onConfirm,
+  onSwap,
   onCancel,
 }: PlayerEditModalProps) {
   const [editNumber, setEditNumber] = useState(playerNumber);
   const [editName, setEditName] = useState(playerName);
+  const [showSwapList, setShowSwapList] = useState(false);
 
   // Reset fields when modal opens
   useEffect(() => {
     if (visible) {
       setEditNumber(playerNumber);
       setEditName(playerName);
+      setShowSwapList(false);
     }
   }, [visible, playerNumber, playerName]);
 
@@ -109,25 +124,101 @@ export default function PlayerEditModal({
             <Text style={{ fontSize: 40, color: "#bbb" }}>👤</Text>
           </View>
 
-          {/* Name field without label */}
-          <TextInput
-            style={{
-              borderWidth: 2,
-              borderColor: "#e0e0e0",
-              borderRadius: 12,
-              padding: 16,
-              width: 240,
-              marginBottom: 24,
-              textAlign: "center",
-              fontSize: 18,
-              fontWeight: "500",
-              backgroundColor: "#fafafa",
-            }}
-            value={editName}
-            onChangeText={setEditName}
-            placeholder="Nom du joueur"
-            maxLength={20}
-          />
+          {/* Name field with swap button */}
+          <View style={{ width: 280, marginBottom: 16 }}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+              <TextInput
+                style={{
+                  flex: 1,
+                  borderWidth: 2,
+                  borderColor: isFromClub ? "#ccc" : "#e0e0e0",
+                  borderRadius: 12,
+                  padding: 16,
+                  textAlign: "center",
+                  fontSize: 18,
+                  fontWeight: "500",
+                  backgroundColor: isFromClub ? "#f5f5f5" : "#fafafa",
+                  color: isFromClub ? "#999" : "#333",
+                }}
+                value={editName}
+                onChangeText={setEditName}
+                placeholder="Nom du joueur"
+                maxLength={20}
+                editable={!isFromClub}
+              />
+
+              {/* Swap button - only if we have players to swap with */}
+              {availablePlayers.length > 0 && onSwap && (
+                <TouchableOpacity
+                  style={{
+                    width: 50,
+                    height: 50,
+                    borderRadius: 25,
+                    backgroundColor: showSwapList ? "#2196F3" : "#E3F2FD",
+                    borderWidth: 2,
+                    borderColor: "#2196F3",
+                    justifyContent: "center",
+                    alignItems: "center",
+                  }}
+                  onPress={() => setShowSwapList(!showSwapList)}
+                >
+                  <Text style={{ fontSize: 20 }}>🔄</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+
+            {/* Swap list */}
+            {showSwapList && availablePlayers.length > 0 && (
+              <ScrollView
+                style={{
+                  maxHeight: 180,
+                  marginTop: 12,
+                  borderRadius: 12,
+                  borderWidth: 1,
+                  borderColor: "#e0e0e0",
+                  backgroundColor: "#fff",
+                }}
+              >
+                {availablePlayers.map((player) => (
+                  <TouchableOpacity
+                    key={player.id}
+                    style={{
+                      padding: 12,
+                      borderBottomWidth: 1,
+                      borderBottomColor: "#f0f0f0",
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: 10,
+                    }}
+                    onPress={() => {
+                      onSwap(player.id);
+                    }}
+                  >
+                    <View
+                      style={{
+                        width: 28,
+                        height: 28,
+                        borderRadius: 14,
+                        backgroundColor: player.isSubstitute ? "#1976d2" : "#4CAF50",
+                        justifyContent: "center",
+                        alignItems: "center",
+                      }}
+                    >
+                      <Text style={{ color: "#fff", fontWeight: "bold", fontSize: 12 }}>
+                        {player.num}
+                      </Text>
+                    </View>
+                    <Text style={{ fontSize: 15, fontWeight: "500", color: "#333", flex: 1 }}>
+                      {player.name}
+                    </Text>
+                    <Text style={{ fontSize: 11, color: "#666", fontWeight: "600" }}>
+                      {player.isSubstitute ? "REM" : "TIT"}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            )}
+          </View>
 
           {/* Numeric field with + and - buttons */}
           <View style={{ marginBottom: 32 }}>

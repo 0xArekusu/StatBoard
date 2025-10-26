@@ -41,6 +41,7 @@ import { ActionQueue, ActionObserver } from "../src/services/match/ActionQueue";
 import { ActionRepository } from "../src/services/database/ActionRepository";
 import { MatchPlayerRepository } from "../src/services/database/MatchPlayerRepository";
 import { Match } from "../src/models/types";
+import type { Player } from "../models/Player";
 
 // Modal layout constants (for the new ActionModal)
 const MODAL_WIDTH = 240;
@@ -57,6 +58,53 @@ type RootStackParamList = {
 };
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, "Board">;
+
+/**
+ * Convert club players (from database) to BoardScreen format
+ * Maps players by position (1-5 for starters) rather than jersey number
+ */
+const convertClubPlayersToBoard = (clubPlayers: Player[]) => {
+  // Separate starters and substitutes
+  const clubStarters = clubPlayers.filter(p => p.isStarter);
+  const clubSubstitutes = clubPlayers.filter(p => !p.isStarter);
+
+  // Map starters by position (1-5)
+  // Position 1 = Point Guard, 2 = Shooting Guard, 3 = Small Forward, 4 = Power Forward, 5 = Center
+  const starters = Array.from({ length: 5 }, (_, index) => {
+    const position = (index + 1) as 1 | 2 | 3 | 4 | 5;
+    const playerAtPosition = clubStarters.find(p => p.position === position);
+
+    if (playerAtPosition) {
+      return {
+        id: index + 1,
+        num: playerAtPosition.jerseyNumber,
+        name: playerAtPosition.name,
+        isSubstitute: false,
+        isFromClub: true
+      };
+    }
+
+    // If no player at this position, create a default placeholder
+    return {
+      id: index + 1,
+      num: index + 1,
+      name: `Joueur A${index + 1}`,
+      isSubstitute: false,
+      isFromClub: false
+    };
+  });
+
+  // Map substitutes (keep their order, assign sequential IDs)
+  const substitutes = clubSubstitutes.map((p, index) => ({
+    id: starters.length + index + 1,
+    num: p.jerseyNumber,
+    name: p.name,
+    isSubstitute: true,
+    isFromClub: true
+  }));
+
+  return { starters, substitutes };
+};
 
 /**
  * Get marker color based on action type and specification
@@ -413,37 +461,37 @@ export default function BasketballCourt() {
 
   // State for players with their positions
   const [players, setPlayers] = useState([
-    { id: 1, num: 1, name: "Joueur #1", isSubstitute: false },
-    { id: 2, num: 2, name: "Joueur #2", isSubstitute: false },
-    { id: 3, num: 3, name: "Joueur #3", isSubstitute: false },
-    { id: 4, num: 4, name: "Joueur #4", isSubstitute: false },
-    { id: 5, num: 5, name: "Joueur #5", isSubstitute: false },
+    { id: 1, num: 1, name: "Joueur A1", isSubstitute: false, isFromClub: false },
+    { id: 2, num: 2, name: "Joueur A2", isSubstitute: false, isFromClub: false },
+    { id: 3, num: 3, name: "Joueur A3", isSubstitute: false, isFromClub: false },
+    { id: 4, num: 4, name: "Joueur A4", isSubstitute: false, isFromClub: false },
+    { id: 5, num: 5, name: "Joueur A5", isSubstitute: false, isFromClub: false },
   ]);
 
   // 🏀 State for team B players ("both" mode)
   const [playersTeamB, setPlayersTeamB] = useState([
-    { id: 6, num: 1, name: "Joueur B #1", isSubstitute: false },
-    { id: 7, num: 2, name: "Joueur B #2", isSubstitute: false },
-    { id: 8, num: 3, name: "Joueur B #3", isSubstitute: false },
-    { id: 9, num: 4, name: "Joueur B #4", isSubstitute: false },
-    { id: 10, num: 5, name: "Joueur B #5", isSubstitute: false },
+    { id: 6, num: 1, name: "Joueur B1", isSubstitute: false, isFromClub: false },
+    { id: 7, num: 2, name: "Joueur B2", isSubstitute: false, isFromClub: false },
+    { id: 8, num: 3, name: "Joueur B3", isSubstitute: false, isFromClub: false },
+    { id: 9, num: 4, name: "Joueur B4", isSubstitute: false, isFromClub: false },
+    { id: 10, num: 5, name: "Joueur B5", isSubstitute: false, isFromClub: false },
   ]);
 
   // States for substitutes
   const [substitutesTeamA, setSubstitutesTeamA] = useState([
-    { id: 11, num: 6, name: "Remplaçant A #1", isSubstitute: true },
-    { id: 12, num: 7, name: "Remplaçant A #2", isSubstitute: true },
-    { id: 13, num: 8, name: "Remplaçant A #3", isSubstitute: true },
-    { id: 14, num: 9, name: "Remplaçant A #4", isSubstitute: true },
-    { id: 15, num: 10, name: "Remplaçant A #5", isSubstitute: true },
+    { id: 11, num: 6, name: "Remplaçant A1", isSubstitute: true, isFromClub: false },
+    { id: 12, num: 7, name: "Remplaçant A2", isSubstitute: true, isFromClub: false },
+    { id: 13, num: 8, name: "Remplaçant A3", isSubstitute: true, isFromClub: false },
+    { id: 14, num: 9, name: "Remplaçant A4", isSubstitute: true, isFromClub: false },
+    { id: 15, num: 10, name: "Remplaçant A5", isSubstitute: true, isFromClub: false },
   ]);
 
   const [substitutesTeamB, setSubstitutesTeamB] = useState([
-    { id: 16, num: 6, name: "Remplaçant B #1", isSubstitute: true },
-    { id: 17, num: 7, name: "Remplaçant B #2", isSubstitute: true },
-    { id: 18, num: 8, name: "Remplaçant B #3", isSubstitute: true },
-    { id: 19, num: 9, name: "Remplaçant B #4", isSubstitute: true },
-    { id: 20, num: 10, name: "Remplaçant B #5", isSubstitute: true },
+    { id: 16, num: 6, name: "Remplaçant B1", isSubstitute: true, isFromClub: false },
+    { id: 17, num: 7, name: "Remplaçant B2", isSubstitute: true, isFromClub: false },
+    { id: 18, num: 8, name: "Remplaçant B3", isSubstitute: true, isFromClub: false },
+    { id: 19, num: 9, name: "Remplaçant B4", isSubstitute: true, isFromClub: false },
+    { id: 20, num: 10, name: "Remplaçant B5", isSubstitute: true, isFromClub: false },
   ]);
 
   // States for coaches
@@ -907,6 +955,32 @@ export default function BasketballCourt() {
   const handleTeamModeConfirm = (selectedTeamMode: "A" | "B" | "both") => {
     setTeamMode(selectedTeamMode);
     setCurrentTeam(selectedTeamMode === "B" ? "B" : "A");
+
+    // ✨ If user chose Team B and we have club players, move them to Team B
+    if (selectedTeamMode === "B" && selectedTeamPlayers.length > 0) {
+      const { starters, substitutes } = convertClubPlayersToBoard(selectedTeamPlayers);
+
+      // Move club players to Team B
+      setPlayersTeamB(starters);
+      setSubstitutesTeamB(substitutes);
+
+      // Reset Team A to default values
+      setPlayers([
+        { id: 1, num: 1, name: "Joueur A1", isSubstitute: false, isFromClub: false },
+        { id: 2, num: 2, name: "Joueur A2", isSubstitute: false, isFromClub: false },
+        { id: 3, num: 3, name: "Joueur A3", isSubstitute: false, isFromClub: false },
+        { id: 4, num: 4, name: "Joueur A4", isSubstitute: false, isFromClub: false },
+        { id: 5, num: 5, name: "Joueur A5", isSubstitute: false, isFromClub: false },
+      ]);
+      setSubstitutesTeamA([
+        { id: 11, num: 6, name: "Remplaçant A1", isSubstitute: true, isFromClub: false },
+        { id: 12, num: 7, name: "Remplaçant A2", isSubstitute: true, isFromClub: false },
+        { id: 13, num: 8, name: "Remplaçant A3", isSubstitute: true, isFromClub: false },
+        { id: 14, num: 9, name: "Remplaçant A4", isSubstitute: true, isFromClub: false },
+        { id: 15, num: 10, name: "Remplaçant A5", isSubstitute: true, isFromClub: false },
+      ]);
+    }
+
     setInitModalVisible(false);
     setMatchConfigModalVisible(true);
   };
@@ -1261,6 +1335,54 @@ export default function BasketballCourt() {
     setEditingPlayer(playerId);
     setEditingTeam(team); // 🏀 Mémoriser l'équipe en cours d'édition
     setPlayerEditModalVisible(true);
+  };
+
+  // 🔄 Fonction pour interchanger deux joueurs (swap positions)
+  const handlePlayerSwap = (targetPlayerId: number) => {
+    if (editingPlayer === null) return;
+
+    const teamPlayers = editingTeam === "A" ? players : playersTeamB;
+    const teamSubstitutes = editingTeam === "A" ? substitutesTeamA : substitutesTeamB;
+
+    // Find the current player being edited
+    const currentPlayer = [...teamPlayers, ...teamSubstitutes].find(p => p.id === editingPlayer);
+    // Find the target player to swap with
+    const targetPlayer = [...teamPlayers, ...teamSubstitutes].find(p => p.id === targetPlayerId);
+
+    if (!currentPlayer || !targetPlayer) return;
+
+    // Swap positions by swapping their data
+    if (editingTeam === "A") {
+      // Update starters
+      setPlayers(prev => prev.map(p => {
+        if (p.id === currentPlayer.id) return { ...p, num: targetPlayer.num, name: targetPlayer.name, isFromClub: targetPlayer.isFromClub };
+        if (p.id === targetPlayer.id) return { ...p, num: currentPlayer.num, name: currentPlayer.name, isFromClub: currentPlayer.isFromClub };
+        return p;
+      }));
+      // Update substitutes
+      setSubstitutesTeamA(prev => prev.map(p => {
+        if (p.id === currentPlayer.id) return { ...p, num: targetPlayer.num, name: targetPlayer.name, isFromClub: targetPlayer.isFromClub };
+        if (p.id === targetPlayer.id) return { ...p, num: currentPlayer.num, name: currentPlayer.name, isFromClub: currentPlayer.isFromClub };
+        return p;
+      }));
+    } else {
+      // Update Team B starters
+      setPlayersTeamB(prev => prev.map(p => {
+        if (p.id === currentPlayer.id) return { ...p, num: targetPlayer.num, name: targetPlayer.name, isFromClub: targetPlayer.isFromClub };
+        if (p.id === targetPlayer.id) return { ...p, num: currentPlayer.num, name: currentPlayer.name, isFromClub: currentPlayer.isFromClub };
+        return p;
+      }));
+      // Update Team B substitutes
+      setSubstitutesTeamB(prev => prev.map(p => {
+        if (p.id === currentPlayer.id) return { ...p, num: targetPlayer.num, name: targetPlayer.name, isFromClub: targetPlayer.isFromClub };
+        if (p.id === targetPlayer.id) return { ...p, num: currentPlayer.num, name: currentPlayer.name, isFromClub: currentPlayer.isFromClub };
+        return p;
+      }));
+    }
+
+    // Close the modal
+    setPlayerEditModalVisible(false);
+    setEditingPlayer(null);
   };
 
   const handlePlayerEditConfirm = (newNumber: number, newName: string) => {
@@ -1691,6 +1813,16 @@ export default function BasketballCourt() {
         onTeamSelected={(team, players) => {
           setSelectedTeam(team);
           setSelectedTeamPlayers(players || []);
+
+          // ✨ Pre-fill players from club team
+          if (players && players.length > 0) {
+            const { starters, substitutes } = convertClubPlayersToBoard(players);
+
+            // Set Team A players (default team for club)
+            setPlayers(starters);
+            setSubstitutesTeamA(substitutes);
+          }
+
           setTeamSelectionModalVisible(false);
           setInitModalVisible(true);
           if (team) {
@@ -1714,6 +1846,11 @@ export default function BasketballCourt() {
         isConfirmDisabled={isConfirmDisabled}
         getFormattedDate={getFormattedDate}
         onRequestClose={() => navigation.goBack()}
+        canGoBack={selectedTeam !== null}
+        onBack={() => {
+          setInitModalVisible(false);
+          setTeamSelectionModalVisible(true);
+        }}
       />
 
       <MatchConfigModal
@@ -1766,6 +1903,27 @@ export default function BasketballCourt() {
               })()
             : ""
         }
+        isFromClub={
+          editingPlayer
+            ? (() => {
+                const teamPlayers =
+                  editingTeam === "A" ? players : playersTeamB;
+                const teamSubstitutes =
+                  editingTeam === "A" ? substitutesTeamA : substitutesTeamB;
+                const player = [...teamPlayers, ...teamSubstitutes].find(
+                  (p) => p.id === editingPlayer
+                );
+                return player?.isFromClub || false;
+              })()
+            : false
+        }
+        availablePlayers={(() => {
+          const teamPlayers = editingTeam === "A" ? players : playersTeamB;
+          const teamSubstitutes = editingTeam === "A" ? substitutesTeamA : substitutesTeamB;
+          // Exclude the currently edited player from the list
+          return [...teamPlayers, ...teamSubstitutes].filter(p => p.id !== editingPlayer);
+        })()}
+        onSwap={handlePlayerSwap}
         onConfirm={handlePlayerEditConfirm}
         onCancel={handlePlayerEditCancel}
       />
@@ -2149,7 +2307,8 @@ export default function BasketballCourt() {
       />
 
       {/* 🏀 Pastilles des joueurs - Équipe A */}
-      {!initModalVisible &&
+      {!teamSelectionModalVisible &&
+        !initModalVisible &&
         !matchConfigModalVisible &&
         preGameMode &&
         (teamMode === "A" || teamMode === "both") &&
@@ -2212,7 +2371,8 @@ export default function BasketballCourt() {
         ))}
 
       {/* 🏀 Pastilles des joueurs - Équipe B */}
-      {!initModalVisible &&
+      {!teamSelectionModalVisible &&
+        !initModalVisible &&
         !matchConfigModalVisible &&
         preGameMode &&
         (teamMode === "B" || teamMode === "both") &&
@@ -2275,7 +2435,8 @@ export default function BasketballCourt() {
         ))}
 
       {/* 🔄 Gestionnaire des remplaçants - Équipe A */}
-      {!initModalVisible &&
+      {!teamSelectionModalVisible &&
+        !initModalVisible &&
         !matchConfigModalVisible &&
         preGameMode &&
         (teamMode === "A" || teamMode === "both") && (
@@ -2294,7 +2455,8 @@ export default function BasketballCourt() {
         )}
 
       {/* 🔄 Gestionnaire des remplaçants - Équipe B */}
-      {!initModalVisible &&
+      {!teamSelectionModalVisible &&
+        !initModalVisible &&
         !matchConfigModalVisible &&
         preGameMode &&
         (teamMode === "B" || teamMode === "both") && (
