@@ -1,5 +1,6 @@
 import { Club, CreateClubData, UpdateClubData } from "../models/Club";
 import { IClubRepository } from "../repositories/IClubRepository";
+import { canUseMultiClub } from "../src/config/devConfig";
 
 /**
  * Service Layer Pattern
@@ -36,10 +37,12 @@ export class ClubService {
       return { success: false, error: "Club acronym must be 5 characters or less" };
     }
 
-    // Check if user already has a club
-    const existingClubs = await this.clubRepository.findByOwnerId(userId);
-    if (existingClubs.length > 0) {
-      return { success: false, error: "Vous avez déjà créé un club" };
+    // Check if user already has a club (unless multi-club is enabled for this user)
+    if (!canUseMultiClub(userId)) {
+      const existingClubs = await this.clubRepository.findByOwnerId(userId);
+      if (existingClubs.length > 0) {
+        return { success: false, error: "Vous avez déjà créé un club" };
+      }
     }
 
     // Create club

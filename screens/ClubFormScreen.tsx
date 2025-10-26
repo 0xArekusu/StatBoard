@@ -57,7 +57,7 @@ export default function ClubFormScreen() {
 
   const [club, setClub] = useState<Club | null>(null);
   const isOwner = club && user && club.ownerId === user.id;
-  const [activeTab, setActiveTab] = useState<"info" | "teams">(isOwner ? "info" : "teams");
+  const [activeTab, setActiveTab] = useState<"info" | "teams">("info");
   const [loading, setLoading] = useState(isEditMode);
   const [saving, setSaving] = useState(false);
 

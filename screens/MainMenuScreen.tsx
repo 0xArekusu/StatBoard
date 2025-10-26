@@ -5,12 +5,14 @@ import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useAuth } from "../src/contexts/AuthContext";
 import { Ionicons } from "@expo/vector-icons";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
+import { Picker } from "@react-native-picker/picker";
 import ClubChoiceModal from "../components/ClubChoiceModal";
 import { supabase } from "../src/config/supabase";
 import { ServiceFactory } from "../services/ServiceFactory";
 import type { Club } from "../models/Club";
 import { ROUTES } from "../constants/routes";
+import { canUseMultiClub } from "../src/config/devConfig";
 
 type RootStackParamList = {
   [ROUTES.MAIN_MENU]: undefined;
@@ -28,12 +30,16 @@ export default function MainMenuScreen() {
   const { signOut, user } = useAuth();
   const [clubModalVisible, setClubModalVisible] = useState(false);
   const [userClub, setUserClub] = useState<Club | null>(null);
+  const [userClubs, setUserClubs] = useState<Club[]>([]);
   const [loadingClub, setLoadingClub] = useState(false);
+  const selectedClubIdRef = useRef<string | null>(null);
 
   // Load user's club when screen is focused
   const loadUserClub = useCallback(async () => {
     if (!user) {
       setUserClub(null);
+      setUserClubs([]);
+      selectedClubIdRef.current = null;
       return;
     }
 
@@ -42,7 +48,21 @@ export default function MainMenuScreen() {
       const clubService = ServiceFactory.getClubService(supabase);
       // Get clubs where user is member (includes owned clubs via trigger)
       const clubs = await clubService.getUserMemberClubs(user.id);
-      setUserClub(clubs.length > 0 ? clubs[0] : null);
+      setUserClubs(clubs);
+
+      // Restore previously selected club if it still exists
+      if (selectedClubIdRef.current) {
+        const previouslySelected = clubs.find(c => c.id === selectedClubIdRef.current);
+        if (previouslySelected) {
+          setUserClub(previouslySelected);
+          return;
+        }
+      }
+
+      // Otherwise, select the first club
+      const firstClub = clubs.length > 0 ? clubs[0] : null;
+      setUserClub(firstClub);
+      selectedClubIdRef.current = firstClub?.id || null;
     } catch (error) {
       console.error("Error loading user club:", error);
     } finally {
@@ -109,28 +129,67 @@ export default function MainMenuScreen() {
       </TouchableOpacity>
 
       {user && (
-        <TouchableOpacity
-          style={[styles.button, styles.clubButton]}
-          onPress={() => {
-            if (userClub) {
-              (navigation as any).navigate(ROUTES.CLUB_FORM, { clubId: userClub.id });
-            } else {
-              setClubModalVisible(true);
-            }
-          }}
-          disabled={loadingClub}
-        >
-          {loadingClub ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <>
-              <Ionicons name="people-outline" size={24} color="#fff" />
-              <Text style={styles.buttonText}>
-                {userClub ? "Mon club" : "Créer/Rejoindre un club"}
-              </Text>
-            </>
+        <>
+          {/* Club selector for admin user with multi-club enabled */}
+          {canUseMultiClub(user.id) && userClubs.length > 1 && (
+            <View style={styles.clubSelectorContainer}>
+              <Text style={styles.clubSelectorLabel}>Sélectionner un club:</Text>
+              <View style={styles.pickerContainer}>
+                <Picker
+                  selectedValue={userClub?.id}
+                  onValueChange={(clubId) => {
+                    const selectedClub = userClubs.find(c => c.id === clubId);
+                    if (selectedClub) {
+                      setUserClub(selectedClub);
+                      selectedClubIdRef.current = clubId;
+                    }
+                  }}
+                  style={styles.picker}
+                >
+                  {userClubs.map(club => (
+                    <Picker.Item key={club.id} label={club.name} value={club.id} />
+                  ))}
+                </Picker>
+              </View>
+            </View>
           )}
-        </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.button, styles.clubButton]}
+            onPress={() => {
+              if (userClub) {
+                (navigation as any).navigate(ROUTES.CLUB_FORM, { clubId: userClub.id });
+              } else {
+                setClubModalVisible(true);
+              }
+            }}
+            disabled={loadingClub}
+          >
+            {loadingClub ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <>
+                <Ionicons name="people-outline" size={24} color="#fff" />
+                <Text style={styles.buttonText}>
+                  {userClub ? "Mon club" : "Créer/Rejoindre un club"}
+                </Text>
+              </>
+            )}
+          </TouchableOpacity>
+
+          {/* Add club button for admin user */}
+          {canUseMultiClub(user.id) && (
+            <TouchableOpacity
+              style={[styles.button, styles.addClubButton]}
+              onPress={() => setClubModalVisible(true)}
+            >
+              <Ionicons name="add-circle-outline" size={24} color="#9C27B0" />
+              <Text style={[styles.buttonText, styles.addClubButtonText]}>
+                Créer/Rejoindre un autre club
+              </Text>
+            </TouchableOpacity>
+          )}
+        </>
       )}
 
       {!user && (
@@ -220,6 +279,33 @@ const styles = StyleSheet.create({
   },
   clubButton: {
     backgroundColor: "#9C27B0",
+  },
+  addClubButton: {
+    backgroundColor: "#fff",
+    borderWidth: 2,
+    borderColor: "#9C27B0",
+  },
+  addClubButtonText: {
+    color: "#9C27B0",
+  },
+  clubSelectorContainer: {
+    width: "80%",
+    marginVertical: 10,
+  },
+  clubSelectorLabel: {
+    fontSize: 14,
+    color: "#666",
+    marginBottom: 5,
+    fontWeight: "600",
+  },
+  pickerContainer: {
+    borderWidth: 1,
+    borderColor: "#9C27B0",
+    borderRadius: 10,
+    backgroundColor: "#f9f9f9",
+  },
+  picker: {
+    height: 50,
   },
   buttonText: {
     color: "#fff",

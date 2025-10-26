@@ -7,6 +7,7 @@ import { ClubService } from "./ClubService";
 import { ClubMemberService } from "./ClubMemberService";
 import { TeamService } from "./TeamService";
 import { PlayerService } from "./PlayerService";
+import { SubscriptionService } from "./SubscriptionService";
 
 /**
  * Factory Pattern + Singleton Pattern
@@ -17,6 +18,7 @@ export class ServiceFactory {
   private static clubMemberServiceInstance: ClubMemberService | null = null;
   private static teamServiceInstance: TeamService | null = null;
   private static playerServiceInstance: PlayerService | null = null;
+  private static subscriptionServiceInstance: SubscriptionService | null = null;
 
   /**
    * Get ClubService singleton instance
@@ -50,7 +52,12 @@ export class ServiceFactory {
     if (!this.teamServiceInstance) {
       const teamRepository = new SupabaseTeamRepository(supabase);
       const clubMemberRepository = new SupabaseClubMemberRepository(supabase);
-      this.teamServiceInstance = new TeamService(teamRepository, clubMemberRepository);
+      const subscriptionService = this.getSubscriptionService(supabase);
+      this.teamServiceInstance = new TeamService(
+        teamRepository,
+        clubMemberRepository,
+        subscriptionService
+      );
     }
     return this.teamServiceInstance;
   }
@@ -68,6 +75,17 @@ export class ServiceFactory {
   }
 
   /**
+   * Get SubscriptionService singleton instance
+   * @param supabase Supabase client instance
+   */
+  static getSubscriptionService(supabase: SupabaseClient): SubscriptionService {
+    if (!this.subscriptionServiceInstance) {
+      this.subscriptionServiceInstance = new SubscriptionService(supabase);
+    }
+    return this.subscriptionServiceInstance;
+  }
+
+  /**
    * Reset singleton instances (useful for testing)
    */
   static reset(): void {
@@ -75,5 +93,6 @@ export class ServiceFactory {
     this.clubMemberServiceInstance = null;
     this.teamServiceInstance = null;
     this.playerServiceInstance = null;
+    this.subscriptionServiceInstance = null;
   }
 }

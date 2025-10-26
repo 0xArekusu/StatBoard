@@ -1,13 +1,15 @@
 import type { ITeamRepository } from "../repositories/ITeamRepository";
 import type { IClubMemberRepository } from "../repositories/IClubMemberRepository";
 import type { CreateTeamData, UpdateTeamData, TeamStatus } from "../models/Team";
+import type { SubscriptionService } from "./SubscriptionService";
 
 const MAX_TEAMS_PER_USER_PER_CLUB = 10;
 
 export class TeamService {
   constructor(
     private teamRepository: ITeamRepository,
-    private clubMemberRepository: IClubMemberRepository
+    private clubMemberRepository: IClubMemberRepository,
+    private subscriptionService?: SubscriptionService
   ) {}
 
   async createTeam(data: CreateTeamData, userId: string) {
@@ -20,6 +22,17 @@ export class TeamService {
     const isMember = await this.clubMemberRepository.findByClubAndUser(data.clubId, userId);
     if (!isMember) {
       return { success: false, error: "Vous devez être membre du club pour créer une équipe" };
+    }
+
+    // Check subscription limits (club-wide)
+    if (this.subscriptionService) {
+      const limitCheck = await this.subscriptionService.canCreateTeam(data.clubId);
+      if (!limitCheck.allowed) {
+        return {
+          success: false,
+          error: limitCheck.error || "Limite d'équipes atteinte pour ce club",
+        };
+      }
     }
 
     // Check team limit per user per club

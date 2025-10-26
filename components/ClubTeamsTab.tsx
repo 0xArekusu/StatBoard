@@ -28,19 +28,37 @@ export default function ClubTeamsTab({ clubId, isOwner, onCreateTeam, onEditTeam
   const [approvedTeams, setApprovedTeams] = useState<Team[]>([]);
   const [loading, setLoading] = useState(true);
   const [showPending, setShowPending] = useState(false);
+  const [subscriptionInfo, setSubscriptionInfo] = useState<{
+    tier: string;
+    currentTeamCount: number;
+    maxTeams: number;
+  } | null>(null);
 
   const loadTeams = useCallback(async () => {
     try {
       setLoading(true);
       const teamService = ServiceFactory.getTeamService(supabase);
+      const subscriptionService = ServiceFactory.getSubscriptionService(supabase);
 
-      const [pending, approved] = await Promise.all([
+      const [pending, approved, subInfo] = await Promise.all([
         teamService.getClubTeamsByStatus(clubId, "pending"),
         teamService.getClubTeamsByStatus(clubId, "approved"),
+        subscriptionService.getClubSubscriptionInfo(clubId),
       ]);
 
       setPendingTeams(pending);
       setApprovedTeams(approved);
+
+      if (subInfo) {
+        console.log("Subscription info loaded:", subInfo);
+        setSubscriptionInfo({
+          tier: subInfo.tier,
+          currentTeamCount: subInfo.currentTeamCount,
+          maxTeams: subInfo.limits.maxTeams,
+        });
+      } else {
+        console.log("No subscription info found");
+      }
     } catch (error) {
       console.error("Error loading teams:", error);
     } finally {
@@ -166,9 +184,47 @@ export default function ClubTeamsTab({ clubId, isOwner, onCreateTeam, onEditTeam
     );
   }
 
+  const handleCreateTeam = () => {
+    // Check subscription limit
+    if (subscriptionInfo && subscriptionInfo.currentTeamCount >= subscriptionInfo.maxTeams) {
+      Alert.alert(
+        "Limite atteinte",
+        `Vous avez atteint la limite de ${subscriptionInfo.maxTeams} équipe(s) pour l'abonnement ${subscriptionInfo.tier.toUpperCase()}.\n\nPassez à un abonnement supérieur pour créer plus d'équipes.`,
+        [
+          { text: "Annuler", style: "cancel" },
+          { text: "Voir les offres", onPress: () => {
+            // TODO: Navigation vers le paywall
+            Alert.alert("Paywall", "Écran de tarification à venir...");
+          }},
+        ]
+      );
+      return;
+    }
+
+    onCreateTeam();
+  };
+
   return (
     <View style={styles.container}>
-      <TouchableOpacity style={styles.createButton} onPress={onCreateTeam}>
+      {/* Subscription Info */}
+      {subscriptionInfo && (
+        <View style={styles.subscriptionInfo}>
+          <View style={styles.subscriptionHeader}>
+            <Ionicons name="star" size={20} color="#9C27B0" />
+            <Text style={styles.subscriptionTier}>
+              Abonnement {subscriptionInfo.tier.toUpperCase()}
+            </Text>
+          </View>
+          <Text style={styles.subscriptionLimit}>
+            Équipes: {subscriptionInfo.currentTeamCount}/{subscriptionInfo.maxTeams}
+          </Text>
+        </View>
+      )}
+
+      <TouchableOpacity
+        style={styles.createButton}
+        onPress={handleCreateTeam}
+      >
         <Ionicons name="add-circle-outline" size={24} color="#fff" />
         <Text style={styles.createButtonText}>Créer une équipe</Text>
       </TouchableOpacity>
@@ -231,6 +287,30 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+  },
+  subscriptionInfo: {
+    backgroundColor: "#f5f0fa",
+    padding: 15,
+    borderRadius: 10,
+    marginBottom: 15,
+    borderWidth: 1,
+    borderColor: "#9C27B0",
+  },
+  subscriptionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 5,
+  },
+  subscriptionTier: {
+    fontSize: 14,
+    fontWeight: "bold",
+    color: "#9C27B0",
+  },
+  subscriptionLimit: {
+    fontSize: 13,
+    color: "#666",
+    marginLeft: 28,
   },
   createButton: {
     flexDirection: "row",

@@ -1,3 +1,5 @@
+import type { SubscriptionTier } from "./Subscription";
+
 /**
  * Club Domain Model
  * Represents a basketball club entity
@@ -14,6 +16,7 @@ export interface Club {
   courtLineColor: string;
   ownerId: string;
   ownerEmail: string;
+  subscriptionTier: SubscriptionTier;
   createdAt: Date;
   updatedAt: Date;
 }
