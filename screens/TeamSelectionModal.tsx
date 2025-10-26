@@ -93,7 +93,7 @@ export default function TeamSelectionModal({
   );
 
   return (
-    <Modal visible={visible} animationType="slide" transparent>
+    <Modal visible={visible} animationType="fade" transparent>
       <View style={styles.overlay}>
         <View style={styles.container}>
           <View style={styles.header}>
@@ -142,14 +142,16 @@ const styles = StyleSheet.create({
   overlay: {
     flex: 1,
     backgroundColor: "rgba(0, 0, 0, 0.5)",
-    justifyContent: "flex-end",
+    justifyContent: "center",
+    alignItems: "center",
   },
   container: {
     backgroundColor: "#fff",
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    borderRadius: 20,
     maxHeight: "80%",
-    paddingBottom: 40,
+    maxWidth: "90%",
+    width: 400,
+    paddingBottom: 20,
   },
   header: {
     flexDirection: "row",

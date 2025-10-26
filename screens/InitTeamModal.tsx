@@ -10,7 +10,7 @@ interface InitTeamModalProps {
   onConfirm: (teamMode: "A" | "B" | "both") => void;
   isConfirmDisabled: boolean;
   getFormattedDate: () => string;
-  onRequestClose: () => void; // Add onRequestClose prop
+  onRequestClose: () => void;
 }
 
 export default function InitTeamModal({
