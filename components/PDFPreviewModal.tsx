@@ -34,6 +34,7 @@ interface PDFPreviewModalProps {
   statsTeamB: any[];
   periodLabel: string;
   teamMode: "A" | "B" | "both";
+  scoreManuallyAdjusted?: boolean;
 }
 
 export default function PDFPreviewModal({
@@ -52,6 +53,7 @@ export default function PDFPreviewModal({
   statsTeamB,
   periodLabel,
   teamMode,
+  scoreManuallyAdjusted = false,
 }: PDFPreviewModalProps) {
   const dateStr = matchDate.toLocaleDateString("fr-FR", {
     day: "2-digit",
@@ -96,6 +98,13 @@ export default function PDFPreviewModal({
                 {scoreA} - {scoreB}
               </Text>
             </View>
+            {scoreManuallyAdjusted && (
+              <View style={styles.warningBanner}>
+                <Text style={styles.warningText}>
+                  ⚠️ Score ajusté manuellement - Les statistiques peuvent ne pas correspondre au score affiché
+                </Text>
+              </View>
+            )}
           </View>
 
           {/* Period Scores */}
@@ -114,18 +123,20 @@ export default function PDFPreviewModal({
               </View>
 
               {/* Team A */}
-              <View style={styles.tableRow}>
-                <Text style={[styles.tableCell, styles.teamCell]}>{teamA}</Text>
-                {periodScoresA.map((score, idx) => (
-                  <Text key={idx} style={styles.tableCell}>
-                    {score}
-                  </Text>
-                ))}
-                <Text style={[styles.tableCell, styles.totalCell]}>{scoreA}</Text>
-              </View>
+              {(teamMode === "A" || teamMode === "both") && (
+                <View style={styles.tableRow}>
+                  <Text style={[styles.tableCell, styles.teamCell]}>{teamA}</Text>
+                  {periodScoresA.map((score, idx) => (
+                    <Text key={idx} style={styles.tableCell}>
+                      {score}
+                    </Text>
+                  ))}
+                  <Text style={[styles.tableCell, styles.totalCell]}>{scoreA}</Text>
+                </View>
+              )}
 
               {/* Team B */}
-              {teamMode === "both" && (
+              {(teamMode === "B" || teamMode === "both") && (
                 <View style={styles.tableRow}>
                   <Text style={[styles.tableCell, styles.teamCell]}>{teamB}</Text>
                   {periodScoresB.map((score, idx) => (
@@ -283,7 +294,7 @@ export default function PDFPreviewModal({
           )}
 
           {/* Team B Stats */}
-          {teamMode === "both" && statsTeamB.length > 0 && (
+          {statsTeamB.length > 0 && (
             <View style={styles.statsSection}>
               <Text style={styles.sectionTitle}>Statistiques - {teamB}</Text>
               <View style={styles.statsContainer}>
@@ -557,5 +568,19 @@ const styles = StyleSheet.create({
     fontSize: 50,
     fontWeight: "bold",
     color: "rgba(255, 107, 53, 0.2)",
+  },
+  warningBanner: {
+    backgroundColor: "#FFF3E0",
+    borderWidth: 2,
+    borderColor: "#FF9800",
+    borderRadius: 8,
+    padding: 12,
+    marginTop: 15,
+  },
+  warningText: {
+    color: "#E65100",
+    fontSize: 12,
+    fontWeight: "bold",
+    textAlign: "center",
   },
 });

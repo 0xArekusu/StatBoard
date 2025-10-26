@@ -21,6 +21,7 @@ interface PDFExportOptions {
   players: Player[];
   matchDate?: Date;
   watermark?: boolean;
+  scoreManuallyAdjusted?: boolean;
 }
 
 export class PDFExportService {
@@ -39,6 +40,7 @@ export class PDFExportService {
       players,
       matchDate = new Date(),
       watermark = false,
+      scoreManuallyAdjusted = false,
     } = options;
 
     const totalPeriods = matchFormat === "2_halves" ? 2 : 4;
@@ -63,9 +65,13 @@ export class PDFExportService {
       cumulativeScoresB.push(sumB);
     }
 
-    // Calculate player stats
-    const playersTeamA = players.filter((p) => p.team === "A");
-    const playersTeamB = players.filter((p) => p.team === "B");
+    // Calculate player stats - filter by teamMode
+    const playersTeamA = (teamMode === "A" || teamMode === "both")
+      ? players.filter((p) => p.team === "A")
+      : [];
+    const playersTeamB = (teamMode === "B" || teamMode === "both")
+      ? players.filter((p) => p.team === "B")
+      : [];
 
     const statsTeamA = playersTeamA.map((player) => ({
       ...player,
@@ -94,6 +100,7 @@ export class PDFExportService {
       statsTeamB,
       teamMode,
       watermark,
+      scoreManuallyAdjusted,
     });
 
     // Generate PDF using expo-print
@@ -209,8 +216,8 @@ export class PDFExportService {
     const chartHeight = height - padding.top - padding.bottom;
 
     const maxScore = Math.max(
-      ...cumulativeScoresA,
-      ...(teamMode === "both" ? cumulativeScoresB : [0])
+      ...(teamMode === "A" || teamMode === "both" ? cumulativeScoresA : [0]),
+      ...(teamMode === "B" || teamMode === "both" ? cumulativeScoresB : [0])
     );
     const yScale = chartHeight / (maxScore || 1);
 
@@ -228,7 +235,7 @@ export class PDFExportService {
 
     // Generate path for team B
     let pathB = `M ${padding.left} ${padding.top + chartHeight}`;
-    if (teamMode === "both") {
+    if (teamMode === "B" || teamMode === "both") {
       allScoresB.forEach((score, i) => {
         const x = padding.left + (i * chartWidth) / totalPeriods;
         const y = padding.top + chartHeight - score * yScale;
@@ -274,6 +281,7 @@ export class PDFExportService {
         <line x1="${padding.left}" y1="${padding.top}" x2="${padding.left}" y2="${padding.top + chartHeight}" stroke="#333" stroke-width="2"/>
         <line x1="${padding.left}" y1="${padding.top + chartHeight}" x2="${width - padding.right}" y2="${padding.top + chartHeight}" stroke="#333" stroke-width="2"/>
 
+        ${(teamMode === "A" || teamMode === "both") ? `
         <!-- Team A line -->
         <path d="${pathA}" fill="none" stroke="#FF6B35" stroke-width="3"/>
         ${allScoresA.map((score, i) => {
@@ -281,8 +289,9 @@ export class PDFExportService {
           const y = padding.top + chartHeight - score * yScale;
           return `<circle cx="${x}" cy="${y}" r="4" fill="#FF6B35"/>`;
         }).join("")}
+        ` : ""}
 
-        ${teamMode === "both" ? `
+        ${(teamMode === "B" || teamMode === "both") ? `
         <!-- Team B line -->
         <path d="${pathB}" fill="none" stroke="#004E89" stroke-width="3"/>
         ${allScoresB.map((score, i) => {
@@ -297,11 +306,13 @@ export class PDFExportService {
         ${yLabelsHTML}
 
         <!-- Legend -->
+        ${(teamMode === "A" || teamMode === "both") ? `
         <circle cx="50" cy="15" r="4" fill="#FF6B35"/>
         <text x="58" y="18" font-size="10">${teamA}</text>
-        ${teamMode === "both" ? `
-        <circle cx="150" cy="15" r="4" fill="#004E89"/>
-        <text x="158" y="18" font-size="10">${teamB}</text>
+        ` : ""}
+        ${(teamMode === "B" || teamMode === "both") ? `
+        <circle cx="${teamMode === "both" ? "150" : "50"}" cy="15" r="4" fill="#004E89"/>
+        <text x="${teamMode === "both" ? "158" : "58"}" y="18" font-size="10">${teamB}</text>
         ` : ""}
       </svg>
     `;
@@ -326,6 +337,7 @@ export class PDFExportService {
     statsTeamB: any[];
     teamMode: "A" | "B" | "both";
     watermark?: boolean;
+    scoreManuallyAdjusted?: boolean;
   }): string {
     const {
       teamA,
@@ -343,6 +355,7 @@ export class PDFExportService {
       statsTeamB,
       teamMode,
       watermark = false,
+      scoreManuallyAdjusted = false,
     } = data;
 
     // Generate the score chart SVG
@@ -493,6 +506,17 @@ export class PDFExportService {
       border-top: 1px solid #ddd;
       padding-top: 10px;
     }
+    .warning-banner {
+      background-color: #FFF3E0;
+      border: 2px solid #FF9800;
+      border-radius: 8px;
+      padding: 10px;
+      margin-top: 15px;
+      text-align: center;
+      font-size: 11px;
+      font-weight: bold;
+      color: #E65100;
+    }
   </style>
 </head>
 <body>
@@ -505,6 +529,11 @@ export class PDFExportService {
   <div class="score-summary">
     <div>SCORE FINAL</div>
     <div class="final-score">${scoreA} - ${scoreB}</div>
+    ${scoreManuallyAdjusted ? `
+    <div class="warning-banner">
+      ⚠️ Score ajusté manuellement - Les statistiques peuvent ne pas correspondre au score affiché
+    </div>
+    ` : ''}
   </div>
 
   <!-- Period Scores -->
@@ -519,12 +548,14 @@ export class PDFExportService {
       </tr>
     </thead>
     <tbody>
+      ${(teamMode === "A" || teamMode === "both") ? `
       <tr>
         <td class="team-name">${teamA}</td>
         ${periodScoresA.map((score) => `<td>${score}</td>`).join("")}
         <td><strong>${scoreA}</strong></td>
       </tr>
-      ${teamMode === "both" ? `
+      ` : ""}
+      ${(teamMode === "B" || teamMode === "both") ? `
       <tr>
         <td class="team-name">${teamB}</td>
         ${periodScoresB.map((score) => `<td>${score}</td>`).join("")}
@@ -540,6 +571,7 @@ export class PDFExportService {
     ${chartSVG}
   </div>
 
+  ${statsTeamA.length > 0 ? `
   <!-- Team A Stats -->
   <div class="stats-section">
     <h2>${teamA} - Statistiques individuelles</h2>
@@ -600,8 +632,9 @@ export class PDFExportService {
       RO: Rebonds offensifs | RD: Rebonds défensifs | RT: Rebonds totaux | F: Fautes (avec T pour technique)
     </div>
   </div>
+  ` : ""}
 
-  ${teamMode === "both" ? `
+  ${statsTeamB.length > 0 ? `
   <!-- Team B Stats -->
   <div class="stats-section">
     <h2>${teamB} - Statistiques individuelles</h2>

@@ -1126,6 +1126,7 @@ export default function BasketballCourt() {
       const allPlayers = [...teamAPlayers, ...teamBPlayersEnd];
 
       navigation.navigate(ROUTES.MATCH_SUMMARY as any, {
+        matchId: currentMatch?.id,
         teamA,
         teamB,
         scoreA,

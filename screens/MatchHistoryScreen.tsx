@@ -46,32 +46,36 @@ export default function MatchHistoryScreen() {
         completedMatches.map(async (match) => {
           const actions = await actionRepository.getActionsForMatch(match.id);
 
-          // Calculate scores
-          const scoreA = actions
-            .filter(
-              (a) =>
-                a.team === "A" &&
-                a.action_type === "tir" &&
-                a.specification === "reussi"
-            )
-            .reduce((sum, a) => {
-              // Use stored points or default to 2 for backward compatibility
-              const points = a.points || 2;
-              return sum + points;
-            }, 0);
+          // Use final scores if available, otherwise calculate from actions
+          let scoreA = match.final_score_a || 0;
+          let scoreB = match.final_score_b || 0;
 
-          const scoreB = actions
-            .filter(
-              (a) =>
-                a.team === "B" &&
-                a.action_type === "tir" &&
-                a.specification === "reussi"
-            )
-            .reduce((sum, a) => {
-              // Use stored points or default to 2 for backward compatibility
-              const points = a.points || 2;
-              return sum + points;
-            }, 0);
+          // If no final scores saved, calculate from actions
+          if (scoreA === 0 && scoreB === 0 && actions.length > 0) {
+            scoreA = actions
+              .filter(
+                (a) =>
+                  a.team === "A" &&
+                  a.action_type === "tir" &&
+                  a.specification === "reussi"
+              )
+              .reduce((sum, a) => {
+                const points = a.points || 2;
+                return sum + points;
+              }, 0);
+
+            scoreB = actions
+              .filter(
+                (a) =>
+                  a.team === "B" &&
+                  a.action_type === "tir" &&
+                  a.specification === "reussi"
+              )
+              .reduce((sum, a) => {
+                const points = a.points || 2;
+                return sum + points;
+              }, 0);
+          }
 
           return {
             ...match,
@@ -124,7 +128,7 @@ export default function MatchHistoryScreen() {
 
       // Convert match players to expected format
       const players = matchPlayers.map(mp => ({
-        id: mp.id,
+        id: mp.player_number, // Use player_number as id to match with actions
         num: mp.player_number,
         name: mp.player_name,
         team: mp.team,
@@ -133,16 +137,18 @@ export default function MatchHistoryScreen() {
 
       // Navigate to MatchSummary
       (navigation.navigate as any)("MatchSummary", {
+        matchId: match.id,
         teamA: match.team_a_name,
         teamB: match.team_b_name,
-        scoreA: match.scoreA,
-        scoreB: match.scoreB,
+        scoreA: match.final_score_a || match.scoreA,
+        scoreB: match.final_score_b || match.scoreB,
         actions: actionDataList,
         matchFormat: match.match_format,
         periodDuration: match.period_duration,
         teamMode: match.team_mode,
         players,
         fromHistory: true, // Indicate this is from history (read-only mode)
+        scoreWasManuallyAdjusted: match.score_manually_adjusted === 1,
       });
     } catch (error) {
       console.error("Error loading match details:", error);

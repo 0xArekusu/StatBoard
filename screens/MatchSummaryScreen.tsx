@@ -15,6 +15,7 @@ import { PDFExportService } from "../src/services/export/PDFExportService";
 import { LineChart } from "react-native-chart-kit";
 import { ROUTES } from "../constants/routes";
 import PDFPreviewModal from "../components/PDFPreviewModal";
+import { MatchRepository } from "../src/services/database/MatchRepository";
 
 interface MatchSummaryScreenProps {}
 
@@ -22,6 +23,7 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
   const navigation = useNavigation();
   const route = useRoute();
   const params = route.params as {
+    matchId?: number;
     teamA: string;
     teamB: string;
     scoreA: number;
@@ -37,9 +39,11 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
       team: "A" | "B";
     }>;
     fromHistory?: boolean; // Indicates if coming from history (read-only)
+    scoreWasManuallyAdjusted?: boolean; // Indicates if score was manually adjusted
   };
 
   const {
+    matchId,
     teamA,
     teamB,
     scoreA,
@@ -50,18 +54,85 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
     teamMode,
     players,
     fromHistory = false,
+    scoreWasManuallyAdjusted = false,
   } = params;
 
   // Local state for adjustable scores
   const [adjustedScoreA, setAdjustedScoreA] = React.useState(scoreA);
   const [adjustedScoreB, setAdjustedScoreB] = React.useState(scoreB);
   const [previewModalVisible, setPreviewModalVisible] = useState(false);
+  const [canEditScoreA, setCanEditScoreA] = useState(teamMode === "B");
+  const [canEditScoreB, setCanEditScoreB] = useState(teamMode === "A");
+  const [scoreManuallyAdjusted, setScoreManuallyAdjusted] = useState(scoreWasManuallyAdjusted);
 
   // Update local scores when props change
   React.useEffect(() => {
     setAdjustedScoreA(scoreA);
     setAdjustedScoreB(scoreB);
   }, [scoreA, scoreB]);
+
+  // Save initial scores when arriving on this screen
+  React.useEffect(() => {
+    const saveInitialScores = async () => {
+      if (matchId && !fromHistory) {
+        try {
+          const matchRepo = new MatchRepository();
+          await matchRepo.updateFinalScores(matchId, scoreA, scoreB);
+          console.log("✅ Initial scores saved:", { scoreA, scoreB });
+        } catch (error) {
+          console.error("Error saving initial scores:", error);
+        }
+      }
+    };
+    saveInitialScores();
+  }, [matchId, fromHistory]);
+
+  // Track when scores are actually changed and save to database
+  React.useEffect(() => {
+    const saveScores = async () => {
+      if (matchId && !fromHistory) {
+        try {
+          const matchRepo = new MatchRepository();
+          // Only mark as manually adjusted if editing the controlled team's score
+          const isControlledTeam = (teamMode === "A") || (teamMode === "both");
+          await matchRepo.updateFinalScores(matchId, adjustedScoreA, adjustedScoreB, scoreManuallyAdjusted);
+        } catch (error) {
+          console.error("Error saving final scores:", error);
+        }
+      }
+    };
+
+    if (canEditScoreA && adjustedScoreA !== scoreA) {
+      // Only set manually adjusted if we're editing a controlled team (Team A when teamMode is A or both)
+      const isControlledTeam = (teamMode === "A") || (teamMode === "both");
+      if (isControlledTeam) {
+        setScoreManuallyAdjusted(true);
+      }
+      saveScores();
+    }
+  }, [adjustedScoreA, scoreA, canEditScoreA, matchId, fromHistory, teamMode, scoreManuallyAdjusted]);
+
+  React.useEffect(() => {
+    const saveScores = async () => {
+      if (matchId && !fromHistory) {
+        try {
+          const matchRepo = new MatchRepository();
+          await matchRepo.updateFinalScores(matchId, adjustedScoreA, adjustedScoreB, scoreManuallyAdjusted);
+        } catch (error) {
+          console.error("Error saving final scores:", error);
+        }
+      }
+    };
+
+    if (canEditScoreB && adjustedScoreB !== scoreB) {
+      // Only set manually adjusted if we're editing a controlled team (Team B when teamMode is B or both)
+      const isControlledTeam = (teamMode === "B") || (teamMode === "both");
+      if (isControlledTeam) {
+        setScoreManuallyAdjusted(true);
+      }
+      saveScores();
+    }
+  }, [adjustedScoreB, scoreB, canEditScoreB, matchId, fromHistory, adjustedScoreA, teamMode, scoreManuallyAdjusted]);
 
   // Calculate winner based on adjusted scores
   const winner =
@@ -282,8 +353,12 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
     };
   };
 
-  const playersTeamA = players.filter(p => p.team === "A");
-  const playersTeamB = players.filter(p => p.team === "B");
+  const playersTeamA = (teamMode === "A" || teamMode === "both")
+    ? players.filter(p => p.team === "A")
+    : [];
+  const playersTeamB = (teamMode === "B" || teamMode === "both")
+    ? players.filter(p => p.team === "B")
+    : [];
 
   const statsTeamA = playersTeamA.map(player => ({
     ...player,
@@ -305,6 +380,27 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
     navigation.navigate(ROUTES.MAIN_MENU as never);
   };
 
+  const handleUnlockScoreEdit = (team: "A" | "B") => {
+    Alert.alert(
+      "Corriger le score",
+      "Attention : si vous modifiez manuellement le score, les statistiques peuvent ne plus correspondre au score affiché.",
+      [
+        { text: "Annuler", style: "cancel" },
+        {
+          text: "Continuer",
+          onPress: () => {
+            if (team === "A") {
+              setCanEditScoreA(true);
+            } else {
+              setCanEditScoreB(true);
+            }
+            setScoreManuallyAdjusted(true);
+          },
+        },
+      ]
+    );
+  };
+
   const handlePreviewPDF = () => {
     setPreviewModalVisible(true);
   };
@@ -322,6 +418,7 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
         teamMode,
         players,
         watermark: false,
+        scoreManuallyAdjusted,
       });
     } catch (error) {
       console.error("Error generating PDF:", error);
@@ -344,14 +441,24 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
           <View style={styles.scoreContainer}>
             {/* Team A Score */}
             <View style={styles.teamScore}>
-              <Text style={styles.teamName}>{teamA}</Text>
+              <View style={styles.teamNameRow}>
+                <Text style={styles.teamName}>{teamA}</Text>
+                {!fromHistory && !canEditScoreA && (
+                  <TouchableOpacity
+                    style={styles.unlockButton}
+                    onPress={() => handleUnlockScoreEdit("A")}
+                  >
+                    <Text style={styles.unlockIcon}>✏️</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
               <View style={styles.scoreAdjustContainer}>
-                {!fromHistory && (
+                {!fromHistory && canEditScoreA && (
                   <TouchableOpacity
                     style={styles.adjustButton}
-                    onPress={() =>
-                      setAdjustedScoreA(Math.max(0, adjustedScoreA - 1))
-                    }
+                    onPress={() => {
+                      setAdjustedScoreA(Math.max(0, adjustedScoreA - 1));
+                    }}
                   >
                     <Text style={styles.adjustButtonText}>−</Text>
                   </TouchableOpacity>
@@ -359,21 +466,21 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
                 <TextInput
                   style={[
                     styles.scoreInput,
-                    fromHistory && styles.scoreInputReadOnly,
+                    (fromHistory || !canEditScoreA) && styles.scoreInputReadOnly,
                     winner === teamA && styles.winnerScore,
                   ]}
                   value={adjustedScoreA.toString()}
                   onChangeText={(text) => {
-                    if (!fromHistory) {
+                    if (!fromHistory && canEditScoreA) {
                       const value = parseInt(text) || 0;
                       setAdjustedScoreA(Math.max(0, value));
                     }
                   }}
                   keyboardType="number-pad"
                   selectTextOnFocus
-                  editable={!fromHistory}
+                  editable={!fromHistory && canEditScoreA}
                 />
-                {!fromHistory && (
+                {!fromHistory && canEditScoreA && (
                   <TouchableOpacity
                     style={styles.adjustButton}
                     onPress={() => setAdjustedScoreA(adjustedScoreA + 1)}
@@ -388,14 +495,24 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
 
             {/* Team B Score */}
             <View style={styles.teamScore}>
-              <Text style={styles.teamName}>{teamB}</Text>
+              <View style={styles.teamNameRow}>
+                <Text style={styles.teamName}>{teamB}</Text>
+                {!fromHistory && !canEditScoreB && (
+                  <TouchableOpacity
+                    style={styles.unlockButton}
+                    onPress={() => handleUnlockScoreEdit("B")}
+                  >
+                    <Text style={styles.unlockIcon}>✏️</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
               <View style={styles.scoreAdjustContainer}>
-                {!fromHistory && (
+                {!fromHistory && canEditScoreB && (
                   <TouchableOpacity
                     style={styles.adjustButton}
-                    onPress={() =>
-                      setAdjustedScoreB(Math.max(0, adjustedScoreB - 1))
-                    }
+                    onPress={() => {
+                      setAdjustedScoreB(Math.max(0, adjustedScoreB - 1));
+                    }}
                   >
                     <Text style={styles.adjustButtonText}>−</Text>
                   </TouchableOpacity>
@@ -403,21 +520,21 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
                 <TextInput
                   style={[
                     styles.scoreInput,
-                    fromHistory && styles.scoreInputReadOnly,
+                    (fromHistory || !canEditScoreB) && styles.scoreInputReadOnly,
                     winner === teamB && styles.winnerScore,
                   ]}
                   value={adjustedScoreB.toString()}
                   onChangeText={(text) => {
-                    if (!fromHistory) {
+                    if (!fromHistory && canEditScoreB) {
                       const value = parseInt(text) || 0;
                       setAdjustedScoreB(Math.max(0, value));
                     }
                   }}
                   keyboardType="number-pad"
                   selectTextOnFocus
-                  editable={!fromHistory}
+                  editable={!fromHistory && canEditScoreB}
                 />
-                {!fromHistory && (
+                {!fromHistory && canEditScoreB && (
                   <TouchableOpacity
                     style={styles.adjustButton}
                     onPress={() => setAdjustedScoreB(adjustedScoreB + 1)}
@@ -439,6 +556,15 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
           ) : (
             <View style={styles.drawBanner}>
               <Text style={styles.drawText}>Match nul</Text>
+            </View>
+          )}
+
+          {/* Manual score adjustment warning */}
+          {scoreManuallyAdjusted && (
+            <View style={styles.warningBanner}>
+              <Text style={styles.warningText}>
+                ⚠️ Score ajusté manuellement - Les statistiques peuvent ne pas correspondre au score affiché
+              </Text>
             </View>
           )}
 
@@ -783,6 +909,7 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
         statsTeamB={statsTeamB}
         periodLabel={periodLabel}
         teamMode={teamMode}
+        scoreManuallyAdjusted={scoreManuallyAdjusted}
       />
     </View>
   );
@@ -827,11 +954,22 @@ const styles = StyleSheet.create({
     alignItems: "center",
     flex: 1,
   },
+  teamNameRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 8,
+  },
   teamName: {
     fontSize: 16,
     fontWeight: "600",
     color: "#666",
-    marginBottom: 8,
+  },
+  unlockButton: {
+    padding: 4,
+  },
+  unlockIcon: {
+    fontSize: 16,
   },
   scoreAdjustContainer: {
     flexDirection: "row",
@@ -902,6 +1040,20 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "bold",
     color: "#fff",
+  },
+  warningBanner: {
+    backgroundColor: "#FFF3E0",
+    borderWidth: 2,
+    borderColor: "#FF9800",
+    borderRadius: 12,
+    padding: 12,
+    marginTop: 15,
+  },
+  warningText: {
+    color: "#E65100",
+    fontSize: 14,
+    fontWeight: "bold",
+    textAlign: "center",
   },
   periodTable: {
     marginTop: 16,

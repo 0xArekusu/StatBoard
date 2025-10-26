@@ -11,6 +11,7 @@ export interface IMatchRepository {
   abandonMatch(id: number): Promise<void>;
   completeMatch(id: number): Promise<void>;
   updateMatchState(id: number, currentPeriod: number, timeElapsed: number): Promise<void>;
+  updateFinalScores(id: number, scoreA: number, scoreB: number, manuallyAdjusted?: boolean): Promise<void>;
   delete(id: number): Promise<void>;
 }
 
@@ -156,6 +157,19 @@ export class MatchRepository implements IMatchRepository {
       );
     } catch (error) {
       console.error('Error updating match state:', error);
+      throw error;
+    }
+  }
+
+  async updateFinalScores(id: number, scoreA: number, scoreB: number, manuallyAdjusted: boolean = false): Promise<void> {
+    try {
+      await this.db.execute(
+        'UPDATE matches SET final_score_a = ?, final_score_b = ?, score_manually_adjusted = ? WHERE id = ?',
+        [scoreA, scoreB, manuallyAdjusted ? 1 : 0, id]
+      );
+      console.log('✅ Final scores updated:', { id, scoreA, scoreB, manuallyAdjusted });
+    } catch (error) {
+      console.error('Error updating final scores:', error);
       throw error;
     }
   }

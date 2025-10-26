@@ -13,8 +13,8 @@ export class SQLiteAdapter implements IStorageAdapter {
     this.db = SQLite.openDatabaseSync(databaseName);
 
     // 🔄 TEMPORARY RESET - Remove after testing!
-    // this.resetDatabaseTables();
-    // this.initializeTables();
+    //this.resetDatabaseTables();
+    //this.initializeTables();
   }
 
   // 🔄 TEMPORARY METHOD - Remove after testing! wip
@@ -47,6 +47,9 @@ export class SQLiteAdapter implements IStorageAdapter {
         period_duration INTEGER NOT NULL DEFAULT 1200,
         current_period INTEGER DEFAULT 1,
         time_elapsed INTEGER DEFAULT 0,
+        final_score_a INTEGER DEFAULT 0,
+        final_score_b INTEGER DEFAULT 0,
+        score_manually_adjusted INTEGER DEFAULT 0,
         last_updated DATETIME DEFAULT CURRENT_TIMESTAMP
       );
     `);
@@ -75,6 +78,31 @@ export class SQLiteAdapter implements IStorageAdapter {
     try {
       this.db.execSync(`
         ALTER TABLE match_actions ADD COLUMN points INTEGER;
+      `);
+    } catch (error) {
+      // Column might already exist, ignore error
+    }
+
+    // Add final score columns if they don't exist (migration for existing databases)
+    try {
+      this.db.execSync(`
+        ALTER TABLE matches ADD COLUMN final_score_a INTEGER DEFAULT 0;
+      `);
+    } catch (error) {
+      // Column might already exist, ignore error
+    }
+
+    try {
+      this.db.execSync(`
+        ALTER TABLE matches ADD COLUMN final_score_b INTEGER DEFAULT 0;
+      `);
+    } catch (error) {
+      // Column might already exist, ignore error
+    }
+
+    try {
+      this.db.execSync(`
+        ALTER TABLE matches ADD COLUMN score_manually_adjusted INTEGER DEFAULT 0;
       `);
     } catch (error) {
       // Column might already exist, ignore error
