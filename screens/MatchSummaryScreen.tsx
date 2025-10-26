@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -14,6 +14,7 @@ import { ActionData } from "../components/ActionSystem";
 import { PDFExportService } from "../src/services/export/PDFExportService";
 import { LineChart } from "react-native-chart-kit";
 import { ROUTES } from "../constants/routes";
+import PDFPreviewModal from "../components/PDFPreviewModal";
 
 interface MatchSummaryScreenProps {}
 
@@ -54,6 +55,7 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
   // Local state for adjustable scores
   const [adjustedScoreA, setAdjustedScoreA] = React.useState(scoreA);
   const [adjustedScoreB, setAdjustedScoreB] = React.useState(scoreB);
+  const [previewModalVisible, setPreviewModalVisible] = useState(false);
 
   // Update local scores when props change
   React.useEffect(() => {
@@ -231,12 +233,80 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
     return acc;
   }, [] as number[]);
 
+  // Calculate player stats for preview (same as PDFExportService)
+  const calculatePlayerStats = (playerId: number) => {
+    const playerActions = actions.filter((a) => a.player === playerId);
+
+    // Shots
+    const shots = playerActions.filter((a) => a.type === "tir");
+    const madeShots = shots.filter((a) => a.specification === "reussi");
+
+    const onePtMade = madeShots.filter((a) => a.points === 1).length;
+    const twoPtMade = madeShots.filter((a) => a.points === 2).length;
+    const threePtMade = madeShots.filter((a) => a.points === 3).length;
+
+    const onePtAttempts = shots.filter((a) => a.points === 1).length;
+    const twoPtAttempts = shots.filter((a) => a.points === 2).length;
+    const threePtAttempts = shots.filter((a) => a.points === 3).length;
+
+    const totalPoints = onePtMade * 1 + twoPtMade * 2 + threePtMade * 3;
+
+    // Rebounds
+    const rebounds = playerActions.filter((a) => a.type === "rebond");
+    const offRebounds = rebounds.filter((a) => a.specification === "offensif").length;
+    const defRebounds = rebounds.filter((a) => a.specification === "defensif").length;
+
+    // Assists
+    const assists = playerActions.filter((a) => a.type === "passe").length;
+
+    // Fouls
+    const fouls = playerActions.filter((a) => a.type === "faute");
+    const personalFouls = fouls.filter((a) => a.specification === "personnelle").length;
+    const technicalFouls = fouls.filter((a) => a.specification === "technique").length;
+
+    return {
+      points: totalPoints,
+      fgm: twoPtMade + threePtMade,
+      fga: twoPtAttempts + threePtAttempts,
+      twopm: twoPtMade,
+      twopa: twoPtAttempts,
+      threepm: threePtMade,
+      threepa: threePtAttempts,
+      ftm: onePtMade,
+      fta: onePtAttempts,
+      orb: offRebounds,
+      drb: defRebounds,
+      trb: offRebounds + defRebounds,
+      pf: personalFouls,
+      tf: technicalFouls,
+    };
+  };
+
+  const playersTeamA = players.filter(p => p.team === "A");
+  const playersTeamB = players.filter(p => p.team === "B");
+
+  const statsTeamA = playersTeamA.map(player => ({
+    ...player,
+    stats: calculatePlayerStats(player.id),
+  }));
+
+  const statsTeamB = playersTeamB.map(player => ({
+    ...player,
+    stats: calculatePlayerStats(player.id),
+  }));
+
+  const periodLabel = matchFormat === "2_halves" ? "MT" : "Q";
+
   const handleViewDetails = () => {
     (navigation.navigate as any)("MatchDetails", { ...params, scoreA: adjustedScoreA, scoreB: adjustedScoreB });
   };
 
   const handleBackToMenu = () => {
     navigation.navigate(ROUTES.MAIN_MENU as never);
+  };
+
+  const handlePreviewPDF = () => {
+    setPreviewModalVisible(true);
   };
 
   const handleExportPDF = async () => {
@@ -251,6 +321,7 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
         periodDuration,
         teamMode,
         players,
+        watermark: false,
       });
     } catch (error) {
       console.error("Error generating PDF:", error);
@@ -668,10 +739,17 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
       {/* Action buttons */}
       <View style={styles.buttonContainer}>
         <TouchableOpacity
-          style={[styles.button, styles.secondaryButton]}
+          style={[styles.button, styles.previewButton]}
+          onPress={handlePreviewPDF}
+        >
+          <Text style={styles.previewButtonText}>👁️ Aperçu PDF</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.button, styles.premiumButton]}
           onPress={handleExportPDF}
         >
-          <Text style={styles.secondaryButtonText}>📄 Export PDF</Text>
+          <Text style={styles.premiumButtonText}>⭐ Export PDF Premium</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -688,6 +766,24 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
           <Text style={styles.primaryButtonText}>🏠 Menu</Text>
         </TouchableOpacity>
       </View>
+
+      {/* PDF Preview Modal */}
+      <PDFPreviewModal
+        visible={previewModalVisible}
+        onClose={() => setPreviewModalVisible(false)}
+        teamA={teamA}
+        teamB={teamB}
+        scoreA={adjustedScoreA}
+        scoreB={adjustedScoreB}
+        periodScoresA={periodScoresA}
+        periodScoresB={periodScoresB}
+        cumulativeScoresA={cumulativeScoresA}
+        cumulativeScoresB={cumulativeScoresB}
+        statsTeamA={statsTeamA}
+        statsTeamB={statsTeamB}
+        periodLabel={periodLabel}
+        teamMode={teamMode}
+      />
     </View>
   );
 }
@@ -961,6 +1057,24 @@ const styles = StyleSheet.create({
   },
   primaryButtonText: {
     color: "#fff",
+    fontSize: 14,
+    fontWeight: "bold",
+  },
+  previewButton: {
+    backgroundColor: "#2196F3",
+  },
+  previewButtonText: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "bold",
+  },
+  premiumButton: {
+    backgroundColor: "#FFD700",
+    borderWidth: 2,
+    borderColor: "#FFA500",
+  },
+  premiumButtonText: {
+    color: "#333",
     fontSize: 14,
     fontWeight: "bold",
   },

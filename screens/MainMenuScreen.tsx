@@ -33,6 +33,7 @@ export default function MainMenuScreen() {
   const [userClubs, setUserClubs] = useState<Club[]>([]);
   const [loadingClub, setLoadingClub] = useState(false);
   const selectedClubIdRef = useRef<string | null>(null);
+  const [isFreeSubscription, setIsFreeSubscription] = useState(false);
 
   // Load user's club when screen is focused
   const loadUserClub = useCallback(async () => {
@@ -55,6 +56,8 @@ export default function MainMenuScreen() {
         const previouslySelected = clubs.find(c => c.id === selectedClubIdRef.current);
         if (previouslySelected) {
           setUserClub(previouslySelected);
+          // Check subscription tier
+          setIsFreeSubscription(previouslySelected.subscriptionTier === 'free');
           return;
         }
       }
@@ -63,6 +66,8 @@ export default function MainMenuScreen() {
       const firstClub = clubs.length > 0 ? clubs[0] : null;
       setUserClub(firstClub);
       selectedClubIdRef.current = firstClub?.id || null;
+      // Check subscription tier
+      setIsFreeSubscription(firstClub?.subscriptionTier === 'free');
     } catch (error) {
       console.error("Error loading user club:", error);
     } finally {
@@ -109,11 +114,11 @@ export default function MainMenuScreen() {
       <Text style={styles.title}>🏀 StatBoard</Text>
 
       <TouchableOpacity
-        style={styles.button}
+        style={[styles.button, (!user || isFreeSubscription) && styles.freeButton]}
         onPress={() => navigation.navigate(ROUTES.BOARD as never)}
       >
-        <Ionicons name="add-circle-outline" size={24} color="#fff" />
-        <Text style={styles.buttonText}>Nouveau match</Text>
+        <Ionicons name={(!user || isFreeSubscription) ? "star-outline" : "add-circle-outline"} size={24} color="#fff" />
+        <Text style={styles.buttonText}>{(!user || isFreeSubscription) ? "Essayez gratuitement !" : "Nouveau match"}</Text>
       </TouchableOpacity>
 
       <TouchableOpacity
@@ -273,6 +278,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "center",
     gap: 10,
+  },
+  freeButton: {
+    backgroundColor: "#FFD700",
   },
   secondaryButton: {
     backgroundColor: "#4CAF50",

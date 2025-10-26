@@ -19,6 +19,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as ScreenOrientation from "expo-screen-orientation";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import TeamSelectionModal from "./TeamSelectionModal";
 import InitTeamModal from "./InitTeamModal";
 import MatchConfigModal from "./MatchConfigModal";
 import PlayerEditModal from "./PlayerEditModal";
@@ -40,7 +41,6 @@ import { ActionQueue, ActionObserver } from "../src/services/match/ActionQueue";
 import { ActionRepository } from "../src/services/database/ActionRepository";
 import { MatchPlayerRepository } from "../src/services/database/MatchPlayerRepository";
 import { Match } from "../src/models/types";
-import { DEBUG } from "../src/config/debug";
 
 // Modal layout constants (for the new ActionModal)
 const MODAL_WIDTH = 240;
@@ -153,7 +153,6 @@ export default function BasketballCourt() {
   const insets = useSafeAreaInsets(); // Provides status bar and notch margins
   const window = useWindowDimensions(); // Automatically reacts to rotation
   const [showSheet, setShowSheet] = useState(true);
-
 
   // Constants for dimensions and offsets
   const BOTTOM_NAV_HEIGHT = 50; // Height of bottom navigation bar in portrait
@@ -380,7 +379,11 @@ export default function BasketballCourt() {
   };
 
   // Added state for initialization popups
-  const [initModalVisible, setInitModalVisible] = useState(true);
+  const [teamSelectionModalVisible, setTeamSelectionModalVisible] =
+    useState(true);
+  const [selectedTeam, setSelectedTeam] = useState<any | null>(null);
+  const [selectedTeamPlayers, setSelectedTeamPlayers] = useState<any[]>([]);
+  const [initModalVisible, setInitModalVisible] = useState(false);
   const [matchConfigModalVisible, setMatchConfigModalVisible] = useState(false);
   const [teamA, setTeamA] = useState("Team A");
   const [teamB, setTeamB] = useState("Team B");
@@ -807,7 +810,9 @@ export default function BasketballCourt() {
     });
   };
 
-  const [matchFormat, setMatchFormat] = useState<"2_halves" | "4_quarters">("4_quarters");
+  const [matchFormat, setMatchFormat] = useState<"2_halves" | "4_quarters">(
+    "4_quarters"
+  );
   const [periodDuration, setPeriodDuration] = useState<number>(600);
 
   // States for status bar display and timer management
@@ -850,7 +855,11 @@ export default function BasketballCourt() {
         // Use the points field from the action (1, 2, or 3 points)
         const points = action.points || 2; // Default to 2 if not specified
 
-        console.log("🔍 Scoring action:", { team: action.team, points, player: action.player }); // 🔍 DEBUG
+        console.log("🔍 Scoring action:", {
+          team: action.team,
+          points,
+          player: action.player,
+        }); // 🔍 DEBUG
 
         if (action.team === "A") {
           newScoreA += points;
@@ -859,8 +868,6 @@ export default function BasketballCourt() {
         }
       }
     });
-
-    console.log("📊 Updated scores:", { scoreA: newScoreA, scoreB: newScoreB }); // 🔍 DEBUG
 
     setScoreA(newScoreA);
     setScoreB(newScoreB);
@@ -904,7 +911,10 @@ export default function BasketballCourt() {
     setMatchConfigModalVisible(true);
   };
 
-  const handleMatchConfigConfirm = (format: "2_halves" | "4_quarters", duration: number) => {
+  const handleMatchConfigConfirm = (
+    format: "2_halves" | "4_quarters",
+    duration: number
+  ) => {
     setMatchFormat(format);
     setPeriodDuration(duration);
     setMatchConfigModalVisible(false);
@@ -940,7 +950,7 @@ export default function BasketballCourt() {
       const matchPlayerRepository = new MatchPlayerRepository();
       const allPlayers = getAllPlayers();
 
-      const playersToSave = allPlayers.map(player => ({
+      const playersToSave = allPlayers.map((player) => ({
         match_id: match.id,
         player_number: player.num,
         player_name: player.name,
@@ -950,7 +960,9 @@ export default function BasketballCourt() {
 
       if (playersToSave.length > 0) {
         await matchPlayerRepository.createBatch(playersToSave);
-        console.log(`✅ Saved ${playersToSave.length} players for match ${match.id}`);
+        console.log(
+          `✅ Saved ${playersToSave.length} players for match ${match.id}`
+        );
       }
 
       setPreGameMode(false);
@@ -1095,19 +1107,21 @@ export default function BasketballCourt() {
       setShowEndMatchModal(false);
 
       // Prepare all players with their team info
-      const teamAPlayers = teamMode === "A" || teamMode === "both"
-        ? [
-            ...players.map(p => ({ ...p, team: "A" as const })),
-            ...substitutesTeamA.map(s => ({ ...s, team: "A" as const })),
-          ]
-        : [];
+      const teamAPlayers =
+        teamMode === "A" || teamMode === "both"
+          ? [
+              ...players.map((p) => ({ ...p, team: "A" as const })),
+              ...substitutesTeamA.map((s) => ({ ...s, team: "A" as const })),
+            ]
+          : [];
 
-      const teamBPlayersEnd = teamMode === "B" || teamMode === "both"
-        ? [
-            ...playersTeamB.map(p => ({ ...p, team: "B" as const })),
-            ...substitutesTeamB.map(s => ({ ...s, team: "B" as const })),
-          ]
-        : [];
+      const teamBPlayersEnd =
+        teamMode === "B" || teamMode === "both"
+          ? [
+              ...playersTeamB.map((p) => ({ ...p, team: "B" as const })),
+              ...substitutesTeamB.map((s) => ({ ...s, team: "B" as const })),
+            ]
+          : [];
 
       const allPlayers = [...teamAPlayers, ...teamBPlayersEnd];
 
@@ -1451,19 +1465,21 @@ export default function BasketballCourt() {
 
   // Fonction pour obtenir tous les joueurs de toutes les équipes avec leur équipe
   const getAllPlayers = () => {
-    const teamAPlayers = teamMode === "A" || teamMode === "both"
-      ? [
-          ...players.map((p) => ({ ...p, team: "A" as const })),
-          ...substitutesTeamA.map((p) => ({ ...p, team: "A" as const })),
-        ]
-      : [];
+    const teamAPlayers =
+      teamMode === "A" || teamMode === "both"
+        ? [
+            ...players.map((p) => ({ ...p, team: "A" as const })),
+            ...substitutesTeamA.map((p) => ({ ...p, team: "A" as const })),
+          ]
+        : [];
 
-    const teamBPlayers = teamMode === "B" || teamMode === "both"
-      ? [
-          ...playersTeamB.map((p) => ({ ...p, team: "B" as const })),
-          ...substitutesTeamB.map((p) => ({ ...p, team: "B" as const })),
-        ]
-      : [];
+    const teamBPlayers =
+      teamMode === "B" || teamMode === "both"
+        ? [
+            ...playersTeamB.map((p) => ({ ...p, team: "B" as const })),
+            ...substitutesTeamB.map((p) => ({ ...p, team: "B" as const })),
+          ]
+        : [];
 
     return [...teamAPlayers, ...teamBPlayers].sort((a, b) => {
       // Trier par équipe puis par type (titulaires d'abord) puis par numéro
@@ -1669,6 +1685,24 @@ export default function BasketballCourt() {
         />
       )}
 
+      <TeamSelectionModal
+        visible={teamSelectionModalVisible}
+        onTeamSelected={(team, players) => {
+          setSelectedTeam(team);
+          setSelectedTeamPlayers(players || []);
+          setTeamSelectionModalVisible(false);
+          setInitModalVisible(true);
+          if (team) {
+            // Pre-fill team name
+            setTeamA(team.name);
+          }
+        }}
+        onSkip={() => {
+          setTeamSelectionModalVisible(false);
+          setInitModalVisible(true);
+        }}
+      />
+
       <InitTeamModal
         visible={initModalVisible}
         teamA={teamA}
@@ -1784,7 +1818,6 @@ export default function BasketballCourt() {
         cancelButtonText="Annuler"
       />
 
-
       {/* 🏀 Bouton double flèche au centre du terrain pour changer de côté */}
       {!initModalVisible && !matchConfigModalVisible && preGameMode && (
         <TouchableOpacity
@@ -1820,7 +1853,6 @@ export default function BasketballCourt() {
           </Text>
         </TouchableOpacity>
       )}
-
 
       {/* Bottom Navigation Bar - positioned at bottom (portrait) or right (landscape) */}
       {!initModalVisible && !preGameMode && (

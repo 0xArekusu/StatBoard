@@ -20,6 +20,7 @@ interface PDFExportOptions {
   teamMode: "A" | "B" | "both";
   players: Player[];
   matchDate?: Date;
+  watermark?: boolean;
 }
 
 export class PDFExportService {
@@ -37,6 +38,7 @@ export class PDFExportService {
       teamMode,
       players,
       matchDate = new Date(),
+      watermark = false,
     } = options;
 
     const totalPeriods = matchFormat === "2_halves" ? 2 : 4;
@@ -91,6 +93,7 @@ export class PDFExportService {
       statsTeamA,
       statsTeamB,
       teamMode,
+      watermark,
     });
 
     // Generate PDF using expo-print
@@ -322,6 +325,7 @@ export class PDFExportService {
     statsTeamA: any[];
     statsTeamB: any[];
     teamMode: "A" | "B" | "both";
+    watermark?: boolean;
   }): string {
     const {
       teamA,
@@ -338,6 +342,7 @@ export class PDFExportService {
       statsTeamA,
       statsTeamB,
       teamMode,
+      watermark = false,
     } = data;
 
     // Generate the score chart SVG
@@ -372,7 +377,23 @@ export class PDFExportService {
       font-family: Arial, sans-serif;
       padding: 20px;
       font-size: 10px;
+      position: relative;
     }
+    ${watermark ? `
+    body::before {
+      content: 'PREVIEW';
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) rotate(-45deg);
+      font-size: 120px;
+      font-weight: bold;
+      color: rgba(255, 107, 53, 0.15);
+      z-index: 9999;
+      pointer-events: none;
+      white-space: nowrap;
+    }
+    ` : ''}
     .header {
       text-align: center;
       margin-bottom: 20px;

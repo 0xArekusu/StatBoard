@@ -22,6 +22,7 @@ export class SQLiteAdapter implements IStorageAdapter {
     try {
       console.log("🔄 Resetting database tables...");
       this.db.execSync("DROP TABLE IF EXISTS match_actions");
+      this.db.execSync("DROP TABLE IF EXISTS match_players");
       this.db.execSync("DROP TABLE IF EXISTS matches");
       this.db.execSync("DROP TABLE IF EXISTS database_version");
       console.log("✅ Database tables reset successfully");
