@@ -761,7 +761,7 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
           {/* Team B Stats - Show if managing Team B or both */}
           {(teamMode === "B" || teamMode === "both") && (
             <View
-              style={[styles.teamStatsContainer, teamMode === "both" && styles.teamStatsMargin]}
+              style={[styles.teamStatsContainer, styles.teamBStats, teamMode === "both" && styles.teamStatsMargin]}
             >
               <Text style={styles.teamStatsName}>{teamB}</Text>
               <View style={styles.statRow}>
@@ -1117,12 +1117,22 @@ const styles = StyleSheet.create({
   statsSection: {
     marginBottom: 16,
   },
+  sideBySideContainer: {
+    flexDirection: "row",
+    gap: 12,
+  },
+  halfWidth: {
+    flex: 1,
+  },
   teamStatsContainer: {
     backgroundColor: "#f9f9f9",
     borderRadius: 12,
     padding: 12,
     borderLeftWidth: 4,
     borderLeftColor: "#4CAF50",
+  },
+  teamBStats: {
+    borderLeftColor: "#2196F3",
   },
   teamStatsMargin: {
     marginTop: 12,
