@@ -172,8 +172,7 @@ export default function ClubTeamsTab({ clubId, isOwner, onCreateTeam, onEditTeam
   };
 
   const renderTeam = (team: Team, isPending: boolean) => {
-    const categoryLabel = team.category ? ` - ${team.category.toUpperCase()}` : "";
-    const genderLabel = team.gender ? ` - ${team.gender === "male" ? "M" : team.gender === "female" ? "F" : "Mixte"}` : "";
+    const genderLabel = team.gender ? `${team.gender === "male" ? "Masculin" : team.gender === "female" ? "Féminin" : "Mixte"}` : "";
     const isTeamOwner = user && team.ownerId === user.id;
 
     return (
@@ -187,12 +186,12 @@ export default function ClubTeamsTab({ clubId, isOwner, onCreateTeam, onEditTeam
               </View>
             )}
           </View>
-          {(team.category || team.gender) && (
+          {team.gender && (
             <Text style={styles.teamDetails}>
-              {categoryLabel}{genderLabel}
+              {genderLabel}
             </Text>
           )}
-          {isPending && isOwner && team.ownerEmail && (
+          {isOwner && team.ownerEmail && (
             <Text style={styles.teamEmail}>
               <Ionicons name="person-outline" size={12} color="#666" /> {team.ownerEmail}
             </Text>

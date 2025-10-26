@@ -12,7 +12,6 @@ export class SupabaseTeamRepository implements ITeamRepository {
       clubId: row.club_id,
       ownerId: row.owner_id,
       ownerEmail: row.club_members?.email || row.owner_email,
-      category: row.category,
       gender: row.gender,
       status: row.status,
       isActive: row.is_active ?? true,
@@ -30,7 +29,6 @@ export class SupabaseTeamRepository implements ITeamRepository {
         name: data.name,
         club_id: data.clubId,
         owner_id: ownerId,
-        category: data.category,
         gender: data.gender,
         status: 'pending',
       })
@@ -138,7 +136,6 @@ export class SupabaseTeamRepository implements ITeamRepository {
   async update(id: string, data: UpdateTeamData): Promise<Team | null> {
     const updateData: any = {};
     if (data.name !== undefined) updateData.name = data.name;
-    if (data.category !== undefined) updateData.category = data.category;
     if (data.gender !== undefined) updateData.gender = data.gender;
     if (data.status !== undefined) updateData.status = data.status;
     if (data.isActive !== undefined) updateData.is_active = data.isActive;

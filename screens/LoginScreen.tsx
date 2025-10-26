@@ -11,6 +11,7 @@ import {
   Platform,
 } from 'react-native';
 import { useAuth } from '../src/contexts/AuthContext';
+import { ROUTES } from '../constants/routes';
 
 export default function LoginScreen({ navigation }: any) {
   const [email, setEmail] = useState('');
@@ -31,7 +32,7 @@ export default function LoginScreen({ navigation }: any) {
     if (error) {
       Alert.alert('Erreur de connexion', error.message);
     } else {
-      navigation.navigate('MainMenu');
+      navigation.navigate(ROUTES.MAIN_MENU);
     }
   };
 
@@ -43,7 +44,7 @@ export default function LoginScreen({ navigation }: any) {
     if (error) {
       Alert.alert('Erreur de connexion Google', error.message);
     } else {
-      navigation.navigate('MainMenu');
+      navigation.navigate(ROUTES.MAIN_MENU);
     }
   };
 
@@ -108,7 +109,7 @@ export default function LoginScreen({ navigation }: any) {
 
         <TouchableOpacity
           style={styles.linkButton}
-          onPress={() => navigation.navigate('SignUp')}
+          onPress={() => navigation.navigate(ROUTES.SIGN_UP)}
           disabled={loading}
         >
           <Text style={styles.linkText}>

@@ -13,6 +13,7 @@ import { useNavigation, useRoute } from "@react-navigation/native";
 import { ActionData } from "../components/ActionSystem";
 import { PDFExportService } from "../src/services/export/PDFExportService";
 import { LineChart } from "react-native-chart-kit";
+import { ROUTES } from "../constants/routes";
 
 interface MatchSummaryScreenProps {}
 
@@ -235,7 +236,7 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
   };
 
   const handleBackToMenu = () => {
-    navigation.navigate("MainMenu" as never);
+    navigation.navigate(ROUTES.MAIN_MENU as never);
   };
 
   const handleExportPDF = async () => {

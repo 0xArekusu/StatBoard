@@ -11,6 +11,7 @@ import {
   Platform,
 } from 'react-native';
 import { useAuth } from '../src/contexts/AuthContext';
+import { ROUTES } from '../constants/routes';
 
 export default function SignUpScreen({ navigation }: any) {
   const [email, setEmail] = useState('');
@@ -45,7 +46,7 @@ export default function SignUpScreen({ navigation }: any) {
       Alert.alert(
         'Succès',
         'Compte créé avec succès ! Vérifiez votre email pour confirmer votre compte.',
-        [{ text: 'OK', onPress: () => navigation.navigate('Login') }]
+        [{ text: 'OK', onPress: () => navigation.navigate(ROUTES.LOGIN) }]
       );
     }
   };
@@ -103,7 +104,7 @@ export default function SignUpScreen({ navigation }: any) {
 
         <TouchableOpacity
           style={styles.linkButton}
-          onPress={() => navigation.navigate('Login')}
+          onPress={() => navigation.navigate(ROUTES.LOGIN)}
           disabled={loading}
         >
           <Text style={styles.linkText}>

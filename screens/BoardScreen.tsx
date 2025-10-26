@@ -28,6 +28,7 @@ import ActionSystemModal, {
 } from "../components/ActionSystemModal";
 import FilterBottomSheet from "../components/FilterBottomSheet";
 import HistoryBottomSheet from "../components/HistoryBottomSheet";
+import { ROUTES } from "../constants/routes";
 import BasketballCourtSVG from "../components/BasketballCourtSVG";
 import SubstitutesManager from "../components/SubstitutesManager";
 import CoachEditModal from "../components/CoachEditModal";
@@ -1110,7 +1111,7 @@ export default function BasketballCourt() {
 
       const allPlayers = [...teamAPlayers, ...teamBPlayersEnd];
 
-      navigation.navigate("MatchSummary" as any, {
+      navigation.navigate(ROUTES.MATCH_SUMMARY as any, {
         teamA,
         teamB,
         scoreA,

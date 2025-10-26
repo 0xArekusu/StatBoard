@@ -253,11 +253,11 @@ export default function ClubFormScreen() {
 
   const handleCreateTeam = () => {
     if (!clubId) return;
-    (navigation as any).navigate("TeamForm", { clubId });
+    (navigation as any).navigate(ROUTES.TEAM_FORM, { clubId });
   };
 
   const handleEditTeam = (teamId: string) => {
-    (navigation as any).navigate("TeamForm", { teamId });
+    (navigation as any).navigate(ROUTES.TEAM_FORM, { teamId });
   };
 
   return (
