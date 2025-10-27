@@ -1,5 +1,5 @@
 import React from "react";
-import { Modal, View, Text, TextInput, TouchableOpacity } from "react-native";
+import { Modal, View, Text, TextInput, TouchableOpacity, Alert } from "react-native";
 
 interface InitTeamModalProps {
   visible: boolean;
@@ -13,6 +13,7 @@ interface InitTeamModalProps {
   onRequestClose: () => void;
   onBack?: () => void; // Callback to go back to team selection
   canGoBack?: boolean; // Show back button only if team was selected
+  onGoToMenu?: () => void; // Callback to go to menu (if no team selected)
 }
 
 export default function InitTeamModal({
@@ -27,6 +28,7 @@ export default function InitTeamModal({
   onRequestClose,
   onBack,
   canGoBack = false,
+  onGoToMenu,
 }: InitTeamModalProps) {
   const [selectedTeamMode, setSelectedTeamMode] = React.useState<
     "A" | "B" | "both" | null
@@ -34,11 +36,38 @@ export default function InitTeamModal({
 
   const isFullyDisabled = isConfirmDisabled || selectedTeamMode === null;
 
+  // Function to handle confirm with validation
+  const handleConfirm = () => {
+    if (!selectedTeamMode) return;
+
+    // Check if user selected Team B while having a club team (Team A has a real name)
+    if (canGoBack && selectedTeamMode === "B" && teamA && teamA.trim() !== "") {
+      Alert.alert(
+        "Confirmation",
+        `Vous avez une équipe du club configurée pour "${teamA}" mais vous gérez "${teamB}". Êtes-vous sûr ?`,
+        [
+          {
+            text: "Annuler",
+            style: "cancel",
+          },
+          {
+            text: "Confirmer",
+            onPress: () => onConfirm(selectedTeamMode),
+          },
+        ]
+      );
+    } else {
+      onConfirm(selectedTeamMode);
+    }
+  };
+
   // Function to swap team names
   const swapTeams = () => {
     const tempTeamA = teamA;
     setTeamA(teamB);
     setTeamB(tempTeamA);
+    // Reset team mode selection when swapping
+    setSelectedTeamMode(null);
   };
 
   return (
@@ -202,7 +231,7 @@ export default function InitTeamModal({
           ))}
 
           <View style={{ flexDirection: "row", gap: 12, marginTop: 16, justifyContent: "center" }}>
-            {canGoBack && onBack && (
+            {canGoBack && onBack ? (
               <TouchableOpacity
                 style={{
                   backgroundColor: "#f0f0f0",
@@ -218,7 +247,25 @@ export default function InitTeamModal({
                   Retour
                 </Text>
               </TouchableOpacity>
-            )}
+            ) : null}
+
+            {!canGoBack && onGoToMenu ? (
+              <TouchableOpacity
+                style={{
+                  backgroundColor: "#f0f0f0",
+                  borderRadius: 8,
+                  paddingVertical: 10,
+                  paddingHorizontal: 20,
+                  borderWidth: 1,
+                  borderColor: "#ddd",
+                }}
+                onPress={onGoToMenu}
+              >
+                <Text style={{ color: "#666", fontWeight: "600", fontSize: 16 }}>
+                  Menu
+                </Text>
+              </TouchableOpacity>
+            ) : null}
 
             <TouchableOpacity
               style={{
@@ -228,7 +275,7 @@ export default function InitTeamModal({
                 paddingHorizontal: 32,
                 opacity: isFullyDisabled ? 0.7 : 1,
               }}
-              onPress={() => selectedTeamMode && onConfirm(selectedTeamMode)}
+              onPress={handleConfirm}
               disabled={isFullyDisabled}
             >
               <Text style={{ color: "white", fontWeight: "bold", fontSize: 16 }}>

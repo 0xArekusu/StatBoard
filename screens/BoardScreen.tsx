@@ -429,6 +429,7 @@ export default function BasketballCourt() {
   // Added state for initialization popups
   const [teamSelectionModalVisible, setTeamSelectionModalVisible] =
     useState(true);
+  const [hasShownTeamSelection, setHasShownTeamSelection] = useState(false);
   const [selectedTeam, setSelectedTeam] = useState<any | null>(null);
   const [selectedTeamPlayers, setSelectedTeamPlayers] = useState<any[]>([]);
   const [initModalVisible, setInitModalVisible] = useState(false);
@@ -1810,9 +1811,13 @@ export default function BasketballCourt() {
 
       <TeamSelectionModal
         visible={teamSelectionModalVisible}
-        onTeamSelected={(team, players) => {
+        onTeamSelected={(team, players, wasAutoSelected) => {
           setSelectedTeam(team);
           setSelectedTeamPlayers(players || []);
+          // Only mark as shown if user manually selected (not auto-selected)
+          if (!wasAutoSelected) {
+            setHasShownTeamSelection(true);
+          }
 
           // ✨ Pre-fill players from club team
           if (players && players.length > 0) {
@@ -1831,8 +1836,13 @@ export default function BasketballCourt() {
           }
         }}
         onSkip={() => {
+          setHasShownTeamSelection(true);
           setTeamSelectionModalVisible(false);
           setInitModalVisible(true);
+        }}
+        onBack={() => {
+          setTeamSelectionModalVisible(false);
+          navigation.goBack();
         }}
       />
 
@@ -1846,11 +1856,16 @@ export default function BasketballCourt() {
         isConfirmDisabled={isConfirmDisabled}
         getFormattedDate={getFormattedDate}
         onRequestClose={() => navigation.goBack()}
-        canGoBack={selectedTeam !== null}
+        canGoBack={hasShownTeamSelection}
         onBack={() => {
           setInitModalVisible(false);
-          setTeamSelectionModalVisible(true);
+          if (hasShownTeamSelection) {
+            setTeamSelectionModalVisible(true);
+          } else {
+            navigation.goBack();
+          }
         }}
+        onGoToMenu={() => navigation.goBack()}
       />
 
       <MatchConfigModal
@@ -2256,7 +2271,7 @@ export default function BasketballCourt() {
       </View>
 
       {/* Bouton pour démarrer le match */}
-      {!initModalVisible && !matchConfigModalVisible && preGameMode && (
+      {!teamSelectionModalVisible && !initModalVisible && !matchConfigModalVisible && preGameMode && (
         <TouchableOpacity
           style={{
             position: "absolute",

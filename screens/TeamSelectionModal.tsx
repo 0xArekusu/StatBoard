@@ -7,6 +7,7 @@ import {
   Modal,
   FlatList,
   ActivityIndicator,
+  BackHandler,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { supabase } from "../src/config/supabase";
@@ -17,14 +18,16 @@ import type { Player } from "../models/Player";
 
 interface TeamSelectionModalProps {
   visible: boolean;
-  onTeamSelected: (team: Team | null, players?: Player[]) => void;
+  onTeamSelected: (team: Team | null, players?: Player[], wasAutoSelected?: boolean) => void;
   onSkip: () => void;
+  onBack: () => void;
 }
 
 export default function TeamSelectionModal({
   visible,
   onTeamSelected,
   onSkip,
+  onBack,
 }: TeamSelectionModalProps) {
   const { user } = useAuth();
   const [teams, setTeams] = useState<Team[]>([]);
@@ -33,13 +36,28 @@ export default function TeamSelectionModal({
   useEffect(() => {
     if (visible) {
       if (!user) {
-        // If not logged in, skip directly
-        onSkip();
+        // If not logged in, skip directly (auto-selected, so back goes to menu)
+        onTeamSelected(null, [], true);
         return;
       }
       loadUserTeams();
     }
   }, [visible, user]);
+
+  // Handle hardware back button
+  useEffect(() => {
+    if (!visible) return;
+
+    const backHandler = BackHandler.addEventListener(
+      "hardwareBackPress",
+      () => {
+        onBack(); // Return to menu
+        return true; // Prevent default behavior
+      }
+    );
+
+    return () => backHandler.remove();
+  }, [visible, onBack]);
 
   const loadUserTeams = async () => {
     if (!user) return;
@@ -57,7 +75,7 @@ export default function TeamSelectionModal({
 
       // Auto-select if only one team
       if (activeTeams.length === 1) {
-        await loadTeamPlayers(activeTeams[0]);
+        await loadTeamPlayers(activeTeams[0], true); // true = wasAutoSelected
       }
     } catch (error) {
       console.error("Error loading teams:", error);
@@ -66,14 +84,14 @@ export default function TeamSelectionModal({
     }
   };
 
-  const loadTeamPlayers = async (team: Team) => {
+  const loadTeamPlayers = async (team: Team, wasAutoSelected: boolean = false) => {
     try {
       const playerService = ServiceFactory.getPlayerService(supabase);
       const players = await playerService.getTeamPlayers(team.id);
-      onTeamSelected(team, players);
+      onTeamSelected(team, players, wasAutoSelected);
     } catch (error) {
       console.error("Error loading team players:", error);
-      onTeamSelected(team, []);
+      onTeamSelected(team, [], wasAutoSelected);
     }
   };
 
@@ -104,9 +122,6 @@ export default function TeamSelectionModal({
         <View style={styles.container}>
           <View style={styles.header}>
             <Text style={styles.title}>Sélectionner une équipe</Text>
-            <TouchableOpacity onPress={onSkip}>
-              <Ionicons name="close" size={28} color="#333" />
-            </TouchableOpacity>
           </View>
 
           {loading ? (
@@ -121,9 +136,14 @@ export default function TeamSelectionModal({
               <Text style={styles.emptyText}>
                 Créez une équipe dans votre club pour l'utiliser ici
               </Text>
-              <TouchableOpacity style={styles.skipButton} onPress={onSkip}>
-                <Text style={styles.skipButtonText}>Continuer sans équipe</Text>
-              </TouchableOpacity>
+              <View style={styles.buttonContainer}>
+                <TouchableOpacity style={styles.backButton} onPress={onBack}>
+                  <Text style={styles.backButtonText}>Retour</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.skipButton} onPress={onSkip}>
+                  <Text style={styles.skipButtonText}>Continuer sans équipe</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           ) : (
             <>
@@ -136,9 +156,14 @@ export default function TeamSelectionModal({
                   showsVerticalScrollIndicator={true}
                 />
               </View>
-              <TouchableOpacity style={styles.skipButton} onPress={onSkip}>
-                <Text style={styles.skipButtonText}>Continuer sans équipe</Text>
-              </TouchableOpacity>
+              <View style={styles.buttonContainer}>
+                <TouchableOpacity style={styles.backButton} onPress={onBack}>
+                  <Text style={styles.backButtonText}>Retour</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.skipButton} onPress={onSkip}>
+                  <Text style={styles.skipButtonText}>Continuer sans équipe</Text>
+                </TouchableOpacity>
+              </View>
             </>
           )}
         </View>
@@ -163,9 +188,6 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
     padding: 20,
     borderBottomWidth: 1,
     borderBottomColor: "#eee",
@@ -174,6 +196,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: "bold",
     color: "#333",
+    textAlign: "center",
   },
   loadingContainer: {
     padding: 60,
@@ -200,6 +223,26 @@ const styles = StyleSheet.create({
     color: "#999",
     textAlign: "center",
     marginBottom: 30,
+  },
+  buttonContainer: {
+    flexDirection: "row",
+    gap: 12,
+    marginHorizontal: 20,
+    marginTop: 10,
+  },
+  backButton: {
+    paddingVertical: 15,
+    paddingHorizontal: 20,
+    backgroundColor: "#f0f0f0",
+    borderRadius: 10,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#ddd",
+  },
+  backButtonText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#666",
   },
   flatListContainer: {
     height: 300,
@@ -232,9 +275,9 @@ const styles = StyleSheet.create({
     color: "#666",
   },
   skipButton: {
-    marginHorizontal: 20,
-    marginTop: 10,
-    padding: 15,
+    flex: 1,
+    paddingVertical: 15,
+    paddingHorizontal: 12,
     backgroundColor: "#2196F3",
     borderRadius: 10,
     alignItems: "center",
