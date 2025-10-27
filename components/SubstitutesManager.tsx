@@ -23,7 +23,7 @@ interface SubstitutesManagerProps {
   onRemoveSubstitute: () => void;
   currentTeam: "A" | "B";
   teamLetter: "A" | "B"; // L'équipe réelle de ces remplaçants
-  maxSubstitutes: number; // 8 maximum
+  maxSubstitutes: number; // 10 maximum
   isPortrait: boolean;
 }
 
@@ -36,7 +36,7 @@ export default function SubstitutesManager({
   onRemoveSubstitute,
   currentTeam,
   teamLetter,
-  maxSubstitutes = 8,
+  maxSubstitutes = 10,
   isPortrait,
 }: SubstitutesManagerProps) {
   const canAddSubstitute = substitutes.length < maxSubstitutes;

@@ -1502,7 +1502,7 @@ export default function BasketballCourt() {
     const setSubstitutes =
       team === "A" ? setSubstitutesTeamA : setSubstitutesTeamB;
 
-    if (substitutes.length >= 8) return; // Maximum 8 remplaçants
+    if (substitutes.length >= 10) return; // Maximum 10 remplaçants
 
     const nextId =
       Math.max(
@@ -1518,7 +1518,7 @@ export default function BasketballCourt() {
     const newSubstitute = {
       id: nextId,
       num: nextNumber,
-      name: `Remplaçant ${teamLetter} #${substitutes.length + 1}`,
+      name: `Remplaçant ${teamLetter}${substitutes.length + 1}`,
       isSubstitute: true,
     };
 
@@ -2480,7 +2480,7 @@ export default function BasketballCourt() {
             onRemoveSubstitute={() => handleRemoveSubstitute("A")}
             currentTeam={currentTeam}
             teamLetter="A"
-            maxSubstitutes={8}
+            maxSubstitutes={10}
             isPortrait={isPortrait}
           />
         )}
@@ -2500,7 +2500,7 @@ export default function BasketballCourt() {
             onRemoveSubstitute={() => handleRemoveSubstitute("B")}
             currentTeam={currentTeam}
             teamLetter="B"
-            maxSubstitutes={8}
+            maxSubstitutes={10}
             isPortrait={isPortrait}
           />
         )}

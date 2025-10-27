@@ -373,7 +373,7 @@ export default function PreGameSystem({
         onRemoveSubstitute={() => onRemoveSubstitute(currentTeam)}
         currentTeam={currentTeam}
         teamLetter={currentTeam}
-        maxSubstitutes={8}
+        maxSubstitutes={10}
         isPortrait={isPortrait}
       />
 

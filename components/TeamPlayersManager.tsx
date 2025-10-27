@@ -217,7 +217,7 @@ export default function TeamPlayersManager({
     );
   }
 
-  const canAddMore = players.length < 13;
+  const canAddMore = players.length < 15;
   const needsMorePlayers = players.length < 5;
   const startersCount = players.filter(p => p.isStarter).length;
   const benchCount = players.filter(p => !p.isStarter).length;
@@ -233,7 +233,7 @@ export default function TeamPlayersManager({
         <View style={styles.headerContent}>
           <Text style={styles.title}>Joueurs de l'équipe</Text>
           <Text style={styles.subtitle}>
-            {players.length}/13 joueurs {needsMorePlayers && "(min. 5 requis)"}
+            {players.length}/15 joueurs {needsMorePlayers && "(min. 5 requis)"}
           </Text>
         </View>
         <Ionicons
@@ -323,7 +323,7 @@ export default function TeamPlayersManager({
                 activeOpacity={0.7}
               >
                 <Text style={styles.sectionTitle}>
-                  Remplaçants ({benchCount}/{13 - startersCount})
+                  Remplaçants ({benchCount}/{15 - startersCount})
                 </Text>
                 <Ionicons
                   name={showBenchSection ? "chevron-up" : "chevron-down"}
