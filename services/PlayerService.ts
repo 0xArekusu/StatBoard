@@ -50,15 +50,6 @@ export class PlayerService {
   }
 
   async deletePlayer(id: string, teamId: string) {
-    // Check min players limit
-    const playerCount = await this.playerRepository.countByTeamId(teamId);
-    if (playerCount <= MIN_PLAYERS) {
-      return {
-        success: false,
-        error: `Une équipe doit avoir au moins ${MIN_PLAYERS} joueurs`
-      };
-    }
-
     const deleted = await this.playerRepository.delete(id);
     if (!deleted) {
       return { success: false, error: "Erreur lors de la suppression du joueur" };
@@ -73,9 +64,5 @@ export class PlayerService {
 
   async getPlayerById(id: string) {
     return await this.playerRepository.findById(id);
-  }
-
-  async toggleStarter(id: string, currentValue: boolean) {
-    return await this.updatePlayer(id, { isStarter: !currentValue });
   }
 }

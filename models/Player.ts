@@ -28,5 +28,4 @@ export interface UpdatePlayerData {
   photoUrl?: string;
   position?: PlayerPosition;
   isStarter?: boolean;
-  displayOrder?: number;
 }

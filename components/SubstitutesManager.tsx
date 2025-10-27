@@ -1,16 +1,19 @@
 import React from "react";
-import { View, Text, TouchableOpacity, ScrollView } from "react-native";
+import { View, Text, TouchableOpacity, ScrollView, Image } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 
 interface Player {
   id: number;
   num: number;
   name: string;
+  photoUrl?: string;
   isSubstitute: boolean;
 }
 
 interface Coach {
   id: number;
   name: string;
+  photoUrl?: string;
   isCoach: boolean;
 }
 
@@ -176,20 +179,31 @@ export default function SubstitutesManager({
               shadowOpacity: 0.3,
               shadowRadius: 4,
               elevation: 5,
+              overflow: "hidden",
             }}
           >
-            <Text
-              style={{
-                color: "#fff",
-                fontSize: 16,
-                fontWeight: "bold",
-                textShadowColor: "rgba(0,0,0,0.5)",
-                textShadowOffset: { width: 1, height: 1 },
-                textShadowRadius: 2,
-              }}
-            >
-              {substitute.num}
-            </Text>
+            {substitute.photoUrl ? (
+              <Image
+                source={{ uri: substitute.photoUrl }}
+                style={{
+                  width: "100%",
+                  height: "100%",
+                }}
+              />
+            ) : (
+              <Text
+                style={{
+                  color: "#fff",
+                  fontSize: 16,
+                  fontWeight: "bold",
+                  textShadowColor: "rgba(0,0,0,0.5)",
+                  textShadowOffset: { width: 1, height: 1 },
+                  textShadowRadius: 2,
+                }}
+              >
+                {substitute.num}
+              </Text>
+            )}
           </TouchableOpacity>
           <Text
             style={{
@@ -229,20 +243,31 @@ export default function SubstitutesManager({
           shadowOpacity: 0.3,
           shadowRadius: 4,
           elevation: 5,
+          overflow: "hidden",
         }}
       >
-        <Text
-          style={{
-            color: "#fff",
-            fontSize: 16,
-            fontWeight: "bold",
-            textShadowColor: "rgba(0,0,0,0.5)",
-            textShadowOffset: { width: 1, height: 1 },
-            textShadowRadius: 2,
-          }}
-        >
-          C
-        </Text>
+        {coach.photoUrl ? (
+          <Image
+            source={{ uri: coach.photoUrl }}
+            style={{
+              width: "100%",
+              height: "100%",
+            }}
+          />
+        ) : (
+          <Text
+            style={{
+              color: "#fff",
+              fontSize: 16,
+              fontWeight: "bold",
+              textShadowColor: "rgba(0,0,0,0.5)",
+              textShadowOffset: { width: 1, height: 1 },
+              textShadowRadius: 2,
+            }}
+          >
+            C
+          </Text>
+        )}
       </TouchableOpacity>
       <Text
         style={{

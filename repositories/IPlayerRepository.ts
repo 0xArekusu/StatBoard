@@ -2,9 +2,9 @@ import type { Player, CreatePlayerData, UpdatePlayerData } from "../models/Playe
 
 export interface IPlayerRepository {
   create(data: CreatePlayerData): Promise<Player | null>;
+  update(id: string, data: UpdatePlayerData): Promise<Player | null>;
   findById(id: string): Promise<Player | null>;
   findByTeamId(teamId: string): Promise<Player[]>;
-  update(id: string, data: UpdatePlayerData): Promise<Player | null>;
   delete(id: string): Promise<boolean>;
   countByTeamId(teamId: string): Promise<number>;
 }

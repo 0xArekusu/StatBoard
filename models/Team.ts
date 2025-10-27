@@ -8,6 +8,8 @@ export interface Team {
   ownerId: string;
   ownerEmail?: string; // Email from club_members (optional, populated via JOIN)
   gender?: TeamGender;
+  coachName?: string; // Name of the team coach
+  coachPhotoUrl?: string; // Photo URL of the team coach
   status: TeamStatus;
   isActive: boolean; // Club owner can activate/deactivate teams
   isDeleted: boolean; // Soft delete - archived but not physically removed
@@ -20,11 +22,15 @@ export interface CreateTeamData {
   name: string;
   clubId: string;
   gender?: TeamGender;
+  coachName?: string;
+  coachPhotoUrl?: string;
 }
 
 export interface UpdateTeamData {
   name?: string;
   gender?: TeamGender;
+  coachName?: string;
+  coachPhotoUrl?: string;
   status?: TeamStatus;
   isActive?: boolean;
 }

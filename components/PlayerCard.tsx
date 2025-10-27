@@ -23,8 +23,12 @@ interface PlayerCardProps {
   }) => Promise<boolean> | void;
   onDelete?: () => void;
   onToggleStarter?: () => void;
+  onCancel?: () => void;
   canEdit: boolean;
   canBecomeStarter?: boolean;
+  hideJerseyNumber?: boolean;
+  hidePosition?: boolean;
+  hideStarter?: boolean;
 }
 
 const POSITIONS = [
@@ -40,8 +44,12 @@ export default function PlayerCard({
   onSave,
   onDelete,
   onToggleStarter,
+  onCancel,
   canEdit,
   canBecomeStarter = true,
+  hideJerseyNumber = false,
+  hidePosition = false,
+  hideStarter = false,
 }: PlayerCardProps) {
   const [name, setName] = useState(player?.name || "");
   const [jerseyNumber, setJerseyNumber] = useState(
@@ -133,11 +141,10 @@ export default function PlayerCard({
     setPosition(player?.position);
     setIsStarter(player?.isStarter || false);
     setIsEditing(false);
+    onCancel?.();
   };
 
   const handleToggleStarter = () => {
-    const newValue = !isStarter;
-    setIsStarter(newValue);
     if (onToggleStarter) {
       onToggleStarter();
     }
@@ -184,50 +191,56 @@ export default function PlayerCard({
               onChangeText={setName}
               maxLength={30}
             />
-            <TextInput
-              style={[styles.input, styles.numberInput]}
-              placeholder="N°"
-              value={jerseyNumber}
-              onChangeText={setJerseyNumber}
-              keyboardType="number-pad"
-              maxLength={2}
-            />
+            {!hideJerseyNumber && (
+              <TextInput
+                style={[styles.input, styles.numberInput]}
+                placeholder="N°"
+                value={jerseyNumber}
+                onChangeText={setJerseyNumber}
+                keyboardType="number-pad"
+                maxLength={2}
+              />
+            )}
           </>
         ) : (
           <>
             <Text style={styles.playerName}>{player?.name}</Text>
-            <Text style={styles.playerNumber}>#{player?.jerseyNumber}</Text>
+            {!hideJerseyNumber && (
+              <Text style={styles.playerNumber}>#{player?.jerseyNumber}</Text>
+            )}
           </>
         )}
 
         {/* Position Selector */}
-        {isEditing ? (
-          <View style={styles.positionContainer}>
-            {POSITIONS.map((pos) => (
-              <TouchableOpacity
-                key={pos.value}
-                style={[
-                  styles.positionButton,
-                  position === pos.value && styles.positionButtonSelected,
-                ]}
-                onPress={() => setPosition(pos.value as PlayerPosition)}
-              >
-                <Text
+        {!hidePosition && (
+          isEditing ? (
+            <View style={styles.positionContainer}>
+              {POSITIONS.map((pos) => (
+                <TouchableOpacity
+                  key={pos.value}
                   style={[
-                    styles.positionText,
-                    position === pos.value && styles.positionTextSelected,
+                    styles.positionButton,
+                    position === pos.value && styles.positionButtonSelected,
                   ]}
+                  onPress={() => setPosition(pos.value as PlayerPosition)}
                 >
-                  {pos.value}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        ) : (
-          player?.position && (
-            <Text style={styles.positionLabel}>
-              Poste {player.position}
-            </Text>
+                  <Text
+                    style={[
+                      styles.positionText,
+                      position === pos.value && styles.positionTextSelected,
+                    ]}
+                  >
+                    {pos.value}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          ) : (
+            player?.position && (
+              <Text style={styles.positionLabel}>
+                Poste {player.position}
+              </Text>
+            )
           )
         )}
       </View>
@@ -254,17 +267,19 @@ export default function PlayerCard({
             </>
           ) : (
             <>
-              <TouchableOpacity
-                style={styles.actionButton}
-                onPress={handleToggleStarter}
-                disabled={!isStarter && !canBecomeStarter}
-              >
-                <Ionicons
-                  name={isStarter ? "star" : "star-outline"}
-                  size={28}
-                  color={!isStarter && !canBecomeStarter ? "#ccc" : "#FFD700"}
-                />
-              </TouchableOpacity>
+              {!hideStarter && (
+                <TouchableOpacity
+                  style={styles.actionButton}
+                  onPress={handleToggleStarter}
+                  disabled={!isStarter && !canBecomeStarter}
+                >
+                  <Ionicons
+                    name={isStarter ? "star" : "star-outline"}
+                    size={28}
+                    color={!isStarter && !canBecomeStarter ? "#ccc" : "#FFD700"}
+                  />
+                </TouchableOpacity>
+              )}
               <TouchableOpacity
                 style={styles.actionButton}
                 onPress={() => setIsEditing(true)}

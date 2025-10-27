@@ -1,34 +1,62 @@
 import React, { useState, useEffect } from "react";
-import { Modal, View, Text, TextInput, TouchableOpacity } from "react-native";
+import { Modal, View, Text, TextInput, TouchableOpacity, Image, Alert } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import * as ImagePicker from "expo-image-picker";
 
 interface CoachEditModalProps {
   visible: boolean;
   coachName: string;
-  onConfirm: (name: string) => void;
+  coachPhotoUrl?: string;
+  onConfirm: (name: string, photoUrl?: string) => void;
   onCancel: () => void;
 }
 
 export default function CoachEditModal({
   visible,
   coachName,
+  coachPhotoUrl,
   onConfirm,
   onCancel,
 }: CoachEditModalProps) {
   const [editName, setEditName] = useState(coachName);
+  const [photoUrl, setPhotoUrl] = useState(coachPhotoUrl);
 
   // Reset fields when modal opens
   useEffect(() => {
     if (visible) {
       setEditName(coachName);
+      setPhotoUrl(coachPhotoUrl);
     }
-  }, [visible, coachName]);
+  }, [visible, coachName, coachPhotoUrl]);
+
+  const pickImage = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert(
+        "Permission refusée",
+        "Nous avons besoin d'accéder à vos photos"
+      );
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.5,
+    });
+
+    if (!result.canceled) {
+      setPhotoUrl(result.assets[0].uri);
+    }
+  };
 
   const handleConfirm = () => {
     if (editName.trim() === "") {
       alert("Le nom ne peut pas être vide");
       return;
     }
-    onConfirm(editName.trim());
+    onConfirm(editName.trim(), photoUrl);
   };
 
   const isValid = editName.trim() !== "";
@@ -57,8 +85,9 @@ export default function CoachEditModal({
             elevation: 8,
           }}
         >
-          {/* Avatar rond avec C pour Coach */}
-          <View
+          {/* Avatar rond avec photo ou C pour Coach */}
+          <TouchableOpacity
+            onPress={pickImage}
             style={{
               width: 80,
               height: 80,
@@ -69,12 +98,49 @@ export default function CoachEditModal({
               marginBottom: 24,
               borderWidth: 3,
               borderColor: "#e0e0e0",
+              overflow: "hidden",
             }}
           >
-            <Text style={{ fontSize: 40, color: "#666", fontWeight: "bold" }}>
-              C
-            </Text>
-          </View>
+            {photoUrl ? (
+              <>
+                <Image source={{ uri: photoUrl }} style={{ width: "100%", height: "100%" }} />
+                <View
+                  style={{
+                    position: "absolute",
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    backgroundColor: "rgba(0,0,0,0.6)",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    padding: 4,
+                  }}
+                >
+                  <Ionicons name="camera" size={16} color="#fff" />
+                </View>
+              </>
+            ) : (
+              <>
+                <Text style={{ fontSize: 40, color: "#666", fontWeight: "bold" }}>
+                  C
+                </Text>
+                <View
+                  style={{
+                    position: "absolute",
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    backgroundColor: "rgba(0,0,0,0.6)",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    padding: 4,
+                  }}
+                >
+                  <Ionicons name="camera" size={16} color="#fff" />
+                </View>
+              </>
+            )}
+          </TouchableOpacity>
 
           {/* Name field */}
           <TextInput

@@ -501,12 +501,14 @@ export default function BasketballCourt() {
   const [coachTeamA, setCoachTeamA] = useState({
     id: 21,
     name: "Coach Équipe A",
+    photoUrl: undefined as string | undefined,
     isCoach: true,
   });
 
   const [coachTeamB, setCoachTeamB] = useState({
     id: 22,
     name: "Coach Équipe B",
+    photoUrl: undefined as string | undefined,
     isCoach: true,
   });
 
@@ -967,6 +969,16 @@ export default function BasketballCourt() {
       setPlayersTeamB(starters);
       setSubstitutesTeamB(substitutes);
 
+      // Move coach to Team B
+      if (selectedTeam) {
+        setCoachTeamB({
+          id: 22,
+          name: selectedTeam.coachName || "Coach Équipe B",
+          photoUrl: selectedTeam.coachPhotoUrl,
+          isCoach: true,
+        });
+      }
+
       // Reset Team A to default values
       setPlayers([
         { id: 1, num: 1, name: "Joueur A1", isSubstitute: false, isFromClub: false },
@@ -982,6 +994,12 @@ export default function BasketballCourt() {
         { id: 14, num: 9, name: "Remplaçant A4", isSubstitute: true, isFromClub: false },
         { id: 15, num: 10, name: "Remplaçant A5", isSubstitute: true, isFromClub: false },
       ]);
+      setCoachTeamA({
+        id: 21,
+        name: "Coach Équipe A",
+        photoUrl: undefined,
+        isCoach: true,
+      });
     }
 
     setInitModalVisible(false);
@@ -1388,7 +1406,7 @@ export default function BasketballCourt() {
     setEditingPlayer(null);
   };
 
-  const handlePlayerEditConfirm = (newNumber: number, newName: string) => {
+  const handlePlayerEditConfirm = (newNumber: number, newName: string, photoUrl?: string) => {
     if (editingPlayer !== null) {
       // Vérifier l'unicité du numéro
       if (!isNumberUnique(newNumber, editingPlayer, editingTeam)) {
@@ -1407,7 +1425,7 @@ export default function BasketballCourt() {
           setPlayers((prevPlayers) =>
             prevPlayers.map((player) =>
               player.id === editingPlayer
-                ? { ...player, num: newNumber, name: newName }
+                ? { ...player, num: newNumber, name: newName, photoUrl }
                 : player
             )
           );
@@ -1415,7 +1433,7 @@ export default function BasketballCourt() {
           setSubstitutesTeamA((prevSubstitutes) =>
             prevSubstitutes.map((substitute) =>
               substitute.id === editingPlayer
-                ? { ...substitute, num: newNumber, name: newName }
+                ? { ...substitute, num: newNumber, name: newName, photoUrl }
                 : substitute
             )
           );
@@ -1430,7 +1448,7 @@ export default function BasketballCourt() {
           setPlayersTeamB((prevPlayers) =>
             prevPlayers.map((player) =>
               player.id === editingPlayer
-                ? { ...player, num: newNumber, name: newName }
+                ? { ...player, num: newNumber, name: newName, photoUrl }
                 : player
             )
           );
@@ -1438,7 +1456,7 @@ export default function BasketballCourt() {
           setSubstitutesTeamB((prevSubstitutes) =>
             prevSubstitutes.map((substitute) =>
               substitute.id === editingPlayer
-                ? { ...substitute, num: newNumber, name: newName }
+                ? { ...substitute, num: newNumber, name: newName, photoUrl }
                 : substitute
             )
           );
@@ -1519,7 +1537,9 @@ export default function BasketballCourt() {
       id: nextId,
       num: nextNumber,
       name: `Remplaçant ${teamLetter}${substitutes.length + 1}`,
+      photoUrl: undefined,
       isSubstitute: true,
+      isFromClub: false,
     };
 
     setSubstitutes([...substitutes, newSubstitute]);
@@ -1554,11 +1574,11 @@ export default function BasketballCourt() {
     setCoachEditModalVisible(true);
   };
 
-  const handleCoachEditConfirm = (newName: string) => {
+  const handleCoachEditConfirm = (newName: string, photoUrl?: string) => {
     if (editingCoach === "A") {
-      setCoachTeamA((prev) => ({ ...prev, name: newName }));
+      setCoachTeamA((prev) => ({ ...prev, name: newName, photoUrl }));
     } else if (editingCoach === "B") {
-      setCoachTeamB((prev) => ({ ...prev, name: newName }));
+      setCoachTeamB((prev) => ({ ...prev, name: newName, photoUrl }));
     }
     setCoachEditModalVisible(false);
     setEditingCoach(null);
@@ -1833,8 +1853,14 @@ export default function BasketballCourt() {
           setTeamSelectionModalVisible(false);
           setInitModalVisible(true);
           if (team) {
-            // Pre-fill team name
+            // Pre-fill team name and coach
             setTeamA(team.name);
+            setCoachTeamA({
+              id: 21,
+              name: team.coachName || "Coach Équipe A",
+              photoUrl: team.coachPhotoUrl,
+              isCoach: true,
+            });
           }
         }}
         onSkip={() => {
@@ -1968,6 +1994,13 @@ export default function BasketballCourt() {
             : editingCoach === "B"
             ? coachTeamB.name
             : ""
+        }
+        coachPhotoUrl={
+          editingCoach === "A"
+            ? coachTeamA.photoUrl
+            : editingCoach === "B"
+            ? coachTeamB.photoUrl
+            : undefined
         }
         onConfirm={handleCoachEditConfirm}
         onCancel={handleCoachEditCancel}

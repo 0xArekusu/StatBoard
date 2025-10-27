@@ -13,6 +13,8 @@ export class SupabaseTeamRepository implements ITeamRepository {
       ownerId: row.owner_id,
       ownerEmail: row.club_members?.email || row.owner_email,
       gender: row.gender,
+      coachName: row.coach_name,
+      coachPhotoUrl: row.coach_photo_url,
       status: row.status,
       isActive: row.is_active ?? true,
       isDeleted: row.is_deleted ?? false,
@@ -30,6 +32,8 @@ export class SupabaseTeamRepository implements ITeamRepository {
         club_id: data.clubId,
         owner_id: ownerId,
         gender: data.gender,
+        coach_name: data.coachName || 'Coach',
+        coach_photo_url: data.coachPhotoUrl,
         status: 'pending',
       })
       .select()
@@ -137,6 +141,8 @@ export class SupabaseTeamRepository implements ITeamRepository {
     const updateData: any = {};
     if (data.name !== undefined) updateData.name = data.name;
     if (data.gender !== undefined) updateData.gender = data.gender;
+    if (data.coachName !== undefined) updateData.coach_name = data.coachName;
+    if (data.coachPhotoUrl !== undefined) updateData.coach_photo_url = data.coachPhotoUrl;
     if (data.status !== undefined) updateData.status = data.status;
     if (data.isActive !== undefined) updateData.is_active = data.isActive;
 

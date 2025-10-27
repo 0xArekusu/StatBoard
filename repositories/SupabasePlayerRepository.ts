@@ -42,6 +42,29 @@ export class SupabasePlayerRepository implements IPlayerRepository {
     return this.mapToPlayer(player);
   }
 
+  async update(id: string, data: UpdatePlayerData): Promise<Player | null> {
+    const updateData: any = {};
+    if (data.name !== undefined) updateData.name = data.name;
+    if (data.jerseyNumber !== undefined) updateData.jersey_number = data.jerseyNumber;
+    if (data.photoUrl !== undefined) updateData.photo_url = data.photoUrl;
+    if (data.position !== undefined) updateData.position = data.position;
+    if (data.isStarter !== undefined) updateData.is_starter = data.isStarter;
+
+    const { data: player, error } = await this.supabase
+      .from("players")
+      .update(updateData)
+      .eq("id", id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Error updating player:", error);
+      return null;
+    }
+
+    return this.mapToPlayer(player);
+  }
+
   async findById(id: string): Promise<Player | null> {
     const { data, error } = await this.supabase
       .from("players")
@@ -70,30 +93,6 @@ export class SupabasePlayerRepository implements IPlayerRepository {
     }
 
     return data.map(this.mapToPlayer);
-  }
-
-  async update(id: string, data: UpdatePlayerData): Promise<Player | null> {
-    const updateData: any = {};
-    if (data.name !== undefined) updateData.name = data.name;
-    if (data.jerseyNumber !== undefined) updateData.jersey_number = data.jerseyNumber;
-    if (data.photoUrl !== undefined) updateData.photo_url = data.photoUrl;
-    if (data.position !== undefined) updateData.position = data.position;
-    if (data.isStarter !== undefined) updateData.is_starter = data.isStarter;
-    if (data.displayOrder !== undefined) updateData.display_order = data.displayOrder;
-
-    const { data: player, error } = await this.supabase
-      .from("players")
-      .update(updateData)
-      .eq("id", id)
-      .select()
-      .single();
-
-    if (error) {
-      console.error("Error updating player:", error);
-      return null;
-    }
-
-    return this.mapToPlayer(player);
   }
 
   async delete(id: string): Promise<boolean> {

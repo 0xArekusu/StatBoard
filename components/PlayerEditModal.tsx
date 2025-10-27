@@ -1,11 +1,17 @@
 import React, { useState, useEffect } from "react";
-import { Modal, View, Text, TextInput, TouchableOpacity } from "react-native";
+import { Modal, View, Text, TextInput, TouchableOpacity, Image, Alert } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import * as ImagePicker from "expo-image-picker";
 
 interface PlayerEditModalProps {
   visible: boolean;
   playerNumber: number;
   playerName: string;
-  onConfirm: (newNumber: number, newName: string) => void;
+  playerPhotoUrl?: string;
+  isFromClub?: boolean;
+  availablePlayers?: any[];
+  onSwap?: (playerId: number) => void;
+  onConfirm: (newNumber: number, newName: string, photoUrl?: string) => void;
   onCancel: () => void;
 }
 
@@ -13,19 +19,44 @@ export default function PlayerEditModal({
   visible,
   playerNumber,
   playerName,
+  playerPhotoUrl,
   onConfirm,
   onCancel,
 }: PlayerEditModalProps) {
   const [editNumber, setEditNumber] = useState(playerNumber);
   const [editName, setEditName] = useState(playerName);
+  const [photoUrl, setPhotoUrl] = useState(playerPhotoUrl);
 
   // Reset fields when modal opens
   useEffect(() => {
     if (visible) {
       setEditNumber(playerNumber);
       setEditName(playerName);
+      setPhotoUrl(playerPhotoUrl);
     }
-  }, [visible, playerNumber, playerName]);
+  }, [visible, playerNumber, playerName, playerPhotoUrl]);
+
+  const pickImage = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert(
+        "Permission refusée",
+        "Nous avons besoin d'accéder à vos photos"
+      );
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.5,
+    });
+
+    if (!result.canceled) {
+      setPhotoUrl(result.assets[0].uri);
+    }
+  };
 
   const handleConfirm = () => {
     if (editNumber < 0 || editNumber > 99) {
@@ -36,7 +67,7 @@ export default function PlayerEditModal({
       alert("Le nom ne peut pas être vide");
       return;
     }
-    onConfirm(editNumber, editName.trim());
+    onConfirm(editNumber, editName.trim(), photoUrl);
   };
 
   const incrementNumber = () => {
@@ -92,8 +123,9 @@ export default function PlayerEditModal({
             elevation: 8,
           }}
         >
-          {/* Avatar rond avec bonhomme */}
-          <View
+          {/* Avatar rond avec photo ou bonhomme */}
+          <TouchableOpacity
+            onPress={pickImage}
             style={{
               width: 80,
               height: 80,
@@ -104,10 +136,47 @@ export default function PlayerEditModal({
               marginBottom: 24,
               borderWidth: 3,
               borderColor: "#e0e0e0",
+              overflow: "hidden",
             }}
           >
-            <Text style={{ fontSize: 40, color: "#bbb" }}>👤</Text>
-          </View>
+            {photoUrl ? (
+              <>
+                <Image source={{ uri: photoUrl }} style={{ width: "100%", height: "100%" }} />
+                <View
+                  style={{
+                    position: "absolute",
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    backgroundColor: "rgba(0,0,0,0.6)",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    padding: 4,
+                  }}
+                >
+                  <Ionicons name="camera" size={16} color="#fff" />
+                </View>
+              </>
+            ) : (
+              <>
+                <Text style={{ fontSize: 40, color: "#bbb" }}>👤</Text>
+                <View
+                  style={{
+                    position: "absolute",
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    backgroundColor: "rgba(0,0,0,0.6)",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    padding: 4,
+                  }}
+                >
+                  <Ionicons name="camera" size={16} color="#fff" />
+                </View>
+              </>
+            )}
+          </TouchableOpacity>
 
           {/* Name field without label */}
           <TextInput

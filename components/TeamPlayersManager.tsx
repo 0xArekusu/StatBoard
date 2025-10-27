@@ -7,6 +7,8 @@ import {
   ScrollView,
   Alert,
   ActivityIndicator,
+  TextInput,
+  Image,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { supabase } from "../src/config/supabase";
@@ -19,13 +21,19 @@ interface TeamPlayersManagerProps {
   canEdit: boolean;
   initialPlayers?: any[];
   onPlayersChange?: (players: any[]) => void;
+  coachName?: string;
+  coachPhotoUrl?: string;
+  onCoachChange?: (name: string, photoUrl?: string) => void;
 }
 
 export default function TeamPlayersManager({
   teamId,
   canEdit,
   initialPlayers,
-  onPlayersChange
+  onPlayersChange,
+  coachName: initialCoachName,
+  coachPhotoUrl: initialCoachPhotoUrl,
+  onCoachChange
 }: TeamPlayersManagerProps) {
   const [players, setPlayers] = useState<Player[]>(initialPlayers || []);
   const [loading, setLoading] = useState(!!teamId);
@@ -34,6 +42,9 @@ export default function TeamPlayersManager({
   const [showTeamSection, setShowTeamSection] = useState(true);
   const [showStartersSection, setShowStartersSection] = useState(true);
   const [showBenchSection, setShowBenchSection] = useState(true);
+  const [showCoachSection, setShowCoachSection] = useState(true);
+  const [coachName, setCoachName] = useState(initialCoachName || "Coach");
+  const [coachPhotoUrl, setCoachPhotoUrl] = useState(initialCoachPhotoUrl);
 
   const loadPlayers = useCallback(async () => {
     if (!teamId) return;
@@ -69,36 +80,23 @@ export default function TeamPlayersManager({
         Alert.alert("Erreur", "Vous ne pouvez avoir que 5 joueurs titulaires maximum");
         return false;
       }
+
+      // Check position uniqueness for starters
+      if (data.position && players.some(p => p.isStarter && p.position === data.position)) {
+        Alert.alert("Erreur", `Le poste ${data.position} est déjà occupé par un autre titulaire`);
+        return false;
+      }
     }
 
-    if (!teamId) {
-      // Local mode (creation)
-      const newPlayer = {
-        id: `temp-${Date.now()}`,
-        ...data,
-      };
-      const newPlayers = [...players, newPlayer];
-      setPlayers(newPlayers);
-      onPlayersChange?.(newPlayers);
-      setShowAddForm(false);
-      return true;
-    }
-
-    // API mode (edit)
-    const playerService = ServiceFactory.getPlayerService(supabase);
-    const result = await playerService.createPlayer({
-      teamId,
+    // Always work in local mode - no immediate save to DB
+    const newPlayer = {
+      id: teamId ? `temp-${Date.now()}` : `temp-${Date.now()}`,
       ...data,
-    });
-
-    if (!result.success) {
-      Alert.alert("Erreur", result.error);
-      return false;
-    }
-
-    Alert.alert("Succès", "Joueur ajouté");
+    };
+    const newPlayers = [...players, newPlayer];
+    setPlayers(newPlayers);
+    onPlayersChange?.(newPlayers);
     setShowAddForm(false);
-    loadPlayers();
     return true;
   };
 
@@ -109,49 +107,44 @@ export default function TeamPlayersManager({
       return false;
     }
 
+    const currentPlayer = players.find(p => p.id === playerId);
+
     // Check max starters (5)
     if (data.isStarter !== undefined) {
-      const currentPlayer = players.find(p => p.id === playerId);
       const startersCount = players.filter(p => p.isStarter && p.id !== playerId).length;
 
       if (data.isStarter && !currentPlayer?.isStarter && startersCount >= 5) {
         Alert.alert("Erreur", "Vous ne pouvez avoir que 5 joueurs titulaires maximum");
         return false;
       }
+
+      // Check position uniqueness for starters
+      if (data.isStarter) {
+        const position = data.position !== undefined ? data.position : currentPlayer?.position;
+        if (position && players.some(p => p.id !== playerId && p.isStarter && p.position === position)) {
+          Alert.alert("Erreur", `Le poste ${position} est déjà occupé par un autre titulaire`);
+          return false;
+        }
+      }
     }
 
-    if (!teamId) {
-      // Local mode (creation)
-      const newPlayers = players.map(p => p.id === playerId ? { ...p, ...data } : p);
-      setPlayers(newPlayers);
-      onPlayersChange?.(newPlayers);
-      return true;
+    // Check position uniqueness when changing position (if player is starter)
+    if (data.position !== undefined) {
+      const isStarter = data.isStarter !== undefined ? data.isStarter : currentPlayer?.isStarter;
+      if (isStarter && players.some(p => p.id !== playerId && p.isStarter && p.position === data.position)) {
+        Alert.alert("Erreur", `Le poste ${data.position} est déjà occupé par un autre titulaire`);
+        return false;
+      }
     }
 
-    // API mode (edit)
-    const playerService = ServiceFactory.getPlayerService(supabase);
-    const result = await playerService.updatePlayer(playerId, data);
-
-    if (!result.success) {
-      Alert.alert("Erreur", result.error);
-      return false;
-    }
-
-    Alert.alert("Succès", "Joueur modifié");
-    loadPlayers();
+    // Always work in local mode - no immediate save to DB
+    const newPlayers = players.map(p => p.id === playerId ? { ...p, ...data } : p);
+    setPlayers(newPlayers);
+    onPlayersChange?.(newPlayers);
     return true;
   };
 
   const handleDeletePlayer = async (playerId: string) => {
-    if (!teamId) {
-      // Local mode (creation)
-      const newPlayers = players.filter(p => p.id !== playerId);
-      setPlayers(newPlayers);
-      onPlayersChange?.(newPlayers);
-      return;
-    }
-
-    // API mode (edit)
     Alert.alert(
       "Supprimer le joueur",
       "Êtes-vous sûr de vouloir supprimer ce joueur ?",
@@ -160,17 +153,11 @@ export default function TeamPlayersManager({
         {
           text: "Supprimer",
           style: "destructive",
-          onPress: async () => {
-            const playerService = ServiceFactory.getPlayerService(supabase);
-            const result = await playerService.deletePlayer(playerId, teamId!);
-
-            if (!result.success) {
-              Alert.alert("Erreur", result.error);
-              return;
-            }
-
-            Alert.alert("Succès", "Joueur supprimé");
-            loadPlayers();
+          onPress: () => {
+            // Always work in local mode - no immediate save to DB
+            const newPlayers = players.filter(p => p.id !== playerId);
+            setPlayers(newPlayers);
+            onPlayersChange?.(newPlayers);
           },
         },
       ]
@@ -185,28 +172,21 @@ export default function TeamPlayersManager({
         Alert.alert("Erreur", "Vous ne pouvez avoir que 5 joueurs titulaires maximum");
         return;
       }
+
+      // Check position uniqueness when setting to starter
+      const player = players.find(p => p.id === playerId);
+      if (player?.position && players.some(p => p.id !== playerId && p.isStarter && p.position === player.position)) {
+        Alert.alert("Erreur", `Le poste ${player.position} est déjà occupé par un autre titulaire`);
+        return;
+      }
     }
 
-    if (!teamId) {
-      // Local mode (creation)
-      const newPlayers = players.map(p =>
-        p.id === playerId ? { ...p, isStarter: !currentValue } : p
-      );
-      setPlayers(newPlayers);
-      onPlayersChange?.(newPlayers);
-      return;
-    }
-
-    // API mode (edit)
-    const playerService = ServiceFactory.getPlayerService(supabase);
-    const result = await playerService.toggleStarter(playerId, currentValue);
-
-    if (!result.success) {
-      Alert.alert("Erreur", result.error);
-      return;
-    }
-
-    loadPlayers();
+    // Always work in local mode - no immediate save to DB
+    const newPlayers = players.map(p =>
+      p.id === playerId ? { ...p, isStarter: !currentValue } : p
+    );
+    setPlayers(newPlayers);
+    onPlayersChange?.(newPlayers);
   };
 
   if (loading) {
@@ -222,8 +202,52 @@ export default function TeamPlayersManager({
   const startersCount = players.filter(p => p.isStarter).length;
   const benchCount = players.filter(p => !p.isStarter).length;
 
+  const handleCoachSave = async (data: any) => {
+    if (!data.name || data.name.trim() === "") {
+      Alert.alert("Erreur", "Le nom du coach ne peut pas être vide");
+      return false;
+    }
+    setCoachName(data.name.trim());
+    setCoachPhotoUrl(data.photoUrl);
+    onCoachChange?.(data.name.trim(), data.photoUrl);
+    return true;
+  };
+
   return (
     <ScrollView style={styles.container}>
+      {/* Coach Section */}
+      <View style={styles.section}>
+        <TouchableOpacity
+          style={styles.sectionHeader}
+          onPress={() => setShowCoachSection(!showCoachSection)}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.sectionTitle}>Coach</Text>
+          <Ionicons
+            name={showCoachSection ? "chevron-up" : "chevron-down"}
+            size={20}
+            color="#666"
+          />
+        </TouchableOpacity>
+
+        {showCoachSection && (
+          <PlayerCard
+            player={{
+              id: "coach",
+              name: coachName,
+              jerseyNumber: 0,
+              photoUrl: coachPhotoUrl,
+              isStarter: false,
+            } as any}
+            onSave={handleCoachSave}
+            canEdit={canEdit}
+            hideJerseyNumber={true}
+            hidePosition={true}
+            hideStarter={true}
+          />
+        )}
+      </View>
+
       {/* Header */}
       <TouchableOpacity
         style={styles.header}
@@ -301,6 +325,7 @@ export default function TeamPlayersManager({
               </TouchableOpacity>
               {showStartersSection && players
                 .filter((p) => p.isStarter)
+                .sort((a, b) => (a.position || 99) - (b.position || 99))
                 .map((player) => (
                   <PlayerCard
                     key={player.id}
@@ -333,6 +358,7 @@ export default function TeamPlayersManager({
               </TouchableOpacity>
               {showBenchSection && players
                 .filter((p) => !p.isStarter)
+                .sort((a, b) => (a.position || 99) - (b.position || 99))
                 .map((player) => {
                   const canBecomeStarter = startersCount < 5;
                   return (

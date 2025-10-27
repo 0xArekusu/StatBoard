@@ -41,6 +41,8 @@ export default function TeamFormScreen() {
   const [loading, setLoading] = useState(isEditMode);
   const [teamName, setTeamName] = useState("");
   const [selectedGender, setSelectedGender] = useState<TeamGender | undefined>(undefined);
+  const [coachName, setCoachName] = useState("Coach");
+  const [coachPhotoUrl, setCoachPhotoUrl] = useState<string | undefined>();
   const [saving, setSaving] = useState(false);
   const [players, setPlayers] = useState<any[]>([
     { id: "temp-1", name: "Player 1", jerseyNumber: 1, position: 1, isStarter: true },
@@ -67,6 +69,13 @@ export default function TeamFormScreen() {
         setTeam(teamData);
         setTeamName(teamData.name);
         setSelectedGender(teamData.gender);
+        setCoachName(teamData.coachName || "Coach");
+        setCoachPhotoUrl(teamData.coachPhotoUrl);
+
+        // Load players
+        const playerService = ServiceFactory.getPlayerService(supabase);
+        const teamPlayers = await playerService.getTeamPlayers(teamId!);
+        setPlayers(teamPlayers);
       } else {
         Alert.alert("Erreur", "Équipe introuvable");
         navigation.goBack();
@@ -129,6 +138,13 @@ export default function TeamFormScreen() {
       return;
     }
 
+    // Validate exactly 5 starters
+    const startersCount = players.filter(p => p.isStarter).length;
+    if (startersCount !== 5) {
+      Alert.alert("Erreur", "Votre équipe doit avoir exactement 5 joueurs titulaires");
+      return;
+    }
+
     setSaving(true);
 
     try {
@@ -141,6 +157,8 @@ export default function TeamFormScreen() {
           {
             name: teamName.trim(),
             gender: selectedGender,
+            coachName: coachName.trim(),
+            coachPhotoUrl: coachPhotoUrl,
           },
           user.id
         );
@@ -149,6 +167,45 @@ export default function TeamFormScreen() {
           Alert.alert("Erreur", result.error || "Impossible de modifier l'équipe");
           setSaving(false);
           return;
+        }
+
+        // Save players in edit mode
+        const playerService = ServiceFactory.getPlayerService(supabase);
+
+        // Get existing players from DB
+        const existingPlayers = await playerService.getTeamPlayers(teamId);
+        const existingIds = new Set(existingPlayers.map(p => p.id));
+        const currentIds = new Set(players.filter(p => !p.id.startsWith('temp-')).map(p => p.id));
+
+        // Update or create players
+        for (const player of players) {
+          if (player.id.startsWith('temp-')) {
+            // New player - CREATE
+            await playerService.createPlayer({
+              teamId,
+              name: player.name,
+              jerseyNumber: player.jerseyNumber,
+              photoUrl: player.photoUrl,
+              position: player.position,
+              isStarter: player.isStarter,
+            });
+          } else {
+            // Existing player - UPDATE
+            await playerService.updatePlayer(player.id, {
+              name: player.name,
+              jerseyNumber: player.jerseyNumber,
+              photoUrl: player.photoUrl,
+              position: player.position,
+              isStarter: player.isStarter,
+            });
+          }
+        }
+
+        // Delete players that are no longer in the list
+        for (const existingPlayer of existingPlayers) {
+          if (!currentIds.has(existingPlayer.id)) {
+            await playerService.deletePlayer(existingPlayer.id, teamId);
+          }
         }
 
         Alert.alert("Succès", "L'équipe a été modifiée");
@@ -160,6 +217,8 @@ export default function TeamFormScreen() {
             name: teamName.trim(),
             clubId: clubId!,
             gender: selectedGender,
+            coachName: coachName.trim(),
+            coachPhotoUrl: coachPhotoUrl,
           },
           user.id
         );
@@ -283,8 +342,14 @@ export default function TeamFormScreen() {
           <TeamPlayersManager
             teamId={teamId}
             canEdit={isEditMode ? !!isOwner : true}
-            initialPlayers={!isEditMode ? players : undefined}
+            initialPlayers={players}
             onPlayersChange={(newPlayers) => setPlayers(newPlayers)}
+            coachName={coachName}
+            coachPhotoUrl={coachPhotoUrl}
+            onCoachChange={(name, photoUrl) => {
+              setCoachName(name);
+              setCoachPhotoUrl(photoUrl);
+            }}
           />
         </View>
 
