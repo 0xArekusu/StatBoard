@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Modal, View, Text, TextInput, TouchableOpacity, ScrollView } from "react-native";
+import { Modal, View, Text, TextInput, TouchableOpacity, ScrollView, Image } from "react-native";
 
 interface AvailablePlayer {
   id: number;
@@ -12,6 +12,7 @@ interface PlayerEditModalProps {
   visible: boolean;
   playerNumber: number;
   playerName: string;
+  playerPhotoUrl?: string; // Photo URL for the player
   isFromClub?: boolean; // Is this player from the configured club team?
   availablePlayers?: AvailablePlayer[]; // List of all players to swap with
   onConfirm: (newNumber: number, newName: string) => void;
@@ -23,6 +24,7 @@ export default function PlayerEditModal({
   visible,
   playerNumber,
   playerName,
+  playerPhotoUrl,
   isFromClub = false,
   availablePlayers = [],
   onConfirm,
@@ -107,7 +109,7 @@ export default function PlayerEditModal({
             elevation: 8,
           }}
         >
-          {/* Avatar rond avec bonhomme */}
+          {/* Avatar rond avec photo ou bonhomme */}
           <View
             style={{
               width: 80,
@@ -119,9 +121,18 @@ export default function PlayerEditModal({
               marginBottom: 24,
               borderWidth: 3,
               borderColor: "#e0e0e0",
+              overflow: "hidden",
             }}
           >
-            <Text style={{ fontSize: 40, color: "#bbb" }}>👤</Text>
+            {playerPhotoUrl ? (
+              <Image
+                source={{ uri: playerPhotoUrl }}
+                style={{ width: 80, height: 80 }}
+                resizeMode="cover"
+              />
+            ) : (
+              <Text style={{ fontSize: 40, color: "#bbb" }}>👤</Text>
+            )}
           </View>
 
           {/* Name field with swap button */}

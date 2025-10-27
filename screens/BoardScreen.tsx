@@ -79,6 +79,7 @@ const convertClubPlayersToBoard = (clubPlayers: Player[]) => {
         id: index + 1,
         num: playerAtPosition.jerseyNumber,
         name: playerAtPosition.name,
+        photoUrl: playerAtPosition.photoUrl,
         isSubstitute: false,
         isFromClub: true
       };
@@ -99,6 +100,7 @@ const convertClubPlayersToBoard = (clubPlayers: Player[]) => {
     id: starters.length + index + 1,
     num: p.jerseyNumber,
     name: p.name,
+    photoUrl: p.photoUrl,
     isSubstitute: true,
     isFromClub: true
   }));
@@ -1356,27 +1358,27 @@ export default function BasketballCourt() {
     if (editingTeam === "A") {
       // Update starters
       setPlayers(prev => prev.map(p => {
-        if (p.id === currentPlayer.id) return { ...p, num: targetPlayer.num, name: targetPlayer.name, isFromClub: targetPlayer.isFromClub };
-        if (p.id === targetPlayer.id) return { ...p, num: currentPlayer.num, name: currentPlayer.name, isFromClub: currentPlayer.isFromClub };
+        if (p.id === currentPlayer.id) return { ...p, num: targetPlayer.num, name: targetPlayer.name, photoUrl: targetPlayer.photoUrl, isFromClub: targetPlayer.isFromClub };
+        if (p.id === targetPlayer.id) return { ...p, num: currentPlayer.num, name: currentPlayer.name, photoUrl: currentPlayer.photoUrl, isFromClub: currentPlayer.isFromClub };
         return p;
       }));
       // Update substitutes
       setSubstitutesTeamA(prev => prev.map(p => {
-        if (p.id === currentPlayer.id) return { ...p, num: targetPlayer.num, name: targetPlayer.name, isFromClub: targetPlayer.isFromClub };
-        if (p.id === targetPlayer.id) return { ...p, num: currentPlayer.num, name: currentPlayer.name, isFromClub: currentPlayer.isFromClub };
+        if (p.id === currentPlayer.id) return { ...p, num: targetPlayer.num, name: targetPlayer.name, photoUrl: targetPlayer.photoUrl, isFromClub: targetPlayer.isFromClub };
+        if (p.id === targetPlayer.id) return { ...p, num: currentPlayer.num, name: currentPlayer.name, photoUrl: currentPlayer.photoUrl, isFromClub: currentPlayer.isFromClub };
         return p;
       }));
     } else {
       // Update Team B starters
       setPlayersTeamB(prev => prev.map(p => {
-        if (p.id === currentPlayer.id) return { ...p, num: targetPlayer.num, name: targetPlayer.name, isFromClub: targetPlayer.isFromClub };
-        if (p.id === targetPlayer.id) return { ...p, num: currentPlayer.num, name: currentPlayer.name, isFromClub: currentPlayer.isFromClub };
+        if (p.id === currentPlayer.id) return { ...p, num: targetPlayer.num, name: targetPlayer.name, photoUrl: targetPlayer.photoUrl, isFromClub: targetPlayer.isFromClub };
+        if (p.id === targetPlayer.id) return { ...p, num: currentPlayer.num, name: currentPlayer.name, photoUrl: currentPlayer.photoUrl, isFromClub: currentPlayer.isFromClub };
         return p;
       }));
       // Update Team B substitutes
       setSubstitutesTeamB(prev => prev.map(p => {
-        if (p.id === currentPlayer.id) return { ...p, num: targetPlayer.num, name: targetPlayer.name, isFromClub: targetPlayer.isFromClub };
-        if (p.id === targetPlayer.id) return { ...p, num: currentPlayer.num, name: currentPlayer.name, isFromClub: currentPlayer.isFromClub };
+        if (p.id === currentPlayer.id) return { ...p, num: targetPlayer.num, name: targetPlayer.name, photoUrl: targetPlayer.photoUrl, isFromClub: targetPlayer.isFromClub };
+        if (p.id === targetPlayer.id) return { ...p, num: currentPlayer.num, name: currentPlayer.name, photoUrl: currentPlayer.photoUrl, isFromClub: currentPlayer.isFromClub };
         return p;
       }));
     }
@@ -1931,6 +1933,20 @@ export default function BasketballCourt() {
                 return player?.isFromClub || false;
               })()
             : false
+        }
+        playerPhotoUrl={
+          editingPlayer
+            ? (() => {
+                const teamPlayers =
+                  editingTeam === "A" ? players : playersTeamB;
+                const teamSubstitutes =
+                  editingTeam === "A" ? substitutesTeamA : substitutesTeamB;
+                const player = [...teamPlayers, ...teamSubstitutes].find(
+                  (p) => p.id === editingPlayer
+                );
+                return player?.photoUrl;
+              })()
+            : undefined
         }
         availablePlayers={(() => {
           const teamPlayers = editingTeam === "A" ? players : playersTeamB;
