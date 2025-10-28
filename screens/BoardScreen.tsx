@@ -20,6 +20,7 @@ import * as ScreenOrientation from "expo-screen-orientation";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
+import { MATCH_FORMATS, MATCH_FORMAT_LABELS } from "../constants/matchConstants";
 import TeamSelectionModal from "./TeamSelectionModal";
 import InitTeamModal from "./InitTeamModal";
 import MatchConfigModal from "./MatchConfigModal";
@@ -876,7 +877,7 @@ export default function BasketballCourt() {
   };
 
   const [matchFormat, setMatchFormat] = useState<"2_halves" | "4_quarters">(
-    "4_quarters"
+    MATCH_FORMATS.FOUR_QUARTERS
   );
   const [periodDuration, setPeriodDuration] = useState<number>(600);
 
@@ -898,7 +899,7 @@ export default function BasketballCourt() {
 
   // Utility functions for period management
   const getTotalPeriods = () => {
-    return matchFormat === "2_halves" ? 2 : 4;
+    return matchFormat === MATCH_FORMATS.TWO_HALVES ? 2 : 4;
   };
 
   const isLastPeriod = () => {
@@ -2051,8 +2052,8 @@ export default function BasketballCourt() {
         visible={showNextPeriodModal}
         title="Passer à la période suivante"
         message={`Voulez-vous vraiment passer à la ${
-          matchFormat === "2_halves" ? "mi-temps" : "quart-temps"
-        } suivant${matchFormat === "2_halves" ? "e" : ""} ?`}
+          MATCH_FORMAT_LABELS[matchFormat].singular
+        } suivant${matchFormat === MATCH_FORMATS.TWO_HALVES ? "e" : ""} ?`}
         timeRemaining={getTimeRemaining()}
         onConfirm={confirmNextPeriod}
         onCancel={cancelNextPeriod}

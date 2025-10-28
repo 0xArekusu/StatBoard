@@ -1,6 +1,7 @@
 import React from "react";
 import { Modal, View, Text, TouchableOpacity } from "react-native";
 import { MatchFormat } from "../src/models/types";
+import { MATCH_FORMATS, MATCH_FORMAT_LABELS } from "../constants/matchConstants";
 
 interface MatchConfigModalProps {
   visible: boolean;
@@ -13,12 +14,12 @@ export default function MatchConfigModal({
   onConfirm,
   onRequestClose,
 }: MatchConfigModalProps) {
-  const [matchFormat, setMatchFormat] = React.useState<MatchFormat>("4_quarters");
+  const [matchFormat, setMatchFormat] = React.useState<MatchFormat>(MATCH_FORMATS.FOUR_QUARTERS);
   const [periodDuration, setPeriodDuration] = React.useState<number>(600);
 
   // Update period duration when format changes
   React.useEffect(() => {
-    setPeriodDuration(matchFormat === "2_halves" ? 1200 : 600);
+    setPeriodDuration(matchFormat === MATCH_FORMATS.TWO_HALVES ? 1200 : 600);
   }, [matchFormat]);
 
   const formatDurationDisplay = (seconds: number): string => {
@@ -26,7 +27,7 @@ export default function MatchConfigModal({
   };
 
   const getTotalMatchDuration = (): string => {
-    const periods = matchFormat === "2_halves" ? 2 : 4;
+    const periods = matchFormat === MATCH_FORMATS.TWO_HALVES ? 2 : 4;
     const totalSeconds = periods * periodDuration;
     return formatDurationDisplay(totalSeconds);
   };
@@ -78,8 +79,8 @@ export default function MatchConfigModal({
             
             <View style={{ flexDirection: "row", marginBottom: 16 }}>
               {[
-                { key: "4_quarters", label: "4 quart-temps", icon: "🏀" },
-                { key: "2_halves", label: "2 mi-temps", icon: "⏱️" },
+                { key: MATCH_FORMATS.FOUR_QUARTERS, label: `4 ${MATCH_FORMAT_LABELS[MATCH_FORMATS.FOUR_QUARTERS].plural}`, icon: "🏀" },
+                { key: MATCH_FORMATS.TWO_HALVES, label: `2 ${MATCH_FORMAT_LABELS[MATCH_FORMATS.TWO_HALVES].plural}`, icon: "⏱️" },
               ].map((format) => (
                 <TouchableOpacity
                   key={format.key}

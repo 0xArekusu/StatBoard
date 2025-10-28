@@ -49,6 +49,27 @@ export const NOT_CONNECTED_LIMITS: SubscriptionLimits = {
   canSyncToServer: false,
 };
 
+/**
+ * Labels pour les tiers d'abonnement
+ */
+export const SUBSCRIPTION_TIER_LABELS: Record<SubscriptionTier, string> = {
+  free: "Gratuit",
+  basic: "Basic",
+  premium: "Premium",
+  ultimate: "Ultimate",
+};
+
+/**
+ * Labels pour les modes utilisateur
+ */
+export const USER_MODE_LABELS: Record<UserMode, string> = {
+  [UserMode.NOT_CONNECTED]: "Non connecté",
+  [UserMode.FREEMIUM]: "Gratuit",
+  [UserMode.BASIC]: "Basic",
+  [UserMode.PREMIUM]: "Premium",
+  [UserMode.ULTIMATE]: "Ultimate",
+};
+
 export interface Subscription {
   tier: SubscriptionTier;
   limits: SubscriptionLimits;
