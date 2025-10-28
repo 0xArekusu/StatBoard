@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Modal, View, Text, TextInput, TouchableOpacity, ScrollView, Image } from "react-native";
+import * as ImagePicker from "expo-image-picker";
 
 interface AvailablePlayer {
   id: number;
@@ -15,7 +16,7 @@ interface PlayerEditModalProps {
   playerPhotoUrl?: string; // Photo URL for the player
   isFromClub?: boolean; // Is this player from the configured club team?
   availablePlayers?: AvailablePlayer[]; // List of all players to swap with
-  onConfirm: (newNumber: number, newName: string) => void;
+  onConfirm: (newNumber: number, newName: string, photoUrl?: string) => void;
   onSwap?: (targetPlayerId: number) => void; // Callback to swap with another player
   onCancel: () => void;
 }
@@ -33,6 +34,7 @@ export default function PlayerEditModal({
 }: PlayerEditModalProps) {
   const [editNumber, setEditNumber] = useState(playerNumber);
   const [editName, setEditName] = useState(playerName);
+  const [editPhotoUrl, setEditPhotoUrl] = useState(playerPhotoUrl);
   const [showSwapList, setShowSwapList] = useState(false);
 
   // Reset fields when modal opens
@@ -40,9 +42,10 @@ export default function PlayerEditModal({
     if (visible) {
       setEditNumber(playerNumber);
       setEditName(playerName);
+      setEditPhotoUrl(playerPhotoUrl);
       setShowSwapList(false);
     }
-  }, [visible, playerNumber, playerName]);
+  }, [visible, playerNumber, playerName, playerPhotoUrl]);
 
   const handleConfirm = () => {
     if (editNumber < 0 || editNumber > 99) {
@@ -53,7 +56,34 @@ export default function PlayerEditModal({
       alert("Le nom ne peut pas être vide");
       return;
     }
-    onConfirm(editNumber, editName.trim());
+    onConfirm(editNumber, editName.trim(), editPhotoUrl);
+  };
+
+  const pickImage = async () => {
+    // Les joueurs du club ne peuvent pas changer leur photo
+    if (isFromClub) {
+      return;
+    }
+
+    // Request permissions
+    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+    if (permissionResult.granted === false) {
+      alert("Permission d'accès à la galerie est requise!");
+      return;
+    }
+
+    // Launch image picker
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.5,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      setEditPhotoUrl(result.assets[0].uri);
+    }
   };
 
   const incrementNumber = () => {
@@ -109,29 +139,53 @@ export default function PlayerEditModal({
             elevation: 8,
           }}
         >
-          {/* Avatar rond avec photo ou bonhomme */}
-          <View
-            style={{
-              width: 80,
-              height: 80,
-              borderRadius: 40,
-              backgroundColor: "#f0f0f0",
-              justifyContent: "center",
-              alignItems: "center",
-              marginBottom: 24,
-              borderWidth: 3,
-              borderColor: "#e0e0e0",
-              overflow: "hidden",
-            }}
-          >
-            {playerPhotoUrl ? (
-              <Image
-                source={{ uri: playerPhotoUrl }}
-                style={{ width: 80, height: 80 }}
-                resizeMode="cover"
-              />
-            ) : (
-              <Text style={{ fontSize: 40, color: "#bbb" }}>👤</Text>
+          {/* Avatar rond avec photo ou bonhomme - cliquable pour changer la photo (sauf si du club) */}
+          <View style={{ alignItems: "center", marginBottom: 24, position: "relative" }}>
+            <TouchableOpacity
+              onPress={pickImage}
+              disabled={isFromClub}
+              style={{
+                width: 80,
+                height: 80,
+                borderRadius: 40,
+                backgroundColor: "#f0f0f0",
+                justifyContent: "center",
+                alignItems: "center",
+                borderWidth: 3,
+                borderColor: "#e0e0e0",
+                overflow: "hidden",
+              }}
+            >
+              {editPhotoUrl ? (
+                <Image
+                  source={{ uri: editPhotoUrl }}
+                  style={{ width: 80, height: 80 }}
+                  resizeMode="cover"
+                />
+              ) : (
+                <Text style={{ fontSize: 40, color: "#bbb" }}>👤</Text>
+              )}
+            </TouchableOpacity>
+
+            {/* Petit indicateur en bas à droite pour montrer qu'on peut changer la photo (seulement si pas du club) */}
+            {!isFromClub && (
+              <View
+                style={{
+                  position: "absolute",
+                  bottom: -2,
+                  right: -2,
+                  width: 28,
+                  height: 28,
+                  borderRadius: 14,
+                  backgroundColor: "#2196F3",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  borderWidth: 2,
+                  borderColor: "#fff",
+                }}
+              >
+                <Text style={{ fontSize: 14 }}>📷</Text>
+              </View>
             )}
           </View>
 

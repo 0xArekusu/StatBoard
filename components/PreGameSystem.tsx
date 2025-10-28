@@ -43,7 +43,7 @@ interface PreGameSystemProps {
   coachTeamB: Coach;
   onCoachEdit: (coachId: number, team: "A" | "B") => void;
   // Propriétés pour l'édition des joueurs
-  onPlayerEditConfirm: (number: number, name: string) => void;
+  onPlayerEditConfirm: (number: number, name: string, photoUrl?: string) => void;
   onPlayerEditCancel: () => void;
 }
 
@@ -175,12 +175,12 @@ export default function PreGameSystem({
     setPlayerEditModalVisible(true);
   };
 
-  const handlePlayerEditConfirm = (newNumber: number, newName: string) => {
+  const handlePlayerEditConfirm = (newNumber: number, newName: string, photoUrl?: string) => {
     if (editingPlayer !== null) {
       setPlayers(
         players.map((player) =>
           player.id === editingPlayer
-            ? { ...player, num: newNumber, name: newName }
+            ? { ...player, num: newNumber, name: newName, photoUrl }
             : player
         )
       );
