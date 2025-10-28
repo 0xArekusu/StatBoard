@@ -19,6 +19,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as ScreenOrientation from "expo-screen-orientation";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import TeamSelectionModal from "./TeamSelectionModal";
 import InitTeamModal from "./InitTeamModal";
 import MatchConfigModal from "./MatchConfigModal";
@@ -2102,7 +2103,11 @@ export default function BasketballCourt() {
               fontWeight: "bold",
             }}
           >
-            {isPortrait ? "⇅" : "⇄"}
+            <MaterialCommunityIcons
+              name={isPortrait ? "swap-vertical" : "swap-horizontal"}
+              size={28}
+              color="#666"
+            />
           </Text>
         </TouchableOpacity>
       )}

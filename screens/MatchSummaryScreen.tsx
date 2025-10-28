@@ -10,6 +10,7 @@ import {
   Dimensions,
 } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
+import { Ionicons } from "@expo/vector-icons";
 import { ActionData } from "../components/ActionSystem";
 import { PDFExportService } from "../src/services/export/PDFExportService";
 import { LineChart } from "react-native-chart-kit";
@@ -453,7 +454,17 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.title}>🏀 Match Terminé</Text>
+        {fromHistory && (
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+          >
+            <Ionicons name="arrow-back" size={24} color="#fff" />
+            <Text style={styles.backButtonText}>Retour</Text>
+          </TouchableOpacity>
+        )}
+        <Text style={[styles.title, fromHistory && styles.titleWithBack]}>🏀 Match Terminé</Text>
+        {fromHistory && <View style={styles.backButton} />}
       </View>
 
       <ScrollView style={styles.scrollContent}>
@@ -954,11 +965,28 @@ const styles = StyleSheet.create({
     backgroundColor: "#FF6B35",
     padding: 20,
     alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  backButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    width: 80,
+  },
+  backButtonText: {
+    fontSize: 16,
+    color: "#fff",
+    fontWeight: "600",
   },
   title: {
     fontSize: 24,
     fontWeight: "bold",
     color: "#fff",
+  },
+  titleWithBack: {
+    flex: 1,
+    textAlign: "center",
   },
   scrollContent: {
     flex: 1,

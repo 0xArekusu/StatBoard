@@ -8,6 +8,7 @@ import {
   ScrollView,
   TextInput,
 } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { ActionData } from "./ActionSystem";
 import BasketballCourtSVG from "./BasketballCourtSVG";
 
@@ -23,6 +24,7 @@ interface MatchSummaryModalProps {
   teamMode: "A" | "B" | "both";
   onViewDetails: () => void;
   onBackToMenu: () => void;
+  onBack?: () => void; // Optional back button when viewing from history
 }
 
 export default function MatchSummaryModal({
@@ -37,6 +39,7 @@ export default function MatchSummaryModal({
   teamMode,
   onViewDetails,
   onBackToMenu,
+  onBack,
 }: MatchSummaryModalProps) {
   // Local state for adjustable scores
   const [adjustedScoreA, setAdjustedScoreA] = React.useState(scoreA);
@@ -690,19 +693,31 @@ export default function MatchSummaryModal({
 
           {/* Action buttons */}
           <View style={styles.buttonContainer}>
-            <TouchableOpacity
-              style={[styles.button, styles.secondaryButton]}
-              onPress={onViewDetails}
-            >
-              <Text style={styles.secondaryButtonText}>📊 Détails</Text>
-            </TouchableOpacity>
+            {onBack ? (
+              <TouchableOpacity
+                style={[styles.button, styles.backButton]}
+                onPress={onBack}
+              >
+                <Ionicons name="arrow-back" size={20} color="#666" />
+                <Text style={styles.backButtonText}>Retour</Text>
+              </TouchableOpacity>
+            ) : (
+              <>
+                <TouchableOpacity
+                  style={[styles.button, styles.secondaryButton]}
+                  onPress={onViewDetails}
+                >
+                  <Text style={styles.secondaryButtonText}>📊 Détails</Text>
+                </TouchableOpacity>
 
-            <TouchableOpacity
-              style={[styles.button, styles.primaryButton]}
-              onPress={onBackToMenu}
-            >
-              <Text style={styles.primaryButtonText}>🏠 Menu</Text>
-            </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.button, styles.primaryButton]}
+                  onPress={onBackToMenu}
+                >
+                  <Text style={styles.primaryButtonText}>🏠 Menu</Text>
+                </TouchableOpacity>
+              </>
+            )}
           </View>
         </View>
       </View>
@@ -1068,6 +1083,19 @@ const styles = StyleSheet.create({
   secondaryButtonText: {
     color: "#333",
     fontSize: 14,
+    fontWeight: "600",
+  },
+  backButton: {
+    backgroundColor: "#f5f5f5",
+    borderWidth: 1,
+    borderColor: "#ddd",
+    flexDirection: "row",
+    gap: 6,
+    paddingVertical: 14,
+  },
+  backButtonText: {
+    color: "#666",
+    fontSize: 16,
     fontWeight: "600",
   },
 });

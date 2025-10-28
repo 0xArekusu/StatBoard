@@ -1,5 +1,6 @@
 import React from "react";
 import { Modal, View, Text, TextInput, TouchableOpacity } from "react-native";
+import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 
 interface InitTeamModalProps {
   visible: boolean;
@@ -142,9 +143,7 @@ export default function InitTeamModal({
               }}
               onPress={swapTeams}
             >
-              <Text style={{ fontSize: 14, color: "#666", fontWeight: "bold" }}>
-                ⇅
-              </Text>
+              <MaterialCommunityIcons name="swap-vertical" size={20} color="#666" />
             </TouchableOpacity>
             <Text style={{ fontSize: 16, fontWeight: "bold" }}>VS</Text>
             <View style={{ width: 30 }} />

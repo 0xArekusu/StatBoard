@@ -386,7 +386,8 @@ export default function MatchHistoryScreen() {
             style={styles.backButton}
             onPress={() => navigation.goBack()}
           >
-            <Text style={styles.backButtonText}>← Retour</Text>
+            <Ionicons name="arrow-back" size={24} color="#666" />
+            <Text style={styles.backButtonText}>Retour</Text>
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Historique des matchs</Text>
           <View style={styles.backButton} />
@@ -406,7 +407,8 @@ export default function MatchHistoryScreen() {
           style={styles.backButton}
           onPress={() => navigation.goBack()}
         >
-          <Text style={styles.backButtonText}>← Retour</Text>
+          <Ionicons name="arrow-back" size={24} color="#666" />
+          <Text style={styles.backButtonText}>Retour</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Historique des matchs</Text>
         <View style={styles.backButton} />
@@ -448,10 +450,13 @@ const styles = StyleSheet.create({
   },
   backButton: {
     width: 80,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
   },
   backButtonText: {
     fontSize: 16,
-    color: "#4CAF50",
+    color: "#666",
     fontWeight: "600",
   },
   headerTitle: {

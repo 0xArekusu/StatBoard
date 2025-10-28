@@ -8,6 +8,7 @@ import {
   SafeAreaView,
 } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
+import { Ionicons } from "@expo/vector-icons";
 import { ActionData } from "../components/ActionSystem";
 import BasketballCourtSVG from "../components/BasketballCourtSVG";
 
@@ -259,7 +260,8 @@ export default function MatchDetailsScreen() {
             navigation.goBack();
           }}
         >
-          <Text style={styles.backButtonText}>← Retour</Text>
+          <Ionicons name="arrow-back" size={24} color="#666" />
+          <Text style={styles.backButtonText}>Retour</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Détails du match</Text>
         <View style={styles.backButton} />
@@ -1029,10 +1031,13 @@ const styles = StyleSheet.create({
   },
   backButton: {
     width: 80,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
   },
   backButtonText: {
     fontSize: 16,
-    color: "#4CAF50",
+    color: "#666",
     fontWeight: "600",
   },
   headerTitle: {
