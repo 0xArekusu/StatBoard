@@ -13,8 +13,8 @@ export class SQLiteAdapter implements IStorageAdapter {
     this.db = SQLite.openDatabaseSync(databaseName);
 
     // 🔄 TEMPORARY RESET - Remove after testing!
-    //this.resetDatabaseTables();
-    //this.initializeTables();
+    // this.resetDatabaseTables();
+    // this.initializeTables();
   }
 
   // 🔄 TEMPORARY METHOD - Remove after testing! wip
@@ -103,6 +103,33 @@ export class SQLiteAdapter implements IStorageAdapter {
     try {
       this.db.execSync(`
         ALTER TABLE matches ADD COLUMN score_manually_adjusted INTEGER DEFAULT 0;
+      `);
+    } catch (error) {
+      // Column might already exist, ignore error
+    }
+
+    // Add synced_to_server column if it doesn't exist (for cloud sync feature)
+    try {
+      this.db.execSync(`
+        ALTER TABLE matches ADD COLUMN synced_to_server INTEGER DEFAULT 0;
+      `);
+    } catch (error) {
+      // Column might already exist, ignore error
+    }
+
+    // Add created_with_tier column if it doesn't exist (to track subscription tier at creation)
+    try {
+      this.db.execSync(`
+        ALTER TABLE matches ADD COLUMN created_with_tier TEXT DEFAULT 'not_connected';
+      `);
+    } catch (error) {
+      // Column might already exist, ignore error
+    }
+
+    // Add club_id column if it doesn't exist (to filter matches by club)
+    try {
+      this.db.execSync(`
+        ALTER TABLE matches ADD COLUMN club_id TEXT;
       `);
     } catch (error) {
       // Column might already exist, ignore error

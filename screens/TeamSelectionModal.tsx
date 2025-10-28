@@ -18,6 +18,7 @@ import type { Player } from "../models/Player";
 
 interface TeamSelectionModalProps {
   visible: boolean;
+  clubId?: string | null;
   onTeamSelected: (team: Team | null, players?: Player[], wasAutoSelected?: boolean) => void;
   onSkip: () => void;
   onBack: () => void;
@@ -25,6 +26,7 @@ interface TeamSelectionModalProps {
 
 export default function TeamSelectionModal({
   visible,
+  clubId,
   onTeamSelected,
   onSkip,
   onBack,
@@ -68,9 +70,15 @@ export default function TeamSelectionModal({
       const userTeams = await teamService.getUserTeams(user.id);
 
       // Filter only approved and active teams
-      const activeTeams = userTeams.filter(
+      let activeTeams = userTeams.filter(
         (t) => t.status === "approved" && t.isActive
       );
+
+      // Filter by club if clubId is provided
+      if (clubId) {
+        activeTeams = activeTeams.filter((t) => t.clubId === clubId);
+      }
+
       setTeams(activeTeams);
 
       // Auto-select if only one team
@@ -137,11 +145,13 @@ export default function TeamSelectionModal({
                 Créez une équipe dans votre club pour l'utiliser ici
               </Text>
               <View style={styles.buttonContainer}>
-                <TouchableOpacity style={styles.backButton} onPress={onBack}>
+                <TouchableOpacity style={styles.backButtonSmall} onPress={onBack}>
                   <Text style={styles.backButtonText}>Retour</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.skipButton} onPress={onSkip}>
-                  <Text style={styles.skipButtonText}>Continuer sans équipe</Text>
+                  <Text style={styles.skipButtonText} numberOfLines={1}>
+                    Continuer sans équipe
+                  </Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -238,6 +248,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderWidth: 1,
     borderColor: "#ddd",
+  },
+  backButtonSmall: {
+    paddingVertical: 15,
+    paddingHorizontal: 15,
+    backgroundColor: "#f0f0f0",
+    borderRadius: 10,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#ddd",
+    minWidth: 80,
   },
   backButtonText: {
     fontSize: 16,

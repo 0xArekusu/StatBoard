@@ -8,11 +8,16 @@ import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useState, useCallback, useRef } from "react";
 import { Picker } from "@react-native-picker/picker";
 import ClubChoiceModal from "../components/ClubChoiceModal";
+import MatchLimitModal from "../components/MatchLimitModal";
 import { supabase } from "../src/config/supabase";
 import { ServiceFactory } from "../services/ServiceFactory";
 import type { Club } from "../models/Club";
 import { ROUTES } from "../constants/routes";
 import { canUseMultiClub } from "../src/config/devConfig";
+import { MatchRepository } from "../src/services/database/MatchRepository";
+import { DatabaseService } from "../src/services/database/DatabaseService";
+import { MatchSyncPolicy } from "../src/services/match/MatchSyncPolicy";
+import type { SubscriptionTier } from "../models/Subscription";
 
 type RootStackParamList = {
   [ROUTES.MAIN_MENU]: undefined;
@@ -29,11 +34,14 @@ export default function MainMenuScreen() {
   const navigation = useNavigation<NavigationProp>();
   const { signOut, user } = useAuth();
   const [clubModalVisible, setClubModalVisible] = useState(false);
+  const [matchLimitModalVisible, setMatchLimitModalVisible] = useState(false);
   const [userClub, setUserClub] = useState<Club | null>(null);
   const [userClubs, setUserClubs] = useState<Club[]>([]);
   const [loadingClub, setLoadingClub] = useState(false);
   const selectedClubIdRef = useRef<string | null>(null);
   const [isFreeSubscription, setIsFreeSubscription] = useState(false);
+  const [matchCount, setMatchCount] = useState(0);
+  const [maxMatches, setMaxMatches] = useState(3);
 
   // Load user's club when screen is focused
   const loadUserClub = useCallback(async () => {
@@ -75,10 +83,31 @@ export default function MainMenuScreen() {
     }
   }, [user]);
 
+  // Load match count
+  const loadMatchCount = useCallback(async () => {
+    try {
+      const matchRepo = new MatchRepository();
+      const allMatches = await matchRepo.getAllMatches();
+
+      // Count only completed matches for the limit
+      const completedMatches = allMatches.filter(match => match.status === 'completed');
+      setMatchCount(completedMatches.length);
+
+      // Get limits based on user status
+      const syncPolicy = new MatchSyncPolicy();
+      const tier: SubscriptionTier | undefined = isFreeSubscription || !user ? 'free' : undefined;
+      const limits = syncPolicy.getLimits(!!user, tier);
+      setMaxMatches(limits.maxLocalMatches);
+    } catch (error) {
+      console.error("Error loading match count:", error);
+    }
+  }, [user, isFreeSubscription]);
+
   useFocusEffect(
     useCallback(() => {
       loadUserClub();
-    }, [loadUserClub])
+      loadMatchCount();
+    }, [loadUserClub, loadMatchCount])
   );
 
   const handleSignOut = () => {
@@ -86,6 +115,21 @@ export default function MainMenuScreen() {
       { text: "Annuler", style: "cancel" },
       { text: "Déconnexion", onPress: () => signOut(), style: "destructive" },
     ]);
+  };
+
+  const handleNewMatch = async () => {
+    // Check match limit
+    const syncPolicy = new MatchSyncPolicy();
+    const tier: SubscriptionTier | undefined = isFreeSubscription || !user ? 'free' : undefined;
+    const canCreate = syncPolicy.canCreateMatch(matchCount, !!user, tier);
+
+    if (!canCreate.allowed) {
+      setMatchLimitModalVisible(true);
+      return;
+    }
+
+    // Navigate to board with selected club ID
+    (navigation as any).navigate(ROUTES.BOARD, { clubId: userClub?.id });
   };
 
   return (
@@ -115,7 +159,7 @@ export default function MainMenuScreen() {
 
       <TouchableOpacity
         style={[styles.button, (!user || isFreeSubscription) && styles.freeButton]}
-        onPress={() => navigation.navigate(ROUTES.BOARD as never)}
+        onPress={handleNewMatch}
       >
         <Ionicons name={(!user || isFreeSubscription) ? "star-outline" : "add-circle-outline"} size={24} color="#fff" />
         <Text style={styles.buttonText}>{(!user || isFreeSubscription) ? "Essayez gratuitement !" : "Nouveau match"}</Text>
@@ -123,7 +167,7 @@ export default function MainMenuScreen() {
 
       <TouchableOpacity
         style={[styles.button, styles.secondaryButton]}
-        onPress={() => navigation.navigate(ROUTES.MATCH_HISTORY as never)}
+        onPress={() => (navigation as any).navigate(ROUTES.MATCH_HISTORY, { clubId: userClub?.id })}
       >
         <MaterialCommunityIcons
           name="clipboard-list-outline"
@@ -213,6 +257,27 @@ export default function MainMenuScreen() {
         onJoinPress={() => {
           setClubModalVisible(false);
           (navigation as any).navigate(ROUTES.JOIN_CLUB);
+        }}
+      />
+
+      <MatchLimitModal
+        visible={matchLimitModalVisible}
+        isConnected={!!user}
+        currentCount={matchCount}
+        maxCount={maxMatches}
+        onClose={() => setMatchLimitModalVisible(false)}
+        onUpgrade={() => {
+          setMatchLimitModalVisible(false);
+          if (!user) {
+            navigation.navigate(ROUTES.LOGIN as never);
+          } else {
+            // TODO: Navigate to subscription screen
+            Alert.alert("Abonnements", "Fonctionnalité à venir !");
+          }
+        }}
+        onManageMatches={() => {
+          setMatchLimitModalVisible(false);
+          (navigation as any).navigate(ROUTES.MATCH_HISTORY, { clubId: userClub?.id });
         }}
       />
 

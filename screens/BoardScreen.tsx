@@ -40,6 +40,7 @@ import { MatchManager } from "../src/services/match/MatchManager";
 import { ActionQueue, ActionObserver } from "../src/services/match/ActionQueue";
 import { ActionRepository } from "../src/services/database/ActionRepository";
 import { MatchPlayerRepository } from "../src/services/database/MatchPlayerRepository";
+import { MatchRepository } from "../src/services/database/MatchRepository";
 import { Match } from "../src/models/types";
 import type { Player } from "../models/Player";
 
@@ -200,6 +201,7 @@ const convertSemanticToDisplay = (
 export default function BasketballCourt() {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute();
+  const clubId = (route.params as any)?.clubId || null;
   const insets = useSafeAreaInsets(); // Provides status bar and notch margins
   const window = useWindowDimensions(); // Automatically reacts to rotation
   const [showSheet, setShowSheet] = useState(true);
@@ -430,7 +432,7 @@ export default function BasketballCourt() {
 
   // Added state for initialization popups
   const [teamSelectionModalVisible, setTeamSelectionModalVisible] =
-    useState(true);
+    useState(false); // Start as false, will be set to true after checking for active match
   const [hasShownTeamSelection, setHasShownTeamSelection] = useState(false);
   const [selectedTeam, setSelectedTeam] = useState<any | null>(null);
   const [selectedTeamPlayers, setSelectedTeamPlayers] = useState<any[]>([]);
@@ -455,6 +457,8 @@ export default function BasketballCourt() {
   // State for action queue
   const [actionQueue] = useState(() => new ActionQueue());
   const [actionRepository] = useState(() => new ActionRepository());
+  const [matchPlayerRepository] = useState(() => new MatchPlayerRepository());
+  const [matchRepository] = useState(() => new MatchRepository());
   const [actionCounter, setActionCounter] = useState(0); // To generate action_order
 
   // State for player editing
@@ -550,9 +554,16 @@ export default function BasketballCourt() {
           setFoundMatch(activeMatch);
           setResumeModalVisible(true);
           setInitModalVisible(false);
+          setTeamSelectionModalVisible(false); // Ensure team selection is hidden
+        } else {
+          // No active match, show team selection modal
+          console.log("✅ No active match found, showing team selection modal");
+          setTeamSelectionModalVisible(true);
         }
       } catch (error) {
         console.error("❌ Error checking active match:", error);
+        // On error, still show team selection
+        setTeamSelectionModalVisible(true);
       }
     };
 
@@ -1036,6 +1047,7 @@ export default function BasketballCourt() {
         team_mode: teamMode,
         match_format: matchFormat as "2_halves" | "4_quarters",
         period_duration: periodDuration,
+        club_id: clubId,
       };
 
       const match = await matchManager.startMatch(matchData);
@@ -1331,17 +1343,33 @@ export default function BasketballCourt() {
     if (!foundMatch) return;
 
     try {
-      console.log("🗑️ Abandoning match:", foundMatch.id);
-      await matchManager.abandonMatch(foundMatch.id);
+      console.log("🗑️ Deleting match and all associated data:", foundMatch.id);
+
+      // Delete all actions for this match
+      await actionRepository.deleteActionsForMatch(foundMatch.id);
+
+      // Delete all players for this match
+      await matchPlayerRepository.deletePlayersForMatch(foundMatch.id);
+
+      // Delete the match itself
+      await matchRepository.delete(foundMatch.id);
+
+      console.log("✅ Match and all data deleted successfully");
+
       setFoundMatch(null);
       setResumeModalVisible(false);
-      setInitModalVisible(true); // Retour au modal d'initialisation
+
+      // Reset team selection state and show team selection modal
+      // This allows user to choose a team again
+      setHasShownTeamSelection(false);
+      setTeamSelectionModalVisible(true);
     } catch (error) {
-      console.error("❌ Error abandoning match:", error);
-      // En cas d'erreur, on ferme quand même le modal
+      console.error("❌ Error deleting match:", error);
+      // En cas d'erreur, on ferme quand même le modal et on montre la sélection d'équipe
       setFoundMatch(null);
       setResumeModalVisible(false);
-      setInitModalVisible(true);
+      setHasShownTeamSelection(false);
+      setTeamSelectionModalVisible(true);
     }
   };
 
@@ -1833,6 +1861,7 @@ export default function BasketballCourt() {
 
       <TeamSelectionModal
         visible={teamSelectionModalVisible}
+        clubId={clubId}
         onTeamSelected={(team, players, wasAutoSelected) => {
           setSelectedTeam(team);
           setSelectedTeamPlayers(players || []);
@@ -1885,6 +1914,7 @@ export default function BasketballCourt() {
         getFormattedDate={getFormattedDate}
         onRequestClose={() => navigation.goBack()}
         canGoBack={hasShownTeamSelection}
+        hasClubTeam={selectedTeam !== null}
         onBack={() => {
           setInitModalVisible(false);
           if (hasShownTeamSelection) {

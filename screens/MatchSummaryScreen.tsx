@@ -15,13 +15,18 @@ import { PDFExportService } from "../src/services/export/PDFExportService";
 import { LineChart } from "react-native-chart-kit";
 import { ROUTES } from "../constants/routes";
 import PDFPreviewModal from "../components/PDFPreviewModal";
+import LocalSaveWarningModal from "../components/LocalSaveWarningModal";
 import { MatchRepository } from "../src/services/database/MatchRepository";
+import { useAuth } from "../src/contexts/AuthContext";
+import { MatchSyncPolicy } from "../src/services/match/MatchSyncPolicy";
+import type { SubscriptionTier } from "../models/Subscription";
 
 interface MatchSummaryScreenProps {}
 
 export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
   const navigation = useNavigation();
   const route = useRoute();
+  const { user } = useAuth();
   const params = route.params as {
     matchId?: number;
     teamA: string;
@@ -61,6 +66,7 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
   const [adjustedScoreA, setAdjustedScoreA] = React.useState(scoreA);
   const [adjustedScoreB, setAdjustedScoreB] = React.useState(scoreB);
   const [previewModalVisible, setPreviewModalVisible] = useState(false);
+  const [localSaveWarningVisible, setLocalSaveWarningVisible] = useState(false);
   const [canEditScoreA, setCanEditScoreA] = useState(teamMode === "B");
   const [canEditScoreB, setCanEditScoreB] = useState(teamMode === "A");
   const [scoreManuallyAdjusted, setScoreManuallyAdjusted] = useState(scoreWasManuallyAdjusted);
@@ -86,6 +92,23 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
     };
     saveInitialScores();
   }, [matchId, fromHistory]);
+
+  // Show local save warning modal if not premium (only when coming from match, not history)
+  React.useEffect(() => {
+    if (!fromHistory) {
+      const syncPolicy = new MatchSyncPolicy();
+      const limits = syncPolicy.getLimits(!!user, 'free');
+
+      // Show warning if user cannot sync to server
+      if (!limits.canSyncToServer) {
+        // Delay to avoid showing multiple modals at once
+        const timer = setTimeout(() => {
+          setLocalSaveWarningVisible(true);
+        }, 500);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [user, fromHistory]);
 
   // Track when scores are actually changed and save to database
   React.useEffect(() => {
@@ -910,6 +933,13 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
         periodLabel={periodLabel}
         teamMode={teamMode}
         scoreManuallyAdjusted={scoreManuallyAdjusted}
+      />
+
+      {/* Local Save Warning Modal */}
+      <LocalSaveWarningModal
+        visible={localSaveWarningVisible}
+        isConnected={!!user}
+        onClose={() => setLocalSaveWarningVisible(false)}
       />
     </View>
   );

@@ -62,15 +62,14 @@ export default function ResumeMatchModal({
       >
         <View style={styles.overlay}>
           <View style={styles.confirmationContainer}>
-            <Text style={styles.confirmationTitle}>⚠️ Confirmer la suppression</Text>
-            
+            <Text style={styles.confirmationTitle}>⚠️ Supprimer le match</Text>
+
             <Text style={styles.confirmationMessage}>
-              Êtes-vous sûr de vouloir abandonner ce match ?
+              Êtes-vous sûr de vouloir supprimer ce match en cours ?
             </Text>
-            
+
             <Text style={styles.warningText}>
-              Le match sera marqué comme abandonné et toutes les données seront conservées dans l'historique, 
-              mais vous ne pourrez plus le reprendre.
+              Le match et toutes ses statistiques seront définitivement supprimés. Cette action est irréversible.
             </Text>
 
             <View style={styles.confirmationButtons}>

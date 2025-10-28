@@ -17,6 +17,9 @@ export interface Match {
   current_period: number;
   time_elapsed: number;
   last_updated: string;
+  synced_to_server?: boolean;         // Si le match a été synchronisé avec le serveur
+  created_with_tier?: string;         // Tier d'abonnement lors de la création du match
+  club_id?: string | null;            // ID du club associé au match
 }
 
 export interface CreateMatchData {
@@ -25,6 +28,7 @@ export interface CreateMatchData {
   team_mode: TeamMode;
   match_format: MatchFormat;
   period_duration: number;
+  club_id?: string | null;
 }
 
 export interface Action {
