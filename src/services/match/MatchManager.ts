@@ -1,11 +1,14 @@
 import { MatchRepository, IMatchRepository } from '../database/MatchRepository';
+import { ActionRepository } from '../database/ActionRepository';
 import { Match, CreateMatchData, MatchStatus } from '../../models/types';
 
 export class MatchManager {
   private matchRepository: IMatchRepository;
+  private actionRepository: ActionRepository;
 
   constructor() {
     this.matchRepository = new MatchRepository();
+    this.actionRepository = new ActionRepository();
   }
 
   /**
@@ -76,8 +79,13 @@ export class MatchManager {
   async endMatch(matchId: number): Promise<void> {
     try {
       await this.matchRepository.completeMatch(matchId);
-      
+
       console.log('🏁 Match ended successfully:', matchId);
+
+      // Compact actions into match_players.actions and delete from match_actions
+      console.log('🗜️ Compacting match actions...');
+      await this.actionRepository.compactMatchActions(matchId);
+      console.log('✅ Match actions compacted successfully');
     } catch (error) {
       console.error('❌ Error ending match:', error);
       throw error;

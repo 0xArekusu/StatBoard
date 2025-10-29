@@ -13,8 +13,8 @@ export class SQLiteAdapter implements IStorageAdapter {
     this.db = SQLite.openDatabaseSync(databaseName);
 
     // 🔄 TEMPORARY RESET - Remove after testing!
-    //this.resetDatabaseTables();
-    //this.initializeTables();
+    this.resetDatabaseTables();
+    this.initializeTables();
   }
 
   // 🔄 TEMPORARY METHOD - Remove after testing! wip
@@ -149,6 +149,15 @@ export class SQLiteAdapter implements IStorageAdapter {
         UNIQUE(match_id, player_number, team)
       );
     `);
+
+    // Add actions column if it doesn't exist (for compacted match data)
+    try {
+      this.db.execSync(`
+        ALTER TABLE match_players ADD COLUMN actions TEXT;
+      `);
+    } catch (error) {
+      // Column might already exist, ignore error
+    }
 
     // Create indexes
     this.db.execSync(`
