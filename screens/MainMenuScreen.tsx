@@ -5,7 +5,7 @@ import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useAuth } from "../src/contexts/AuthContext";
 import { Ionicons } from "@expo/vector-icons";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
-import { useState, useCallback, useRef } from "react";
+import React, { useState, useCallback, useRef } from "react";
 import { Picker } from "@react-native-picker/picker";
 import ClubChoiceModal from "../components/ClubChoiceModal";
 import MatchLimitModal from "../components/MatchLimitModal";
@@ -92,16 +92,18 @@ export default function MainMenuScreen() {
       // Count only completed matches for the limit
       const completedMatches = allMatches.filter(match => match.status === 'completed');
       setMatchCount(completedMatches.length);
-
-      // Get limits based on user status
-      const syncPolicy = new MatchSyncPolicy();
-      const tier: SubscriptionTier | undefined = isFreeSubscription || !user ? 'free' : undefined;
-      const limits = syncPolicy.getLimits(!!user, tier);
-      setMaxMatches(limits.maxLocalMatches);
     } catch (error) {
       console.error("Error loading match count:", error);
     }
-  }, [user, isFreeSubscription]);
+  }, []);
+
+  // Update max matches when user or userClub changes
+  React.useEffect(() => {
+    const syncPolicy = new MatchSyncPolicy();
+    const tier: SubscriptionTier = userClub?.subscriptionTier || (user ? 'free' : 'free');
+    const limits = syncPolicy.getLimits(!!user, tier);
+    setMaxMatches(limits.maxLocalMatches);
+  }, [user, userClub]);
 
   useFocusEffect(
     useCallback(() => {
@@ -120,7 +122,7 @@ export default function MainMenuScreen() {
   const handleNewMatch = async () => {
     // Check match limit
     const syncPolicy = new MatchSyncPolicy();
-    const tier: SubscriptionTier | undefined = isFreeSubscription || !user ? 'free' : undefined;
+    const tier: SubscriptionTier = userClub?.subscriptionTier || (user ? 'free' : 'free');
     const canCreate = syncPolicy.canCreateMatch(matchCount, !!user, tier);
 
     if (!canCreate.allowed) {
@@ -158,11 +160,11 @@ export default function MainMenuScreen() {
       <Text style={styles.title}>🏀 StatBoard</Text>
 
       <TouchableOpacity
-        style={[styles.button, (!user || isFreeSubscription) && styles.freeButton]}
+        style={[styles.button, !user && styles.freeButton]}
         onPress={handleNewMatch}
       >
-        <Ionicons name={(!user || isFreeSubscription) ? "star-outline" : "add-circle-outline"} size={24} color="#fff" />
-        <Text style={styles.buttonText}>{(!user || isFreeSubscription) ? "Essayez gratuitement !" : "Nouveau match"}</Text>
+        <Ionicons name={!user ? "star-outline" : "add-circle-outline"} size={24} color="#fff" />
+        <Text style={styles.buttonText}>{!user ? "Essayez gratuitement !" : "Nouveau match"}</Text>
       </TouchableOpacity>
 
       <TouchableOpacity

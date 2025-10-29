@@ -34,6 +34,7 @@ export class SupabaseClubRepository implements IClubRepository {
       courtLineColor: row.court_line_color,
       ownerId: row.owner_id,
       ownerEmail: row.owner_email,
+      subscriptionTier: row.subscription_tier || 'free',
       createdAt: new Date(row.created_at),
       updatedAt: new Date(row.updated_at),
     };

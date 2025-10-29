@@ -11,24 +11,38 @@ import {
 } from "react-native";
 import { useNavigation, useFocusEffect, useRoute } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
+import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { MatchRepository } from "../src/services/database/MatchRepository";
 import { ActionRepository } from "../src/services/database/ActionRepository";
 import { MatchPlayerRepository } from "../src/services/database/MatchPlayerRepository";
 import { Match } from "../src/models/types";
 import { ActionData } from "../components/ActionSystem";
+import { useMatchSync } from "../src/hooks/useMatchSync";
+import SyncErrorModal from "../components/SyncErrorModal";
+import { useAuth } from "../src/contexts/AuthContext";
+import { supabase } from "../src/config/supabase";
 
 interface MatchWithDetails extends Match {
   scoreA: number;
   scoreB: number;
   actionsCount: number;
+  isFromServer?: boolean; // Flag to identify server matches
+  serverMatchId?: string; // UUID from Supabase
 }
 
 export default function MatchHistoryScreen() {
   const navigation = useNavigation();
   const route = useRoute();
   const clubId = (route.params as any)?.clubId || null;
+  const { user } = useAuth();
   const [matches, setMatches] = useState<MatchWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
+  const { isSyncing, syncMatch, checkEligibility } = useMatchSync();
+  const [syncingMatchId, setSyncingMatchId] = useState<number | null>(null);
+  const [syncErrorModalVisible, setSyncErrorModalVisible] = useState(false);
+  const [syncErrorReason, setSyncErrorReason] = useState("");
+  const [syncErrorIsNotConnected, setSyncErrorIsNotConnected] = useState(false);
+  const [syncErrorIsFreemium, setSyncErrorIsFreemium] = useState(false);
 
   // Reload matches when screen gains focus (to refresh after creating new match)
   useFocusEffect(
@@ -38,24 +52,29 @@ export default function MatchHistoryScreen() {
   );
 
   const loadCompletedMatches = async () => {
+    console.log('📂 [MatchHistory] Loading completed matches...');
     try {
       const matchRepository = new MatchRepository();
       const actionRepository = new ActionRepository();
 
-      // Get all completed matches
-      const allMatches = await matchRepository.getAllMatches();
-      let completedMatches = allMatches.filter(
-        (match) => match.status === "completed"
+      // 1. Get LOCAL completed matches (only non-synced ones)
+      const allLocalMatches = await matchRepository.getAllMatches();
+      console.log('📂 [MatchHistory] All local matches:', allLocalMatches.length);
+
+      let completedLocalMatches = allLocalMatches.filter(
+        (match) => match.status === "completed" && !match.synced_to_server
       );
+      console.log('📂 [MatchHistory] Completed local matches (not synced):', completedLocalMatches.length);
 
       // Filter by club if clubId is provided
       if (clubId) {
-        completedMatches = completedMatches.filter((match) => match.club_id === clubId);
+        completedLocalMatches = completedLocalMatches.filter((match) => match.club_id === clubId);
+        console.log('📂 [MatchHistory] After club filter:', completedLocalMatches.length);
       }
 
-      // Load details for each match
-      const matchesWithDetails = await Promise.all(
-        completedMatches.map(async (match) => {
+      // Load details for each LOCAL match
+      const localMatchesWithDetails = await Promise.all(
+        completedLocalMatches.map(async (match) => {
           const actions = await actionRepository.getActionsForMatch(match.id);
 
           // Use final scores if available, otherwise calculate from actions
@@ -94,17 +113,83 @@ export default function MatchHistoryScreen() {
             scoreA,
             scoreB,
             actionsCount: actions.length,
+            isFromServer: false,
           };
         })
       );
 
+      console.log('📂 [MatchHistory] Local matches loaded:', localMatchesWithDetails.length);
+
+      // 2. Get SERVER matches if user is connected
+      let serverMatches: MatchWithDetails[] = [];
+      if (user) {
+        console.log('☁️ [MatchHistory] User connected, fetching server matches...');
+        try {
+          let query = supabase
+            .from("matches")
+            .select("*")
+            .eq("created_by", user.id)
+            .order("played_at", { ascending: false });
+
+          // Filter by club if provided
+          if (clubId) {
+            query = query.eq("club_id", clubId);
+          }
+
+          const { data: serverMatchesData, error: serverError } = await query;
+
+          if (serverError) {
+            console.error("❌ [MatchHistory] Error fetching server matches:", serverError);
+          } else if (serverMatchesData) {
+            console.log('☁️ [MatchHistory] Server matches fetched:', serverMatchesData.length);
+            // Transform server matches to MatchWithDetails format
+            serverMatches = serverMatchesData.map((sm) => ({
+              id: sm.local_match_id || 0, // Use local_match_id or 0 as placeholder
+              team_a_name: sm.team_a_name,
+              team_b_name: sm.team_b_name,
+              team_mode: "both" as const, // Default
+              status: "completed" as const,
+              match_format: sm.match_format,
+              period_duration: sm.period_duration,
+              club_id: sm.club_id,
+              current_period: 0,
+              time_elapsed: 0,
+              final_score_a: sm.final_score_a,
+              final_score_b: sm.final_score_b,
+              score_manually_adjusted: sm.score_manually_adjusted ? 1 : 0,
+              synced_to_server: 1,
+              created_at: sm.played_at,
+              started_at: sm.played_at,
+              ended_at: sm.played_at,
+              last_updated: sm.created_at,
+              scoreA: sm.final_score_a,
+              scoreB: sm.final_score_b,
+              actionsCount: 0, // We'll get this from match_players if needed
+              isFromServer: true,
+              serverMatchId: sm.id,
+            }));
+          }
+        } catch (error) {
+          console.error("Error loading server matches:", error);
+        }
+      }
+
+      // 3. Merge LOCAL and SERVER matches
+      const allMatches = [...localMatchesWithDetails, ...serverMatches];
+      console.log('🔀 [MatchHistory] Merged matches:', {
+        local: localMatchesWithDetails.length,
+        server: serverMatches.length,
+        total: allMatches.length
+      });
+
       // Sort by date (most recent first)
-      matchesWithDetails.sort(
+      allMatches.sort(
         (a, b) =>
           new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       );
 
-      setMatches(matchesWithDetails);
+      console.log('✅ [MatchHistory] Final matches to display:', allMatches.length);
+      setMatches(allMatches);
     } catch (error) {
       console.error("Error loading completed matches:", error);
     } finally {
@@ -114,38 +199,114 @@ export default function MatchHistoryScreen() {
 
   const handleMatchPress = async (match: MatchWithDetails) => {
     try {
-      const actionRepository = new ActionRepository();
-      const matchPlayerRepository = new MatchPlayerRepository();
+      let actionDataList: ActionData[] = [];
+      let players: any[] = [];
 
-      // Load actions and players for this match
-      const actions = await actionRepository.getActionsForMatch(match.id);
-      const matchPlayers = await matchPlayerRepository.getPlayersForMatch(match.id);
+      if (match.isFromServer && match.serverMatchId) {
+        // Load data from Supabase
+        console.log('☁️ [MatchHistory] Loading match data from server:', match.serverMatchId);
 
-      // Convert actions to ActionData format
-      const actionDataList: ActionData[] = actions.map((action) => ({
-        type: action.action_type,
-        specification: action.specification,
-        points: action.points, // Use stored points from DB
-        player: action.player_number,
-        team: action.team,
-        timestamp: new Date(action.timestamp),
-        period_number: action.period_number,
-        time_in_period: action.time_in_period,
-        position: { x: 0, y: 0 },
-        semanticPosition: {
-          xNormalized: action.semantic_x,
-          yNormalized: action.semantic_y,
-        },
-      }));
+        const { data: matchPlayers, error } = await supabase
+          .from("match_players")
+          .select("*")
+          .eq("match_id", match.serverMatchId);
 
-      // Convert match players to expected format
-      const players = matchPlayers.map(mp => ({
-        id: mp.player_number, // Use player_number as id to match with actions
-        num: mp.player_number,
-        name: mp.player_name,
-        team: mp.team,
-        isSubstitute: !mp.is_starter,
-      }));
+        if (error) {
+          console.error("❌ [MatchHistory] Error loading match players from server:", error);
+          Alert.alert("Erreur", "Impossible de charger les données du match depuis le serveur.");
+          return;
+        }
+
+        if (matchPlayers) {
+          console.log('☁️ [MatchHistory] Loaded', matchPlayers.length, 'players from server');
+
+          // Convert server match players to expected format
+          players = matchPlayers.map(mp => ({
+            id: mp.player_number,
+            num: mp.player_number,
+            name: mp.player_name,
+            team: mp.team,
+            isSubstitute: !mp.is_starter,
+          }));
+
+          // Extract all actions from all players
+          matchPlayers.forEach(mp => {
+            if (mp.actions && Array.isArray(mp.actions)) {
+              const playerActions: ActionData[] = mp.actions.map((action: any) => ({
+                type: action.action_type,
+                specification: action.specification,
+                points: action.points,
+                player: mp.player_number,
+                team: mp.team,
+                timestamp: new Date(action.timestamp),
+                period_number: action.period_number,
+                time_in_period: action.time_in_period,
+                position: { x: 0, y: 0 },
+                semanticPosition: {
+                  xNormalized: action.semantic_x,
+                  yNormalized: action.semantic_y,
+                },
+              }));
+              actionDataList.push(...playerActions);
+            }
+          });
+
+          console.log('☁️ [MatchHistory] Loaded', actionDataList.length, 'actions from server');
+        }
+      } else {
+        // Load data from local database
+        console.log('📂 [MatchHistory] Loading match data from local DB:', match.id);
+
+        const actionRepository = new ActionRepository();
+        const matchPlayerRepository = new MatchPlayerRepository();
+
+        const actions = await actionRepository.getActionsForMatch(match.id);
+        const matchPlayers = await matchPlayerRepository.getPlayersForMatch(match.id);
+
+        // Convert actions to ActionData format
+        actionDataList = actions.map((action) => ({
+          type: action.action_type,
+          specification: action.specification,
+          points: action.points,
+          player: action.player_number,
+          team: action.team,
+          timestamp: new Date(action.timestamp),
+          period_number: action.period_number,
+          time_in_period: action.time_in_period,
+          position: { x: 0, y: 0 },
+          semanticPosition: {
+            xNormalized: action.semantic_x,
+            yNormalized: action.semantic_y,
+          },
+        }));
+
+        // Convert match players to expected format
+        players = matchPlayers.map(mp => ({
+          id: mp.player_number,
+          num: mp.player_number,
+          name: mp.player_name,
+          team: mp.team,
+          isSubstitute: !mp.is_starter,
+        }));
+
+        console.log('📂 [MatchHistory] Loaded', actionDataList.length, 'actions and', players.length, 'players from local DB');
+      }
+
+      // Determine which team is from the club by checking player_id
+      // Players with player_id (not null) are from the club
+      let clubTeamLetter: "A" | "B" | null = null;
+      if (match.isFromServer && matchPlayers) {
+        const teamAHasClubPlayers = matchPlayers.some(mp => mp.team === "A" && mp.player_id !== null);
+        const teamBHasClubPlayers = matchPlayers.some(mp => mp.team === "B" && mp.player_id !== null);
+
+        if (teamAHasClubPlayers && !teamBHasClubPlayers) {
+          clubTeamLetter = "A";
+        } else if (teamBHasClubPlayers && !teamAHasClubPlayers) {
+          clubTeamLetter = "B";
+        }
+      }
+
+      console.log('📋 [MatchHistory] Club team determined:', clubTeamLetter);
 
       // Navigate to MatchSummary
       (navigation.navigate as any)("MatchSummary", {
@@ -161,9 +322,11 @@ export default function MatchHistoryScreen() {
         players,
         fromHistory: true, // Indicate this is from history (read-only mode)
         scoreWasManuallyAdjusted: match.score_manually_adjusted === 1,
+        clubTeamOverride: clubTeamLetter, // Override club team detection
       });
     } catch (error) {
       console.error("Error loading match details:", error);
+      Alert.alert("Erreur", "Impossible de charger les détails du match.");
     }
   };
 
@@ -206,28 +369,90 @@ export default function MatchHistoryScreen() {
           style: "destructive",
           onPress: async () => {
             try {
-              const matchRepository = new MatchRepository();
-              const actionRepository = new ActionRepository();
-              const matchPlayerRepository = new MatchPlayerRepository();
+              // If match is from server, delete from Supabase
+              if (match.isFromServer && match.serverMatchId) {
+                const { error: deleteMatchError } = await supabase
+                  .from("matches")
+                  .delete()
+                  .eq("id", match.serverMatchId);
 
-              // TODO: If synced to server, archive on server first
-              if (match.synced_to_server) {
-                console.log("TODO: Archive match on server", match.id);
-                // await archiveMatchOnServer(match.id);
+                if (deleteMatchError) {
+                  console.error("Error deleting match from server:", deleteMatchError);
+                  Alert.alert("Erreur", "Impossible de supprimer le match du serveur.");
+                  return;
+                }
+
+                console.log("✅ Match deleted from server successfully");
+              } else {
+                // Delete from local database
+                const matchRepository = new MatchRepository();
+                const actionRepository = new ActionRepository();
+                const matchPlayerRepository = new MatchPlayerRepository();
+
+                await actionRepository.deleteActionsForMatch(match.id);
+                await matchPlayerRepository.deletePlayersForMatch(match.id);
+                await matchRepository.delete(match.id);
+
+                console.log("✅ Match deleted from local database successfully");
               }
-
-              // Delete locally
-              await actionRepository.deleteActionsForMatch(match.id);
-              await matchPlayerRepository.deletePlayersForMatch(match.id);
-              await matchRepository.delete(match.id);
-
-              console.log("✅ Match deleted successfully");
 
               // Reload matches
               await loadCompletedMatches();
             } catch (error) {
               console.error("Error deleting match:", error);
               Alert.alert("Erreur", "Impossible de supprimer le match.");
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleSyncMatch = async (match: MatchWithDetails) => {
+    // Check eligibility first
+    const eligibility = await checkEligibility(match.id);
+
+    if (!eligibility.canSync) {
+      // Determine the type of error
+      const isNotConnected = !user;
+      const isFreemium = !!user && eligibility.reason?.includes("abonnement");
+
+      setSyncErrorReason(eligibility.reason || "Une erreur est survenue");
+      setSyncErrorIsNotConnected(isNotConnected);
+      setSyncErrorIsFreemium(isFreemium);
+      setSyncErrorModalVisible(true);
+      return;
+    }
+
+    // Show confirmation
+    Alert.alert(
+      "Synchroniser avec le serveur",
+      "Voulez-vous sauvegarder ce match sur le serveur ?",
+      [
+        {
+          text: "Annuler",
+          style: "cancel",
+        },
+        {
+          text: "Synchroniser",
+          onPress: async () => {
+            setSyncingMatchId(match.id);
+            const result = await syncMatch(match.id);
+            setSyncingMatchId(null);
+
+            if (result.success) {
+              Alert.alert(
+                "Succès",
+                "Match synchronisé avec succès !",
+                [{ text: "OK" }]
+              );
+              // Reload matches to update sync status
+              await loadCompletedMatches();
+            } else {
+              Alert.alert(
+                "Erreur",
+                result.error || "Impossible de synchroniser le match"
+              );
             }
           },
         },
@@ -349,11 +574,11 @@ export default function MatchHistoryScreen() {
           </Text>
 
           {/* Sync status badge */}
-          {item.synced_to_server ? (
+          {item.isFromServer || item.synced_to_server ? (
             <View style={styles.syncedBadge}>
               <Ionicons name="cloud-done-outline" size={12} color="#4CAF50" />
               <Text style={styles.syncedText}>
-                Synchronisé le {formatDate(item.last_updated || item.created_at).split(" ")[0]}
+                Synchronisé
               </Text>
             </View>
           ) : (
@@ -364,16 +589,41 @@ export default function MatchHistoryScreen() {
           )}
         </View>
 
-        {/* Delete button */}
-        <TouchableOpacity
-          style={styles.deleteButton}
-          onPress={(e) => {
-            e.stopPropagation();
-            handleDeleteMatch(item);
-          }}
-        >
-          <Ionicons name="trash-outline" size={20} color="#F44336" />
-        </TouchableOpacity>
+        {/* Action buttons */}
+        <View style={styles.actionButtons}>
+          {/* Sync button - only show if not synced and not from server */}
+          {!item.synced_to_server && !item.isFromServer && (
+            <TouchableOpacity
+              style={styles.syncButton}
+              onPress={(e) => {
+                e.stopPropagation();
+                handleSyncMatch(item);
+              }}
+              disabled={syncingMatchId === item.id}
+            >
+              {syncingMatchId === item.id ? (
+                <ActivityIndicator size="small" color="#9C27B0" />
+              ) : (
+                <MaterialCommunityIcons
+                  name="cloud-upload"
+                  size={20}
+                  color="#9C27B0"
+                />
+              )}
+            </TouchableOpacity>
+          )}
+
+          {/* Delete button */}
+          <TouchableOpacity
+            style={styles.deleteButton}
+            onPress={(e) => {
+              e.stopPropagation();
+              handleDeleteMatch(item);
+            }}
+          >
+            <Ionicons name="trash-outline" size={20} color="#F44336" />
+          </TouchableOpacity>
+        </View>
       </TouchableOpacity>
     );
   };
@@ -426,10 +676,23 @@ export default function MatchHistoryScreen() {
         <FlatList
           data={matches}
           renderItem={renderMatchItem}
-          keyExtractor={(item) => item.id.toString()}
+          keyExtractor={(item) => item.isFromServer && item.serverMatchId ? item.serverMatchId : item.id.toString()}
           contentContainerStyle={styles.listContainer}
         />
       )}
+
+      {/* Sync Error Modal */}
+      <SyncErrorModal
+        visible={syncErrorModalVisible}
+        reason={syncErrorReason}
+        isNotConnected={syncErrorIsNotConnected}
+        isFreemium={syncErrorIsFreemium}
+        onClose={() => setSyncErrorModalVisible(false)}
+        onUpgrade={() => {
+          // TODO: Navigate to subscription screen
+          console.log("Navigate to subscription");
+        }}
+      />
     </SafeAreaView>
   );
 }
@@ -638,10 +901,27 @@ const styles = StyleSheet.create({
     color: "#FF9800",
     fontWeight: "600",
   },
-  deleteButton: {
+  actionButtons: {
     position: "absolute",
     top: 12,
     right: 12,
+    flexDirection: "row",
+    gap: 8,
+  },
+  syncButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#f3e5f5",
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  deleteButton: {
     width: 36,
     height: 36,
     borderRadius: 18,

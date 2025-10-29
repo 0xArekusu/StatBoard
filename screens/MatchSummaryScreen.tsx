@@ -8,6 +8,8 @@ import {
   TextInput,
   Alert,
   Dimensions,
+  Modal,
+  ActivityIndicator,
 } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
@@ -21,6 +23,8 @@ import { MatchRepository } from "../src/services/database/MatchRepository";
 import { useAuth } from "../src/contexts/AuthContext";
 import { MatchSyncPolicy } from "../src/services/match/MatchSyncPolicy";
 import type { SubscriptionTier } from "../models/Subscription";
+import { useMatchSync } from "../src/hooks/useMatchSync";
+import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 
 interface MatchSummaryScreenProps {}
 
@@ -28,6 +32,7 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
   const navigation = useNavigation();
   const route = useRoute();
   const { user } = useAuth();
+  const { isSyncing, error: syncError, syncMatch, checkEligibility } = useMatchSync();
   const params = route.params as {
     matchId?: number;
     teamA: string;
@@ -46,6 +51,7 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
     }>;
     fromHistory?: boolean; // Indicates if coming from history (read-only)
     scoreWasManuallyAdjusted?: boolean; // Indicates if score was manually adjusted
+    clubTeamOverride?: "A" | "B" | null; // Override for determining club team
   };
 
   const {
@@ -61,6 +67,7 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
     players,
     fromHistory = false,
     scoreWasManuallyAdjusted = false,
+    clubTeamOverride = null,
   } = params;
 
   // Local state for adjustable scores
@@ -71,6 +78,7 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
   const [canEditScoreA, setCanEditScoreA] = useState(teamMode === "B");
   const [canEditScoreB, setCanEditScoreB] = useState(teamMode === "A");
   const [scoreManuallyAdjusted, setScoreManuallyAdjusted] = useState(scoreWasManuallyAdjusted);
+  const [syncModalVisible, setSyncModalVisible] = useState(false);
 
   // Update local scores when props change
   React.useEffect(() => {
@@ -94,22 +102,8 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
     saveInitialScores();
   }, [matchId, fromHistory]);
 
-  // Show local save warning modal if not premium (only when coming from match, not history)
-  React.useEffect(() => {
-    if (!fromHistory) {
-      const syncPolicy = new MatchSyncPolicy();
-      const limits = syncPolicy.getLimits(!!user, 'free');
-
-      // Show warning if user cannot sync to server
-      if (!limits.canSyncToServer) {
-        // Delay to avoid showing multiple modals at once
-        const timer = setTimeout(() => {
-          setLocalSaveWarningVisible(true);
-        }, 500);
-        return () => clearTimeout(timer);
-      }
-    }
-  }, [user, fromHistory]);
+  // Sync or show warning will be triggered when user clicks "Menu" button
+  // (removed auto-sync on mount)
 
   // Track when scores are actually changed and save to database
   React.useEffect(() => {
@@ -117,8 +111,6 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
       if (matchId && !fromHistory) {
         try {
           const matchRepo = new MatchRepository();
-          // Only mark as manually adjusted if editing the controlled team's score
-          const isControlledTeam = (teamMode === "A") || (teamMode === "both");
           await matchRepo.updateFinalScores(matchId, adjustedScoreA, adjustedScoreB, scoreManuallyAdjusted);
         } catch (error) {
           console.error("Error saving final scores:", error);
@@ -127,11 +119,8 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
     };
 
     if (canEditScoreA && adjustedScoreA !== scoreA) {
-      // Only set manually adjusted if we're editing a controlled team (Team A when teamMode is A or both)
-      const isControlledTeam = (teamMode === "A") || (teamMode === "both");
-      if (isControlledTeam) {
-        setScoreManuallyAdjusted(true);
-      }
+      // Mark as manually adjusted (any score edit counts)
+      setScoreManuallyAdjusted(true);
       saveScores();
     }
   }, [adjustedScoreA, scoreA, canEditScoreA, matchId, fromHistory, teamMode, scoreManuallyAdjusted]);
@@ -149,11 +138,8 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
     };
 
     if (canEditScoreB && adjustedScoreB !== scoreB) {
-      // Only set manually adjusted if we're editing a controlled team (Team B when teamMode is B or both)
-      const isControlledTeam = (teamMode === "B") || (teamMode === "both");
-      if (isControlledTeam) {
-        setScoreManuallyAdjusted(true);
-      }
+      // Mark as manually adjusted (any score edit counts)
+      setScoreManuallyAdjusted(true);
       saveScores();
     }
   }, [adjustedScoreB, scoreB, canEditScoreB, matchId, fromHistory, adjustedScoreA, teamMode, scoreManuallyAdjusted]);
@@ -165,6 +151,31 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
       : adjustedScoreB > adjustedScoreA
       ? teamB
       : null;
+
+  // Determine if club team won or lost
+  // Use clubTeamOverride if provided (from history), otherwise use teamMode logic
+  const clubTeam = clubTeamOverride !== null
+    ? clubTeamOverride
+    : (teamMode === "A" ? "A" : teamMode === "B" ? "B" : null);
+  const isClubMatch = clubTeam !== null;
+  const clubTeamName = clubTeam === "A" ? teamA : clubTeam === "B" ? teamB : null;
+  const clubWon = isClubMatch && winner === clubTeamName;
+  const clubLost = isClubMatch && winner !== null && winner !== clubTeamName;
+
+  console.log('🏆 [MatchSummary] Winner logic:', {
+    teamMode,
+    clubTeamOverride,
+    clubTeam,
+    isClubMatch,
+    teamA,
+    teamB,
+    clubTeamName,
+    winner,
+    adjustedScoreA,
+    adjustedScoreB,
+    clubWon,
+    clubLost
+  });
 
   // Calculate shooting statistics
   const calculateShootingStats = (team: "A" | "B") => {
@@ -400,7 +411,44 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
     (navigation.navigate as any)("MatchDetails", { ...params, scoreA: adjustedScoreA, scoreB: adjustedScoreB });
   };
 
-  const handleBackToMenu = () => {
+  const handleBackToMenu = async () => {
+    // If coming from history, just go back
+    if (fromHistory) {
+      navigation.navigate(ROUTES.MAIN_MENU as never);
+      return;
+    }
+
+    // Check if we should sync or show local warning
+    if (matchId) {
+      console.log('📋 [MatchSummary] Checking sync eligibility for match', matchId);
+      const eligibility = await checkEligibility(matchId);
+      console.log('📋 [MatchSummary] Eligibility result:', eligibility);
+
+      if (eligibility.canSync) {
+        // User has paid subscription - auto sync
+        console.log('✅ [MatchSummary] User can sync, starting sync process...');
+        setSyncModalVisible(true);
+        const result = await syncMatch(matchId);
+        setSyncModalVisible(false);
+        console.log('📋 [MatchSummary] Sync result:', result);
+
+        if (!result.success) {
+          // If sync fails, show error but don't block navigation
+          console.error('❌ [MatchSummary] Auto-sync failed:', result.error);
+        } else {
+          console.log('✅ [MatchSummary] Match synced successfully, local data should be deleted');
+        }
+      } else {
+        // User cannot sync (not connected or freemium) - show local warning
+        console.log('⚠️ [MatchSummary] User cannot sync, showing local warning modal');
+        setLocalSaveWarningVisible(true);
+        // Wait for modal to be closed before navigating
+        return;
+      }
+    }
+
+    // Navigate to main menu
+    console.log('📋 [MatchSummary] Navigating to main menu');
     navigation.navigate(ROUTES.MAIN_MENU as never);
   };
 
@@ -450,6 +498,7 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
     }
   };
 
+
   return (
     <View style={styles.container}>
       {/* Header */}
@@ -463,7 +512,7 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
             <Text style={styles.backButtonText}>Retour</Text>
           </TouchableOpacity>
         )}
-        <Text style={[styles.title, fromHistory && styles.titleWithBack]}>🏀 Match Terminé</Text>
+        <Text style={styles.title}>🏀 Match Terminé</Text>
         {fromHistory && <View style={styles.backButton} />}
       </View>
 
@@ -582,9 +631,9 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
 
           {/* Winner announcement */}
           {winner ? (
-            <View style={styles.winnerBanner}>
+            <View style={[styles.winnerBanner, clubLost && styles.loserBanner]}>
               <Text style={styles.winnerText}>
-                🏆 {winner} remporte le match !
+                {clubLost ? "😔" : "🏆"} {winner} remporte le match !
               </Text>
             </View>
           ) : (
@@ -927,6 +976,20 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
         </TouchableOpacity>
       </View>
 
+      {/* Sync Loading Modal */}
+      <Modal
+        visible={syncModalVisible}
+        transparent={true}
+        animationType="fade"
+      >
+        <View style={styles.syncModalOverlay}>
+          <View style={styles.syncModalContent}>
+            <ActivityIndicator size="large" color="#9C27B0" />
+            <Text style={styles.syncModalText}>Synchronisation avec le serveur...</Text>
+          </View>
+        </View>
+      </Modal>
+
       {/* PDF Preview Modal */}
       <PDFPreviewModal
         visible={previewModalVisible}
@@ -950,7 +1013,11 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
       <LocalSaveWarningModal
         visible={localSaveWarningVisible}
         isConnected={!!user}
-        onClose={() => setLocalSaveWarningVisible(false)}
+        onClose={() => {
+          setLocalSaveWarningVisible(false);
+          // Navigate to menu after closing the modal
+          navigation.navigate(ROUTES.MAIN_MENU as never);
+        }}
       />
     </View>
   );
@@ -983,8 +1050,6 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: "bold",
     color: "#fff",
-  },
-  titleWithBack: {
     flex: 1,
     textAlign: "center",
   },
@@ -1082,6 +1147,9 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 12,
     alignItems: "center",
+  },
+  loserBanner: {
+    backgroundColor: "#F44336",
   },
   winnerText: {
     fontSize: 18,
@@ -1307,6 +1375,25 @@ const styles = StyleSheet.create({
     color: "#333",
     fontSize: 14,
     fontWeight: "600",
+  },
+  syncModalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  syncModalContent: {
+    backgroundColor: "#fff",
+    padding: 30,
+    borderRadius: 16,
+    alignItems: "center",
+    minWidth: 200,
+  },
+  syncModalText: {
+    marginTop: 16,
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#333",
   },
   chartSection: {
     marginBottom: 24,

@@ -12,6 +12,8 @@ export interface IMatchRepository {
   completeMatch(id: number): Promise<void>;
   updateMatchState(id: number, currentPeriod: number, timeElapsed: number): Promise<void>;
   updateFinalScores(id: number, scoreA: number, scoreB: number, manuallyAdjusted?: boolean): Promise<void>;
+  updateSyncStatus(id: number, synced: boolean): Promise<void>;
+  findUnsyncedCompletedMatches(): Promise<Match[]>;
   delete(id: number): Promise<void>;
 }
 
@@ -171,6 +173,35 @@ export class MatchRepository implements IMatchRepository {
       console.log('✅ Final scores updated:', { id, scoreA, scoreB, manuallyAdjusted });
     } catch (error) {
       console.error('Error updating final scores:', error);
+      throw error;
+    }
+  }
+
+  async updateSyncStatus(id: number, synced: boolean): Promise<void> {
+    try {
+      await this.db.execute(
+        'UPDATE matches SET synced_to_server = ? WHERE id = ?',
+        [synced ? 1 : 0, id]
+      );
+      console.log(`✅ Match ${id} sync status updated: ${synced}`);
+    } catch (error) {
+      console.error('Error updating sync status:', error);
+      throw error;
+    }
+  }
+
+  async findUnsyncedCompletedMatches(): Promise<Match[]> {
+    try {
+      const matches = await this.db.query(
+        `SELECT * FROM matches
+         WHERE status = 'completed'
+         AND (synced_to_server = 0 OR synced_to_server IS NULL)
+         ORDER BY ended_at DESC`
+      );
+
+      return matches as Match[];
+    } catch (error) {
+      console.error('Error finding unsynced completed matches:', error);
       throw error;
     }
   }
