@@ -201,15 +201,18 @@ export default function MatchHistoryScreen() {
     try {
       let actionDataList: ActionData[] = [];
       let players: any[] = [];
+      let matchPlayers: any[] | null = null;
 
       if (match.isFromServer && match.serverMatchId) {
         // Load data from Supabase
         console.log('☁️ [MatchHistory] Loading match data from server:', match.serverMatchId);
 
-        const { data: matchPlayers, error } = await supabase
+        const { data, error } = await supabase
           .from("match_players")
           .select("*")
           .eq("match_id", match.serverMatchId);
+
+        matchPlayers = data;
 
         if (error) {
           console.error("❌ [MatchHistory] Error loading match players from server:", error);
