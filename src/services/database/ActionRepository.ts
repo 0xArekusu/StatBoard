@@ -123,57 +123,67 @@ export class ActionRepository implements IActionRepository {
 
   async getActionsForMatch(matchId: number): Promise<Action[]> {
     try {
-      // First, check if actions are compacted in match_players.actions
-      const compactedPlayers = await this.db.query(
-        `SELECT player_number, team, actions FROM match_players
-         WHERE match_id = ? AND actions IS NOT NULL`,
+      // First, check the match status to determine if actions are compacted
+      const matchResult = await this.db.query(
+        `SELECT status FROM matches WHERE id = ?`,
         [matchId]
       );
 
-      // If we have compacted actions, use them
-      if (compactedPlayers.length > 0) {
-        console.log(`📦 [ActionRepository] Reading ${compactedPlayers.length} compacted players for match ${matchId}`);
+      const matchStatus = matchResult[0]?.status;
 
-        const allActions: Action[] = [];
-        let actionIdCounter = 1;
+      // Only try to read compacted actions if match is completed
+      if (matchStatus === 'completed') {
+        const compactedPlayers = await this.db.query(
+          `SELECT player_number, team, actions FROM match_players
+           WHERE match_id = ? AND actions IS NOT NULL AND actions != ''`,
+          [matchId]
+        );
 
-        for (const player of compactedPlayers) {
-          if (player.actions) {
-            try {
-              const playerActions = JSON.parse(player.actions);
+        // If we have compacted actions, use them
+        if (compactedPlayers.length > 0) {
+          console.log(`📦 [ActionRepository] Reading ${compactedPlayers.length} compacted players for completed match ${matchId}`);
 
-              for (const action of playerActions) {
-                allActions.push({
-                  id: actionIdCounter++,
-                  match_id: matchId,
-                  team: player.team,
-                  player_number: player.player_number,
-                  action_type: action.action_type,
-                  specification: action.specification,
-                  points: action.points,
-                  semantic_x: action.semantic_x,
-                  semantic_y: action.semantic_y,
-                  action_order: action.action_order,
-                  period_number: action.period_number,
-                  time_in_period: action.time_in_period,
-                  timestamp: action.timestamp,
-                });
+          const allActions: Action[] = [];
+          let actionIdCounter = 1;
+
+          for (const player of compactedPlayers) {
+            if (player.actions) {
+              try {
+                const playerActions = JSON.parse(player.actions);
+
+                for (const action of playerActions) {
+                  allActions.push({
+                    id: actionIdCounter++,
+                    match_id: matchId,
+                    team: player.team,
+                    player_number: player.player_number,
+                    action_type: action.action_type,
+                    specification: action.specification,
+                    points: action.points,
+                    semantic_x: action.semantic_x,
+                    semantic_y: action.semantic_y,
+                    action_order: action.action_order,
+                    period_number: action.period_number,
+                    time_in_period: action.time_in_period,
+                    timestamp: action.timestamp,
+                  });
+                }
+              } catch (parseError) {
+                console.error(`❌ Error parsing actions for player ${player.team}-${player.player_number}:`, parseError);
               }
-            } catch (parseError) {
-              console.error(`❌ Error parsing actions for player ${player.team}-${player.player_number}:`, parseError);
             }
           }
+
+          // Sort by action_order
+          allActions.sort((a, b) => a.action_order - b.action_order);
+
+          console.log(`✅ [ActionRepository] Loaded ${allActions.length} compacted actions`);
+          return allActions;
         }
-
-        // Sort by action_order
-        allActions.sort((a, b) => a.action_order - b.action_order);
-
-        console.log(`✅ [ActionRepository] Loaded ${allActions.length} compacted actions`);
-        return allActions;
       }
 
-      // Otherwise, fall back to reading from match_actions table
-      console.log(`📊 [ActionRepository] Reading from match_actions table for match ${matchId}`);
+      // For in-progress matches or if no compacted data, read from match_actions table
+      console.log(`📊 [ActionRepository] Reading from match_actions table for match ${matchId} (status: ${matchStatus})`);
       const actions = await this.db.query(
         `SELECT * FROM match_actions
          WHERE match_id = ?
