@@ -8,7 +8,7 @@ interface InitTeamModalProps {
   setTeamA: (v: string) => void;
   teamB: string;
   setTeamB: (v: string) => void;
-  onConfirm: (teamMode: "A" | "B" | "both") => void;
+  onConfirm: (teamMode: "A" | "B" | "BOTH") => void;
   isConfirmDisabled: boolean;
   getFormattedDate: () => string;
   onRequestClose: () => void;
@@ -34,7 +34,7 @@ export default function InitTeamModal({
   hasClubTeam = false,
 }: InitTeamModalProps) {
   const [selectedTeamMode, setSelectedTeamMode] = React.useState<
-    "A" | "B" | "both" | null
+    "A" | "B" | "BOTH" | null
   >(null);
 
   // Track if teams have been swapped
@@ -176,10 +176,10 @@ export default function InitTeamModal({
           {[
             { key: "A", label: `${teamA || "Team A"} (Domicile)` },
             { key: "B", label: `${teamB || "Team B"} (Extérieur)` },
-            { key: "both", label: "Les deux équipes" },
+            { key: "BOTH", label: "Les deux équipes" },
           ].map((option) => {
             // Disable Team B if club team is Team A, disable Team A if club team is Team B
-            const isDisabled = clubTeam && option.key !== clubTeam && option.key !== "both";
+            const isDisabled = clubTeam && option.key !== clubTeam && option.key !== "BOTH";
 
             return (
               <TouchableOpacity
@@ -201,7 +201,7 @@ export default function InitTeamModal({
                   opacity: isDisabled ? 0.4 : 1,
                 }}
                 onPress={() =>
-                  setSelectedTeamMode(option.key as "A" | "B" | "both")
+                  setSelectedTeamMode(option.key as "A" | "B" | "BOTH")
                 }
               >
                 <View

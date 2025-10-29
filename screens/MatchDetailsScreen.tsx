@@ -19,7 +19,7 @@ interface MatchDetailsRouteParams {
   scoreB: number;
   actions: ActionData[];
   matchFormat: "2_halves" | "4_quarters";
-  teamMode: "A" | "B" | "both";
+  teamMode: "A" | "B" | "BOTH";
   players: Array<{
     id: number;
     num: number;
@@ -48,13 +48,13 @@ export default function MatchDetailsScreen() {
   } = params;
 
   const [sortBy, setSortBy] = useState<SortOption>("points");
-  const [selectedTeam, setSelectedTeam] = useState<"A" | "B" | "both">(teamMode);
+  const [selectedTeam, setSelectedTeam] = useState<"A" | "B" | "BOTH">(teamMode);
 
   // Tab state
   const [activeTab, setActiveTab] = useState<"court" | "players">("court");
 
   // Court filters
-  const [courtFilterTeam, setCourtFilterTeam] = useState<"A" | "B" | "both">(teamMode);
+  const [courtFilterTeam, setCourtFilterTeam] = useState<"A" | "B" | "BOTH">(teamMode);
   const [courtFilterPlayers, setCourtFilterPlayers] = useState<string[]>([]); // Player identifiers "team-num" (e.g., "A-5", "B-7")
   const [courtFilterActionType, setCourtFilterActionType] = useState<string[]>([]); // ["tir", "rebond", "faute"]
   const [courtFilterPeriod, setCourtFilterPeriod] = useState<number[]>([]); // [1, 2, 3, 4] or [1, 2]
@@ -143,7 +143,7 @@ export default function MatchDetailsScreen() {
 
   // Filter by team
   const filteredPlayers = playersWithStats.filter((player) => {
-    if (selectedTeam === "both") return true;
+    if (selectedTeam === "BOTH") return true;
     return player.team === selectedTeam;
   });
 
@@ -170,7 +170,7 @@ export default function MatchDetailsScreen() {
   const filteredCourtActions = useMemo(() => {
     return actions.filter((action) => {
       // Team filter
-      if (courtFilterTeam !== "both" && action.team !== courtFilterTeam) {
+      if (courtFilterTeam !== "BOTH" && action.team !== courtFilterTeam) {
         return false;
       }
 
@@ -323,18 +323,18 @@ export default function MatchDetailsScreen() {
               <Text style={styles.filterCategoryLabel}>Équipe</Text>
               <View style={styles.filterCards}>
                 {/* Show "Les deux" option only if managing both teams */}
-                {teamMode === "both" && (
+                {teamMode === "BOTH" && (
                   <TouchableOpacity
                     style={[
                       styles.filterCard,
-                      courtFilterTeam === "both" && styles.filterCardActive,
+                      courtFilterTeam === "BOTH" && styles.filterCardActive,
                     ]}
-                    onPress={() => setCourtFilterTeam("both")}
+                    onPress={() => setCourtFilterTeam("BOTH")}
                   >
                     <Text
                       style={[
                         styles.filterCardText,
-                        courtFilterTeam === "both" && styles.filterCardTextActive,
+                        courtFilterTeam === "BOTH" && styles.filterCardTextActive,
                       ]}
                     >
                       Les deux
@@ -343,7 +343,7 @@ export default function MatchDetailsScreen() {
                 )}
 
                 {/* Show Team A option if managing Team A or both */}
-                {(teamMode === "A" || teamMode === "both") && (
+                {(teamMode === "A" || teamMode === "BOTH") && (
                   <TouchableOpacity
                     style={[
                       styles.filterCard,
@@ -363,7 +363,7 @@ export default function MatchDetailsScreen() {
                 )}
 
                 {/* Show Team B option if managing Team B or both */}
-                {(teamMode === "B" || teamMode === "both") && (
+                {(teamMode === "B" || teamMode === "BOTH") && (
                   <TouchableOpacity
                     style={[
                       styles.filterCard,
@@ -444,7 +444,7 @@ export default function MatchDetailsScreen() {
               <Text style={styles.filterCategoryLabel}>Joueurs</Text>
 
               {/* Team A Players - Show if managing Team A or both */}
-              {(courtFilterTeam === "A" || courtFilterTeam === "both") && (
+              {(courtFilterTeam === "A" || courtFilterTeam === "BOTH") && (
                 <>
                   <Text style={styles.filterSubLabel}>{teamA}</Text>
                   <ScrollView
@@ -482,9 +482,9 @@ export default function MatchDetailsScreen() {
               )}
 
               {/* Team B Players - Show if managing Team B or both */}
-              {(courtFilterTeam === "B" || courtFilterTeam === "both") && (
+              {(courtFilterTeam === "B" || courtFilterTeam === "BOTH") && (
                 <>
-                  <Text style={[styles.filterSubLabel, courtFilterTeam === "both" && styles.filterSubLabelMargin]}>{teamB}</Text>
+                  <Text style={[styles.filterSubLabel, courtFilterTeam === "BOTH" && styles.filterSubLabelMargin]}>{teamB}</Text>
                   <ScrollView
                     horizontal
                     showsHorizontalScrollIndicator={false}
@@ -554,7 +554,7 @@ export default function MatchDetailsScreen() {
           <View style={styles.courtAndStatsContainer}>
             {/* Left Column - Live Stats */}
             <View style={styles.liveStats}>
-              <Text style={styles.liveStatsTitle}>{teamMode === "both" ? teamA : "Stats"}</Text>
+              <Text style={styles.liveStatsTitle}>{teamMode === "BOTH" ? teamA : "Stats"}</Text>
 
               {/* Shooting Stats */}
               {(courtFilterActionType.length === 0 || courtFilterActionType.includes("tir")) && (
@@ -563,7 +563,7 @@ export default function MatchDetailsScreen() {
                     <Text style={styles.liveStatGroupLabel}>🏀 Tirs</Text>
                     <Text style={styles.liveStatGroupValue}>
                       {(() => {
-                        const actionsToUse = teamMode === "both" ? filteredCourtActions.filter(a => a.team === "A") : filteredCourtActions;
+                        const actionsToUse = teamMode === "BOTH" ? filteredCourtActions.filter(a => a.team === "A") : filteredCourtActions;
                         const shots = actionsToUse.filter(a => a.type === "tir");
                         const made = shots.filter(a => a.specification === "reussi").length;
                         const percentage = shots.length > 0 ? Math.round((made / shots.length) * 100) : 0;
@@ -575,7 +575,7 @@ export default function MatchDetailsScreen() {
                     <View style={styles.liveStatDetail}>
                       <Text style={styles.liveStatDetailText}>
                         1pt: {(() => {
-                          const actionsToUse = teamMode === "both" ? filteredCourtActions.filter(a => a.team === "A") : filteredCourtActions;
+                          const actionsToUse = teamMode === "BOTH" ? filteredCourtActions.filter(a => a.team === "A") : filteredCourtActions;
                           const onePtShots = actionsToUse.filter(a => a.type === "tir" && a.points === 1);
                           const onePtMade = onePtShots.filter(a => a.specification === "reussi").length;
                           const onePtPercentage = onePtShots.length > 0 ? Math.round((onePtMade / onePtShots.length) * 100) : 0;
@@ -584,7 +584,7 @@ export default function MatchDetailsScreen() {
                       </Text>
                       <Text style={styles.liveStatDetailText}>
                         2pts: {(() => {
-                          const actionsToUse = teamMode === "both" ? filteredCourtActions.filter(a => a.team === "A") : filteredCourtActions;
+                          const actionsToUse = teamMode === "BOTH" ? filteredCourtActions.filter(a => a.team === "A") : filteredCourtActions;
                           const twoPtShots = actionsToUse.filter(a => a.type === "tir" && a.points === 2);
                           const twoPtMade = twoPtShots.filter(a => a.specification === "reussi").length;
                           const twoPtPercentage = twoPtShots.length > 0 ? Math.round((twoPtMade / twoPtShots.length) * 100) : 0;
@@ -593,7 +593,7 @@ export default function MatchDetailsScreen() {
                       </Text>
                       <Text style={styles.liveStatDetailText}>
                         3pts: {(() => {
-                          const actionsToUse = teamMode === "both" ? filteredCourtActions.filter(a => a.team === "A") : filteredCourtActions;
+                          const actionsToUse = teamMode === "BOTH" ? filteredCourtActions.filter(a => a.team === "A") : filteredCourtActions;
                           const threePtShots = actionsToUse.filter(a => a.type === "tir" && a.points === 3);
                           const threePtMade = threePtShots.filter(a => a.specification === "reussi").length;
                           const threePtPercentage = threePtShots.length > 0 ? Math.round((threePtMade / threePtShots.length) * 100) : 0;
@@ -611,20 +611,20 @@ export default function MatchDetailsScreen() {
                   <Text style={styles.liveStatGroupLabel}>📥 Rebonds</Text>
                   <Text style={styles.liveStatGroupValue}>
                     {(() => {
-                      const actionsToUse = teamMode === "both" ? filteredCourtActions.filter(a => a.team === "A") : filteredCourtActions;
+                      const actionsToUse = teamMode === "BOTH" ? filteredCourtActions.filter(a => a.team === "A") : filteredCourtActions;
                       return actionsToUse.filter(a => a.type === "rebond").length;
                     })()}
                   </Text>
                   <View style={styles.liveStatDetail}>
                     <Text style={styles.liveStatDetailText}>
                       Off: {(() => {
-                        const actionsToUse = teamMode === "both" ? filteredCourtActions.filter(a => a.team === "A") : filteredCourtActions;
+                        const actionsToUse = teamMode === "BOTH" ? filteredCourtActions.filter(a => a.team === "A") : filteredCourtActions;
                         return actionsToUse.filter(a => a.type === "rebond" && a.specification === "offensif").length;
                       })()}
                     </Text>
                     <Text style={styles.liveStatDetailText}>
                       Def: {(() => {
-                        const actionsToUse = teamMode === "both" ? filteredCourtActions.filter(a => a.team === "A") : filteredCourtActions;
+                        const actionsToUse = teamMode === "BOTH" ? filteredCourtActions.filter(a => a.team === "A") : filteredCourtActions;
                         return actionsToUse.filter(a => a.type === "rebond" && a.specification === "defensif").length;
                       })()}
                     </Text>
@@ -638,20 +638,20 @@ export default function MatchDetailsScreen() {
                   <Text style={styles.liveStatGroupLabel}>⚠️ Fautes</Text>
                   <Text style={styles.liveStatGroupValue}>
                     {(() => {
-                      const actionsToUse = teamMode === "both" ? filteredCourtActions.filter(a => a.team === "A") : filteredCourtActions;
+                      const actionsToUse = teamMode === "BOTH" ? filteredCourtActions.filter(a => a.team === "A") : filteredCourtActions;
                       return actionsToUse.filter(a => a.type === "faute").length;
                     })()}
                   </Text>
                   <View style={styles.liveStatDetail}>
                     <Text style={styles.liveStatDetailText}>
                       Pers: {(() => {
-                        const actionsToUse = teamMode === "both" ? filteredCourtActions.filter(a => a.team === "A") : filteredCourtActions;
+                        const actionsToUse = teamMode === "BOTH" ? filteredCourtActions.filter(a => a.team === "A") : filteredCourtActions;
                         return actionsToUse.filter(a => a.type === "faute" && a.specification === "personnelle").length;
                       })()}
                     </Text>
                     <Text style={styles.liveStatDetailText}>
                       Tech: {(() => {
-                        const actionsToUse = teamMode === "both" ? filteredCourtActions.filter(a => a.team === "A") : filteredCourtActions;
+                        const actionsToUse = teamMode === "BOTH" ? filteredCourtActions.filter(a => a.team === "A") : filteredCourtActions;
                         return actionsToUse.filter(a => a.type === "faute" && a.specification === "technique").length;
                       })()}
                     </Text>
@@ -673,7 +673,7 @@ export default function MatchDetailsScreen() {
             </View>
 
             {/* Right Column - Team B Stats (when managing both teams) */}
-            {teamMode === "both" ? (
+            {teamMode === "BOTH" ? (
               <View style={styles.liveStats}>
                 <Text style={styles.liveStatsTitle}>{teamB}</Text>
 
@@ -797,19 +797,19 @@ export default function MatchDetailsScreen() {
             {/* Filters */}
             <View style={styles.filtersContainer}>
             {/* Team filter */}
-        {teamMode === "both" && (
+        {teamMode === "BOTH" && (
           <View style={styles.teamFilter}>
             <TouchableOpacity
               style={[
                 styles.teamFilterButton,
-                selectedTeam === "both" && styles.teamFilterButtonActive,
+                selectedTeam === "BOTH" && styles.teamFilterButtonActive,
               ]}
-              onPress={() => setSelectedTeam("both")}
+              onPress={() => setSelectedTeam("BOTH")}
             >
               <Text
                 style={[
                   styles.teamFilterText,
-                  selectedTeam === "both" && styles.teamFilterTextActive,
+                  selectedTeam === "BOTH" && styles.teamFilterTextActive,
                 ]}
               >
                 Tous

@@ -142,12 +142,42 @@ export default function MatchHistoryScreen() {
             console.error("❌ [MatchHistory] Error fetching server matches:", serverError);
           } else if (serverMatchesData) {
             console.log('☁️ [MatchHistory] Server matches fetched:', serverMatchesData.length);
+
+            // Collect all unique team UUIDs to fetch team names
+            const teamUUIDs = new Set<string>();
+            const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+            serverMatchesData.forEach(sm => {
+              if (uuidRegex.test(sm.team_a)) teamUUIDs.add(sm.team_a);
+              if (uuidRegex.test(sm.team_b)) teamUUIDs.add(sm.team_b);
+            });
+
+            // Fetch team names for all UUIDs
+            const teamNamesMap = new Map<string, string>();
+            if (teamUUIDs.size > 0) {
+              const { data: teamsData } = await supabase
+                .from('teams')
+                .select('id, name')
+                .in('id', Array.from(teamUUIDs));
+
+              if (teamsData) {
+                teamsData.forEach(team => {
+                  teamNamesMap.set(team.id, team.name);
+                });
+              }
+            }
+
             // Transform server matches to MatchWithDetails format
-            serverMatches = serverMatchesData.map((sm) => ({
+            serverMatches = serverMatchesData.map((sm) => {
+              // Resolve team names: if UUID, use team name, otherwise use string value
+              const teamAName = teamNamesMap.get(sm.team_a) || sm.team_a;
+              const teamBName = teamNamesMap.get(sm.team_b) || sm.team_b;
+
+              return {
               id: sm.local_match_id || 0, // Use local_match_id or 0 as placeholder
-              team_a_name: sm.team_a_name,
-              team_b_name: sm.team_b_name,
-              team_mode: "both" as const, // Default
+              team_a_name: teamAName,
+              team_b_name: teamBName,
+              team_mode: sm.team_mode,
               status: "completed" as const,
               match_format: sm.match_format,
               period_duration: sm.period_duration,
@@ -167,7 +197,8 @@ export default function MatchHistoryScreen() {
               actionsCount: 0, // We'll get this from match_players if needed
               isFromServer: true,
               serverMatchId: sm.id,
-            }));
+            };
+            });
           }
         } catch (error) {
           console.error("Error loading server matches:", error);
@@ -472,7 +503,7 @@ export default function MatchHistoryScreen() {
     // Determine which team is from the club based on team_mode
     // team_mode "A" = managing team A (our club team)
     // team_mode "B" = managing team B (our club team)
-    // team_mode "both" = managing both teams (friendly match, no club)
+    // team_mode "BOTH" = managing both teams (friendly match, no club)
     const clubTeam = item.team_mode === "A" ? "A" : item.team_mode === "B" ? "B" : null;
     const isClubMatch = clubTeam !== null; // Is there a club team involved?
     const clubWon = isClubMatch && winner === clubTeam;

@@ -42,7 +42,7 @@ export class SQLiteAdapter implements IStorageAdapter {
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         started_at DATETIME,
         ended_at DATETIME,
-        team_mode TEXT NOT NULL CHECK(team_mode IN ('A', 'B', 'both')),
+        team_mode TEXT NOT NULL CHECK(team_mode IN ('A', 'B', 'BOTH')),
         match_format TEXT NOT NULL DEFAULT '2_halves' CHECK(match_format IN ('2_halves', '4_quarters')),
         period_duration INTEGER NOT NULL DEFAULT 1200,
         current_period INTEGER DEFAULT 1,
@@ -135,6 +135,15 @@ export class SQLiteAdapter implements IStorageAdapter {
       // Column might already exist, ignore error
     }
 
+    // Add team_id column if it doesn't exist (to link to specific club team)
+    try {
+      this.db.execSync(`
+        ALTER TABLE matches ADD COLUMN team_id TEXT;
+      `);
+    } catch (error) {
+      // Column might already exist, ignore error
+    }
+
     // Create match_players table
     this.db.execSync(`
       CREATE TABLE IF NOT EXISTS match_players (
@@ -154,6 +163,15 @@ export class SQLiteAdapter implements IStorageAdapter {
     try {
       this.db.execSync(`
         ALTER TABLE match_players ADD COLUMN actions TEXT;
+      `);
+    } catch (error) {
+      // Column might already exist, ignore error
+    }
+
+    // Add player_id column if it doesn't exist (link to club players)
+    try {
+      this.db.execSync(`
+        ALTER TABLE match_players ADD COLUMN player_id TEXT;
       `);
     } catch (error) {
       // Column might already exist, ignore error

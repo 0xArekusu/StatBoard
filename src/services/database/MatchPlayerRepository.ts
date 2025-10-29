@@ -3,6 +3,7 @@ import { DatabaseService } from "./DatabaseService";
 export interface MatchPlayer {
   id: number;
   match_id: number;
+  player_id?: string | null;
   player_number: number;
   player_name: string;
   team: "A" | "B";
@@ -12,6 +13,7 @@ export interface MatchPlayer {
 
 export interface CreateMatchPlayerData {
   match_id: number;
+  player_id?: string | null;
   player_number: number;
   player_name: string;
   team: "A" | "B";
@@ -35,13 +37,14 @@ export class MatchPlayerRepository implements IMatchPlayerRepository {
   async create(data: CreateMatchPlayerData): Promise<MatchPlayer> {
     const sql = `
       INSERT INTO match_players (
-        match_id, player_number, player_name, team, is_starter
-      ) VALUES (?, ?, ?, ?, ?)
+        match_id, player_id, player_number, player_name, team, is_starter
+      ) VALUES (?, ?, ?, ?, ?, ?)
     `;
 
     try {
       await this.db.execute(sql, [
         data.match_id,
+        data.player_id || null,
         data.player_number,
         data.player_name,
         data.team,
@@ -73,13 +76,14 @@ export class MatchPlayerRepository implements IMatchPlayerRepository {
       await this.db.transaction(async (adapter) => {
         const sql = `
           INSERT INTO match_players (
-            match_id, player_number, player_name, team, is_starter
-          ) VALUES (?, ?, ?, ?, ?)
+            match_id, player_id, player_number, player_name, team, is_starter
+          ) VALUES (?, ?, ?, ?, ?, ?)
         `;
 
         for (const player of players) {
           await adapter.execute(sql, [
             player.match_id,
+            player.player_id || null,
             player.player_number,
             player.player_name,
             player.team,

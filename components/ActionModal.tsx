@@ -37,7 +37,7 @@ interface ActionModalProps {
     team: "A" | "B";
     isSubstitute: boolean;
   }>;
-  teamMode: "A" | "B" | "both";
+  teamMode: "A" | "B" | "BOTH";
   teamA: string;
   teamB: string;
 }
@@ -71,9 +71,9 @@ export default function ActionModal({
     // Don't show back button if we're at step 1
     if (currentStep === 1) return null;
 
-    // If teamMode is not "both", don't show back button at step 2
+    // If teamMode is not "BOTH", don't show back button at step 2
     // (because step 1 team selection was skipped)
-    if (teamMode !== "both" && currentStep === 2) return null;
+    if (teamMode !== "BOTH" && currentStep === 2) return null;
 
     return (
       <TouchableOpacity style={styles.backButton} onPress={onGoBack}>
@@ -203,8 +203,8 @@ export default function ActionModal({
   };
 
   const renderPlayerSelection = () => {
-    // Filter players according to selected team only if in "both" mode
-    const filteredPlayers = teamMode === "both" && selectedTeam
+    // Filter players according to selected team only if in "BOTH" mode
+    const filteredPlayers = teamMode === "BOTH" && selectedTeam
       ? players.filter((player) => player.team === selectedTeam)
       : players;
 
@@ -239,8 +239,8 @@ export default function ActionModal({
   const renderStepContent = () => {
     switch (currentStep) {
       case 1:
-        // Team selection step (only for "both" mode)
-        return teamMode === "both"
+        // Team selection step (only for "BOTH" mode)
+        return teamMode === "BOTH"
           ? renderTeamSelection()
           : renderActionSelection();
       case 2:

@@ -39,7 +39,7 @@ export const DURATION_LABELS = {
 export const TEAM_MODES = {
   A: 'A' as const,
   B: 'B' as const,
-  BOTH: 'both' as const,
+  BOTH: 'BOTH' as const,
 } as const;
 
 export type TeamMode = typeof TEAM_MODES[keyof typeof TEAM_MODES];

@@ -42,7 +42,7 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
     actions: ActionData[];
     matchFormat: "2_halves" | "4_quarters";
     periodDuration: number;
-    teamMode: "A" | "B" | "both";
+    teamMode: "A" | "B" | "BOTH";
     players: Array<{
       id: number;
       num: number;
@@ -388,10 +388,10 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
     };
   };
 
-  const playersTeamA = (teamMode === "A" || teamMode === "both")
+  const playersTeamA = (teamMode === "A" || teamMode === "BOTH")
     ? players.filter(p => p.team === "A")
     : [];
-  const playersTeamB = (teamMode === "B" || teamMode === "both")
+  const playersTeamB = (teamMode === "B" || teamMode === "BOTH")
     ? players.filter(p => p.team === "B")
     : [];
 
@@ -672,7 +672,7 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
             </View>
 
             {/* Team A Row - Show if managing Team A or both */}
-            {(teamMode === "A" || teamMode === "both") && (
+            {(teamMode === "A" || teamMode === "BOTH") && (
               <View style={styles.periodTableRow}>
                 <View style={styles.periodTableCellTeam}>
                   <Text style={styles.periodTableTeamText}>{teamA}</Text>
@@ -680,7 +680,7 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
                 {periodScoresA.map((score, index) => {
                   // Only highlight winner if managing both teams
                   const isWinner =
-                    teamMode === "both" && score > periodScoresB[index];
+                    teamMode === "BOTH" && score > periodScoresB[index];
                   return (
                     <View
                       key={index}
@@ -709,13 +709,13 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
             )}
 
             {/* Team B Row - Show if managing Team B or both */}
-            {(teamMode === "B" || teamMode === "both") && (
+            {(teamMode === "B" || teamMode === "BOTH") && (
               <View style={styles.periodTableRow}>
                 <View style={styles.periodTableCellTeam}>
                   <Text style={styles.periodTableTeamText}>{teamB}</Text>
                 </View>
                 {periodScoresB.map((score, index) => {
-                  const isWinner = teamMode === "both" && score > periodScoresA[index];
+                  const isWinner = teamMode === "BOTH" && score > periodScoresA[index];
                   return (
                     <View
                       key={index}
@@ -757,7 +757,7 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
                 ),
               ],
               datasets: [
-                ...(teamMode === "A" || teamMode === "both"
+                ...(teamMode === "A" || teamMode === "BOTH"
                   ? [
                       {
                         data: [0, ...cumulativeScoresA],
@@ -766,7 +766,7 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
                       },
                     ]
                   : []),
-                ...(teamMode === "B" || teamMode === "both"
+                ...(teamMode === "B" || teamMode === "BOTH"
                   ? [
                       {
                         data: [0, ...cumulativeScoresB],
@@ -777,8 +777,8 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
                   : []),
               ],
               legend: [
-                ...(teamMode === "A" || teamMode === "both" ? [teamA] : []),
-                ...(teamMode === "B" || teamMode === "both" ? [teamB] : []),
+                ...(teamMode === "A" || teamMode === "BOTH" ? [teamA] : []),
+                ...(teamMode === "B" || teamMode === "BOTH" ? [teamB] : []),
               ],
             }}
             width={Dimensions.get("window").width - 40}
@@ -808,7 +808,7 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
           <Text style={styles.sectionTitle}>Statistiques de tir</Text>
 
           {/* Team A Stats - Show if managing Team A or both */}
-          {(teamMode === "A" || teamMode === "both") && (
+          {(teamMode === "A" || teamMode === "BOTH") && (
             <View style={styles.teamStatsContainer}>
               <Text style={styles.teamStatsName}>{teamA}</Text>
               <View style={styles.statRow}>
@@ -842,9 +842,9 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
           )}
 
           {/* Team B Stats - Show if managing Team B or both */}
-          {(teamMode === "B" || teamMode === "both") && (
+          {(teamMode === "B" || teamMode === "BOTH") && (
             <View
-              style={[styles.teamStatsContainer, styles.teamBStats, teamMode === "both" && styles.teamStatsMargin]}
+              style={[styles.teamStatsContainer, styles.teamBStats, teamMode === "BOTH" && styles.teamStatsMargin]}
             >
               <Text style={styles.teamStatsName}>{teamB}</Text>
               <View style={styles.statRow}>
@@ -884,7 +884,7 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
 
           <View style={styles.compactStatsContainer}>
             {/* Team A - Show if managing Team A or both */}
-            {(teamMode === "A" || teamMode === "both") && (
+            {(teamMode === "A" || teamMode === "BOTH") && (
               <View style={styles.compactTeamStats}>
                 <Text style={styles.compactTeamName}>{teamA}</Text>
 
@@ -909,12 +909,12 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
             )}
 
             {/* Separator - Only show if managing both teams */}
-            {teamMode === "both" && (
+            {teamMode === "BOTH" && (
               <View style={styles.compactSeparator} />
             )}
 
             {/* Team B - Show if managing Team B or both */}
-            {(teamMode === "B" || teamMode === "both") && (
+            {(teamMode === "B" || teamMode === "BOTH") && (
               <View style={styles.compactTeamStats}>
                 <Text style={styles.compactTeamName}>{teamB}</Text>
 

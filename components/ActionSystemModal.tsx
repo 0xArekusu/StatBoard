@@ -23,7 +23,7 @@ interface ActionSystemModalProps {
     team: "A" | "B";
     isSubstitute: boolean;
   }>;
-  teamMode: "A" | "B" | "both";
+  teamMode: "A" | "B" | "BOTH";
   teamA: string;
   teamB: string;
   currentTeam: "A" | "B";

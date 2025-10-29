@@ -88,7 +88,7 @@ export interface ActionSystemProps {
     num: number;
     name: string;
   }>;
-  teamMode: "A" | "B" | "both"; // Add team mode
+  teamMode: "A" | "B" | "BOTH"; // Add team mode
   teamA: string;
   teamB: string;
   currentTeam: "A" | "B"; // Current team for single team mode
@@ -227,16 +227,16 @@ export const useActionSystem = () => {
     (
       position: ActionSystemState["position"],
       clickPosition: ActionSystemState["clickPosition"],
-      teamMode: "A" | "B" | "both",
+      teamMode: "A" | "B" | "BOTH",
       currentTeam: "A" | "B"
     ) => {
       console.log("🔍 startAction called:", { teamMode, currentTeam }); // 🔍 DEBUG
-      const selectedTeam = teamMode === "both" ? null : currentTeam;
+      const selectedTeam = teamMode === "BOTH" ? null : currentTeam;
       console.log("🔍 selectedTeam will be:", selectedTeam); // 🔍 DEBUG
 
       setState({
         isVisible: true,
-        currentStep: teamMode === "both" ? 1 : 2, // Start with team selection if both, otherwise skip to action
+        currentStep: teamMode === "BOTH" ? 1 : 2, // Start with team selection if both, otherwise skip to action
         actionType: null,
         actionPoints: null,
         actionSpec: null,

@@ -33,7 +33,7 @@ interface PDFPreviewModalProps {
   statsTeamA: any[];
   statsTeamB: any[];
   periodLabel: string;
-  teamMode: "A" | "B" | "both";
+  teamMode: "A" | "B" | "BOTH";
   scoreManuallyAdjusted?: boolean;
 }
 
@@ -123,7 +123,7 @@ export default function PDFPreviewModal({
               </View>
 
               {/* Team A */}
-              {(teamMode === "A" || teamMode === "both") && (
+              {(teamMode === "A" || teamMode === "BOTH") && (
                 <View style={styles.tableRow}>
                   <Text style={[styles.tableCell, styles.teamCell]}>{teamA}</Text>
                   {periodScoresA.map((score, idx) => (
@@ -136,7 +136,7 @@ export default function PDFPreviewModal({
               )}
 
               {/* Team B */}
-              {(teamMode === "B" || teamMode === "both") && (
+              {(teamMode === "B" || teamMode === "BOTH") && (
                 <View style={styles.tableRow}>
                   <Text style={[styles.tableCell, styles.teamCell]}>{teamB}</Text>
                   {periodScoresB.map((score, idx) => (
@@ -163,7 +163,7 @@ export default function PDFPreviewModal({
                   ),
                 ],
                 datasets: [
-                  ...(teamMode === "A" || teamMode === "both"
+                  ...(teamMode === "A" || teamMode === "BOTH"
                     ? [
                         {
                           data: [0, ...cumulativeScoresA],
@@ -172,7 +172,7 @@ export default function PDFPreviewModal({
                         },
                       ]
                     : []),
-                  ...(teamMode === "B" || teamMode === "both"
+                  ...(teamMode === "B" || teamMode === "BOTH"
                     ? [
                         {
                           data: [0, ...cumulativeScoresB],
@@ -183,8 +183,8 @@ export default function PDFPreviewModal({
                     : []),
                 ],
                 legend: [
-                  ...(teamMode === "A" || teamMode === "both" ? [teamA] : []),
-                  ...(teamMode === "B" || teamMode === "both" ? [teamB] : []),
+                  ...(teamMode === "A" || teamMode === "BOTH" ? [teamA] : []),
+                  ...(teamMode === "B" || teamMode === "BOTH" ? [teamB] : []),
                 ],
               }}
               width={Dimensions.get("window").width - 60}

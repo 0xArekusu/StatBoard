@@ -80,6 +80,7 @@ const convertClubPlayersToBoard = (clubPlayers: Player[]) => {
     if (playerAtPosition) {
       return {
         id: index + 1,
+        playerId: playerAtPosition.id, // Keep the original club player ID
         num: playerAtPosition.jerseyNumber,
         name: playerAtPosition.name,
         photoUrl: playerAtPosition.photoUrl,
@@ -101,6 +102,7 @@ const convertClubPlayersToBoard = (clubPlayers: Player[]) => {
   // Map substitutes (keep their order, assign sequential IDs)
   const substitutes = clubSubstitutes.map((p, index) => ({
     id: starters.length + index + 1,
+    playerId: p.id, // Keep the original club player ID
     num: p.jerseyNumber,
     name: p.name,
     photoUrl: p.photoUrl,
@@ -442,7 +444,7 @@ export default function BasketballCourt() {
   const [matchConfigModalVisible, setMatchConfigModalVisible] = useState(false);
   const [teamA, setTeamA] = useState("Team A");
   const [teamB, setTeamB] = useState("Team B");
-  const [teamMode, setTeamMode] = useState<"A" | "B" | "both">("A");
+  const [teamMode, setTeamMode] = useState<"A" | "B" | "BOTH">("A");
   const [currentTeam, setCurrentTeam] = useState<"A" | "B">("A");
 
   // PreGame mode: disables court interactions
@@ -970,7 +972,7 @@ export default function BasketballCourt() {
     }
   }, [currentPeriod, timeElapsed, saveMatchState, currentMatch, preGameMode]);
 
-  const handleTeamModeConfirm = (selectedTeamMode: "A" | "B" | "both") => {
+  const handleTeamModeConfirm = (selectedTeamMode: "A" | "B" | "BOTH") => {
     setTeamMode(selectedTeamMode);
     setCurrentTeam(selectedTeamMode === "B" ? "B" : "A");
 
@@ -1050,6 +1052,7 @@ export default function BasketballCourt() {
         match_format: matchFormat as "2_halves" | "4_quarters",
         period_duration: periodDuration,
         club_id: clubId,
+        team_id: selectedTeam?.id || null,
       };
 
       const match = await matchManager.startMatch(matchData);
@@ -1061,6 +1064,7 @@ export default function BasketballCourt() {
 
       const playersToSave = allPlayers.map((player) => ({
         match_id: match.id,
+        player_id: player.playerId || null, // Include club player ID if available
         player_number: player.num,
         player_name: player.name,
         team: player.team,
@@ -1217,7 +1221,7 @@ export default function BasketballCourt() {
 
       // Prepare all players with their team info
       const teamAPlayers =
-        teamMode === "A" || teamMode === "both"
+        teamMode === "A" || teamMode === "BOTH"
           ? [
               ...players.map((p) => ({ ...p, team: "A" as const })),
               ...substitutesTeamA.map((s) => ({ ...s, team: "A" as const })),
@@ -1225,7 +1229,7 @@ export default function BasketballCourt() {
           : [];
 
       const teamBPlayersEnd =
-        teamMode === "B" || teamMode === "both"
+        teamMode === "B" || teamMode === "BOTH"
           ? [
               ...playersTeamB.map((p) => ({ ...p, team: "B" as const })),
               ...substitutesTeamB.map((s) => ({ ...s, team: "B" as const })),
@@ -1642,7 +1646,7 @@ export default function BasketballCourt() {
   // Fonction pour obtenir tous les joueurs de toutes les équipes avec leur équipe
   const getAllPlayers = () => {
     const teamAPlayers =
-      teamMode === "A" || teamMode === "both"
+      teamMode === "A" || teamMode === "BOTH"
         ? [
             ...players.map((p) => ({ ...p, team: "A" as const })),
             ...substitutesTeamA.map((p) => ({ ...p, team: "A" as const })),
@@ -1650,7 +1654,7 @@ export default function BasketballCourt() {
         : [];
 
     const teamBPlayers =
-      teamMode === "B" || teamMode === "both"
+      teamMode === "B" || teamMode === "BOTH"
         ? [
             ...playersTeamB.map((p) => ({ ...p, team: "B" as const })),
             ...substitutesTeamB.map((p) => ({ ...p, team: "B" as const })),
@@ -2411,7 +2415,7 @@ export default function BasketballCourt() {
         !initModalVisible &&
         !matchConfigModalVisible &&
         preGameMode &&
-        (teamMode === "A" || teamMode === "both") &&
+        (teamMode === "A" || teamMode === "BOTH") &&
         players.map((player) => (
           <View key={player.id}>
             <TouchableOpacity
@@ -2475,7 +2479,7 @@ export default function BasketballCourt() {
         !initModalVisible &&
         !matchConfigModalVisible &&
         preGameMode &&
-        (teamMode === "B" || teamMode === "both") &&
+        (teamMode === "B" || teamMode === "BOTH") &&
         playersTeamB.map((player) => (
           <View key={player.id}>
             <TouchableOpacity
@@ -2539,7 +2543,7 @@ export default function BasketballCourt() {
         !initModalVisible &&
         !matchConfigModalVisible &&
         preGameMode &&
-        (teamMode === "A" || teamMode === "both") && (
+        (teamMode === "A" || teamMode === "BOTH") && (
           <SubstitutesManager
             substitutes={substitutesTeamA}
             coach={coachTeamA}
@@ -2559,7 +2563,7 @@ export default function BasketballCourt() {
         !initModalVisible &&
         !matchConfigModalVisible &&
         preGameMode &&
-        (teamMode === "B" || teamMode === "both") && (
+        (teamMode === "B" || teamMode === "BOTH") && (
           <SubstitutesManager
             substitutes={substitutesTeamB}
             coach={coachTeamB}

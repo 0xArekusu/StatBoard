@@ -1,5 +1,6 @@
 import { IPayloadAdapter } from '../types/IPayloadAdapter';
 import { MatchData } from '../types/MatchData';
+import { TeamMode } from '../../../models/types';
 
 /**
  * Supabase-specific payload format
@@ -8,7 +9,7 @@ export interface SupabaseMatchPayload {
   match: {
     team_a_name: string;
     team_b_name: string;
-    team_mode: 'A' | 'B' | 'both';
+    team_mode: TeamMode;
     match_format: '2_halves' | '4_quarters';
     period_duration: number;
     started_at: string | null;

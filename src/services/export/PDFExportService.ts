@@ -17,7 +17,7 @@ interface PDFExportOptions {
   actions: ActionData[];
   matchFormat: "2_halves" | "4_quarters";
   periodDuration: number;
-  teamMode: "A" | "B" | "both";
+  teamMode: "A" | "B" | "BOTH";
   players: Player[];
   matchDate?: Date;
   watermark?: boolean;
@@ -66,10 +66,10 @@ export class PDFExportService {
     }
 
     // Calculate player stats - filter by teamMode
-    const playersTeamA = (teamMode === "A" || teamMode === "both")
+    const playersTeamA = (teamMode === "A" || teamMode === "BOTH")
       ? players.filter((p) => p.team === "A")
       : [];
-    const playersTeamB = (teamMode === "B" || teamMode === "both")
+    const playersTeamB = (teamMode === "B" || teamMode === "BOTH")
       ? players.filter((p) => p.team === "B")
       : [];
 
@@ -216,8 +216,8 @@ export class PDFExportService {
     const chartHeight = height - padding.top - padding.bottom;
 
     const maxScore = Math.max(
-      ...(teamMode === "A" || teamMode === "both" ? cumulativeScoresA : [0]),
-      ...(teamMode === "B" || teamMode === "both" ? cumulativeScoresB : [0])
+      ...(teamMode === "A" || teamMode === "BOTH" ? cumulativeScoresA : [0]),
+      ...(teamMode === "B" || teamMode === "BOTH" ? cumulativeScoresB : [0])
     );
     const yScale = chartHeight / (maxScore || 1);
 
@@ -235,7 +235,7 @@ export class PDFExportService {
 
     // Generate path for team B
     let pathB = `M ${padding.left} ${padding.top + chartHeight}`;
-    if (teamMode === "B" || teamMode === "both") {
+    if (teamMode === "B" || teamMode === "BOTH") {
       allScoresB.forEach((score, i) => {
         const x = padding.left + (i * chartWidth) / totalPeriods;
         const y = padding.top + chartHeight - score * yScale;
@@ -281,7 +281,7 @@ export class PDFExportService {
         <line x1="${padding.left}" y1="${padding.top}" x2="${padding.left}" y2="${padding.top + chartHeight}" stroke="#333" stroke-width="2"/>
         <line x1="${padding.left}" y1="${padding.top + chartHeight}" x2="${width - padding.right}" y2="${padding.top + chartHeight}" stroke="#333" stroke-width="2"/>
 
-        ${(teamMode === "A" || teamMode === "both") ? `
+        ${(teamMode === "A" || teamMode === "BOTH") ? `
         <!-- Team A line -->
         <path d="${pathA}" fill="none" stroke="#FF6B35" stroke-width="3"/>
         ${allScoresA.map((score, i) => {
@@ -291,7 +291,7 @@ export class PDFExportService {
         }).join("")}
         ` : ""}
 
-        ${(teamMode === "B" || teamMode === "both") ? `
+        ${(teamMode === "B" || teamMode === "BOTH") ? `
         <!-- Team B line -->
         <path d="${pathB}" fill="none" stroke="#004E89" stroke-width="3"/>
         ${allScoresB.map((score, i) => {
@@ -306,13 +306,13 @@ export class PDFExportService {
         ${yLabelsHTML}
 
         <!-- Legend -->
-        ${(teamMode === "A" || teamMode === "both") ? `
+        ${(teamMode === "A" || teamMode === "BOTH") ? `
         <circle cx="50" cy="15" r="4" fill="#FF6B35"/>
         <text x="58" y="18" font-size="10">${teamA}</text>
         ` : ""}
-        ${(teamMode === "B" || teamMode === "both") ? `
-        <circle cx="${teamMode === "both" ? "150" : "50"}" cy="15" r="4" fill="#004E89"/>
-        <text x="${teamMode === "both" ? "158" : "58"}" y="18" font-size="10">${teamB}</text>
+        ${(teamMode === "B" || teamMode === "BOTH") ? `
+        <circle cx="${teamMode === "BOTH" ? "150" : "50"}" cy="15" r="4" fill="#004E89"/>
+        <text x="${teamMode === "BOTH" ? "158" : "58"}" y="18" font-size="10">${teamB}</text>
         ` : ""}
       </svg>
     `;
@@ -335,7 +335,7 @@ export class PDFExportService {
     cumulativeScoresB: number[];
     statsTeamA: any[];
     statsTeamB: any[];
-    teamMode: "A" | "B" | "both";
+    teamMode: "A" | "B" | "BOTH";
     watermark?: boolean;
     scoreManuallyAdjusted?: boolean;
   }): string {
@@ -548,14 +548,14 @@ export class PDFExportService {
       </tr>
     </thead>
     <tbody>
-      ${(teamMode === "A" || teamMode === "both") ? `
+      ${(teamMode === "A" || teamMode === "BOTH") ? `
       <tr>
         <td class="team-name">${teamA}</td>
         ${periodScoresA.map((score) => `<td>${score}</td>`).join("")}
         <td><strong>${scoreA}</strong></td>
       </tr>
       ` : ""}
-      ${(teamMode === "B" || teamMode === "both") ? `
+      ${(teamMode === "B" || teamMode === "BOTH") ? `
       <tr>
         <td class="team-name">${teamB}</td>
         ${periodScoresB.map((score) => `<td>${score}</td>`).join("")}

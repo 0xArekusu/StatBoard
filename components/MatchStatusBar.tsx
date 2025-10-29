@@ -17,7 +17,7 @@ interface MatchStatusBarProps {
   onEndMatch?: () => void;
   scoreA?: number;
   scoreB?: number;
-  teamMode: "A" | "B" | "both";
+  teamMode: "A" | "B" | "BOTH";
 }
 
 export default function MatchStatusBar({
@@ -100,7 +100,7 @@ export default function MatchStatusBar({
             >
               {teamA}
             </Text>
-            {(teamMode === "both" || teamMode === "A") && (
+            {(teamMode === "BOTH" || teamMode === "A") && (
               <View
                 style={{
                   backgroundColor: "#0A0A0A",
@@ -149,7 +149,7 @@ export default function MatchStatusBar({
 
           {/* Team B with score on the left */}
           <View style={{ flexDirection: "row", alignItems: "center" }}>
-            {(teamMode === "both" || teamMode === "B") && (
+            {(teamMode === "BOTH" || teamMode === "B") && (
               <View
                 style={{
                   backgroundColor: "#0A0A0A",

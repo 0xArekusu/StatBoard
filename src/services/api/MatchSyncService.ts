@@ -215,19 +215,37 @@ export class MatchSyncService {
     actions: Action[],
     userId: string
   ): SupabaseMatchSyncData {
+    // Determine team_a_name and team_b_name values
+    // If team_id exists and matches the team_mode, send team_id as the name
+    // Otherwise, send the actual team name
+    let teamAValue = match.team_a_name;
+    let teamBValue = match.team_b_name;
+
+    if (match.team_id) {
+      // If we have a team_id, check which team (A or B) is the club team based on team_mode
+      if (match.team_mode === 'A') {
+        // Team A is the club team, use team_id as the value
+        teamAValue = match.team_id;
+      } else if (match.team_mode === 'B') {
+        // Team B is the club team, use team_id as the value
+        teamBValue = match.team_id;
+      }
+      // For 'BOTH' mode, we keep the original names since both teams are managed
+    }
+
     // Create match insert data
     const matchInsert: SupabaseMatchInsert = {
       club_id: match.club_id || null,
-      team_id: null, // TODO: Add team_id logic if needed
-      team_a_name: match.team_a_name,
-      team_b_name: match.team_b_name,
+      team_id: match.team_id || null,
+      team_mode: match.team_mode,
+      team_a: teamAValue,
+      team_b: teamBValue,
       match_format: match.match_format,
       period_duration: match.period_duration,
       final_score_a: match.final_score_a || 0,
       final_score_b: match.final_score_b || 0,
       score_manually_adjusted: match.score_manually_adjusted === 1,
       created_by: userId,
-      local_match_id: match.id,
       played_at: match.ended_at || match.started_at || match.created_at,
     };
 
@@ -262,7 +280,7 @@ export class MatchSyncService {
         }));
 
         return {
-          player_id: null, // TODO: Link to players table if possible
+          player_id: player.player_id || null,
           player_number: player.player_number,
           player_name: player.player_name,
           team: player.team,

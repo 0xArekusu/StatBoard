@@ -21,7 +21,7 @@ interface MatchSummaryModalProps {
   actions: ActionData[];
   matchFormat: "2_halves" | "4_quarters";
   periodDuration: number;
-  teamMode: "A" | "B" | "both";
+  teamMode: "A" | "B" | "BOTH";
   onViewDetails: () => void;
   onBackToMenu: () => void;
   onBack?: () => void; // Optional back button when viewing from history
@@ -211,8 +211,8 @@ export default function MatchSummaryModal({
     calculateScoresByPeriod();
 
   // State for court filter
-  const [courtFilter, setCourtFilter] = React.useState<"both" | "A" | "B">(
-    "both"
+  const [courtFilter, setCourtFilter] = React.useState<"BOTH" | "A" | "B">(
+    "BOTH"
   );
 
   // Helper to get marker color based on action
@@ -243,7 +243,7 @@ export default function MatchSummaryModal({
 
   // Filter markers based on selected filter
   const filteredMarkers = actionMarkers.filter((marker) => {
-    if (courtFilter === "both") return true;
+    if (courtFilter === "BOTH") return true;
     return marker.team === courtFilter;
   });
 
@@ -379,7 +379,7 @@ export default function MatchSummaryModal({
                   {periodScoresA.map((score, index) => {
                     // Only highlight winner if managing both teams
                     const isWinner =
-                      teamMode === "both" && score > periodScoresB[index];
+                      teamMode === "BOTH" && score > periodScoresB[index];
                     return (
                       <View
                         key={index}
@@ -407,7 +407,7 @@ export default function MatchSummaryModal({
                 </View>
 
                 {/* Team B Row - Only show if managing both teams */}
-                {teamMode === "both" && (
+                {teamMode === "BOTH" && (
                   <View style={styles.periodTableRow}>
                     <View style={styles.periodTableCellTeam}>
                       <Text style={styles.periodTableTeamText}>{teamB}</Text>
@@ -480,7 +480,7 @@ export default function MatchSummaryModal({
               </View>
 
               {/* Team B Stats - Only show if managing both teams */}
-              {teamMode === "both" && (
+              {teamMode === "BOTH" && (
                 <View
                   style={[styles.teamStatsContainer, styles.teamStatsMargin]}
                 >
@@ -545,12 +545,12 @@ export default function MatchSummaryModal({
                 </View>
 
                 {/* Separator - Only show if managing both teams */}
-                {teamMode === "both" && (
+                {teamMode === "BOTH" && (
                   <View style={styles.compactSeparator} />
                 )}
 
                 {/* Team B - Only show if managing both teams */}
-                {teamMode === "both" && (
+                {teamMode === "BOTH" && (
                   <View style={styles.compactTeamStats}>
                     <Text style={styles.compactTeamName}>{teamB}</Text>
 
@@ -588,14 +588,14 @@ export default function MatchSummaryModal({
                 <TouchableOpacity
                   style={[
                     styles.filterButton,
-                    courtFilter === "both" && styles.filterButtonActive,
+                    courtFilter === "BOTH" && styles.filterButtonActive,
                   ]}
-                  onPress={() => setCourtFilter("both")}
+                  onPress={() => setCourtFilter("BOTH")}
                 >
                   <Text
                     style={[
                       styles.filterButtonText,
-                      courtFilter === "both" && styles.filterButtonTextActive,
+                      courtFilter === "BOTH" && styles.filterButtonTextActive,
                     ]}
                   >
                     Les deux
@@ -617,7 +617,7 @@ export default function MatchSummaryModal({
                     {teamA}
                   </Text>
                 </TouchableOpacity>
-                {teamMode === "both" && (
+                {teamMode === "BOTH" && (
                   <TouchableOpacity
                     style={[
                       styles.filterButton,

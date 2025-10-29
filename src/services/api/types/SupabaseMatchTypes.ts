@@ -12,10 +12,12 @@ export interface SupabaseMatch {
   id: string;  // UUID
   club_id: string | null;
   team_id: string | null;
+  team_mode: 'A' | 'B' | 'BOTH';  // Which team(s) are managed
 
   // Match information
-  team_a_name: string;
-  team_b_name: string;
+  // team_a and team_b can contain either team UUID or team name
+  team_a: string;
+  team_b: string;
   match_format: MatchFormat;
   period_duration: number;
 
@@ -26,7 +28,6 @@ export interface SupabaseMatch {
 
   // Metadata
   created_by: string | null;  // UUID of auth user
-  local_match_id: number | null;
   created_at: string;
   played_at: string;
   synced_at: string;
@@ -38,15 +39,15 @@ export interface SupabaseMatch {
 export interface SupabaseMatchInsert {
   club_id?: string | null;
   team_id?: string | null;
-  team_a_name: string;
-  team_b_name: string;
+  team_mode: 'A' | 'B' | 'BOTH';
+  team_a: string;  // Can be team UUID or name
+  team_b: string;  // Can be team UUID or name
   match_format: MatchFormat;
   period_duration: number;
   final_score_a: number;
   final_score_b: number;
   score_manually_adjusted?: boolean;
   created_by?: string | null;
-  local_match_id?: number | null;
   played_at: string;
 }
 
@@ -95,9 +96,6 @@ export interface SupabaseMatchPlayer {
   total_blocks: number;
   total_turnovers: number;
   total_fouls: number;
-
-  // Flag for temporary players
-  is_temporary: boolean;
 
   created_at: string;
 }
