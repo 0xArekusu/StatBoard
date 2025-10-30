@@ -444,6 +444,8 @@ export default function BasketballCourt() {
   const [matchConfigModalVisible, setMatchConfigModalVisible] = useState(false);
   const [teamA, setTeamA] = useState("Team A");
   const [teamB, setTeamB] = useState("Team B");
+  const [teamAId, setTeamAId] = useState<string | null>(null); // UUID if club team
+  const [teamBId, setTeamBId] = useState<string | null>(null); // UUID if club team
   const [teamMode, setTeamMode] = useState<"A" | "B" | "BOTH">("A");
   const [currentTeam, setCurrentTeam] = useState<"A" | "B">("A");
 
@@ -1046,8 +1048,8 @@ export default function BasketballCourt() {
       }
 
       const matchData = {
-        team_a_name: teamA,
-        team_b_name: teamB,
+        team_a_name: teamAId || teamA, // Use UUID if available, otherwise use name
+        team_b_name: teamBId || teamB, // Use UUID if available, otherwise use name
         team_mode: teamMode,
         match_format: matchFormat as "2_halves" | "4_quarters",
         period_duration: periodDuration,
@@ -1890,6 +1892,7 @@ export default function BasketballCourt() {
           if (team) {
             // Pre-fill team name and coach
             setTeamA(team.name);
+            setTeamAId(team.id); // Store UUID
             setCoachTeamA({
               id: 21,
               name: team.coachName || "Coach Équipe A",

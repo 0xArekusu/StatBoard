@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -9,7 +9,11 @@ import {
   ActivityIndicator,
   Alert,
 } from "react-native";
-import { useNavigation, useFocusEffect, useRoute } from "@react-navigation/native";
+import {
+  useNavigation,
+  useFocusEffect,
+  useRoute,
+} from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { MatchRepository } from "../src/services/database/MatchRepository";
@@ -28,6 +32,8 @@ interface MatchWithDetails extends Match {
   actionsCount: number;
   isFromServer?: boolean; // Flag to identify server matches
   serverMatchId?: string; // UUID from Supabase
+  team_a?: string; // Team A value (can be UUID or name)
+  team_b?: string; // Team B value (can be UUID or name)
 }
 
 export default function MatchHistoryScreen() {
@@ -52,24 +58,35 @@ export default function MatchHistoryScreen() {
   );
 
   const loadCompletedMatches = async () => {
-    console.log('📂 [MatchHistory] Loading completed matches...');
+    console.log("📂 [MatchHistory] Loading completed matches...");
     try {
       const matchRepository = new MatchRepository();
       const actionRepository = new ActionRepository();
 
       // 1. Get LOCAL completed matches (only non-synced ones)
       const allLocalMatches = await matchRepository.getAllMatches();
-      console.log('📂 [MatchHistory] All local matches:', allLocalMatches.length);
+      console.log(
+        "📂 [MatchHistory] All local matches:",
+        allLocalMatches.length
+      );
 
       let completedLocalMatches = allLocalMatches.filter(
         (match) => match.status === "completed" && !match.synced_to_server
       );
-      console.log('📂 [MatchHistory] Completed local matches (not synced):', completedLocalMatches.length);
+      console.log(
+        "📂 [MatchHistory] Completed local matches (not synced):",
+        completedLocalMatches.length
+      );
 
       // Filter by club if clubId is provided
       if (clubId) {
-        completedLocalMatches = completedLocalMatches.filter((match) => match.club_id === clubId);
-        console.log('📂 [MatchHistory] After club filter:', completedLocalMatches.length);
+        completedLocalMatches = completedLocalMatches.filter(
+          (match) => match.club_id === clubId
+        );
+        console.log(
+          "📂 [MatchHistory] After club filter:",
+          completedLocalMatches.length
+        );
       }
 
       // Load details for each LOCAL match
@@ -114,16 +131,23 @@ export default function MatchHistoryScreen() {
             scoreB,
             actionsCount: actions.length,
             isFromServer: false,
+            team_a: match.team_a_name,
+            team_b: match.team_b_name,
           };
         })
       );
 
-      console.log('📂 [MatchHistory] Local matches loaded:', localMatchesWithDetails.length);
+      console.log(
+        "📂 [MatchHistory] Local matches loaded:",
+        localMatchesWithDetails.length
+      );
 
       // 2. Get SERVER matches if user is connected
       let serverMatches: MatchWithDetails[] = [];
       if (user) {
-        console.log('☁️ [MatchHistory] User connected, fetching server matches...');
+        console.log(
+          "☁️ [MatchHistory] User connected, fetching server matches..."
+        );
         try {
           let query = supabase
             .from("matches")
@@ -139,15 +163,22 @@ export default function MatchHistoryScreen() {
           const { data: serverMatchesData, error: serverError } = await query;
 
           if (serverError) {
-            console.error("❌ [MatchHistory] Error fetching server matches:", serverError);
+            console.error(
+              "❌ [MatchHistory] Error fetching server matches:",
+              serverError
+            );
           } else if (serverMatchesData) {
-            console.log('☁️ [MatchHistory] Server matches fetched:', serverMatchesData.length);
+            console.log(
+              "☁️ [MatchHistory] Server matches fetched:",
+              serverMatchesData.length
+            );
 
             // Collect all unique team UUIDs to fetch team names
             const teamUUIDs = new Set<string>();
-            const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+            const uuidRegex =
+              /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-            serverMatchesData.forEach(sm => {
+            serverMatchesData.forEach((sm) => {
               if (uuidRegex.test(sm.team_a)) teamUUIDs.add(sm.team_a);
               if (uuidRegex.test(sm.team_b)) teamUUIDs.add(sm.team_b);
             });
@@ -156,12 +187,12 @@ export default function MatchHistoryScreen() {
             const teamNamesMap = new Map<string, string>();
             if (teamUUIDs.size > 0) {
               const { data: teamsData } = await supabase
-                .from('teams')
-                .select('id, name')
-                .in('id', Array.from(teamUUIDs));
+                .from("teams")
+                .select("id, name")
+                .in("id", Array.from(teamUUIDs));
 
               if (teamsData) {
-                teamsData.forEach(team => {
+                teamsData.forEach((team) => {
                   teamNamesMap.set(team.id, team.name);
                 });
               }
@@ -174,30 +205,32 @@ export default function MatchHistoryScreen() {
               const teamBName = teamNamesMap.get(sm.team_b) || sm.team_b;
 
               return {
-              id: sm.local_match_id || 0, // Use local_match_id or 0 as placeholder
-              team_a_name: teamAName,
-              team_b_name: teamBName,
-              team_mode: sm.team_mode,
-              status: "completed" as const,
-              match_format: sm.match_format,
-              period_duration: sm.period_duration,
-              club_id: sm.club_id,
-              current_period: 0,
-              time_elapsed: 0,
-              final_score_a: sm.final_score_a,
-              final_score_b: sm.final_score_b,
-              score_manually_adjusted: sm.score_manually_adjusted ? 1 : 0,
-              synced_to_server: 1,
-              created_at: sm.played_at,
-              started_at: sm.played_at,
-              ended_at: sm.played_at,
-              last_updated: sm.created_at,
-              scoreA: sm.final_score_a,
-              scoreB: sm.final_score_b,
-              actionsCount: 0, // We'll get this from match_players if needed
-              isFromServer: true,
-              serverMatchId: sm.id,
-            };
+                id: sm.local_match_id || 0, // Use local_match_id or 0 as placeholder
+                team_a_name: teamAName,
+                team_b_name: teamBName,
+                team_a: sm.team_a,
+                team_b: sm.team_b,
+                team_mode: sm.team_mode,
+                status: "completed" as const,
+                match_format: sm.match_format,
+                period_duration: sm.period_duration,
+                club_id: sm.club_id,
+                current_period: 0,
+                time_elapsed: 0,
+                final_score_a: sm.final_score_a,
+                final_score_b: sm.final_score_b,
+                score_manually_adjusted: sm.score_manually_adjusted ? 1 : 0,
+                synced_to_server: 1,
+                created_at: sm.played_at,
+                started_at: sm.played_at,
+                ended_at: sm.played_at,
+                last_updated: sm.created_at,
+                scoreA: sm.final_score_a,
+                scoreB: sm.final_score_b,
+                actionsCount: 0, // We'll get this from match_players if needed
+                isFromServer: true,
+                serverMatchId: sm.id,
+              };
             });
           }
         } catch (error) {
@@ -207,10 +240,10 @@ export default function MatchHistoryScreen() {
 
       // 3. Merge LOCAL and SERVER matches
       const allMatches = [...localMatchesWithDetails, ...serverMatches];
-      console.log('🔀 [MatchHistory] Merged matches:', {
+      console.log("🔀 [MatchHistory] Merged matches:", {
         local: localMatchesWithDetails.length,
         server: serverMatches.length,
-        total: allMatches.length
+        total: allMatches.length,
       });
 
       // Sort by date (most recent first)
@@ -219,7 +252,10 @@ export default function MatchHistoryScreen() {
           new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       );
 
-      console.log('✅ [MatchHistory] Final matches to display:', allMatches.length);
+      console.log(
+        "✅ [MatchHistory] Final matches to display:",
+        allMatches.length
+      );
       setMatches(allMatches);
     } catch (error) {
       console.error("Error loading completed matches:", error);
@@ -236,7 +272,10 @@ export default function MatchHistoryScreen() {
 
       if (match.isFromServer && match.serverMatchId) {
         // Load data from Supabase
-        console.log('☁️ [MatchHistory] Loading match data from server:', match.serverMatchId);
+        console.log(
+          "☁️ [MatchHistory] Loading match data from server:",
+          match.serverMatchId
+        );
 
         const { data, error } = await supabase
           .from("match_players")
@@ -246,16 +285,26 @@ export default function MatchHistoryScreen() {
         matchPlayers = data;
 
         if (error) {
-          console.error("❌ [MatchHistory] Error loading match players from server:", error);
-          Alert.alert("Erreur", "Impossible de charger les données du match depuis le serveur.");
+          console.error(
+            "❌ [MatchHistory] Error loading match players from server:",
+            error
+          );
+          Alert.alert(
+            "Erreur",
+            "Impossible de charger les données du match depuis le serveur."
+          );
           return;
         }
 
         if (matchPlayers) {
-          console.log('☁️ [MatchHistory] Loaded', matchPlayers.length, 'players from server');
+          console.log(
+            "☁️ [MatchHistory] Loaded",
+            matchPlayers.length,
+            "players from server"
+          );
 
           // Convert server match players to expected format
-          players = matchPlayers.map(mp => ({
+          players = matchPlayers.map((mp) => ({
             id: mp.player_number,
             num: mp.player_number,
             name: mp.player_name,
@@ -264,38 +313,49 @@ export default function MatchHistoryScreen() {
           }));
 
           // Extract all actions from all players
-          matchPlayers.forEach(mp => {
+          matchPlayers.forEach((mp) => {
             if (mp.actions && Array.isArray(mp.actions)) {
-              const playerActions: ActionData[] = mp.actions.map((action: any) => ({
-                type: action.action_type,
-                specification: action.specification,
-                points: action.points,
-                player: mp.player_number,
-                team: mp.team,
-                timestamp: new Date(action.timestamp),
-                period_number: action.period_number,
-                time_in_period: action.time_in_period,
-                position: { x: 0, y: 0 },
-                semanticPosition: {
-                  xNormalized: action.semantic_x,
-                  yNormalized: action.semantic_y,
-                },
-              }));
+              const playerActions: ActionData[] = mp.actions.map(
+                (action: any) => ({
+                  type: action.action_type,
+                  specification: action.specification,
+                  points: action.points,
+                  player: mp.player_number,
+                  team: mp.team,
+                  timestamp: new Date(action.timestamp),
+                  period_number: action.period_number,
+                  time_in_period: action.time_in_period,
+                  position: { x: 0, y: 0 },
+                  semanticPosition: {
+                    xNormalized: action.semantic_x,
+                    yNormalized: action.semantic_y,
+                  },
+                })
+              );
               actionDataList.push(...playerActions);
             }
           });
 
-          console.log('☁️ [MatchHistory] Loaded', actionDataList.length, 'actions from server');
+          console.log(
+            "☁️ [MatchHistory] Loaded",
+            actionDataList.length,
+            "actions from server"
+          );
         }
       } else {
         // Load data from local database
-        console.log('📂 [MatchHistory] Loading match data from local DB:', match.id);
+        console.log(
+          "📂 [MatchHistory] Loading match data from local DB:",
+          match.id
+        );
 
         const actionRepository = new ActionRepository();
         const matchPlayerRepository = new MatchPlayerRepository();
 
         const actions = await actionRepository.getActionsForMatch(match.id);
-        const matchPlayers = await matchPlayerRepository.getPlayersForMatch(match.id);
+        const matchPlayers = await matchPlayerRepository.getPlayersForMatch(
+          match.id
+        );
 
         // Convert actions to ActionData format
         actionDataList = actions.map((action) => ({
@@ -315,7 +375,7 @@ export default function MatchHistoryScreen() {
         }));
 
         // Convert match players to expected format
-        players = matchPlayers.map(mp => ({
+        players = matchPlayers.map((mp) => ({
           id: mp.player_number,
           num: mp.player_number,
           name: mp.player_name,
@@ -323,24 +383,26 @@ export default function MatchHistoryScreen() {
           isSubstitute: !mp.is_starter,
         }));
 
-        console.log('📂 [MatchHistory] Loaded', actionDataList.length, 'actions and', players.length, 'players from local DB');
+        console.log(
+          "📂 [MatchHistory] Loaded",
+          actionDataList.length,
+          "actions and",
+          players.length,
+          "players from local DB"
+        );
       }
 
-      // Determine which team is from the club by checking player_id
-      // Players with player_id (not null) are from the club
+      // Simpler: on retient juste la configuration déclarée
       let clubTeamLetter: "A" | "B" | null = null;
-      if (match.isFromServer && matchPlayers) {
-        const teamAHasClubPlayers = matchPlayers.some(mp => mp.team === "A" && mp.player_id !== null);
-        const teamBHasClubPlayers = matchPlayers.some(mp => mp.team === "B" && mp.player_id !== null);
-
-        if (teamAHasClubPlayers && !teamBHasClubPlayers) {
-          clubTeamLetter = "A";
-        } else if (teamBHasClubPlayers && !teamAHasClubPlayers) {
-          clubTeamLetter = "B";
-        }
+      if (match.team_mode === "A") {
+        clubTeamLetter = "A";
+      } else if (match.team_mode === "B") {
+        clubTeamLetter = "B";
+      } else {
+        clubTeamLetter = null; // BOTH ou inconnu = pas d’équipe club détectée
       }
 
-      console.log('📋 [MatchHistory] Club team determined:', clubTeamLetter);
+      console.log("📋 [MatchHistory] Club team determined:", clubTeamLetter);
 
       // Navigate to MatchSummary
       (navigation.navigate as any)("MatchSummary", {
@@ -411,8 +473,14 @@ export default function MatchHistoryScreen() {
                   .eq("id", match.serverMatchId);
 
                 if (deleteMatchError) {
-                  console.error("Error deleting match from server:", deleteMatchError);
-                  Alert.alert("Erreur", "Impossible de supprimer le match du serveur.");
+                  console.error(
+                    "Error deleting match from server:",
+                    deleteMatchError
+                  );
+                  Alert.alert(
+                    "Erreur",
+                    "Impossible de supprimer le match du serveur."
+                  );
                   return;
                 }
 
@@ -427,7 +495,9 @@ export default function MatchHistoryScreen() {
                 await matchPlayerRepository.deletePlayersForMatch(match.id);
                 await matchRepository.delete(match.id);
 
-                console.log("✅ Match deleted from local database successfully");
+                console.log(
+                  "✅ Match deleted from local database successfully"
+                );
               }
 
               // Reload matches
@@ -475,11 +545,9 @@ export default function MatchHistoryScreen() {
             setSyncingMatchId(null);
 
             if (result.success) {
-              Alert.alert(
-                "Succès",
-                "Match synchronisé avec succès !",
-                [{ text: "OK" }]
-              );
+              Alert.alert("Succès", "Match synchronisé avec succès !", [
+                { text: "OK" },
+              ]);
               // Reload matches to update sync status
               await loadCompletedMatches();
             } else {
@@ -503,11 +571,43 @@ export default function MatchHistoryScreen() {
     // Determine which team is from the club based on team_mode
     // team_mode "A" = managing team A (our club team)
     // team_mode "B" = managing team B (our club team)
-    // team_mode "BOTH" = managing both teams (friendly match, no club)
-    const clubTeam = item.team_mode === "A" ? "A" : item.team_mode === "B" ? "B" : null;
-    const isClubMatch = clubTeam !== null; // Is there a club team involved?
-    const clubWon = isClubMatch && winner === clubTeam;
+    // team_mode "BOTH" = managing both teams, check which one has UUID (club team)
+    let clubTeam: "A" | "B" | null = null;
+
+    if (item.team_mode === "A") {
+      clubTeam = "A";
+    } else if (item.team_mode === "B") {
+      clubTeam = "B";
+    } else if (item.team_mode === "BOTH") {
+      // Check if team_a or team_b is a UUID (club team)
+      const uuidRegex =
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      const teamAIsUUID = item.team_a && uuidRegex.test(item.team_a);
+      const teamBIsUUID = item.team_b && uuidRegex.test(item.team_b);
+
+      if (teamAIsUUID && !teamBIsUUID) {
+        clubTeam = "A"; // Team A is club team
+      } else if (teamBIsUUID && !teamAIsUUID) {
+        clubTeam = "B"; // Team B is club team
+      }
+      // If both are UUIDs or neither, it's a friendly match (clubTeam stays null)
+    }
+
+    const isClubMatch = clubTeam !== null;
     const clubLost = isClubMatch && winner !== null && winner !== clubTeam;
+
+    console.log("🏀 [MatchHistory] Match render:", {
+      teamA: item.team_a_name,
+      teamB: item.team_b_name,
+      scoreA: item.scoreA,
+      scoreB: item.scoreB,
+      winner,
+      teamMode: item.team_mode,
+      teamA_uuid: item.team_a,
+      teamB_uuid: item.team_b,
+      clubTeam,
+      clubLost,
+    });
 
     return (
       <TouchableOpacity
@@ -519,32 +619,24 @@ export default function MatchHistoryScreen() {
           <Text style={styles.matchDuration}>{formatDuration(item)}</Text>
         </View>
 
-        <View style={styles.matchScore}>
+        <View style={[styles.matchScore]}>
           <View style={styles.teamContainer}>
             <Text
               style={[
                 styles.teamName,
-                // Green if team A won (and it's a club match with team A as club, or both teams mode)
-                (clubTeam === "A" && clubWon) && styles.winnerText,
-                // Red if team A lost and opponent won (club is team A)
-                (clubTeam === "A" && clubLost) && styles.normalText,
-                // Green if team A won but club is team B (opponent won against us)
-                (clubTeam === "B" && winner === "A") && styles.loserText,
-                // Normal victory for non-club match
-                (!isClubMatch && winner === "A") && styles.winnerText,
+                winner === "A" && !clubLost && styles.winnerText,
+                clubLost && winner === "A" && styles.loserText,
               ]}
             >
               {item.team_a_name}
             </Text>
-            <Text style={[
-              styles.score,
-              // Green if team A won and is club team
-              (clubTeam === "A" && clubWon) && styles.winnerScore,
-              // Red if team A won but club is team B (we lost)
-              (clubTeam === "B" && winner === "A") && styles.loserScore,
-              // Green for non-club match winner
-              (!isClubMatch && winner === "A") && styles.winnerScore,
-            ]}>
+            <Text
+              style={[
+                styles.score,
+                winner === "A" && !clubLost && styles.winnerScore,
+                clubLost && winner === "A" && styles.loserScore,
+              ]}
+            >
               {item.scoreA}
             </Text>
           </View>
@@ -555,42 +647,45 @@ export default function MatchHistoryScreen() {
             <Text
               style={[
                 styles.teamName,
-                // Green if team B won and is club team
-                (clubTeam === "B" && clubWon) && styles.winnerText,
-                // Normal if team B is club and lost
-                (clubTeam === "B" && clubLost) && styles.normalText,
-                // Red if team B won but club is team A (we lost)
-                (clubTeam === "A" && winner === "B") && styles.loserText,
-                // Normal victory for non-club match
-                (!isClubMatch && winner === "B") && styles.winnerText,
+                winner === "B" && !clubLost && styles.winnerText,
+                clubLost && winner === "B" && styles.loserText,
               ]}
             >
               {item.team_b_name}
             </Text>
-            <Text style={[
-              styles.score,
-              // Green if team B won and is club team
-              (clubTeam === "B" && clubWon) && styles.winnerScore,
-              // Red if team B won but club is team A (we lost)
-              (clubTeam === "A" && winner === "B") && styles.loserScore,
-              // Green for non-club match winner
-              (!isClubMatch && winner === "B") && styles.winnerScore,
-            ]}>
+            <Text
+              style={[
+                styles.score,
+                winner === "B" && !clubLost && styles.winnerScore,
+                clubLost && winner === "B" && styles.loserScore,
+              ]}
+            >
               {item.scoreB}
             </Text>
           </View>
         </View>
 
+        {/* Badge vainqueur, neutre : plus d'encadré de couleur, texte verbeux */}
         {winner && (
-          <View style={[
-            styles.winnerBadge,
-            clubLost && styles.loserBadge,
-          ]}>
-            <Text style={[
-              styles.winnerBadgeText,
-              clubLost && styles.loserBadgeText,
-            ]} numberOfLines={1} ellipsizeMode="tail">
-              {clubLost ? "😔" : "🏆"} {winner === "A" ? item.team_a_name : item.team_b_name}
+          <View
+            style={[
+              styles.winnerBadge,
+              clubLost && styles.loserWinnerBadge, // n'appliquer que si le club perd
+            ]}
+          >
+            <Text
+              style={[
+                styles.winnerBadgeText,
+                winner === clubTeam && !clubLost
+                  ? styles.winnerText
+                  : styles.loserText,
+              ]}
+              numberOfLines={1}
+              ellipsizeMode="tail"
+            >
+              {(winner === clubTeam && !clubLost ? "🏆 " : "😔 ") +
+                (winner === "A" ? item.team_a_name : item.team_b_name) +
+                " remporte le match"}
             </Text>
           </View>
         )}
@@ -611,13 +706,15 @@ export default function MatchHistoryScreen() {
           {item.isFromServer || item.synced_to_server ? (
             <View style={styles.syncedBadge}>
               <Ionicons name="cloud-done-outline" size={12} color="#4CAF50" />
-              <Text style={styles.syncedText}>
-                Synchronisé
-              </Text>
+              <Text style={styles.syncedText}>Synchronisé</Text>
             </View>
           ) : (
             <View style={styles.notSyncedBadge}>
-              <Ionicons name="cloud-offline-outline" size={12} color="#FF9800" />
+              <Ionicons
+                name="cloud-offline-outline"
+                size={12}
+                color="#FF9800"
+              />
               <Text style={styles.notSyncedText}>Non synchronisé</Text>
             </View>
           )}
@@ -710,7 +807,11 @@ export default function MatchHistoryScreen() {
         <FlatList
           data={matches}
           renderItem={renderMatchItem}
-          keyExtractor={(item) => item.isFromServer && item.serverMatchId ? item.serverMatchId : item.id.toString()}
+          keyExtractor={(item) =>
+            item.isFromServer && item.serverMatchId
+              ? item.serverMatchId
+              : item.id.toString()
+          }
           contentContainerStyle={styles.listContainer}
         />
       )}
@@ -826,6 +927,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-around",
     marginBottom: 12,
+    padding: 12,
+    borderRadius: 8,
+    backgroundColor: "#f9f9f9",
+  },
+  matchScoreLost: {
+    backgroundColor: "#ffebee",
+    borderWidth: 2,
+    borderColor: "#F44336",
   },
   teamContainer: {
     alignItems: "center",
@@ -870,6 +979,13 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     flexDirection: "row",
     justifyContent: "center",
+    borderWidth: 2,
+    borderColor: "#4CAF50",
+  },
+  loserWinnerBadge: {
+    backgroundColor: "#ffebee",
+    borderColor: "#F44336",
+    borderWidth: 2,
   },
   winnerBadgeText: {
     fontSize: 14,
