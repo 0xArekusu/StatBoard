@@ -1236,8 +1236,8 @@ export default function BasketballCourt() {
       }
 
       const matchData = {
-        team_a_name: teamA, // Always use team names, not UUIDs
-        team_b_name: teamB, // Always use team names, not UUIDs
+        team_a_name: teamAId || teamA, // Use UUID if club team, otherwise name
+        team_b_name: teamBId || teamB, // Use UUID if club team, otherwise name
         team_mode: teamMode,
         match_format: matchFormat as "2_halves" | "4_quarters",
         period_duration: periodDuration,
@@ -2196,6 +2196,10 @@ export default function BasketballCourt() {
         setTeamA={setTeamA}
         teamB={teamB}
         setTeamB={setTeamB}
+        teamAId={teamAId}
+        setTeamAId={setTeamAId}
+        teamBId={teamBId}
+        setTeamBId={setTeamBId}
         onConfirm={handleTeamModeConfirm}
         isConfirmDisabled={isConfirmDisabled}
         getFormattedDate={getFormattedDate}

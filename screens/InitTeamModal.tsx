@@ -8,6 +8,10 @@ interface InitTeamModalProps {
   setTeamA: (v: string) => void;
   teamB: string;
   setTeamB: (v: string) => void;
+  teamAId?: string | null;
+  setTeamAId?: (v: string | null) => void;
+  teamBId?: string | null;
+  setTeamBId?: (v: string | null) => void;
   onConfirm: (teamMode: "A" | "B" | "BOTH") => void;
   isConfirmDisabled: boolean;
   getFormattedDate: () => string;
@@ -24,6 +28,10 @@ export default function InitTeamModal({
   setTeamA,
   teamB,
   setTeamB,
+  teamAId,
+  setTeamAId,
+  teamBId,
+  setTeamBId,
   onConfirm,
   isConfirmDisabled,
   getFormattedDate,
@@ -53,11 +61,19 @@ export default function InitTeamModal({
     onConfirm(selectedTeamMode);
   };
 
-  // Function to swap team names
+  // Function to swap team names and IDs
   const swapTeams = () => {
     const tempTeamA = teamA;
     setTeamA(teamB);
     setTeamB(tempTeamA);
+
+    // Also swap team IDs if setters are provided
+    if (setTeamAId && setTeamBId) {
+      const tempTeamAId = teamAId;
+      setTeamAId(teamBId || null);
+      setTeamBId(tempTeamAId || null);
+    }
+
     // Toggle swap state
     setTeamsSwapped(!teamsSwapped);
     // Reset team mode selection when swapping
@@ -179,7 +195,7 @@ export default function InitTeamModal({
             { key: "BOTH", label: "Les deux équipes" },
           ].map((option) => {
             // Disable Team B if club team is Team A, disable Team A if club team is Team B
-            const isDisabled = clubTeam && option.key !== clubTeam && option.key !== "BOTH";
+            const isDisabled = !!(clubTeam && option.key !== clubTeam && option.key !== "BOTH");
 
             return (
               <TouchableOpacity
