@@ -20,7 +20,10 @@ import * as ScreenOrientation from "expo-screen-orientation";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
-import { MATCH_FORMATS, MATCH_FORMAT_LABELS } from "../constants/matchConstants";
+import {
+  MATCH_FORMATS,
+  MATCH_FORMAT_LABELS,
+} from "../constants/matchConstants";
 import TeamSelectionModal from "./TeamSelectionModal";
 import InitTeamModal from "./InitTeamModal";
 import MatchConfigModal from "./MatchConfigModal";
@@ -66,48 +69,52 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList, "Board">;
  * Convert club players (from database) to BoardScreen format
  * Maps players by position (1-5 for starters) rather than jersey number
  */
-const convertClubPlayersToBoard = (clubPlayers: Player[]) => {
+const convertClubPlayersToBoard = (clubPlayers: Player[], teamLetter: "A" | "B" = "A") => {
   // Separate starters and substitutes
-  const clubStarters = clubPlayers.filter(p => p.isStarter);
-  const clubSubstitutes = clubPlayers.filter(p => !p.isStarter);
+  const clubStarters = clubPlayers.filter((p) => p.isStarter);
+  const clubSubstitutes = clubPlayers.filter((p) => !p.isStarter);
+
+  // Calculate base ID offset (Team A: 1-5, Team B: 6-10)
+  const baseId = teamLetter === "B" ? 5 : 0;
 
   // Map starters by position (1-5)
   // Position 1 = Point Guard, 2 = Shooting Guard, 3 = Small Forward, 4 = Power Forward, 5 = Center
   const starters = Array.from({ length: 5 }, (_, index) => {
     const position = (index + 1) as 1 | 2 | 3 | 4 | 5;
-    const playerAtPosition = clubStarters.find(p => p.position === position);
+    const playerAtPosition = clubStarters.find((p) => p.position === position);
 
     if (playerAtPosition) {
       return {
-        id: index + 1,
+        id: baseId + index + 1,
         playerId: playerAtPosition.id, // Keep the original club player ID
         num: playerAtPosition.jerseyNumber,
         name: playerAtPosition.name,
         photoUrl: playerAtPosition.photoUrl,
         isSubstitute: false,
-        isFromClub: true
+        isFromClub: true,
       };
     }
 
     // If no player at this position, create a default placeholder
     return {
-      id: index + 1,
+      id: baseId + index + 1,
       num: index + 1,
-      name: `Joueur A${index + 1}`,
+      name: `Joueur ${teamLetter}${index + 1}`,
       isSubstitute: false,
-      isFromClub: false
+      isFromClub: false,
     };
   });
 
   // Map substitutes (keep their order, assign sequential IDs)
+  const baseSubId = teamLetter === "B" ? 20 : 10;
   const substitutes = clubSubstitutes.map((p, index) => ({
-    id: starters.length + index + 1,
+    id: baseSubId + index + 1,
     playerId: p.id, // Keep the original club player ID
     num: p.jerseyNumber,
     name: p.name,
     photoUrl: p.photoUrl,
     isSubstitute: true,
-    isFromClub: true
+    isFromClub: true,
   }));
 
   return { starters, substitutes };
@@ -474,37 +481,157 @@ export default function BasketballCourt() {
 
   // State for players with their positions
   const [players, setPlayers] = useState([
-    { id: 1, num: 1, name: "Joueur A1", isSubstitute: false, isFromClub: false },
-    { id: 2, num: 2, name: "Joueur A2", isSubstitute: false, isFromClub: false },
-    { id: 3, num: 3, name: "Joueur A3", isSubstitute: false, isFromClub: false },
-    { id: 4, num: 4, name: "Joueur A4", isSubstitute: false, isFromClub: false },
-    { id: 5, num: 5, name: "Joueur A5", isSubstitute: false, isFromClub: false },
+    {
+      id: 1,
+      num: 1,
+      name: "Joueur A1",
+      isSubstitute: false,
+      isFromClub: false,
+    },
+    {
+      id: 2,
+      num: 2,
+      name: "Joueur A2",
+      isSubstitute: false,
+      isFromClub: false,
+    },
+    {
+      id: 3,
+      num: 3,
+      name: "Joueur A3",
+      isSubstitute: false,
+      isFromClub: false,
+    },
+    {
+      id: 4,
+      num: 4,
+      name: "Joueur A4",
+      isSubstitute: false,
+      isFromClub: false,
+    },
+    {
+      id: 5,
+      num: 5,
+      name: "Joueur A5",
+      isSubstitute: false,
+      isFromClub: false,
+    },
   ]);
 
   // 🏀 State for team B players ("both" mode)
   const [playersTeamB, setPlayersTeamB] = useState([
-    { id: 6, num: 1, name: "Joueur B1", isSubstitute: false, isFromClub: false },
-    { id: 7, num: 2, name: "Joueur B2", isSubstitute: false, isFromClub: false },
-    { id: 8, num: 3, name: "Joueur B3", isSubstitute: false, isFromClub: false },
-    { id: 9, num: 4, name: "Joueur B4", isSubstitute: false, isFromClub: false },
-    { id: 10, num: 5, name: "Joueur B5", isSubstitute: false, isFromClub: false },
+    {
+      id: 6,
+      num: 1,
+      name: "Joueur B1",
+      isSubstitute: false,
+      isFromClub: false,
+    },
+    {
+      id: 7,
+      num: 2,
+      name: "Joueur B2",
+      isSubstitute: false,
+      isFromClub: false,
+    },
+    {
+      id: 8,
+      num: 3,
+      name: "Joueur B3",
+      isSubstitute: false,
+      isFromClub: false,
+    },
+    {
+      id: 9,
+      num: 4,
+      name: "Joueur B4",
+      isSubstitute: false,
+      isFromClub: false,
+    },
+    {
+      id: 10,
+      num: 5,
+      name: "Joueur B5",
+      isSubstitute: false,
+      isFromClub: false,
+    },
   ]);
 
   // States for substitutes
   const [substitutesTeamA, setSubstitutesTeamA] = useState([
-    { id: 11, num: 6, name: "Remplaçant A1", isSubstitute: true, isFromClub: false },
-    { id: 12, num: 7, name: "Remplaçant A2", isSubstitute: true, isFromClub: false },
-    { id: 13, num: 8, name: "Remplaçant A3", isSubstitute: true, isFromClub: false },
-    { id: 14, num: 9, name: "Remplaçant A4", isSubstitute: true, isFromClub: false },
-    { id: 15, num: 10, name: "Remplaçant A5", isSubstitute: true, isFromClub: false },
+    {
+      id: 11,
+      num: 6,
+      name: "Remplaçant A1",
+      isSubstitute: true,
+      isFromClub: false,
+    },
+    {
+      id: 12,
+      num: 7,
+      name: "Remplaçant A2",
+      isSubstitute: true,
+      isFromClub: false,
+    },
+    {
+      id: 13,
+      num: 8,
+      name: "Remplaçant A3",
+      isSubstitute: true,
+      isFromClub: false,
+    },
+    {
+      id: 14,
+      num: 9,
+      name: "Remplaçant A4",
+      isSubstitute: true,
+      isFromClub: false,
+    },
+    {
+      id: 15,
+      num: 10,
+      name: "Remplaçant A5",
+      isSubstitute: true,
+      isFromClub: false,
+    },
   ]);
 
   const [substitutesTeamB, setSubstitutesTeamB] = useState([
-    { id: 16, num: 6, name: "Remplaçant B1", isSubstitute: true, isFromClub: false },
-    { id: 17, num: 7, name: "Remplaçant B2", isSubstitute: true, isFromClub: false },
-    { id: 18, num: 8, name: "Remplaçant B3", isSubstitute: true, isFromClub: false },
-    { id: 19, num: 9, name: "Remplaçant B4", isSubstitute: true, isFromClub: false },
-    { id: 20, num: 10, name: "Remplaçant B5", isSubstitute: true, isFromClub: false },
+    {
+      id: 16,
+      num: 6,
+      name: "Remplaçant B1",
+      isSubstitute: true,
+      isFromClub: false,
+    },
+    {
+      id: 17,
+      num: 7,
+      name: "Remplaçant B2",
+      isSubstitute: true,
+      isFromClub: false,
+    },
+    {
+      id: 18,
+      num: 8,
+      name: "Remplaçant B3",
+      isSubstitute: true,
+      isFromClub: false,
+    },
+    {
+      id: 19,
+      num: 9,
+      name: "Remplaçant B4",
+      isSubstitute: true,
+      isFromClub: false,
+    },
+    {
+      id: 20,
+      num: 10,
+      name: "Remplaçant B5",
+      isSubstitute: true,
+      isFromClub: false,
+    },
   ]);
 
   // States for coaches
@@ -980,7 +1107,8 @@ export default function BasketballCourt() {
 
     // ✨ If user chose Team B and we have club players, move them to Team B
     if (selectedTeamMode === "B" && selectedTeamPlayers.length > 0) {
-      const { starters, substitutes } = convertClubPlayersToBoard(selectedTeamPlayers);
+      const { starters, substitutes } =
+        convertClubPlayersToBoard(selectedTeamPlayers, "B");
 
       // Move club players to Team B
       setPlayersTeamB(starters);
@@ -998,18 +1126,78 @@ export default function BasketballCourt() {
 
       // Reset Team A to default values
       setPlayers([
-        { id: 1, num: 1, name: "Joueur A1", isSubstitute: false, isFromClub: false },
-        { id: 2, num: 2, name: "Joueur A2", isSubstitute: false, isFromClub: false },
-        { id: 3, num: 3, name: "Joueur A3", isSubstitute: false, isFromClub: false },
-        { id: 4, num: 4, name: "Joueur A4", isSubstitute: false, isFromClub: false },
-        { id: 5, num: 5, name: "Joueur A5", isSubstitute: false, isFromClub: false },
+        {
+          id: 1,
+          num: 1,
+          name: "Joueur A1",
+          isSubstitute: false,
+          isFromClub: false,
+        },
+        {
+          id: 2,
+          num: 2,
+          name: "Joueur A2",
+          isSubstitute: false,
+          isFromClub: false,
+        },
+        {
+          id: 3,
+          num: 3,
+          name: "Joueur A3",
+          isSubstitute: false,
+          isFromClub: false,
+        },
+        {
+          id: 4,
+          num: 4,
+          name: "Joueur A4",
+          isSubstitute: false,
+          isFromClub: false,
+        },
+        {
+          id: 5,
+          num: 5,
+          name: "Joueur A5",
+          isSubstitute: false,
+          isFromClub: false,
+        },
       ]);
       setSubstitutesTeamA([
-        { id: 11, num: 6, name: "Remplaçant A1", isSubstitute: true, isFromClub: false },
-        { id: 12, num: 7, name: "Remplaçant A2", isSubstitute: true, isFromClub: false },
-        { id: 13, num: 8, name: "Remplaçant A3", isSubstitute: true, isFromClub: false },
-        { id: 14, num: 9, name: "Remplaçant A4", isSubstitute: true, isFromClub: false },
-        { id: 15, num: 10, name: "Remplaçant A5", isSubstitute: true, isFromClub: false },
+        {
+          id: 11,
+          num: 6,
+          name: "Remplaçant A1",
+          isSubstitute: true,
+          isFromClub: false,
+        },
+        {
+          id: 12,
+          num: 7,
+          name: "Remplaçant A2",
+          isSubstitute: true,
+          isFromClub: false,
+        },
+        {
+          id: 13,
+          num: 8,
+          name: "Remplaçant A3",
+          isSubstitute: true,
+          isFromClub: false,
+        },
+        {
+          id: 14,
+          num: 9,
+          name: "Remplaçant A4",
+          isSubstitute: true,
+          isFromClub: false,
+        },
+        {
+          id: 15,
+          num: 10,
+          name: "Remplaçant A5",
+          isSubstitute: true,
+          isFromClub: false,
+        },
       ]);
       setCoachTeamA({
         id: 21,
@@ -1048,13 +1236,13 @@ export default function BasketballCourt() {
       }
 
       const matchData = {
-        team_a_name: teamAId || teamA, // Use UUID if available, otherwise use name
-        team_b_name: teamBId || teamB, // Use UUID if available, otherwise use name
+        team_a_name: teamA, // Always use team names, not UUIDs
+        team_b_name: teamB, // Always use team names, not UUIDs
         team_mode: teamMode,
         match_format: matchFormat as "2_halves" | "4_quarters",
         period_duration: periodDuration,
         club_id: clubId,
-        team_id: selectedTeam?.id || null,
+        team_id: teamAId || teamBId || selectedTeam?.id || null, // Store the club team UUID
       };
 
       const match = await matchManager.startMatch(matchData);
@@ -1240,6 +1428,21 @@ export default function BasketballCourt() {
 
       const allPlayers = [...teamAPlayers, ...teamBPlayersEnd];
 
+      // Ajout de la logique de détection de l'équipe du club
+      let clubTeamOverride: "A" | "B" | null = null;
+      if (teamMode === "A" || teamMode === "B") {
+        clubTeamOverride = teamMode;
+      } else if (teamMode === "BOTH" && selectedTeam) {
+        if (teamB === selectedTeam.name) {
+          clubTeamOverride = "B";
+        } else if (teamA === selectedTeam.name) {
+          clubTeamOverride = "A";
+        } else {
+          // Fallback si les noms ont été modifiés
+          if (teamAId) clubTeamOverride = "A";
+          else if (teamBId) clubTeamOverride = "B";
+        }
+      }
       navigation.navigate(ROUTES.MATCH_SUMMARY as any, {
         matchId: currentMatch?.id,
         teamA,
@@ -1251,6 +1454,7 @@ export default function BasketballCourt() {
         periodDuration,
         teamMode,
         players: allPlayers,
+        clubTeamOverride,
       });
     } catch (error) {
       console.error("❌ Error ending match:", error);
@@ -1399,42 +1603,111 @@ export default function BasketballCourt() {
     if (editingPlayer === null) return;
 
     const teamPlayers = editingTeam === "A" ? players : playersTeamB;
-    const teamSubstitutes = editingTeam === "A" ? substitutesTeamA : substitutesTeamB;
+    const teamSubstitutes =
+      editingTeam === "A" ? substitutesTeamA : substitutesTeamB;
 
     // Find the current player being edited
-    const currentPlayer = [...teamPlayers, ...teamSubstitutes].find(p => p.id === editingPlayer);
+    const currentPlayer = [...teamPlayers, ...teamSubstitutes].find(
+      (p) => p.id === editingPlayer
+    );
     // Find the target player to swap with
-    const targetPlayer = [...teamPlayers, ...teamSubstitutes].find(p => p.id === targetPlayerId);
+    const targetPlayer = [...teamPlayers, ...teamSubstitutes].find(
+      (p) => p.id === targetPlayerId
+    );
 
     if (!currentPlayer || !targetPlayer) return;
 
     // Swap positions by swapping their data
     if (editingTeam === "A") {
       // Update starters
-      setPlayers(prev => prev.map(p => {
-        if (p.id === currentPlayer.id) return { ...p, num: targetPlayer.num, name: targetPlayer.name, photoUrl: targetPlayer.photoUrl, isFromClub: targetPlayer.isFromClub };
-        if (p.id === targetPlayer.id) return { ...p, num: currentPlayer.num, name: currentPlayer.name, photoUrl: currentPlayer.photoUrl, isFromClub: currentPlayer.isFromClub };
-        return p;
-      }));
+      setPlayers((prev) =>
+        prev.map((p) => {
+          if (p.id === currentPlayer.id)
+            return {
+              ...p,
+              num: targetPlayer.num,
+              name: targetPlayer.name,
+              photoUrl: targetPlayer.photoUrl,
+              isFromClub: targetPlayer.isFromClub,
+            };
+          if (p.id === targetPlayer.id)
+            return {
+              ...p,
+              num: currentPlayer.num,
+              name: currentPlayer.name,
+              photoUrl: currentPlayer.photoUrl,
+              isFromClub: currentPlayer.isFromClub,
+            };
+          return p;
+        })
+      );
       // Update substitutes
-      setSubstitutesTeamA(prev => prev.map(p => {
-        if (p.id === currentPlayer.id) return { ...p, num: targetPlayer.num, name: targetPlayer.name, photoUrl: targetPlayer.photoUrl, isFromClub: targetPlayer.isFromClub };
-        if (p.id === targetPlayer.id) return { ...p, num: currentPlayer.num, name: currentPlayer.name, photoUrl: currentPlayer.photoUrl, isFromClub: currentPlayer.isFromClub };
-        return p;
-      }));
+      setSubstitutesTeamA((prev) =>
+        prev.map((p) => {
+          if (p.id === currentPlayer.id)
+            return {
+              ...p,
+              num: targetPlayer.num,
+              name: targetPlayer.name,
+              photoUrl: targetPlayer.photoUrl,
+              isFromClub: targetPlayer.isFromClub,
+            };
+          if (p.id === targetPlayer.id)
+            return {
+              ...p,
+              num: currentPlayer.num,
+              name: currentPlayer.name,
+              photoUrl: currentPlayer.photoUrl,
+              isFromClub: currentPlayer.isFromClub,
+            };
+          return p;
+        })
+      );
     } else {
       // Update Team B starters
-      setPlayersTeamB(prev => prev.map(p => {
-        if (p.id === currentPlayer.id) return { ...p, num: targetPlayer.num, name: targetPlayer.name, photoUrl: targetPlayer.photoUrl, isFromClub: targetPlayer.isFromClub };
-        if (p.id === targetPlayer.id) return { ...p, num: currentPlayer.num, name: currentPlayer.name, photoUrl: currentPlayer.photoUrl, isFromClub: currentPlayer.isFromClub };
-        return p;
-      }));
+      setPlayersTeamB((prev) =>
+        prev.map((p) => {
+          if (p.id === currentPlayer.id)
+            return {
+              ...p,
+              num: targetPlayer.num,
+              name: targetPlayer.name,
+              photoUrl: targetPlayer.photoUrl,
+              isFromClub: targetPlayer.isFromClub,
+            };
+          if (p.id === targetPlayer.id)
+            return {
+              ...p,
+              num: currentPlayer.num,
+              name: currentPlayer.name,
+              photoUrl: currentPlayer.photoUrl,
+              isFromClub: currentPlayer.isFromClub,
+            };
+          return p;
+        })
+      );
       // Update Team B substitutes
-      setSubstitutesTeamB(prev => prev.map(p => {
-        if (p.id === currentPlayer.id) return { ...p, num: targetPlayer.num, name: targetPlayer.name, photoUrl: targetPlayer.photoUrl, isFromClub: targetPlayer.isFromClub };
-        if (p.id === targetPlayer.id) return { ...p, num: currentPlayer.num, name: currentPlayer.name, photoUrl: currentPlayer.photoUrl, isFromClub: currentPlayer.isFromClub };
-        return p;
-      }));
+      setSubstitutesTeamB((prev) =>
+        prev.map((p) => {
+          if (p.id === currentPlayer.id)
+            return {
+              ...p,
+              num: targetPlayer.num,
+              name: targetPlayer.name,
+              photoUrl: targetPlayer.photoUrl,
+              isFromClub: targetPlayer.isFromClub,
+            };
+          if (p.id === targetPlayer.id)
+            return {
+              ...p,
+              num: currentPlayer.num,
+              name: currentPlayer.name,
+              photoUrl: currentPlayer.photoUrl,
+              isFromClub: currentPlayer.isFromClub,
+            };
+          return p;
+        })
+      );
     }
 
     // Close the modal
@@ -1442,7 +1715,11 @@ export default function BasketballCourt() {
     setEditingPlayer(null);
   };
 
-  const handlePlayerEditConfirm = (newNumber: number, newName: string, photoUrl?: string) => {
+  const handlePlayerEditConfirm = (
+    newNumber: number,
+    newName: string,
+    photoUrl?: string
+  ) => {
     if (editingPlayer !== null) {
       // Vérifier l'unicité du numéro
       if (!isNumberUnique(newNumber, editingPlayer, editingTeam)) {
@@ -1880,7 +2157,8 @@ export default function BasketballCourt() {
 
           // ✨ Pre-fill players from club team
           if (players && players.length > 0) {
-            const { starters, substitutes } = convertClubPlayersToBoard(players);
+            const { starters, substitutes } =
+              convertClubPlayersToBoard(players);
 
             // Set Team A players (default team for club)
             setPlayers(starters);
@@ -2015,9 +2293,12 @@ export default function BasketballCourt() {
         }
         availablePlayers={(() => {
           const teamPlayers = editingTeam === "A" ? players : playersTeamB;
-          const teamSubstitutes = editingTeam === "A" ? substitutesTeamA : substitutesTeamB;
+          const teamSubstitutes =
+            editingTeam === "A" ? substitutesTeamA : substitutesTeamB;
           // Exclude the currently edited player from the list
-          return [...teamPlayers, ...teamSubstitutes].filter(p => p.id !== editingPlayer);
+          return [...teamPlayers, ...teamSubstitutes].filter(
+            (p) => p.id !== editingPlayer
+          );
         })()}
         onSwap={handlePlayerSwap}
         onConfirm={handlePlayerEditConfirm}
@@ -2363,31 +2644,34 @@ export default function BasketballCourt() {
       </View>
 
       {/* Bouton pour démarrer le match */}
-      {!teamSelectionModalVisible && !initModalVisible && !matchConfigModalVisible && preGameMode && (
-        <TouchableOpacity
-          style={{
-            position: "absolute",
-            bottom: isPortrait ? 100 : 40, // Leave space for toolbar in portrait
-            right: "50%", // Adjust for toolbar in landscape
-            transform: [{ translateX: 75 }],
-            backgroundColor: "#FF5722",
-            borderRadius: 25,
-            paddingHorizontal: 20,
-            paddingVertical: 12,
-            shadowColor: "#000",
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.3,
-            shadowRadius: 4,
-            elevation: 5,
-            zIndex: 300,
-          }}
-          onPress={handleStartMatch}
-        >
-          <Text style={{ color: "#fff", fontWeight: "bold", fontSize: 16 }}>
-            🏀 Démarrer le match
-          </Text>
-        </TouchableOpacity>
-      )}
+      {!teamSelectionModalVisible &&
+        !initModalVisible &&
+        !matchConfigModalVisible &&
+        preGameMode && (
+          <TouchableOpacity
+            style={{
+              position: "absolute",
+              bottom: isPortrait ? 100 : 40, // Leave space for toolbar in portrait
+              right: "50%", // Adjust for toolbar in landscape
+              transform: [{ translateX: 75 }],
+              backgroundColor: "#FF5722",
+              borderRadius: 25,
+              paddingHorizontal: 20,
+              paddingVertical: 12,
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.3,
+              shadowRadius: 4,
+              elevation: 5,
+              zIndex: 300,
+            }}
+            onPress={handleStartMatch}
+          >
+            <Text style={{ color: "#fff", fontWeight: "bold", fontSize: 16 }}>
+              🏀 Démarrer le match
+            </Text>
+          </TouchableOpacity>
+        )}
 
       {/* Action Modal */}
       <ActionSystemModal
