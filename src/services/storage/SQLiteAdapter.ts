@@ -177,6 +177,15 @@ export class SQLiteAdapter implements IStorageAdapter {
       // Column might already exist, ignore error
     }
 
+    // Add photo_url column if it doesn't exist (Supabase Storage URL for club players)
+    try {
+      this.db.execSync(`
+        ALTER TABLE match_players ADD COLUMN photo_url TEXT;
+      `);
+    } catch (error) {
+      // Column might already exist, ignore error
+    }
+
     // Create indexes
     this.db.execSync(`
       CREATE INDEX IF NOT EXISTS idx_match_actions_match_id ON match_actions(match_id);

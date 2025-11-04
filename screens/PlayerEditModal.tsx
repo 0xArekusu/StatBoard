@@ -60,20 +60,12 @@ export default function PlayerEditModal({
   };
 
   const pickImage = async () => {
-    // Les joueurs du club ne peuvent pas changer leur photo
-    if (isFromClub) {
-      return;
-    }
-
-    // Request permissions
-    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-
-    if (permissionResult.granted === false) {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") {
       alert("Permission d'accès à la galerie est requise!");
       return;
     }
 
-    // Launch image picker
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
       allowsEditing: true,

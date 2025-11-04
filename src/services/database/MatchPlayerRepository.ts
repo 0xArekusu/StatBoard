@@ -8,6 +8,7 @@ export interface MatchPlayer {
   player_name: string;
   team: "A" | "B";
   is_starter: boolean;
+  photo_url?: string | null;
   created_at: string;
 }
 
@@ -128,6 +129,18 @@ export class MatchPlayerRepository implements IMatchPlayerRepository {
       console.log("🗑️ All players deleted for match:", matchId);
     } catch (error) {
       console.error("❌ Error deleting players for match:", error);
+      throw error;
+    }
+  }
+
+  async updatePhotoUrl(playerId: number, photoUrl: string): Promise<void> {
+    try {
+      await this.db.execute(
+        "UPDATE match_players SET photo_url = ? WHERE id = ?",
+        [photoUrl, playerId]
+      );
+    } catch (error) {
+      console.error("❌ Error updating player photo URL:", error);
       throw error;
     }
   }

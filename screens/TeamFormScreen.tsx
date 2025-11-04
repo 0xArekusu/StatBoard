@@ -16,6 +16,7 @@ import { ServiceFactory } from "../services/ServiceFactory";
 import { useAuth } from "../src/contexts/AuthContext";
 import type { TeamGender, Team } from "../models/Team";
 import TeamPlayersManager from "../components/TeamPlayersManager";
+import { PhotoUploadService } from "../services/PhotoUploadService";
 
 type RootStackParamList = {
   TeamForm: { clubId?: string; teamId?: string };
@@ -121,6 +122,30 @@ export default function TeamFormScreen() {
     );
   };
 
+  /**
+   * Upload photo to Supabase if it's a local URI
+   * Returns Supabase URL or original value if already uploaded
+   */
+  const uploadPhotoIfNeeded = async (photoUrl: string | undefined, playerId: string): Promise<string | undefined> => {
+    if (!photoUrl) return undefined;
+
+    // If already a Supabase URL, return as is
+    if (photoUrl.startsWith('http://') || photoUrl.startsWith('https://')) {
+      return photoUrl;
+    }
+
+    // Local URI - need to upload
+    const photoService = new PhotoUploadService(supabase);
+    const { url, error } = await photoService.uploadPlayerPhoto(photoUrl, playerId);
+
+    if (error) {
+      console.error('Error uploading player photo:', error);
+      return undefined; // Continue without photo rather than failing
+    }
+
+    return url || undefined;
+  };
+
   const handleSave = async () => {
     if (!user) {
       Alert.alert("Erreur", "Vous devez être connecté");
@@ -179,13 +204,16 @@ export default function TeamFormScreen() {
 
         // Update or create players
         for (const player of players) {
+          // Upload photo if it's a local URI
+          const uploadedPhotoUrl = await uploadPhotoIfNeeded(player.photoUrl, player.id);
+
           if (player.id.startsWith('temp-')) {
             // New player - CREATE
             await playerService.createPlayer({
               teamId,
               name: player.name,
               jerseyNumber: player.jerseyNumber,
-              photoUrl: player.photoUrl,
+              photoUrl: uploadedPhotoUrl,
               position: player.position,
               isStarter: player.isStarter,
             });
@@ -194,7 +222,7 @@ export default function TeamFormScreen() {
             await playerService.updatePlayer(player.id, {
               name: player.name,
               jerseyNumber: player.jerseyNumber,
-              photoUrl: player.photoUrl,
+              photoUrl: uploadedPhotoUrl,
               position: player.position,
               isStarter: player.isStarter,
             });
@@ -239,13 +267,16 @@ export default function TeamFormScreen() {
         // Create players from state
         const playerService = ServiceFactory.getPlayerService(supabase);
         for (const player of players) {
+          // Upload photo if it's a local URI
+          const uploadedPhotoUrl = await uploadPhotoIfNeeded(player.photoUrl, player.id);
+
           await playerService.createPlayer({
             teamId: newTeamId,
             name: player.name,
             jerseyNumber: player.jerseyNumber,
             position: player.position,
             isStarter: player.isStarter,
-            photoUrl: player.photoUrl,
+            photoUrl: uploadedPhotoUrl,
           });
         }
 

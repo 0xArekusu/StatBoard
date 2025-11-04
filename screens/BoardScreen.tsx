@@ -1462,6 +1462,24 @@ export default function BasketballCourt() {
       // Arrêter le chrono
       stopTimer();
 
+      // Upload coach photos if they are local URIs
+      const { PhotoUploadService } = await import('../services/PhotoUploadService');
+      const photoService = new PhotoUploadService(supabase);
+
+      if (coachTeamA.photoUrl && (coachTeamA.photoUrl.startsWith('file://') || coachTeamA.photoUrl.startsWith('content://'))) {
+        const { url, error } = await photoService.uploadPlayerPhoto(coachTeamA.photoUrl, 'coach-a');
+        if (!error && url) {
+          setCoachTeamA(prev => ({ ...prev, photoUrl: url }));
+        }
+      }
+
+      if (coachTeamB.photoUrl && (coachTeamB.photoUrl.startsWith('file://') || coachTeamB.photoUrl.startsWith('content://'))) {
+        const { url, error } = await photoService.uploadPlayerPhoto(coachTeamB.photoUrl, 'coach-b');
+        if (!error && url) {
+          setCoachTeamB(prev => ({ ...prev, photoUrl: url }));
+        }
+      }
+
       // Marquer le match comme terminé dans la base de données
       if (currentMatch) {
         await matchManager.endMatch(currentMatch.id);
@@ -1908,13 +1926,16 @@ export default function BasketballCourt() {
     const nextNumber = getNextAvailableNumber(team);
     const teamLetter = team;
 
+    // Détecter si cette équipe est une équipe du club
+    const isClubTeam = (team === "A" && teamAId) || (team === "B" && teamBId);
+
     const newSubstitute = {
       id: nextId,
       num: nextNumber,
       name: `Remplaçant ${teamLetter}${substitutes.length + 1}`,
       photoUrl: undefined,
       isSubstitute: true,
-      isFromClub: false,
+      isFromClub: isClubTeam,
     };
 
     setSubstitutes([...substitutes, newSubstitute]);

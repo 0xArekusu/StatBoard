@@ -171,6 +171,21 @@ export class MatchSyncService {
       const matchPlayers =
         await this.matchPlayerRepository.getPlayersForMatch(matchId);
 
+      // Upload photos for club players with local URIs
+      const { PhotoUploadService } = await import('../../../services/PhotoUploadService');
+      const photoService = new PhotoUploadService(this.supabase);
+
+      for (const player of matchPlayers) {
+        if (player.photo_url && (player.photo_url.startsWith('file://') || player.photo_url.startsWith('content://'))) {
+          const { url, error } = await photoService.uploadPlayerPhoto(player.photo_url, player.player_id || `player-${player.id}`);
+          if (!error && url) {
+            // Update the player's photo_url with the uploaded URL
+            player.photo_url = url;
+            await this.matchPlayerRepository.updatePhotoUrl(player.id, url);
+          }
+        }
+      }
+
       // Transform data to Supabase format
       const syncData = this.transformMatchForSync(
         match,
