@@ -1,6 +1,7 @@
 import React from "react";
 import { View, Text, TouchableOpacity, ScrollView, Image } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import JerseyIcon from "./JerseyIcon";
 
 interface Player {
   id: number;
@@ -28,6 +29,8 @@ interface SubstitutesManagerProps {
   teamLetter: "A" | "B"; // L'équipe réelle de ces remplaçants
   maxSubstitutes: number; // 10 maximum
   isPortrait: boolean;
+  jerseyPrimaryColor?: string;
+  jerseySecondaryColor?: string;
 }
 
 export default function SubstitutesManager({
@@ -41,6 +44,8 @@ export default function SubstitutesManager({
   teamLetter,
   maxSubstitutes = 10,
   isPortrait,
+  jerseyPrimaryColor = "#FF0000",
+  jerseySecondaryColor = "#000000",
 }: SubstitutesManagerProps) {
   const canAddSubstitute = substitutes.length < maxSubstitutes;
   const canRemoveSubstitute = substitutes.length > 0;
@@ -166,44 +171,18 @@ export default function SubstitutesManager({
           <TouchableOpacity
             onPress={() => onSubstituteEdit(substitute.id)}
             style={{
-              width: 40,
-              height: 40,
-              backgroundColor: "#1976d2",
-              borderRadius: 20,
+              width: 50,
+              height: 50,
               justifyContent: "center",
               alignItems: "center",
-              borderWidth: 2,
-              borderColor: "#fff",
-              shadowColor: "#000",
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.3,
-              shadowRadius: 4,
-              elevation: 5,
-              overflow: "hidden",
             }}
           >
-            {substitute.photoUrl ? (
-              <Image
-                source={{ uri: substitute.photoUrl }}
-                style={{
-                  width: "100%",
-                  height: "100%",
-                }}
-              />
-            ) : (
-              <Text
-                style={{
-                  color: "#fff",
-                  fontSize: 16,
-                  fontWeight: "bold",
-                  textShadowColor: "rgba(0,0,0,0.5)",
-                  textShadowOffset: { width: 1, height: 1 },
-                  textShadowRadius: 2,
-                }}
-              >
-                {substitute.num}
-              </Text>
-            )}
+            <JerseyIcon
+              width={50}
+              primaryColor={jerseySecondaryColor}
+              secondaryColor={jerseyPrimaryColor}
+              number={substitute.num}
+            />
           </TouchableOpacity>
           <Text
             style={{

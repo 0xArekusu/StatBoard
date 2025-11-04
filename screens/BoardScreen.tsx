@@ -39,6 +39,7 @@ import BasketballCourtSVG from "../components/BasketballCourtSVG";
 import SubstitutesManager from "../components/SubstitutesManager";
 import CoachEditModal from "../components/CoachEditModal";
 import ResumeMatchModal from "../components/ResumeMatchModal";
+import JerseyIcon from "../components/JerseyIcon";
 import MatchStatusBar from "../components/MatchStatusBar";
 import MatchConfirmationModal from "../components/MatchConfirmationModal";
 import { MatchManager } from "../src/services/match/MatchManager";
@@ -48,6 +49,10 @@ import { MatchPlayerRepository } from "../src/services/database/MatchPlayerRepos
 import { MatchRepository } from "../src/services/database/MatchRepository";
 import { Match } from "../src/models/types";
 import type { Player } from "../models/Player";
+import type { Club } from "../models/Club";
+import { supabase } from "../src/config/supabase";
+import { ServiceFactory } from "../services/ServiceFactory";
+import { useAuth } from "../src/contexts/AuthContext";
 
 // Modal layout constants (for the new ActionModal)
 const MODAL_WIDTH = 240;
@@ -80,7 +85,10 @@ interface BoardPlayer {
  * Convert club players (from database) to BoardScreen format
  * Maps players by position (1-5 for starters) rather than jersey number
  */
-const convertClubPlayersToBoard = (clubPlayers: Player[], teamLetter: "A" | "B" = "A") => {
+const convertClubPlayersToBoard = (
+  clubPlayers: Player[],
+  teamLetter: "A" | "B" = "A"
+) => {
   // Separate starters and substitutes
   const clubStarters = clubPlayers.filter((p) => p.isStarter);
   const clubSubstitutes = clubPlayers.filter((p) => !p.isStarter);
@@ -224,9 +232,11 @@ export default function BasketballCourt() {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute();
   const clubId = (route.params as any)?.clubId || null;
+  const { user } = useAuth();
   const insets = useSafeAreaInsets(); // Provides status bar and notch margins
   const window = useWindowDimensions(); // Automatically reacts to rotation
   const [showSheet, setShowSheet] = useState(true);
+  const [club, setClub] = useState<Club | null>(null);
 
   // Constants for dimensions and offsets
   const BOTTOM_NAV_HEIGHT = 50; // Height of bottom navigation bar in portrait
@@ -688,6 +698,25 @@ export default function BasketballCourt() {
     setShowSheet(true);
   }, []);
 
+  // Load club data if clubId is provided
+  useEffect(() => {
+    const loadClub = async () => {
+      if (!clubId) return;
+
+      try {
+        const clubService = ServiceFactory.getClubService(supabase);
+        const clubData = await clubService.getClubById(clubId);
+        if (clubData) {
+          setClub(clubData);
+        }
+      } catch (error) {
+        console.error("Error loading club:", error);
+      }
+    };
+
+    loadClub();
+  }, [clubId]);
+
   // Check if there is an active match at startup
   useEffect(() => {
     const checkActiveMatch = async () => {
@@ -1118,8 +1147,10 @@ export default function BasketballCourt() {
 
     // ✨ If user chose Team B and we have club players, move them to Team B
     if (selectedTeamMode === "B" && selectedTeamPlayers.length > 0) {
-      const { starters, substitutes } =
-        convertClubPlayersToBoard(selectedTeamPlayers, "B");
+      const { starters, substitutes } = convertClubPlayersToBoard(
+        selectedTeamPlayers,
+        "B"
+      );
 
       // Move club players to Team B
       setPlayersTeamB(starters);
@@ -2653,7 +2684,9 @@ export default function BasketballCourt() {
           width={containerLayout.width || courtWidth}
           height={containerLayout.height || courtHeight}
           onCourtPress={!preGameMode ? handleZonePress : undefined}
-          backgroundColor="green"
+          backgroundColor={club?.courtBackgroundColor || "#1a472a"}
+          lineColor={club?.courtLineColor || "#FFFFFF"}
+          logoUri={user && club?.logoUrl ? club.logoUrl : null}
           markers={displayMarkers}
         />
       </View>
@@ -2726,34 +2759,19 @@ export default function BasketballCourt() {
                 position: "absolute",
                 left: getPlayerPosition(player.id, "A").left,
                 top: getPlayerPosition(player.id, "A").top,
-                width: 40,
-                height: 40,
-                backgroundColor: "#1976d2",
-                borderRadius: 20,
+                width: 50,
+                height: 50,
                 justifyContent: "center",
                 alignItems: "center",
-                borderWidth: 2,
-                borderColor: "#fff",
-                shadowColor: "#000",
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.3,
-                shadowRadius: 4,
-                elevation: 5,
                 zIndex: 200,
               }}
             >
-              <Text
-                style={{
-                  color: "#fff",
-                  fontSize: 16,
-                  fontWeight: "bold",
-                  textShadowColor: "rgba(0,0,0,0.5)",
-                  textShadowOffset: { width: 1, height: 1 },
-                  textShadowRadius: 2,
-                }}
-              >
-                {player.num}
-              </Text>
+              <JerseyIcon
+                width={50}
+                primaryColor={club?.secondaryColor || "#000000"}
+                secondaryColor={club?.primaryColor || "#FF0000"}
+                number={player.num}
+              />
             </TouchableOpacity>
             <Text
               style={{
@@ -2790,34 +2808,19 @@ export default function BasketballCourt() {
                 position: "absolute",
                 left: getPlayerPosition(player.id - 5, "B").left, // 🏀 IDs 6-10 → positions 1-5
                 top: getPlayerPosition(player.id - 5, "B").top,
-                width: 40,
-                height: 40,
-                backgroundColor: "#2196F3", // 🏀 Couleur différente pour l'équipe B
-                borderRadius: 20,
+                width: 50,
+                height: 50,
                 justifyContent: "center",
                 alignItems: "center",
-                borderWidth: 2,
-                borderColor: "#fff",
-                shadowColor: "#000",
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.3,
-                shadowRadius: 4,
-                elevation: 5,
                 zIndex: 200,
               }}
             >
-              <Text
-                style={{
-                  color: "#fff",
-                  fontSize: 16,
-                  fontWeight: "bold",
-                  textShadowColor: "rgba(0,0,0,0.5)",
-                  textShadowOffset: { width: 1, height: 1 },
-                  textShadowRadius: 2,
-                }}
-              >
-                {player.num}
-              </Text>
+              <JerseyIcon
+                width={50}
+                primaryColor={club?.secondaryColor || "#000000"}
+                secondaryColor={club?.primaryColor || "#FF0000"}
+                number={player.num}
+              />
             </TouchableOpacity>
             <Text
               style={{
@@ -2857,6 +2860,8 @@ export default function BasketballCourt() {
             teamLetter="A"
             maxSubstitutes={10}
             isPortrait={isPortrait}
+            jerseyPrimaryColor={club?.primaryColor}
+            jerseySecondaryColor={club?.secondaryColor}
           />
         )}
 
@@ -2877,6 +2882,8 @@ export default function BasketballCourt() {
             teamLetter="B"
             maxSubstitutes={10}
             isPortrait={isPortrait}
+            jerseyPrimaryColor={club?.primaryColor}
+            jerseySecondaryColor={club?.secondaryColor}
           />
         )}
     </View>

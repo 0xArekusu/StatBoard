@@ -16,6 +16,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import BasketballCourtSVG from "../components/BasketballCourtSVG";
 import ClubTeamsTab from "../components/ClubTeamsTab";
+import JerseyIcon from "../components/JerseyIcon";
 import ColorPicker, {
   Panel1,
   HueSlider,
@@ -34,12 +35,9 @@ const PRESET_COLORS = [
   "#FFFFFF",
   "#FF0000",
   "#0000FF",
-  "#FFFF00",
   "#00FF00",
   "#FFA500",
   "#800080",
-  "#808080",
-  "#FFC0CB",
 ];
 
 type RootStackParamList = {
@@ -286,7 +284,12 @@ export default function ClubFormScreen() {
                 size={20}
                 color={activeTab === "info" ? "#9C27B0" : "#999"}
               />
-              <Text style={[styles.tabText, activeTab === "info" && styles.tabTextActive]}>
+              <Text
+                style={[
+                  styles.tabText,
+                  activeTab === "info" && styles.tabTextActive,
+                ]}
+              >
                 Infos
               </Text>
             </TouchableOpacity>
@@ -304,7 +307,12 @@ export default function ClubFormScreen() {
               size={20}
               color={activeTab === "teams" ? "#9C27B0" : "#999"}
             />
-            <Text style={[styles.tabText, activeTab === "teams" && styles.tabTextActive]}>
+            <Text
+              style={[
+                styles.tabText,
+                activeTab === "teams" && styles.tabTextActive,
+              ]}
+            >
               Équipes
             </Text>
           </TouchableOpacity>
@@ -313,247 +321,273 @@ export default function ClubFormScreen() {
 
       {/* Teams Tab Content */}
       {activeTab === "teams" && isEditMode ? (
-        <ClubTeamsTab clubId={clubId!} isOwner={!!isOwner} onCreateTeam={handleCreateTeam} onEditTeam={handleEditTeam} />
+        <ClubTeamsTab
+          clubId={clubId!}
+          isOwner={!!isOwner}
+          onCreateTeam={handleCreateTeam}
+          onEditTeam={handleEditTeam}
+        />
       ) : (
         <ScrollView
           style={{ flex: 1 }}
           contentContainerStyle={styles.scrollView}
           showsVerticalScrollIndicator={false}
         >
-        {/* Club code - Only in edit mode */}
-        {isEditMode && club && (
-          <View style={styles.codeSection}>
-            <Text style={styles.codeLabel}>Code du club</Text>
-            <View style={styles.codeRow}>
-              <Text style={styles.codeText}>{club.code}</Text>
-              <TouchableOpacity
-                style={styles.copyButton}
-                onPress={() => {
-                  Clipboard.setString(club.code);
-                }}
-              >
-                <Ionicons name="copy-outline" size={24} color="#9C27B0" />
-              </TouchableOpacity>
+          {/* Club code - Only in edit mode */}
+          {isEditMode && club && (
+            <View style={styles.codeSection}>
+              <Text style={styles.codeLabel}>Code du club</Text>
+              <View style={styles.codeRow}>
+                <Text style={styles.codeText}>{club.code}</Text>
+                <TouchableOpacity
+                  style={styles.copyButton}
+                  onPress={() => {
+                    Clipboard.setString(club.code);
+                  }}
+                >
+                  <Ionicons name="copy-outline" size={24} color="#9C27B0" />
+                </TouchableOpacity>
+              </View>
+              <Text style={styles.codeHint}>
+                Partagez ce code pour inviter des membres
+              </Text>
             </View>
-            <Text style={styles.codeHint}>
-              Partagez ce code pour inviter des membres
-            </Text>
+          )}
+
+          {/* Informations de base */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Informations</Text>
+
+            <Text style={styles.label}>Nom du club *</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Mon super club"
+              value={clubName}
+              onChangeText={setClubName}
+              maxLength={30}
+            />
+
+            <Text style={styles.label}>Sigle *</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Ex: LAL, GSW, CHI"
+              value={sigle}
+              onChangeText={setSigle}
+              maxLength={5}
+              autoCapitalize="characters"
+            />
           </View>
-        )}
 
-        {/* Informations de base */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Informations</Text>
+          {/* Personnalisation */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Personnalisation</Text>
 
-          <Text style={styles.label}>Nom du club *</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Mon super club"
-            value={clubName}
-            onChangeText={setClubName}
-            maxLength={30}
-          />
+            <View style={styles.colorsRow}>
+              <View style={styles.colorsColumn}>
+                <Text style={styles.label}>Couleur principale</Text>
+                <View style={styles.colorPicker}>
+                  {PRESET_COLORS.map((color) => (
+                    <TouchableOpacity
+                      key={color}
+                      style={[
+                        styles.colorOption,
+                        { backgroundColor: color },
+                        primaryColor === color && styles.colorOptionSelected,
+                      ]}
+                      onPress={() => {
+                        setPrimaryColor(color);
+                        setIsCustomPrimary(false);
+                      }}
+                    >
+                      {primaryColor === color && (
+                        <Ionicons name="checkmark" size={20} color="#fff" />
+                      )}
+                    </TouchableOpacity>
+                  ))}
+                  <TouchableOpacity
+                    style={styles.gradientContainer}
+                    onPress={() => setShowPrimaryPicker(true)}
+                  >
+                    <View
+                      style={[
+                        styles.gradientBorder,
+                        isCustomPrimary && styles.gradientBorderSelected,
+                      ]}
+                    >
+                      <LinearGradient
+                        colors={[
+                          "#FF0000",
+                          "#FFFF00",
+                          "#00FF00",
+                          "#00FFFF",
+                          "#0000FF",
+                          "#FF00FF",
+                          "#FF0000",
+                        ]}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                        style={styles.gradientButton}
+                      >
+                        {isCustomPrimary ? (
+                          <Ionicons name="checkmark" size={20} color="#fff" />
+                        ) : (
+                          <Ionicons
+                            name="color-palette"
+                            size={24}
+                            color="#fff"
+                          />
+                        )}
+                      </LinearGradient>
+                    </View>
+                  </TouchableOpacity>
+                </View>
 
-          <Text style={styles.label}>Sigle *</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Ex: LAL, GSW, CHI"
-            value={sigle}
-            onChangeText={setSigle}
-            maxLength={5}
-            autoCapitalize="characters"
-          />
-        </View>
-
-        {/* Personnalisation */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Personnalisation</Text>
-
-          <Text style={styles.label}>Couleur principale</Text>
-          <View style={styles.colorPicker}>
-            {PRESET_COLORS.map((color) => (
-              <TouchableOpacity
-                key={color}
-                style={[
-                  styles.colorOption,
-                  { backgroundColor: color },
-                  primaryColor === color && styles.colorOptionSelected,
-                ]}
-                onPress={() => {
-                  setPrimaryColor(color);
-                  setIsCustomPrimary(false);
-                }}
-              >
-                {primaryColor === color && (
-                  <Ionicons name="checkmark" size={20} color="#fff" />
-                )}
-              </TouchableOpacity>
-            ))}
-            <TouchableOpacity
-              style={styles.gradientContainer}
-              onPress={() => setShowPrimaryPicker(true)}
-            >
-              <View
-                style={[
-                  styles.gradientBorder,
-                  isCustomPrimary && styles.gradientBorderSelected,
-                ]}
-              >
-                <LinearGradient
-                  colors={[
-                    "#FF0000",
-                    "#FFFF00",
-                    "#00FF00",
-                    "#00FFFF",
-                    "#0000FF",
-                    "#FF00FF",
-                    "#FF0000",
-                  ]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={styles.gradientButton}
-                >
-                  {isCustomPrimary ? (
-                    <Ionicons name="checkmark" size={20} color="#fff" />
-                  ) : (
-                    <Ionicons name="color-palette" size={24} color="#fff" />
-                  )}
-                </LinearGradient>
+                <Text style={styles.label}>Couleur secondaire</Text>
+                <View style={styles.colorPicker}>
+                  {PRESET_COLORS.map((color) => (
+                    <TouchableOpacity
+                      key={color}
+                      style={[
+                        styles.colorOption,
+                        { backgroundColor: color },
+                        secondaryColor === color && styles.colorOptionSelected,
+                      ]}
+                      onPress={() => {
+                        setSecondaryColor(color);
+                        setIsCustomSecondary(false);
+                      }}
+                    >
+                      {secondaryColor === color && (
+                        <Ionicons name="checkmark" size={20} color="#fff" />
+                      )}
+                    </TouchableOpacity>
+                  ))}
+                  <TouchableOpacity
+                    style={styles.gradientContainer}
+                    onPress={() => setShowSecondaryPicker(true)}
+                  >
+                    <View
+                      style={[
+                        styles.gradientBorder,
+                        isCustomSecondary && styles.gradientBorderSelected,
+                      ]}
+                    >
+                      <LinearGradient
+                        colors={[
+                          "#FF0000",
+                          "#FFFF00",
+                          "#00FF00",
+                          "#00FFFF",
+                          "#0000FF",
+                          "#FF00FF",
+                          "#FF0000",
+                        ]}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                        style={styles.gradientButton}
+                      >
+                        {isCustomSecondary ? (
+                          <Ionicons name="checkmark" size={20} color="#fff" />
+                        ) : (
+                          <Ionicons
+                            name="color-palette"
+                            size={24}
+                            color="#fff"
+                          />
+                        )}
+                      </LinearGradient>
+                    </View>
+                  </TouchableOpacity>
+                </View>
               </View>
-            </TouchableOpacity>
-          </View>
 
-          <Text style={styles.label}>Couleur secondaire</Text>
-          <View style={styles.colorPicker}>
-            {PRESET_COLORS.map((color) => (
-              <TouchableOpacity
-                key={color}
-                style={[
-                  styles.colorOption,
-                  { backgroundColor: color },
-                  secondaryColor === color && styles.colorOptionSelected,
-                ]}
-                onPress={() => {
-                  setSecondaryColor(color);
-                  setIsCustomSecondary(false);
-                }}
-              >
-                {secondaryColor === color && (
-                  <Ionicons name="checkmark" size={20} color="#fff" />
-                )}
-              </TouchableOpacity>
-            ))}
-            <TouchableOpacity
-              style={styles.gradientContainer}
-              onPress={() => setShowSecondaryPicker(true)}
-            >
-              <View
-                style={[
-                  styles.gradientBorder,
-                  isCustomSecondary && styles.gradientBorderSelected,
-                ]}
-              >
-                <LinearGradient
-                  colors={[
-                    "#FF0000",
-                    "#FFFF00",
-                    "#00FF00",
-                    "#00FFFF",
-                    "#0000FF",
-                    "#FF00FF",
-                    "#FF0000",
-                  ]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={styles.gradientButton}
-                >
-                  {isCustomSecondary ? (
-                    <Ionicons name="checkmark" size={20} color="#fff" />
-                  ) : (
-                    <Ionicons name="color-palette" size={24} color="#fff" />
-                  )}
-                </LinearGradient>
-              </View>
-            </TouchableOpacity>
-          </View>
-
-          <Text style={styles.label}>Logo du club</Text>
-          <View style={styles.logoSection}>
-            <TouchableOpacity
-              style={styles.logoButton}
-              onPress={handlePickImage}
-            >
-              <Ionicons name="camera" size={24} color="#666" />
-              <Text style={styles.logoButtonText}>Importer un logo</Text>
-            </TouchableOpacity>
-            {logoUri && (
-              <View style={styles.logoPreview}>
-                <Image source={{ uri: logoUri }} style={styles.logoImage} />
-              </View>
-            )}
-          </View>
-        </View>
-
-        {/* Prévisualisation */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Aperçu du terrain</Text>
-
-          <View style={styles.courtPreview}>
-            <View style={styles.courtColorPickers}>
-              <TouchableOpacity
-                style={[
-                  styles.courtColorButton,
-                  { backgroundColor: courtBackgroundColor },
-                ]}
-                onPress={() => setShowCourtBgPicker(true)}
-              >
-                <Ionicons name="color-palette" size={20} color="#fff" />
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.courtColorButton,
-                  { backgroundColor: courtLineColor },
-                ]}
-                onPress={() => setShowCourtLinePicker(true)}
-              >
-                <Ionicons
-                  name="brush"
-                  size={20}
-                  color={courtLineColor === "#FFFFFF" ? "#000" : "#fff"}
+              <View style={styles.jerseyPreview}>
+                <JerseyIcon
+                  width={180}
+                  primaryColor={secondaryColor}
+                  secondaryColor={primaryColor}
+                  number="23"
                 />
-              </TouchableOpacity>
+              </View>
             </View>
 
-            <View style={styles.courtContainer}>
-              <BasketballCourtSVG
-                width={320}
-                height={180}
-                backgroundColor={courtBackgroundColor}
-                lineColor={courtLineColor}
-                logoUri={logoUri}
-              />
+            <Text style={styles.label}>Logo du club</Text>
+            <View style={styles.logoSection}>
+              <TouchableOpacity
+                style={styles.logoButton}
+                onPress={handlePickImage}
+              >
+                <Ionicons name="camera" size={24} color="#666" />
+                <Text style={styles.logoButtonText}>Importer un logo</Text>
+              </TouchableOpacity>
+              {logoUri && (
+                <View style={styles.logoPreview}>
+                  <Image source={{ uri: logoUri }} style={styles.logoImage} />
+                </View>
+              )}
             </View>
-            {clubName && (
-              <Text style={styles.clubNamePreview}>
-                {clubName} {sigle && `(${sigle})`}
+          </View>
+
+          {/* Prévisualisation */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Aperçu du terrain</Text>
+
+            <View style={styles.courtPreview}>
+              <View style={styles.courtColorPickers}>
+                <TouchableOpacity
+                  style={[
+                    styles.courtColorButton,
+                    { backgroundColor: courtBackgroundColor },
+                  ]}
+                  onPress={() => setShowCourtBgPicker(true)}
+                >
+                  <Ionicons name="color-palette" size={20} color="#fff" />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.courtColorButton,
+                    { backgroundColor: courtLineColor },
+                  ]}
+                  onPress={() => setShowCourtLinePicker(true)}
+                >
+                  <Ionicons
+                    name="brush"
+                    size={20}
+                    color={courtLineColor === "#FFFFFF" ? "#000" : "#fff"}
+                  />
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.courtContainer}>
+                <BasketballCourtSVG
+                  width={320}
+                  height={180}
+                  backgroundColor={courtBackgroundColor}
+                  lineColor={courtLineColor}
+                  logoUri={logoUri}
+                />
+              </View>
+              {clubName && (
+                <Text style={styles.clubNamePreview}>
+                  {clubName} {sigle && `(${sigle})`}
+                </Text>
+              )}
+            </View>
+          </View>
+
+          <TouchableOpacity
+            style={[styles.saveButton, saving && styles.saveButtonDisabled]}
+            onPress={handleSave}
+            disabled={saving}
+          >
+            {saving ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.saveButtonText}>
+                {isEditMode ? "Sauvegarder" : "Créer mon club"}
               </Text>
             )}
-          </View>
-        </View>
-
-        <TouchableOpacity
-          style={[styles.saveButton, saving && styles.saveButtonDisabled]}
-          onPress={handleSave}
-          disabled={saving}
-        >
-          {saving ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.saveButtonText}>
-              {isEditMode ? "Sauvegarder" : "Créer mon club"}
-            </Text>
-          )}
-        </TouchableOpacity>
+          </TouchableOpacity>
         </ScrollView>
       )}
 
@@ -791,6 +825,18 @@ const styles = StyleSheet.create({
     padding: 12,
     fontSize: 16,
     backgroundColor: "#f8f8f8",
+  },
+  colorsRow: {
+    flexDirection: "row",
+    gap: 20,
+  },
+  colorsColumn: {
+    flex: 1,
+  },
+  jerseyPreview: {
+    justifyContent: "center",
+    alignItems: "center",
+    paddingVertical: 10,
   },
   colorPicker: {
     flexDirection: "row",
