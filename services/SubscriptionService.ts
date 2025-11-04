@@ -3,13 +3,60 @@ import type { SubscriptionTier, SubscriptionLimits } from "../models/Subscriptio
 import { SUBSCRIPTION_LIMITS } from "../models/Subscription";
 
 export class SubscriptionService {
+  private limitsCache: Map<SubscriptionTier, SubscriptionLimits> = new Map();
+  private lastFetchTime: number = 0;
+  private CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
   constructor(private supabase: SupabaseClient) {}
 
   /**
-   * Get subscription limits for a given tier
+   * Get subscription limits for a given tier from database
+   * Falls back to hardcoded limits if database is unavailable
    */
-  getLimitsForTier(tier: SubscriptionTier): SubscriptionLimits {
+  async getLimitsForTier(tier: SubscriptionTier): Promise<SubscriptionLimits> {
+    // Check if we have a fresh cache
+    const now = Date.now();
+    if (this.limitsCache.has(tier) && (now - this.lastFetchTime) < this.CACHE_DURATION) {
+      return this.limitsCache.get(tier)!;
+    }
+
+    try {
+      // Fetch from database
+      const { data, error } = await this.supabase
+        .from("subscription_plans")
+        .select("max_teams, max_local_matches, can_sync_to_server")
+        .eq("tier", tier)
+        .single();
+
+      if (error) throw error;
+
+      if (data) {
+        const limits: SubscriptionLimits = {
+          maxTeams: data.max_teams,
+          maxLocalMatches: data.max_local_matches,
+          canSyncToServer: data.can_sync_to_server,
+        };
+
+        // Update cache
+        this.limitsCache.set(tier, limits);
+        this.lastFetchTime = now;
+
+        return limits;
+      }
+    } catch (error) {
+      console.warn(`Failed to fetch limits for tier ${tier} from database, using fallback:`, error);
+    }
+
+    // Fallback to hardcoded limits
     return SUBSCRIPTION_LIMITS[tier];
+  }
+
+  /**
+   * Get subscription limits for a given tier (synchronous, uses cache or fallback)
+   * @deprecated Use getLimitsForTier() instead for fresh data
+   */
+  getLimitsForTierSync(tier: SubscriptionTier): SubscriptionLimits {
+    return this.limitsCache.get(tier) || SUBSCRIPTION_LIMITS[tier];
   }
 
   /**
@@ -41,7 +88,7 @@ export class SubscriptionService {
       }
 
       const tier = club.subscription_tier as SubscriptionTier;
-      const limits = this.getLimitsForTier(tier);
+      const limits = await this.getLimitsForTier(tier);
 
       // Count current approved teams (excluding deleted)
       const { count, error: countError } = await this.supabase
@@ -105,7 +152,7 @@ export class SubscriptionService {
       }
 
       const tier = club.subscription_tier as SubscriptionTier;
-      const limits = this.getLimitsForTier(tier);
+      const limits = await this.getLimitsForTier(tier);
 
       const { count } = await this.supabase
         .from("teams")

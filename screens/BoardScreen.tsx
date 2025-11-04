@@ -65,6 +65,17 @@ type RootStackParamList = {
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, "Board">;
 
+// Interface for board players with optional club player properties
+interface BoardPlayer {
+  id: number;
+  num: number;
+  name: string;
+  isSubstitute: boolean;
+  isFromClub: boolean;
+  playerId?: string; // Club player UUID
+  photoUrl?: string; // Player photo URL
+}
+
 /**
  * Convert club players (from database) to BoardScreen format
  * Maps players by position (1-5 for starters) rather than jersey number
@@ -480,7 +491,7 @@ export default function BasketballCourt() {
   const [editingTeam, setEditingTeam] = useState<"A" | "B">("A"); // 🏀 Team being edited
 
   // State for players with their positions
-  const [players, setPlayers] = useState([
+  const [players, setPlayers] = useState<BoardPlayer[]>([
     {
       id: 1,
       num: 1,
@@ -519,7 +530,7 @@ export default function BasketballCourt() {
   ]);
 
   // 🏀 State for team B players ("both" mode)
-  const [playersTeamB, setPlayersTeamB] = useState([
+  const [playersTeamB, setPlayersTeamB] = useState<BoardPlayer[]>([
     {
       id: 6,
       num: 1,
@@ -558,7 +569,7 @@ export default function BasketballCourt() {
   ]);
 
   // States for substitutes
-  const [substitutesTeamA, setSubstitutesTeamA] = useState([
+  const [substitutesTeamA, setSubstitutesTeamA] = useState<BoardPlayer[]>([
     {
       id: 11,
       num: 6,
@@ -596,7 +607,7 @@ export default function BasketballCourt() {
     },
   ]);
 
-  const [substitutesTeamB, setSubstitutesTeamB] = useState([
+  const [substitutesTeamB, setSubstitutesTeamB] = useState<BoardPlayer[]>([
     {
       id: 16,
       num: 6,
