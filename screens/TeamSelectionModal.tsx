@@ -50,15 +50,26 @@ export default function TeamSelectionModal({
   useEffect(() => {
     if (!visible) return;
 
-    const backHandler = BackHandler.addEventListener(
-      "hardwareBackPress",
-      () => {
-        onBack(); // Return to menu
-        return true; // Prevent default behavior
-      }
-    );
+    let backHandlerSubscription: any = null;
 
-    return () => backHandler.remove();
+    // Add a small delay to ensure the modal is fully mounted
+    const timeoutId = setTimeout(() => {
+      backHandlerSubscription = BackHandler.addEventListener(
+        "hardwareBackPress",
+        () => {
+          console.log("🔙 Hardware back button pressed in TeamSelectionModal");
+          onBack(); // Return to menu
+          return true; // Prevent default behavior
+        }
+      );
+    }, 100);
+
+    return () => {
+      clearTimeout(timeoutId);
+      if (backHandlerSubscription) {
+        backHandlerSubscription.remove();
+      }
+    };
   }, [visible, onBack]);
 
   const loadUserTeams = async () => {
@@ -125,7 +136,12 @@ export default function TeamSelectionModal({
   );
 
   return (
-    <Modal visible={visible} animationType="fade" transparent>
+    <Modal
+      visible={visible}
+      animationType="fade"
+      transparent
+      onRequestClose={onBack}
+    >
       <View style={styles.overlay}>
         <View style={styles.container}>
           <View style={styles.header}>
