@@ -1927,7 +1927,7 @@ export default function BasketballCourt() {
     const teamLetter = team;
 
     // Détecter si cette équipe est une équipe du club
-    const isClubTeam = (team === "A" && teamAId) || (team === "B" && teamBId);
+    const isClubTeam = (team === "A" && !!teamAId) || (team === "B" && !!teamBId);
 
     const newSubstitute = {
       id: nextId,
