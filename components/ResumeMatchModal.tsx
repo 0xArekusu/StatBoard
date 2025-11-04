@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Modal,
   View,
@@ -8,6 +8,8 @@ import {
   Alert,
 } from "react-native";
 import { Match } from "../src/models/types";
+import { supabase } from "../src/config/supabase";
+import { resolveTeamName } from "../src/utils/teamNameResolver";
 
 interface ResumeMatchModalProps {
   visible: boolean;
@@ -25,8 +27,31 @@ export default function ResumeMatchModal({
   onGoBack,
 }: ResumeMatchModalProps) {
   const [showDiscardConfirmation, setShowDiscardConfirmation] = useState(false);
+  const [teamAName, setTeamAName] = useState<string>("");
+  const [teamBName, setTeamBName] = useState<string>("");
+
+  // Resolve team names when match changes
+  useEffect(() => {
+    if (match) {
+      resolveTeamNames();
+    }
+  }, [match]);
+
+  const resolveTeamNames = async () => {
+    if (!match) return;
+
+    const resolvedTeamA = await resolveTeamName(match.team_a_name, supabase);
+    const resolvedTeamB = await resolveTeamName(match.team_b_name, supabase);
+
+    setTeamAName(resolvedTeamA);
+    setTeamBName(resolvedTeamB);
+  };
 
   if (!match) return null;
+
+  // Use resolved names or fallback to original names
+  const displayTeamA = teamAName || match.team_a_name;
+  const displayTeamB = teamBName || match.team_b_name;
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -106,7 +131,7 @@ export default function ResumeMatchModal({
           
           <View style={styles.matchInfo}>
             <Text style={styles.matchTitle}>
-              {match.team_a_name} vs {match.team_b_name}
+              {displayTeamA} vs {displayTeamB}
             </Text>
             
             {match.started_at && (

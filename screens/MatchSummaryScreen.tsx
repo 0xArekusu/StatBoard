@@ -525,7 +525,15 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
             {/* Team A Score */}
             <View style={styles.teamScore}>
               <View style={styles.teamNameRow}>
-                <Text style={styles.teamName}>{teamA}</Text>
+                <Text
+                  style={[
+                    styles.teamName,
+                    winner === teamA && !clubLost && styles.winnerTeamName,
+                    clubLost && winner === teamA && styles.loserTeamName,
+                  ]}
+                >
+                  {teamA}
+                </Text>
                 {!fromHistory && !canEditScoreA && (
                   <TouchableOpacity
                     style={styles.unlockButton}
@@ -550,7 +558,8 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
                   style={[
                     styles.scoreInput,
                     (fromHistory || !canEditScoreA) && styles.scoreInputReadOnly,
-                    winner === teamA && styles.winnerScore,
+                    winner === teamA && !clubLost && styles.winnerScore,
+                    clubLost && winner === teamA && styles.loserScore,
                   ]}
                   value={adjustedScoreA.toString()}
                   onChangeText={(text) => {
@@ -579,7 +588,15 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
             {/* Team B Score */}
             <View style={styles.teamScore}>
               <View style={styles.teamNameRow}>
-                <Text style={styles.teamName}>{teamB}</Text>
+                <Text
+                  style={[
+                    styles.teamName,
+                    winner === teamB && !clubLost && styles.winnerTeamName,
+                    clubLost && winner === teamB && styles.loserTeamName,
+                  ]}
+                >
+                  {teamB}
+                </Text>
                 {!fromHistory && !canEditScoreB && (
                   <TouchableOpacity
                     style={styles.unlockButton}
@@ -604,7 +621,8 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
                   style={[
                     styles.scoreInput,
                     (fromHistory || !canEditScoreB) && styles.scoreInputReadOnly,
-                    winner === teamB && styles.winnerScore,
+                    winner === teamB && !clubLost && styles.winnerScore,
+                    clubLost && winner === teamB && styles.loserScore,
                   ]}
                   value={adjustedScoreB.toString()}
                   onChangeText={(text) => {
@@ -1088,6 +1106,14 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#666",
   },
+  winnerTeamName: {
+    color: "#4CAF50",
+    fontWeight: "bold",
+  },
+  loserTeamName: {
+    color: "#F44336",
+    fontWeight: "bold",
+  },
   unlockButton: {
     padding: 4,
   },
@@ -1135,6 +1161,10 @@ const styles = StyleSheet.create({
   winnerScore: {
     color: "#4CAF50",
     borderColor: "#4CAF50",
+  },
+  loserScore: {
+    color: "#F44336",
+    borderColor: "#F44336",
   },
   scoreSeparator: {
     fontSize: 36,

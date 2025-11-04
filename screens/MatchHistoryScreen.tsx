@@ -25,6 +25,7 @@ import { useMatchSync } from "../src/hooks/useMatchSync";
 import SyncErrorModal from "../components/SyncErrorModal";
 import { useAuth } from "../src/contexts/AuthContext";
 import { supabase } from "../src/config/supabase";
+import { resolveTeamNames } from "../src/utils/teamNameResolver";
 
 interface MatchWithDetails extends Match {
   scoreA: number;
@@ -89,6 +90,19 @@ export default function MatchHistoryScreen() {
         );
       }
 
+      // Collect all team identifiers from local matches for batch resolution
+      const localTeamIdentifiers = new Set<string>();
+      completedLocalMatches.forEach((match) => {
+        localTeamIdentifiers.add(match.team_a_name);
+        localTeamIdentifiers.add(match.team_b_name);
+      });
+
+      // Resolve team names in batch
+      const localTeamNamesMap = await resolveTeamNames(
+        Array.from(localTeamIdentifiers),
+        supabase
+      );
+
       // Load details for each LOCAL match
       const localMatchesWithDetails = await Promise.all(
         completedLocalMatches.map(async (match) => {
@@ -125,14 +139,20 @@ export default function MatchHistoryScreen() {
               }, 0);
           }
 
+          // Resolve team names (UUID -> name)
+          const teamAName = localTeamNamesMap.get(match.team_a_name) || match.team_a_name;
+          const teamBName = localTeamNamesMap.get(match.team_b_name) || match.team_b_name;
+
           return {
             ...match,
+            team_a_name: teamAName, // Override with resolved name
+            team_b_name: teamBName, // Override with resolved name
             scoreA,
             scoreB,
             actionsCount: actions.length,
             isFromServer: false,
-            team_a: match.team_a_name,
-            team_b: match.team_b_name,
+            team_a: match.team_a_name, // Keep original for UUID detection
+            team_b: match.team_b_name, // Keep original for UUID detection
           };
         })
       );
