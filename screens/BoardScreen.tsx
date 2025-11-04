@@ -817,16 +817,7 @@ export default function BasketballCourt() {
     orientation === ScreenOrientation.Orientation.PORTRAIT_UP ||
     orientation === ScreenOrientation.Orientation.PORTRAIT_DOWN;
 
-  const {
-    courtWidth,
-    courtHeight,
-    circleDiameter,
-    keyWidth,
-    keyHeight,
-    threePointArcWidth,
-    threePointArcHeight,
-    styles,
-  } = useMemo(() => {
+  const { courtWidth, courtHeight, styles } = useMemo(() => {
     // Width without phone state bar and navigation bar, with bottom nav space
     const availableWidth = isPortrait
       ? window.width - insets.left - insets.right
@@ -840,16 +831,6 @@ export default function BasketballCourt() {
     const courtWidth = availableWidth;
     const courtHeight = availableHeight;
 
-    const circleDiameter = isPortrait ? courtWidth * 0.2 : courtHeight * 0.2;
-    const keyWidth = isPortrait ? courtWidth * 0.3 : courtWidth * 0.24;
-    const keyHeight = isPortrait ? courtHeight * 0.24 : courtHeight * 0.3;
-    const threePointArcWidth = isPortrait
-      ? courtWidth * 0.88
-      : courtHeight * 0.88;
-    const threePointArcHeight = isPortrait
-      ? courtHeight * 0.68
-      : courtWidth * 0.38;
-
     // Generate styles based on layout
     const styles = getStyles({
       courtWidth,
@@ -862,11 +843,6 @@ export default function BasketballCourt() {
     return {
       courtWidth,
       courtHeight,
-      circleDiameter,
-      keyWidth,
-      keyHeight,
-      threePointArcWidth,
-      threePointArcHeight,
       styles,
     };
   }, [orientation, window, insets]);
@@ -938,6 +914,26 @@ export default function BasketballCourt() {
 
   // Determine which markers to display
   const displayMarkers = showAllActions ? getAllActionMarkers() : clickMarkers;
+
+  const handlePreGameCourtPress = (
+    svgX: number,
+    svgY: number,
+    screenX: number,
+    screenY: number
+  ) => {
+    // Log des coordonnées pour faciliter le positionnement des joueurs
+    console.log("🏀 Clic sur le terrain (pré-game):");
+    console.log(
+      `  📍 Position écran: left=${Math.round(screenX)}, top=${Math.round(
+        screenY
+      )}`
+    );
+    console.log(
+      `  📐 Court dimensions: width=${Math.round(
+        courtWidth
+      )}, height=${Math.round(courtHeight)}`
+    );
+  };
 
   const handleZonePress = (
     svgX: number,
@@ -2024,84 +2020,62 @@ export default function BasketballCourt() {
     // 🔄 Détermine si cette équipe doit être du côté "proche" selon currentTeam
     const isTeamOnNearSide = currentTeam === team;
 
+    const keyHeight = 150;
+    const keyWidth = 200;
     const positions = [
       // Meneur (ID 1)
       {
-        left: courtWidth / 2 - 20,
+        left: 350,
         top: isTeamOnNearSide
           ? isPortrait
-            ? keyHeight - 50
+            ? 393
             : courtHeight / 2 - keyHeight / 2 - 50
           : isPortrait
-          ? courtHeight - keyHeight - 50
+          ? 700
           : courtHeight / 2 + keyHeight / 2 + 10,
       },
       // Ailier gauche (ID 2)
       {
-        left: isTeamOnNearSide
-          ? isPortrait
-            ? courtWidth / 2 - keyWidth / 2 - 40
-            : courtWidth / 2 - keyWidth / 2 - 40
-          : isPortrait
-          ? courtWidth / 2 - keyWidth / 2 - 40
-          : courtWidth / 2 + keyWidth / 2 + 40,
+        left: isPortrait ? 160 : courtWidth / 2 - keyWidth / 2 - 40,
         top: isTeamOnNearSide
           ? isPortrait
-            ? keyHeight
+            ? 289
             : courtHeight / 2 - keyHeight / 2
           : isPortrait
-          ? courtHeight - keyHeight
+          ? 785
           : courtHeight / 2 + keyHeight / 2,
       },
       // Ailier droit (ID 3)
       {
-        left: isTeamOnNearSide
-          ? isPortrait
-            ? courtWidth / 2 + keyWidth / 2
-            : courtWidth / 2 + keyWidth / 2
-          : isPortrait
-          ? courtWidth / 2 + keyWidth / 2
-          : courtWidth / 2 - keyWidth / 2,
+        left: isPortrait ? 552 : courtWidth / 2 + keyWidth / 2,
         top: isTeamOnNearSide
           ? isPortrait
-            ? keyHeight
+            ? 283
             : courtHeight / 2 - keyHeight / 2
           : isPortrait
-          ? courtHeight - keyHeight
+          ? 785
           : courtHeight / 2 + keyHeight / 2,
       },
       // Intérieur gauche (ID 4)
       {
-        left: isTeamOnNearSide
-          ? isPortrait
-            ? courtWidth / 2 - keyWidth / 4 - 30
-            : courtWidth / 2 - keyWidth / 4 - 30
-          : isPortrait
-          ? courtWidth / 2 - keyWidth / 4 - 30
-          : courtWidth / 2 + keyWidth / 4 + 30,
+        left: isPortrait ? 239 : courtWidth / 2 - keyWidth / 4 - 30,
         top: isTeamOnNearSide
           ? isPortrait
-            ? keyHeight + keyHeight / 2
+            ? 147
             : courtHeight / 2 - keyHeight / 4
           : isPortrait
-          ? courtHeight - keyHeight - keyHeight / 2
+          ? 952
           : courtHeight / 2 + keyHeight / 4,
       },
       // Intérieur droit (ID 5)
       {
-        left: isTeamOnNearSide
-          ? isPortrait
-            ? courtWidth / 2 + keyWidth / 4 + 10
-            : courtWidth / 2 + keyWidth / 4 + 10
-          : isPortrait
-          ? courtWidth / 2 + keyWidth / 4 + 10
-          : courtWidth / 2 - keyWidth / 4 - 10,
+        left: isPortrait ? 473 : courtWidth / 2 + keyWidth / 4 + 10,
         top: isTeamOnNearSide
           ? isPortrait
-            ? keyHeight + keyHeight / 2
+            ? 147
             : courtHeight / 2 - keyHeight / 4
           : isPortrait
-          ? courtHeight - keyHeight - keyHeight / 2
+          ? 952
           : courtHeight / 2 + keyHeight / 4,
       },
     ];
@@ -2707,7 +2681,7 @@ export default function BasketballCourt() {
         <BasketballCourtSVG
           width={containerLayout.width || courtWidth}
           height={containerLayout.height || courtHeight}
-          onCourtPress={!preGameMode ? handleZonePress : undefined}
+          onCourtPress={preGameMode ? handlePreGameCourtPress : handleZonePress}
           backgroundColor={club?.courtBackgroundColor || "#1a472a"}
           lineColor={club?.courtLineColor || "#FFFFFF"}
           logoUri={user && club?.logoUrl ? club.logoUrl : null}
@@ -2723,8 +2697,8 @@ export default function BasketballCourt() {
           <TouchableOpacity
             style={{
               position: "absolute",
-              bottom: isPortrait ? 100 : 40, // Leave space for toolbar in portrait
-              right: "50%", // Adjust for toolbar in landscape
+              bottom: isPortrait ? 15 : 40, // Leave space for toolbar in portrait
+              right: "47%", // Adjust for toolbar in landscape
               transform: [{ translateX: 75 }],
               backgroundColor: "#FF5722",
               borderRadius: 25,
