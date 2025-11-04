@@ -694,6 +694,30 @@ export default function BasketballCourt() {
     );
   }
 
+  // Fonction pour obtenir les couleurs du jersey selon l'équipe
+  const getJerseyColors = (team: "A" | "B") => {
+    // Si une équipe du club est présente
+    if (teamAId || teamBId) {
+      // Si cette équipe est celle du club, utiliser les couleurs du club
+      if ((team === "A" && teamAId) || (team === "B" && teamBId)) {
+        return {
+          primary: club?.secondaryColor || "#000000",
+          secondary: club?.primaryColor || "#FF0000",
+        };
+      }
+      // Sinon, utiliser la couleur par défaut pour l'équipe adverse
+      return {
+        primary: "#FFFFFF",
+        secondary: "#931116",
+      };
+    }
+
+    // Aucune équipe du club : couleurs par défaut
+    return team === "A"
+      ? { primary: "#FFFFFF", secondary: "#002157" }
+      : { primary: "#FFFFFF", secondary: "#931116" };
+  };
+
   useEffect(() => {
     setShowSheet(true);
   }, []);
@@ -2412,8 +2436,8 @@ export default function BasketballCourt() {
         <TouchableOpacity
           style={{
             position: "absolute",
-            top: isPortrait ? courtHeight / 2 - 25 : courtHeight / 2 - 25,
-            left: isPortrait ? courtWidth / 2 - 25 : courtWidth / 2 - 25,
+            top: isPortrait ? courtHeight / 2 : 15,
+            left: isPortrait ? 30 : courtWidth / 2 - 25,
             backgroundColor: "rgba(255,255,255,0.9)",
             borderRadius: 25,
             width: 50,
@@ -2768,8 +2792,8 @@ export default function BasketballCourt() {
             >
               <JerseyIcon
                 width={50}
-                primaryColor={club?.secondaryColor || "#000000"}
-                secondaryColor={club?.primaryColor || "#FF0000"}
+                primaryColor={getJerseyColors("A").primary}
+                secondaryColor={getJerseyColors("A").secondary}
                 number={player.num}
               />
             </TouchableOpacity>
@@ -2817,8 +2841,8 @@ export default function BasketballCourt() {
             >
               <JerseyIcon
                 width={50}
-                primaryColor={club?.secondaryColor || "#000000"}
-                secondaryColor={club?.primaryColor || "#FF0000"}
+                primaryColor={getJerseyColors("B").primary}
+                secondaryColor={getJerseyColors("B").secondary}
                 number={player.num}
               />
             </TouchableOpacity>
@@ -2860,8 +2884,8 @@ export default function BasketballCourt() {
             teamLetter="A"
             maxSubstitutes={10}
             isPortrait={isPortrait}
-            jerseyPrimaryColor={club?.primaryColor}
-            jerseySecondaryColor={club?.secondaryColor}
+            jerseyPrimaryColor={getJerseyColors("A").primary}
+            jerseySecondaryColor={getJerseyColors("A").secondary}
           />
         )}
 
@@ -2882,8 +2906,8 @@ export default function BasketballCourt() {
             teamLetter="B"
             maxSubstitutes={10}
             isPortrait={isPortrait}
-            jerseyPrimaryColor={club?.primaryColor}
-            jerseySecondaryColor={club?.secondaryColor}
+            jerseyPrimaryColor={getJerseyColors("B").primary}
+            jerseySecondaryColor={getJerseyColors("B").secondary}
           />
         )}
     </View>

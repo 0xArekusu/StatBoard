@@ -1,6 +1,5 @@
 import React from "react";
 import { View, Text, TouchableOpacity, ScrollView, Image } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 import JerseyIcon from "./JerseyIcon";
 
 interface Player {
@@ -60,15 +59,15 @@ export default function SubstitutesManager({
       // Portrait : position à gauche, verticalement selon l'équipe
       return {
         left: 10,
-        top: isTeamOnTop ? 60 : 620,
+        top: isTeamOnTop ? 90 : 660,
         width: 100,
         height: 400,
       };
     } else {
       // Paysage : position en bas, horizontalement selon l'équipe
       return {
-        left: isTeamOnTop ? 60 : 700,
-        bottom: 10,
+        left: isTeamOnTop ? 40 : 700,
+        top: 5,
         width: 400,
         height: 100,
       };
@@ -179,8 +178,8 @@ export default function SubstitutesManager({
           >
             <JerseyIcon
               width={50}
-              primaryColor={jerseySecondaryColor}
-              secondaryColor={jerseyPrimaryColor}
+              primaryColor={jerseyPrimaryColor}
+              secondaryColor={jerseySecondaryColor}
               number={substitute.num}
             />
           </TouchableOpacity>
