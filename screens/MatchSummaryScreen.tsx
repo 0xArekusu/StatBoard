@@ -119,8 +119,7 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
     };
 
     if (canEditScoreA && adjustedScoreA !== scoreA) {
-      // Mark as manually adjusted (any score edit counts)
-      setScoreManuallyAdjusted(true);
+      // Save scores when adjusted
       saveScores();
     }
   }, [adjustedScoreA, scoreA, canEditScoreA, matchId, fromHistory, teamMode, scoreManuallyAdjusted]);
@@ -138,8 +137,7 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
     };
 
     if (canEditScoreB && adjustedScoreB !== scoreB) {
-      // Mark as manually adjusted (any score edit counts)
-      setScoreManuallyAdjusted(true);
+      // Save scores when adjusted
       saveScores();
     }
   }, [adjustedScoreB, scoreB, canEditScoreB, matchId, fromHistory, adjustedScoreA, teamMode, scoreManuallyAdjusted]);
