@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Modal, View, Text, TextInput, TouchableOpacity, Image, Alert } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import * as ImagePicker from "expo-image-picker";
+import { Modal, View, Text, TextInput, TouchableOpacity, Image } from "react-native";
 
 interface CoachEditModalProps {
   visible: boolean;
@@ -28,28 +26,6 @@ export default function CoachEditModal({
       setPhotoUrl(coachPhotoUrl);
     }
   }, [visible, coachName, coachPhotoUrl]);
-
-  const pickImage = async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== "granted") {
-      Alert.alert(
-        "Permission refusée",
-        "Nous avons besoin d'accéder à vos photos"
-      );
-      return;
-    }
-
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.5,
-    });
-
-    if (!result.canceled) {
-      setPhotoUrl(result.assets[0].uri);
-    }
-  };
 
   const handleConfirm = () => {
     if (editName.trim() === "") {
@@ -85,9 +61,8 @@ export default function CoachEditModal({
             elevation: 8,
           }}
         >
-          {/* Avatar rond avec photo ou C pour Coach */}
-          <TouchableOpacity
-            onPress={pickImage}
+          {/* Avatar rond avec photo ou C pour Coach (non cliquable) */}
+          <View
             style={{
               width: 80,
               height: 80,
@@ -102,45 +77,13 @@ export default function CoachEditModal({
             }}
           >
             {photoUrl ? (
-              <>
-                <Image source={{ uri: photoUrl }} style={{ width: "100%", height: "100%" }} />
-                <View
-                  style={{
-                    position: "absolute",
-                    bottom: 0,
-                    left: 0,
-                    right: 0,
-                    backgroundColor: "rgba(0,0,0,0.6)",
-                    justifyContent: "center",
-                    alignItems: "center",
-                    padding: 4,
-                  }}
-                >
-                  <Ionicons name="camera" size={16} color="#fff" />
-                </View>
-              </>
+              <Image source={{ uri: photoUrl }} style={{ width: "100%", height: "100%" }} />
             ) : (
-              <>
-                <Text style={{ fontSize: 40, color: "#666", fontWeight: "bold" }}>
-                  C
-                </Text>
-                <View
-                  style={{
-                    position: "absolute",
-                    bottom: 0,
-                    left: 0,
-                    right: 0,
-                    backgroundColor: "rgba(0,0,0,0.6)",
-                    justifyContent: "center",
-                    alignItems: "center",
-                    padding: 4,
-                  }}
-                >
-                  <Ionicons name="camera" size={16} color="#fff" />
-                </View>
-              </>
+              <Text style={{ fontSize: 40, color: "#666", fontWeight: "bold" }}>
+                C
+              </Text>
             )}
-          </TouchableOpacity>
+          </View>
 
           {/* Name field */}
           <TextInput

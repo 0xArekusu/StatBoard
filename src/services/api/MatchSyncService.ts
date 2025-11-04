@@ -177,14 +177,20 @@ export class MatchSyncService {
 
       for (const player of matchPlayers) {
         if (player.photo_url && (player.photo_url.startsWith('file://') || player.photo_url.startsWith('content://'))) {
+          console.log(`📸 Uploading photo for player ${player.player_name} (${player.id})...`);
           const { url, error } = await photoService.uploadPlayerPhoto(player.photo_url, player.player_id || `player-${player.id}`);
           if (!error && url) {
             // Update the player's photo_url with the uploaded URL
             player.photo_url = url;
             await this.matchPlayerRepository.updatePhotoUrl(player.id, url);
+            console.log(`✅ Photo URL updated for player ${player.player_name}: ${url}`);
+          } else {
+            console.error(`❌ Failed to upload photo for player ${player.player_name}:`, error);
           }
         }
       }
+
+      console.log(`📋 Players before transform:`, matchPlayers.map(p => ({ name: p.player_name, photo_url: p.photo_url })));
 
       // Transform data to Supabase format
       const syncData = this.transformMatchForSync(
@@ -300,7 +306,7 @@ export class MatchSyncService {
           player_name: player.player_name,
           team: player.team,
           is_starter: player.is_starter,
-          photo_url: null, // TODO: Add photo_url if available
+          photo_url: player.photo_url || null,
           actions: actionsJson,
         };
       }

@@ -79,6 +79,7 @@ interface BoardPlayer {
   isFromClub: boolean;
   playerId?: string; // Club player UUID
   photoUrl?: string; // Player photo URL
+  isAddedInPreGame?: boolean; // True if player was added during pre-game (not pre-configured)
 }
 
 /**
@@ -1321,6 +1322,7 @@ export default function BasketballCourt() {
         player_name: player.name,
         team: player.team,
         is_starter: !player.isSubstitute,
+        photo_url: player.photoUrl || null, // Include photo URL
       }));
 
       if (playersToSave.length > 0) {
@@ -1936,6 +1938,7 @@ export default function BasketballCourt() {
       photoUrl: undefined,
       isSubstitute: true,
       isFromClub: isClubTeam,
+      isAddedInPreGame: true, // Marquer comme ajouté en pre-game
     };
 
     setSubstitutes([...substitutes, newSubstitute]);
@@ -2338,7 +2341,8 @@ export default function BasketballCourt() {
                 const player = [...teamPlayers, ...teamSubstitutes].find(
                   (p) => p.id === editingPlayer
                 );
-                return player?.isFromClub || false;
+                // Autoriser la photo uniquement pour les joueurs du club ajoutés en pre-game
+                return (player?.isFromClub && player?.isAddedInPreGame) || false;
               })()
             : false
         }

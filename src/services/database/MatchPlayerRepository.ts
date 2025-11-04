@@ -19,6 +19,7 @@ export interface CreateMatchPlayerData {
   player_name: string;
   team: "A" | "B";
   is_starter: boolean;
+  photo_url?: string | null;
 }
 
 export interface IMatchPlayerRepository {
@@ -38,8 +39,8 @@ export class MatchPlayerRepository implements IMatchPlayerRepository {
   async create(data: CreateMatchPlayerData): Promise<MatchPlayer> {
     const sql = `
       INSERT INTO match_players (
-        match_id, player_id, player_number, player_name, team, is_starter
-      ) VALUES (?, ?, ?, ?, ?, ?)
+        match_id, player_id, player_number, player_name, team, is_starter, photo_url
+      ) VALUES (?, ?, ?, ?, ?, ?, ?)
     `;
 
     try {
@@ -50,6 +51,7 @@ export class MatchPlayerRepository implements IMatchPlayerRepository {
         data.player_name,
         data.team,
         data.is_starter ? 1 : 0,
+        data.photo_url || null,
       ]);
 
       const players = await this.db.query(
@@ -77,8 +79,8 @@ export class MatchPlayerRepository implements IMatchPlayerRepository {
       await this.db.transaction(async (adapter) => {
         const sql = `
           INSERT INTO match_players (
-            match_id, player_id, player_number, player_name, team, is_starter
-          ) VALUES (?, ?, ?, ?, ?, ?)
+            match_id, player_id, player_number, player_name, team, is_starter, photo_url
+          ) VALUES (?, ?, ?, ?, ?, ?, ?)
         `;
 
         for (const player of players) {
@@ -89,6 +91,7 @@ export class MatchPlayerRepository implements IMatchPlayerRepository {
             player.player_name,
             player.team,
             player.is_starter ? 1 : 0,
+            player.photo_url || null,
           ]);
         }
       });

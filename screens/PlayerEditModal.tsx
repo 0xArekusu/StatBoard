@@ -131,11 +131,11 @@ export default function PlayerEditModal({
             elevation: 8,
           }}
         >
-          {/* Avatar rond avec photo ou bonhomme - cliquable pour changer la photo (sauf si du club) */}
+          {/* Avatar rond avec photo ou bonhomme - cliquable pour changer la photo (uniquement si du club) */}
           <View style={{ alignItems: "center", marginBottom: 24, position: "relative" }}>
             <TouchableOpacity
               onPress={pickImage}
-              disabled={isFromClub}
+              disabled={!isFromClub}
               style={{
                 width: 80,
                 height: 80,
@@ -159,8 +159,8 @@ export default function PlayerEditModal({
               )}
             </TouchableOpacity>
 
-            {/* Petit indicateur en bas à droite pour montrer qu'on peut changer la photo (seulement si pas du club) */}
-            {!isFromClub && (
+            {/* Petit indicateur en bas à droite pour montrer qu'on peut changer la photo (uniquement si du club) */}
+            {isFromClub && (
               <View
                 style={{
                   position: "absolute",
