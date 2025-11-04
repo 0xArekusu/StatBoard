@@ -676,14 +676,14 @@ export default function MatchHistoryScreen() {
             <Text
               style={[
                 styles.winnerBadgeText,
-                winner === clubTeam && !clubLost
-                  ? styles.winnerText
-                  : styles.loserText,
+                clubLost
+                  ? styles.loserText
+                  : styles.winnerText, // Vert si le club gagne OU si match neutre
               ]}
               numberOfLines={1}
               ellipsizeMode="tail"
             >
-              {(winner === clubTeam && !clubLost ? "🏆 " : "😔 ") +
+              {(clubLost ? "😔 " : "🏆 ") +
                 (winner === "A" ? item.team_a_name : item.team_b_name) +
                 " remporte le match"}
             </Text>
