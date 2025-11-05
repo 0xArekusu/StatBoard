@@ -13,6 +13,7 @@ export const ROUTES = {
   CLUB_FORM: "ClubForm",
   TEAM_FORM: "TeamForm",
   JOIN_CLUB: "JoinClub",
+  DEBUG_COURT: "DebugCourt",
 } as const;
 
 // Type for route names

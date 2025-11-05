@@ -954,7 +954,7 @@ export default function BasketballCourt() {
     // Adjust screen coordinates to account for court container offset
     // courtContainer starts at top: 80
     const absoluteScreenX = screenX;
-    const absoluteScreenY = screenY + 80; // Add top offset of courtContainer
+    const absoluteScreenY = screenY + 80 + MODAL_PADDING; // Add top offset of courtContainer
 
     const pos = calculateModalPosition(absoluteScreenX, absoluteScreenY);
     setModalPosition(pos);

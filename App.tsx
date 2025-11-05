@@ -23,6 +23,7 @@ import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { AuthProvider, useAuth } from "./src/contexts/AuthContext";
 import { ROUTES } from "./constants/routes";
 import { logInfo } from "./utils/logger";
+import DebugCourtClick from "./DebugCourtClick";
 
 const Stack = createNativeStackNavigator();
 
@@ -35,12 +36,12 @@ function Navigation() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    logInfo('App', '🚀 App initialization started');
+    logInfo("App", "🚀 App initialization started");
 
     // Simulate initial loading time for splash screen
     setTimeout(() => {
       setIsLoading(false);
-      logInfo('App', '✅ App initialization completed');
+      logInfo("App", "✅ App initialization completed");
     }, 500);
   }, []);
 
@@ -57,11 +58,21 @@ function Navigation() {
           headerShown: false,
         }}
       >
+        <Stack.Screen name={ROUTES.DEBUG_COURT} component={DebugCourtClick} />
         <Stack.Screen name={ROUTES.MAIN_MENU} component={MainMenuScreen} />
         <Stack.Screen name={ROUTES.BOARD} component={BoardScreen} />
-        <Stack.Screen name={ROUTES.MATCH_HISTORY} component={MatchHistoryScreen} />
-        <Stack.Screen name={ROUTES.MATCH_SUMMARY} component={MatchSummaryScreen} />
-        <Stack.Screen name={ROUTES.MATCH_DETAILS} component={MatchDetailsScreen} />
+        <Stack.Screen
+          name={ROUTES.MATCH_HISTORY}
+          component={MatchHistoryScreen}
+        />
+        <Stack.Screen
+          name={ROUTES.MATCH_SUMMARY}
+          component={MatchSummaryScreen}
+        />
+        <Stack.Screen
+          name={ROUTES.MATCH_DETAILS}
+          component={MatchDetailsScreen}
+        />
         <Stack.Screen name={ROUTES.LOGIN} component={LoginScreen} />
         <Stack.Screen name={ROUTES.SIGN_UP} component={SignUpScreen} />
         <Stack.Screen name={ROUTES.CLUB_FORM} component={ClubFormScreen} />
