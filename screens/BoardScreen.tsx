@@ -1895,6 +1895,7 @@ export default function BasketballCourt() {
       matchId: foundMatch.id,
       teamA: foundMatch.team_a_name,
       teamB: foundMatch.team_b_name,
+      teamId: foundMatch.team_id,
       currentPeriod: foundMatch.current_period,
       timeElapsed: foundMatch.time_elapsed,
       finalScoreA: foundMatch.final_score_a,
@@ -1902,8 +1903,51 @@ export default function BasketballCourt() {
     });
 
     setCurrentMatch(foundMatch);
-    setTeamA(foundMatch.team_a_name);
-    setTeamB(foundMatch.team_b_name);
+
+    // Load team names from Supabase if team_a_name/team_b_name look like UUIDs
+    let teamADisplayName = foundMatch.team_a_name;
+    let teamBDisplayName = foundMatch.team_b_name;
+
+    // Check if team_a_name or team_b_name is a UUID (contains dashes in UUID format)
+    const isUUID = (str: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+
+    if (foundMatch.team_id && user) {
+      try {
+        const teamService = ServiceFactory.getTeamService(supabase);
+
+        // Load team A if it's a UUID
+        if (isUUID(foundMatch.team_a_name)) {
+          logInfo("BoardScreen", "📡 Loading Team A name from Supabase (UUID detected)", {
+            teamId: foundMatch.team_a_name
+          });
+          const teamA = await teamService.getTeamById(foundMatch.team_a_name);
+          if (teamA) {
+            teamADisplayName = teamA.name;
+            logInfo("BoardScreen", "✅ Team A name loaded", { name: teamA.name });
+          }
+        }
+
+        // Load team B if it's a UUID
+        if (isUUID(foundMatch.team_b_name)) {
+          logInfo("BoardScreen", "📡 Loading Team B name from Supabase (UUID detected)", {
+            teamId: foundMatch.team_b_name
+          });
+          const teamB = await teamService.getTeamById(foundMatch.team_b_name);
+          if (teamB) {
+            teamBDisplayName = teamB.name;
+            logInfo("BoardScreen", "✅ Team B name loaded", { name: teamB.name });
+          }
+        }
+      } catch (error) {
+        logError("BoardScreen", "❌ Error loading team names from Supabase", {
+          error: error instanceof Error ? error.message : error
+        });
+        // Continue with UUID as fallback
+      }
+    }
+
+    setTeamA(teamADisplayName);
+    setTeamB(teamBDisplayName);
     setTeamMode(foundMatch.team_mode);
     setCurrentTeam(foundMatch.team_mode === "B" ? "B" : "A");
 
