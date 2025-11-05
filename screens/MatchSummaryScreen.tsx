@@ -1,4 +1,18 @@
-import React, { useState } from "react";
+/**
+ * MatchSummaryScreen
+ *
+ * Displays match statistics and summary after a match is completed.
+ * Features:
+ * - View match scores and statistics
+ * - Adjust scores manually (if not from history)
+ * - View player statistics
+ * - View score evolution chart
+ * - Export match to PDF
+ * - Sync match to Supabase (subscription-based)
+ * All database operations (SQLite and Supabase) are logged for debugging.
+ */
+
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -25,6 +39,7 @@ import { MatchSyncPolicy } from "../src/services/match/MatchSyncPolicy";
 import type { SubscriptionTier } from "../models/Subscription";
 import { useMatchSync } from "../src/hooks/useMatchSync";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
+import { logInfo, logError, logWarn } from "../utils/logger";
 
 interface MatchSummaryScreenProps {}
 
@@ -80,22 +95,60 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
   const [scoreManuallyAdjusted, setScoreManuallyAdjusted] = useState(scoreWasManuallyAdjusted);
   const [syncModalVisible, setSyncModalVisible] = useState(false);
 
-  // Update local scores when props change
+  /**
+   * Log screen mount when user arrives on the view
+   */
+  useEffect(() => {
+    logInfo('MatchSummaryScreen', '📱 Screen mounted - User arrived on match summary', {
+      matchId,
+      teamA,
+      teamB,
+      scoreA,
+      scoreB,
+      fromHistory,
+      teamMode,
+      playersCount: players.length,
+      actionsCount: actions.length
+    });
+  }, []);
+
+  /**
+   * Update local scores when props change
+   */
   React.useEffect(() => {
     setAdjustedScoreA(scoreA);
     setAdjustedScoreB(scoreB);
   }, [scoreA, scoreB]);
 
-  // Save initial scores when arriving on this screen
+  /**
+   * Save initial scores when arriving on this screen
+   * Only saves if not viewing from history (read-only mode)
+   */
   React.useEffect(() => {
     const saveInitialScores = async () => {
       if (matchId && !fromHistory) {
+        logInfo('MatchSummaryScreen', '💾 Saving initial scores to SQLite', {
+          matchId,
+          scoreA,
+          scoreB
+        });
+
         try {
           const matchRepo = new MatchRepository();
           await matchRepo.updateFinalScores(matchId, scoreA, scoreB);
-          console.log("✅ Initial scores saved:", { scoreA, scoreB });
+
+          logInfo('MatchSummaryScreen', '✅ Initial scores saved to SQLite', {
+            matchId,
+            scoreA,
+            scoreB
+          });
         } catch (error) {
-          console.error("Error saving initial scores:", error);
+          logError('MatchSummaryScreen', '❌ Error saving initial scores to SQLite', {
+            matchId,
+            scoreA,
+            scoreB,
+            error: error instanceof Error ? error.message : error
+          });
         }
       }
     };
@@ -105,15 +158,33 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
   // Sync or show warning will be triggered when user clicks "Menu" button
   // (removed auto-sync on mount)
 
-  // Track when scores are actually changed and save to database
+  /**
+   * Track when Team A score changes and save to SQLite database
+   */
   React.useEffect(() => {
     const saveScores = async () => {
       if (matchId && !fromHistory) {
+        logInfo('MatchSummaryScreen', '💾 Saving adjusted Team A score to SQLite', {
+          matchId,
+          adjustedScoreA,
+          adjustedScoreB,
+          scoreManuallyAdjusted
+        });
+
         try {
           const matchRepo = new MatchRepository();
           await matchRepo.updateFinalScores(matchId, adjustedScoreA, adjustedScoreB, scoreManuallyAdjusted);
+
+          logInfo('MatchSummaryScreen', '✅ Team A score saved to SQLite', {
+            matchId,
+            adjustedScoreA
+          });
         } catch (error) {
-          console.error("Error saving final scores:", error);
+          logError('MatchSummaryScreen', '❌ Error saving Team A score to SQLite', {
+            matchId,
+            adjustedScoreA,
+            error: error instanceof Error ? error.message : error
+          });
         }
       }
     };
@@ -124,14 +195,33 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
     }
   }, [adjustedScoreA, scoreA, canEditScoreA, matchId, fromHistory, teamMode, scoreManuallyAdjusted]);
 
+  /**
+   * Track when Team B score changes and save to SQLite database
+   */
   React.useEffect(() => {
     const saveScores = async () => {
       if (matchId && !fromHistory) {
+        logInfo('MatchSummaryScreen', '💾 Saving adjusted Team B score to SQLite', {
+          matchId,
+          adjustedScoreA,
+          adjustedScoreB,
+          scoreManuallyAdjusted
+        });
+
         try {
           const matchRepo = new MatchRepository();
           await matchRepo.updateFinalScores(matchId, adjustedScoreA, adjustedScoreB, scoreManuallyAdjusted);
+
+          logInfo('MatchSummaryScreen', '✅ Team B score saved to SQLite', {
+            matchId,
+            adjustedScoreB
+          });
         } catch (error) {
-          console.error("Error saving final scores:", error);
+          logError('MatchSummaryScreen', '❌ Error saving Team B score to SQLite', {
+            matchId,
+            adjustedScoreB,
+            error: error instanceof Error ? error.message : error
+          });
         }
       }
     };
@@ -160,7 +250,8 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
   const clubWon = isClubMatch && winner === clubTeamName;
   const clubLost = isClubMatch && winner !== null && winner !== clubTeamName;
 
-  console.log('🏆 [MatchSummary] Winner logic:', {
+  // Log winner logic for debugging win/loss detection
+  logInfo('MatchSummaryScreen', '🏆 Winner logic calculated', {
     teamMode,
     clubTeamOverride,
     clubTeam,
@@ -418,27 +509,48 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
 
     // Check if we should sync or show local warning
     if (matchId) {
-      console.log('📋 [MatchSummary] Checking sync eligibility for match', matchId);
+      logInfo('MatchSummaryScreen', '🔍 Checking sync eligibility for match', { matchId });
+
       const eligibility = await checkEligibility(matchId);
-      console.log('📋 [MatchSummary] Eligibility result:', eligibility);
+
+      logInfo('MatchSummaryScreen', '✅ Eligibility check complete', {
+        matchId,
+        canSync: eligibility.canSync,
+        reason: eligibility.reason
+      });
 
       if (eligibility.canSync) {
         // User has paid subscription - auto sync
-        console.log('✅ [MatchSummary] User can sync, starting sync process...');
+        logInfo('MatchSummaryScreen', '📡 User can sync, starting sync process', { matchId });
+
         setSyncModalVisible(true);
         const result = await syncMatch(matchId);
         setSyncModalVisible(false);
-        console.log('📋 [MatchSummary] Sync result:', result);
+
+        logInfo('MatchSummaryScreen', '📊 Sync operation completed', {
+          matchId,
+          success: result.success,
+          error: result.error
+        });
 
         if (!result.success) {
           // If sync fails, show error but don't block navigation
-          console.error('❌ [MatchSummary] Auto-sync failed:', result.error);
+          logError('MatchSummaryScreen', '❌ Auto-sync failed', {
+            matchId,
+            error: result.error
+          });
         } else {
-          console.log('✅ [MatchSummary] Match synced successfully, local data should be deleted');
+          logInfo('MatchSummaryScreen', '✅ Match synced successfully to Supabase', {
+            matchId
+          });
         }
       } else {
         // User cannot sync (not connected or freemium) - show local warning
-        console.log('⚠️ [MatchSummary] User cannot sync, showing local warning modal');
+        logWarn('MatchSummaryScreen', '⚠️ User cannot sync, showing local warning modal', {
+          matchId,
+          reason: eligibility.reason,
+          isAuthenticated: !!user
+        });
         setLocalSaveWarningVisible(true);
         // Wait for modal to be closed before navigating
         return;
@@ -446,7 +558,7 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
     }
 
     // Navigate to main menu
-    console.log('📋 [MatchSummary] Navigating to main menu');
+    logInfo('MatchSummaryScreen', '🏠 Navigating to main menu');
     navigation.navigate(ROUTES.MAIN_MENU as never);
   };
 
@@ -475,7 +587,21 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
     setPreviewModalVisible(true);
   };
 
+  /**
+   * Handle PDF export
+   * Generates and saves match summary as PDF file
+   */
   const handleExportPDF = async () => {
+    logInfo('MatchSummaryScreen', '📄 Generating PDF export', {
+      teamA,
+      teamB,
+      scoreA: adjustedScoreA,
+      scoreB: adjustedScoreB,
+      matchFormat,
+      playersCount: players.length,
+      actionsCount: actions.length
+    });
+
     try {
       await PDFExportService.generateMatchPDF({
         teamA,
@@ -490,8 +616,14 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
         watermark: false,
         scoreManuallyAdjusted,
       });
+
+      logInfo('MatchSummaryScreen', '✅ PDF generated successfully');
     } catch (error) {
-      console.error("Error generating PDF:", error);
+      logError('MatchSummaryScreen', '❌ Error generating PDF', {
+        error: error instanceof Error ? error.message : error,
+        teamA,
+        teamB
+      });
       Alert.alert("Erreur", "Impossible de générer le PDF");
     }
   };

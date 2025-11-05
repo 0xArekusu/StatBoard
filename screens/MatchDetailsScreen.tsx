@@ -1,4 +1,16 @@
-import React, { useState, useMemo } from "react";
+/**
+ * MatchDetailsScreen
+ *
+ * Displays detailed match statistics and visualizations.
+ * Features:
+ * - Court view with shot visualization (heatmap)
+ * - Player statistics table (sortable)
+ * - Filter by team, player, action type, and period
+ * - Switch between court and players tabs
+ * All tab changes and filters are logged for debugging.
+ */
+
+import React, { useState, useMemo, useEffect } from "react";
 import {
   View,
   Text,
@@ -11,6 +23,7 @@ import { useNavigation, useRoute } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { ActionData } from "../components/ActionSystem";
 import BasketballCourtSVG from "../components/BasketballCourtSVG";
+import { logInfo, logError, logWarn } from "../utils/logger";
 
 interface MatchDetailsRouteParams {
   teamA: string;
@@ -58,6 +71,33 @@ export default function MatchDetailsScreen() {
   const [courtFilterPlayers, setCourtFilterPlayers] = useState<string[]>([]); // Player identifiers "team-num" (e.g., "A-5", "B-7")
   const [courtFilterActionType, setCourtFilterActionType] = useState<string[]>([]); // ["tir", "rebond", "faute"]
   const [courtFilterPeriod, setCourtFilterPeriod] = useState<number[]>([]); // [1, 2, 3, 4] or [1, 2]
+
+  /**
+   * Log screen mount when user arrives on the view
+   */
+  useEffect(() => {
+    logInfo('MatchDetailsScreen', '📱 Screen mounted - User arrived on match details', {
+      teamA,
+      teamB,
+      scoreA,
+      scoreB,
+      matchFormat,
+      teamMode,
+      playersCount: players.length,
+      actionsCount: actions.length,
+      activeTab
+    });
+  }, []);
+
+  /**
+   * Log tab changes
+   */
+  useEffect(() => {
+    logInfo('MatchDetailsScreen', '📑 Tab changed', {
+      activeTab,
+      previousTab: activeTab === "court" ? "players" : "court"
+    });
+  }, [activeTab]);
 
 
   // Calculate individual player statistics
