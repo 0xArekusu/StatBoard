@@ -383,7 +383,8 @@ export class MatchSyncService {
     }
 
     // Create match players insert data with actions grouped
-    const playersInsert: SupabaseMatchPlayerInsert[] = matchPlayers.map(
+    // Note: match_id will be added later after match creation in Supabase
+    const playersInsert: Omit<SupabaseMatchPlayerInsert, 'match_id'>[] = matchPlayers.map(
       (player) => {
         const key = `${player.team}-${player.player_number}`;
         const playerActions = actionsByPlayer.get(key) || [];

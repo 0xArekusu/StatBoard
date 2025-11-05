@@ -116,8 +116,9 @@ export interface SupabaseMatchPlayerInsert {
 
 /**
  * Complete match data for sync (match + players)
+ * Players don't have match_id yet (will be set after match creation)
  */
 export interface SupabaseMatchSyncData {
   match: SupabaseMatchInsert;
-  players: SupabaseMatchPlayerInsert[];
+  players: Omit<SupabaseMatchPlayerInsert, 'match_id'>[];
 }

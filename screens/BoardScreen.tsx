@@ -871,8 +871,8 @@ export default function BasketballCourt() {
             matchId: activeMatch.id,
             teamA: activeMatch.team_a_name,
             teamB: activeMatch.team_b_name,
-            scoreA: activeMatch.score_a,
-            scoreB: activeMatch.score_b,
+            finalScoreA: activeMatch.final_score_a,
+            finalScoreB: activeMatch.final_score_b,
             status: activeMatch.status,
           });
           setFoundMatch(activeMatch);
@@ -1897,8 +1897,8 @@ export default function BasketballCourt() {
       teamB: foundMatch.team_b_name,
       currentPeriod: foundMatch.current_period,
       timeElapsed: foundMatch.time_elapsed,
-      scoreA: foundMatch.score_a,
-      scoreB: foundMatch.score_b,
+      finalScoreA: foundMatch.final_score_a,
+      finalScoreB: foundMatch.final_score_b,
     });
 
     setCurrentMatch(foundMatch);
