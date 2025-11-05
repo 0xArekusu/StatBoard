@@ -1,7 +1,19 @@
+/**
+ * MatchConfigModal
+ *
+ * Pre-game modal that allows user to configure match format and period duration.
+ * Features:
+ * - Select match format (2 halves or 4 quarters)
+ * - Adjust period duration with +/- buttons
+ * - Shows total match duration
+ * - Auto-adjusts default duration based on format
+ */
+
 import React from "react";
 import { Modal, View, Text, TouchableOpacity } from "react-native";
 import { MatchFormat } from "../src/models/types";
 import { MATCH_FORMATS, MATCH_FORMAT_LABELS } from "../constants/matchConstants";
+import { logInfo } from "../utils/logger";
 
 interface MatchConfigModalProps {
   visible: boolean;
@@ -32,8 +44,32 @@ export default function MatchConfigModal({
     return formatDurationDisplay(totalSeconds);
   };
 
+  /**
+   * Handle confirm button click
+   * Proceeds to start the match with selected configuration
+   */
   const handleConfirm = () => {
+    const formatLabel = matchFormat === MATCH_FORMATS.TWO_HALVES ? '2 Mi-temps' : '4 Quart-temps';
+    const totalDuration = getTotalMatchDuration();
+
+    logInfo('MatchConfigModal', '✅ User confirmed match configuration', {
+      matchFormat,
+      formatLabel,
+      periodDuration,
+      periodDurationMinutes: Math.floor(periodDuration / 60),
+      totalMatchDuration: totalDuration
+    });
+
     onConfirm(matchFormat, periodDuration);
+  };
+
+  /**
+   * Handle back button click
+   * Returns to team initialization screen
+   */
+  const handleBack = () => {
+    logInfo('MatchConfigModal', '◀️ User clicked back button, returning to team initialization');
+    onRequestClose();
   };
 
   return (
@@ -41,7 +77,10 @@ export default function MatchConfigModal({
       visible={visible}
       transparent
       animationType="fade"
-      onRequestClose={onRequestClose}
+      onRequestClose={() => {
+        logInfo('MatchConfigModal', '🔙 Hardware back button pressed, returning to team initialization');
+        onRequestClose();
+      }}
     >
       <View
         style={{
@@ -97,7 +136,15 @@ export default function MatchConfigModal({
                     borderWidth: 1,
                     borderColor: matchFormat === format.key ? "#1976d2" : "#ddd",
                   }}
-                  onPress={() => setMatchFormat(format.key as MatchFormat)}
+                  onPress={() => {
+                    const newFormat = format.key as MatchFormat;
+                    logInfo('MatchConfigModal', '🏀 User changed match format', {
+                      previousFormat: matchFormat,
+                      newFormat,
+                      formatLabel: format.label
+                    });
+                    setMatchFormat(newFormat);
+                  }}
                 >
                   <Text style={{ fontSize: 16, marginRight: 4 }}>{format.icon}</Text>
                   <Text
@@ -130,7 +177,15 @@ export default function MatchConfigModal({
                     justifyContent: "center",
                     marginHorizontal: 8,
                   }}
-                  onPress={() => setPeriodDuration(Math.max(60, periodDuration - 60))}
+                  onPress={() => {
+                    const newDuration = Math.max(60, periodDuration - 60);
+                    logInfo('MatchConfigModal', '⏱️ User decreased period duration', {
+                      previousDuration: periodDuration,
+                      newDuration,
+                      change: -60
+                    });
+                    setPeriodDuration(newDuration);
+                  }}
                 >
                   <Text style={{ fontSize: 18, fontWeight: "bold", color: "#666" }}>-</Text>
                 </TouchableOpacity>
@@ -149,7 +204,15 @@ export default function MatchConfigModal({
                     justifyContent: "center",
                     marginHorizontal: 8,
                   }}
-                  onPress={() => setPeriodDuration(Math.min(3600, periodDuration + 60))}
+                  onPress={() => {
+                    const newDuration = Math.min(3600, periodDuration + 60);
+                    logInfo('MatchConfigModal', '⏱️ User increased period duration', {
+                      previousDuration: periodDuration,
+                      newDuration,
+                      change: +60
+                    });
+                    setPeriodDuration(newDuration);
+                  }}
                 >
                   <Text style={{ fontSize: 18, fontWeight: "bold", color: "#666" }}>+</Text>
                 </TouchableOpacity>
@@ -171,7 +234,7 @@ export default function MatchConfigModal({
                 borderWidth: 1,
                 borderColor: "#ddd",
               }}
-              onPress={onRequestClose}
+              onPress={handleBack}
             >
               <Text style={{ color: "#666", fontWeight: "bold", fontSize: 16 }}>
                 Retour

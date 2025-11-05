@@ -5,9 +5,10 @@
  * Manages the initial loading state and renders the navigation stack once ready.
  */
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import { AppState, AppStateStatus } from "react-native";
 import MainMenuScreen from "./screens/MainMenuScreen";
 import BoardScreen from "./screens/BoardScreen";
 import MatchDetailsScreen from "./screens/MatchDetailsScreen";
@@ -22,7 +23,7 @@ import JoinClubScreen from "./screens/JoinClubScreen";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { AuthProvider, useAuth } from "./src/contexts/AuthContext";
 import { ROUTES } from "./constants/routes";
-import { logInfo } from "./utils/logger";
+import { logInfo, logWarn } from "./utils/logger";
 import DebugCourtClick from "./DebugCourtClick";
 
 const Stack = createNativeStackNavigator();
@@ -86,8 +87,83 @@ function Navigation() {
 /**
  * Root App component
  * Sets up providers (SafeArea, Auth) and renders the navigation
+ * Also tracks app lifecycle (foreground, background, inactive)
  */
 export default function App() {
+  const appState = useRef<AppStateStatus>(AppState.currentState);
+
+  useEffect(() => {
+    // Log initial app state
+    logInfo("App", "📱 App initial state", {
+      currentState: appState.current
+    });
+
+    /**
+     * AppState listener - Tracks when app goes to background or comes to foreground
+     * States:
+     * - "active": App is in foreground and user is interacting
+     * - "background": App is in background (user switched to another app)
+     * - "inactive": App is transitioning between states (iOS only, brief state)
+     */
+    const subscription = AppState.addEventListener("change", (nextAppState: AppStateStatus) => {
+      const previousState = appState.current;
+
+      // App coming back to foreground (from background or inactive)
+      if (
+        previousState.match(/inactive|background/) &&
+        nextAppState === "active"
+      ) {
+        logInfo("App", "🟢 App came to foreground", {
+          previousState,
+          currentState: nextAppState,
+          timestamp: new Date().toISOString()
+        });
+      }
+
+      // App going to background
+      if (
+        previousState === "active" &&
+        nextAppState === "background"
+      ) {
+        logInfo("App", "⚫ App went to background", {
+          previousState,
+          currentState: nextAppState,
+          timestamp: new Date().toISOString()
+        });
+      }
+
+      // App going inactive (iOS transition state)
+      if (
+        previousState === "active" &&
+        nextAppState === "inactive"
+      ) {
+        logWarn("App", "🟡 App became inactive (transitioning)", {
+          previousState,
+          currentState: nextAppState,
+          timestamp: new Date().toISOString()
+        });
+      }
+
+      appState.current = nextAppState;
+
+      // Log all state changes for debugging
+      logInfo("App", "🔄 App state changed", {
+        from: previousState,
+        to: nextAppState,
+        timestamp: new Date().toISOString()
+      });
+    });
+
+    // Cleanup listener on unmount (app closing)
+    return () => {
+      logInfo("App", "🔴 App component unmounting (app closing)", {
+        lastState: appState.current,
+        timestamp: new Date().toISOString()
+      });
+      subscription.remove();
+    };
+  }, []);
+
   return (
     <SafeAreaProvider>
       <SafeAreaView style={{ flex: 1 }}>

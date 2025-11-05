@@ -583,16 +583,30 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
     );
   };
 
+  /**
+   * Handle PDF preview button click
+   * Opens the PDF preview modal to show match summary
+   */
   const handlePreviewPDF = () => {
+    logInfo('MatchSummaryScreen', '👁️ User clicked PDF preview button', {
+      teamA,
+      teamB,
+      scoreA: adjustedScoreA,
+      scoreB: adjustedScoreB,
+      matchFormat,
+      playersCount: players.length,
+      actionsCount: actions.length,
+      fromHistory
+    });
     setPreviewModalVisible(true);
   };
 
   /**
-   * Handle PDF export
-   * Generates and saves match summary as PDF file
+   * Handle PDF export (Premium feature)
+   * Generates and saves match summary as PDF file without watermark
    */
   const handleExportPDF = async () => {
-    logInfo('MatchSummaryScreen', '📄 Generating PDF export', {
+    logInfo('MatchSummaryScreen', '⭐ User clicked Premium PDF export button', {
       teamA,
       teamB,
       scoreA: adjustedScoreA,
@@ -617,7 +631,13 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
         scoreManuallyAdjusted,
       });
 
-      logInfo('MatchSummaryScreen', '✅ PDF generated successfully');
+      logInfo('MatchSummaryScreen', '✅ Premium PDF generated and saved successfully', {
+        teamA,
+        teamB,
+        finalScoreA: adjustedScoreA,
+        finalScoreB: adjustedScoreB,
+        withWatermark: false
+      });
     } catch (error) {
       logError('MatchSummaryScreen', '❌ Error generating PDF', {
         error: error instanceof Error ? error.message : error,

@@ -1,6 +1,18 @@
+/**
+ * InitTeamModal
+ *
+ * Pre-game modal that allows user to configure team names and select team mode.
+ * Features:
+ * - Edit team names (if not from club)
+ * - Swap teams
+ * - Select team mode (manage Team A only, Team B only, or both)
+ * - Shows which team is from the club (if applicable)
+ */
+
 import React from "react";
 import { Modal, View, Text, TextInput, TouchableOpacity } from "react-native";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
+import { logInfo } from "../utils/logger";
 
 interface InitTeamModalProps {
   visible: boolean;
@@ -55,14 +67,37 @@ export default function InitTeamModal({
   // Initially club is Team A, but if swapped, club becomes Team B
   const clubTeam = hasClubTeam ? (teamsSwapped ? "B" : "A") : null;
 
-  // Function to handle confirm
+  /**
+   * Handle confirm button click
+   * Proceeds to match configuration with selected team mode
+   */
   const handleConfirm = () => {
     if (!selectedTeamMode) return;
+
+    logInfo('InitTeamModal', '✅ User confirmed team setup', {
+      teamA,
+      teamB,
+      teamMode: selectedTeamMode,
+      hasClubTeam,
+      clubTeam,
+      teamsSwapped
+    });
+
     onConfirm(selectedTeamMode);
   };
 
-  // Function to swap team names and IDs
+  /**
+   * Swap teams A and B
+   * Swaps names, IDs, and resets team mode selection
+   */
   const swapTeams = () => {
+    logInfo('InitTeamModal', '🔄 User swapped teams', {
+      previousTeamA: teamA,
+      previousTeamB: teamB,
+      newTeamA: teamB,
+      newTeamB: teamA
+    });
+
     const tempTeamA = teamA;
     setTeamA(teamB);
     setTeamB(tempTeamA);
@@ -80,12 +115,29 @@ export default function InitTeamModal({
     setSelectedTeamMode(null);
   };
 
+  /**
+   * Handle back button click
+   * Returns to team selection (if team was selected) or menu (if no team)
+   */
+  const handleBack = () => {
+    if (canGoBack && onBack) {
+      logInfo('InitTeamModal', '◀️ User clicked back button, returning to team selection');
+      onBack();
+    } else if (!canGoBack && onGoToMenu) {
+      logInfo('InitTeamModal', '◀️ User clicked back button, returning to menu');
+      onGoToMenu();
+    }
+  };
+
   return (
     <Modal
       visible={visible}
       transparent
       animationType="fade"
-      onRequestClose={onRequestClose}
+      onRequestClose={() => {
+        logInfo('InitTeamModal', '🔙 Hardware back button pressed');
+        onRequestClose();
+      }}
     >
       <View
         style={{
@@ -216,9 +268,14 @@ export default function InitTeamModal({
                   minWidth: 250,
                   opacity: isDisabled ? 0.4 : 1,
                 }}
-                onPress={() =>
-                  setSelectedTeamMode(option.key as "A" | "B" | "BOTH")
-                }
+                onPress={() => {
+                  const mode = option.key as "A" | "B" | "BOTH";
+                  logInfo('InitTeamModal', '🎯 User selected team mode', {
+                    selectedMode: mode,
+                    modeLabel: option.label
+                  });
+                  setSelectedTeamMode(mode);
+                }}
               >
                 <View
                   style={{
@@ -246,7 +303,7 @@ export default function InitTeamModal({
           })}
 
           <View style={{ flexDirection: "row", gap: 12, marginTop: 16, justifyContent: "center" }}>
-            {canGoBack && onBack ? (
+            {(canGoBack && onBack) || (!canGoBack && onGoToMenu) ? (
               <TouchableOpacity
                 style={{
                   backgroundColor: "#f0f0f0",
@@ -256,25 +313,7 @@ export default function InitTeamModal({
                   borderWidth: 1,
                   borderColor: "#ddd",
                 }}
-                onPress={onBack}
-              >
-                <Text style={{ color: "#666", fontWeight: "600", fontSize: 16 }}>
-                  Retour
-                </Text>
-              </TouchableOpacity>
-            ) : null}
-
-            {!canGoBack && onGoToMenu ? (
-              <TouchableOpacity
-                style={{
-                  backgroundColor: "#f0f0f0",
-                  borderRadius: 8,
-                  paddingVertical: 10,
-                  paddingHorizontal: 20,
-                  borderWidth: 1,
-                  borderColor: "#ddd",
-                }}
-                onPress={onGoToMenu}
+                onPress={handleBack}
               >
                 <Text style={{ color: "#666", fontWeight: "600", fontSize: 16 }}>
                   Retour

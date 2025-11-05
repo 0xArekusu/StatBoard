@@ -1,3 +1,26 @@
+/**
+ * BoardScreen (Basketball Court)
+ *
+ * Main screen for managing live basketball matches.
+ * Features:
+ * - Interactive basketball court with SVG visualization
+ * - Real-time action tracking (shots, rebounds, fouls)
+ * - Player management (starters, substitutes, coaches)
+ * - Timer and period management
+ * - Score tracking
+ * - SQLite persistence with action queue
+ * - Support for single team mode (A or B) or both teams mode
+ * - Pre-game setup flow (team selection, initialization, configuration)
+ * - Resume incomplete matches from database
+ * - Action filtering and history
+ *
+ * Architecture:
+ * - Uses MatchManager for match state persistence
+ * - ActionQueue for batched action saves to SQLite
+ * - Semantic coordinate system for court actions (rotation-aware)
+ * - Modal-based UI for actions, player editing, and configuration
+ */
+
 import React, {
   useState,
   useMemo,
@@ -53,6 +76,7 @@ import type { Club } from "../models/Club";
 import { supabase } from "../src/config/supabase";
 import { ServiceFactory } from "../services/ServiceFactory";
 import { useAuth } from "../src/contexts/AuthContext";
+import { logInfo, logError, logWarn } from "../utils/logger";
 
 // Modal layout constants (for the new ActionModal)
 const MODAL_WIDTH = 240;
@@ -723,43 +747,74 @@ export default function BasketballCourt() {
     setShowSheet(true);
   }, []);
 
-  // Load club data if clubId is provided
+  /**
+   * Load club data if clubId is provided
+   * Fetches club details from Supabase to display club context
+   */
   useEffect(() => {
     const loadClub = async () => {
       if (!clubId) return;
+
+      logInfo('BoardScreen', '📡 Loading club data from Supabase', { clubId });
 
       try {
         const clubService = ServiceFactory.getClubService(supabase);
         const clubData = await clubService.getClubById(clubId);
         if (clubData) {
           setClub(clubData);
+          logInfo('BoardScreen', '✅ Club data loaded successfully', {
+            clubId,
+            clubName: clubData.name,
+            clubCode: clubData.code
+          });
         }
       } catch (error) {
-        console.error("Error loading club:", error);
+        logError('BoardScreen', '❌ Error loading club data', {
+          clubId,
+          error: error instanceof Error ? error.message : error
+        });
       }
     };
 
     loadClub();
   }, [clubId]);
 
-  // Check if there is an active match at startup
+  /**
+   * Check if there is an active match at startup
+   * If found, prompt user to resume; otherwise show team selection
+   */
   useEffect(() => {
     const checkActiveMatch = async () => {
+      logInfo('BoardScreen', '🔍 Checking for active match in SQLite', {
+        userId: user?.id,
+        clubId
+      });
+
       try {
         const activeMatch = await matchManager.getActiveMatch();
         if (activeMatch) {
-          console.log("🔄 Active match found:", activeMatch);
+          logInfo('BoardScreen', '🔄 Active match found, prompting to resume', {
+            matchId: activeMatch.id,
+            teamA: activeMatch.team_a_name,
+            teamB: activeMatch.team_b_name,
+            scoreA: activeMatch.score_a,
+            scoreB: activeMatch.score_b,
+            status: activeMatch.status
+          });
           setFoundMatch(activeMatch);
           setResumeModalVisible(true);
           setInitModalVisible(false);
           setTeamSelectionModalVisible(false); // Ensure team selection is hidden
         } else {
           // No active match, show team selection modal
-          console.log("✅ No active match found, showing team selection modal");
+          logInfo('BoardScreen', '✅ No active match found, showing team selection modal');
           setTeamSelectionModalVisible(true);
         }
       } catch (error) {
-        console.error("❌ Error checking active match:", error);
+        logError('BoardScreen', '❌ Error checking active match', {
+          error: error instanceof Error ? error.message : error,
+          userId: user?.id
+        });
         // On error, still show team selection
         setTeamSelectionModalVisible(true);
       }
@@ -768,14 +823,23 @@ export default function BasketballCourt() {
     checkActiveMatch();
   }, [matchManager]);
 
-  // Configure action queue observer
+  /**
+   * Configure action queue observer
+   * Monitors when actions are batch-saved to SQLite database
+   */
   useEffect(() => {
     const observer: ActionObserver = {
       onActionsSaved: (savedCount: number) => {
-        console.log(`✅ ${savedCount} actions saved to database`);
+        logInfo('BoardScreen', '💾 Actions batch saved to SQLite', {
+          savedCount,
+          matchId: currentMatch?.id
+        });
       },
       onError: (error: Error) => {
-        console.error("❌ Action queue error:", error);
+        logError('BoardScreen', '❌ Action queue error during batch save', {
+          error: error.message,
+          matchId: currentMatch?.id
+        });
         // TODO: Display an error toast to the user
       },
     };
@@ -1288,13 +1352,32 @@ export default function BasketballCourt() {
     setInitModalVisible(true);
   };
 
+  /**
+   * Handle match start
+   * Creates match in SQLite database and saves all players
+   */
   const handleStartMatch = async () => {
     try {
-      console.log("🏀 Starting match...");
+      logInfo('BoardScreen', '🏀 Starting new match', {
+        teamA,
+        teamB,
+        teamMode,
+        matchFormat,
+        periodDuration,
+        clubId,
+        teamAId,
+        teamBId
+      });
 
       // Protection contre les valeurs null
       if (!teamA || !teamB || !teamMode || !matchFormat || !periodDuration) {
-        console.warn("⚠️ Missing required match data");
+        logWarn('BoardScreen', '⚠️ Missing required match data, cannot start', {
+          hasTeamA: !!teamA,
+          hasTeamB: !!teamB,
+          hasTeamMode: !!teamMode,
+          hasMatchFormat: !!matchFormat,
+          hasPeriodDuration: !!periodDuration
+        });
         return;
       }
 
@@ -1308,8 +1391,13 @@ export default function BasketballCourt() {
         team_id: teamAId || teamBId || selectedTeam?.id || null, // Store the club team UUID
       };
 
+      logInfo('BoardScreen', '💾 Creating match in SQLite database', matchData);
       const match = await matchManager.startMatch(matchData);
       setCurrentMatch(match);
+      logInfo('BoardScreen', '✅ Match created successfully in SQLite', {
+        matchId: match.id,
+        status: match.status
+      });
 
       // Sauvegarder les joueurs dans la base de données
       const matchPlayerRepository = new MatchPlayerRepository();
@@ -1326,10 +1414,15 @@ export default function BasketballCourt() {
       }));
 
       if (playersToSave.length > 0) {
+        logInfo('BoardScreen', '💾 Saving players to SQLite for match', {
+          matchId: match.id,
+          playersCount: playersToSave.length
+        });
         await matchPlayerRepository.createBatch(playersToSave);
-        console.log(
-          `✅ Saved ${playersToSave.length} players for match ${match.id}`
-        );
+        logInfo('BoardScreen', '✅ Players saved to SQLite successfully', {
+          matchId: match.id,
+          savedPlayersCount: playersToSave.length
+        });
       }
 
       setPreGameMode(false);
@@ -1338,9 +1431,18 @@ export default function BasketballCourt() {
       setScoreA(0);
       setScoreB(0);
 
-      console.log("✅ Match started successfully:", match.id);
+      logInfo('BoardScreen', '✅ Match started successfully, game ready', {
+        matchId: match.id,
+        preGameMode: false,
+        initialScoreA: 0,
+        initialScoreB: 0
+      });
     } catch (error) {
-      console.error("❌ Error starting match:", error);
+      logError('BoardScreen', '❌ Error starting match', {
+        error: error instanceof Error ? error.message : error,
+        teamA,
+        teamB
+      });
       // En cas d'erreur, on peut continuer sans la base de données
       setPreGameMode(false);
     }
@@ -1457,9 +1559,21 @@ export default function BasketballCourt() {
     }
   };
 
+  /**
+   * End the match
+   * Stops timer, uploads coach photos, marks match as completed in SQLite,
+   * and navigates to summary screen
+   */
   const endMatch = async () => {
     try {
-      console.log("🏁 Fin de match");
+      logInfo('BoardScreen', '🏁 Ending match', {
+        matchId: currentMatch?.id,
+        finalScoreA: scoreA,
+        finalScoreB: scoreB,
+        currentPeriod,
+        timeElapsed,
+        actionsCount: completedActions.length
+      });
 
       // Arrêter le chrono
       stopTimer();
@@ -1500,8 +1614,15 @@ export default function BasketballCourt() {
 
       // Marquer le match comme terminé dans la base de données
       if (currentMatch) {
+        logInfo('BoardScreen', '💾 Marking match as completed in SQLite', {
+          matchId: currentMatch.id,
+          scoreA,
+          scoreB
+        });
         await matchManager.endMatch(currentMatch.id);
-        console.log("✅ Match terminé et sauvegardé");
+        logInfo('BoardScreen', '✅ Match marked as completed in SQLite', {
+          matchId: currentMatch.id
+        });
       }
 
       // Navigate to MatchSummaryScreen
@@ -1541,6 +1662,17 @@ export default function BasketballCourt() {
           else if (teamBId) clubTeamOverride = "B";
         }
       }
+      logInfo('BoardScreen', '🧭 Navigating to Match Summary screen', {
+        matchId: currentMatch?.id,
+        teamA,
+        teamB,
+        scoreA,
+        scoreB,
+        actionsCount: completedActions.length,
+        playersCount: allPlayers.length,
+        clubTeamOverride
+      });
+
       navigation.navigate(ROUTES.MATCH_SUMMARY as any, {
         matchId: currentMatch?.id,
         teamA,
@@ -1555,7 +1687,10 @@ export default function BasketballCourt() {
         clubTeamOverride,
       });
     } catch (error) {
-      console.error("❌ Error ending match:", error);
+      logError('BoardScreen', '❌ Error ending match', {
+        error: error instanceof Error ? error.message : error,
+        matchId: currentMatch?.id
+      });
       // Même en cas d'erreur, arrêter le chrono
     }
   };
@@ -1579,10 +1714,23 @@ export default function BasketballCourt() {
     setShowEndMatchModal(false);
   };
 
+  /**
+   * Resume an existing match
+   * Restores match state from SQLite and loads all actions
+   */
   const handleResumeMatch = async () => {
     if (!foundMatch) return;
 
-    console.log("🔄 Resuming match:", foundMatch.id);
+    logInfo('BoardScreen', '🔄 Resuming existing match from SQLite', {
+      matchId: foundMatch.id,
+      teamA: foundMatch.team_a_name,
+      teamB: foundMatch.team_b_name,
+      currentPeriod: foundMatch.current_period,
+      timeElapsed: foundMatch.time_elapsed,
+      scoreA: foundMatch.score_a,
+      scoreB: foundMatch.score_b
+    });
+
     setCurrentMatch(foundMatch);
     setTeamA(foundMatch.team_a_name);
     setTeamB(foundMatch.team_b_name);
@@ -1605,7 +1753,8 @@ export default function BasketballCourt() {
     // Charger les actions existantes du match
     await loadExistingActions(foundMatch.id);
 
-    console.log(`✅ Match state restored:`, {
+    logInfo('BoardScreen', '✅ Match state restored successfully', {
+      matchId: foundMatch.id,
       period: foundMatch.current_period,
       timeElapsed: foundMatch.time_elapsed,
       format: foundMatch.match_format,
@@ -1613,9 +1762,13 @@ export default function BasketballCourt() {
     });
   };
 
+  /**
+   * Load existing actions from SQLite for a resumed match
+   * Converts database format to UI ActionData format
+   */
   const loadExistingActions = async (matchId: number) => {
     try {
-      console.log("📊 Loading existing actions for match:", matchId);
+      logInfo('BoardScreen', '📊 Loading existing actions from SQLite', { matchId });
       const actions = await actionRepository.getActionsForMatch(matchId);
 
       if (actions.length > 0) {
@@ -1642,18 +1795,35 @@ export default function BasketballCourt() {
         const maxOrder = Math.max(...actions.map((a) => a.action_order), 0);
         setActionCounter(maxOrder);
 
-        console.log(`✅ Loaded ${actions.length} existing actions`);
+        logInfo('BoardScreen', '✅ Existing actions loaded from SQLite', {
+          matchId,
+          actionsCount: actions.length,
+          maxActionOrder: maxOrder
+        });
+      } else {
+        logInfo('BoardScreen', 'ℹ️ No existing actions found for match', { matchId });
       }
     } catch (error) {
-      console.error("❌ Error loading existing actions:", error);
+      logError('BoardScreen', '❌ Error loading existing actions from SQLite', {
+        matchId,
+        error: error instanceof Error ? error.message : error
+      });
     }
   };
 
+  /**
+   * Discard an existing match
+   * Deletes match and all associated data (actions, players) from SQLite
+   */
   const handleDiscardMatch = async () => {
     if (!foundMatch) return;
 
     try {
-      console.log("🗑️ Deleting match and all associated data:", foundMatch.id);
+      logInfo('BoardScreen', '🗑️ Deleting match and all associated data from SQLite', {
+        matchId: foundMatch.id,
+        teamA: foundMatch.team_a_name,
+        teamB: foundMatch.team_b_name
+      });
 
       // Delete all actions for this match
       await actionRepository.deleteActionsForMatch(foundMatch.id);
@@ -1664,7 +1834,9 @@ export default function BasketballCourt() {
       // Delete the match itself
       await matchRepository.delete(foundMatch.id);
 
-      console.log("✅ Match and all data deleted successfully");
+      logInfo('BoardScreen', '✅ Match and all associated data deleted from SQLite', {
+        matchId: foundMatch.id
+      });
 
       setFoundMatch(null);
       setResumeModalVisible(false);
@@ -1674,7 +1846,10 @@ export default function BasketballCourt() {
       setHasShownTeamSelection(false);
       setTeamSelectionModalVisible(true);
     } catch (error) {
-      console.error("❌ Error deleting match:", error);
+      logError('BoardScreen', '❌ Error deleting match from SQLite', {
+        matchId: foundMatch.id,
+        error: error instanceof Error ? error.message : error
+      });
       // En cas d'erreur, on ferme quand même le modal et on montre la sélection d'équipe
       setFoundMatch(null);
       setResumeModalVisible(false);
@@ -1690,13 +1865,32 @@ export default function BasketballCourt() {
     navigation.goBack(); // Retour au MainMenuScreen
   };
 
+  /**
+   * Handle player edit button click
+   * Opens the player edit modal for the specified player
+   */
   const handlePlayerEdit = (playerId: number, team: "A" | "B" = "A") => {
+    // Find player details for logging
+    const teamPlayers = team === "A" ? players : playersTeamB;
+    const teamSubstitutes = team === "A" ? substitutesTeamA : substitutesTeamB;
+    const player = [...teamPlayers, ...teamSubstitutes].find(p => p.id === playerId);
+
+    logInfo('BoardScreen', '✏️ User clicked edit player button', {
+      playerId,
+      playerName: player?.name,
+      playerNumber: player?.num,
+      team,
+      preGameMode
+    });
     setEditingPlayer(playerId);
-    setEditingTeam(team); // 🏀 Mémoriser l'équipe en cours d'édition
+    setEditingTeam(team); // Remember the team being edited
     setPlayerEditModalVisible(true);
   };
 
-  // 🔄 Fonction pour interchanger deux joueurs (swap positions)
+  /**
+   * Handle player swap (exchange positions)
+   * Swaps data between two players
+   */
   const handlePlayerSwap = (targetPlayerId: number) => {
     if (editingPlayer === null) return;
 
@@ -1813,23 +2007,40 @@ export default function BasketballCourt() {
     setEditingPlayer(null);
   };
 
+  /**
+   * Handle player edit confirmation
+   * Updates player number, name, and photo in the correct team and roster (starters/substitutes)
+   */
   const handlePlayerEditConfirm = (
     newNumber: number,
     newName: string,
     photoUrl?: string
   ) => {
     if (editingPlayer !== null) {
-      // Vérifier l'unicité du numéro
+      // Check number uniqueness
       if (!isNumberUnique(newNumber, editingPlayer, editingTeam)) {
+        logWarn('BoardScreen', '⚠️ Player number already in use', {
+          newNumber,
+          editingPlayer,
+          editingTeam
+        });
         alert(
           `Le numéro ${newNumber} est déjà utilisé par un autre joueur de l'équipe ${editingTeam}.`
         );
         return;
       }
 
-      // 🏀 Mettre à jour la bonne équipe selon editingTeam
+      logInfo('BoardScreen', '✅ User confirmed player edit', {
+        playerId: editingPlayer,
+        team: editingTeam,
+        newNumber,
+        newName,
+        hasPhoto: !!photoUrl
+      });
+
+      // Update the correct team based on editingTeam
       if (editingTeam === "A") {
-        // Vérifier si c'est un titulaire ou un remplaçant
+        // Check if starter or substitute
         const isPlayerInStarters = players.some((p) => p.id === editingPlayer);
 
         if (isPlayerInStarters) {
@@ -1850,7 +2061,7 @@ export default function BasketballCourt() {
           );
         }
       } else {
-        // Vérifier si c'est un titulaire ou un remplaçant
+        // Check if starter or substitute
         const isPlayerInStarters = playersTeamB.some(
           (p) => p.id === editingPlayer
         );
@@ -1876,13 +2087,21 @@ export default function BasketballCourt() {
     }
     setPlayerEditModalVisible(false);
     setEditingPlayer(null);
-    setEditingTeam("A"); // 🏀 Reset à l'équipe A
+    setEditingTeam("A"); // Reset to team A
   };
 
+  /**
+   * Handle player edit cancellation
+   * Closes modal without saving changes
+   */
   const handlePlayerEditCancel = () => {
+    logInfo('BoardScreen', '❌ User cancelled player edit', {
+      playerId: editingPlayer,
+      team: editingTeam
+    });
     setPlayerEditModalVisible(false);
     setEditingPlayer(null);
-    setEditingTeam("A"); // 🏀 Reset à l'équipe A
+    setEditingTeam("A"); // Reset to team A
   };
 
   // Fonction utilitaire pour vérifier l'unicité des numéros
@@ -1925,13 +2144,23 @@ export default function BasketballCourt() {
     return 99; // Fallback
   };
 
-  // Gestion des remplaçants - Ajout
+  /**
+   * Handle add substitute button click
+   * Creates a new substitute player with auto-generated number and default name
+   */
   const handleAddSubstitute = (team: "A" | "B") => {
     const substitutes = team === "A" ? substitutesTeamA : substitutesTeamB;
     const setSubstitutes =
       team === "A" ? setSubstitutesTeamA : setSubstitutesTeamB;
 
-    if (substitutes.length >= 10) return; // Maximum 10 remplaçants
+    if (substitutes.length >= 10) {
+      logWarn('BoardScreen', '⚠️ Maximum substitutes reached', {
+        team,
+        currentCount: substitutes.length,
+        maxAllowed: 10
+      });
+      return; // Maximum 10 substitutes
+    }
 
     const nextId =
       Math.max(
@@ -1944,7 +2173,7 @@ export default function BasketballCourt() {
     const nextNumber = getNextAvailableNumber(team);
     const teamLetter = team;
 
-    // Détecter si cette équipe est une équipe du club
+    // Detect if this team is a club team
     const isClubTeam =
       (team === "A" && !!teamAId) || (team === "B" && !!teamBId);
 
@@ -1955,13 +2184,25 @@ export default function BasketballCourt() {
       photoUrl: undefined,
       isSubstitute: true,
       isFromClub: isClubTeam,
-      isAddedInPreGame: true, // Marquer comme ajouté en pre-game
+      isAddedInPreGame: true, // Mark as added in pre-game
     };
+
+    logInfo('BoardScreen', '➕ User added substitute player', {
+      team,
+      substituteId: nextId,
+      substituteNumber: nextNumber,
+      currentSubstitutesCount: substitutes.length,
+      newSubstitutesCount: substitutes.length + 1,
+      isClubTeam
+    });
 
     setSubstitutes([...substitutes, newSubstitute]);
   };
 
-  // Gestion des remplaçants - Suppression
+  /**
+   * Handle remove substitute button click
+   * Removes the last substitute from the team
+   */
   const handleRemoveSubstitute = (team: "A" | "B") => {
     const substitutes = team === "A" ? substitutesTeamA : substitutesTeamB;
     const setSubstitutes =
@@ -1969,28 +2210,67 @@ export default function BasketballCourt() {
 
     if (substitutes.length === 0) return;
 
-    // Supprimer le dernier remplaçant
+    logInfo('BoardScreen', '➖ User removed substitute player', {
+      team,
+      currentSubstitutesCount: substitutes.length,
+      newSubstitutesCount: substitutes.length - 1,
+      removedSubstitute: substitutes[substitutes.length - 1]
+    });
+
+    // Remove the last substitute
     setSubstitutes(substitutes.slice(0, -1));
   };
 
-  // Gestion de l'édition des remplaçants
+  /**
+   * Handle substitute edit button click
+   * Opens the player edit modal for a substitute
+   */
   const handleSubstituteEdit = (substituteId: number, team: "A" | "B") => {
+    // Find substitute details for logging
+    const teamSubstitutes = team === "A" ? substitutesTeamA : substitutesTeamB;
+    const substitute = teamSubstitutes.find(s => s.id === substituteId);
+
+    logInfo('BoardScreen', '✏️ User clicked edit substitute button', {
+      substituteId,
+      substituteName: substitute?.name,
+      substituteNumber: substitute?.num,
+      team,
+      preGameMode
+    });
     setEditingPlayer(substituteId);
     setEditingTeam(team);
     setPlayerEditModalVisible(true);
   };
 
-  // État pour l'édition du coach
+  // Coach editing state
   const [coachEditModalVisible, setCoachEditModalVisible] = useState(false);
   const [editingCoach, setEditingCoach] = useState<"A" | "B" | null>(null);
 
-  // Gestion de l'édition du coach
+  /**
+   * Handle coach edit button click
+   * Opens the coach edit modal
+   */
   const handleCoachEdit = (coachId: number, team: "A" | "B") => {
+    logInfo('BoardScreen', '✏️ User clicked edit coach button', {
+      coachId,
+      team,
+      preGameMode
+    });
     setEditingCoach(team);
     setCoachEditModalVisible(true);
   };
 
+  /**
+   * Handle coach edit confirmation
+   * Updates coach name and photo
+   */
   const handleCoachEditConfirm = (newName: string, photoUrl?: string) => {
+    logInfo('BoardScreen', '✅ User confirmed coach edit', {
+      team: editingCoach,
+      newName,
+      hasPhoto: !!photoUrl
+    });
+
     if (editingCoach === "A") {
       setCoachTeamA((prev) => ({ ...prev, name: newName, photoUrl }));
     } else if (editingCoach === "B") {
@@ -2000,15 +2280,30 @@ export default function BasketballCourt() {
     setEditingCoach(null);
   };
 
+  /**
+   * Handle coach edit cancellation
+   * Closes modal without saving changes
+   */
   const handleCoachEditCancel = () => {
+    logInfo('BoardScreen', '❌ User cancelled coach edit', {
+      team: editingCoach
+    });
     setCoachEditModalVisible(false);
     setEditingCoach(null);
   };
 
-  // Fonction pour swapper les côtés des équipes (juste changer currentTeam)
+  /**
+   * Handle team swap button click
+   * Swaps the visual sides of teams on the court (changes currentTeam)
+   */
   const handleSwapTeams = () => {
-    // Simplement changer le currentTeam pour inverser l'affichage
-    setCurrentTeam(currentTeam === "A" ? "B" : "A");
+    const newCurrentTeam = currentTeam === "A" ? "B" : "A";
+    logInfo('BoardScreen', '🔄 User swapped team sides on court', {
+      previousCurrentTeam: currentTeam,
+      newCurrentTeam
+    });
+    // Simply change the currentTeam to reverse the display
+    setCurrentTeam(newCurrentTeam);
   };
 
   // Fonction pour obtenir tous les joueurs d'une équipe (titulaires + remplaçants)
@@ -2202,13 +2497,12 @@ export default function BasketballCourt() {
   }, [preGameMode, initModalVisible, matchConfigModalVisible]);
 
   return (
-    // <View style={[styles.container, { flex: 1 }]}>
     <View
       style={[
         { flex: 1, backgroundColor: club?.courtBackgroundColor || "#1a472a" },
       ]}
     >
-      {/* 📊 Barre de statut du match en haut */}
+      {/* Match Status Bar: Timer, score, period controls - shown during active match */}
       {!initModalVisible && !matchConfigModalVisible && !preGameMode && (
         <MatchStatusBar
           teamA={teamA}
@@ -2229,6 +2523,7 @@ export default function BasketballCourt() {
         />
       )}
 
+      {/* Pre-game Modal: Team Selection - allows user to select a club team or skip */}
       <TeamSelectionModal
         visible={teamSelectionModalVisible}
         clubId={clubId}
@@ -2275,6 +2570,7 @@ export default function BasketballCourt() {
         }}
       />
 
+      {/* Pre-game Modal: Team Initialization - configure team names and select team mode (A/B/BOTH) */}
       <InitTeamModal
         visible={initModalVisible}
         teamA={teamA}
@@ -2302,18 +2598,20 @@ export default function BasketballCourt() {
         onGoToMenu={() => navigation.goBack()}
       />
 
+      {/* Pre-game Modal: Match Configuration - set match format (halves/quarters) and period duration */}
       <MatchConfigModal
         visible={matchConfigModalVisible}
         onConfirm={handleMatchConfigConfirm}
         onRequestClose={handleMatchConfigBack}
       />
 
+      {/* Player Edit Modal: Edit player name and number during match */}
       <PlayerEditModal
         visible={playerEditModalVisible}
         playerNumber={
           editingPlayer
             ? (() => {
-                // Chercher dans les titulaires
+                // Search in starters
                 const teamPlayers =
                   editingTeam === "A" ? players : playersTeamB;
                 const playerInStarters = teamPlayers.find(
@@ -2321,7 +2619,7 @@ export default function BasketballCourt() {
                 );
                 if (playerInStarters) return playerInStarters.num;
 
-                // Chercher dans les remplaçants
+                // Search in substitutes
                 const teamSubstitutes =
                   editingTeam === "A" ? substitutesTeamA : substitutesTeamB;
                 const playerInSubstitutes = teamSubstitutes.find(
@@ -2334,7 +2632,7 @@ export default function BasketballCourt() {
         playerName={
           editingPlayer
             ? (() => {
-                // Chercher dans les titulaires
+                // Search in starters
                 const teamPlayers =
                   editingTeam === "A" ? players : playersTeamB;
                 const playerInStarters = teamPlayers.find(
@@ -2342,7 +2640,7 @@ export default function BasketballCourt() {
                 );
                 if (playerInStarters) return playerInStarters.name;
 
-                // Chercher dans les remplaçants
+                // Search in substitutes
                 const teamSubstitutes =
                   editingTeam === "A" ? substitutesTeamA : substitutesTeamB;
                 const playerInSubstitutes = teamSubstitutes.find(
@@ -2740,7 +3038,7 @@ export default function BasketballCourt() {
         />
       </View>
 
-      {/* Bouton pour démarrer le match */}
+      {/* Pre-game: Start Match Button - saves match and players to SQLite and begins the game */}
       {!teamSelectionModalVisible &&
         !initModalVisible &&
         !matchConfigModalVisible &&
@@ -2794,7 +3092,7 @@ export default function BasketballCourt() {
         timeElapsed={timeElapsed}
       />
 
-      {/* 🏀 Pastilles des joueurs - Équipe A */}
+      {/* Pre-game: Player jerseys for Team A - clickable to edit player details */}
       {!teamSelectionModalVisible &&
         !initModalVisible &&
         !matchConfigModalVisible &&
@@ -2843,7 +3141,7 @@ export default function BasketballCourt() {
           </View>
         ))}
 
-      {/* 🏀 Pastilles des joueurs - Équipe B */}
+      {/* Pre-game: Player jerseys for Team B - clickable to edit player details */}
       {!teamSelectionModalVisible &&
         !initModalVisible &&
         !matchConfigModalVisible &&
@@ -2892,7 +3190,7 @@ export default function BasketballCourt() {
           </View>
         ))}
 
-      {/* 🔄 Gestionnaire des remplaçants - Équipe A */}
+      {/* Pre-game: Substitutes Manager for Team A - manage substitutes and coach */}
       {!teamSelectionModalVisible &&
         !initModalVisible &&
         !matchConfigModalVisible &&
@@ -2914,7 +3212,7 @@ export default function BasketballCourt() {
           />
         )}
 
-      {/* 🔄 Gestionnaire des remplaçants - Équipe B */}
+      {/* Pre-game: Substitutes Manager for Team B - manage substitutes and coach */}
       {!teamSelectionModalVisible &&
         !initModalVisible &&
         !matchConfigModalVisible &&

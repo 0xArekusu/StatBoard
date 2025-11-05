@@ -1,3 +1,14 @@
+/**
+ * TeamSelectionModal
+ *
+ * Pre-game modal that allows users to select which team they want to manage.
+ * Features:
+ * - Load teams from Supabase based on user and club
+ * - Auto-select if only one team available
+ * - Skip option to create teams on the fly without database
+ * - Load team players when team is selected
+ */
+
 import React, { useState, useEffect } from "react";
 import {
   View,
@@ -15,6 +26,7 @@ import { ServiceFactory } from "../services/ServiceFactory";
 import { useAuth } from "../src/contexts/AuthContext";
 import type { Team } from "../models/Team";
 import type { Player } from "../models/Player";
+import { logInfo, logError, logWarn } from "../utils/logger";
 
 interface TeamSelectionModalProps {
   visible: boolean;
@@ -35,10 +47,21 @@ export default function TeamSelectionModal({
   const [teams, setTeams] = useState<Team[]>([]);
   const [loading, setLoading] = useState(true);
 
+  /**
+   * Load teams when modal becomes visible
+   * Auto-selects if user is not logged in (anonymous mode)
+   */
   useEffect(() => {
     if (visible) {
+      logInfo('TeamSelectionModal', '👁️ Modal opened', {
+        hasUser: !!user,
+        userId: user?.id,
+        clubId
+      });
+
       if (!user) {
         // If not logged in, skip directly (auto-selected, so back goes to menu)
+        logInfo('TeamSelectionModal', '🚫 No user logged in, skipping team selection (anonymous mode)');
         onTeamSelected(null, [], true);
         return;
       }
@@ -57,7 +80,7 @@ export default function TeamSelectionModal({
       backHandlerSubscription = BackHandler.addEventListener(
         "hardwareBackPress",
         () => {
-          console.log("🔙 Hardware back button pressed in TeamSelectionModal");
+          logInfo('TeamSelectionModal', '🔙 User pressed hardware back button, returning to menu');
           onBack(); // Return to menu
           return true; // Prevent default behavior
         }
@@ -72,46 +95,128 @@ export default function TeamSelectionModal({
     };
   }, [visible, onBack]);
 
+  /**
+   * Load user's teams from Supabase
+   * Filters by approved/active status and optionally by club
+   * Auto-selects team if only one is available
+   */
   const loadUserTeams = async () => {
     if (!user) return;
+
+    logInfo('TeamSelectionModal', '📡 Loading user teams from Supabase', {
+      userId: user.id,
+      clubId
+    });
 
     try {
       setLoading(true);
       const teamService = ServiceFactory.getTeamService(supabase);
       const userTeams = await teamService.getUserTeams(user.id);
 
+      logInfo('TeamSelectionModal', '✅ User teams fetched from Supabase', {
+        totalTeams: userTeams.length,
+        teamIds: userTeams.map(t => t.id),
+        teamNames: userTeams.map(t => t.name)
+      });
+
       // Filter only approved and active teams
       let activeTeams = userTeams.filter(
         (t) => t.status === "approved" && t.isActive
       );
 
+      logInfo('TeamSelectionModal', '🔍 Filtered to approved and active teams', {
+        activeTeamsCount: activeTeams.length
+      });
+
       // Filter by club if clubId is provided
       if (clubId) {
         activeTeams = activeTeams.filter((t) => t.clubId === clubId);
+        logInfo('TeamSelectionModal', '🔍 Filtered by club', {
+          clubId,
+          teamsInClub: activeTeams.length
+        });
       }
 
       setTeams(activeTeams);
 
       // Auto-select if only one team
       if (activeTeams.length === 1) {
+        logInfo('TeamSelectionModal', '🎯 Only one team available, auto-selecting', {
+          teamId: activeTeams[0].id,
+          teamName: activeTeams[0].name
+        });
         await loadTeamPlayers(activeTeams[0], true); // true = wasAutoSelected
+      } else if (activeTeams.length === 0) {
+        logWarn('TeamSelectionModal', '⚠️ No active teams found for user', {
+          userId: user.id,
+          clubId
+        });
+      } else {
+        logInfo('TeamSelectionModal', '📋 Multiple teams available for selection', {
+          teamsCount: activeTeams.length
+        });
       }
     } catch (error) {
-      console.error("Error loading teams:", error);
+      logError('TeamSelectionModal', '❌ Error loading teams from Supabase', {
+        userId: user.id,
+        clubId,
+        error: error instanceof Error ? error.message : error
+      });
     } finally {
       setLoading(false);
     }
   };
 
+  /**
+   * Load players for selected team from Supabase
+   * Then calls onTeamSelected callback to proceed to next step
+   */
   const loadTeamPlayers = async (team: Team, wasAutoSelected: boolean = false) => {
+    logInfo('TeamSelectionModal', '👥 User selected team, loading players from Supabase', {
+      teamId: team.id,
+      teamName: team.name,
+      wasAutoSelected
+    });
+
     try {
       const playerService = ServiceFactory.getPlayerService(supabase);
       const players = await playerService.getTeamPlayers(team.id);
+
+      logInfo('TeamSelectionModal', '✅ Team players loaded from Supabase', {
+        teamId: team.id,
+        teamName: team.name,
+        playersCount: players.length,
+        playerNames: players.map(p => p.name)
+      });
+
       onTeamSelected(team, players, wasAutoSelected);
     } catch (error) {
-      console.error("Error loading team players:", error);
+      logError('TeamSelectionModal', '❌ Error loading team players from Supabase', {
+        teamId: team.id,
+        teamName: team.name,
+        error: error instanceof Error ? error.message : error
+      });
+      // Proceed with empty players array on error
       onTeamSelected(team, [], wasAutoSelected);
     }
+  };
+
+  /**
+   * Handle skip button click
+   * User chooses to continue without selecting a pre-configured team
+   */
+  const handleSkip = () => {
+    logInfo('TeamSelectionModal', '⏭️ User clicked skip, continuing without team (manual setup)');
+    onSkip();
+  };
+
+  /**
+   * Handle back button click
+   * User returns to main menu
+   */
+  const handleBack = () => {
+    logInfo('TeamSelectionModal', '◀️ User clicked back button, returning to menu');
+    onBack();
   };
 
   const renderTeam = ({ item }: { item: Team }) => (
@@ -140,7 +245,10 @@ export default function TeamSelectionModal({
       visible={visible}
       animationType="fade"
       transparent
-      onRequestClose={onBack}
+      onRequestClose={() => {
+        logInfo('TeamSelectionModal', '🔙 Modal onRequestClose triggered (hardware back or gesture)');
+        onBack();
+      }}
     >
       <View style={styles.overlay}>
         <View style={styles.container}>
@@ -161,10 +269,10 @@ export default function TeamSelectionModal({
                 Créez une équipe dans votre club pour l'utiliser ici
               </Text>
               <View style={styles.buttonContainer}>
-                <TouchableOpacity style={styles.backButtonSmall} onPress={onBack}>
+                <TouchableOpacity style={styles.backButtonSmall} onPress={handleBack}>
                   <Text style={styles.backButtonText}>Retour</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.skipButton} onPress={onSkip}>
+                <TouchableOpacity style={styles.skipButton} onPress={handleSkip}>
                   <Text style={styles.skipButtonText} numberOfLines={1}>
                     Continuer sans équipe
                   </Text>
@@ -183,10 +291,10 @@ export default function TeamSelectionModal({
                 />
               </View>
               <View style={styles.buttonContainer}>
-                <TouchableOpacity style={styles.backButton} onPress={onBack}>
+                <TouchableOpacity style={styles.backButton} onPress={handleBack}>
                   <Text style={styles.backButtonText}>Retour</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.skipButton} onPress={onSkip}>
+                <TouchableOpacity style={styles.skipButton} onPress={handleSkip}>
                   <Text style={styles.skipButtonText}>Continuer sans équipe</Text>
                 </TouchableOpacity>
               </View>

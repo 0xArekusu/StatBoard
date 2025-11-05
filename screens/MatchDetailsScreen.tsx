@@ -99,6 +99,72 @@ export default function MatchDetailsScreen() {
     });
   }, [activeTab]);
 
+  /**
+   * Log court filter changes - Team filter
+   */
+  useEffect(() => {
+    logInfo('MatchDetailsScreen', '🔍 Court team filter changed', {
+      courtFilterTeam,
+      filteringBothTeams: courtFilterTeam === "BOTH"
+    });
+  }, [courtFilterTeam]);
+
+  /**
+   * Log court filter changes - Players filter
+   */
+  useEffect(() => {
+    logInfo('MatchDetailsScreen', '🔍 Court players filter changed', {
+      selectedPlayers: courtFilterPlayers,
+      selectedPlayersCount: courtFilterPlayers.length
+    });
+  }, [courtFilterPlayers]);
+
+  /**
+   * Log court filter changes - Action type filter
+   */
+  useEffect(() => {
+    logInfo('MatchDetailsScreen', '🔍 Court action type filter changed', {
+      selectedActionTypes: courtFilterActionType,
+      filteringShots: courtFilterActionType.includes("tir"),
+      filteringRebounds: courtFilterActionType.includes("rebond"),
+      filteringFouls: courtFilterActionType.includes("faute")
+    });
+  }, [courtFilterActionType]);
+
+  /**
+   * Log court filter changes - Period filter
+   */
+  useEffect(() => {
+    logInfo('MatchDetailsScreen', '🔍 Court period filter changed', {
+      selectedPeriods: courtFilterPeriod,
+      selectedPeriodsCount: courtFilterPeriod.length,
+      matchFormat
+    });
+  }, [courtFilterPeriod]);
+
+  /**
+   * Log player stats sort option changes
+   */
+  useEffect(() => {
+    logInfo('MatchDetailsScreen', '🔀 Player stats sort option changed', {
+      sortBy,
+      sortingByPoints: sortBy === "points",
+      sortingByName: sortBy === "name",
+      sortingByShots: sortBy === "shots",
+      sortingByRebounds: sortBy === "rebounds"
+    });
+  }, [sortBy]);
+
+  /**
+   * Log player stats team filter changes
+   */
+  useEffect(() => {
+    logInfo('MatchDetailsScreen', '🔍 Player stats team filter changed', {
+      selectedTeam,
+      filteringBothTeams: selectedTeam === "BOTH"
+    });
+  }, [selectedTeam]);
+
 
   // Calculate individual player statistics
   const calculatePlayerStats = (playerId: number) => {
@@ -292,7 +358,7 @@ export default function MatchDetailsScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
+      {/* Header: Back button, title, and empty right side for alignment */}
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.backButton}
@@ -308,7 +374,7 @@ export default function MatchDetailsScreen() {
       </View>
 
       <ScrollView style={styles.mainScroll}>
-        {/* Score Summary */}
+        {/* Score Summary: Display match score for both teams */}
         <View style={styles.scoreSummary}>
           <View style={styles.teamScoreContainer}>
             <Text style={styles.teamNameSmall}>{teamA}</Text>
@@ -321,7 +387,7 @@ export default function MatchDetailsScreen() {
           </View>
         </View>
 
-        {/* Tabs */}
+        {/* Tabs: Switch between Court visualization and Player statistics */}
         <View style={styles.tabsContainer}>
           <TouchableOpacity
             style={[styles.tab, activeTab === "court" && styles.tabActive]}
@@ -351,12 +417,12 @@ export default function MatchDetailsScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Court Tab Content */}
+        {/* Court Tab Content: Shot visualization with filters and live stats */}
         {activeTab === "court" && (
           <View style={styles.courtSection}>
           <Text style={styles.sectionTitle}>Visualisation du terrain</Text>
 
-          {/* Court Filters */}
+          {/* Court Filters: Team, Action type, Players, and Period filters */}
           <View style={styles.courtFilters}>
             {/* Team Filter */}
             <View style={styles.filterCategory}>
@@ -590,9 +656,9 @@ export default function MatchDetailsScreen() {
             </View>
           </View>
 
-          {/* Court and Stats Container */}
+          {/* Court and Stats Container: 3-column layout with stats on sides and court in center */}
           <View style={styles.courtAndStatsContainer}>
-            {/* Left Column - Live Stats */}
+            {/* Left Column - Live Stats: Team A statistics (or single team if managing one) */}
             <View style={styles.liveStats}>
               <Text style={styles.liveStatsTitle}>{teamMode === "BOTH" ? teamA : "Stats"}</Text>
 
@@ -700,7 +766,7 @@ export default function MatchDetailsScreen() {
               )}
             </View>
 
-            {/* Center Column - Court */}
+            {/* Center Column - Court: Basketball court SVG with action markers */}
             <View style={styles.courtContainer}>
               <View style={{ width: 320, height: 595 }}>
                 <BasketballCourtSVG
@@ -712,7 +778,7 @@ export default function MatchDetailsScreen() {
               </View>
             </View>
 
-            {/* Right Column - Team B Stats (when managing both teams) */}
+            {/* Right Column - Team B Stats: Team B statistics (only shown when managing both teams) */}
             {teamMode === "BOTH" ? (
               <View style={styles.liveStats}>
                 <Text style={styles.liveStatsTitle}>{teamB}</Text>
@@ -829,14 +895,14 @@ export default function MatchDetailsScreen() {
           </View>
         )}
 
-        {/* Players Tab Content */}
+        {/* Players Tab Content: Detailed player statistics table */}
         {activeTab === "players" && (
           <View style={styles.playerStatsSection}>
             <Text style={styles.sectionTitle}>Statistiques des joueurs</Text>
 
-            {/* Filters */}
+            {/* Filters: Team selection and sort options */}
             <View style={styles.filtersContainer}>
-            {/* Team filter */}
+            {/* Team filter: Filter players by team (only shown when managing both teams) */}
         {teamMode === "BOTH" && (
           <View style={styles.teamFilter}>
             <TouchableOpacity
@@ -890,7 +956,7 @@ export default function MatchDetailsScreen() {
           </View>
         )}
 
-        {/* Sort buttons */}
+        {/* Sort buttons: Sort players by points, shots, rebounds, or name */}
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -963,11 +1029,11 @@ export default function MatchDetailsScreen() {
         </ScrollView>
           </View>
 
-          {/* Players List */}
+          {/* Players List: Individual player cards with detailed statistics */}
           <View style={styles.playersList}>
         {sortedPlayers.map((player) => (
           <View key={player.id} style={styles.playerCard}>
-            {/* Player header */}
+            {/* Player header: Player name, number, and total points */}
             <View style={styles.playerHeader}>
               <View style={styles.playerInfo}>
                 <Text style={styles.playerNumber}>#{player.num}</Text>
@@ -976,9 +1042,9 @@ export default function MatchDetailsScreen() {
               <Text style={styles.playerPoints}>{player.stats.totalPoints} pts</Text>
             </View>
 
-            {/* Player stats */}
+            {/* Player stats: Detailed breakdown by category */}
             <View style={styles.playerStats}>
-              {/* Shooting stats */}
+              {/* Shooting stats: Total shots and breakdown by point value (1pt, 2pts, 3pts) */}
               <View style={styles.statSection}>
                 <Text style={styles.statSectionTitle}>Tirs</Text>
                 <View style={styles.statRow}>
@@ -1013,7 +1079,7 @@ export default function MatchDetailsScreen() {
                 )}
               </View>
 
-              {/* Other stats */}
+              {/* Other stats: Rebounds (offensive/defensive) and Fouls (personal/technical) */}
               {(player.stats.rebounds > 0 || player.stats.fouls > 0) && (
                 <View style={styles.statSection}>
                   <Text style={styles.statSectionTitle}>Autres</Text>
@@ -1039,6 +1105,7 @@ export default function MatchDetailsScreen() {
           </View>
         ))}
 
+            {/* Empty state: Shown when no players match the current filters */}
             {sortedPlayers.length === 0 && (
               <View style={styles.emptyState}>
                 <Text style={styles.emptyStateText}>Aucune statistique disponible</Text>
