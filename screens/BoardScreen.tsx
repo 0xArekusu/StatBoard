@@ -2771,6 +2771,26 @@ export default function BasketballCourt() {
         canGoBack={hasShownTeamSelection}
         hasClubTeam={selectedTeam !== null}
         onBack={() => {
+          logInfo('BoardScreen', '🔙 User going back from InitTeamModal to TeamSelectionModal');
+
+          // Reset all team-related state to allow fresh selection
+          setSelectedTeam(null);
+          setSelectedTeamPlayers([]);
+          setTeamA("Team A");
+          setTeamB("Team B");
+          setTeamAId(null);
+          setTeamBId(null);
+
+          // Reset players to empty
+          setPlayers([]);
+          setSubstitutesTeamA([]);
+          setPlayersTeamB([]);
+          setSubstitutesTeamB([]);
+
+          // Reset coach
+          setCoachTeamA({ id: 21, name: "Coach Équipe A", photoUrl: null, isCoach: true });
+          setCoachTeamB({ id: 22, name: "Coach Équipe B", photoUrl: null, isCoach: true });
+
           setInitModalVisible(false);
           if (hasShownTeamSelection) {
             setTeamSelectionModalVisible(true);

@@ -60,6 +60,18 @@ export default function InitTeamModal({
   // Track if teams have been swapped
   const [teamsSwapped, setTeamsSwapped] = React.useState(false);
 
+  /**
+   * Reset selection states when modal opens
+   * Ensures clean state when user returns to this modal
+   */
+  React.useEffect(() => {
+    if (visible) {
+      logInfo('InitTeamModal', '👁️ Modal opened, resetting selection states');
+      setSelectedTeamMode(null);
+      setTeamsSwapped(false);
+    }
+  }, [visible]);
+
   const isFullyDisabled = isConfirmDisabled || selectedTeamMode === null;
 
   // Determine which team is from the club
