@@ -275,7 +275,7 @@ export default function MatchHistoryScreen() {
                 final_score_a: sm.final_score_a,
                 final_score_b: sm.final_score_b,
                 score_manually_adjusted: sm.score_manually_adjusted ? 1 : 0,
-                synced_to_server: 1,
+                synced_to_server: true, // Server matches are by definition synced
                 created_at: sm.played_at,
                 started_at: sm.played_at,
                 ended_at: sm.played_at,
@@ -623,7 +623,7 @@ export default function MatchHistoryScreen() {
     if (!eligibility.canSync) {
       // Determine the type of error
       const isNotConnected = !user;
-      const isFreemium = !!user && eligibility.reason?.includes("abonnement");
+      const isFreemium = !!user && (eligibility.reason?.includes("abonnement") || false);
 
       setSyncErrorReason(eligibility.reason || "Une erreur est survenue");
       setSyncErrorIsNotConnected(isNotConnected);
