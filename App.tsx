@@ -1,3 +1,10 @@
+/**
+ * App.tsx
+ *
+ * Main application component that sets up navigation and authentication context.
+ * Manages the initial loading state and renders the navigation stack once ready.
+ */
+
 import { useState, useEffect } from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
@@ -15,20 +22,29 @@ import JoinClubScreen from "./screens/JoinClubScreen";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { AuthProvider, useAuth } from "./src/contexts/AuthContext";
 import { ROUTES } from "./constants/routes";
+import { logInfo } from "./utils/logger";
 
 const Stack = createNativeStackNavigator();
 
+/**
+ * Navigation component that manages the app's screen navigation
+ * Displays splash screen during loading, then shows the main navigation stack
+ */
 function Navigation() {
   const { loading } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Simuler un temps de chargement
+    logInfo('App', '🚀 App initialization started');
+
+    // Simulate initial loading time for splash screen
     setTimeout(() => {
       setIsLoading(false);
+      logInfo('App', '✅ App initialization completed');
     }, 500);
   }, []);
 
+  // Show splash screen while loading auth or initial data
   if (isLoading || loading) {
     return <SplashScreen />;
   }
@@ -56,6 +72,10 @@ function Navigation() {
   );
 }
 
+/**
+ * Root App component
+ * Sets up providers (SafeArea, Auth) and renders the navigation
+ */
 export default function App() {
   return (
     <SafeAreaProvider>

@@ -11,7 +11,10 @@
  *   logError("ScreenName", "Failed to load data", { error: err.message });
  */
 
-import { logger } from '../services/LoggerService';
+import { logger as loggerService } from '../services/LoggerService';
+
+// Re-export the logger instance for direct access
+export { logger } from '../services/LoggerService';
 
 /**
  * Log informational message
@@ -20,7 +23,7 @@ import { logger } from '../services/LoggerService';
  * @param data - Optional data object
  */
 export const logInfo = (tag: string, message: string, data?: any) => {
-  logger.log('INFO', tag, message, data);
+  loggerService.log('INFO', tag, message, data);
 };
 
 /**
@@ -30,7 +33,7 @@ export const logInfo = (tag: string, message: string, data?: any) => {
  * @param data - Optional data object
  */
 export const logWarn = (tag: string, message: string, data?: any) => {
-  logger.log('WARN', tag, message, data);
+  loggerService.log('WARN', tag, message, data);
 };
 
 /**
@@ -40,31 +43,31 @@ export const logWarn = (tag: string, message: string, data?: any) => {
  * @param data - Optional data object
  */
 export const logError = (tag: string, message: string, data?: any) => {
-  logger.log('ERROR', tag, message, data);
+  loggerService.log('ERROR', tag, message, data);
 };
 
 /**
  * Get all logs from file
  * @returns Promise with log content as string
  */
-export const getLogs = () => logger.getLogs();
+export const getLogs = () => loggerService.getLogs();
 
 /**
  * Clear all logs
  */
-export const clearLogs = () => logger.clearLogs();
+export const clearLogs = () => loggerService.clearLogs();
 
 /**
  * Share logs file
  */
-export const shareLogs = () => logger.shareLogs();
+export const shareLogs = () => loggerService.shareLogs();
 
 /**
  * Enable/disable logging
  */
-export const setLoggingEnabled = (enabled: boolean) => logger.setEnabled(enabled);
+export const setLoggingEnabled = (enabled: boolean) => loggerService.setEnabled(enabled);
 
 /**
  * Get log file path
  */
-export const getLogFilePath = () => logger.getLogFilePath();
+export const getLogFilePath = () => loggerService.getLogFilePath();
