@@ -1,4 +1,11 @@
-import { StyleSheet, Text, View, TouchableOpacity, Alert, ActivityIndicator } from "react-native";
+import {
+  StyleSheet,
+  Text,
+  View,
+  TouchableOpacity,
+  Alert,
+  ActivityIndicator,
+} from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -15,9 +22,9 @@ import type { Club } from "../models/Club";
 import { ROUTES } from "../constants/routes";
 import { canUseMultiClub } from "../src/config/devConfig";
 import { MatchRepository } from "../src/services/database/MatchRepository";
-import { DatabaseService } from "../src/services/database/DatabaseService";
 import { MatchSyncPolicy } from "../src/services/match/MatchSyncPolicy";
 import type { SubscriptionTier } from "../models/Subscription";
+import { shareLogs } from "../utils/logger";
 
 type RootStackParamList = {
   [ROUTES.MAIN_MENU]: undefined;
@@ -61,11 +68,13 @@ export default function MainMenuScreen() {
 
       // Restore previously selected club if it still exists
       if (selectedClubIdRef.current) {
-        const previouslySelected = clubs.find(c => c.id === selectedClubIdRef.current);
+        const previouslySelected = clubs.find(
+          (c) => c.id === selectedClubIdRef.current
+        );
         if (previouslySelected) {
           setUserClub(previouslySelected);
           // Check subscription tier
-          setIsFreeSubscription(previouslySelected.subscriptionTier === 'free');
+          setIsFreeSubscription(previouslySelected.subscriptionTier === "free");
           return;
         }
       }
@@ -75,7 +84,7 @@ export default function MainMenuScreen() {
       setUserClub(firstClub);
       selectedClubIdRef.current = firstClub?.id || null;
       // Check subscription tier
-      setIsFreeSubscription(firstClub?.subscriptionTier === 'free');
+      setIsFreeSubscription(firstClub?.subscriptionTier === "free");
     } catch (error) {
       console.error("Error loading user club:", error);
     } finally {
@@ -90,7 +99,9 @@ export default function MainMenuScreen() {
       const allMatches = await matchRepo.getAllMatches();
 
       // Count only completed matches for the limit
-      const completedMatches = allMatches.filter(match => match.status === 'completed');
+      const completedMatches = allMatches.filter(
+        (match) => match.status === "completed"
+      );
       setMatchCount(completedMatches.length);
     } catch (error) {
       console.error("Error loading match count:", error);
@@ -100,7 +111,8 @@ export default function MainMenuScreen() {
   // Update max matches when user or userClub changes
   React.useEffect(() => {
     const syncPolicy = new MatchSyncPolicy();
-    const tier: SubscriptionTier = userClub?.subscriptionTier || (user ? 'free' : 'free');
+    const tier: SubscriptionTier =
+      userClub?.subscriptionTier || (user ? "free" : "free");
     const limits = syncPolicy.getLimits(!!user, tier);
     setMaxMatches(limits.maxLocalMatches);
   }, [user, userClub]);
@@ -122,7 +134,8 @@ export default function MainMenuScreen() {
   const handleNewMatch = async () => {
     // Check match limit
     const syncPolicy = new MatchSyncPolicy();
-    const tier: SubscriptionTier = userClub?.subscriptionTier || (user ? 'free' : 'free');
+    const tier: SubscriptionTier =
+      userClub?.subscriptionTier || (user ? "free" : "free");
     const canCreate = syncPolicy.canCreateMatch(matchCount, !!user, tier);
 
     if (!canCreate.allowed) {
@@ -163,13 +176,23 @@ export default function MainMenuScreen() {
         style={[styles.button, !user && styles.freeButton]}
         onPress={handleNewMatch}
       >
-        <Ionicons name={!user ? "star-outline" : "add-circle-outline"} size={24} color="#fff" />
-        <Text style={styles.buttonText}>{!user ? "Essayez gratuitement !" : "Nouveau match"}</Text>
+        <Ionicons
+          name={!user ? "star-outline" : "add-circle-outline"}
+          size={24}
+          color="#fff"
+        />
+        <Text style={styles.buttonText}>
+          {!user ? "Essayez gratuitement !" : "Nouveau match"}
+        </Text>
       </TouchableOpacity>
 
       <TouchableOpacity
         style={[styles.button, styles.secondaryButton]}
-        onPress={() => (navigation as any).navigate(ROUTES.MATCH_HISTORY, { clubId: userClub?.id })}
+        onPress={() =>
+          (navigation as any).navigate(ROUTES.MATCH_HISTORY, {
+            clubId: userClub?.id,
+          })
+        }
       >
         <MaterialCommunityIcons
           name="clipboard-list-outline"
@@ -184,12 +207,14 @@ export default function MainMenuScreen() {
           {/* Club selector for admin user with multi-club enabled */}
           {canUseMultiClub(user.id) && userClubs.length > 1 && (
             <View style={styles.clubSelectorContainer}>
-              <Text style={styles.clubSelectorLabel}>Sélectionner un club:</Text>
+              <Text style={styles.clubSelectorLabel}>
+                Sélectionner un club:
+              </Text>
               <View style={styles.pickerContainer}>
                 <Picker
                   selectedValue={userClub?.id}
                   onValueChange={(clubId) => {
-                    const selectedClub = userClubs.find(c => c.id === clubId);
+                    const selectedClub = userClubs.find((c) => c.id === clubId);
                     if (selectedClub) {
                       setUserClub(selectedClub);
                       selectedClubIdRef.current = clubId;
@@ -197,8 +222,12 @@ export default function MainMenuScreen() {
                   }}
                   style={styles.picker}
                 >
-                  {userClubs.map(club => (
-                    <Picker.Item key={club.id} label={club.name} value={club.id} />
+                  {userClubs.map((club) => (
+                    <Picker.Item
+                      key={club.id}
+                      label={club.name}
+                      value={club.id}
+                    />
                   ))}
                 </Picker>
               </View>
@@ -209,7 +238,9 @@ export default function MainMenuScreen() {
             style={[styles.button, styles.clubButton]}
             onPress={() => {
               if (userClub) {
-                (navigation as any).navigate(ROUTES.CLUB_FORM, { clubId: userClub.id });
+                (navigation as any).navigate(ROUTES.CLUB_FORM, {
+                  clubId: userClub.id,
+                });
               } else {
                 setClubModalVisible(true);
               }
@@ -279,9 +310,37 @@ export default function MainMenuScreen() {
         }}
         onManageMatches={() => {
           setMatchLimitModalVisible(false);
-          (navigation as any).navigate(ROUTES.MATCH_HISTORY, { clubId: userClub?.id });
+          (navigation as any).navigate(ROUTES.MATCH_HISTORY, {
+            clubId: userClub?.id,
+          });
         }}
       />
+
+      {/* Debug button to share logs */}
+      <TouchableOpacity
+        style={styles.debugButton}
+        onPress={() => {
+          Alert.alert(
+            "Partager les logs",
+            "Voulez-vous partager le fichier de logs ?",
+            [
+              { text: "Annuler", style: "cancel" },
+              {
+                text: "Partager",
+                onPress: async () => {
+                  try {
+                    await shareLogs();
+                  } catch (error) {
+                    Alert.alert("Erreur", "Impossible de partager les logs");
+                  }
+                },
+              },
+            ]
+          );
+        }}
+      >
+        <Ionicons name="bug-outline" size={20} color="#666" />
+      </TouchableOpacity>
 
       <StatusBar style="auto" />
     </View>
@@ -394,5 +453,21 @@ const styles = StyleSheet.create({
     fontStyle: "italic",
     textAlign: "center",
     paddingHorizontal: 40,
+  },
+  debugButton: {
+    position: "absolute",
+    bottom: 20,
+    right: 20,
+    backgroundColor: "#f0f0f0",
+    borderRadius: 30,
+    width: 50,
+    height: 50,
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
 });

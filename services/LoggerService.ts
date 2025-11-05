@@ -1,0 +1,275 @@
+/**
+ * LoggerService
+ *
+ * Centralized logging service that writes logs to both console and file.
+ * Automatically rotates log file when it exceeds max size.
+ * Logs can be retrieved and shared for debugging purposes.
+ *
+ * Uses expo-file-system legacy API for compatibility.
+ */
+
+import * as FileSystem from "expo-file-system/legacy";
+
+class LoggerService {
+  private static instance: LoggerService;
+  private logFilePath: string;
+  private maxLogSize = 5 * 1024 * 1024; // 5MB max file size
+  private isEnabled = true;
+  private currentDate: string;
+
+  private constructor() {
+    // Store logs in app's document directory with date
+    this.currentDate = this.getDateString();
+    this.logFilePath = this.getLogFilePathForDate(this.currentDate);
+    console.log("[LoggerService] 📁 Log file path:", this.logFilePath);
+    this.initializeLogFile();
+  }
+
+  /**
+   * Get date string in YYYY-MM-DD format
+   */
+  private getDateString(): string {
+    const now = new Date();
+    return now.toISOString().split("T")[0];
+  }
+
+  /**
+   * Get log file path for a specific date
+   */
+  private getLogFilePathForDate(date: string): string {
+    return `${FileSystem.documentDirectory}app-logs-${date}.txt`;
+  }
+
+  /**
+   * Check if we need to rotate to a new day's log file
+   */
+  private async checkDateRotation() {
+    const currentDate = this.getDateString();
+    if (currentDate !== this.currentDate) {
+      // New day, switch to new log file
+      this.currentDate = currentDate;
+      this.logFilePath = this.getLogFilePathForDate(currentDate);
+      await this.initializeLogFile();
+      console.log(
+        "📁 [LoggerService] Rotated to new log file:",
+        this.logFilePath
+      );
+    }
+  }
+
+  /**
+   * Get singleton instance
+   */
+  static getInstance(): LoggerService {
+    if (!LoggerService.instance) {
+      LoggerService.instance = new LoggerService();
+    }
+    return LoggerService.instance;
+  }
+
+  /**
+   * Initialize log file with header
+   */
+  private async initializeLogFile() {
+    try {
+      const fileInfo = await FileSystem.getInfoAsync(this.logFilePath);
+      if (!fileInfo.exists) {
+        const header = `=== App Logs - Started at ${new Date().toISOString()} ===\n\n`;
+        await FileSystem.writeAsStringAsync(this.logFilePath, header);
+      }
+    } catch (error) {
+      console.error("Failed to initialize log file:", error);
+    }
+  }
+
+  /**
+   * Log a message with specified level
+   * Writes to both console and file
+   */
+  async log(
+    level: "INFO" | "WARN" | "ERROR",
+    tag: string,
+    message: string,
+    data?: any
+  ) {
+    if (!this.isEnabled) return;
+
+    const timestamp = new Date().toISOString();
+    const dataStr = data ? `\n  Data: ${JSON.stringify(data, null, 2)}` : "";
+    const logEntry = `[${timestamp}] [${level}] ${tag}: ${message}${dataStr}\n`;
+
+    // Console log (only add emoji for WARN and ERROR, INFO uses emoji from message)
+    const prefix = level === "ERROR" ? "❌" : level === "WARN" ? "⚠️" : "";
+    const logMessage = prefix
+      ? `${prefix} [${tag}] ${message}`
+      : `[${tag}] ${message}`;
+
+    if (data) {
+      console.log(logMessage, data);
+    } else {
+      console.log(logMessage);
+    }
+
+    // Write to file asynchronously (don't await to avoid blocking)
+    this.writeToFile(logEntry).catch((err) => {
+      console.error("Failed to write log to file:", err);
+    });
+  }
+
+  /**
+   * Write log entry to file
+   * Automatically rotates log when size limit is reached or date changes
+   */
+  private async writeToFile(entry: string) {
+    try {
+      // Check if we need to rotate to a new day
+      await this.checkDateRotation();
+
+      // Check if file size exceeds limit
+      const fileInfo = await FileSystem.getInfoAsync(this.logFilePath);
+
+      if (fileInfo.exists && fileInfo.size && fileInfo.size > this.maxLogSize) {
+        // Create a new log file with sequential number
+        const timestamp = new Date()
+          .toISOString()
+          .replace(/[:.]/g, "-")
+          .slice(0, -5);
+        const oldFilePath = this.logFilePath;
+        this.logFilePath = `${FileSystem.documentDirectory}app-logs-${this.currentDate}-${timestamp}.txt`;
+        console.log(
+          "📁 [LoggerService] Log size exceeded, rotated to:",
+          this.logFilePath
+        );
+        await this.initializeLogFile();
+      }
+
+      // Append log entry - read current content and append
+      let currentContent = "";
+      const fileInfo2 = await FileSystem.getInfoAsync(this.logFilePath);
+      if (fileInfo2.exists) {
+        currentContent = await FileSystem.readAsStringAsync(this.logFilePath);
+      }
+      await FileSystem.writeAsStringAsync(
+        this.logFilePath,
+        currentContent + entry
+      );
+    } catch (error) {
+      // Silent fail - don't spam console with file write errors
+    }
+  }
+
+  /**
+   * Get all logs from file
+   */
+  async getLogs(): Promise<string> {
+    try {
+      const fileInfo = await FileSystem.getInfoAsync(this.logFilePath);
+      if (fileInfo.exists) {
+        return await FileSystem.readAsStringAsync(this.logFilePath);
+      }
+      return "No logs found";
+    } catch (error) {
+      return `Error reading logs: ${error}`;
+    }
+  }
+
+  /**
+   * Clear all logs
+   */
+  async clearLogs() {
+    try {
+      await FileSystem.deleteAsync(this.logFilePath, { idempotent: true });
+      await this.initializeLogFile();
+      console.log("✅ [LoggerService] Logs cleared");
+    } catch (error) {
+      console.error("❌ [LoggerService] Error clearing logs:", error);
+    }
+  }
+
+  /**
+   * Share logs file (for debugging)
+   * Collects all log files and saves them to Downloads folder
+   */
+  async shareLogs() {
+    try {
+      // Find all log files in the directory
+      const dirInfo = await FileSystem.readDirectoryAsync(
+        FileSystem.documentDirectory || ""
+      );
+      const logFiles = dirInfo.filter((file) => file.startsWith("app-logs-"));
+
+      if (logFiles.length === 0) {
+        console.warn("⚠️ [LoggerService] No log files to share");
+        return;
+      }
+
+      // Read all log files and combine them
+      let combinedLogs = `=== Coach Assistant Logs Export ===\n`;
+      combinedLogs += `=== Exported at ${new Date().toISOString()} ===\n`;
+      combinedLogs += `=== Total files: ${logFiles.length} ===\n\n`;
+
+      for (const file of logFiles.sort()) {
+        const filePath = `${FileSystem.documentDirectory}${file}`;
+        const fileInfo = await FileSystem.getInfoAsync(filePath);
+
+        if (fileInfo.exists) {
+          combinedLogs += `\n========================================\n`;
+          combinedLogs += `=== File: ${file} ===\n`;
+          combinedLogs += `========================================\n\n`;
+          const content = await FileSystem.readAsStringAsync(filePath);
+          combinedLogs += content + "\n";
+        }
+      }
+
+      // Generate filename with timestamp
+      const timestamp = new Date()
+        .toISOString()
+        .replace(/[:.]/g, "-")
+        .slice(0, -5);
+      const filename = `coach-assistant-logs-${timestamp}.txt`;
+
+      // Request permission to save in user-selected directory (usually Downloads)
+      const permissions =
+        await FileSystem.StorageAccessFramework.requestDirectoryPermissionsAsync();
+
+      if (permissions.granted) {
+        // Save to user-selected directory
+        const fileUri = await FileSystem.StorageAccessFramework.createFileAsync(
+          permissions.directoryUri,
+          filename,
+          "text/plain"
+        );
+        await FileSystem.writeAsStringAsync(fileUri, combinedLogs, {
+          encoding: FileSystem.EncodingType.UTF8,
+        });
+        console.log("✅ [LoggerService] Logs saved to:", fileUri);
+      } else {
+        console.warn("⚠️ [LoggerService] Permission denied to save file");
+      }
+    } catch (error) {
+      console.error("❌ [LoggerService] Error sharing logs:", error);
+    }
+  }
+
+  /**
+   * Enable/disable logging
+   */
+  setEnabled(enabled: boolean) {
+    this.isEnabled = enabled;
+    console.log(
+      `${enabled ? "✅" : "❌"} [LoggerService] Logging ${
+        enabled ? "enabled" : "disabled"
+      }`
+    );
+  }
+
+  /**
+   * Get log file path
+   */
+  getLogFilePath(): string {
+    return this.logFilePath;
+  }
+}
+
+// Export singleton instance
+export const logger = LoggerService.getInstance();
