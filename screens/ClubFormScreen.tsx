@@ -1,3 +1,15 @@
+/**
+ * ClubFormScreen
+ *
+ * Screen for creating or editing a club.
+ * Features:
+ * - Create new club with customization (name, colors, logo)
+ * - Edit existing club (owner only)
+ * - Manage club teams (separate tab)
+ * - Share club code for member invitations
+ * All Supabase operations are logged for debugging.
+ */
+
 import React, { useState, useCallback, useEffect } from "react";
 import {
   View,
@@ -29,6 +41,7 @@ import { ServiceFactory } from "../services/ServiceFactory";
 import type { Club } from "../models/Club";
 import { ROUTES } from "../constants/routes";
 import { useAuth } from "../src/contexts/AuthContext";
+import { logInfo, logError, logWarn } from "../utils/logger";
 
 const PRESET_COLORS = [
   "#000000",
@@ -73,20 +86,47 @@ export default function ClubFormScreen() {
   const [isCustomPrimary, setIsCustomPrimary] = useState(false);
   const [isCustomSecondary, setIsCustomSecondary] = useState(false);
 
-  // Load club data if in edit mode
+  /**
+   * Log screen mount and load club data if in edit mode
+   * Fetches club details from Supabase and populates form fields
+   */
   useEffect(() => {
     if (isEditMode) {
+      logInfo('ClubFormScreen', '📱 Screen mounted - Edit mode', {
+        clubId,
+        userId: user?.id,
+        userEmail: user?.email
+      });
       loadClub();
+    } else {
+      logInfo('ClubFormScreen', '📱 Screen mounted - Create mode (new club)', {
+        userId: user?.id,
+        userEmail: user?.email
+      });
     }
   }, [clubId]);
 
+  /**
+   * Load club data from Supabase
+   * Populates form with existing club information
+   */
   const loadClub = async () => {
     try {
       setLoading(true);
+      logInfo('ClubFormScreen', '📡 Fetching club data from Supabase', { clubId });
+
       const clubService = ServiceFactory.getClubService(supabase);
       const clubData = await clubService.getClubById(clubId!);
 
       if (clubData) {
+        logInfo('ClubFormScreen', '✅ Club data loaded successfully', {
+          clubId: clubData.id,
+          clubName: clubData.name,
+          ownerId: clubData.ownerId,
+          isOwner: user?.id === clubData.ownerId,
+          hasLogo: !!clubData.logoUrl
+        });
+
         setClub(clubData);
         setClubName(clubData.name);
         setSigle(clubData.acronym);
@@ -98,14 +138,19 @@ export default function ClubFormScreen() {
 
         // If user is not owner, force teams tab
         if (user && clubData.ownerId !== user.id) {
+          logInfo('ClubFormScreen', '👥 User is not owner, switching to teams tab');
           setActiveTab("teams");
         }
       } else {
+        logError('ClubFormScreen', '❌ Club not found', { clubId });
         Alert.alert("Erreur", "Club introuvable");
         navigation.goBack();
       }
     } catch (error) {
-      console.error("Error loading club:", error);
+      logError('ClubFormScreen', '❌ Error loading club data', {
+        clubId,
+        error: error instanceof Error ? error.message : error
+      });
       Alert.alert("Erreur", "Impossible de charger le club");
     } finally {
       setLoading(false);
@@ -130,17 +175,26 @@ export default function ClubFormScreen() {
     setCourtLineColor(colors.hex);
   }, []);
 
+  /**
+   * Handle logo image selection
+   * Requests media library permissions and launches image picker
+   */
   const handlePickImage = async () => {
+    logInfo('ClubFormScreen', '📸 Requesting media library permissions');
+
     const permissionResult =
       await ImagePicker.requestMediaLibraryPermissionsAsync();
 
     if (permissionResult.granted === false) {
+      logWarn('ClubFormScreen', '⚠️ Media library permission denied');
       Alert.alert(
         "Permission requise",
         "Vous devez autoriser l'accès à vos photos pour importer un logo."
       );
       return;
     }
+
+    logInfo('ClubFormScreen', '✅ Media library permission granted, launching picker');
 
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: "images",
@@ -150,12 +204,26 @@ export default function ClubFormScreen() {
     });
 
     if (!result.canceled && result.assets && result.assets.length > 0) {
+      logInfo('ClubFormScreen', '✅ Image selected', {
+        uri: result.assets[0].uri,
+        width: result.assets[0].width,
+        height: result.assets[0].height
+      });
       setLogoUri(result.assets[0].uri);
+    } else {
+      logInfo('ClubFormScreen', 'ℹ️ Image selection cancelled');
     }
   };
 
+  /**
+   * Save club data to Supabase
+   * Creates new club or updates existing one based on mode
+   */
   const handleSave = async () => {
-    if (saving) return;
+    if (saving) {
+      logWarn('ClubFormScreen', '⚠️ Save already in progress, ignoring duplicate request');
+      return;
+    }
 
     try {
       setSaving(true);
@@ -163,6 +231,13 @@ export default function ClubFormScreen() {
 
       if (isEditMode) {
         // Update existing club
+        logInfo('ClubFormScreen', '💾 Updating existing club in Supabase', {
+          clubId,
+          clubName,
+          acronym: sigle,
+          hasLogo: !!logoUri
+        });
+
         const result = await clubService.updateClub(clubId!, {
           name: clubName,
           acronym: sigle,
@@ -174,6 +249,10 @@ export default function ClubFormScreen() {
         });
 
         if (!result.success) {
+          logError('ClubFormScreen', '❌ Failed to update club', {
+            clubId,
+            error: result.error
+          });
           Alert.alert(
             "Erreur",
             result.error || "Impossible de sauvegarder le club"
@@ -181,19 +260,29 @@ export default function ClubFormScreen() {
           return;
         }
 
+        logInfo('ClubFormScreen', '✅ Club updated successfully', { clubId });
         Alert.alert("Succès", "Le club a été mis à jour", [
           { text: "OK", onPress: () => navigation.goBack() },
         ]);
       } else {
         // Create new club
+        logInfo('ClubFormScreen', '📡 Fetching current user for club creation');
         const {
           data: { user },
         } = await supabase.auth.getUser();
 
         if (!user) {
+          logError('ClubFormScreen', '❌ No authenticated user found');
           Alert.alert("Erreur", "Vous devez être connecté pour créer un club");
           return;
         }
+
+        logInfo('ClubFormScreen', '➕ Creating new club in Supabase', {
+          clubName,
+          acronym: sigle,
+          ownerId: user.id,
+          hasLogo: !!logoUri
+        });
 
         const result = await clubService.createClub(
           {
@@ -209,9 +298,18 @@ export default function ClubFormScreen() {
         );
 
         if (!result.success) {
+          logError('ClubFormScreen', '❌ Failed to create club', {
+            error: result.error,
+            clubName
+          });
           Alert.alert("Erreur", result.error || "Impossible de créer le club");
           return;
         }
+
+        logInfo('ClubFormScreen', '✅ Club created successfully', {
+          clubId: result.club?.id,
+          clubName: result.club?.name
+        });
 
         const clubCode = result.club!.code;
 
@@ -260,6 +358,7 @@ export default function ClubFormScreen() {
 
   return (
     <View style={styles.container}>
+      {/* Header with back button and title */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={28} color="#333" />
@@ -270,10 +369,10 @@ export default function ClubFormScreen() {
         <View style={{ width: 28 }} />
       </View>
 
-      {/* Tabs - Only in edit mode */}
+      {/* Navigation tabs: Info (owner only) and Teams (edit mode only) */}
       {isEditMode && (
         <View style={styles.tabsContainer}>
-          {/* Only show Info tab if user is owner */}
+          {/* Info tab - only visible for club owner */}
           {isOwner && (
             <TouchableOpacity
               style={[styles.tab, activeTab === "info" && styles.tabActive]}
@@ -294,6 +393,7 @@ export default function ClubFormScreen() {
               </Text>
             </TouchableOpacity>
           )}
+          {/* Teams tab - visible for all members */}
           <TouchableOpacity
             style={[
               styles.tab,
@@ -319,7 +419,7 @@ export default function ClubFormScreen() {
         </View>
       )}
 
-      {/* Teams Tab Content */}
+      {/* Teams tab content - shows teams management component */}
       {activeTab === "teams" && isEditMode ? (
         <ClubTeamsTab
           clubId={clubId!}
@@ -328,12 +428,13 @@ export default function ClubFormScreen() {
           onEditTeam={handleEditTeam}
         />
       ) : (
+        /* Info tab content - club information form */
         <ScrollView
           style={{ flex: 1 }}
           contentContainerStyle={styles.scrollView}
           showsVerticalScrollIndicator={false}
         >
-          {/* Club code - Only in edit mode */}
+          {/* Club code section - displays shareable 6-digit code (edit mode only) */}
           {isEditMode && club && (
             <View style={styles.codeSection}>
               <Text style={styles.codeLabel}>Code du club</Text>
@@ -354,7 +455,7 @@ export default function ClubFormScreen() {
             </View>
           )}
 
-          {/* Informations de base */}
+          {/* Basic information section - club name and acronym */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Informations</Text>
 
@@ -378,10 +479,11 @@ export default function ClubFormScreen() {
             />
           </View>
 
-          {/* Personnalisation */}
+          {/* Customization section - colors, logo, court appearance */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Personnalisation</Text>
 
+            {/* Team colors selection */}
             <View style={styles.colorsRow}>
               <View style={styles.colorsColumn}>
                 <Text style={styles.label}>Couleur principale</Text>
@@ -501,6 +603,7 @@ export default function ClubFormScreen() {
                 </View>
               </View>
 
+              {/* Jersey preview - visual representation of team colors */}
               <View style={styles.jerseyPreview}>
                 <JerseyIcon
                   width={180}
@@ -511,6 +614,7 @@ export default function ClubFormScreen() {
               </View>
             </View>
 
+            {/* Logo upload section */}
             <Text style={styles.label}>Logo du club</Text>
             <View style={styles.logoSection}>
               <TouchableOpacity
@@ -528,11 +632,12 @@ export default function ClubFormScreen() {
             </View>
           </View>
 
-          {/* Prévisualisation */}
+          {/* Court preview section - shows how club will appear on basketball court */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Aperçu du terrain</Text>
 
             <View style={styles.courtPreview}>
+              {/* Court color customization buttons */}
               <View style={styles.courtColorPickers}>
                 <TouchableOpacity
                   style={[
@@ -558,6 +663,7 @@ export default function ClubFormScreen() {
                 </TouchableOpacity>
               </View>
 
+              {/* Court visualization with logo */}
               <View style={styles.courtContainer}>
                 <BasketballCourtSVG
                   width={320}
@@ -567,6 +673,7 @@ export default function ClubFormScreen() {
                   logoUri={logoUri}
                 />
               </View>
+              {/* Club name display */}
               {clubName && (
                 <Text style={styles.clubNamePreview}>
                   {clubName} {sigle && `(${sigle})`}
@@ -575,6 +682,7 @@ export default function ClubFormScreen() {
             </View>
           </View>
 
+          {/* Save button */}
           <TouchableOpacity
             style={[styles.saveButton, saving && styles.saveButtonDisabled]}
             onPress={handleSave}
@@ -591,7 +699,9 @@ export default function ClubFormScreen() {
         </ScrollView>
       )}
 
-      {/* Color Picker Modals */}
+      {/* Color Picker Modals - Full-screen modals for custom color selection */}
+
+      {/* Primary color picker modal */}
       <Modal visible={showPrimaryPicker} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
@@ -618,6 +728,7 @@ export default function ClubFormScreen() {
         </View>
       </Modal>
 
+      {/* Secondary color picker modal */}
       <Modal visible={showSecondaryPicker} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>

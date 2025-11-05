@@ -1,4 +1,17 @@
-import React, { useState } from "react";
+/**
+ * MatchHistoryScreen
+ *
+ * Displays list of completed matches from both local SQLite and Supabase.
+ * Features:
+ * - View match history with scores
+ * - Delete matches (local and server)
+ * - Sync local matches to Supabase (subscription-based)
+ * - Navigate to match details/summary
+ * - Filter by club (if clubId provided in route params)
+ * All database operations (SQLite and Supabase) are logged for debugging.
+ */
+
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -26,6 +39,7 @@ import SyncErrorModal from "../components/SyncErrorModal";
 import { useAuth } from "../src/contexts/AuthContext";
 import { supabase } from "../src/config/supabase";
 import { resolveTeamNames } from "../src/utils/teamNameResolver";
+import { logInfo, logError, logWarn } from "../utils/logger";
 
 interface MatchWithDetails extends Match {
   scoreA: number;
@@ -51,43 +65,64 @@ export default function MatchHistoryScreen() {
   const [syncErrorIsNotConnected, setSyncErrorIsNotConnected] = useState(false);
   const [syncErrorIsFreemium, setSyncErrorIsFreemium] = useState(false);
 
-  // Reload matches when screen gains focus (to refresh after creating new match)
+  /**
+   * Log screen mount when user arrives on the view
+   */
+  useEffect(() => {
+    logInfo('MatchHistoryScreen', '📱 Screen mounted - User arrived on match history view', {
+      userId: user?.id,
+      userEmail: user?.email,
+      isAuthenticated: !!user,
+      clubId: clubId,
+      hasClubFilter: !!clubId
+    });
+  }, []);
+
+  /**
+   * Reload matches when screen gains focus
+   * Ensures list is updated after creating/editing matches
+   */
   useFocusEffect(
     React.useCallback(() => {
+      logInfo('MatchHistoryScreen', '🔄 Screen focused, reloading matches');
       loadCompletedMatches();
     }, [])
   );
 
+  /**
+   * Load completed matches from both SQLite and Supabase
+   * Combines local non-synced matches with server matches
+   */
   const loadCompletedMatches = async () => {
-    console.log("📂 [MatchHistory] Loading completed matches...");
+    logInfo('MatchHistoryScreen', '💾 Loading completed matches from databases');
+
     try {
       const matchRepository = new MatchRepository();
       const actionRepository = new ActionRepository();
 
-      // 1. Get LOCAL completed matches (only non-synced ones)
+      // 1. Get LOCAL completed matches from SQLite (only non-synced ones)
+      logInfo('MatchHistoryScreen', '💾 Fetching all local matches from SQLite');
       const allLocalMatches = await matchRepository.getAllMatches();
-      console.log(
-        "📂 [MatchHistory] All local matches:",
-        allLocalMatches.length
-      );
+      logInfo('MatchHistoryScreen', '✅ Local matches fetched from SQLite', {
+        totalLocalMatches: allLocalMatches.length
+      });
 
       let completedLocalMatches = allLocalMatches.filter(
         (match) => match.status === "completed" && !match.synced_to_server
       );
-      console.log(
-        "📂 [MatchHistory] Completed local matches (not synced):",
-        completedLocalMatches.length
-      );
+      logInfo('MatchHistoryScreen', '✅ Filtered completed local matches (not synced)', {
+        completedLocalCount: completedLocalMatches.length
+      });
 
       // Filter by club if clubId is provided
       if (clubId) {
         completedLocalMatches = completedLocalMatches.filter(
           (match) => match.club_id === clubId
         );
-        console.log(
-          "📂 [MatchHistory] After club filter:",
-          completedLocalMatches.length
-        );
+        logInfo('MatchHistoryScreen', '🔍 Applied club filter', {
+          clubId,
+          matchesAfterFilter: completedLocalMatches.length
+        });
       }
 
       // Collect all team identifiers from local matches for batch resolution
@@ -157,17 +192,16 @@ export default function MatchHistoryScreen() {
         })
       );
 
-      console.log(
-        "📂 [MatchHistory] Local matches loaded:",
-        localMatchesWithDetails.length
-      );
+      logInfo('MatchHistoryScreen', '✅ Local matches processed with details', {
+        localMatchesWithDetailsCount: localMatchesWithDetails.length
+      });
 
-      // 2. Get SERVER matches if user is connected
+      // 2. Get SERVER matches from Supabase if user is authenticated
       let serverMatches: MatchWithDetails[] = [];
       if (user) {
-        console.log(
-          "☁️ [MatchHistory] User connected, fetching server matches..."
-        );
+        logInfo('MatchHistoryScreen', '📡 User authenticated, fetching server matches from Supabase', {
+          userId: user.id
+        });
         try {
           let query = supabase
             .from("matches")
@@ -183,15 +217,16 @@ export default function MatchHistoryScreen() {
           const { data: serverMatchesData, error: serverError } = await query;
 
           if (serverError) {
-            console.error(
-              "❌ [MatchHistory] Error fetching server matches:",
-              serverError
-            );
+            logError('MatchHistoryScreen', '❌ Error fetching server matches from Supabase', {
+              userId: user.id,
+              clubId,
+              error: serverError.message
+            });
           } else if (serverMatchesData) {
-            console.log(
-              "☁️ [MatchHistory] Server matches fetched:",
-              serverMatchesData.length
-            );
+            logInfo('MatchHistoryScreen', '✅ Server matches fetched from Supabase', {
+              serverMatchesCount: serverMatchesData.length,
+              userId: user.id
+            });
 
             // Collect all unique team UUIDs to fetch team names
             const teamUUIDs = new Set<string>();
@@ -254,16 +289,19 @@ export default function MatchHistoryScreen() {
             });
           }
         } catch (error) {
-          console.error("Error loading server matches:", error);
+          logError('MatchHistoryScreen', '❌ Error loading server matches', {
+            userId: user.id,
+            error: error instanceof Error ? error.message : error
+          });
         }
       }
 
-      // 3. Merge LOCAL and SERVER matches
+      // 3. Merge LOCAL and SERVER matches into combined list
       const allMatches = [...localMatchesWithDetails, ...serverMatches];
-      console.log("🔀 [MatchHistory] Merged matches:", {
-        local: localMatchesWithDetails.length,
-        server: serverMatches.length,
-        total: allMatches.length,
+      logInfo('MatchHistoryScreen', '🔀 Merged local and server matches', {
+        localMatchesCount: localMatchesWithDetails.length,
+        serverMatchesCount: serverMatches.length,
+        totalMatchesCount: allMatches.length
       });
 
       // Sort by date (most recent first)
@@ -272,30 +310,43 @@ export default function MatchHistoryScreen() {
           new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       );
 
-      console.log(
-        "✅ [MatchHistory] Final matches to display:",
-        allMatches.length
-      );
+      logInfo('MatchHistoryScreen', '✅ Matches loaded and ready to display', {
+        totalMatchesToDisplay: allMatches.length
+      });
       setMatches(allMatches);
     } catch (error) {
-      console.error("Error loading completed matches:", error);
+      logError('MatchHistoryScreen', '❌ Error loading completed matches', {
+        error: error instanceof Error ? error.message : error,
+        clubId
+      });
     } finally {
       setLoading(false);
     }
   };
 
+  /**
+   * Handle match press to view details/summary
+   * Loads match data from SQLite or Supabase based on source
+   */
   const handleMatchPress = async (match: MatchWithDetails) => {
+    logInfo('MatchHistoryScreen', '👆 User pressed on match', {
+      matchId: match.id,
+      isFromServer: match.isFromServer,
+      serverMatchId: match.serverMatchId,
+      teamA: match.team_a_name,
+      teamB: match.team_b_name
+    });
+
     try {
       let actionDataList: ActionData[] = [];
       let players: any[] = [];
       let matchPlayers: any[] | null = null;
 
       if (match.isFromServer && match.serverMatchId) {
-        // Load data from Supabase
-        console.log(
-          "☁️ [MatchHistory] Loading match data from server:",
-          match.serverMatchId
-        );
+        // Load match data from Supabase
+        logInfo('MatchHistoryScreen', '📡 Loading match data from Supabase', {
+          serverMatchId: match.serverMatchId
+        });
 
         const { data, error } = await supabase
           .from("match_players")
@@ -305,10 +356,10 @@ export default function MatchHistoryScreen() {
         matchPlayers = data;
 
         if (error) {
-          console.error(
-            "❌ [MatchHistory] Error loading match players from server:",
-            error
-          );
+          logError('MatchHistoryScreen', '❌ Error loading match players from Supabase', {
+            serverMatchId: match.serverMatchId,
+            error: error.message
+          });
           Alert.alert(
             "Erreur",
             "Impossible de charger les données du match depuis le serveur."
@@ -317,11 +368,10 @@ export default function MatchHistoryScreen() {
         }
 
         if (matchPlayers) {
-          console.log(
-            "☁️ [MatchHistory] Loaded",
-            matchPlayers.length,
-            "players from server"
-          );
+          logInfo('MatchHistoryScreen', '✅ Match players loaded from Supabase', {
+            serverMatchId: match.serverMatchId,
+            playersCount: matchPlayers.length
+          });
 
           // Convert server match players to expected format
           players = matchPlayers.map((mp) => ({
@@ -356,18 +406,16 @@ export default function MatchHistoryScreen() {
             }
           });
 
-          console.log(
-            "☁️ [MatchHistory] Loaded",
-            actionDataList.length,
-            "actions from server"
-          );
+          logInfo('MatchHistoryScreen', '✅ Actions extracted from server players', {
+            serverMatchId: match.serverMatchId,
+            actionsCount: actionDataList.length
+          });
         }
       } else {
-        // Load data from local database
-        console.log(
-          "📂 [MatchHistory] Loading match data from local DB:",
-          match.id
-        );
+        // Load match data from local SQLite database
+        logInfo('MatchHistoryScreen', '💾 Loading match data from SQLite', {
+          matchId: match.id
+        });
 
         const actionRepository = new ActionRepository();
         const matchPlayerRepository = new MatchPlayerRepository();
@@ -403,28 +451,31 @@ export default function MatchHistoryScreen() {
           isSubstitute: !mp.is_starter,
         }));
 
-        console.log(
-          "📂 [MatchHistory] Loaded",
-          actionDataList.length,
-          "actions and",
-          players.length,
-          "players from local DB"
-        );
+        logInfo('MatchHistoryScreen', '✅ Match data loaded from SQLite', {
+          matchId: match.id,
+          actionsCount: actionDataList.length,
+          playersCount: players.length
+        });
       }
 
-      // Simpler: on retient juste la configuration déclarée
+      // Determine club team based on team_mode configuration
       let clubTeamLetter: "A" | "B" | null = null;
       if (match.team_mode === "A") {
         clubTeamLetter = "A";
       } else if (match.team_mode === "B") {
         clubTeamLetter = "B";
       } else {
-        clubTeamLetter = null; // BOTH ou inconnu = pas d’équipe club détectée
+        clubTeamLetter = null; // BOTH or unknown = no club team detected
       }
 
-      console.log("📋 [MatchHistory] Club team determined:", clubTeamLetter);
+      logInfo('MatchHistoryScreen', '✅ Navigating to match summary', {
+        matchId: match.id,
+        clubTeamLetter,
+        actionsCount: actionDataList.length,
+        playersCount: players.length
+      });
 
-      // Navigate to MatchSummary
+      // Navigate to MatchSummary screen with match data
       (navigation.navigate as any)("MatchSummary", {
         matchId: match.id,
         teamA: match.team_a_name,
@@ -441,7 +492,11 @@ export default function MatchHistoryScreen() {
         clubTeamOverride: clubTeamLetter, // Override club team detection
       });
     } catch (error) {
-      console.error("Error loading match details:", error);
+      logError('MatchHistoryScreen', '❌ Error loading match details', {
+        matchId: match.id,
+        isFromServer: match.isFromServer,
+        error: error instanceof Error ? error.message : error
+      });
       Alert.alert("Erreur", "Impossible de charger les détails du match.");
     }
   };
@@ -471,7 +526,19 @@ export default function MatchHistoryScreen() {
     return `${minutes} min`;
   };
 
+  /**
+   * Handle match deletion with confirmation
+   * Deletes from Supabase or SQLite based on match source
+   */
   const handleDeleteMatch = async (match: MatchWithDetails) => {
+    logInfo('MatchHistoryScreen', '🗑️ User requested to delete match', {
+      matchId: match.id,
+      isFromServer: match.isFromServer,
+      serverMatchId: match.serverMatchId,
+      teamA: match.team_a_name,
+      teamB: match.team_b_name
+    });
+
     Alert.alert(
       "Supprimer le match",
       `Êtes-vous sûr de vouloir supprimer le match ${match.team_a_name} vs ${match.team_b_name} ?\n\nCette action est irréversible.`,
@@ -479,6 +546,9 @@ export default function MatchHistoryScreen() {
         {
           text: "Annuler",
           style: "cancel",
+          onPress: () => {
+            logInfo('MatchHistoryScreen', 'ℹ️ Match deletion cancelled by user');
+          }
         },
         {
           text: "Supprimer",
@@ -487,16 +557,20 @@ export default function MatchHistoryScreen() {
             try {
               // If match is from server, delete from Supabase
               if (match.isFromServer && match.serverMatchId) {
+                logInfo('MatchHistoryScreen', '📡 Deleting match from Supabase', {
+                  serverMatchId: match.serverMatchId
+                });
+
                 const { error: deleteMatchError } = await supabase
                   .from("matches")
                   .delete()
                   .eq("id", match.serverMatchId);
 
                 if (deleteMatchError) {
-                  console.error(
-                    "Error deleting match from server:",
-                    deleteMatchError
-                  );
+                  logError('MatchHistoryScreen', '❌ Error deleting match from Supabase', {
+                    serverMatchId: match.serverMatchId,
+                    error: deleteMatchError.message
+                  });
                   Alert.alert(
                     "Erreur",
                     "Impossible de supprimer le match du serveur."
@@ -504,9 +578,15 @@ export default function MatchHistoryScreen() {
                   return;
                 }
 
-                console.log("✅ Match deleted from server successfully");
+                logInfo('MatchHistoryScreen', '✅ Match deleted from Supabase successfully', {
+                  serverMatchId: match.serverMatchId
+                });
               } else {
-                // Delete from local database
+                // Delete from local SQLite database
+                logInfo('MatchHistoryScreen', '💾 Deleting match from SQLite', {
+                  matchId: match.id
+                });
+
                 const matchRepository = new MatchRepository();
                 const actionRepository = new ActionRepository();
                 const matchPlayerRepository = new MatchPlayerRepository();
@@ -515,15 +595,19 @@ export default function MatchHistoryScreen() {
                 await matchPlayerRepository.deletePlayersForMatch(match.id);
                 await matchRepository.delete(match.id);
 
-                console.log(
-                  "✅ Match deleted from local database successfully"
-                );
+                logInfo('MatchHistoryScreen', '✅ Match deleted from SQLite successfully', {
+                  matchId: match.id
+                });
               }
 
-              // Reload matches
+              // Reload matches list
               await loadCompletedMatches();
             } catch (error) {
-              console.error("Error deleting match:", error);
+              logError('MatchHistoryScreen', '❌ Error deleting match', {
+                matchId: match.id,
+                isFromServer: match.isFromServer,
+                error: error instanceof Error ? error.message : error
+              });
               Alert.alert("Erreur", "Impossible de supprimer le match.");
             }
           },
@@ -616,7 +700,9 @@ export default function MatchHistoryScreen() {
     const isClubMatch = clubTeam !== null;
     const clubLost = isClubMatch && winner !== null && winner !== clubTeam;
 
-    console.log("🏀 [MatchHistory] Match render:", {
+    // Log match render details for debugging win/loss detection and club team identification
+    logInfo('MatchHistoryScreen', '🏀 Rendering match item', {
+      matchId: item.id,
       teamA: item.team_a_name,
       teamB: item.team_b_name,
       scoreA: item.scoreA,
@@ -626,20 +712,26 @@ export default function MatchHistoryScreen() {
       teamA_uuid: item.team_a,
       teamB_uuid: item.team_b,
       clubTeam,
+      isClubMatch,
       clubLost,
+      isFromServer: item.isFromServer
     });
 
     return (
+      /* Match card - tap to view details */
       <TouchableOpacity
         style={styles.matchCard}
         onPress={() => handleMatchPress(item)}
       >
+        {/* Match header - date and duration */}
         <View style={styles.matchHeader}>
           <Text style={styles.matchDate}>{formatDate(item.created_at)}</Text>
           <Text style={styles.matchDuration}>{formatDuration(item)}</Text>
         </View>
 
+        {/* Match score section - teams and scores */}
         <View style={[styles.matchScore]}>
+          {/* Team A */}
           <View style={styles.teamContainer}>
             <Text
               style={[
@@ -663,6 +755,7 @@ export default function MatchHistoryScreen() {
 
           <Text style={styles.scoreSeparator}>-</Text>
 
+          {/* Team B */}
           <View style={styles.teamContainer}>
             <Text
               style={[
@@ -685,7 +778,7 @@ export default function MatchHistoryScreen() {
           </View>
         </View>
 
-        {/* Badge vainqueur, neutre : plus d'encadré de couleur, texte verbeux */}
+        {/* Winner badge - shows winning team with appropriate styling (green if club wins, red if club loses) */}
         {winner && (
           <View
             style={[
@@ -710,19 +803,21 @@ export default function MatchHistoryScreen() {
           </View>
         )}
 
+        {/* Draw badge - shown for tied matches */}
         {isDraw && (
           <View style={styles.drawBadge}>
             <Text style={styles.drawBadgeText}>Match nul</Text>
           </View>
         )}
 
+        {/* Match footer - format info and action buttons */}
         <View style={styles.matchFooter}>
           <Text style={styles.matchInfo}>
             {item.match_format === "2_halves" ? "2 mi-temps" : "4 quarts"} •{" "}
             {item.period_duration / 60} min
           </Text>
 
-          {/* Sync status badge */}
+          {/* Sync status badge - shows if match is synced to Supabase */}
           {item.isFromServer || item.synced_to_server ? (
             <View style={styles.syncedBadge}>
               <Ionicons name="cloud-done-outline" size={12} color="#4CAF50" />
@@ -803,6 +898,7 @@ export default function MatchHistoryScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* Header with back button and title */}
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.backButton}
@@ -815,6 +911,7 @@ export default function MatchHistoryScreen() {
         <View style={styles.backButton} />
       </View>
 
+      {/* Empty state - shown when no matches exist */}
       {matches.length === 0 ? (
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyText}>🏀</Text>
@@ -824,6 +921,7 @@ export default function MatchHistoryScreen() {
           </Text>
         </View>
       ) : (
+        /* Matches list - displays all completed matches from SQLite and Supabase */
         <FlatList
           data={matches}
           renderItem={renderMatchItem}
@@ -836,7 +934,7 @@ export default function MatchHistoryScreen() {
         />
       )}
 
-      {/* Sync Error Modal */}
+      {/* Sync Error Modal - shown when match sync fails due to subscription limits */}
       <SyncErrorModal
         visible={syncErrorModalVisible}
         reason={syncErrorReason}
@@ -845,7 +943,7 @@ export default function MatchHistoryScreen() {
         onClose={() => setSyncErrorModalVisible(false)}
         onUpgrade={() => {
           // TODO: Navigate to subscription screen
-          console.log("Navigate to subscription");
+          logInfo('MatchHistoryScreen', 'ℹ️ User requested subscription upgrade from sync error modal');
         }}
       />
     </SafeAreaView>

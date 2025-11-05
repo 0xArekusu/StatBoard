@@ -99,7 +99,8 @@ class LoggerService {
     const logEntry = `[${timestamp}] [${level}] ${tag}: ${message}${dataStr}\n`;
 
     // Console log (only add emoji for WARN and ERROR, INFO uses emoji from message)
-    const prefix = level === "ERROR" ? "❌" : level === "WARN" ? "⚠️" : "";
+    // const prefix = level === "ERROR" ? "❌" : level === "WARN" ? "⚠️" : "";
+    const prefix = "";
     const logMessage = prefix
       ? `${prefix} [${tag}] ${message}`
       : `[${tag}] ${message}`;

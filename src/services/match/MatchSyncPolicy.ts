@@ -1,15 +1,20 @@
+/**
+ * MatchSyncPolicy
+ *
+ * Service to manage match synchronization rules based on user subscription tier.
+ * Determines what actions users can perform (create, sync) based on their subscription level.
+ * Enforces storage limits for local and cloud match storage.
+ */
+
 import { SubscriptionTier, SUBSCRIPTION_LIMITS, NOT_CONNECTED_LIMITS, SubscriptionLimits } from "../../../models/Subscription";
 import { Match } from "../../models/types";
 
-/**
- * Service pour gérer les règles de synchronisation des matchs
- * selon le tier d'abonnement de l'utilisateur
- */
 export class MatchSyncPolicy {
   /**
-   * Obtenir les limites selon le statut de connexion et le tier
-   * @param isConnected Si l'utilisateur est connecté
-   * @param tier Tier d'abonnement (si connecté)
+   * Get subscription limits based on connection status and tier
+   * @param isConnected Whether the user is logged in
+   * @param tier Subscription tier (if connected)
+   * @returns SubscriptionLimits object with match storage and sync capabilities
    */
   getLimits(isConnected: boolean, tier?: SubscriptionTier): SubscriptionLimits {
     if (!isConnected) {
@@ -19,10 +24,12 @@ export class MatchSyncPolicy {
   }
 
   /**
-   * Vérifier si l'utilisateur peut créer un nouveau match
-   * @param currentMatchCount Nombre de matchs actuels en local
-   * @param isConnected Si l'utilisateur est connecté
-   * @param tier Tier d'abonnement
+   * Check if user can create a new match
+   * Enforces local storage limits based on subscription tier
+   * @param currentMatchCount Current number of local matches
+   * @param isConnected Whether the user is logged in
+   * @param tier Subscription tier
+   * @returns Object with allowed status, reason if denied, and max match limit
    */
   canCreateMatch(
     currentMatchCount: number,
@@ -48,10 +55,12 @@ export class MatchSyncPolicy {
   }
 
   /**
-   * Vérifier si un match peut être synchronisé vers le serveur
-   * @param match Match à vérifier
-   * @param isConnected Si l'utilisateur est connecté
-   * @param tier Tier d'abonnement actuel
+   * Check if a match can be synchronized to the server
+   * Requires user authentication and appropriate subscription tier
+   * @param match Match to check for sync eligibility
+   * @param isConnected Whether the user is logged in
+   * @param tier Current subscription tier
+   * @returns Object with allowed status and reason if denied
    */
   canSyncMatch(
     match: Match,
@@ -67,7 +76,7 @@ export class MatchSyncPolicy {
 
     const limits = this.getLimits(isConnected, tier);
 
-    // Vérifier si le tier actuel permet la synchronisation
+    // Check if current tier allows server synchronization
     if (!limits.canSyncToServer) {
       return {
         allowed: false,
@@ -75,7 +84,7 @@ export class MatchSyncPolicy {
       };
     }
 
-    // Vérifier si le match a déjà été synchronisé
+    // Check if match has already been synced
     if (match.synced_to_server) {
       return {
         allowed: false,
@@ -83,13 +92,18 @@ export class MatchSyncPolicy {
       };
     }
 
-    // Pas de limite de temps : tous les matchs freemium peuvent être synchronisés
-    // (limite de 3 matchs empêche l'abus naturellement)
+    // No time limit: all freemium matches can be synced
+    // (3 match limit prevents abuse naturally)
     return { allowed: true };
   }
 
   /**
-   * Obtenir les informations sur la capacité de stockage
+   * Get storage capacity information
+   * Provides details about current match storage usage and limits
+   * @param currentMatchCount Current number of stored matches
+   * @param isConnected Whether the user is logged in
+   * @param tier Subscription tier
+   * @returns Object with storage statistics and capabilities
    */
   getStorageInfo(
     currentMatchCount: number,

@@ -1,3 +1,14 @@
+/**
+ * MainMenuScreen
+ *
+ * Main menu screen of the app where users can:
+ * - Start a new match
+ * - View match history
+ * - Manage their club
+ * - Sign in/out
+ * All data operations (Supabase and SQLite) are logged for debugging.
+ */
+
 import {
   StyleSheet,
   Text,
@@ -24,7 +35,7 @@ import { canUseMultiClub } from "../src/config/devConfig";
 import { MatchRepository } from "../src/services/database/MatchRepository";
 import { MatchSyncPolicy } from "../src/services/match/MatchSyncPolicy";
 import type { SubscriptionTier } from "../models/Subscription";
-import { shareLogs } from "../utils/logger";
+import { shareLogs, logInfo, logError, logWarn } from "../utils/logger";
 
 type RootStackParamList = {
   [ROUTES.MAIN_MENU]: undefined;
@@ -50,9 +61,14 @@ export default function MainMenuScreen() {
   const [matchCount, setMatchCount] = useState(0);
   const [maxMatches, setMaxMatches] = useState(3);
 
-  // Load user's club when screen is focused
+  /**
+   * Load user's clubs from Supabase
+   * Fetches all clubs where the user is a member (including owned clubs)
+   * Restores previously selected club if available
+   */
   const loadUserClub = useCallback(async () => {
     if (!user) {
+      logInfo('MainMenuScreen', '👤 No user logged in, clearing club data');
       setUserClub(null);
       setUserClubs([]);
       selectedClubIdRef.current = null;
@@ -61,87 +77,191 @@ export default function MainMenuScreen() {
 
     try {
       setLoadingClub(true);
+      logInfo('MainMenuScreen', '📡 Fetching user clubs from Supabase', { userId: user.id });
+
       const clubService = ServiceFactory.getClubService(supabase);
       // Get clubs where user is member (includes owned clubs via trigger)
       const clubs = await clubService.getUserMemberClubs(user.id);
+
+      logInfo('MainMenuScreen', '✅ User clubs fetched successfully', {
+        userId: user.id,
+        clubCount: clubs.length,
+        clubIds: clubs.map(c => c.id),
+        clubNames: clubs.map(c => c.name)
+      });
+
       setUserClubs(clubs);
 
       // Restore previously selected club if it still exists
       if (selectedClubIdRef.current) {
+        logInfo('MainMenuScreen', '🔍 Attempting to restore previously selected club', {
+          previousClubId: selectedClubIdRef.current
+        });
+
         const previouslySelected = clubs.find(
           (c) => c.id === selectedClubIdRef.current
         );
+
         if (previouslySelected) {
+          logInfo('MainMenuScreen', '✅ Previously selected club restored', {
+            clubId: previouslySelected.id,
+            clubName: previouslySelected.name,
+            subscriptionTier: previouslySelected.subscriptionTier
+          });
           setUserClub(previouslySelected);
           // Check subscription tier
           setIsFreeSubscription(previouslySelected.subscriptionTier === "free");
           return;
+        } else {
+          logWarn('MainMenuScreen', '⚠️ Previously selected club not found in user clubs');
         }
       }
 
       // Otherwise, select the first club
       const firstClub = clubs.length > 0 ? clubs[0] : null;
+
+      if (firstClub) {
+        logInfo('MainMenuScreen', '✅ Selected first club as default', {
+          clubId: firstClub.id,
+          clubName: firstClub.name,
+          subscriptionTier: firstClub.subscriptionTier
+        });
+      } else {
+        logInfo('MainMenuScreen', 'ℹ️ No clubs found for user');
+      }
+
       setUserClub(firstClub);
       selectedClubIdRef.current = firstClub?.id || null;
       // Check subscription tier
       setIsFreeSubscription(firstClub?.subscriptionTier === "free");
     } catch (error) {
-      console.error("Error loading user club:", error);
+      logError('MainMenuScreen', '❌ Error loading user clubs', {
+        userId: user.id,
+        error: error instanceof Error ? error.message : error
+      });
     } finally {
       setLoadingClub(false);
     }
   }, [user]);
 
-  // Load match count
+  /**
+   * Load match count from SQLite database
+   * Retrieves all matches and counts only completed ones for subscription limit check
+   */
   const loadMatchCount = useCallback(async () => {
     try {
+      logInfo('MainMenuScreen', '💾 Fetching match count from SQLite');
+
       const matchRepo = new MatchRepository();
       const allMatches = await matchRepo.getAllMatches();
+
+      logInfo('MainMenuScreen', '✅ Matches fetched from SQLite', {
+        totalMatches: allMatches.length,
+        matchIds: allMatches.map(m => m.id)
+      });
 
       // Count only completed matches for the limit
       const completedMatches = allMatches.filter(
         (match) => match.status === "completed"
       );
+
+      logInfo('MainMenuScreen', '✅ Match count calculated', {
+        totalMatches: allMatches.length,
+        completedMatches: completedMatches.length,
+        pendingMatches: allMatches.length - completedMatches.length
+      });
+
       setMatchCount(completedMatches.length);
     } catch (error) {
-      console.error("Error loading match count:", error);
+      logError('MainMenuScreen', '❌ Error loading match count from SQLite', {
+        error: error instanceof Error ? error.message : error
+      });
     }
   }, []);
 
-  // Update max matches when user or userClub changes
+  /**
+   * Update maximum allowed matches based on user subscription tier
+   * Runs when user or userClub changes
+   */
   React.useEffect(() => {
     const syncPolicy = new MatchSyncPolicy();
     const tier: SubscriptionTier =
       userClub?.subscriptionTier || (user ? "free" : "free");
     const limits = syncPolicy.getLimits(!!user, tier);
+
+    logInfo('MainMenuScreen', '📊 Updated match limits', {
+      isLoggedIn: !!user,
+      subscriptionTier: tier,
+      maxLocalMatches: limits.maxLocalMatches
+    });
+
     setMaxMatches(limits.maxLocalMatches);
   }, [user, userClub]);
 
+  /**
+   * Reload user club and match count when screen comes into focus
+   * Ensures data is fresh when user navigates back to main menu
+   */
   useFocusEffect(
     useCallback(() => {
+      logInfo('MainMenuScreen', '🔄 Screen focused, reloading data');
       loadUserClub();
       loadMatchCount();
     }, [loadUserClub, loadMatchCount])
   );
 
+  /**
+   * Handle sign out button press
+   * Shows confirmation dialog before signing out
+   */
   const handleSignOut = () => {
+    logInfo('MainMenuScreen', '🚪 User initiated sign out');
     Alert.alert("Déconnexion", "Voulez-vous vraiment vous déconnecter ?", [
       { text: "Annuler", style: "cancel" },
-      { text: "Déconnexion", onPress: () => signOut(), style: "destructive" },
+      {
+        text: "Déconnexion",
+        onPress: () => {
+          logInfo('MainMenuScreen', '✅ Sign out confirmed by user');
+          signOut();
+        },
+        style: "destructive"
+      },
     ]);
   };
 
+  /**
+   * Handle new match creation
+   * Checks subscription limits before allowing navigation to board
+   */
   const handleNewMatch = async () => {
-    // Check match limit
+    logInfo('MainMenuScreen', '➕ User attempting to create new match', {
+      currentMatchCount: matchCount,
+      maxMatches: maxMatches,
+      hasUser: !!user,
+      clubId: userClub?.id
+    });
+
+    // Check match limit based on subscription tier
     const syncPolicy = new MatchSyncPolicy();
     const tier: SubscriptionTier =
       userClub?.subscriptionTier || (user ? "free" : "free");
     const canCreate = syncPolicy.canCreateMatch(matchCount, !!user, tier);
 
     if (!canCreate.allowed) {
+      logWarn('MainMenuScreen', '⚠️ Match creation blocked - limit reached', {
+        currentMatchCount: matchCount,
+        maxMatches: maxMatches,
+        subscriptionTier: tier,
+        reason: canCreate.reason
+      });
       setMatchLimitModalVisible(true);
       return;
     }
+
+    logInfo('MainMenuScreen', '✅ Match creation allowed, navigating to board', {
+      clubId: userClub?.id,
+      clubName: userClub?.name
+    });
 
     // Navigate to board with selected club ID
     (navigation as any).navigate(ROUTES.BOARD, { clubId: userClub?.id });
