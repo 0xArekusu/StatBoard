@@ -1,3 +1,28 @@
+/**
+ * ClubTeamsTab
+ *
+ * Tab component for managing teams within a club.
+ * Displays pending and approved teams with subscription limits.
+ *
+ * Features:
+ * - Subscription tier display with team count limits
+ * - Team creation (with subscription limit enforcement)
+ * - Team approval/rejection (club owners only)
+ * - Team activation/deactivation (club owners only)
+ * - Team editing (team owners only)
+ * - Team deletion (club owners only, archives data)
+ * - Pending teams visibility toggle (non-owners)
+ *
+ * Permissions:
+ * - Club owners: Full control (approve, reject, activate, deactivate, delete)
+ * - Team owners: Edit their own teams
+ * - Members: View approved teams, toggle pending visibility
+ *
+ * Subscription Limits:
+ * - Checks current team count vs max teams for subscription tier
+ * - Blocks team creation if limit reached
+ * - Shows paywall prompt when limit exceeded
+ */
 import React, { useState, useCallback } from "react";
 import {
   View,
@@ -14,6 +39,7 @@ import { supabase } from "../src/config/supabase";
 import { ServiceFactory } from "../services/ServiceFactory";
 import { useAuth } from "../src/contexts/AuthContext";
 import type { Team } from "../models/Team";
+import { logInfo, logError, logWarn } from "../utils/logger";
 
 interface ClubTeamsTabProps {
   clubId: string;
@@ -34,9 +60,15 @@ export default function ClubTeamsTab({ clubId, isOwner, onCreateTeam, onEditTeam
     maxTeams: number;
   } | null>(null);
 
+  /**
+   * Load teams and subscription info for the club
+   * Called on tab focus and after team status changes
+   */
   const loadTeams = useCallback(async () => {
     try {
       setLoading(true);
+      logInfo('ClubTeamsTab', '📋 Loading teams for club', { clubId, isOwner });
+
       const teamService = ServiceFactory.getTeamService(supabase);
       const subscriptionService = ServiceFactory.getSubscriptionService(supabase);
 
@@ -50,21 +82,30 @@ export default function ClubTeamsTab({ clubId, isOwner, onCreateTeam, onEditTeam
       setApprovedTeams(approved);
 
       if (subInfo) {
-        console.log("Subscription info loaded:", subInfo);
+        logInfo('ClubTeamsTab', '✅ Teams and subscription info loaded', {
+          pendingCount: pending.length,
+          approvedCount: approved.length,
+          tier: subInfo.tier,
+          teamCount: subInfo.currentTeamCount,
+          maxTeams: subInfo.limits.maxTeams
+        });
         setSubscriptionInfo({
           tier: subInfo.tier,
           currentTeamCount: subInfo.currentTeamCount,
           maxTeams: subInfo.limits.maxTeams,
         });
       } else {
-        console.log("No subscription info found");
+        logWarn('ClubTeamsTab', '⚠️ No subscription info found for club', { clubId });
       }
     } catch (error) {
-      console.error("Error loading teams:", error);
+      logError('ClubTeamsTab', '❌ Error loading teams', {
+        clubId,
+        error: error instanceof Error ? error.message : error
+      });
     } finally {
       setLoading(false);
     }
-  }, [clubId]);
+  }, [clubId, isOwner]);
 
   useFocusEffect(
     useCallback(() => {
@@ -72,6 +113,10 @@ export default function ClubTeamsTab({ clubId, isOwner, onCreateTeam, onEditTeam
     }, [loadTeams])
   );
 
+  /**
+   * Approve a pending team (club owners only)
+   * Changes team status from pending to approved
+   */
   const handleApprove = async (teamId: string) => {
     Alert.alert(
       "Approuver l'équipe",
@@ -81,13 +126,19 @@ export default function ClubTeamsTab({ clubId, isOwner, onCreateTeam, onEditTeam
         {
           text: "Approuver",
           onPress: async () => {
+            logInfo('ClubTeamsTab', '✅ Approving team', { teamId, clubId });
             const teamService = ServiceFactory.getTeamService(supabase);
             const result = await teamService.updateTeamStatus(teamId, "approved", "");
 
             if (result.success) {
+              logInfo('ClubTeamsTab', '✅ Team approved successfully', { teamId });
               Alert.alert("Succès", "L'équipe a été approuvée");
               loadTeams();
             } else {
+              logError('ClubTeamsTab', '❌ Failed to approve team', {
+                teamId,
+                error: result.error
+              });
               Alert.alert("Erreur", result.error || "Impossible d'approuver l'équipe");
             }
           },
@@ -96,6 +147,10 @@ export default function ClubTeamsTab({ clubId, isOwner, onCreateTeam, onEditTeam
     );
   };
 
+  /**
+   * Reject a pending team (club owners only)
+   * Changes team status from pending to rejected
+   */
   const handleReject = async (teamId: string) => {
     Alert.alert(
       "Rejeter l'équipe",
@@ -106,13 +161,19 @@ export default function ClubTeamsTab({ clubId, isOwner, onCreateTeam, onEditTeam
           text: "Rejeter",
           style: "destructive",
           onPress: async () => {
+            logInfo('ClubTeamsTab', '🚫 Rejecting team', { teamId, clubId });
             const teamService = ServiceFactory.getTeamService(supabase);
             const result = await teamService.updateTeamStatus(teamId, "rejected", "");
 
             if (result.success) {
+              logInfo('ClubTeamsTab', '✅ Team rejected successfully', { teamId });
               Alert.alert("Succès", "L'équipe a été rejetée");
               loadTeams();
             } else {
+              logError('ClubTeamsTab', '❌ Failed to reject team', {
+                teamId,
+                error: result.error
+              });
               Alert.alert("Erreur", result.error || "Impossible de rejeter l'équipe");
             }
           },
@@ -121,6 +182,10 @@ export default function ClubTeamsTab({ clubId, isOwner, onCreateTeam, onEditTeam
     );
   };
 
+  /**
+   * Toggle team active status (club owners only)
+   * Active teams are visible in match setup, inactive are hidden
+   */
   const handleToggleActive = async (team: Team) => {
     const action = team.isActive ? "désactiver" : "activer";
     Alert.alert(
@@ -131,13 +196,26 @@ export default function ClubTeamsTab({ clubId, isOwner, onCreateTeam, onEditTeam
         {
           text: action.charAt(0).toUpperCase() + action.slice(1),
           onPress: async () => {
+            logInfo('ClubTeamsTab', team.isActive ? '⏸️ Deactivating team' : '▶️ Activating team', {
+              teamId: team.id,
+              teamName: team.name,
+              currentStatus: team.isActive
+            });
             const teamService = ServiceFactory.getTeamService(supabase);
             const result = await teamService.toggleTeamActive(team.id, "");
 
             if (result.success) {
+              logInfo('ClubTeamsTab', '✅ Team status toggled successfully', {
+                teamId: team.id,
+                newStatus: !team.isActive
+              });
               Alert.alert("Succès", `L'équipe a été ${team.isActive ? "désactivée" : "activée"}`);
               loadTeams();
             } else {
+              logError('ClubTeamsTab', '❌ Failed to toggle team status', {
+                teamId: team.id,
+                error: result.error
+              });
               Alert.alert("Erreur", result.error || `Impossible de ${action} l'équipe`);
             }
           },
@@ -146,6 +224,10 @@ export default function ClubTeamsTab({ clubId, isOwner, onCreateTeam, onEditTeam
     );
   };
 
+  /**
+   * Delete a team (club owners only)
+   * Archives team data and frees up subscription slot
+   */
   const handleDeleteTeam = async (team: Team) => {
     Alert.alert(
       "Supprimer l'équipe",
@@ -156,13 +238,23 @@ export default function ClubTeamsTab({ clubId, isOwner, onCreateTeam, onEditTeam
           text: "Supprimer",
           style: "destructive",
           onPress: async () => {
+            logInfo('ClubTeamsTab', '🗑️ Deleting team', {
+              teamId: team.id,
+              teamName: team.name,
+              clubId
+            });
             const teamService = ServiceFactory.getTeamService(supabase);
             const result = await teamService.deleteTeam(team.id, user!.id);
 
             if (result.success) {
+              logInfo('ClubTeamsTab', '✅ Team deleted successfully (archived)', { teamId: team.id });
               Alert.alert("Succès", "L'équipe a été supprimée");
               loadTeams();
             } else {
+              logError('ClubTeamsTab', '❌ Failed to delete team', {
+                teamId: team.id,
+                error: result.error
+              });
               Alert.alert("Erreur", result.error || "Impossible de supprimer l'équipe");
             }
           },
@@ -171,12 +263,17 @@ export default function ClubTeamsTab({ clubId, isOwner, onCreateTeam, onEditTeam
     );
   };
 
+  /**
+   * Render a single team card
+   * Shows different actions based on pending status and user permissions
+   */
   const renderTeam = (team: Team, isPending: boolean) => {
     const genderLabel = team.gender ? `${team.gender === "male" ? "Masculin" : team.gender === "female" ? "Féminin" : "Mixte"}` : "";
     const isTeamOwner = user && team.ownerId === user.id;
 
     return (
       <View key={team.id} style={[styles.teamCard, !team.isActive && styles.teamCardInactive]}>
+        {/* Team information */}
         <View style={styles.teamInfo}>
           <View style={styles.teamNameRow}>
             <Text style={styles.teamName}>{team.name}</Text>
@@ -198,6 +295,7 @@ export default function ClubTeamsTab({ clubId, isOwner, onCreateTeam, onEditTeam
           )}
         </View>
 
+        {/* Pending team actions: Approve/Reject (club owners only) */}
         {isPending && isOwner && (
           <View style={styles.teamActions}>
             <TouchableOpacity
@@ -215,6 +313,7 @@ export default function ClubTeamsTab({ clubId, isOwner, onCreateTeam, onEditTeam
           </View>
         )}
 
+        {/* Approved team actions: Edit (team owner), Activate/Delete (club owner) */}
         {!isPending && (
           <View style={styles.approvedActions}>
             {isTeamOwner && (
@@ -245,6 +344,7 @@ export default function ClubTeamsTab({ clubId, isOwner, onCreateTeam, onEditTeam
                 </TouchableOpacity>
               </>
             )}
+            {/* Approved badge */}
             <Ionicons name="checkmark-circle" size={24} color="#4CAF50" />
           </View>
         )}
@@ -260,16 +360,27 @@ export default function ClubTeamsTab({ clubId, isOwner, onCreateTeam, onEditTeam
     );
   }
 
+  /**
+   * Handle create team button
+   * Checks subscription limits before allowing team creation
+   */
   const handleCreateTeam = () => {
+    logInfo('ClubTeamsTab', '➕ User clicked create team button', { clubId });
+
     // Check subscription limit
     if (subscriptionInfo && subscriptionInfo.currentTeamCount >= subscriptionInfo.maxTeams) {
+      logWarn('ClubTeamsTab', '⚠️ Subscription limit reached - blocking team creation', {
+        currentCount: subscriptionInfo.currentTeamCount,
+        maxTeams: subscriptionInfo.maxTeams,
+        tier: subscriptionInfo.tier
+      });
       Alert.alert(
         "Limite atteinte",
         `Vous avez atteint la limite de ${subscriptionInfo.maxTeams} équipe(s) pour l'abonnement ${subscriptionInfo.tier.toUpperCase()}.\n\nPassez à un abonnement supérieur pour créer plus d'équipes.`,
         [
           { text: "Annuler", style: "cancel" },
           { text: "Voir les offres", onPress: () => {
-            // TODO: Navigation vers le paywall
+            // TODO: Navigation to paywall
             Alert.alert("Paywall", "Écran de tarification à venir...");
           }},
         ]
@@ -277,12 +388,16 @@ export default function ClubTeamsTab({ clubId, isOwner, onCreateTeam, onEditTeam
       return;
     }
 
+    logInfo('ClubTeamsTab', '✅ Subscription limit OK - proceeding to team creation', {
+      currentCount: subscriptionInfo?.currentTeamCount,
+      maxTeams: subscriptionInfo?.maxTeams
+    });
     onCreateTeam();
   };
 
   return (
     <View style={styles.container}>
-      {/* Subscription Info */}
+      {/* Subscription information card */}
       {subscriptionInfo && (
         <View style={styles.subscriptionInfo}>
           <View style={styles.subscriptionHeader}>
@@ -297,6 +412,7 @@ export default function ClubTeamsTab({ clubId, isOwner, onCreateTeam, onEditTeam
         </View>
       )}
 
+      {/* Create team button */}
       <TouchableOpacity
         style={styles.createButton}
         onPress={handleCreateTeam}
@@ -305,7 +421,7 @@ export default function ClubTeamsTab({ clubId, isOwner, onCreateTeam, onEditTeam
         <Text style={styles.createButtonText}>Créer une équipe</Text>
       </TouchableOpacity>
 
-      {/* Toggle to show pending teams */}
+      {/* Toggle to show/hide pending teams (non-owners only) */}
       {!isOwner && pendingTeams.length > 0 && (
         <TouchableOpacity
           style={styles.toggleContainer}
@@ -322,7 +438,7 @@ export default function ClubTeamsTab({ clubId, isOwner, onCreateTeam, onEditTeam
         </TouchableOpacity>
       )}
 
-      {/* Pending teams section */}
+      {/* Pending teams section: Always visible to owners, toggleable for members */}
       {((isOwner && pendingTeams.length > 0) || (showPending && pendingTeams.length > 0)) && (
         <View style={styles.section}>
           <View style={styles.sectionHeader}>

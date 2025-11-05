@@ -2041,7 +2041,6 @@ export default function BasketballCourt() {
   };
 
   const handleGoBackToMenu = () => {
-    console.log("🏠 Going back to main menu");
     setResumeModalVisible(false);
     setFoundMatch(null);
     navigation.goBack(); // Retour au MainMenuScreen

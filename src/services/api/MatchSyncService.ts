@@ -1,3 +1,29 @@
+/**
+ * MatchSyncService
+ *
+ * Service for synchronizing completed matches from SQLite to Supabase.
+ * Handles offline-first architecture with server sync for paid subscriptions.
+ *
+ * Features:
+ * - Sync eligibility checking (authentication, subscription, completion status)
+ * - Match data transformation from SQLite to Supabase format
+ * - Photo upload for player images before sync
+ * - Batch sync for multiple pending matches
+ * - Local data cleanup after successful sync
+ * - Rollback on sync failures
+ *
+ * Architecture:
+ * - Reads from SQLite repositories (MatchRepository, ActionRepository, MatchPlayerRepository)
+ * - Writes to Supabase (matches, match_players tables)
+ * - Uploads photos to Supabase Storage
+ * - Deletes local data after successful sync (offline→online transition)
+ *
+ * Sync Requirements:
+ * - User must be authenticated
+ * - Match must be completed (status: 'completed')
+ * - Match must not be already synced (synced_to_server: false)
+ * - User must have paid subscription (if match has club_id)
+ */
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { MatchRepository } from "../database/MatchRepository";
 import { ActionRepository } from "../database/ActionRepository";
@@ -11,6 +37,7 @@ import type {
 } from "./types/SupabaseMatchTypes";
 import type { Match, Action } from "../../models/types";
 import type { MatchPlayer } from "../database/MatchPlayerRepository";
+import { logInfo, logError, logWarn } from "../../../utils/logger";
 
 export interface SyncResult {
   success: boolean;
@@ -45,6 +72,8 @@ export class MatchSyncService {
    */
   async checkSyncEligibility(matchId: number): Promise<SyncEligibility> {
     try {
+      logInfo('MatchSyncService', '🔍 Checking sync eligibility', { matchId });
+
       // Check if user is authenticated
       const {
         data: { user },
@@ -52,6 +81,7 @@ export class MatchSyncService {
       } = await this.supabase.auth.getUser();
 
       if (authError || !user) {
+        logWarn('MatchSyncService', '⚠️ User not authenticated', { matchId });
         return {
           canSync: false,
           reason: "Vous devez être connecté pour synchroniser un match",
@@ -62,6 +92,7 @@ export class MatchSyncService {
       const match = await this.matchRepository.findById(matchId);
 
       if (!match) {
+        logWarn('MatchSyncService', '⚠️ Match not found for sync eligibility check', { matchId });
         return {
           canSync: false,
           reason: "Match introuvable",
@@ -70,6 +101,10 @@ export class MatchSyncService {
 
       // Check if match is completed
       if (match.status !== "completed") {
+        logWarn('MatchSyncService', '⚠️ Match not completed', {
+          matchId,
+          status: match.status
+        });
         return {
           canSync: false,
           reason: "Seuls les matchs terminés peuvent être synchronisés",
@@ -78,6 +113,7 @@ export class MatchSyncService {
 
       // Check if already synced
       if (match.synced_to_server) {
+        logWarn('MatchSyncService', '⚠️ Match already synced', { matchId });
         return {
           canSync: false,
           reason: "Ce match a déjà été synchronisé",
@@ -90,6 +126,10 @@ export class MatchSyncService {
           await this.subscriptionService.getClubSubscriptionInfo(match.club_id);
 
         if (!subscriptionInfo) {
+          logWarn('MatchSyncService', '⚠️ Cannot verify club subscription', {
+            matchId,
+            clubId: match.club_id
+          });
           return {
             canSync: false,
             reason: "Impossible de vérifier l'abonnement du club",
@@ -97,6 +137,11 @@ export class MatchSyncService {
         }
 
         if (!subscriptionInfo.limits.canSyncToServer) {
+          logWarn('MatchSyncService', '⚠️ Subscription does not allow sync', {
+            matchId,
+            clubId: match.club_id,
+            tier: subscriptionInfo.tier
+          });
           return {
             canSync: false,
             reason:
@@ -104,16 +149,24 @@ export class MatchSyncService {
           };
         }
       } else {
-        // Match without club (personal match)
-        // For now, we'll allow sync for authenticated users
-        // You might want to add additional checks here
+        // Match without club (personal match) - allow sync for authenticated users
+        logInfo('MatchSyncService', 'ℹ️ Personal match (no club_id)', { matchId });
       }
+
+      logInfo('MatchSyncService', '✅ Sync eligible', {
+        matchId,
+        userId: user.id,
+        clubId: match.club_id
+      });
 
       return {
         canSync: true,
       };
     } catch (error) {
-      console.error("Error checking sync eligibility:", error);
+      logError('MatchSyncService', '❌ Error checking sync eligibility', {
+        matchId,
+        error: error instanceof Error ? error.message : error
+      });
       return {
         canSync: false,
         reason: "Erreur lors de la vérification des permissions",
@@ -126,16 +179,23 @@ export class MatchSyncService {
    * This will:
    * 1. Check eligibility (auth + subscription)
    * 2. Fetch match data from local SQLite
-   * 3. Transform data to Supabase format
-   * 4. Insert match and players to Supabase
-   * 5. Update local match as synced
+   * 3. Upload player photos to Supabase Storage
+   * 4. Transform data to Supabase format
+   * 5. Insert match and players to Supabase
+   * 6. Delete local match data after successful sync
    */
   async syncMatch(matchId: number): Promise<SyncResult> {
     try {
+      logInfo('MatchSyncService', '🔄 Starting match sync', { matchId });
+
       // Check eligibility
       const eligibility = await this.checkSyncEligibility(matchId);
 
       if (!eligibility.canSync) {
+        logWarn('MatchSyncService', '⚠️ Sync not eligible', {
+          matchId,
+          reason: eligibility.reason
+        });
         return {
           success: false,
           error: eligibility.reason || "Synchronisation non autorisée",
@@ -148,26 +208,28 @@ export class MatchSyncService {
       } = await this.supabase.auth.getUser();
 
       if (!user) {
+        logError('MatchSyncService', '❌ User not authenticated during sync', { matchId });
         return {
           success: false,
           error: "Utilisateur non authentifié",
         };
       }
 
-      // Fetch match data from local database
+      // Fetch match data from local database (logged by repositories)
       const match = await this.matchRepository.findById(matchId);
 
       if (!match) {
+        logError('MatchSyncService', '❌ Match not found during sync', { matchId });
         return {
           success: false,
           error: "Match introuvable",
         };
       }
 
-      // Fetch all actions for this match
+      // Fetch all actions for this match (logged by repository)
       const actions = await this.actionRepository.getActionsForMatch(matchId);
 
-      // Fetch all players for this match
+      // Fetch all players for this match (logged by repository)
       const matchPlayers =
         await this.matchPlayerRepository.getPlayersForMatch(matchId);
 
@@ -175,22 +237,47 @@ export class MatchSyncService {
       const { PhotoUploadService } = await import('../../../services/PhotoUploadService');
       const photoService = new PhotoUploadService(this.supabase);
 
+      let photosUploaded = 0;
       for (const player of matchPlayers) {
         if (player.photo_url && (player.photo_url.startsWith('file://') || player.photo_url.startsWith('content://'))) {
-          console.log(`📸 Uploading photo for player ${player.player_name} (${player.id})...`);
-          const { url, error } = await photoService.uploadPlayerPhoto(player.photo_url, player.player_id || `player-${player.id}`);
+          logInfo('MatchSyncService', '📸 Uploading player photo', {
+            matchId,
+            playerName: player.player_name,
+            playerId: player.id
+          });
+
+          const { url, error } = await photoService.uploadPlayerPhoto(
+            player.photo_url,
+            player.player_id || `player-${player.id}`
+          );
+
           if (!error && url) {
             // Update the player's photo_url with the uploaded URL
             player.photo_url = url;
             await this.matchPlayerRepository.updatePhotoUrl(player.id, url);
-            console.log(`✅ Photo URL updated for player ${player.player_name}: ${url}`);
+            photosUploaded++;
+
+            logInfo('MatchSyncService', '✅ Player photo uploaded', {
+              matchId,
+              playerName: player.player_name,
+              photoUrl: url
+            });
           } else {
-            console.error(`❌ Failed to upload photo for player ${player.player_name}:`, error);
+            logError('MatchSyncService', '❌ Failed to upload player photo', {
+              matchId,
+              playerName: player.player_name,
+              error
+            });
           }
         }
       }
 
-      console.log(`📋 Players before transform:`, matchPlayers.map(p => ({ name: p.player_name, photo_url: p.photo_url })));
+      if (photosUploaded > 0) {
+        logInfo('MatchSyncService', `📸 ${photosUploaded} player photos uploaded`, {
+          matchId,
+          totalPlayers: matchPlayers.length
+        });
+      }
 
       // Transform data to Supabase format
       const syncData = this.transformMatchForSync(
@@ -200,25 +287,39 @@ export class MatchSyncService {
         user.id
       );
 
+      logInfo('MatchSyncService', '📦 Data transformed for Supabase', {
+        matchId,
+        playerCount: syncData.players.length,
+        actionCount: actions.length
+      });
+
       // Sync to Supabase
       const supabaseMatchId = await this.syncToSupabase(syncData);
 
-      // Delete local match data after successful sync
-      console.log(`🗑️ Deleting local match data for match ${matchId}...`);
+      // Delete local match data after successful sync (logged by repositories)
+      logInfo('MatchSyncService', '🗑️ Deleting local match data after successful sync', {
+        localMatchId: matchId,
+        supabaseMatchId
+      });
+
       await this.actionRepository.deleteActionsForMatch(matchId);
       await this.matchPlayerRepository.deletePlayersForMatch(matchId);
       await this.matchRepository.delete(matchId);
 
-      console.log(
-        `✅ Match ${matchId} synced successfully to Supabase (${supabaseMatchId}) and deleted from local storage`
-      );
+      logInfo('MatchSyncService', '✅ Match synced successfully and deleted from local storage', {
+        localMatchId: matchId,
+        supabaseMatchId
+      });
 
       return {
         success: true,
         matchId: supabaseMatchId,
       };
     } catch (error) {
-      console.error("Error syncing match:", error);
+      logError('MatchSyncService', '❌ Error syncing match', {
+        matchId,
+        error: error instanceof Error ? error.message : error
+      });
       return {
         success: false,
         error:
@@ -229,6 +330,7 @@ export class MatchSyncService {
 
   /**
    * Transform local match data to Supabase format
+   * Handles team_id logic for club teams and groups actions by player
    */
   private transformMatchForSync(
     match: Match,
@@ -238,7 +340,6 @@ export class MatchSyncService {
   ): SupabaseMatchSyncData {
     // Determine team_a_name and team_b_name values
     // If team_id exists and matches the team_mode, send team_id as the name
-    // Otherwise, send the actual team name
     let teamAValue = match.team_a_name;
     let teamBValue = match.team_b_name;
 
@@ -281,7 +382,7 @@ export class MatchSyncService {
       actionsByPlayer.get(key)!.push(action);
     }
 
-    // Create match players insert data
+    // Create match players insert data with actions grouped
     const playersInsert: SupabaseMatchPlayerInsert[] = matchPlayers.map(
       (player) => {
         const key = `${player.team}-${player.player_number}`;
@@ -320,11 +421,18 @@ export class MatchSyncService {
 
   /**
    * Insert match and players to Supabase
+   * Creates match first, then inserts all players with their actions
+   * Rolls back match if player insertion fails
    */
   private async syncToSupabase(
     syncData: SupabaseMatchSyncData
   ): Promise<string> {
     try {
+      logInfo('MatchSyncService', '📤 Inserting match to Supabase', {
+        teamA: syncData.match.team_a,
+        teamB: syncData.match.team_b
+      });
+
       // Insert match
       const { data: matchData, error: matchError } = await this.supabase
         .from("matches")
@@ -333,11 +441,18 @@ export class MatchSyncService {
         .single();
 
       if (matchError) {
-        console.error("Error inserting match to Supabase:", matchError);
+        logError('MatchSyncService', '❌ Error inserting match to Supabase', {
+          error: matchError.message,
+          match: syncData.match
+        });
         throw new Error(`Erreur lors de la création du match: ${matchError.message}`);
       }
 
       const matchId = matchData.id;
+
+      logInfo('MatchSyncService', '✅ Match inserted to Supabase', {
+        supabaseMatchId: matchId
+      });
 
       // Insert players with actions
       const playersWithMatchId = syncData.players.map((player) => ({
@@ -345,28 +460,46 @@ export class MatchSyncService {
         match_id: matchId,
       }));
 
+      logInfo('MatchSyncService', '📤 Inserting match players to Supabase', {
+        supabaseMatchId: matchId,
+        playerCount: playersWithMatchId.length
+      });
+
       const { error: playersError } = await this.supabase
         .from("match_players")
         .insert(playersWithMatchId);
 
       if (playersError) {
-        console.error("Error inserting match players to Supabase:", playersError);
+        logError('MatchSyncService', '❌ Error inserting match players, rolling back', {
+          supabaseMatchId: matchId,
+          error: playersError.message
+        });
+
         // Try to rollback match insertion
         await this.supabase.from("matches").delete().eq("id", matchId);
+
         throw new Error(
           `Erreur lors de la création des joueurs: ${playersError.message}`
         );
       }
 
+      logInfo('MatchSyncService', '✅ Match players inserted to Supabase', {
+        supabaseMatchId: matchId,
+        playerCount: playersWithMatchId.length
+      });
+
       return matchId;
     } catch (error) {
-      console.error("Error in syncToSupabase:", error);
+      logError('MatchSyncService', '❌ Error in syncToSupabase', {
+        error: error instanceof Error ? error.message : error
+      });
       throw error;
     }
   }
 
   /**
    * Sync all unsynchronized completed matches
+   * Useful for batch sync operations
    */
   async syncAllPendingMatches(): Promise<{
     synced: number;
@@ -374,9 +507,15 @@ export class MatchSyncService {
     errors: string[];
   }> {
     try {
-      // Get all completed matches that haven't been synced
+      logInfo('MatchSyncService', '🔄 Starting batch sync of pending matches');
+
+      // Get all completed matches that haven't been synced (logged by repository)
       const unsynced =
         await this.matchRepository.findUnsyncedCompletedMatches();
+
+      logInfo('MatchSyncService', '📋 Found unsynced matches', {
+        count: unsynced.length
+      });
 
       let synced = 0;
       let failed = 0;
@@ -393,9 +532,17 @@ export class MatchSyncService {
         }
       }
 
+      logInfo('MatchSyncService', '✅ Batch sync completed', {
+        total: unsynced.length,
+        synced,
+        failed
+      });
+
       return { synced, failed, errors };
     } catch (error) {
-      console.error("Error syncing all pending matches:", error);
+      logError('MatchSyncService', '❌ Error syncing all pending matches', {
+        error: error instanceof Error ? error.message : error
+      });
       return {
         synced: 0,
         failed: 0,

@@ -1,3 +1,19 @@
+/**
+ * ClubChoiceModal
+ *
+ * Modal presenting the choice between creating a new club or joining an existing one.
+ * Entry point for club functionality from the main menu.
+ *
+ * Features:
+ * - Two-card layout with distinct actions
+ * - Create club: Opens club creation flow with customization (colors, logo)
+ * - Join club: Opens club join flow with code entry
+ * - Close button in header
+ *
+ * Navigation:
+ * - Clicking outside modal or close button dismisses it
+ * - Create/Join buttons trigger respective callback handlers
+ */
 import React from 'react';
 import {
   Modal,
@@ -29,8 +45,11 @@ export default function ClubChoiceModal({
       animationType="fade"
       onRequestClose={onClose}
     >
+      {/* Overlay: clicking outside closes modal */}
       <Pressable style={styles.overlay} onPress={onClose}>
+        {/* Modal content: prevent click propagation to overlay */}
         <Pressable style={styles.modalContent} onPress={(e) => e.stopPropagation()}>
+          {/* Header with title and close button */}
           <View style={styles.header}>
             <Text style={styles.title}>Club</Text>
             <TouchableOpacity onPress={onClose}>
@@ -38,7 +57,9 @@ export default function ClubChoiceModal({
             </TouchableOpacity>
           </View>
 
+          {/* Two-card layout: Create or Join */}
           <View style={styles.cardsContainer}>
+            {/* Create club card */}
             <TouchableOpacity
               style={styles.card}
               onPress={onCreatePress}
@@ -53,6 +74,7 @@ export default function ClubChoiceModal({
               </Text>
             </TouchableOpacity>
 
+            {/* Join club card */}
             <TouchableOpacity
               style={styles.card}
               onPress={onJoinPress}

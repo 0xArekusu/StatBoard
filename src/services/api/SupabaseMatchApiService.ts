@@ -1,7 +1,28 @@
+/**
+ * SupabaseMatchApiService
+ *
+ * Supabase implementation of IMatchApiService for uploading match data.
+ * Legacy service - mostly replaced by MatchSyncService for production use.
+ *
+ * Features:
+ * - Match data upload to Supabase (matches table)
+ * - Action data upload (match_actions table)
+ * - Player data upload (match_players table)
+ * - Sequential insertion with foreign key relationships
+ *
+ * Architecture:
+ * - Uses IMatchApiService interface for abstraction
+ * - Uses payload adapter pattern for data transformation
+ * - Inserts match first, then actions/players with match_id
+ *
+ * Note: MatchSyncService is the preferred service for production sync operations
+ * as it handles subscription checks, photo uploads, and local data cleanup.
+ */
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { IMatchApiService } from './types/IMatchApiService';
 import { IPayloadAdapter } from './types/IPayloadAdapter';
 import { SupabaseMatchPayload } from './adapters/SupabasePayloadAdapter';
+import { logInfo, logError, logWarn } from '../../../utils/logger';
 
 /**
  * Supabase implementation of IMatchApiService
@@ -18,9 +39,18 @@ export class SupabaseMatchApiService implements IMatchApiService {
     this.supabase = createClient(supabaseUrl, supabaseKey);
   }
 
+  /**
+   * Upload match data to Supabase
+   * Inserts match, actions, and players in sequence
+   */
   async uploadMatch(payload: SupabaseMatchPayload): Promise<void> {
     try {
-      console.log('📤 Uploading match to Supabase...');
+      logInfo('SupabaseMatchApiService', '📤 Uploading match to Supabase', {
+        hasActions: payload.actions.length > 0,
+        hasPlayers: payload.players && payload.players.length > 0,
+        actionCount: payload.actions.length,
+        playerCount: payload.players?.length || 0
+      });
 
       // 1. Insert match
       const { data: matchData, error: matchError } = await this.supabase
@@ -30,11 +60,16 @@ export class SupabaseMatchApiService implements IMatchApiService {
         .single();
 
       if (matchError) {
-        console.error('❌ Error inserting match:', matchError);
+        logError('SupabaseMatchApiService', '❌ Error inserting match to Supabase', {
+          error: matchError.message,
+          match: payload.match
+        });
         throw new Error(`Failed to insert match: ${matchError.message}`);
       }
 
-      console.log('✅ Match inserted with ID:', matchData.id);
+      logInfo('SupabaseMatchApiService', '✅ Match inserted to Supabase', {
+        matchId: matchData.id
+      });
 
       // 2. Insert actions with match_id
       if (payload.actions.length > 0) {
@@ -48,11 +83,18 @@ export class SupabaseMatchApiService implements IMatchApiService {
           .insert(actionsWithMatchId);
 
         if (actionsError) {
-          console.error('❌ Error inserting actions:', actionsError);
+          logError('SupabaseMatchApiService', '❌ Error inserting actions to Supabase', {
+            matchId: matchData.id,
+            actionCount: actionsWithMatchId.length,
+            error: actionsError.message
+          });
           throw new Error(`Failed to insert actions: ${actionsError.message}`);
         }
 
-        console.log(`✅ ${payload.actions.length} actions inserted`);
+        logInfo('SupabaseMatchApiService', '✅ Actions inserted to Supabase', {
+          matchId: matchData.id,
+          actionCount: payload.actions.length
+        });
       }
 
       // 3. Insert players if present
@@ -67,16 +109,27 @@ export class SupabaseMatchApiService implements IMatchApiService {
           .insert(playersWithMatchId);
 
         if (playersError) {
-          console.error('⚠️ Warning: Error inserting players:', playersError);
+          logWarn('SupabaseMatchApiService', '⚠️ Error inserting players to Supabase (non-critical)', {
+            matchId: matchData.id,
+            playerCount: playersWithMatchId.length,
+            error: playersError.message
+          });
           // Don't throw - players are optional
         } else {
-          console.log(`✅ ${payload.players.length} players inserted`);
+          logInfo('SupabaseMatchApiService', '✅ Players inserted to Supabase', {
+            matchId: matchData.id,
+            playerCount: payload.players.length
+          });
         }
       }
 
-      console.log('✅ Match upload completed successfully');
+      logInfo('SupabaseMatchApiService', '✅ Match upload completed successfully', {
+        matchId: matchData.id
+      });
     } catch (error) {
-      console.error('❌ Upload failed:', error);
+      logError('SupabaseMatchApiService', '❌ Match upload failed', {
+        error: error instanceof Error ? error.message : error
+      });
       throw error;
     }
   }

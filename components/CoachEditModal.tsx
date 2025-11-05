@@ -1,3 +1,17 @@
+/**
+ * CoachEditModal
+ *
+ * Modal for editing coach name during pre-game setup.
+ * Simple text input for coach name with avatar display.
+ *
+ * Features:
+ * - Text input for coach name
+ * - Avatar display (photo or default "C" icon)
+ * - Input validation (non-empty name required)
+ * - Confirm/Cancel buttons
+ *
+ * Note: Photo editing not implemented (avatar is display-only)
+ */
 import React, { useState, useEffect } from "react";
 import { Modal, View, Text, TextInput, TouchableOpacity, Image } from "react-native";
 
@@ -19,7 +33,10 @@ export default function CoachEditModal({
   const [editName, setEditName] = useState(coachName);
   const [photoUrl, setPhotoUrl] = useState(coachPhotoUrl);
 
-  // Reset fields when modal opens
+  /**
+   * Reset fields when modal opens
+   * Ensures modal always shows current coach data
+   */
   useEffect(() => {
     if (visible) {
       setEditName(coachName);
@@ -27,6 +44,10 @@ export default function CoachEditModal({
     }
   }, [visible, coachName, coachPhotoUrl]);
 
+  /**
+   * Validate and confirm coach name change
+   * Requires non-empty name
+   */
   const handleConfirm = () => {
     if (editName.trim() === "") {
       alert("Le nom ne peut pas être vide");
@@ -35,10 +56,12 @@ export default function CoachEditModal({
     onConfirm(editName.trim(), photoUrl);
   };
 
+  // Validation state for button styling
   const isValid = editName.trim() !== "";
 
   return (
     <Modal visible={visible} transparent animationType="fade">
+      {/* Semi-transparent overlay */}
       <View
         style={{
           flex: 1,
@@ -47,6 +70,7 @@ export default function CoachEditModal({
           alignItems: "center",
         }}
       >
+        {/* Modal container */}
         <View
           style={{
             backgroundColor: "white",
@@ -61,7 +85,7 @@ export default function CoachEditModal({
             elevation: 8,
           }}
         >
-          {/* Avatar rond avec photo ou C pour Coach (non cliquable) */}
+          {/* Coach avatar: circular photo or "C" icon (display only, not editable) */}
           <View
             style={{
               width: 80,
@@ -85,7 +109,7 @@ export default function CoachEditModal({
             )}
           </View>
 
-          {/* Name field */}
+          {/* Coach name text input */}
           <TextInput
             style={{
               borderWidth: 2,
@@ -105,7 +129,7 @@ export default function CoachEditModal({
             maxLength={30}
           />
 
-          {/* Buttons */}
+          {/* Action buttons: Cancel and Confirm */}
           <View
             style={{
               flexDirection: "row",

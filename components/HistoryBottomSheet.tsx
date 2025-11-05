@@ -1,3 +1,23 @@
+/**
+ * HistoryBottomSheet
+ *
+ * Bottom sheet displaying chronological list of all recorded match actions.
+ * Allows viewing action details and deleting individual actions.
+ *
+ * Features:
+ * - Chronological action list with time, player, team
+ * - Color-coded by team (green/blue)
+ * - Action icons and descriptions
+ * - Delete action with confirmation modal
+ * - Empty state message when no actions
+ * - Adapts to portrait/landscape orientation
+ *
+ * Action Display:
+ * - Shows player name, jersey number, team
+ * - Action icon from ActionSystem
+ * - Formatted action description (English)
+ * - Period and time information
+ */
 import React, { useState } from "react";
 import {
   View,

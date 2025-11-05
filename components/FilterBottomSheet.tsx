@@ -1,3 +1,21 @@
+/**
+ * FilterBottomSheet
+ *
+ * Bottom sheet modal for filtering displayed actions on the court.
+ * Allows filtering by team, player, and action type.
+ *
+ * Features:
+ * - Multi-select filters (teams, players, action types)
+ * - Reset filters button
+ * - Apply/Cancel actions
+ * - Shows only players with recorded actions
+ * - Adapts to portrait/landscape orientation
+ *
+ * Filter Logic:
+ * - Empty filter = show all (no filtering)
+ * - Selected items = show only those items
+ * - Filters are combined with AND logic (team AND player AND type)
+ */
 import React, { useState } from "react";
 import {
   View,

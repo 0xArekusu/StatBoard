@@ -1,3 +1,21 @@
+/**
+ * MatchConfirmationModal
+ *
+ * Reusable confirmation modal for critical match actions.
+ * Used for period transitions and match end confirmations.
+ *
+ * Features:
+ * - Custom title and message
+ * - Time remaining warning (shows if time > 0)
+ * - Configurable button labels
+ * - Semi-transparent overlay
+ * - Hardware back button closes modal (onRequestClose)
+ *
+ * Usage:
+ * - Next period confirmation (with time remaining warning)
+ * - End match confirmation (with time remaining warning)
+ * - Any other destructive/important match action
+ */
 import React from "react";
 import {
   View,
@@ -28,6 +46,9 @@ export default function MatchConfirmationModal({
   confirmButtonText = "Confirmer",
   cancelButtonText = "Annuler",
 }: MatchConfirmationModalProps) {
+  /**
+   * Format seconds to MM:SS display
+   */
   const formatTime = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -43,10 +64,13 @@ export default function MatchConfirmationModal({
     >
       <View style={styles.overlay}>
         <View style={styles.container}>
+          {/* Modal title */}
           <Text style={styles.title}>{title}</Text>
-          
+
+          {/* Confirmation message */}
           <Text style={styles.message}>{message}</Text>
-          
+
+          {/* Time remaining warning (only shown if time > 0) */}
           {timeRemaining > 0 && (
             <View style={styles.timeWarning}>
               <Text style={styles.timeWarningIcon}>⏰</Text>
@@ -56,6 +80,7 @@ export default function MatchConfirmationModal({
             </View>
           )}
 
+          {/* Action buttons: Cancel (left) and Confirm (right) */}
           <View style={styles.buttonsContainer}>
             <TouchableOpacity
               style={[styles.button, styles.cancelButton]}

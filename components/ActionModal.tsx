@@ -1,3 +1,28 @@
+/**
+ * ActionModal
+ *
+ * Modal UI component for recording basketball actions during a match.
+ * Displays step-by-step selection interface positioned near the court tap location.
+ *
+ * Features:
+ * - Multi-step flow: Team → Action Type → Points (if shot) → Specification → Player
+ * - Positioned modal with pointer/triangle indicator showing tap location
+ * - Back navigation with intelligent step management
+ * - Conditional steps (team selection only in BOTH mode, points only for shots)
+ * - Scrollable action/player lists for long content
+ *
+ * Architecture:
+ * - Pure presentational component (no state management)
+ * - State managed by parent (ActionSystem hook)
+ * - Renders different content based on currentStep prop
+ * - Modal positioned near court tap with pointer indicator
+ *
+ * Visual Design:
+ * - 220x160px modal with rounded corners
+ * - Pointer triangle pointing to tap location
+ * - Color-coded action buttons
+ * - Player buttons with jersey numbers
+ */
 import React from "react";
 import {
   View,
@@ -42,6 +67,7 @@ interface ActionModalProps {
   teamB: string;
 }
 
+// Modal dimensions and styling constants
 const MODAL_WIDTH = 220;
 const MODAL_HEIGHT = 160;
 const POINTER_SIZE = 12;
@@ -67,6 +93,10 @@ export default function ActionModal({
   teamA,
   teamB,
 }: ActionModalProps) {
+  /**
+   * Render back button with conditional visibility
+   * Hidden at step 1 and at step 2 for single-team mode
+   */
   const renderBackButton = () => {
     // Don't show back button if we're at step 1
     if (currentStep === 1) return null;
@@ -82,6 +112,10 @@ export default function ActionModal({
     );
   };
 
+  /**
+   * Step 1: Team selection (only for BOTH mode)
+   * Displays two buttons for Team A and Team B
+   */
   const renderTeamSelection = () => {
     return (
       <View style={styles.actionsContainer}>
@@ -105,6 +139,10 @@ export default function ActionModal({
     );
   };
 
+  /**
+   * Step 2 (or 1 in single-team): Action type selection
+   * Scrollable list of all available action types (shot, rebound, foul, etc.)
+   */
   const renderActionSelection = () => {
     return (
       <View style={styles.actionsContainer}>
@@ -134,6 +172,10 @@ export default function ActionModal({
     );
   };
 
+  /**
+   * Step 3: Points selection (only for shots)
+   * Displays 1pt, 2pt, 3pt options
+   */
   const renderPointsSelection = () => {
     const currentAction = ACTION_DEFINITIONS.find(
       (a) => a.id === selectedAction
@@ -168,6 +210,10 @@ export default function ActionModal({
     );
   };
 
+  /**
+   * Step 4: Specification selection
+   * Displays action-specific options (made/missed, offensive/defensive, etc.)
+   */
   const renderSpecificationSelection = () => {
     const currentAction = ACTION_DEFINITIONS.find(
       (a) => a.id === selectedAction
@@ -202,6 +248,11 @@ export default function ActionModal({
     );
   };
 
+  /**
+   * Step 5: Player selection
+   * Displays list of players with jersey numbers
+   * Filters by selected team in BOTH mode
+   */
   const renderPlayerSelection = () => {
     // Filter players according to selected team only if in "BOTH" mode
     const filteredPlayers = teamMode === "BOTH" && selectedTeam
@@ -236,6 +287,10 @@ export default function ActionModal({
     );
   };
 
+  /**
+   * Render content for current step
+   * Handles conditional step logic (team selection, points selection)
+   */
   const renderStepContent = () => {
     switch (currentStep) {
       case 1:

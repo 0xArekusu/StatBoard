@@ -1,3 +1,18 @@
+/**
+ * LocalSaveWarningModal
+ *
+ * Informational modal displayed after saving a match locally.
+ * Shows different warnings based on user connection status.
+ *
+ * Features:
+ * - Local save confirmation message
+ * - Warning for non-authenticated users (data loss risk on uninstall)
+ * - Warning for authenticated non-premium users (no cloud sync)
+ * - Different icons based on connection status
+ *
+ * Props:
+ * - isConnected: Shows premium upsell if true, account creation warning if false
+ */
 import React from "react";
 import { Modal, View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -15,19 +30,26 @@ export default function LocalSaveWarningModal({
 }: LocalSaveWarningModalProps) {
   return (
     <Modal visible={visible} transparent animationType="fade">
+      {/* Semi-transparent overlay */}
       <View style={styles.overlay}>
+        {/* Modal container */}
         <View style={styles.modal}>
+          {/* Save icon */}
           <View style={styles.iconContainer}>
             <Ionicons name="save-outline" size={60} color="#2196F3" />
           </View>
 
+          {/* Modal title */}
           <Text style={styles.title}>Match sauvegardé localement</Text>
 
+          {/* Success message */}
           <Text style={styles.message}>
             Votre match a été enregistré sur cet appareil.
           </Text>
 
+          {/* Warning box: content varies based on connection status */}
           {!isConnected ? (
+            /* Warning for non-authenticated users */
             <View style={styles.warningBox}>
               <Ionicons name="warning-outline" size={24} color="#FF9800" />
               <Text style={styles.warningText}>
@@ -35,6 +57,7 @@ export default function LocalSaveWarningModal({
               </Text>
             </View>
           ) : (
+            /* Warning for authenticated but non-premium users */
             <View style={styles.warningBox}>
               <Ionicons name="cloud-offline-outline" size={24} color="#FF9800" />
               <Text style={styles.warningText}>
@@ -43,6 +66,7 @@ export default function LocalSaveWarningModal({
             </View>
           )}
 
+          {/* Action button: Close modal */}
           <View style={styles.actions}>
             <TouchableOpacity
               style={[styles.button, styles.primaryButton]}
