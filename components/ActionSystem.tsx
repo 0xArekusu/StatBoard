@@ -1,12 +1,39 @@
+/**
+ * ActionSystem
+ *
+ * State management hook for the action recording system.
+ * Implements a multi-step state machine for recording basketball actions.
+ *
+ * Flow:
+ * Step 1: Team selection (A or B) - skipped in single team mode
+ * Step 2: Action type selection (shot, rebound, foul)
+ * Step 3: Points selection (1pt, 2pt, 3pt) - only for shots
+ * Step 4: Specification selection (made/missed, offensive/defensive, etc.)
+ * Step 5: Player selection (by jersey number)
+ *
+ * Features:
+ * - Conditional step flow (e.g., skip points selection for non-shot actions)
+ * - Back navigation with proper state cleanup
+ * - Auto-completion when all required data is collected
+ * - Semantic position tracking for orientation-independent coordinate storage
+ */
 import { useState, useCallback } from "react";
 
 // Types for the action system
+
+/**
+ * ActionStep: Represents a single step in the action recording flow
+ */
 export interface ActionStep {
   step: number;
   title: string;
   canGoBack: boolean;
 }
 
+/**
+ * ActionData: Complete data for a recorded basketball action
+ * Used for both immediate UI updates and SQLite persistence
+ */
 export interface ActionData {
   type: string;
   specification?: string;
@@ -28,6 +55,10 @@ export interface ActionData {
   };
 }
 
+/**
+ * ActionDefinition: Configuration for a type of basketball action
+ * Defines available actions, their specifications, and points options
+ */
 export interface ActionDefinition {
   id: string;
   icon: string;
@@ -49,6 +80,10 @@ export interface ActionDefinition {
   }[];
 }
 
+/**
+ * ActionSystemState: Current state of the action recording flow
+ * Tracks which step the user is on and what selections they've made
+ */
 export interface ActionSystemState {
   isVisible: boolean;
   currentStep: number;
@@ -69,6 +104,10 @@ export interface ActionSystemState {
   };
 }
 
+/**
+ * ActionSystemProps: Props for ActionSystemModal component
+ * Provides context about the match, teams, and players
+ */
 export interface ActionSystemProps {
   visible: boolean;
   onClose: () => void;
@@ -96,7 +135,11 @@ export interface ActionSystemProps {
   timeElapsed: number; // Time elapsed in current period
 }
 
-// Action definitions with sub-specifications
+/**
+ * ACTION_DEFINITIONS: Available basketball actions
+ * Each action has specifications (made/missed, offensive/defensive, etc.)
+ * Shots have additional points selection (1pt, 2pt, 3pt)
+ */
 export const ACTION_DEFINITIONS: ActionDefinition[] = [
   {
     id: "tir",
@@ -184,7 +227,14 @@ export const ACTION_DEFINITIONS: ActionDefinition[] = [
   },
 ];
 
-// Helper function to get the correct icon for displaying on the court
+/**
+ * getActionIcon: Returns the appropriate icon for displaying an action on the court
+ * Uses specification icon if available, otherwise falls back to action type icon
+ *
+ * @param actionType - The action type ID (e.g., "tir", "rebond", "faute")
+ * @param specification - Optional specification ID (e.g., "reussi", "rate")
+ * @returns Emoji icon string for display
+ */
 export const getActionIcon = (
   actionType: string,
   specification?: string
@@ -200,7 +250,14 @@ export const getActionIcon = (
   return action.icon;
 };
 
+/**
+ * useActionSystem: React hook for managing action recording state
+ *
+ * Returns state and action handlers for the multi-step action flow.
+ * Handles conditional step navigation (e.g., skip points for rebounds/fouls).
+ */
 export const useActionSystem = () => {
+  // State: Tracks current step, selections, and modal position
   const [state, setState] = useState<ActionSystemState>({
     isVisible: false,
     currentStep: 1,
@@ -221,8 +278,13 @@ export const useActionSystem = () => {
     },
   });
 
+  // History of all completed actions (not currently used, but available for future features)
   const [completedActions, setCompletedActions] = useState<ActionData[]>([]);
 
+  /**
+   * startAction: Initialize the action recording flow
+   * Opens the modal and sets initial step based on team mode
+   */
   const startAction = useCallback(
     (
       position: ActionSystemState["position"],
@@ -230,9 +292,7 @@ export const useActionSystem = () => {
       teamMode: "A" | "B" | "BOTH",
       currentTeam: "A" | "B"
     ) => {
-      console.log("🔍 startAction called:", { teamMode, currentTeam }); // 🔍 DEBUG
       const selectedTeam = teamMode === "BOTH" ? null : currentTeam;
-      console.log("🔍 selectedTeam will be:", selectedTeam); // 🔍 DEBUG
 
       setState({
         isVisible: true,
@@ -249,6 +309,10 @@ export const useActionSystem = () => {
     []
   );
 
+  /**
+   * selectTeam: User selected a team (A or B)
+   * Advances to step 2 (action type selection)
+   */
   const selectTeam = useCallback((team: "A" | "B") => {
     setState((prev) => ({
       ...prev,
@@ -257,6 +321,10 @@ export const useActionSystem = () => {
     }));
   }, []);
 
+  /**
+   * selectActionType: User selected an action type (shot, rebound, foul)
+   * If shot, advances to step 3 (points), otherwise skips to step 4 (specification)
+   */
   const selectActionType = useCallback((actionType: string) => {
     const action = ACTION_DEFINITIONS.find((a) => a.id === actionType);
     const hasPointsSelection = action?.hasPointsSelection || false;
@@ -269,6 +337,10 @@ export const useActionSystem = () => {
     }));
   }, []);
 
+  /**
+   * selectActionPoints: User selected shot points (1pt, 2pt, 3pt)
+   * Advances to step 4 (specification)
+   */
   const selectActionPoints = useCallback((points: number) => {
     setState((prev) => ({
       ...prev,
@@ -277,6 +349,10 @@ export const useActionSystem = () => {
     }));
   }, []);
 
+  /**
+   * selectActionSpec: User selected specification (made/missed, offensive/defensive, etc.)
+   * Advances to step 5 (player selection)
+   */
   const selectActionSpec = useCallback((actionSpec: string) => {
     setState((prev) => ({
       ...prev,
@@ -285,6 +361,10 @@ export const useActionSystem = () => {
     }));
   }, []);
 
+  /**
+   * selectPlayer: User selected player by number
+   * Triggers auto-completion in ActionSystemModal via useEffect
+   */
   const selectPlayer = useCallback((playerNumber: number) => {
     setState((prev) => ({
       ...prev,
@@ -292,6 +372,11 @@ export const useActionSystem = () => {
     }));
   }, []);
 
+  /**
+   * goBack: Navigate to previous step
+   * Intelligently handles skipped steps (e.g., points selection for non-shots)
+   * Clears data from steps being navigated away from
+   */
   const goBack = useCallback(() => {
     setState((prev) => {
       if (prev.currentStep > 1) {
@@ -299,7 +384,9 @@ export const useActionSystem = () => {
 
         // If going back from step 4 (spec) and action doesn't have points, skip to step 2 (action type)
         if (newStep === 3 && prev.actionType) {
-          const action = ACTION_DEFINITIONS.find((a) => a.id === prev.actionType);
+          const action = ACTION_DEFINITIONS.find(
+            (a) => a.id === prev.actionType
+          );
           if (!action?.hasPointsSelection) {
             newStep = 2;
           }
@@ -338,16 +425,25 @@ export const useActionSystem = () => {
     });
   }, []);
 
+  /**
+   * completeAction: Finalize the action and pass data to parent
+   * Validates all required data is present, creates ActionData object,
+   * calls parent callback, and resets state for next action
+   */
   const completeAction = useCallback(
-    (onActionComplete: (actionData: ActionData) => void, currentPeriod: number, timeElapsed: number) => {
-      console.log("🔍 completeAction - state.selectedTeam:", state.selectedTeam); // 🔍 DEBUG
-
+    (
+      onActionComplete: (actionData: ActionData) => void,
+      currentPeriod: number,
+      timeElapsed: number
+    ) => {
+      // Validate all required data is present
       if (
         state.actionType &&
         state.actionSpec &&
         state.playerNumber &&
         state.selectedTeam
       ) {
+        // Build complete action data object
         const actionData: ActionData = {
           type: state.actionType,
           specification: state.actionSpec,
@@ -359,15 +455,18 @@ export const useActionSystem = () => {
           time_in_period: timeElapsed,
           position: state.clickPosition,
           // Semantic coordinates will be calculated in BoardScreen.tsx
-          semanticPosition: { xNormalized: 0, yNormalized: 0, capturedInPortrait: true },
+          semanticPosition: {
+            xNormalized: 0,
+            yNormalized: 0,
+            capturedInPortrait: true,
+          },
         };
 
-        console.log("🔍 completeAction - actionData.team:", actionData.team); // 🔍 DEBUG
-
+        // Store in history and notify parent
         setCompletedActions((prev) => [...prev, actionData]);
         onActionComplete(actionData);
 
-        // Reset state
+        // Reset state for next action
         setState({
           isVisible: false,
           currentStep: 1,
@@ -392,6 +491,10 @@ export const useActionSystem = () => {
     [state]
   );
 
+  /**
+   * closeAction: Close the modal without completing an action
+   * Resets all state to initial values
+   */
   const closeAction = useCallback(() => {
     setState({
       isVisible: false,
@@ -414,6 +517,7 @@ export const useActionSystem = () => {
     });
   }, []);
 
+  // Return state and all action handlers
   return {
     state,
     completedActions,

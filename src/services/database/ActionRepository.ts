@@ -1,5 +1,26 @@
+/**
+ * ActionRepository
+ *
+ * Repository for managing basketball match actions in SQLite database.
+ * Handles CRUD operations for actions (shots, rebounds, fouls, etc.)
+ *
+ * Features:
+ * - Single action creation with immediate logging
+ * - Batch action creation within transaction
+ * - Action compaction: groups actions by player in JSON format for completed matches
+ * - Reads from compacted format (match_players.actions) or live format (match_actions table)
+ * - Action deletion (single or all for match)
+ * - Action counting and ordering
+ *
+ * Architecture:
+ * - Uses SQLite via DatabaseService
+ * - Stores actions in match_actions table during active match
+ * - Compacts actions into match_players.actions JSON after match completion
+ * - Automatically detects and reads from correct source based on match status
+ */
 import { DatabaseService } from "./DatabaseService";
 import { Action, CreateActionData } from "../../models/types";
+import { logInfo, logError, logWarn } from "../../../utils/logger";
 
 export interface IActionRepository {
   create(data: CreateActionData): Promise<Action>;
@@ -17,6 +38,10 @@ export class ActionRepository implements IActionRepository {
     this.db = DatabaseService.getInstance();
   }
 
+  /**
+   * Create a single action in SQLite database
+   * Inserts into match_actions table and returns created action with ID
+   */
   async create(data: CreateActionData): Promise<Action> {
     const sql = `
       INSERT INTO match_actions (
@@ -26,6 +51,17 @@ export class ActionRepository implements IActionRepository {
     `;
 
     try {
+      logInfo('ActionRepository', '📊 Creating action in SQLite', {
+        matchId: data.match_id,
+        actionType: data.action_type,
+        specification: data.specification,
+        player: data.player_number,
+        team: data.team,
+        points: data.points,
+        period: data.period_number,
+        order: data.action_order
+      });
+
       await this.db.execute(sql, [
         data.match_id,
         data.team,
@@ -40,17 +76,18 @@ export class ActionRepository implements IActionRepository {
         data.time_in_period,
       ]);
 
-      // Récupérer l'action créée
+      // Retrieve created action
       const actions = await this.db.query(
         "SELECT * FROM match_actions WHERE match_id = ? ORDER BY id DESC LIMIT 1",
         [data.match_id]
       );
 
       if (actions.length === 0) {
+        logError('ActionRepository', '❌ Failed to retrieve created action', { matchId: data.match_id });
         throw new Error("Failed to create action");
       }
 
-      console.log("📊 Action created in DB:", {
+      logInfo('ActionRepository', '✅ Action created successfully in SQLite', {
         id: actions[0].id,
         type: actions[0].action_type,
         specification: actions[0].specification,
@@ -67,16 +104,27 @@ export class ActionRepository implements IActionRepository {
 
       return actions[0] as Action;
     } catch (error) {
-      console.error("❌ Error creating action:", error);
+      logError('ActionRepository', '❌ Error creating action in SQLite', {
+        error: error instanceof Error ? error.message : error,
+        matchId: data.match_id,
+        actionType: data.action_type
+      });
       throw error;
     }
   }
 
+  /**
+   * Create multiple actions in a single transaction
+   * More efficient than individual creates for bulk operations
+   */
   async createBatch(actions: CreateActionData[]): Promise<Action[]> {
     if (actions.length === 0) return [];
 
     try {
-      console.log(`📊 Creating batch of ${actions.length} actions...`);
+      logInfo('ActionRepository', '📊 Creating batch of actions in SQLite transaction', {
+        actionCount: actions.length,
+        matchId: actions[0].match_id
+      });
 
       await this.db.transaction(async (adapter) => {
         const sql = `
@@ -103,27 +151,42 @@ export class ActionRepository implements IActionRepository {
         }
       });
 
-      // Récupérer les actions créées
+      // Retrieve created actions
       const matchId = actions[0].match_id;
       const createdActions = await this.db.query(
-        `SELECT * FROM match_actions 
-         WHERE match_id = ? 
-         ORDER BY id DESC 
+        `SELECT * FROM match_actions
+         WHERE match_id = ?
+         ORDER BY id DESC
          LIMIT ?`,
         [matchId, actions.length]
       );
 
-      console.log(`✅ Batch of ${actions.length} actions created successfully`);
+      logInfo('ActionRepository', '✅ Batch created successfully in SQLite', {
+        actionCount: actions.length,
+        matchId
+      });
       return createdActions as Action[];
     } catch (error) {
-      console.error("❌ Error creating action batch:", error);
+      logError('ActionRepository', '❌ Error creating action batch in SQLite', {
+        error: error instanceof Error ? error.message : error,
+        actionCount: actions.length,
+        matchId: actions[0]?.match_id
+      });
       throw error;
     }
   }
 
+  /**
+   * Get all actions for a match
+   * Automatically detects source:
+   * - Completed matches: reads from match_players.actions (compacted JSON)
+   * - Active matches: reads from match_actions table
+   */
   async getActionsForMatch(matchId: number): Promise<Action[]> {
     try {
-      // First, check the match status to determine if actions are compacted
+      logInfo('ActionRepository', '📊 Fetching actions for match', { matchId });
+
+      // Check match status to determine if actions are compacted
       const matchResult = await this.db.query(
         `SELECT status FROM matches WHERE id = ?`,
         [matchId]
@@ -141,7 +204,11 @@ export class ActionRepository implements IActionRepository {
 
         // If we have compacted actions, use them
         if (compactedPlayers.length > 0) {
-          console.log(`📦 [ActionRepository] Reading ${compactedPlayers.length} compacted players for completed match ${matchId}`);
+          logInfo('ActionRepository', '📦 Reading compacted actions from match_players', {
+            matchId,
+            playerCount: compactedPlayers.length,
+            matchStatus
+          });
 
           const allActions: Action[] = [];
           let actionIdCounter = 1;
@@ -169,7 +236,12 @@ export class ActionRepository implements IActionRepository {
                   });
                 }
               } catch (parseError) {
-                console.error(`❌ Error parsing actions for player ${player.team}-${player.player_number}:`, parseError);
+                logError('ActionRepository', '❌ Error parsing compacted actions for player', {
+                  matchId,
+                  team: player.team,
+                  playerNumber: player.player_number,
+                  error: parseError instanceof Error ? parseError.message : parseError
+                });
               }
             }
           }
@@ -177,13 +249,20 @@ export class ActionRepository implements IActionRepository {
           // Sort by action_order
           allActions.sort((a, b) => a.action_order - b.action_order);
 
-          console.log(`✅ [ActionRepository] Loaded ${allActions.length} compacted actions`);
+          logInfo('ActionRepository', '✅ Compacted actions loaded successfully', {
+            matchId,
+            totalActions: allActions.length
+          });
           return allActions;
         }
       }
 
       // For in-progress matches or if no compacted data, read from match_actions table
-      console.log(`📊 [ActionRepository] Reading from match_actions table for match ${matchId} (status: ${matchStatus})`);
+      logInfo('ActionRepository', '📊 Reading from match_actions table', {
+        matchId,
+        matchStatus
+      });
+
       const actions = await this.db.query(
         `SELECT * FROM match_actions
          WHERE match_id = ?
@@ -191,21 +270,36 @@ export class ActionRepository implements IActionRepository {
         [matchId]
       );
 
+      logInfo('ActionRepository', '✅ Actions loaded from match_actions table', {
+        matchId,
+        actionCount: actions.length
+      });
+
       return actions as Action[];
     } catch (error) {
-      console.error("❌ Error getting actions for match:", error);
+      logError('ActionRepository', '❌ Error getting actions for match', {
+        matchId,
+        error: error instanceof Error ? error.message : error
+      });
       throw error;
     }
   }
 
+  /**
+   * Delete a single action by ID
+   * Verifies action exists before deletion
+   */
   async deleteAction(actionId: number): Promise<void> {
     try {
+      logInfo('ActionRepository', '🗑️ Deleting action from SQLite', { actionId });
+
       const result = await this.db.query(
         "SELECT * FROM match_actions WHERE id = ?",
         [actionId]
       );
 
       if (result.length === 0) {
+        logWarn('ActionRepository', '⚠️ Action not found for deletion', { actionId });
         throw new Error(`Action with id ${actionId} not found`);
       }
 
@@ -213,26 +307,47 @@ export class ActionRepository implements IActionRepository {
         actionId,
       ]);
 
-      console.log("🗑️ Action deleted from DB:", actionId);
+      logInfo('ActionRepository', '✅ Action deleted successfully', {
+        actionId,
+        actionType: result[0].action_type,
+        matchId: result[0].match_id
+      });
     } catch (error) {
-      console.error("❌ Error deleting action:", error);
+      logError('ActionRepository', '❌ Error deleting action', {
+        actionId,
+        error: error instanceof Error ? error.message : error
+      });
       throw error;
     }
   }
 
+  /**
+   * Delete all actions for a match
+   * Used during match cleanup or compaction
+   */
   async deleteActionsForMatch(matchId: number): Promise<void> {
     try {
+      logInfo('ActionRepository', '🗑️ Deleting all actions for match', { matchId });
+
       await this.db.execute(
         "DELETE FROM match_actions WHERE match_id = ?",
         [matchId]
       );
-      console.log("🗑️ All actions deleted for match:", matchId);
+
+      logInfo('ActionRepository', '✅ All actions deleted for match', { matchId });
     } catch (error) {
-      console.error("❌ Error deleting actions for match:", error);
+      logError('ActionRepository', '❌ Error deleting actions for match', {
+        matchId,
+        error: error instanceof Error ? error.message : error
+      });
       throw error;
     }
   }
 
+  /**
+   * Get total count of actions for a match
+   * Returns 0 if error occurs
+   */
   async getActionCount(matchId: number): Promise<number> {
     try {
       const result = await this.db.query(
@@ -240,13 +355,22 @@ export class ActionRepository implements IActionRepository {
         [matchId]
       );
 
-      return result[0]?.count || 0;
+      const count = result[0]?.count || 0;
+      logInfo('ActionRepository', '📊 Action count retrieved', { matchId, count });
+      return count;
     } catch (error) {
-      console.error("❌ Error getting action count:", error);
+      logError('ActionRepository', '❌ Error getting action count', {
+        matchId,
+        error: error instanceof Error ? error.message : error
+      });
       return 0;
     }
   }
 
+  /**
+   * Get highest action_order value for a match
+   * Used to determine next action order number
+   */
   async getLastActionOrder(matchId: number): Promise<number> {
     try {
       const result = await this.db.query(
@@ -254,9 +378,14 @@ export class ActionRepository implements IActionRepository {
         [matchId]
       );
 
-      return result[0]?.max_order || 0;
+      const maxOrder = result[0]?.max_order || 0;
+      logInfo('ActionRepository', '📊 Last action order retrieved', { matchId, maxOrder });
+      return maxOrder;
     } catch (error) {
-      console.error("❌ Error getting last action order:", error);
+      logError('ActionRepository', '❌ Error getting last action order', {
+        matchId,
+        error: error instanceof Error ? error.message : error
+      });
       return 0;
     }
   }
@@ -264,20 +393,24 @@ export class ActionRepository implements IActionRepository {
   /**
    * Compact match actions: group by player and store in match_players.actions as JSON
    * Then delete all actions from match_actions table
+   * Called after match completion to save space and improve performance
    */
   async compactMatchActions(matchId: number): Promise<void> {
     try {
-      console.log(`🗜️ [ActionRepository] Compacting actions for match ${matchId}...`);
+      logInfo('ActionRepository', '🗜️ Starting action compaction', { matchId });
 
       // 1. Get all actions for this match
       const actions = await this.getActionsForMatch(matchId);
 
       if (actions.length === 0) {
-        console.log(`⚠️ [ActionRepository] No actions to compact for match ${matchId}`);
+        logWarn('ActionRepository', '⚠️ No actions to compact', { matchId });
         return;
       }
 
-      console.log(`📦 [ActionRepository] Found ${actions.length} actions to compact`);
+      logInfo('ActionRepository', '📦 Actions to compact', {
+        matchId,
+        actionCount: actions.length
+      });
 
       // 2. Group actions by player (team + player_number)
       const actionsByPlayer = new Map<string, any[]>();
@@ -303,7 +436,10 @@ export class ActionRepository implements IActionRepository {
         });
       }
 
-      console.log(`👥 [ActionRepository] Grouped into ${actionsByPlayer.size} players`);
+      logInfo('ActionRepository', '👥 Actions grouped by player', {
+        matchId,
+        playerCount: actionsByPlayer.size
+      });
 
       // 3. Update each match_player with their actions
       for (const [playerKey, playerActions] of actionsByPlayer.entries()) {
@@ -317,15 +453,26 @@ export class ActionRepository implements IActionRepository {
           [actionsJson, matchId, team, parseInt(playerNumber)]
         );
 
-        console.log(`💾 [ActionRepository] Saved ${playerActions.length} actions for player ${playerKey}`);
+        logInfo('ActionRepository', '💾 Actions saved for player', {
+          matchId,
+          playerKey,
+          actionCount: playerActions.length
+        });
       }
 
       // 4. Delete all actions from match_actions table
       await this.deleteActionsForMatch(matchId);
 
-      console.log(`✅ [ActionRepository] Actions compacted successfully for match ${matchId}`);
+      logInfo('ActionRepository', '✅ Action compaction completed successfully', {
+        matchId,
+        totalActionsCompacted: actions.length,
+        playerCount: actionsByPlayer.size
+      });
     } catch (error) {
-      console.error(`❌ [ActionRepository] Error compacting actions for match ${matchId}:`, error);
+      logError('ActionRepository', '❌ Error compacting actions', {
+        matchId,
+        error: error instanceof Error ? error.message : error
+      });
       throw error;
     }
   }

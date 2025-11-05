@@ -1,6 +1,21 @@
+/**
+ * MatchStatusBar
+ *
+ * Top toolbar displaying match status and timer controls during active gameplay.
+ * Features:
+ * - Team names with digital-style scores
+ * - Period indicator (quarters or halves)
+ * - Countdown timer with color-coded warnings (red < 1min, orange < 5min)
+ * - Timer controls: Pause/Resume buttons
+ * - Period navigation: Next Period button (disabled during play)
+ * - Match end: End Match button (shown only in last period, disabled during play)
+ *
+ * Timer controls are only enabled when match is paused or time is up.
+ */
 import React from "react";
 import { View, Text, TouchableOpacity, Platform } from "react-native";
 import { MatchFormat } from "../src/models/types";
+import { logInfo, logWarn } from "../utils/logger";
 
 interface MatchStatusBarProps {
   teamA: string;
@@ -37,12 +52,14 @@ export default function MatchStatusBar({
   scoreB = 0,
   teamMode,
 }: MatchStatusBarProps) {
+  // Format seconds to MM:SS display
   const formatTime = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
+  // Get localized period name (1ère MT, 2ème MT, or Q1-Q4)
   const getPeriodName = (): string => {
     if (matchFormat === "2_halves") {
       return currentPeriod === 1 ? "1ère MT" : "2ème MT";
@@ -53,12 +70,76 @@ export default function MatchStatusBar({
 
   const timeRemaining = Math.max(0, periodDuration - timeElapsed);
   const isTimeUp = timeRemaining === 0;
-  
+
+  // Calculate total periods based on match format
   const getTotalPeriods = (): number => {
     return matchFormat === "2_halves" ? 2 : 4;
   };
-  
+
   const isLastPeriod = currentPeriod >= getTotalPeriods();
+
+  // Handler: User clicked pause button
+  const handlePause = () => {
+    logInfo('MatchStatusBar', '⏸️ User clicked pause button', {
+      currentPeriod,
+      timeElapsed,
+      timeRemaining,
+      periodName: getPeriodName()
+    });
+    onPause();
+  };
+
+  // Handler: User clicked resume button
+  const handleResume = () => {
+    logInfo('MatchStatusBar', '▶️ User clicked resume button', {
+      currentPeriod,
+      timeElapsed,
+      timeRemaining,
+      periodName: getPeriodName()
+    });
+    onResume();
+  };
+
+  // Handler: User clicked next period button
+  const handleNextPeriod = () => {
+    if (!(isPaused || isTimeUp)) {
+      logWarn('MatchStatusBar', '⚠️ Next period button disabled during active play');
+      return;
+    }
+
+    logInfo('MatchStatusBar', '⏭️ User clicked next period button', {
+      currentPeriod,
+      nextPeriod: currentPeriod + 1,
+      totalPeriods: getTotalPeriods(),
+      timeRemaining,
+      isPaused
+    });
+
+    if (onNextPeriod) {
+      onNextPeriod();
+    }
+  };
+
+  // Handler: User clicked end match button
+  const handleEndMatch = () => {
+    if (!(isPaused || isTimeUp)) {
+      logWarn('MatchStatusBar', '⚠️ End match button disabled during active play');
+      return;
+    }
+
+    logInfo('MatchStatusBar', '🏁 User clicked end match button', {
+      currentPeriod,
+      isLastPeriod: true,
+      timeRemaining,
+      isPaused,
+      finalScoreA: scoreA,
+      finalScoreB: scoreB
+    });
+
+    if (onEndMatch) {
+      onEndMatch();
+    }
+  };
 
   return (
     <View
@@ -230,11 +311,11 @@ export default function MatchStatusBar({
           </Text>
         </View>
 
-        {/* Discreet control buttons */}
+        {/* Timer control buttons: Pause/Resume, Next Period, End Match */}
         <View style={{ flexDirection: "row", alignItems: "center" }}>
           {isPaused ? (
             <TouchableOpacity
-              onPress={isTimeUp ? undefined : onResume}
+              onPress={isTimeUp ? undefined : handleResume}
               disabled={isTimeUp}
               style={{
                 backgroundColor: isTimeUp ? "#666" : "#4CAF50",
@@ -256,7 +337,7 @@ export default function MatchStatusBar({
             </TouchableOpacity>
           ) : (
             <TouchableOpacity
-              onPress={isTimeUp ? undefined : onPause}
+              onPress={isTimeUp ? undefined : handlePause}
               disabled={isTimeUp}
               style={{
                 backgroundColor: isTimeUp ? "#666" : "#FF9800",
@@ -278,10 +359,10 @@ export default function MatchStatusBar({
             </TouchableOpacity>
           )}
 
-          {/* Next Period button - shown only if not the last period */}
+          {/* Next Period button - shown only if not the last period, enabled only when paused */}
           {!isLastPeriod && onNextPeriod && (
             <TouchableOpacity
-              onPress={(isPaused || isTimeUp) ? onNextPeriod : undefined}
+              onPress={(isPaused || isTimeUp) ? handleNextPeriod : undefined}
               disabled={!(isPaused || isTimeUp)}
               style={{
                 backgroundColor: !(isPaused || isTimeUp) ? "#666" : "#2196F3",
@@ -303,10 +384,10 @@ export default function MatchStatusBar({
             </TouchableOpacity>
           )}
 
-          {/* End match button - shown only in the last period */}
+          {/* End match button - shown only in the last period, enabled only when paused */}
           {isLastPeriod && onEndMatch && (
             <TouchableOpacity
-              onPress={(isPaused || isTimeUp) ? onEndMatch : undefined}
+              onPress={(isPaused || isTimeUp) ? handleEndMatch : undefined}
               disabled={!(isPaused || isTimeUp)}
               style={{
                 backgroundColor: !(isPaused || isTimeUp) ? "#666" : "#F44336",

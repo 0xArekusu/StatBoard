@@ -1,3 +1,17 @@
+/**
+ * ActionSystemModal
+ *
+ * Main modal component for recording basketball actions during a match.
+ * Manages the multi-step action recording flow:
+ * 1. Team selection (if both teams mode)
+ * 2. Action type selection (shot, rebound, foul, etc.)
+ * 3. Shot points selection (1pt/2pt/3pt) if applicable
+ * 4. Action specification (made/missed, offensive/defensive, etc.)
+ * 5. Player selection
+ *
+ * Uses ActionSystem hook for state management and ActionModal for UI rendering.
+ * Auto-completes action when all required data is collected.
+ */
 import React from "react";
 import { useActionSystem, ActionData } from "./ActionSystem";
 import ActionModal from "./ActionModal";
@@ -45,6 +59,7 @@ export default function ActionSystemModal({
   currentPeriod,
   timeElapsed,
 }: ActionSystemModalProps) {
+  // Hook for managing action state machine (steps, selections, data)
   const {
     state,
     startAction,
@@ -98,36 +113,44 @@ export default function ActionSystemModal({
     timeElapsed,
   ]);
 
+  // Handler: User selected a team (A or B)
   const handleTeamSelect = (team: "A" | "B") => {
     selectTeam(team);
   };
 
+  // Handler: User selected an action type (shot, rebound, foul, etc.)
   const handleActionSelect = (actionType: string) => {
     selectActionType(actionType);
   };
 
+  // Handler: User selected shot point value (1pt, 2pt, or 3pt)
   const handlePointsSelect = (points: number) => {
     selectActionPoints(points);
   };
 
+  // Handler: User selected action specification (made/missed, offensive/defensive, etc.)
   const handleSpecificationSelect = (spec: string) => {
     selectActionSpec(spec);
   };
 
+  // Handler: User selected player number - triggers auto-completion
   const handlePlayerSelect = (playerNum: number) => {
     selectPlayer(playerNum);
     // Action will be completed automatically via useEffect
   };
 
+  // Handler: User clicked back button to return to previous step
   const handleGoBack = () => {
     goBack();
   };
 
+  // Handler: User closed modal without completing action
   const handleClose = () => {
     closeAction();
     onClose();
   };
 
+  // Render the action modal with current state and handlers
   return (
     <ActionModal
       visible={state.isVisible}

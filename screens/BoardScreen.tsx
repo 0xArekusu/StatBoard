@@ -351,22 +351,61 @@ export default function BasketballCourt() {
   // Ref to store marker animations
   const markerAnimations = useRef<{ [key: string]: Animated.Value }>({});
 
-  // Function to toggle showing all actions
+  /**
+   * Toggle showing all action markers on court
+   * Handler for Actions button in bottom toolbar
+   */
   const toggleShowAllActions = () => {
-    setShowAllActions(!showAllActions);
+    const newState = !showAllActions;
+    logInfo(
+      "BoardScreen",
+      newState
+        ? "👁️ User enabled action markers display"
+        : "🚫 User disabled action markers display",
+      {
+        previousState: showAllActions,
+        newState,
+        totalActions: completedActions.length,
+      }
+    );
+    setShowAllActions(newState);
   };
 
-  // Function to handle undo last action
+  /**
+   * Handle undo last action button click
+   * Shows confirmation modal before undoing
+   */
   const handleUndoLastAction = () => {
     if (completedActions.length > 0) {
+      const lastAction = completedActions[completedActions.length - 1];
+      logInfo("BoardScreen", "⏪ User clicked undo button", {
+        totalActions: completedActions.length,
+        lastActionType: lastAction.type,
+        lastActionSpec: lastAction.specification,
+        lastActionPlayer: lastAction.player,
+        lastActionTeam: lastAction.team,
+      });
       setShowUndoConfirmation(true);
+    } else {
+      logWarn("BoardScreen", "⚠️ Undo button clicked but no actions to undo");
     }
   };
 
-  // Function to confirm undo action
+  /**
+   * Confirm undo action - removes last action from state
+   * Called when user confirms in undo modal
+   */
   const confirmUndoAction = () => {
     if (completedActions.length > 0) {
       const lastAction = completedActions[completedActions.length - 1];
+
+      logInfo("BoardScreen", "✅ User confirmed undo action", {
+        actionType: lastAction.type,
+        actionSpec: lastAction.specification,
+        player: lastAction.player,
+        team: lastAction.team,
+        remainingActions: completedActions.length - 1,
+      });
 
       // Remove the last action from completedActions
       setCompletedActions((prev) => prev.slice(0, -1));
@@ -395,8 +434,11 @@ export default function BasketballCourt() {
     setShowUndoConfirmation(false);
   };
 
-  // Function to cancel undo action
+  /**
+   * Cancel undo action - user clicked cancel in confirmation modal
+   */
   const cancelUndoAction = () => {
+    logInfo("BoardScreen", "❌ User cancelled undo action");
     setShowUndoConfirmation(false);
   };
 
@@ -420,17 +462,36 @@ export default function BasketballCourt() {
     }, delay);
   };
 
-  // Function to handle filter application
+  /**
+   * Handle filter application from FilterBottomSheet
+   * Updates applied filters state to filter displayed actions
+   */
   const handleApplyFilters = (filters: {
     teams: ("A" | "B")[];
     players: number[];
     actionTypes: string[];
   }) => {
+    logInfo("BoardScreen", "🔍 User applied action filters", {
+      teams: filters.teams,
+      teamCount: filters.teams.length,
+      players: filters.players,
+      playerCount: filters.players.length,
+      actionTypes: filters.actionTypes,
+      actionTypeCount: filters.actionTypes.length,
+      totalActions: completedActions.length,
+    });
     setAppliedFilters(filters);
   };
 
-  // Function to reset filters
+  /**
+   * Reset filters to default (show all actions)
+   * Handler for Reset button in bottom toolbar
+   */
   const handleResetFilters = () => {
+    logInfo("BoardScreen", "🔄 User reset action filters to default", {
+      previousFilters: appliedFilters,
+      totalActions: completedActions.length,
+    });
     setAppliedFilters({
       teams: ["A", "B"],
       players: [],
@@ -438,8 +499,21 @@ export default function BasketballCourt() {
     });
   };
 
-  // Function to delete a specific action
+  /**
+   * Delete a specific action from history
+   * Called from HistoryBottomSheet when user deletes an action
+   */
   const handleDeleteAction = (actionIndex: number) => {
+    const deletedAction = completedActions[actionIndex];
+    logInfo("BoardScreen", "🗑️ User deleted action from history", {
+      actionIndex,
+      actionType: deletedAction?.type,
+      actionSpec: deletedAction?.specification,
+      player: deletedAction?.player,
+      team: deletedAction?.team,
+      remainingActions: completedActions.length - 1,
+    });
+
     setCompletedActions((prev) => {
       const newActions = [...prev];
       newActions.splice(actionIndex, 1);
@@ -755,23 +829,23 @@ export default function BasketballCourt() {
     const loadClub = async () => {
       if (!clubId) return;
 
-      logInfo('BoardScreen', '📡 Loading club data from Supabase', { clubId });
+      logInfo("BoardScreen", "📡 Loading club data from Supabase", { clubId });
 
       try {
         const clubService = ServiceFactory.getClubService(supabase);
         const clubData = await clubService.getClubById(clubId);
         if (clubData) {
           setClub(clubData);
-          logInfo('BoardScreen', '✅ Club data loaded successfully', {
+          logInfo("BoardScreen", "✅ Club data loaded successfully", {
             clubId,
             clubName: clubData.name,
-            clubCode: clubData.code
+            clubCode: clubData.code,
           });
         }
       } catch (error) {
-        logError('BoardScreen', '❌ Error loading club data', {
+        logError("BoardScreen", "❌ Error loading club data", {
           clubId,
-          error: error instanceof Error ? error.message : error
+          error: error instanceof Error ? error.message : error,
         });
       }
     };
@@ -785,21 +859,21 @@ export default function BasketballCourt() {
    */
   useEffect(() => {
     const checkActiveMatch = async () => {
-      logInfo('BoardScreen', '🔍 Checking for active match in SQLite', {
+      logInfo("BoardScreen", "🔍 Checking for active match in SQLite", {
         userId: user?.id,
-        clubId
+        clubId,
       });
 
       try {
         const activeMatch = await matchManager.getActiveMatch();
         if (activeMatch) {
-          logInfo('BoardScreen', '🔄 Active match found, prompting to resume', {
+          logInfo("BoardScreen", "🔄 Active match found, prompting to resume", {
             matchId: activeMatch.id,
             teamA: activeMatch.team_a_name,
             teamB: activeMatch.team_b_name,
             scoreA: activeMatch.score_a,
             scoreB: activeMatch.score_b,
-            status: activeMatch.status
+            status: activeMatch.status,
           });
           setFoundMatch(activeMatch);
           setResumeModalVisible(true);
@@ -807,13 +881,16 @@ export default function BasketballCourt() {
           setTeamSelectionModalVisible(false); // Ensure team selection is hidden
         } else {
           // No active match, show team selection modal
-          logInfo('BoardScreen', '✅ No active match found, showing team selection modal');
+          logInfo(
+            "BoardScreen",
+            "✅ No active match found, showing team selection modal"
+          );
           setTeamSelectionModalVisible(true);
         }
       } catch (error) {
-        logError('BoardScreen', '❌ Error checking active match', {
+        logError("BoardScreen", "❌ Error checking active match", {
           error: error instanceof Error ? error.message : error,
-          userId: user?.id
+          userId: user?.id,
         });
         // On error, still show team selection
         setTeamSelectionModalVisible(true);
@@ -830,15 +907,15 @@ export default function BasketballCourt() {
   useEffect(() => {
     const observer: ActionObserver = {
       onActionsSaved: (savedCount: number) => {
-        logInfo('BoardScreen', '💾 Actions batch saved to SQLite', {
+        logInfo("BoardScreen", "💾 Actions batch saved to SQLite", {
           savedCount,
-          matchId: currentMatch?.id
+          matchId: currentMatch?.id,
         });
       },
       onError: (error: Error) => {
-        logError('BoardScreen', '❌ Action queue error during batch save', {
+        logError("BoardScreen", "❌ Action queue error during batch save", {
           error: error.message,
-          matchId: currentMatch?.id
+          matchId: currentMatch?.id,
         });
         // TODO: Display an error toast to the user
       },
@@ -980,36 +1057,43 @@ export default function BasketballCourt() {
   // Determine which markers to display
   const displayMarkers = showAllActions ? getAllActionMarkers() : clickMarkers;
 
+  /**
+   * Handle court press in pre-game mode
+   * Used for debugging player positioning - logs coordinates
+   */
   const handlePreGameCourtPress = (
     svgX: number,
     svgY: number,
     screenX: number,
     screenY: number
   ) => {
-    // Log des coordonnées pour faciliter le positionnement des joueurs
-    console.log("🏀 Clic sur le terrain (pré-game):");
-    console.log(
-      `  📍 Position écran: left=${Math.round(screenX)}, top=${Math.round(
-        screenY
-      )}`
-    );
-    console.log(
-      `  📐 Court dimensions: width=${Math.round(
-        courtWidth
-      )}, height=${Math.round(courtHeight)}`
-    );
+    // No action needed in pre-game mode
+    // Coordinates logged for debugging player positioning during development
   };
 
+  /**
+   * Handle court press during active match
+   * Opens action modal at the pressed location
+   */
   const handleZonePress = (
     svgX: number,
     svgY: number,
     screenX: number,
     screenY: number
   ) => {
+    logInfo("BoardScreen", "🏀 User pressed court to record action", {
+      svgX: Math.round(svgX),
+      svgY: Math.round(svgY),
+      screenX: Math.round(screenX),
+      screenY: Math.round(screenY),
+      currentPeriod,
+      timeElapsed,
+    });
+
     // Store SVG coordinates for later use in handleActionComplete
     setTempSvgCoords({ svgX, svgY });
 
-    // Capturer le temps exact au moment du clic
+    // Capture exact time at moment of press
     setClickTime({
       period: currentPeriod,
       timeInPeriod: timeElapsed,
@@ -1025,14 +1109,18 @@ export default function BasketballCourt() {
     setActionModalVisible(true);
   };
 
+  /**
+   * Handle action completion from action modal
+   * Saves action to SQLite queue and updates UI with marker
+   */
   const handleActionComplete = (actionData: ActionData) => {
     if (!currentMatch) {
-      console.warn("⚠️ No current match - action not saved");
+      logWarn("BoardScreen", "⚠️ No current match - action not saved");
       return;
     }
 
     if (!tempSvgCoords) {
-      console.warn("⚠️ No SVG coordinates stored");
+      logWarn("BoardScreen", "⚠️ No SVG coordinates stored");
       return;
     }
 
@@ -1105,31 +1193,41 @@ export default function BasketballCourt() {
     // Save detailed action data for immediate UI updates
     setCompletedActions((prev) => [...prev, actionWithSemanticPosition]);
 
-    setActionModalVisible(false);
-
-    // Log the action for debugging
-    const courtDimensions = { width: courtWidth, height: courtHeight };
-    console.log("🏀 Action completed:", {
-      type: actionData.type,
+    logInfo("BoardScreen", "✅ Action completed and queued for SQLite save", {
+      actionType: actionData.type,
       specification: actionData.specification,
       player: actionData.player,
-      team: actionData.team, // 🔍 DEBUG: Log team
-      timestamp: actionData.timestamp,
-      svgCoordinates: { svgX, svgY },
-      isPortrait,
-      semanticPosition,
-      calculatedAbsolute: convertSemanticToDisplay(
-        semanticPosition,
-        isPortrait,
-        courtDimensions
-      ),
-      debug: {
-        semanticPercentages: {
-          x: (semanticPosition.xNormalized * 100).toFixed(1) + "%",
-          y: (semanticPosition.yNormalized * 100).toFixed(1) + "%",
-        },
-      },
+      team: actionData.team,
+      points: actionData.points,
+      matchId: currentMatch.id,
+      period: clickTime.period,
+      timeInPeriod: clickTime.timeInPeriod,
+      actionOrder: nextActionOrder,
+      svgX: Math.round(svgX),
+      svgY: Math.round(svgY),
     });
+
+    setActionModalVisible(false);
+  };
+
+  /**
+   * Handle action modal close/cancel
+   * User closed the action modal without completing an action
+   */
+  const handleActionModalClose = () => {
+    logInfo(
+      "BoardScreen",
+      "❌ User closed action modal without completing action",
+      {
+        currentPeriod,
+        timeElapsed,
+        hadCoordinates: !!tempSvgCoords,
+      }
+    );
+
+    // Clear temporary coordinates
+    setTempSvgCoords(null);
+    setActionModalVisible(false);
   };
 
   const [matchFormat, setMatchFormat] = useState<"2_halves" | "4_quarters">(
@@ -1176,12 +1274,6 @@ export default function BasketballCourt() {
       if (action.type === "tir" && action.specification === "reussi") {
         // Use the points field from the action (1, 2, or 3 points)
         const points = action.points || 2; // Default to 2 if not specified
-
-        console.log("🔍 Scoring action:", {
-          team: action.team,
-          points,
-          player: action.player,
-        }); // 🔍 DEBUG
 
         if (action.team === "A") {
           newScoreA += points;
@@ -1358,7 +1450,7 @@ export default function BasketballCourt() {
    */
   const handleStartMatch = async () => {
     try {
-      logInfo('BoardScreen', '🏀 Starting new match', {
+      logInfo("BoardScreen", "🏀 Starting new match", {
         teamA,
         teamB,
         teamMode,
@@ -1366,17 +1458,17 @@ export default function BasketballCourt() {
         periodDuration,
         clubId,
         teamAId,
-        teamBId
+        teamBId,
       });
 
       // Protection contre les valeurs null
       if (!teamA || !teamB || !teamMode || !matchFormat || !periodDuration) {
-        logWarn('BoardScreen', '⚠️ Missing required match data, cannot start', {
+        logWarn("BoardScreen", "⚠️ Missing required match data, cannot start", {
           hasTeamA: !!teamA,
           hasTeamB: !!teamB,
           hasTeamMode: !!teamMode,
           hasMatchFormat: !!matchFormat,
-          hasPeriodDuration: !!periodDuration
+          hasPeriodDuration: !!periodDuration,
         });
         return;
       }
@@ -1391,12 +1483,12 @@ export default function BasketballCourt() {
         team_id: teamAId || teamBId || selectedTeam?.id || null, // Store the club team UUID
       };
 
-      logInfo('BoardScreen', '💾 Creating match in SQLite database', matchData);
+      logInfo("BoardScreen", "💾 Creating match in SQLite database", matchData);
       const match = await matchManager.startMatch(matchData);
       setCurrentMatch(match);
-      logInfo('BoardScreen', '✅ Match created successfully in SQLite', {
+      logInfo("BoardScreen", "✅ Match created successfully in SQLite", {
         matchId: match.id,
-        status: match.status
+        status: match.status,
       });
 
       // Sauvegarder les joueurs dans la base de données
@@ -1414,14 +1506,14 @@ export default function BasketballCourt() {
       }));
 
       if (playersToSave.length > 0) {
-        logInfo('BoardScreen', '💾 Saving players to SQLite for match', {
+        logInfo("BoardScreen", "💾 Saving players to SQLite for match", {
           matchId: match.id,
-          playersCount: playersToSave.length
+          playersCount: playersToSave.length,
         });
         await matchPlayerRepository.createBatch(playersToSave);
-        logInfo('BoardScreen', '✅ Players saved to SQLite successfully', {
+        logInfo("BoardScreen", "✅ Players saved to SQLite successfully", {
           matchId: match.id,
-          savedPlayersCount: playersToSave.length
+          savedPlayersCount: playersToSave.length,
         });
       }
 
@@ -1431,17 +1523,17 @@ export default function BasketballCourt() {
       setScoreA(0);
       setScoreB(0);
 
-      logInfo('BoardScreen', '✅ Match started successfully, game ready', {
+      logInfo("BoardScreen", "✅ Match started successfully, game ready", {
         matchId: match.id,
         preGameMode: false,
         initialScoreA: 0,
-        initialScoreB: 0
+        initialScoreB: 0,
       });
     } catch (error) {
-      logError('BoardScreen', '❌ Error starting match', {
+      logError("BoardScreen", "❌ Error starting match", {
         error: error instanceof Error ? error.message : error,
         teamA,
-        teamB
+        teamB,
       });
       // En cas d'erreur, on peut continuer sans la base de données
       setPreGameMode(false);
@@ -1494,67 +1586,112 @@ export default function BasketballCourt() {
 
   // Fonctions pour la barre de statut
   const handlePauseMatch = () => {
-    console.log("Pause clicked");
     stopTimer();
   };
 
   const handleResumeTimer = () => {
-    console.log("Resume clicked");
     // Si le match n'a pas encore commencé ou si on est en pause, démarrer le chrono
     if (!isMatchStarted || isPaused) {
       startTimer();
     }
   };
 
-  // Fonctions pour la gestion des périodes
+  /**
+   * Handle next period request
+   * Shows confirmation modal if time remaining, otherwise advances directly
+   */
   const handleNextPeriodRequest = () => {
     const timeRemaining = getTimeRemaining();
 
     if (timeRemaining > 0) {
-      // Il reste du temps, demander confirmation
+      // Time remaining, ask for confirmation
+      logInfo("BoardScreen", "⏭️ Opening next period confirmation modal", {
+        currentPeriod,
+        nextPeriod: currentPeriod + 1,
+        timeRemaining,
+        matchFormat,
+      });
       setShowNextPeriodModal(true);
     } else {
-      // Pas de temps restant, passer directement
+      // No time remaining, advance directly
+      logInfo(
+        "BoardScreen",
+        "⏭️ Advancing to next period directly (no time remaining)",
+        {
+          currentPeriod,
+          nextPeriod: currentPeriod + 1,
+          matchFormat,
+        }
+      );
       goToNextPeriod();
     }
   };
 
+  /**
+   * Advance to next period
+   * Stops timer, resets elapsed time, and saves new period state to SQLite
+   */
   const goToNextPeriod = () => {
     const nextPeriod = currentPeriod + 1;
     const maxPeriods = getTotalPeriods();
 
     if (nextPeriod <= maxPeriods) {
-      console.log(`🏀 Passage à la période ${nextPeriod}`);
+      logInfo("BoardScreen", "🏀 Advancing to next period", {
+        currentPeriod,
+        nextPeriod,
+        maxPeriods,
+        matchFormat,
+      });
 
-      // Arrêter le chrono actuel
+      // Stop current timer
       stopTimer();
 
-      // Passer à la période suivante et reset le chrono
+      // Advance to next period and reset timer
       setCurrentPeriod(nextPeriod);
       setTimeElapsed(0);
       setIsPaused(true);
 
-      // Note: Les scores sont conservés entre les périodes
+      // Note: Scores are preserved between periods
 
-      // Sauvegarder immédiatement l'état de la nouvelle période
+      // Save new period state to SQLite immediately
       if (currentMatch) {
         setTimeout(() => {
           matchManager.updateMatchState(currentMatch.id, nextPeriod, 0);
         }, 100);
       }
 
-      console.log(`✅ Période ${nextPeriod} commencée`);
+      logInfo("BoardScreen", "✅ Period advanced successfully", {
+        newPeriod: nextPeriod,
+        timeElapsed: 0,
+        isPaused: true,
+        matchId: currentMatch?.id,
+      });
     }
   };
 
+  /**
+   * Handle end match request
+   * Shows confirmation modal if time remaining, otherwise ends directly
+   */
   const handleEndMatchRequest = () => {
     const timeRemaining = getTimeRemaining();
 
     if (timeRemaining > 0) {
-      // Il reste du temps, demander confirmation
+      // Time remaining, ask for confirmation
+      logInfo("BoardScreen", "🏁 Opening end match confirmation modal", {
+        currentPeriod,
+        timeRemaining,
+        matchFormat,
+        totalActions: completedActions.length,
+      });
       setShowEndMatchModal(true);
     } else {
-      // Pas de temps restant, terminer directement
+      // No time remaining, end directly
+      logInfo("BoardScreen", "🏁 Ending match directly (no time remaining)", {
+        currentPeriod,
+        matchFormat,
+        totalActions: completedActions.length,
+      });
       endMatch();
     }
   };
@@ -1566,13 +1703,13 @@ export default function BasketballCourt() {
    */
   const endMatch = async () => {
     try {
-      logInfo('BoardScreen', '🏁 Ending match', {
+      logInfo("BoardScreen", "🏁 Ending match", {
         matchId: currentMatch?.id,
         finalScoreA: scoreA,
         finalScoreB: scoreB,
         currentPeriod,
         timeElapsed,
-        actionsCount: completedActions.length
+        actionsCount: completedActions.length,
       });
 
       // Arrêter le chrono
@@ -1614,14 +1751,14 @@ export default function BasketballCourt() {
 
       // Marquer le match comme terminé dans la base de données
       if (currentMatch) {
-        logInfo('BoardScreen', '💾 Marking match as completed in SQLite', {
+        logInfo("BoardScreen", "💾 Marking match as completed in SQLite", {
           matchId: currentMatch.id,
           scoreA,
-          scoreB
+          scoreB,
         });
         await matchManager.endMatch(currentMatch.id);
-        logInfo('BoardScreen', '✅ Match marked as completed in SQLite', {
-          matchId: currentMatch.id
+        logInfo("BoardScreen", "✅ Match marked as completed in SQLite", {
+          matchId: currentMatch.id,
         });
       }
 
@@ -1662,7 +1799,7 @@ export default function BasketballCourt() {
           else if (teamBId) clubTeamOverride = "B";
         }
       }
-      logInfo('BoardScreen', '🧭 Navigating to Match Summary screen', {
+      logInfo("BoardScreen", "🧭 Navigating to Match Summary screen", {
         matchId: currentMatch?.id,
         teamA,
         teamB,
@@ -1670,7 +1807,7 @@ export default function BasketballCourt() {
         scoreB,
         actionsCount: completedActions.length,
         playersCount: allPlayers.length,
-        clubTeamOverride
+        clubTeamOverride,
       });
 
       navigation.navigate(ROUTES.MATCH_SUMMARY as any, {
@@ -1687,30 +1824,63 @@ export default function BasketballCourt() {
         clubTeamOverride,
       });
     } catch (error) {
-      logError('BoardScreen', '❌ Error ending match', {
+      logError("BoardScreen", "❌ Error ending match", {
         error: error instanceof Error ? error.message : error,
-        matchId: currentMatch?.id
+        matchId: currentMatch?.id,
       });
       // Même en cas d'erreur, arrêter le chrono
     }
   };
 
-  // Fonctions pour les modals de confirmation
+  /**
+   * Confirm next period - user validated in confirmation modal
+   * Advances to next period and updates timer
+   */
   const confirmNextPeriod = () => {
+    logInfo("BoardScreen", "✅ User confirmed next period transition", {
+      currentPeriod,
+      nextPeriod: currentPeriod + 1,
+      matchFormat,
+      timeRemaining: getTimeRemaining(),
+    });
     setShowNextPeriodModal(false);
     goToNextPeriod();
   };
 
+  /**
+   * Cancel next period - user cancelled in confirmation modal
+   */
   const cancelNextPeriod = () => {
+    logInfo("BoardScreen", "❌ User cancelled next period transition", {
+      currentPeriod,
+      matchFormat,
+    });
     setShowNextPeriodModal(false);
   };
 
+  /**
+   * Confirm end match - user validated in confirmation modal
+   * Ends match and navigates to summary
+   */
   const confirmEndMatch = () => {
+    logInfo("BoardScreen", "✅ User confirmed match end", {
+      currentPeriod,
+      matchFormat,
+      timeRemaining: getTimeRemaining(),
+      totalActions: completedActions.length,
+    });
     setShowEndMatchModal(false);
     endMatch();
   };
 
+  /**
+   * Cancel end match - user cancelled in confirmation modal
+   */
   const cancelEndMatch = () => {
+    logInfo("BoardScreen", "❌ User cancelled match end", {
+      currentPeriod,
+      matchFormat,
+    });
     setShowEndMatchModal(false);
   };
 
@@ -1721,14 +1891,14 @@ export default function BasketballCourt() {
   const handleResumeMatch = async () => {
     if (!foundMatch) return;
 
-    logInfo('BoardScreen', '🔄 Resuming existing match from SQLite', {
+    logInfo("BoardScreen", "🔄 Resuming existing match from SQLite", {
       matchId: foundMatch.id,
       teamA: foundMatch.team_a_name,
       teamB: foundMatch.team_b_name,
       currentPeriod: foundMatch.current_period,
       timeElapsed: foundMatch.time_elapsed,
       scoreA: foundMatch.score_a,
-      scoreB: foundMatch.score_b
+      scoreB: foundMatch.score_b,
     });
 
     setCurrentMatch(foundMatch);
@@ -1753,7 +1923,7 @@ export default function BasketballCourt() {
     // Charger les actions existantes du match
     await loadExistingActions(foundMatch.id);
 
-    logInfo('BoardScreen', '✅ Match state restored successfully', {
+    logInfo("BoardScreen", "✅ Match state restored successfully", {
       matchId: foundMatch.id,
       period: foundMatch.current_period,
       timeElapsed: foundMatch.time_elapsed,
@@ -1768,7 +1938,9 @@ export default function BasketballCourt() {
    */
   const loadExistingActions = async (matchId: number) => {
     try {
-      logInfo('BoardScreen', '📊 Loading existing actions from SQLite', { matchId });
+      logInfo("BoardScreen", "📊 Loading existing actions from SQLite", {
+        matchId,
+      });
       const actions = await actionRepository.getActionsForMatch(matchId);
 
       if (actions.length > 0) {
@@ -1795,18 +1967,20 @@ export default function BasketballCourt() {
         const maxOrder = Math.max(...actions.map((a) => a.action_order), 0);
         setActionCounter(maxOrder);
 
-        logInfo('BoardScreen', '✅ Existing actions loaded from SQLite', {
+        logInfo("BoardScreen", "✅ Existing actions loaded from SQLite", {
           matchId,
           actionsCount: actions.length,
-          maxActionOrder: maxOrder
+          maxActionOrder: maxOrder,
         });
       } else {
-        logInfo('BoardScreen', 'ℹ️ No existing actions found for match', { matchId });
+        logInfo("BoardScreen", "ℹ️ No existing actions found for match", {
+          matchId,
+        });
       }
     } catch (error) {
-      logError('BoardScreen', '❌ Error loading existing actions from SQLite', {
+      logError("BoardScreen", "❌ Error loading existing actions from SQLite", {
         matchId,
-        error: error instanceof Error ? error.message : error
+        error: error instanceof Error ? error.message : error,
       });
     }
   };
@@ -1819,11 +1993,15 @@ export default function BasketballCourt() {
     if (!foundMatch) return;
 
     try {
-      logInfo('BoardScreen', '🗑️ Deleting match and all associated data from SQLite', {
-        matchId: foundMatch.id,
-        teamA: foundMatch.team_a_name,
-        teamB: foundMatch.team_b_name
-      });
+      logInfo(
+        "BoardScreen",
+        "🗑️ Deleting match and all associated data from SQLite",
+        {
+          matchId: foundMatch.id,
+          teamA: foundMatch.team_a_name,
+          teamB: foundMatch.team_b_name,
+        }
+      );
 
       // Delete all actions for this match
       await actionRepository.deleteActionsForMatch(foundMatch.id);
@@ -1834,9 +2012,13 @@ export default function BasketballCourt() {
       // Delete the match itself
       await matchRepository.delete(foundMatch.id);
 
-      logInfo('BoardScreen', '✅ Match and all associated data deleted from SQLite', {
-        matchId: foundMatch.id
-      });
+      logInfo(
+        "BoardScreen",
+        "✅ Match and all associated data deleted from SQLite",
+        {
+          matchId: foundMatch.id,
+        }
+      );
 
       setFoundMatch(null);
       setResumeModalVisible(false);
@@ -1846,9 +2028,9 @@ export default function BasketballCourt() {
       setHasShownTeamSelection(false);
       setTeamSelectionModalVisible(true);
     } catch (error) {
-      logError('BoardScreen', '❌ Error deleting match from SQLite', {
+      logError("BoardScreen", "❌ Error deleting match from SQLite", {
         matchId: foundMatch.id,
-        error: error instanceof Error ? error.message : error
+        error: error instanceof Error ? error.message : error,
       });
       // En cas d'erreur, on ferme quand même le modal et on montre la sélection d'équipe
       setFoundMatch(null);
@@ -1873,14 +2055,16 @@ export default function BasketballCourt() {
     // Find player details for logging
     const teamPlayers = team === "A" ? players : playersTeamB;
     const teamSubstitutes = team === "A" ? substitutesTeamA : substitutesTeamB;
-    const player = [...teamPlayers, ...teamSubstitutes].find(p => p.id === playerId);
+    const player = [...teamPlayers, ...teamSubstitutes].find(
+      (p) => p.id === playerId
+    );
 
-    logInfo('BoardScreen', '✏️ User clicked edit player button', {
+    logInfo("BoardScreen", "✏️ User clicked edit player button", {
       playerId,
       playerName: player?.name,
       playerNumber: player?.num,
       team,
-      preGameMode
+      preGameMode,
     });
     setEditingPlayer(playerId);
     setEditingTeam(team); // Remember the team being edited
@@ -2019,10 +2203,10 @@ export default function BasketballCourt() {
     if (editingPlayer !== null) {
       // Check number uniqueness
       if (!isNumberUnique(newNumber, editingPlayer, editingTeam)) {
-        logWarn('BoardScreen', '⚠️ Player number already in use', {
+        logWarn("BoardScreen", "⚠️ Player number already in use", {
           newNumber,
           editingPlayer,
-          editingTeam
+          editingTeam,
         });
         alert(
           `Le numéro ${newNumber} est déjà utilisé par un autre joueur de l'équipe ${editingTeam}.`
@@ -2030,12 +2214,12 @@ export default function BasketballCourt() {
         return;
       }
 
-      logInfo('BoardScreen', '✅ User confirmed player edit', {
+      logInfo("BoardScreen", "✅ User confirmed player edit", {
         playerId: editingPlayer,
         team: editingTeam,
         newNumber,
         newName,
-        hasPhoto: !!photoUrl
+        hasPhoto: !!photoUrl,
       });
 
       // Update the correct team based on editingTeam
@@ -2095,9 +2279,9 @@ export default function BasketballCourt() {
    * Closes modal without saving changes
    */
   const handlePlayerEditCancel = () => {
-    logInfo('BoardScreen', '❌ User cancelled player edit', {
+    logInfo("BoardScreen", "❌ User cancelled player edit", {
       playerId: editingPlayer,
-      team: editingTeam
+      team: editingTeam,
     });
     setPlayerEditModalVisible(false);
     setEditingPlayer(null);
@@ -2154,10 +2338,10 @@ export default function BasketballCourt() {
       team === "A" ? setSubstitutesTeamA : setSubstitutesTeamB;
 
     if (substitutes.length >= 10) {
-      logWarn('BoardScreen', '⚠️ Maximum substitutes reached', {
+      logWarn("BoardScreen", "⚠️ Maximum substitutes reached", {
         team,
         currentCount: substitutes.length,
-        maxAllowed: 10
+        maxAllowed: 10,
       });
       return; // Maximum 10 substitutes
     }
@@ -2187,13 +2371,13 @@ export default function BasketballCourt() {
       isAddedInPreGame: true, // Mark as added in pre-game
     };
 
-    logInfo('BoardScreen', '➕ User added substitute player', {
+    logInfo("BoardScreen", "➕ User added substitute player", {
       team,
       substituteId: nextId,
       substituteNumber: nextNumber,
       currentSubstitutesCount: substitutes.length,
       newSubstitutesCount: substitutes.length + 1,
-      isClubTeam
+      isClubTeam,
     });
 
     setSubstitutes([...substitutes, newSubstitute]);
@@ -2210,11 +2394,11 @@ export default function BasketballCourt() {
 
     if (substitutes.length === 0) return;
 
-    logInfo('BoardScreen', '➖ User removed substitute player', {
+    logInfo("BoardScreen", "➖ User removed substitute player", {
       team,
       currentSubstitutesCount: substitutes.length,
       newSubstitutesCount: substitutes.length - 1,
-      removedSubstitute: substitutes[substitutes.length - 1]
+      removedSubstitute: substitutes[substitutes.length - 1],
     });
 
     // Remove the last substitute
@@ -2228,14 +2412,14 @@ export default function BasketballCourt() {
   const handleSubstituteEdit = (substituteId: number, team: "A" | "B") => {
     // Find substitute details for logging
     const teamSubstitutes = team === "A" ? substitutesTeamA : substitutesTeamB;
-    const substitute = teamSubstitutes.find(s => s.id === substituteId);
+    const substitute = teamSubstitutes.find((s) => s.id === substituteId);
 
-    logInfo('BoardScreen', '✏️ User clicked edit substitute button', {
+    logInfo("BoardScreen", "✏️ User clicked edit substitute button", {
       substituteId,
       substituteName: substitute?.name,
       substituteNumber: substitute?.num,
       team,
-      preGameMode
+      preGameMode,
     });
     setEditingPlayer(substituteId);
     setEditingTeam(team);
@@ -2251,10 +2435,10 @@ export default function BasketballCourt() {
    * Opens the coach edit modal
    */
   const handleCoachEdit = (coachId: number, team: "A" | "B") => {
-    logInfo('BoardScreen', '✏️ User clicked edit coach button', {
+    logInfo("BoardScreen", "✏️ User clicked edit coach button", {
       coachId,
       team,
-      preGameMode
+      preGameMode,
     });
     setEditingCoach(team);
     setCoachEditModalVisible(true);
@@ -2265,10 +2449,10 @@ export default function BasketballCourt() {
    * Updates coach name and photo
    */
   const handleCoachEditConfirm = (newName: string, photoUrl?: string) => {
-    logInfo('BoardScreen', '✅ User confirmed coach edit', {
+    logInfo("BoardScreen", "✅ User confirmed coach edit", {
       team: editingCoach,
       newName,
-      hasPhoto: !!photoUrl
+      hasPhoto: !!photoUrl,
     });
 
     if (editingCoach === "A") {
@@ -2285,8 +2469,8 @@ export default function BasketballCourt() {
    * Closes modal without saving changes
    */
   const handleCoachEditCancel = () => {
-    logInfo('BoardScreen', '❌ User cancelled coach edit', {
-      team: editingCoach
+    logInfo("BoardScreen", "❌ User cancelled coach edit", {
+      team: editingCoach,
     });
     setCoachEditModalVisible(false);
     setEditingCoach(null);
@@ -2298,9 +2482,9 @@ export default function BasketballCourt() {
    */
   const handleSwapTeams = () => {
     const newCurrentTeam = currentTeam === "A" ? "B" : "A";
-    logInfo('BoardScreen', '🔄 User swapped team sides on court', {
+    logInfo("BoardScreen", "🔄 User swapped team sides on court", {
       previousCurrentTeam: currentTeam,
-      newCurrentTeam
+      newCurrentTeam,
     });
     // Simply change the currentTeam to reverse the display
     setCurrentTeam(newCurrentTeam);
@@ -2791,10 +2975,16 @@ export default function BasketballCourt() {
         </TouchableOpacity>
       )}
 
-      {/* Bottom Navigation Bar - positioned at bottom (portrait) or right (landscape) */}
+      {/* Bottom Navigation Bar: Action management toolbar
+          - Actions: Toggle visibility of action markers on court
+          - Filtres: Open filter sheet to filter actions by team/player/type
+          - Reset: Reset all filters to default
+          - Histoire: View action history list
+          - Annuler: Undo last action
+          Position: Bottom (portrait) or Right (landscape) */}
       {!initModalVisible && !preGameMode && (
         <View style={styles.bottomNavBar}>
-          {/* Actions Button */}
+          {/* Actions Button: Toggle showing action markers on court */}
           <TouchableOpacity
             style={styles.navButton}
             onPress={toggleShowAllActions}
@@ -2812,13 +3002,20 @@ export default function BasketballCourt() {
             </View>
           </TouchableOpacity>
 
-          {/* Filter button */}
+          {/* Filter button: Opens filter sheet to filter visible actions */}
           <TouchableOpacity
             style={[
               styles.navButton,
               !showAllActions && styles.navButtonDisabled,
             ]}
-            onPress={() => setShowFilterSheet(true)}
+            onPress={() => {
+              logInfo("BoardScreen", "🔍 User clicked filters button", {
+                showAllActions,
+                currentFilters: appliedFilters,
+                totalActions: completedActions.length,
+              });
+              setShowFilterSheet(true);
+            }}
             disabled={!showAllActions}
           >
             <View style={styles.navButtonContent}>
@@ -2849,13 +3046,19 @@ export default function BasketballCourt() {
             </View>
           </TouchableOpacity>
 
-          {/* History button */}
+          {/* History button: Opens action history sheet with list of all actions */}
           <TouchableOpacity
             style={[
               styles.navButton,
               completedActions.length === 0 && styles.navButtonDisabled,
             ]}
-            onPress={() => setShowHistorySheet(true)}
+            onPress={() => {
+              logInfo("BoardScreen", "📋 User clicked history button", {
+                totalActions: completedActions.length,
+                hasActions: completedActions.length > 0,
+              });
+              setShowHistorySheet(true);
+            }}
             disabled={completedActions.length === 0}
           >
             <View style={styles.navButtonContent}>
@@ -2873,7 +3076,7 @@ export default function BasketballCourt() {
             </View>
           </TouchableOpacity>
 
-          {/* Undo button */}
+          {/* Undo button: Undo last action with confirmation modal */}
           <TouchableOpacity
             style={[
               styles.navButton,
@@ -3068,10 +3271,10 @@ export default function BasketballCourt() {
           </TouchableOpacity>
         )}
 
-      {/* Action Modal */}
+      {/* Action Modal: Record basketball actions (shots, fouls, etc.) with player selection */}
       <ActionSystemModal
         visible={actionModalVisible}
-        onClose={() => setActionModalVisible(false)}
+        onClose={handleActionModalClose}
         onActionComplete={handleActionComplete}
         position={{
           x: modalPosition.x,

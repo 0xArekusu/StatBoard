@@ -1,4 +1,25 @@
+/**
+ * MatchPlayerRepository
+ *
+ * Repository for managing match player data in SQLite database.
+ * Stores player information for each match (starters and substitutes).
+ *
+ * Features:
+ * - Single player creation with photo URL support
+ * - Batch player creation within transaction for match initialization
+ * - Player retrieval ordered by team, starter status, and jersey number
+ * - Player deletion for match cleanup
+ * - Photo URL updates for player images
+ * - Compacted actions storage (actions column for completed matches)
+ *
+ * Architecture:
+ * - Uses SQLite via DatabaseService
+ * - Stores players in match_players table
+ * - Links to matches via match_id foreign key
+ * - Supports both club players (player_id) and anonymous players
+ */
 import { DatabaseService } from "./DatabaseService";
+import { logInfo, logError } from "../../../utils/logger";
 
 export interface MatchPlayer {
   id: number;
@@ -36,6 +57,10 @@ export class MatchPlayerRepository implements IMatchPlayerRepository {
     this.db = DatabaseService.getInstance();
   }
 
+  /**
+   * Create a single match player in SQLite database
+   * Used for adding players during match or for individual updates
+   */
   async create(data: CreateMatchPlayerData): Promise<MatchPlayer> {
     const sql = `
       INSERT INTO match_players (
@@ -44,6 +69,15 @@ export class MatchPlayerRepository implements IMatchPlayerRepository {
     `;
 
     try {
+      logInfo('MatchPlayerRepository', '👤 Creating match player in SQLite', {
+        matchId: data.match_id,
+        playerNumber: data.player_number,
+        playerName: data.player_name,
+        team: data.team,
+        isStarter: data.is_starter,
+        hasPhoto: !!data.photo_url
+      });
+
       await this.db.execute(sql, [
         data.match_id,
         data.player_id || null,
@@ -60,21 +94,43 @@ export class MatchPlayerRepository implements IMatchPlayerRepository {
       );
 
       if (players.length === 0) {
+        logError('MatchPlayerRepository', '❌ Failed to retrieve created player', {
+          matchId: data.match_id
+        });
         throw new Error("Failed to create match player");
       }
 
+      logInfo('MatchPlayerRepository', '✅ Match player created successfully', {
+        playerId: players[0].id,
+        playerNumber: data.player_number,
+        playerName: data.player_name,
+        team: data.team
+      });
+
       return players[0] as MatchPlayer;
     } catch (error) {
-      console.error("Error creating match player:", error);
+      logError('MatchPlayerRepository', '❌ Error creating match player', {
+        error: error instanceof Error ? error.message : error,
+        matchId: data.match_id,
+        playerNumber: data.player_number
+      });
       throw error;
     }
   }
 
+  /**
+   * Create multiple match players in a single transaction
+   * Used during match initialization to save all players at once
+   * More efficient than individual creates
+   */
   async createBatch(players: CreateMatchPlayerData[]): Promise<MatchPlayer[]> {
     if (players.length === 0) return [];
 
     try {
-      console.log(`📊 Creating batch of ${players.length} match players...`);
+      logInfo('MatchPlayerRepository', '👥 Creating batch of match players in SQLite transaction', {
+        playerCount: players.length,
+        matchId: players[0].match_id
+      });
 
       await this.db.transaction(async (adapter) => {
         const sql = `
@@ -102,48 +158,98 @@ export class MatchPlayerRepository implements IMatchPlayerRepository {
         [matchId]
       );
 
-      console.log(`✅ Batch of ${players.length} match players created`);
+      logInfo('MatchPlayerRepository', '✅ Batch of match players created successfully', {
+        playerCount: players.length,
+        matchId
+      });
+
       return createdPlayers as MatchPlayer[];
     } catch (error) {
-      console.error("❌ Error creating match player batch:", error);
+      logError('MatchPlayerRepository', '❌ Error creating match player batch', {
+        error: error instanceof Error ? error.message : error,
+        playerCount: players.length,
+        matchId: players[0]?.match_id
+      });
       throw error;
     }
   }
 
+  /**
+   * Get all players for a match
+   * Returns players ordered by: team, starter status (starters first), jersey number
+   */
   async getPlayersForMatch(matchId: number): Promise<MatchPlayer[]> {
     try {
+      logInfo('MatchPlayerRepository', '📋 Fetching players for match', { matchId });
+
       const players = await this.db.query(
         "SELECT * FROM match_players WHERE match_id = ? ORDER BY team, is_starter DESC, player_number",
         [matchId]
       );
 
+      logInfo('MatchPlayerRepository', '✅ Players retrieved', {
+        matchId,
+        playerCount: players.length
+      });
+
       return players as MatchPlayer[];
     } catch (error) {
-      console.error("❌ Error getting players for match:", error);
+      logError('MatchPlayerRepository', '❌ Error getting players for match', {
+        matchId,
+        error: error instanceof Error ? error.message : error
+      });
       throw error;
     }
   }
 
+  /**
+   * Delete all players for a match
+   * Used during match cleanup or when resetting match players
+   */
   async deletePlayersForMatch(matchId: number): Promise<void> {
     try {
+      logInfo('MatchPlayerRepository', '🗑️ Deleting all players for match', { matchId });
+
       await this.db.execute("DELETE FROM match_players WHERE match_id = ?", [
         matchId,
       ]);
-      console.log("🗑️ All players deleted for match:", matchId);
+
+      logInfo('MatchPlayerRepository', '✅ All players deleted for match', { matchId });
     } catch (error) {
-      console.error("❌ Error deleting players for match:", error);
+      logError('MatchPlayerRepository', '❌ Error deleting players for match', {
+        matchId,
+        error: error instanceof Error ? error.message : error
+      });
       throw error;
     }
   }
 
+  /**
+   * Update player photo URL
+   * Used when uploading player photos to Supabase storage
+   */
   async updatePhotoUrl(playerId: number, photoUrl: string): Promise<void> {
     try {
+      logInfo('MatchPlayerRepository', '📸 Updating player photo URL', {
+        playerId,
+        photoUrl
+      });
+
       await this.db.execute(
         "UPDATE match_players SET photo_url = ? WHERE id = ?",
         [photoUrl, playerId]
       );
+
+      logInfo('MatchPlayerRepository', '✅ Player photo URL updated', {
+        playerId,
+        photoUrl
+      });
     } catch (error) {
-      console.error("❌ Error updating player photo URL:", error);
+      logError('MatchPlayerRepository', '❌ Error updating player photo URL', {
+        playerId,
+        photoUrl,
+        error: error instanceof Error ? error.message : error
+      });
       throw error;
     }
   }
