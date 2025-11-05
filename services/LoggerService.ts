@@ -51,7 +51,7 @@ class LoggerService {
       this.logFilePath = this.getLogFilePathForDate(currentDate);
       await this.initializeLogFile();
       console.log(
-        "📁 [LoggerService] Rotated to new log file:",
+        "[LoggerService] 📁 Rotated to new log file:",
         this.logFilePath
       );
     }
@@ -138,7 +138,7 @@ class LoggerService {
         const oldFilePath = this.logFilePath;
         this.logFilePath = `${FileSystem.documentDirectory}app-logs-${this.currentDate}-${timestamp}.txt`;
         console.log(
-          "📁 [LoggerService] Log size exceeded, rotated to:",
+          "[LoggerService] 📁 Log size exceeded, rotated to:",
           this.logFilePath
         );
         await this.initializeLogFile();
@@ -181,9 +181,9 @@ class LoggerService {
     try {
       await FileSystem.deleteAsync(this.logFilePath, { idempotent: true });
       await this.initializeLogFile();
-      console.log("✅ [LoggerService] Logs cleared");
+      console.log("[LoggerService] ✅ Logs cleared");
     } catch (error) {
-      console.error("❌ [LoggerService] Error clearing logs:", error);
+      console.error("[LoggerService] ❌ Error clearing logs:", error);
     }
   }
 
@@ -200,7 +200,7 @@ class LoggerService {
       const logFiles = dirInfo.filter((file) => file.startsWith("app-logs-"));
 
       if (logFiles.length === 0) {
-        console.warn("⚠️ [LoggerService] No log files to share");
+        console.warn("[LoggerService] ⚠️  No log files to share");
         return;
       }
 
@@ -243,12 +243,12 @@ class LoggerService {
         await FileSystem.writeAsStringAsync(fileUri, combinedLogs, {
           encoding: FileSystem.EncodingType.UTF8,
         });
-        console.log("✅ [LoggerService] Logs saved to:", fileUri);
+        console.log("[LoggerService] ✅ Logs saved to:", fileUri);
       } else {
-        console.warn("⚠️ [LoggerService] Permission denied to save file");
+        console.warn("[LoggerService] ⚠️  Permission denied to save file");
       }
     } catch (error) {
-      console.error("❌ [LoggerService] Error sharing logs:", error);
+      console.error("[LoggerService] ❌ Error sharing logs:", error);
     }
   }
 

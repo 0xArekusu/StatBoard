@@ -1465,20 +1465,36 @@ export default function BasketballCourt() {
       stopTimer();
 
       // Upload coach photos if they are local URIs
-      const { PhotoUploadService } = await import('../services/PhotoUploadService');
+      const { PhotoUploadService } = await import(
+        "../services/PhotoUploadService"
+      );
       const photoService = new PhotoUploadService(supabase);
 
-      if (coachTeamA.photoUrl && (coachTeamA.photoUrl.startsWith('file://') || coachTeamA.photoUrl.startsWith('content://'))) {
-        const { url, error } = await photoService.uploadPlayerPhoto(coachTeamA.photoUrl, 'coach-a');
+      if (
+        coachTeamA.photoUrl &&
+        (coachTeamA.photoUrl.startsWith("file://") ||
+          coachTeamA.photoUrl.startsWith("content://"))
+      ) {
+        const { url, error } = await photoService.uploadPlayerPhoto(
+          coachTeamA.photoUrl,
+          "coach-a"
+        );
         if (!error && url) {
-          setCoachTeamA(prev => ({ ...prev, photoUrl: url }));
+          setCoachTeamA((prev) => ({ ...prev, photoUrl: url }));
         }
       }
 
-      if (coachTeamB.photoUrl && (coachTeamB.photoUrl.startsWith('file://') || coachTeamB.photoUrl.startsWith('content://'))) {
-        const { url, error } = await photoService.uploadPlayerPhoto(coachTeamB.photoUrl, 'coach-b');
+      if (
+        coachTeamB.photoUrl &&
+        (coachTeamB.photoUrl.startsWith("file://") ||
+          coachTeamB.photoUrl.startsWith("content://"))
+      ) {
+        const { url, error } = await photoService.uploadPlayerPhoto(
+          coachTeamB.photoUrl,
+          "coach-b"
+        );
         if (!error && url) {
-          setCoachTeamB(prev => ({ ...prev, photoUrl: url }));
+          setCoachTeamB((prev) => ({ ...prev, photoUrl: url }));
         }
       }
 
@@ -1929,7 +1945,8 @@ export default function BasketballCourt() {
     const teamLetter = team;
 
     // Détecter si cette équipe est une équipe du club
-    const isClubTeam = (team === "A" && !!teamAId) || (team === "B" && !!teamBId);
+    const isClubTeam =
+      (team === "A" && !!teamAId) || (team === "B" && !!teamBId);
 
     const newSubstitute = {
       id: nextId,
@@ -2186,7 +2203,11 @@ export default function BasketballCourt() {
 
   return (
     // <View style={[styles.container, { flex: 1 }]}>
-    <View style={[{ flex: 1 }]}>
+    <View
+      style={[
+        { flex: 1, backgroundColor: club?.courtBackgroundColor || "#1a472a" },
+      ]}
+    >
       {/* 📊 Barre de statut du match en haut */}
       {!initModalVisible && !matchConfigModalVisible && !preGameMode && (
         <MatchStatusBar
@@ -2342,7 +2363,9 @@ export default function BasketballCourt() {
                   (p) => p.id === editingPlayer
                 );
                 // Autoriser la photo uniquement pour les joueurs du club ajoutés en pre-game
-                return (player?.isFromClub && player?.isAddedInPreGame) || false;
+                return (
+                  (player?.isFromClub && player?.isAddedInPreGame) || false
+                );
               })()
             : false
         }
@@ -2697,7 +2720,10 @@ export default function BasketballCourt() {
 
       {/* Basketball Court SVG */}
       <View
-        style={styles.courtContainer}
+        style={[
+          styles.courtContainer,
+          { backgroundColor: club?.courtBackgroundColor || "#1a472a" },
+        ]}
         onLayout={(event) => {
           const { width, height } = event.nativeEvent.layout;
           setContainerLayout({ width, height });
@@ -3132,7 +3158,6 @@ const getStyles = ({
       fontWeight: "bold",
     },
     courtContainer: {
-      backgroundColor: "green",
       position: "absolute",
       top: 80, // Space for MatchStatusBar
       left: 0,
