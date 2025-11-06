@@ -26,6 +26,7 @@ import {
   ScrollView,
 } from "react-native";
 import { ActionData } from "./ActionSystemModal";
+import { ActionType } from "../src/models/ActionTypes";
 
 interface Player {
   id: number;
@@ -53,13 +54,13 @@ interface FilterOptions {
 }
 
 const ACTION_TYPES = [
-  { key: "tir", label: "Tirs", icon: "🏀" },
-  { key: "rebond", label: "Rebonds", icon: "📥" },
-  { key: "faute", label: "Fautes", icon: "🚨" },
-  { key: "turnover", label: "Pertes de balle", icon: "💥" },
-  { key: "assist", label: "Passes décisives", icon: "🎯" },
-  { key: "steal", label: "Interceptions", icon: "🕵️" },
-  { key: "block", label: "Contres", icon: "🚫" },
+  { key: ActionType.SHOT, label: "Tirs", icon: "🏀" },
+  { key: ActionType.REBOUND, label: "Rebonds", icon: "📥" },
+  { key: ActionType.FOUL, label: "Fautes", icon: "🚨" },
+  { key: ActionType.TURNOVER, label: "Pertes de balle", icon: "💥" },
+  { key: ActionType.ASSIST, label: "Passes décisives", icon: "🎯" },
+  { key: ActionType.STEAL, label: "Interceptions", icon: "🕵️" },
+  { key: ActionType.BLOCK, label: "Contres", icon: "🚫" },
 ];
 
 export default function FilterBottomSheet({

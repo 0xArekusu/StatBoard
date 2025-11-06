@@ -75,7 +75,7 @@ export default function MatchDetailsScreen() {
   // Court filters
   const [courtFilterTeam, setCourtFilterTeam] = useState<"A" | "B" | "BOTH">(teamMode);
   const [courtFilterPlayers, setCourtFilterPlayers] = useState<string[]>([]); // Player identifiers "team-num" (e.g., "A-5", "B-7")
-  const [courtFilterActionType, setCourtFilterActionType] = useState<string[]>([]); // ["tir", "rebond", "faute"]
+  const [courtFilterActionType, setCourtFilterActionType] = useState<string[]>([]); // ["shot", "rebound", "foul"]
   const [courtFilterPeriod, setCourtFilterPeriod] = useState<number[]>([]); // [1, 2, 3, 4] or [1, 2]
 
   /**
@@ -131,9 +131,9 @@ export default function MatchDetailsScreen() {
   useEffect(() => {
     logInfo('MatchDetailsScreen', '🔍 Court action type filter changed', {
       selectedActionTypes: courtFilterActionType,
-      filteringShots: courtFilterActionType.includes("tir"),
-      filteringRebounds: courtFilterActionType.includes("rebond"),
-      filteringFouls: courtFilterActionType.includes("faute")
+      filteringShots: courtFilterActionType.includes(ActionType.SHOT),
+      filteringRebounds: courtFilterActionType.includes(ActionType.REBOUND),
+      filteringFouls: courtFilterActionType.includes(ActionType.FOUL)
     });
   }, [courtFilterActionType]);
 
@@ -510,14 +510,14 @@ export default function MatchDetailsScreen() {
                 <TouchableOpacity
                   style={[
                     styles.filterCard,
-                    courtFilterActionType.includes("tir") && styles.filterCardActive,
+                    courtFilterActionType.includes(ActionType.SHOT) && styles.filterCardActive,
                   ]}
-                  onPress={() => toggleActionTypeFilter("tir")}
+                  onPress={() => toggleActionTypeFilter(ActionType.SHOT)}
                 >
                   <Text
                     style={[
                       styles.filterCardText,
-                      courtFilterActionType.includes("tir") && styles.filterCardTextActive,
+                      courtFilterActionType.includes(ActionType.SHOT) && styles.filterCardTextActive,
                     ]}
                   >
                     🏀 Tirs
@@ -526,14 +526,14 @@ export default function MatchDetailsScreen() {
                 <TouchableOpacity
                   style={[
                     styles.filterCard,
-                    courtFilterActionType.includes("rebond") && styles.filterCardActive,
+                    courtFilterActionType.includes(ActionType.REBOUND) && styles.filterCardActive,
                   ]}
-                  onPress={() => toggleActionTypeFilter("rebond")}
+                  onPress={() => toggleActionTypeFilter(ActionType.REBOUND)}
                 >
                   <Text
                     style={[
                       styles.filterCardText,
-                      courtFilterActionType.includes("rebond") && styles.filterCardTextActive,
+                      courtFilterActionType.includes(ActionType.REBOUND) && styles.filterCardTextActive,
                     ]}
                   >
                     📥 Rebonds
@@ -542,14 +542,14 @@ export default function MatchDetailsScreen() {
                 <TouchableOpacity
                   style={[
                     styles.filterCard,
-                    courtFilterActionType.includes("faute") && styles.filterCardActive,
+                    courtFilterActionType.includes(ActionType.FOUL) && styles.filterCardActive,
                   ]}
-                  onPress={() => toggleActionTypeFilter("faute")}
+                  onPress={() => toggleActionTypeFilter(ActionType.FOUL)}
                 >
                   <Text
                     style={[
                       styles.filterCardText,
-                      courtFilterActionType.includes("faute") && styles.filterCardTextActive,
+                      courtFilterActionType.includes(ActionType.FOUL) && styles.filterCardTextActive,
                     ]}
                   >
                     ⚠️ Fautes
@@ -676,7 +676,7 @@ export default function MatchDetailsScreen() {
               <Text style={styles.liveStatsTitle}>{teamMode === "BOTH" ? teamA : "Stats"}</Text>
 
               {/* Shooting Stats */}
-              {(courtFilterActionType.length === 0 || courtFilterActionType.includes("tir")) && (
+              {(courtFilterActionType.length === 0 || courtFilterActionType.includes(ActionType.SHOT)) && (
                 <>
                   <View style={styles.liveStatGroup}>
                     <Text style={styles.liveStatGroupLabel}>🏀 Tirs</Text>
@@ -725,7 +725,7 @@ export default function MatchDetailsScreen() {
               )}
 
               {/* Rebounds Stats */}
-              {(courtFilterActionType.length === 0 || courtFilterActionType.includes("rebond")) && (
+              {(courtFilterActionType.length === 0 || courtFilterActionType.includes(ActionType.REBOUND)) && (
                 <View style={styles.liveStatGroup}>
                   <Text style={styles.liveStatGroupLabel}>📥 Rebonds</Text>
                   <Text style={styles.liveStatGroupValue}>
@@ -752,7 +752,7 @@ export default function MatchDetailsScreen() {
               )}
 
               {/* Fouls Stats */}
-              {(courtFilterActionType.length === 0 || courtFilterActionType.includes("faute")) && (
+              {(courtFilterActionType.length === 0 || courtFilterActionType.includes(ActionType.FOUL)) && (
                 <View style={[styles.liveStatGroup, styles.liveStatGroupLast]}>
                   <Text style={styles.liveStatGroupLabel}>⚠️ Fautes</Text>
                   <Text style={styles.liveStatGroupValue}>
@@ -797,7 +797,7 @@ export default function MatchDetailsScreen() {
                 <Text style={styles.liveStatsTitle}>{teamB}</Text>
 
                 {/* Shooting Stats */}
-                {(courtFilterActionType.length === 0 || courtFilterActionType.includes("tir")) && (
+                {(courtFilterActionType.length === 0 || courtFilterActionType.includes(ActionType.SHOT)) && (
                   <>
                     <View style={styles.liveStatGroup}>
                       <Text style={styles.liveStatGroupLabel}>🏀 Tirs</Text>
@@ -846,7 +846,7 @@ export default function MatchDetailsScreen() {
                 )}
 
                 {/* Rebounds Stats */}
-                {(courtFilterActionType.length === 0 || courtFilterActionType.includes("rebond")) && (
+                {(courtFilterActionType.length === 0 || courtFilterActionType.includes(ActionType.REBOUND)) && (
                   <View style={styles.liveStatGroup}>
                     <Text style={styles.liveStatGroupLabel}>📥 Rebonds</Text>
                     <Text style={styles.liveStatGroupValue}>
@@ -873,7 +873,7 @@ export default function MatchDetailsScreen() {
                 )}
 
                 {/* Fouls Stats */}
-                {(courtFilterActionType.length === 0 || courtFilterActionType.includes("faute")) && (
+                {(courtFilterActionType.length === 0 || courtFilterActionType.includes(ActionType.FOUL)) && (
                   <View style={[styles.liveStatGroup, styles.liveStatGroupLast]}>
                     <Text style={styles.liveStatGroupLabel}>⚠️ Fautes</Text>
                     <Text style={styles.liveStatGroupValue}>

@@ -139,10 +139,10 @@ export default function MatchSummaryModal({
     );
 
     const offensive = teamRebounds.filter(
-      (action) => action.specification === "offensif"
+      (action) => action.specification === ReboundSpecification.OFFENSIVE
     ).length;
     const defensive = teamRebounds.filter(
-      (action) => action.specification === "defensif"
+      (action) => action.specification === ReboundSpecification.DEFENSIVE
     ).length;
 
     return {
@@ -162,10 +162,10 @@ export default function MatchSummaryModal({
     );
 
     const personal = teamFouls.filter(
-      (action) => action.specification === "personnelle"
+      (action) => action.specification === FoulSpecification.PERSONAL
     ).length;
     const technical = teamFouls.filter(
-      (action) => action.specification === "technique"
+      (action) => action.specification === FoulSpecification.TECHNICAL
     ).length;
 
     return {
@@ -226,14 +226,14 @@ export default function MatchSummaryModal({
     actionType: string,
     specification?: string
   ): string => {
-    if (actionType === "tir") {
-      return specification === "reussi" ? "#4CAF50" : "#F44336";
+    if (actionType === ActionType.SHOT) {
+      return specification === ShotSpecification.MADE ? "#4CAF50" : "#F44336";
     }
-    if (actionType === "rebond") {
-      return specification === "offensif" ? "#FF9800" : "#2196F3";
+    if (actionType === ActionType.REBOUND) {
+      return specification === ReboundSpecification.OFFENSIVE ? "#FF9800" : "#2196F3";
     }
-    if (actionType === "faute") {
-      return specification === "technique" ? "#9C27B0" : "#E74C3C";
+    if (actionType === ActionType.FOUL) {
+      return specification === FoulSpecification.TECHNICAL ? "#9C27B0" : "#E74C3C";
     }
     return "#757575";
   };

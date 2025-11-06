@@ -18,6 +18,12 @@
  * - Semantic position tracking for orientation-independent coordinate storage
  */
 import { useState, useCallback } from "react";
+import {
+  ActionType,
+  ShotSpecification,
+  ReboundSpecification,
+  FoulSpecification,
+} from "../src/models/ActionTypes";
 
 // Types for the action system
 
@@ -142,7 +148,7 @@ export interface ActionSystemProps {
  */
 export const ACTION_DEFINITIONS: ActionDefinition[] = [
   {
-    id: "tir",
+    id: ActionType.SHOT,
     icon: "🏀",
     label: "Tir",
     backgroundColor: "#FF6B35",
@@ -170,13 +176,13 @@ export const ACTION_DEFINITIONS: ActionDefinition[] = [
     ],
     specifications: [
       {
-        id: "reussi",
+        id: ShotSpecification.MADE,
         label: "Réussi",
         icon: "✅",
         color: "#4CAF50",
       },
       {
-        id: "rate",
+        id: ShotSpecification.MISSED,
         label: "Raté",
         icon: "❌",
         color: "#F44336",
@@ -184,20 +190,20 @@ export const ACTION_DEFINITIONS: ActionDefinition[] = [
     ],
   },
   {
-    id: "rebond",
+    id: ActionType.REBOUND,
     icon: "📥",
     label: "Rebond",
     backgroundColor: "#4A90E2",
     description: "Action de rebond",
     specifications: [
       {
-        id: "offensif",
+        id: ReboundSpecification.OFFENSIVE,
         label: "Offensif",
         icon: "🔵",
         color: "#FF9800",
       },
       {
-        id: "defensif",
+        id: ReboundSpecification.DEFENSIVE,
         label: "Défensif",
         icon: "🛡️",
         color: "#2196F3",
@@ -205,20 +211,20 @@ export const ACTION_DEFINITIONS: ActionDefinition[] = [
     ],
   },
   {
-    id: "faute",
+    id: ActionType.FOUL,
     icon: "⚠️",
     label: "Faute",
     backgroundColor: "#E74C3C",
     description: "Faute commise",
     specifications: [
       {
-        id: "personnelle",
+        id: FoulSpecification.PERSONAL,
         label: "Personnelle",
         icon: "👤",
         color: "#E74C3C",
       },
       {
-        id: "technique",
+        id: FoulSpecification.TECHNICAL,
         label: "Technique",
         icon: "⚡",
         color: "#9C27B0",
