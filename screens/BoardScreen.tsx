@@ -2109,6 +2109,7 @@ export default function BasketballCourt() {
           specification: action.specification,
           player: action.player_number,
           team: action.team,
+          points: action.points, // ⚠️ Important: include points for score calculation
           timestamp: new Date(action.timestamp),
           period_number: action.period_number,
           time_in_period: action.time_in_period,
