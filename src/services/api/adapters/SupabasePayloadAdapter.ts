@@ -1,6 +1,10 @@
 import { IPayloadAdapter } from '../types/IPayloadAdapter';
 import { MatchData } from '../types/MatchData';
 import { TeamMode } from '../../../models/types';
+import {
+  ActionType,
+  ShotSpecification,
+} from '../../../models/ActionTypes';
 
 /**
  * Supabase-specific payload format
@@ -86,11 +90,11 @@ export class SupabasePayloadAdapter implements IPayloadAdapter<SupabaseMatchPayl
       .filter(
         (a) =>
           a.team === team &&
-          a.action_type === 'tir' &&
-          a.specification === 'reussi'
+          a.action_type === ActionType.SHOT &&
+          a.specification === ShotSpecification.MADE
       )
       .reduce((sum, a) => {
-        const points = a.points || 2; // Default to 2 for backward compatibility
+        const points = a.points || 0;
         return sum + points;
       }, 0);
   }

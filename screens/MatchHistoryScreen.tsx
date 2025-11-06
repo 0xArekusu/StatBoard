@@ -40,6 +40,10 @@ import { useAuth } from "../src/contexts/AuthContext";
 import { supabase } from "../src/config/supabase";
 import { resolveTeamNames } from "../src/utils/teamNameResolver";
 import { logInfo, logError, logWarn } from "../utils/logger";
+import {
+  ActionType,
+  ShotSpecification,
+} from "../src/models/ActionTypes";
 
 interface MatchWithDetails extends Match {
   scoreA: number;
@@ -153,8 +157,8 @@ export default function MatchHistoryScreen() {
               .filter(
                 (a) =>
                   a.team === "A" &&
-                  a.action_type === "tir" &&
-                  a.specification === "reussi"
+                  a.action_type === ActionType.SHOT &&
+                  a.specification === ShotSpecification.MADE
               )
               .reduce((sum, a) => {
                 const points = a.points || 2;
@@ -165,8 +169,8 @@ export default function MatchHistoryScreen() {
               .filter(
                 (a) =>
                   a.team === "B" &&
-                  a.action_type === "tir" &&
-                  a.specification === "reussi"
+                  a.action_type === ActionType.SHOT &&
+                  a.specification === ShotSpecification.MADE
               )
               .reduce((sum, a) => {
                 const points = a.points || 2;

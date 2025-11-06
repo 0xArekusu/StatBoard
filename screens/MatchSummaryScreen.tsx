@@ -38,6 +38,12 @@ import { useAuth } from "../src/contexts/AuthContext";
 import { MatchSyncPolicy } from "../src/services/match/MatchSyncPolicy";
 import type { SubscriptionTier } from "../models/Subscription";
 import { useMatchSync } from "../src/hooks/useMatchSync";
+import {
+  ActionType,
+  ShotSpecification,
+  ReboundSpecification,
+  FoulSpecification,
+} from "../src/models/ActionTypes";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { logInfo, logError, logWarn } from "../utils/logger";
 
@@ -269,14 +275,14 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
   // Calculate shooting statistics
   const calculateShootingStats = (team: "A" | "B") => {
     const teamShots = actions.filter(
-      (action) => action.type === "tir" && action.team === team
+      (action) => action.type === ActionType.SHOT && action.team === team
     );
 
     const madeShots = teamShots.filter(
-      (action) => action.specification === "reussi"
+      (action) => action.specification === ShotSpecification.MADE
     );
     const missedShots = teamShots.filter(
-      (action) => action.specification === "rate"
+      (action) => action.specification === ShotSpecification.MISSED
     );
 
     const totalShots = teamShots.length;
@@ -336,14 +342,14 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
   // Calculate rebounds statistics
   const calculateReboundsStats = (team: "A" | "B") => {
     const teamRebounds = actions.filter(
-      (action) => action.type === "rebond" && action.team === team
+      (action) => action.type === ActionType.REBOUND && action.team === team
     );
 
     const offensive = teamRebounds.filter(
-      (action) => action.specification === "offensif"
+      (action) => action.specification === ReboundSpecification.OFFENSIVE
     ).length;
     const defensive = teamRebounds.filter(
-      (action) => action.specification === "defensif"
+      (action) => action.specification === ReboundSpecification.DEFENSIVE
     ).length;
 
     return {
@@ -359,19 +365,27 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
   // Calculate fouls statistics
   const calculateFoulsStats = (team: "A" | "B") => {
     const teamFouls = actions.filter(
-      (action) => action.type === "faute" && action.team === team
+      (action) => action.type === ActionType.FOUL && action.team === team
     );
 
     const personal = teamFouls.filter(
-      (action) => action.specification === "personnelle"
+      (action) => action.specification === FoulSpecification.PERSONAL
     ).length;
     const technical = teamFouls.filter(
-      (action) => action.specification === "technique"
+      (action) => action.specification === FoulSpecification.TECHNICAL
+    ).length;
+    const penality = teamFouls.filter(
+      (action) => action.specification === FoulSpecification.PENALITY
+    ).length;
+    const disqualification = teamFouls.filter(
+      (action) => action.specification === FoulSpecification.DISQUALIFICATION
     ).length;
 
     return {
       personal,
       technical,
+      penality,
+      disqualification,
       total: teamFouls.length,
     };
   };
@@ -401,8 +415,8 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
       );
 
       // Only count successful shots for scoring
-      if (action.type === "tir" && action.specification === "reussi") {
-        const points = action.points || 2;
+      if (action.type === ActionType.SHOT && action.specification === ShotSpecification.MADE) {
+        const points = action.points || 0;
         if (action.team === "A") {
           periodScoresA[periodIndex] += points;
         } else if (action.team === "B") {
@@ -433,8 +447,8 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
     const playerActions = actions.filter((a) => a.player === playerId);
 
     // Shots
-    const shots = playerActions.filter((a) => a.type === "tir");
-    const madeShots = shots.filter((a) => a.specification === "reussi");
+    const shots = playerActions.filter((a) => a.type === ActionType.SHOT);
+    const madeShots = shots.filter((a) => a.specification === ShotSpecification.MADE);
 
     const onePtMade = madeShots.filter((a) => a.points === 1).length;
     const twoPtMade = madeShots.filter((a) => a.points === 2).length;
@@ -447,17 +461,22 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
     const totalPoints = onePtMade * 1 + twoPtMade * 2 + threePtMade * 3;
 
     // Rebounds
-    const rebounds = playerActions.filter((a) => a.type === "rebond");
-    const offRebounds = rebounds.filter((a) => a.specification === "offensif").length;
-    const defRebounds = rebounds.filter((a) => a.specification === "defensif").length;
+    const rebounds = playerActions.filter((a) => a.type === ActionType.REBOUND);
+    const offRebounds = rebounds.filter((a) => a.specification === ReboundSpecification.OFFENSIVE).length;
+    const defRebounds = rebounds.filter((a) => a.specification === ReboundSpecification.DEFENSIVE).length;
 
-    // Assists
-    const assists = playerActions.filter((a) => a.type === "passe").length;
+    // New stats
+    const assists = playerActions.filter((a) => a.type === ActionType.ASSIST).length;
+    const steals = playerActions.filter((a) => a.type === ActionType.STEAL).length;
+    const blocks = playerActions.filter((a) => a.type === ActionType.BLOCK).length;
+    const turnovers = playerActions.filter((a) => a.type === ActionType.TURNOVER).length;
 
     // Fouls
-    const fouls = playerActions.filter((a) => a.type === "faute");
-    const personalFouls = fouls.filter((a) => a.specification === "personnelle").length;
-    const technicalFouls = fouls.filter((a) => a.specification === "technique").length;
+    const fouls = playerActions.filter((a) => a.type === ActionType.FOUL);
+    const personalFouls = fouls.filter((a) => a.specification === FoulSpecification.PERSONAL).length;
+    const technicalFouls = fouls.filter((a) => a.specification === FoulSpecification.TECHNICAL).length;
+    const penalityFouls = fouls.filter((a) => a.specification === FoulSpecification.PENALITY).length;
+    const disqualificationFouls = fouls.filter((a) => a.specification === FoulSpecification.DISQUALIFICATION).length;
 
     return {
       points: totalPoints,

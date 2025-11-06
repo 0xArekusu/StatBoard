@@ -79,6 +79,17 @@ import { useAuth } from "../src/contexts/AuthContext";
 import { logInfo, logError, logWarn } from "../utils/logger";
 import { generateMockActions, getMockActionsSummary } from "../utils/mockActions";
 import { DEBUG } from "../src/config/debug";
+import {
+  ActionType,
+  ShotSpecification,
+  ReboundSpecification,
+  FoulSpecification,
+  isShotMade,
+  ACTION_TYPE_FR,
+  SHOT_SPECIFICATION_FR,
+  REBOUND_SPECIFICATION_FR,
+  FOUL_SPECIFICATION_FR,
+} from "../src/models/ActionTypes";
 
 // Modal layout constants (for the new ActionModal)
 const MODAL_WIDTH = 240;
@@ -171,16 +182,35 @@ const convertClubPlayersToBoard = (
  */
 const getMarkerColor = (actionType: string, specification?: string): string => {
   // Shot
-  if (actionType === "tir") {
-    return specification === "reussi" ? "#4CAF50" : "#F44336"; // green if successful, red if missed
+  if (actionType === ActionType.SHOT) {
+    return specification === ShotSpecification.MADE ? "#4CAF50" : "#F44336"; // green if successful, red if missed
   }
   // Rebound
-  if (actionType === "rebond") {
-    return specification === "offensif" ? "#FF9800" : "#2196F3"; // orange if offensive, blue if defensive
+  if (actionType === ActionType.REBOUND) {
+    return specification === ReboundSpecification.OFFENSIVE ? "#FF9800" : "#2196F3"; // orange if offensive, blue if defensive
   }
   // Foul
-  if (actionType === "faute") {
-    return specification === "technique" ? "#9C27B0" : "#E74C3C"; // purple if technical, red if personal
+  if (actionType === ActionType.FOUL) {
+    if (specification === FoulSpecification.TECHNICAL) return "#9C27B0"; // purple
+    if (specification === FoulSpecification.DISQUALIFICATION) return "#000000"; // black
+    if (specification === FoulSpecification.PENALITY) return "#FF6F00"; // dark orange
+    return "#E74C3C"; // red for personal
+  }
+  // Assist
+  if (actionType === ActionType.ASSIST) {
+    return "#00BCD4"; // cyan
+  }
+  // Steal
+  if (actionType === ActionType.STEAL) {
+    return "#8BC34A"; // light green
+  }
+  // Block
+  if (actionType === ActionType.BLOCK) {
+    return "#FF5722"; // deep orange
+  }
+  // Turnover
+  if (actionType === ActionType.TURNOVER) {
+    return "#795548"; // brown
   }
   // Default color
   return "#757575";
@@ -1273,9 +1303,9 @@ export default function BasketballCourt() {
 
     completedActions.forEach((action) => {
       // A successful shot scores points
-      if (action.type === "tir" && action.specification === "reussi") {
+      if (action.type === ActionType.SHOT && action.specification === ShotSpecification.MADE) {
         // Use the points field from the action (1, 2, or 3 points)
-        const points = action.points || 2; // Default to 2 if not specified
+        const points = action.points || 0;
 
         if (action.team === "A") {
           newScoreA += points;

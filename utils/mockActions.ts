@@ -18,6 +18,13 @@
  * );
  */
 
+import {
+  ActionType,
+  ShotSpecification,
+  ReboundSpecification,
+  FoulSpecification,
+} from "../src/models/ActionTypes";
+
 interface MockPlayer {
   jersey_number: number;
   name: string;
@@ -97,39 +104,52 @@ export function generateMockActions(
 
     if (rand < distributions.shot) {
       // SHOT ACTION
-      actionType = "tir";
+      actionType = ActionType.SHOT;
 
       // Determine shot type
       const shotRand = Math.random();
+
       if (shotRand < shotDistributions.freeThrow) {
-        points = 1;
+        points = 1; // Free throw
       } else if (shotRand < shotDistributions.freeThrow + shotDistributions.twoPoint) {
-        points = 2;
+        points = 2; // 2-pointer
       } else {
-        points = 3;
+        points = 3; // 3-pointer
       }
 
       // Determine if made or missed based on success rate
       const successRoll = Math.random();
-      specification = successRoll < successRates[points] ? "reussi" : "rate";
+      const successRate = successRates[points as keyof typeof successRates];
+      specification = successRoll < successRate
+        ? ShotSpecification.MADE
+        : ShotSpecification.MISSED;
+
+      // If missed, no points
+      if (specification === ShotSpecification.MISSED) {
+        points = 0;
+      }
 
     } else if (rand < distributions.shot + distributions.rebound) {
       // REBOUND ACTION
-      actionType = "rebond";
+      actionType = ActionType.REBOUND;
       // 60% defensive, 40% offensive
-      specification = Math.random() < 0.6 ? "defensif" : "offensif";
+      specification = Math.random() < 0.6
+        ? ReboundSpecification.DEFENSIVE
+        : ReboundSpecification.OFFENSIVE;
 
     } else {
       // FOUL ACTION
-      actionType = "faute";
-      // 70% personal, 20% offensive, 10% technical
+      actionType = ActionType.FOUL;
+      // 50% personal, 30% technical, 15% penality, 5% disqualification
       const foulRand = Math.random();
-      if (foulRand < 0.7) {
-        specification = "personnelle";
-      } else if (foulRand < 0.9) {
-        specification = "offensive";
+      if (foulRand < 0.5) {
+        specification = FoulSpecification.PERSONAL;
+      } else if (foulRand < 0.8) {
+        specification = FoulSpecification.TECHNICAL;
+      } else if (foulRand < 0.95) {
+        specification = FoulSpecification.PENALITY;
       } else {
-        specification = "technique";
+        specification = FoulSpecification.DISQUALIFICATION;
       }
     }
 
@@ -164,24 +184,23 @@ export function generateMockActions(
  * Useful for logging/debugging
  */
 export function getMockActionsSummary(actions: MockAction[]) {
+  const shots = actions.filter(a => a.action_type === ActionType.SHOT);
+  const rebounds = actions.filter(a => a.action_type === ActionType.REBOUND);
+  const fouls = actions.filter(a => a.action_type === ActionType.FOUL);
+
   const summary = {
     total: actions.length,
-    shots: actions.filter(a => a.action_type === "tir").length,
-    shotsMade: actions.filter(a => a.action_type === "tir" && a.specification === "reussi").length,
-    shotsMissed: actions.filter(a => a.action_type === "tir" && a.specification === "rate").length,
-    rebounds: actions.filter(a => a.action_type === "rebond").length,
-    reboundsOffensive: actions.filter(a => a.action_type === "rebond" && a.specification === "offensif").length,
-    reboundsDefensive: actions.filter(a => a.action_type === "rebond" && a.specification === "defensif").length,
-    fouls: actions.filter(a => a.action_type === "faute").length,
-    freeThrows: actions.filter(a => a.points === 1).length,
-    twoPointers: actions.filter(a => a.points === 2).length,
-    threePointers: actions.filter(a => a.points === 3).length,
-    totalPoints: actions.reduce((sum, a) => {
-      if (a.action_type === "tir" && a.specification === "reussi" && a.points) {
-        return sum + a.points;
-      }
-      return sum;
-    }, 0),
+    shots: shots.length,
+    shotsMade: shots.filter(a => a.specification === ShotSpecification.MADE).length,
+    shotsMissed: shots.filter(a => a.specification === ShotSpecification.MISSED).length,
+    rebounds: rebounds.length,
+    reboundsOffensive: rebounds.filter(a => a.specification === ReboundSpecification.OFFENSIVE).length,
+    reboundsDefensive: rebounds.filter(a => a.specification === ReboundSpecification.DEFENSIVE).length,
+    fouls: fouls.length,
+    freeThrows: shots.filter(a => a.points === 1 || (a.points === 0 && shots.indexOf(a) % 10 === 0)).length,
+    twoPointers: shots.filter(a => a.points === 2).length,
+    threePointers: shots.filter(a => a.points === 3).length,
+    totalPoints: shots.reduce((sum, a) => sum + (a.points || 0), 0),
   };
 
   return summary;

@@ -1,6 +1,12 @@
 import * as Print from "expo-print";
 import * as Sharing from "expo-sharing";
 import { ActionData } from "../../../components/ActionSystem";
+import {
+  ActionType,
+  ShotSpecification,
+  ReboundSpecification,
+  FoulSpecification,
+} from "../../models/ActionTypes";
 
 interface Player {
   id: number;
@@ -136,8 +142,8 @@ export class PDFExportService {
         totalPeriods - 1
       );
 
-      if (action.type === "tir" && action.specification === "reussi") {
-        const points = action.points || 2;
+      if (action.type === ActionType.SHOT && action.specification === ShotSpecification.MADE) {
+        const points = action.points || 0;
         if (action.team === "A") {
           periodScoresA[periodIndex] += points;
         } else if (action.team === "B") {
@@ -156,8 +162,8 @@ export class PDFExportService {
     const playerActions = actions.filter((a) => a.player === playerId);
 
     // Shots
-    const shots = playerActions.filter((a) => a.type === "tir");
-    const madeShots = shots.filter((a) => a.specification === "reussi");
+    const shots = playerActions.filter((a) => a.type === ActionType.SHOT);
+    const madeShots = shots.filter((a) => a.specification === ShotSpecification.MADE);
 
     const onePtMade = madeShots.filter((a) => a.points === 1).length;
     const twoPtMade = madeShots.filter((a) => a.points === 2).length;
@@ -170,14 +176,22 @@ export class PDFExportService {
     const totalPoints = onePtMade * 1 + twoPtMade * 2 + threePtMade * 3;
 
     // Rebounds
-    const rebounds = playerActions.filter((a) => a.type === "rebond");
-    const offRebounds = rebounds.filter((a) => a.specification === "offensif").length;
-    const defRebounds = rebounds.filter((a) => a.specification === "defensif").length;
+    const rebounds = playerActions.filter((a) => a.type === ActionType.REBOUND);
+    const offRebounds = rebounds.filter((a) => a.specification === ReboundSpecification.OFFENSIVE).length;
+    const defRebounds = rebounds.filter((a) => a.specification === ReboundSpecification.DEFENSIVE).length;
 
     // Fouls
-    const fouls = playerActions.filter((a) => a.type === "faute");
-    const personalFouls = fouls.filter((a) => a.specification === "personnelle").length;
-    const technicalFouls = fouls.filter((a) => a.specification === "technique").length;
+    const fouls = playerActions.filter((a) => a.type === ActionType.FOUL);
+    const personalFouls = fouls.filter((a) => a.specification === FoulSpecification.PERSONAL).length;
+    const technicalFouls = fouls.filter((a) => a.specification === FoulSpecification.TECHNICAL).length;
+    const penalityFouls = fouls.filter((a) => a.specification === FoulSpecification.PENALITY).length;
+    const disqualificationFouls = fouls.filter((a) => a.specification === FoulSpecification.DISQUALIFICATION).length;
+
+    // New stats
+    const assists = playerActions.filter((a) => a.type === ActionType.ASSIST).length;
+    const steals = playerActions.filter((a) => a.type === ActionType.STEAL).length;
+    const blocks = playerActions.filter((a) => a.type === ActionType.BLOCK).length;
+    const turnovers = playerActions.filter((a) => a.type === ActionType.TURNOVER).length;
 
     return {
       points: totalPoints,
@@ -194,6 +208,12 @@ export class PDFExportService {
       trb: offRebounds + defRebounds,
       pf: personalFouls,
       tf: technicalFouls,
+      uf: penalityFouls, // unsportsmanlike fouls (antisportive)
+      df: disqualificationFouls, // disqualifying fouls
+      ast: assists,
+      stl: steals,
+      blk: blocks,
+      tov: turnovers,
     };
   }
 

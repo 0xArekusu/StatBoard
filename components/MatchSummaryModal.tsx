@@ -11,6 +11,12 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { ActionData } from "./ActionSystem";
 import BasketballCourtSVG from "./BasketballCourtSVG";
+import {
+  ActionType,
+  ShotSpecification,
+  ReboundSpecification,
+  FoulSpecification,
+} from "../src/models/ActionTypes";
 
 interface MatchSummaryModalProps {
   visible: boolean;
@@ -62,14 +68,14 @@ export default function MatchSummaryModal({
   // Calculate shooting statistics
   const calculateShootingStats = (team: "A" | "B") => {
     const teamShots = actions.filter(
-      (action) => action.type === "tir" && action.team === team
+      (action) => action.type === ActionType.SHOT && action.team === team
     );
 
     const madeShots = teamShots.filter(
-      (action) => action.specification === "reussi"
+      (action) => action.specification === ShotSpecification.MADE
     );
     const missedShots = teamShots.filter(
-      (action) => action.specification === "rate"
+      (action) => action.specification === ShotSpecification.MISSED
     );
 
     const totalShots = teamShots.length;
@@ -129,7 +135,7 @@ export default function MatchSummaryModal({
   // Calculate rebounds statistics
   const calculateReboundsStats = (team: "A" | "B") => {
     const teamRebounds = actions.filter(
-      (action) => action.type === "rebond" && action.team === team
+      (action) => action.type === ActionType.REBOUND && action.team === team
     );
 
     const offensive = teamRebounds.filter(
@@ -152,7 +158,7 @@ export default function MatchSummaryModal({
   // Calculate fouls statistics
   const calculateFoulsStats = (team: "A" | "B") => {
     const teamFouls = actions.filter(
-      (action) => action.type === "faute" && action.team === team
+      (action) => action.type === ActionType.FOUL && action.team === team
     );
 
     const personal = teamFouls.filter(
@@ -194,7 +200,7 @@ export default function MatchSummaryModal({
       );
 
       // Only count successful shots for scoring
-      if (action.type === "tir" && action.specification === "reussi") {
+      if (action.type === ActionType.SHOT && action.specification === ShotSpecification.MADE) {
         const points = action.points || 2;
         if (action.team === "A") {
           periodScoresA[periodIndex] += points;

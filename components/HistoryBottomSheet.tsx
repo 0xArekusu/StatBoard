@@ -29,6 +29,15 @@ import {
 } from "react-native";
 import { ActionData } from "./ActionSystemModal";
 import { getActionIcon } from "./ActionSystem";
+import {
+  ActionType,
+  ShotSpecification,
+  ReboundSpecification,
+  FoulSpecification,
+  SHOT_SPECIFICATION_FR,
+  REBOUND_SPECIFICATION_FR,
+  FOUL_SPECIFICATION_FR,
+} from "../src/models/ActionTypes";
 
 interface Player {
   id: number;
@@ -85,26 +94,33 @@ export default function HistoryBottomSheet({
     let description = `${teamName} - ${playerName} - #${playerNum}`;
 
     switch (action.type) {
-      case "tir":
-        if (action.specification === "reussi") {
-          description += " - Successful shot"; // TODO: Add point value based on position
-        } else if (action.specification === "rate") {
-          description += " - Missed shot";
-        }
+      case ActionType.SHOT:
+        const shotSpec = action.specification as ShotSpecification;
+        const shotLabel = SHOT_SPECIFICATION_FR[shotSpec] || action.specification;
+        const points = action.points || 0;
+        description += ` - Tir ${shotLabel}${points > 0 ? ` (${points} pts)` : ''}`;
         break;
-      case "rebond":
-        if (action.specification === "offensif") {
-          description += " - Offensive rebound";
-        } else if (action.specification === "defensif") {
-          description += " - Defensive rebound";
-        }
+      case ActionType.REBOUND:
+        const reboundSpec = action.specification as ReboundSpecification;
+        const reboundLabel = REBOUND_SPECIFICATION_FR[reboundSpec] || action.specification;
+        description += ` - Rebond ${reboundLabel}`;
         break;
-      case "faute":
-        if (action.specification === "personnelle") {
-          description += " - Personal foul";
-        } else if (action.specification === "technique") {
-          description += " - Technical foul";
-        }
+      case ActionType.FOUL:
+        const foulSpec = action.specification as FoulSpecification;
+        const foulLabel = FOUL_SPECIFICATION_FR[foulSpec] || action.specification;
+        description += ` - Faute ${foulLabel}`;
+        break;
+      case ActionType.ASSIST:
+        description += " - Passe décisive";
+        break;
+      case ActionType.STEAL:
+        description += " - Interception";
+        break;
+      case ActionType.BLOCK:
+        description += " - Contre";
+        break;
+      case ActionType.TURNOVER:
+        description += " - Perte de balle";
         break;
       default:
         description += ` - ${action.type} ${action.specification || ""}`;

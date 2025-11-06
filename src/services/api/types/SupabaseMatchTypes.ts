@@ -112,6 +112,23 @@ export interface SupabaseMatchPlayerInsert {
   is_starter: boolean;
   photo_url?: string | null;
   actions: PlayerAction[];
+  // Statistics calculated from actions
+  total_points?: number;
+  total_shots?: number;
+  shots_made?: number;
+  free_throws_attempted?: number;
+  free_throws_made?: number;
+  two_points_attempted?: number;
+  two_points_made?: number;
+  three_points_attempted?: number;
+  three_points_made?: number;
+  total_rebounds?: number;
+  offensive_rebounds?: number;
+  defensive_rebounds?: number;
+  total_fouls?: number;
+  personal_fouls?: number;
+  offensive_fouls?: number;
+  technical_fouls?: number;
 }
 
 /**
