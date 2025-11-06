@@ -77,6 +77,8 @@ import { supabase } from "../src/config/supabase";
 import { ServiceFactory } from "../services/ServiceFactory";
 import { useAuth } from "../src/contexts/AuthContext";
 import { logInfo, logError, logWarn } from "../utils/logger";
+import { generateMockActions, getMockActionsSummary } from "../utils/mockActions";
+import { DEBUG } from "../src/config/debug";
 
 // Modal layout constants (for the new ActionModal)
 const MODAL_WIDTH = 240;
@@ -1046,8 +1048,8 @@ export default function BasketballCourt() {
 
   // Convert completed actions to SVG markers
   const getAllActionMarkers = useCallback(() => {
-    return getFilteredActions().map((action) => ({
-      id: `action-${action.timestamp.getTime()}`,
+    return getFilteredActions().map((action, index) => ({
+      id: `action-${action.timestamp.getTime()}-${index}`,
       svgX: action.semanticPosition.xNormalized * 615.75,
       svgY: action.semanticPosition.yNormalized * 1146.749971,
       color: getMarkerColor(action.type, action.specification),
@@ -1539,6 +1541,89 @@ export default function BasketballCourt() {
       setPreGameMode(false);
     }
   };
+
+  /**
+   * 🧪 DEV ONLY: Load 100 mock actions for load testing
+   * Call this function manually from React DevTools or add a debug button
+   *
+   * Usage: After starting a match, call loadMockActions() to insert 100 test actions
+   */
+  const loadMockActions = async () => {
+    if (!currentMatch) {
+      logWarn("BoardScreen", "⚠️ Cannot load mock actions: No active match");
+      return;
+    }
+
+    try {
+      logInfo("BoardScreen", "🧪 Generating 100 mock actions for load testing", {
+        matchId: currentMatch.id,
+        currentPeriod,
+        periodDuration
+      });
+
+      // Get team A players (your club team)
+      const teamAPlayers = [...players, ...substitutesTeamA].map(p => ({
+        jersey_number: p.num,
+        name: p.name
+      }));
+
+      if (teamAPlayers.length === 0) {
+        logWarn("BoardScreen", "⚠️ No Team A players found, cannot generate actions");
+        return;
+      }
+
+      // Generate 100 mock actions
+      const mockActions = generateMockActions(
+        currentMatch.id,
+        teamAPlayers,
+        currentPeriod,
+        periodDuration
+      );
+
+      // Get summary for logging
+      const summary = getMockActionsSummary(mockActions);
+      logInfo("BoardScreen", "📊 Mock actions generated", summary);
+
+      // Insert all actions via ActionQueue in batches
+      const actionRepository = new ActionRepository();
+      const batchSize = 10;
+      let insertedCount = 0;
+
+      for (let i = 0; i < mockActions.length; i += batchSize) {
+        const batch = mockActions.slice(i, i + batchSize);
+        await actionRepository.createBatch(batch);
+        insertedCount += batch.length;
+
+        logInfo("BoardScreen", `💾 Inserted batch ${Math.floor(i / batchSize) + 1}`, {
+          batchSize: batch.length,
+          totalInserted: insertedCount,
+          remaining: mockActions.length - insertedCount
+        });
+      }
+
+      // Reload actions from database to display on court
+      await loadExistingActions(currentMatch.id);
+
+      logInfo("BoardScreen", "✅ All 100 mock actions loaded successfully", {
+        matchId: currentMatch.id,
+        totalActions: mockActions.length,
+        totalPoints: summary.totalPoints,
+        shotPercentage: `${Math.round((summary.shotsMade / summary.shots) * 100)}%`
+      });
+
+      alert(`✅ 100 actions mockées chargées!\n\nRésumé:\n- Tirs: ${summary.shots} (${summary.shotsMade} réussis)\n- Rebonds: ${summary.rebounds}\n- Fautes: ${summary.fouls}\n- Points totaux: ${summary.totalPoints}`);
+
+    } catch (error) {
+      logError("BoardScreen", "❌ Error loading mock actions", {
+        error: error instanceof Error ? error.message : error
+      });
+      alert("❌ Erreur lors du chargement des actions mockées");
+    }
+  };
+
+  // 🧪 Expose loadMockActions globally for debugging (DEV ONLY)
+  // @ts-ignore
+  global.loadMockActions = loadMockActions;
 
   // Fonction pour démarrer/arrêter le chrono
   const startTimer = useCallback(() => {
@@ -2748,6 +2833,30 @@ export default function BasketballCourt() {
           scoreB={scoreB}
           teamMode={teamMode}
         />
+      )}
+
+      {/* 🧪 DEV ONLY: Debug button to load 100 mock actions */}
+      {DEBUG && !preGameMode && currentMatch && (
+        <TouchableOpacity
+          style={{
+            position: 'absolute',
+            top: 80,
+            right: 10,
+            backgroundColor: '#FF9800',
+            padding: 10,
+            borderRadius: 8,
+            zIndex: 1000,
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 5,
+          }}
+          onPress={loadMockActions}
+        >
+          <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 12 }}>🧪</Text>
+          <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 12 }}>
+            Load 100 Actions
+          </Text>
+        </TouchableOpacity>
       )}
 
       {/* Pre-game Modal: Team Selection - allows user to select a club team or skip */}

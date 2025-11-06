@@ -402,6 +402,8 @@ export class MatchSyncService {
           timestamp: action.timestamp,
         }));
 
+        // Note: Player statistics (total_points, total_shots, etc.) are calculated
+        // automatically by PostgreSQL trigger on insert/update in Supabase
         return {
           player_id: player.player_id || null,
           player_number: player.player_number,
