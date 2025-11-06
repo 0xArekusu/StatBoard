@@ -86,10 +86,9 @@ export interface SupabaseMatchPlayer {
   // All actions as JSONB array
   actions: PlayerAction[];
 
-  // Pre-calculated stats
+  // Pre-calculated stats (basic stats only)
   total_points: number;
   total_shots: number;
-  total_shots_made: number;
   total_rebounds: number;
   total_assists: number;
   total_steals: number;
@@ -112,23 +111,15 @@ export interface SupabaseMatchPlayerInsert {
   is_starter: boolean;
   photo_url?: string | null;
   actions: PlayerAction[];
-  // Statistics calculated from actions
+  // Statistics calculated from actions (basic stats only)
   total_points?: number;
   total_shots?: number;
-  shots_made?: number;
-  free_throws_attempted?: number;
-  free_throws_made?: number;
-  two_points_attempted?: number;
-  two_points_made?: number;
-  three_points_attempted?: number;
-  three_points_made?: number;
   total_rebounds?: number;
-  offensive_rebounds?: number;
-  defensive_rebounds?: number;
+  total_assists?: number;
+  total_steals?: number;
+  total_blocks?: number;
+  total_turnovers?: number;
   total_fouls?: number;
-  personal_fouls?: number;
-  offensive_fouls?: number;
-  technical_fouls?: number;
 }
 
 /**

@@ -425,23 +425,15 @@ export class MatchSyncService {
           is_starter: player.is_starter,
           photo_url: player.photo_url || null,
           actions: actionsJson,
-          // Statistics calculated from actions
+          // Statistics calculated from actions (basic stats only)
           total_points: stats.totalPoints,
           total_shots: stats.totalShots,
-          shots_made: stats.shotsMade,
-          free_throws_attempted: stats.freeThrowsAttempted,
-          free_throws_made: stats.freeThrowsMade,
-          two_points_attempted: stats.twoPointsAttempted,
-          two_points_made: stats.twoPointsMade,
-          three_points_attempted: stats.threePointsAttempted,
-          three_points_made: stats.threePointsMade,
           total_rebounds: stats.totalRebounds,
-          offensive_rebounds: stats.offensiveRebounds,
-          defensive_rebounds: stats.defensiveRebounds,
           total_fouls: stats.totalFouls,
-          personal_fouls: stats.personalFouls,
-          offensive_fouls: stats.offensiveFouls,
-          technical_fouls: stats.technicalFouls,
+          total_assists: stats.totalAssists,
+          total_steals: stats.totalSteals,
+          total_blocks: stats.totalBlocks,
+          total_turnovers: stats.totalTurnovers,
         };
       }
     );
@@ -465,110 +457,73 @@ export class MatchSyncService {
   private calculatePlayerStats(actions: Action[]): {
     totalPoints: number;
     totalShots: number;
-    shotsMade: number;
-    freeThrowsAttempted: number;
-    freeThrowsMade: number;
-    twoPointsAttempted: number;
-    twoPointsMade: number;
-    threePointsAttempted: number;
-    threePointsMade: number;
     totalRebounds: number;
-    offensiveRebounds: number;
-    defensiveRebounds: number;
     totalFouls: number;
-    personalFouls: number;
-    offensiveFouls: number;
-    technicalFouls: number;
+    totalAssists: number;
+    totalSteals: number;
+    totalBlocks: number;
+    totalTurnovers: number;
   } {
     let totalPoints = 0;
     let totalShots = 0;
-    let shotsMade = 0;
-    let freeThrowsAttempted = 0;
-    let freeThrowsMade = 0;
-    let twoPointsAttempted = 0;
-    let twoPointsMade = 0;
-    let threePointsAttempted = 0;
-    let threePointsMade = 0;
     let totalRebounds = 0;
-    let offensiveRebounds = 0;
-    let defensiveRebounds = 0;
     let totalFouls = 0;
-    let personalFouls = 0;
-    let offensiveFouls = 0;
-    let technicalFouls = 0;
+    let totalAssists = 0;
+    let totalSteals = 0;
+    let totalBlocks = 0;
+    let totalTurnovers = 0;
 
     for (const action of actions) {
       // Process shots
       if (action.action_type === ActionType.SHOT) {
         totalShots++;
 
-        // Check if shot was successful
-        const made = action.specification === ShotSpecification.MADE;
-
-        if (made) {
-          shotsMade++;
-          // Add points (stored in action.points)
+        // Add points if shot was made
+        if (action.specification === ShotSpecification.MADE) {
           totalPoints += action.points || 0;
-        }
-
-        // Break down by shot type based on points
-        const points = action.points || 0;
-        if (points === 1) {
-          freeThrowsAttempted++;
-          if (made) freeThrowsMade++;
-        } else if (points === 2) {
-          twoPointsAttempted++;
-          if (made) twoPointsMade++;
-        } else if (points === 3) {
-          threePointsAttempted++;
-          if (made) threePointsMade++;
         }
       }
 
       // Process rebounds
       if (action.action_type === ActionType.REBOUND) {
         totalRebounds++;
-
-        if (action.specification === ReboundSpecification.OFFENSIVE) {
-          offensiveRebounds++;
-        } else if (action.specification === ReboundSpecification.DEFENSIVE) {
-          defensiveRebounds++;
-        }
       }
 
       // Process fouls
       if (action.action_type === ActionType.FOUL) {
         totalFouls++;
+      }
 
-        if (action.specification === FoulSpecification.PERSONAL) {
-          personalFouls++;
-        } else if (action.specification === FoulSpecification.TECHNICAL) {
-          technicalFouls++;
-        } else if (action.specification === FoulSpecification.PENALITY) {
-          // Antisportive foul - could add separate counter if needed
-        } else if (action.specification === FoulSpecification.DISQUALIFICATION) {
-          // Disqualifying foul - could add separate counter if needed
-        }
+      // Process assists
+      if (action.action_type === ActionType.ASSIST) {
+        totalAssists++;
+      }
+
+      // Process steals
+      if (action.action_type === ActionType.STEAL) {
+        totalSteals++;
+      }
+
+      // Process blocks
+      if (action.action_type === ActionType.BLOCK) {
+        totalBlocks++;
+      }
+
+      // Process turnovers
+      if (action.action_type === ActionType.TURNOVER) {
+        totalTurnovers++;
       }
     }
 
     return {
       totalPoints,
       totalShots,
-      shotsMade,
-      freeThrowsAttempted,
-      freeThrowsMade,
-      twoPointsAttempted,
-      twoPointsMade,
-      threePointsAttempted,
-      threePointsMade,
       totalRebounds,
-      offensiveRebounds,
-      defensiveRebounds,
       totalFouls,
-      personalFouls,
-      offensiveFouls,
-      technicalFouls,
+      totalAssists,
+      totalSteals,
+      totalBlocks,
+      totalTurnovers,
     };
   }
 

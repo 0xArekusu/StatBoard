@@ -25,6 +25,9 @@ import {
   FoulSpecification,
 } from "../src/models/ActionTypes";
 
+// Specifications for new action types (no specifications needed, just the action itself)
+const NO_SPECIFICATION = "none";
+
 interface MockPlayer {
   jersey_number: number;
   name: string;
@@ -64,9 +67,13 @@ export function generateMockActions(
 
   // Action distributions (realistic basketball game)
   const distributions = {
-    shot: 0.60,      // 60% shots
-    rebound: 0.25,   // 25% rebounds
-    foul: 0.15       // 15% fouls
+    shot: 0.50,      // 50% shots
+    rebound: 0.20,   // 20% rebounds
+    foul: 0.12,      // 12% fouls
+    assist: 0.10,    // 10% assists
+    steal: 0.04,     // 4% steals
+    block: 0.02,     // 2% blocks
+    turnover: 0.02   // 2% turnovers
   };
 
   // Shot distributions
@@ -137,7 +144,7 @@ export function generateMockActions(
         ? ReboundSpecification.DEFENSIVE
         : ReboundSpecification.OFFENSIVE;
 
-    } else {
+    } else if (rand < distributions.shot + distributions.rebound + distributions.foul) {
       // FOUL ACTION
       actionType = ActionType.FOUL;
       // 50% personal, 30% technical, 15% penality, 5% disqualification
@@ -151,6 +158,26 @@ export function generateMockActions(
       } else {
         specification = FoulSpecification.DISQUALIFICATION;
       }
+
+    } else if (rand < distributions.shot + distributions.rebound + distributions.foul + distributions.assist) {
+      // ASSIST ACTION
+      actionType = ActionType.ASSIST;
+      specification = NO_SPECIFICATION;
+
+    } else if (rand < distributions.shot + distributions.rebound + distributions.foul + distributions.assist + distributions.steal) {
+      // STEAL ACTION
+      actionType = ActionType.STEAL;
+      specification = NO_SPECIFICATION;
+
+    } else if (rand < distributions.shot + distributions.rebound + distributions.foul + distributions.assist + distributions.steal + distributions.block) {
+      // BLOCK ACTION
+      actionType = ActionType.BLOCK;
+      specification = NO_SPECIFICATION;
+
+    } else {
+      // TURNOVER ACTION
+      actionType = ActionType.TURNOVER;
+      specification = NO_SPECIFICATION;
     }
 
     actions.push({
@@ -187,6 +214,10 @@ export function getMockActionsSummary(actions: MockAction[]) {
   const shots = actions.filter(a => a.action_type === ActionType.SHOT);
   const rebounds = actions.filter(a => a.action_type === ActionType.REBOUND);
   const fouls = actions.filter(a => a.action_type === ActionType.FOUL);
+  const assists = actions.filter(a => a.action_type === ActionType.ASSIST);
+  const steals = actions.filter(a => a.action_type === ActionType.STEAL);
+  const blocks = actions.filter(a => a.action_type === ActionType.BLOCK);
+  const turnovers = actions.filter(a => a.action_type === ActionType.TURNOVER);
 
   const summary = {
     total: actions.length,
@@ -197,6 +228,10 @@ export function getMockActionsSummary(actions: MockAction[]) {
     reboundsOffensive: rebounds.filter(a => a.specification === ReboundSpecification.OFFENSIVE).length,
     reboundsDefensive: rebounds.filter(a => a.specification === ReboundSpecification.DEFENSIVE).length,
     fouls: fouls.length,
+    assists: assists.length,
+    steals: steals.length,
+    blocks: blocks.length,
+    turnovers: turnovers.length,
     freeThrows: shots.filter(a => a.points === 1 || (a.points === 0 && shots.indexOf(a) % 10 === 0)).length,
     twoPointers: shots.filter(a => a.points === 2).length,
     threePointers: shots.filter(a => a.points === 3).length,
