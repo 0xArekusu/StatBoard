@@ -30,6 +30,7 @@ import {
   ReboundSpecification,
   FoulSpecification,
 } from "../src/models/ActionTypes";
+import { ACTION_DEFINITIONS } from "../src/config/actionConfig";
 
 interface MatchDetailsRouteParams {
   teamA: string;
@@ -48,7 +49,19 @@ interface MatchDetailsRouteParams {
   }>;
 }
 
-type SortOption = "points" | "name" | "shots" | "rebounds";
+type SortOption = "points" | "name" | "shots" | "rebounds" | "assists" | "steals" | "blocks" | "turnovers";
+
+// Sort options configuration for player stats
+const SORT_OPTIONS: Array<{ key: SortOption; label: string }> = [
+  { key: "points", label: "Points" },
+  { key: "shots", label: "Tirs" },
+  { key: "rebounds", label: "Rebonds" },
+  { key: "assists", label: "Passes" },
+  { key: "steals", label: "Interceptions" },
+  { key: "blocks", label: "Contres" },
+  { key: "turnovers", label: "Balles perdues" },
+  { key: "name", label: "Nom" },
+];
 
 export default function MatchDetailsScreen() {
   const navigation = useNavigation();
@@ -153,11 +166,7 @@ export default function MatchDetailsScreen() {
    */
   useEffect(() => {
     logInfo('MatchDetailsScreen', '🔀 Player stats sort option changed', {
-      sortBy,
-      sortingByPoints: sortBy === "points",
-      sortingByName: sortBy === "name",
-      sortingByShots: sortBy === "shots",
-      sortingByRebounds: sortBy === "rebounds"
+      sortBy
     });
   }, [sortBy]);
 
@@ -178,19 +187,23 @@ export default function MatchDetailsScreen() {
       (action) => action.player === playerId
     );
 
-    // Shots
+    // Shots - Include ALL shots
     const shots = playerActions.filter((action) => action.type === ActionType.SHOT);
     const madeShots = shots.filter((action) => action.specification === ShotSpecification.MADE);
     const missedShots = shots.filter((action) => action.specification === ShotSpecification.MISSED);
 
-    // Points by type
-    const onePtMade = madeShots.filter((a) => a.points === 1).length;
-    const twoPtMade = madeShots.filter((a) => a.points === 2).length;
-    const threePtMade = madeShots.filter((a) => a.points === 3).length;
+    // Points by type - Count by point value
+    const onePtShots = shots.filter((a) => a.points === 1);
+    const twoPtShots = shots.filter((a) => a.points === 2);
+    const threePtShots = shots.filter((a) => a.points === 3);
 
-    const onePtTotal = shots.filter((a) => a.points === 1).length;
-    const twoPtTotal = shots.filter((a) => a.points === 2).length;
-    const threePtTotal = shots.filter((a) => a.points === 3).length;
+    const onePtMade = onePtShots.filter((a) => a.specification === ShotSpecification.MADE).length;
+    const twoPtMade = twoPtShots.filter((a) => a.specification === ShotSpecification.MADE).length;
+    const threePtMade = threePtShots.filter((a) => a.specification === ShotSpecification.MADE).length;
+
+    const onePtTotal = onePtShots.length;
+    const twoPtTotal = twoPtShots.length;
+    const threePtTotal = threePtShots.length;
 
     // Total points
     const totalPoints =
@@ -213,6 +226,12 @@ export default function MatchDetailsScreen() {
     const technicalFouls = fouls.filter(
       (action) => action.specification === FoulSpecification.TECHNICAL
     ).length;
+
+    // Other actions
+    const assists = playerActions.filter((action) => action.type === ActionType.ASSIST).length;
+    const steals = playerActions.filter((action) => action.type === ActionType.STEAL).length;
+    const blocks = playerActions.filter((action) => action.type === ActionType.BLOCK).length;
+    const turnovers = playerActions.filter((action) => action.type === ActionType.TURNOVER).length;
 
     // Percentages
     const shotPercentage =
@@ -244,6 +263,10 @@ export default function MatchDetailsScreen() {
       fouls: fouls.length,
       personalFouls,
       technicalFouls,
+      assists,
+      steals,
+      blocks,
+      turnovers,
     };
   };
 
@@ -270,6 +293,14 @@ export default function MatchDetailsScreen() {
         return b.stats.shots - a.stats.shots;
       case "rebounds":
         return b.stats.rebounds - a.stats.rebounds;
+      case "assists":
+        return b.stats.assists - a.stats.assists;
+      case "steals":
+        return b.stats.steals - a.stats.steals;
+      case "blocks":
+        return b.stats.blocks - a.stats.blocks;
+      case "turnovers":
+        return b.stats.turnovers - a.stats.turnovers;
       default:
         return 0;
     }
@@ -506,56 +537,31 @@ export default function MatchDetailsScreen() {
             {/* Action Type Filter */}
             <View style={styles.filterCategory}>
               <Text style={styles.filterCategoryLabel}>Actions</Text>
-              <View style={styles.filterCards}>
-                <TouchableOpacity
-                  style={[
-                    styles.filterCard,
-                    courtFilterActionType.includes(ActionType.SHOT) && styles.filterCardActive,
-                  ]}
-                  onPress={() => toggleActionTypeFilter(ActionType.SHOT)}
-                >
-                  <Text
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                style={styles.filterCardsScroll}
+              >
+                {ACTION_DEFINITIONS.map((action) => (
+                  <TouchableOpacity
+                    key={action.id}
                     style={[
-                      styles.filterCardText,
-                      courtFilterActionType.includes(ActionType.SHOT) && styles.filterCardTextActive,
+                      styles.filterCard,
+                      courtFilterActionType.includes(action.id) && styles.filterCardActive,
                     ]}
+                    onPress={() => toggleActionTypeFilter(action.id)}
                   >
-                    🏀 Tirs
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[
-                    styles.filterCard,
-                    courtFilterActionType.includes(ActionType.REBOUND) && styles.filterCardActive,
-                  ]}
-                  onPress={() => toggleActionTypeFilter(ActionType.REBOUND)}
-                >
-                  <Text
-                    style={[
-                      styles.filterCardText,
-                      courtFilterActionType.includes(ActionType.REBOUND) && styles.filterCardTextActive,
-                    ]}
-                  >
-                    📥 Rebonds
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[
-                    styles.filterCard,
-                    courtFilterActionType.includes(ActionType.FOUL) && styles.filterCardActive,
-                  ]}
-                  onPress={() => toggleActionTypeFilter(ActionType.FOUL)}
-                >
-                  <Text
-                    style={[
-                      styles.filterCardText,
-                      courtFilterActionType.includes(ActionType.FOUL) && styles.filterCardTextActive,
-                    ]}
-                  >
-                    ⚠️ Fautes
-                  </Text>
-                </TouchableOpacity>
-              </View>
+                    <Text
+                      style={[
+                        styles.filterCardText,
+                        courtFilterActionType.includes(action.id) && styles.filterCardTextActive,
+                      ]}
+                    >
+                      {action.icon} {action.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
             </View>
 
             {/* Player Filter */}
@@ -753,7 +759,7 @@ export default function MatchDetailsScreen() {
 
               {/* Fouls Stats */}
               {(courtFilterActionType.length === 0 || courtFilterActionType.includes(ActionType.FOUL)) && (
-                <View style={[styles.liveStatGroup, styles.liveStatGroupLast]}>
+                <View style={styles.liveStatGroup}>
                   <Text style={styles.liveStatGroupLabel}>⚠️ Fautes</Text>
                   <Text style={styles.liveStatGroupValue}>
                     {(() => {
@@ -777,6 +783,23 @@ export default function MatchDetailsScreen() {
                   </View>
                 </View>
               )}
+
+              {/* Other Actions Stats (Assists, Steals, Blocks, Turnovers) */}
+              {ACTION_DEFINITIONS.filter(
+                action => ![ActionType.SHOT, ActionType.REBOUND, ActionType.FOUL].includes(action.id as ActionType)
+              ).map((action, index, array) => (
+                (courtFilterActionType.length === 0 || courtFilterActionType.includes(action.id)) && (
+                  <View key={action.id} style={[styles.liveStatGroup, index === array.length - 1 && styles.liveStatGroupLast]}>
+                    <Text style={styles.liveStatGroupLabel}>{action.icon} {action.label}</Text>
+                    <Text style={styles.liveStatGroupValue}>
+                      {(() => {
+                        const actionsToUse = teamMode === "BOTH" ? filteredCourtActions.filter(a => a.team === "A") : filteredCourtActions;
+                        return actionsToUse.filter(a => a.type === action.id).length;
+                      })()}
+                    </Text>
+                  </View>
+                )
+              ))}
             </View>
 
             {/* Center Column - Court: Basketball court SVG with action markers */}
@@ -874,7 +897,7 @@ export default function MatchDetailsScreen() {
 
                 {/* Fouls Stats */}
                 {(courtFilterActionType.length === 0 || courtFilterActionType.includes(ActionType.FOUL)) && (
-                  <View style={[styles.liveStatGroup, styles.liveStatGroupLast]}>
+                  <View style={styles.liveStatGroup}>
                     <Text style={styles.liveStatGroupLabel}>⚠️ Fautes</Text>
                     <Text style={styles.liveStatGroupValue}>
                       {(() => {
@@ -898,6 +921,23 @@ export default function MatchDetailsScreen() {
                     </View>
                   </View>
                 )}
+
+                {/* Other Actions Stats (Assists, Steals, Blocks, Turnovers) */}
+                {ACTION_DEFINITIONS.filter(
+                  action => ![ActionType.SHOT, ActionType.REBOUND, ActionType.FOUL].includes(action.id as ActionType)
+                ).map((action, index, array) => (
+                  (courtFilterActionType.length === 0 || courtFilterActionType.includes(action.id)) && (
+                    <View key={action.id} style={[styles.liveStatGroup, index === array.length - 1 && styles.liveStatGroupLast]}>
+                      <Text style={styles.liveStatGroupLabel}>{action.icon} {action.label}</Text>
+                      <Text style={styles.liveStatGroupValue}>
+                        {(() => {
+                          const actionsTeamB = filteredCourtActions.filter(a => a.team === "B");
+                          return actionsTeamB.filter(a => a.type === action.id).length;
+                        })()}
+                      </Text>
+                    </View>
+                  )
+                ))}
               </View>
             ) : (
               <View style={styles.rightPanel}>
@@ -969,76 +1009,31 @@ export default function MatchDetailsScreen() {
           </View>
         )}
 
-        {/* Sort buttons: Sort players by points, shots, rebounds, or name */}
+        {/* Sort buttons: Sort players by different stats */}
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
           style={styles.sortButtons}
         >
-          <TouchableOpacity
-            style={[
-              styles.sortButton,
-              sortBy === "points" && styles.sortButtonActive,
-            ]}
-            onPress={() => setSortBy("points")}
-          >
-            <Text
+          {SORT_OPTIONS.map((option) => (
+            <TouchableOpacity
+              key={option.key}
               style={[
-                styles.sortButtonText,
-                sortBy === "points" && styles.sortButtonTextActive,
+                styles.sortButton,
+                sortBy === option.key && styles.sortButtonActive,
               ]}
+              onPress={() => setSortBy(option.key)}
             >
-              Points
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[
-              styles.sortButton,
-              sortBy === "shots" && styles.sortButtonActive,
-            ]}
-            onPress={() => setSortBy("shots")}
-          >
-            <Text
-              style={[
-                styles.sortButtonText,
-                sortBy === "shots" && styles.sortButtonTextActive,
-              ]}
-            >
-              Tirs
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[
-              styles.sortButton,
-              sortBy === "rebounds" && styles.sortButtonActive,
-            ]}
-            onPress={() => setSortBy("rebounds")}
-          >
-            <Text
-              style={[
-                styles.sortButtonText,
-                sortBy === "rebounds" && styles.sortButtonTextActive,
-              ]}
-            >
-              Rebonds
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[
-              styles.sortButton,
-              sortBy === "name" && styles.sortButtonActive,
-            ]}
-            onPress={() => setSortBy("name")}
-          >
-            <Text
-              style={[
-                styles.sortButtonText,
-                sortBy === "name" && styles.sortButtonTextActive,
-              ]}
-            >
-              Nom
-            </Text>
-          </TouchableOpacity>
+              <Text
+                style={[
+                  styles.sortButtonText,
+                  sortBy === option.key && styles.sortButtonTextActive,
+                ]}
+              >
+                {option.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
         </ScrollView>
           </View>
 
@@ -1058,62 +1053,73 @@ export default function MatchDetailsScreen() {
             {/* Player stats: Detailed breakdown by category */}
             <View style={styles.playerStats}>
               {/* Shooting stats: Total shots and breakdown by point value (1pt, 2pts, 3pts) */}
-              <View style={styles.statSection}>
-                <Text style={styles.statSectionTitle}>Tirs</Text>
-                <View style={styles.statRow}>
-                  <Text style={styles.statLabel}>Total</Text>
-                  <Text style={styles.statValue}>
-                    {player.stats.madeShots}/{player.stats.shots} ({player.stats.shotPercentage}%)
-                  </Text>
-                </View>
-                {player.stats.onePtTotal > 0 && (
+              {player.stats.shots > 0 && (
+                <View style={styles.statSection}>
+                  <Text style={styles.statSectionTitle}>Tirs</Text>
+                  <View style={styles.statRow}>
+                    <Text style={styles.statLabel}>Total</Text>
+                    <Text style={styles.statValue}>
+                      {player.stats.madeShots}/{player.stats.shots} ({player.stats.shotPercentage}%)
+                    </Text>
+                  </View>
                   <View style={styles.statRow}>
                     <Text style={styles.statLabel}>1pt</Text>
                     <Text style={styles.statValue}>
                       {player.stats.onePtMade}/{player.stats.onePtTotal} ({player.stats.onePtPercentage}%)
                     </Text>
                   </View>
-                )}
-                {player.stats.twoPtTotal > 0 && (
                   <View style={styles.statRow}>
                     <Text style={styles.statLabel}>2pts</Text>
                     <Text style={styles.statValue}>
                       {player.stats.twoPtMade}/{player.stats.twoPtTotal} ({player.stats.twoPtPercentage}%)
                     </Text>
                   </View>
-                )}
-                {player.stats.threePtTotal > 0 && (
                   <View style={styles.statRow}>
                     <Text style={styles.statLabel}>3pts</Text>
                     <Text style={styles.statValue}>
                       {player.stats.threePtMade}/{player.stats.threePtTotal} ({player.stats.threePtPercentage}%)
                     </Text>
                   </View>
-                )}
-              </View>
-
-              {/* Other stats: Rebounds (offensive/defensive) and Fouls (personal/technical) */}
-              {(player.stats.rebounds > 0 || player.stats.fouls > 0) && (
-                <View style={styles.statSection}>
-                  <Text style={styles.statSectionTitle}>Autres</Text>
-                  {player.stats.rebounds > 0 && (
-                    <View style={styles.statRow}>
-                      <Text style={styles.statLabel}>Rebonds</Text>
-                      <Text style={styles.statValue}>
-                        {player.stats.rebounds} (Off: {player.stats.offensiveRebounds} / Def: {player.stats.defensiveRebounds})
-                      </Text>
-                    </View>
-                  )}
-                  {player.stats.fouls > 0 && (
-                    <View style={styles.statRow}>
-                      <Text style={styles.statLabel}>Fautes</Text>
-                      <Text style={styles.statValue}>
-                        {player.stats.fouls} (Pers: {player.stats.personalFouls} / Tech: {player.stats.technicalFouls})
-                      </Text>
-                    </View>
-                  )}
                 </View>
               )}
+
+              {/* Other stats: Dynamic rendering based on player stats */}
+              {(() => {
+                const hasOtherStats = player.stats.rebounds > 0 || player.stats.fouls > 0 ||
+                  player.stats.assists > 0 || player.stats.steals > 0 ||
+                  player.stats.blocks > 0 || player.stats.turnovers > 0;
+
+                if (!hasOtherStats) return null;
+
+                // Map of stat keys to their display config
+                const otherStatsConfig = [
+                  { key: 'rebounds', label: 'Rebonds', detail: `(Off: ${player.stats.offensiveRebounds} / Def: ${player.stats.defensiveRebounds})` },
+                  { key: ActionType.ASSIST, label: ACTION_DEFINITIONS.find(a => a.id === ActionType.ASSIST)?.label || 'Passes', detail: null },
+                  { key: ActionType.STEAL, label: ACTION_DEFINITIONS.find(a => a.id === ActionType.STEAL)?.label || 'Interceptions', detail: null },
+                  { key: ActionType.BLOCK, label: ACTION_DEFINITIONS.find(a => a.id === ActionType.BLOCK)?.label || 'Contres', detail: null },
+                  { key: ActionType.TURNOVER, label: ACTION_DEFINITIONS.find(a => a.id === ActionType.TURNOVER)?.label || 'Balles perdues', detail: null },
+                  { key: 'fouls', label: 'Fautes', detail: `(Pers: ${player.stats.personalFouls} / Tech: ${player.stats.technicalFouls})` },
+                ];
+
+                return (
+                  <View style={styles.statSection}>
+                    <Text style={styles.statSectionTitle}>Autres</Text>
+                    {otherStatsConfig.map(({ key, label, detail }) => {
+                      const value = player.stats[key as keyof typeof player.stats];
+                      if (!value || value === 0) return null;
+
+                      return (
+                        <View key={key} style={styles.statRow}>
+                          <Text style={styles.statLabel}>{label}</Text>
+                          <Text style={styles.statValue}>
+                            {value} {detail}
+                          </Text>
+                        </View>
+                      );
+                    })}
+                  </View>
+                );
+              })()}
             </View>
           </View>
         ))}
