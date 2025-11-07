@@ -131,10 +131,8 @@ export function generateMockActions(
         ? ShotSpecification.MADE
         : ShotSpecification.MISSED;
 
-      // If missed, no points
-      if (specification === ShotSpecification.MISSED) {
-        points = 0;
-      }
+      // Keep the points value even if missed (for statistics tracking)
+      // The points field indicates the type of shot (1pt/2pt/3pt), not the points scored
 
     } else if (rand < distributions.shot + distributions.rebound) {
       // REBOUND ACTION
