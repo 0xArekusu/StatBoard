@@ -18,6 +18,7 @@ import {
   ScrollView,
   TouchableOpacity,
   SafeAreaView,
+  BackHandler,
 } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
@@ -90,6 +91,18 @@ export default function MatchDetailsScreen() {
   const [courtFilterPlayers, setCourtFilterPlayers] = useState<string[]>([]); // Player identifiers "team-num" (e.g., "A-5", "B-7")
   const [courtFilterActionType, setCourtFilterActionType] = useState<string[]>([]); // ["shot", "rebound", "foul"]
   const [courtFilterPeriod, setCourtFilterPeriod] = useState<number[]>([]); // [1, 2, 3, 4] or [1, 2]
+
+  /**
+   * Handle hardware back button
+   */
+  useEffect(() => {
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
+      navigation.goBack();
+      return true; // Prevent default behavior
+    });
+
+    return () => backHandler.remove();
+  }, [navigation]);
 
   /**
    * Log screen mount when user arrives on the view
