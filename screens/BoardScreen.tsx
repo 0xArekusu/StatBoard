@@ -90,6 +90,7 @@ import {
   REBOUND_SPECIFICATION_FR,
   FOUL_SPECIFICATION_FR,
 } from "../src/models/ActionTypes";
+import { getActionColor } from "../src/config/actionConfig";
 
 // Modal layout constants (for the new ActionModal)
 const MODAL_WIDTH = 240;
@@ -179,41 +180,10 @@ const convertClubPlayersToBoard = (
 
 /**
  * Get marker color based on action type and specification
+ * @deprecated Now using centralized getActionColor from actionConfig
  */
-const getMarkerColor = (actionType: string, specification?: string): string => {
-  // Shot
-  if (actionType === ActionType.SHOT) {
-    return specification === ShotSpecification.MADE ? "#4CAF50" : "#F44336"; // green if successful, red if missed
-  }
-  // Rebound
-  if (actionType === ActionType.REBOUND) {
-    return specification === ReboundSpecification.OFFENSIVE ? "#FF9800" : "#2196F3"; // orange if offensive, blue if defensive
-  }
-  // Foul
-  if (actionType === ActionType.FOUL) {
-    if (specification === FoulSpecification.TECHNICAL) return "#9C27B0"; // purple
-    if (specification === FoulSpecification.DISQUALIFICATION) return "#000000"; // black
-    if (specification === FoulSpecification.PENALITY) return "#FF6F00"; // dark orange
-    return "#E74C3C"; // red for personal
-  }
-  // Assist
-  if (actionType === ActionType.ASSIST) {
-    return "#00BCD4"; // cyan
-  }
-  // Steal
-  if (actionType === ActionType.STEAL) {
-    return "#8BC34A"; // light green
-  }
-  // Block
-  if (actionType === ActionType.BLOCK) {
-    return "#FF5722"; // deep orange
-  }
-  // Turnover
-  if (actionType === ActionType.TURNOVER) {
-    return "#795548"; // brown
-  }
-  // Default color
-  return "#757575";
+const getMarkerColor = (actionType: string, specification?: string, points?: number): string => {
+  return getActionColor(actionType, specification, points);
 };
 
 /**
@@ -2972,8 +2942,8 @@ export default function BasketballCourt() {
           setSubstitutesTeamB([]);
 
           // Reset coach
-          setCoachTeamA({ id: 21, name: "Coach Équipe A", photoUrl: null, isCoach: true });
-          setCoachTeamB({ id: 22, name: "Coach Équipe B", photoUrl: null, isCoach: true });
+          setCoachTeamA({ id: 21, name: "Coach Équipe A", photoUrl: undefined, isCoach: true });
+          setCoachTeamB({ id: 22, name: "Coach Équipe B", photoUrl: undefined, isCoach: true });
 
           setInitModalVisible(false);
           if (hasShownTeamSelection) {

@@ -24,6 +24,7 @@ import {
   ReboundSpecification,
   FoulSpecification,
 } from "../src/models/ActionTypes";
+import { ACTION_DEFINITIONS } from "../src/config/actionConfig";
 
 // Types for the action system
 
@@ -143,118 +144,16 @@ export interface ActionSystemProps {
 
 /**
  * ACTION_DEFINITIONS: Available basketball actions
- * Each action has specifications (made/missed, offensive/defensive, etc.)
- * Shots have additional points selection (1pt, 2pt, 3pt)
+ * Now imported from centralized config
+ * @deprecated Import from actionConfig instead
  */
-export const ACTION_DEFINITIONS: ActionDefinition[] = [
-  {
-    id: ActionType.SHOT,
-    icon: "🏀",
-    label: "Tir",
-    backgroundColor: "#FF6B35",
-    description: "Enregistrer un tir",
-    hasPointsSelection: true,
-    pointsOptions: [
-      {
-        id: 1,
-        label: "1 point",
-        icon: "1️⃣",
-        color: "#9C27B0",
-      },
-      {
-        id: 2,
-        label: "2 points",
-        icon: "2️⃣",
-        color: "#2196F3",
-      },
-      {
-        id: 3,
-        label: "3 points",
-        icon: "3️⃣",
-        color: "#FF9800",
-      },
-    ],
-    specifications: [
-      {
-        id: ShotSpecification.MADE,
-        label: "Réussi",
-        icon: "✅",
-        color: "#4CAF50",
-      },
-      {
-        id: ShotSpecification.MISSED,
-        label: "Raté",
-        icon: "❌",
-        color: "#F44336",
-      },
-    ],
-  },
-  {
-    id: ActionType.REBOUND,
-    icon: "📥",
-    label: "Rebond",
-    backgroundColor: "#4A90E2",
-    description: "Action de rebond",
-    specifications: [
-      {
-        id: ReboundSpecification.OFFENSIVE,
-        label: "Offensif",
-        icon: "🔵",
-        color: "#FF9800",
-      },
-      {
-        id: ReboundSpecification.DEFENSIVE,
-        label: "Défensif",
-        icon: "🛡️",
-        color: "#2196F3",
-      },
-    ],
-  },
-  {
-    id: ActionType.FOUL,
-    icon: "⚠️",
-    label: "Faute",
-    backgroundColor: "#E74C3C",
-    description: "Faute commise",
-    specifications: [
-      {
-        id: FoulSpecification.PERSONAL,
-        label: "Personnelle",
-        icon: "👤",
-        color: "#E74C3C",
-      },
-      {
-        id: FoulSpecification.TECHNICAL,
-        label: "Technique",
-        icon: "⚡",
-        color: "#9C27B0",
-      },
-    ],
-  },
-];
+export { ACTION_DEFINITIONS } from "../src/config/actionConfig";
 
 /**
  * getActionIcon: Returns the appropriate icon for displaying an action on the court
- * Uses specification icon if available, otherwise falls back to action type icon
- *
- * @param actionType - The action type ID (e.g., "tir", "rebond", "faute")
- * @param specification - Optional specification ID (e.g., "reussi", "rate")
- * @returns Emoji icon string for display
+ * @deprecated Use getActionEmoji from actionConfig instead
  */
-export const getActionIcon = (
-  actionType: string,
-  specification?: string
-): string => {
-  const action = ACTION_DEFINITIONS.find((a) => a.id === actionType);
-  if (!action) return "❓";
-
-  if (specification) {
-    const spec = action.specifications.find((s) => s.id === specification);
-    return spec ? spec.icon : action.icon;
-  }
-
-  return action.icon;
-};
+export { getActionEmoji as getActionIcon } from "../src/config/actionConfig";
 
 /**
  * useActionSystem: React hook for managing action recording state
@@ -329,30 +228,44 @@ export const useActionSystem = () => {
 
   /**
    * selectActionType: User selected an action type (shot, rebound, foul)
-   * If shot, advances to step 3 (points), otherwise skips to step 4 (specification)
+   * If shot, advances to step 3 (points), otherwise skips to step 4 (specification) or 5 (player)
    */
   const selectActionType = useCallback((actionType: string) => {
-    const action = ACTION_DEFINITIONS.find((a) => a.id === actionType);
+    const action = ACTION_DEFINITIONS.find((a: { id: string }) => a.id === actionType);
     const hasPointsSelection = action?.hasPointsSelection || false;
+    const hasSpecifications = action?.specifications && action.specifications.length > 0;
+
+    let nextStep = 4; // Default to specifications
+    if (hasPointsSelection) {
+      nextStep = 3; // Go to points selection for shots
+    } else if (!hasSpecifications) {
+      nextStep = 5; // Skip directly to player selection if no specifications
+    }
 
     setState((prev) => ({
       ...prev,
       actionType,
-      // If action has points selection (shot), go to step 3 (points), otherwise skip to step 4 (spec)
-      currentStep: hasPointsSelection ? 3 : 4,
+      actionSpec: !hasSpecifications ? "none" : null, // Auto-set spec if none available
+      currentStep: nextStep,
     }));
   }, []);
 
   /**
    * selectActionPoints: User selected shot points (1pt, 2pt, 3pt)
-   * Advances to step 4 (specification)
+   * Advances to step 4 (specification) or 5 (player) if no specifications
    */
   const selectActionPoints = useCallback((points: number) => {
-    setState((prev) => ({
-      ...prev,
-      actionPoints: points,
-      currentStep: 4, // Move to specification selection
-    }));
+    setState((prev) => {
+      const action = ACTION_DEFINITIONS.find((a: { id: string }) => a.id === prev.actionType);
+      const hasSpecifications = action?.specifications && action.specifications.length > 0;
+
+      return {
+        ...prev,
+        actionPoints: points,
+        actionSpec: !hasSpecifications ? "none" : null,
+        currentStep: hasSpecifications ? 4 : 5,
+      };
+    });
   }, []);
 
   /**
@@ -380,7 +293,7 @@ export const useActionSystem = () => {
 
   /**
    * goBack: Navigate to previous step
-   * Intelligently handles skipped steps (e.g., points selection for non-shots)
+   * Intelligently handles skipped steps (e.g., points selection for non-shots, specifications for actions without them)
    * Clears data from steps being navigated away from
    */
   const goBack = useCallback(() => {
@@ -388,12 +301,20 @@ export const useActionSystem = () => {
       if (prev.currentStep > 1) {
         let newStep = prev.currentStep - 1;
 
-        // If going back from step 4 (spec) and action doesn't have points, skip to step 2 (action type)
-        if (newStep === 3 && prev.actionType) {
+        if (prev.actionType) {
           const action = ACTION_DEFINITIONS.find(
-            (a) => a.id === prev.actionType
+            (a: { id: string }) => a.id === prev.actionType
           );
-          if (!action?.hasPointsSelection) {
+          const hasPointsSelection = action?.hasPointsSelection || false;
+          const hasSpecifications = action?.specifications && action.specifications.length > 0;
+
+          // If going back from step 5 (player) and action has no specifications, skip to step 3 or 2
+          if (newStep === 4 && !hasSpecifications) {
+            newStep = hasPointsSelection ? 3 : 2;
+          }
+
+          // If going back from step 4 (spec) and action doesn't have points, skip to step 2 (action type)
+          if (newStep === 3 && !hasPointsSelection) {
             newStep = 2;
           }
         }

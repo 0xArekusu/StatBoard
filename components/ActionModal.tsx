@@ -33,7 +33,10 @@ import {
   StyleSheet,
   ScrollView,
 } from "react-native";
-import { ACTION_DEFINITIONS } from "./ActionSystem";
+import { ACTION_DEFINITIONS } from "../src/config/actionConfig";
+
+// Debug: Check if ACTION_DEFINITIONS is loaded
+console.log('[ActionModal] ACTION_DEFINITIONS loaded:', ACTION_DEFINITIONS?.length, 'actions');
 
 interface ActionModalProps {
   visible: boolean;

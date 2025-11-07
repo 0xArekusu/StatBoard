@@ -26,7 +26,7 @@ import {
   ScrollView,
 } from "react-native";
 import { ActionData } from "./ActionSystemModal";
-import { ActionType } from "../src/models/ActionTypes";
+import { getAllActionTypes } from "../src/config/actionConfig";
 
 interface Player {
   id: number;
@@ -53,15 +53,13 @@ interface FilterOptions {
   actionTypes: string[];
 }
 
-const ACTION_TYPES = [
-  { key: ActionType.SHOT, label: "Tirs", icon: "🏀" },
-  { key: ActionType.REBOUND, label: "Rebonds", icon: "📥" },
-  { key: ActionType.FOUL, label: "Fautes", icon: "🚨" },
-  { key: ActionType.TURNOVER, label: "Pertes de balle", icon: "💥" },
-  { key: ActionType.ASSIST, label: "Passes décisives", icon: "🎯" },
-  { key: ActionType.STEAL, label: "Interceptions", icon: "🕵️" },
-  { key: ActionType.BLOCK, label: "Contres", icon: "🚫" },
-];
+// Get action types from centralized config
+const ACTION_TYPES = getAllActionTypes().map((config) => ({
+  key: config.id,
+  label: config.label,
+  icon: config.emoji,
+  color: config.color,
+}));
 
 export default function FilterBottomSheet({
   visible,
@@ -258,8 +256,10 @@ export default function FilterBottomSheet({
                     key={actionType.key}
                     style={[
                       styles.actionTypeButton,
-                      selectedActionTypes.includes(actionType.key) &&
-                        styles.optionButtonSelected,
+                      selectedActionTypes.includes(actionType.key) && {
+                        backgroundColor: actionType.color,
+                        borderColor: actionType.color,
+                      },
                     ]}
                     onPress={() => toggleActionType(actionType.key)}
                   >
