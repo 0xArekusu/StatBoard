@@ -10,6 +10,7 @@ import { StyleSheet, Text, View, ActivityIndicator } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
 import { logInfo } from "../utils/logger";
+import Logo from "../components/icons/Logo";
 
 export default function SplashScreen() {
   useEffect(() => {
@@ -18,15 +19,11 @@ export default function SplashScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Logo placeholder - uncomment when logo asset is available */}
-      {/* <Image
-        source={require('../assets/logo.png')}
-        style={styles.logo}
-        resizeMode="contain"
-      /> */}
+      {/* Logo */}
+      <Logo width={350} />
 
       {/* Loading indicator */}
-      <ActivityIndicator size="large" color="#007AFF" />
+      <ActivityIndicator size="large" color="#FF6B35" style={styles.loader} />
       <Text style={styles.loadingText}>Chargement...</Text>
       <StatusBar style="auto" />
     </View>
@@ -41,9 +38,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  // Loading indicator with margin
+  loader: {
+    marginTop: 40,
+  },
   // Loading text displayed below spinner
   loadingText: {
     fontSize: 18,
     color: "#666",
+    marginTop: 16,
   },
 });

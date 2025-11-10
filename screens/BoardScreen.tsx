@@ -62,7 +62,7 @@ import BasketballCourtSVG from "../components/BasketballCourtSVG";
 import SubstitutesManager from "../components/SubstitutesManager";
 import CoachEditModal from "../components/CoachEditModal";
 import ResumeMatchModal from "../components/ResumeMatchModal";
-import JerseyIcon from "../components/JerseyIcon";
+import JerseyIcon from "../components/icons/JerseyIcon";
 import MatchStatusBar from "../components/MatchStatusBar";
 import MatchConfirmationModal from "../components/MatchConfirmationModal";
 import { MatchManager } from "../src/services/match/MatchManager";
@@ -77,19 +77,12 @@ import { supabase } from "../src/config/supabase";
 import { ServiceFactory } from "../services/ServiceFactory";
 import { useAuth } from "../src/contexts/AuthContext";
 import { logInfo, logError, logWarn } from "../utils/logger";
-import { generateMockActions, getMockActionsSummary } from "../utils/mockActions";
-import { DEBUG } from "../src/config/debug";
 import {
-  ActionType,
-  ShotSpecification,
-  ReboundSpecification,
-  FoulSpecification,
-  isShotMade,
-  ACTION_TYPE_FR,
-  SHOT_SPECIFICATION_FR,
-  REBOUND_SPECIFICATION_FR,
-  FOUL_SPECIFICATION_FR,
-} from "../src/models/ActionTypes";
+  generateMockActions,
+  getMockActionsSummary,
+} from "../utils/mockActions";
+import { DEBUG } from "../src/config/debug";
+import { ActionType, ShotSpecification } from "../src/models/ActionTypes";
 import { getActionColor } from "../src/config/actionConfig";
 
 // Modal layout constants (for the new ActionModal)
@@ -182,7 +175,11 @@ const convertClubPlayersToBoard = (
  * Get marker color based on action type and specification
  * @deprecated Now using centralized getActionColor from actionConfig
  */
-const getMarkerColor = (actionType: string, specification?: string, points?: number): string => {
+const getMarkerColor = (
+  actionType: string,
+  specification?: string,
+  points?: number
+): string => {
   return getActionColor(actionType, specification, points);
 };
 
@@ -1273,7 +1270,10 @@ export default function BasketballCourt() {
 
     completedActions.forEach((action) => {
       // A successful shot scores points
-      if (action.type === ActionType.SHOT && action.specification === ShotSpecification.MADE) {
+      if (
+        action.type === ActionType.SHOT &&
+        action.specification === ShotSpecification.MADE
+      ) {
         // Use the points field from the action (1, 2, or 3 points)
         const points = action.points || 0;
 
@@ -1559,33 +1559,41 @@ export default function BasketballCourt() {
       const actionsPerPeriod = 50; // 50 actions per period (was 25)
       const totalActions = totalPeriods * actionsPerPeriod;
 
-      logInfo("BoardScreen", `🧪 Generating ${totalActions} mock actions for load testing`, {
-        matchId: currentMatch.id,
-        matchFormat,
-        totalPeriods,
-        actionsPerPeriod,
-        periodDuration,
-        teamMode
-      });
+      logInfo(
+        "BoardScreen",
+        `🧪 Generating ${totalActions} mock actions for load testing`,
+        {
+          matchId: currentMatch.id,
+          matchFormat,
+          totalPeriods,
+          actionsPerPeriod,
+          periodDuration,
+          teamMode,
+        }
+      );
 
       // Get team A players (your club team)
-      const teamAPlayers = [...players, ...substitutesTeamA].map(p => ({
+      const teamAPlayers = [...players, ...substitutesTeamA].map((p) => ({
         jersey_number: p.num,
-        name: p.name
+        name: p.name,
       }));
 
       if (teamAPlayers.length === 0) {
-        logWarn("BoardScreen", "⚠️ No Team A players found, cannot generate actions");
+        logWarn(
+          "BoardScreen",
+          "⚠️ No Team A players found, cannot generate actions"
+        );
         return;
       }
 
       // Get team B players if in BOTH mode
-      const teamBPlayers = teamMode === "BOTH"
-        ? substitutesTeamB.map(p => ({
-            jersey_number: p.num,
-            name: p.name
-          }))
-        : undefined;
+      const teamBPlayers =
+        teamMode === "BOTH"
+          ? substitutesTeamB.map((p) => ({
+              jersey_number: p.num,
+              name: p.name,
+            }))
+          : undefined;
 
       // Generate mock actions for all periods
       const mockActions = generateMockActions(
@@ -1611,11 +1619,15 @@ export default function BasketballCourt() {
         await actionRepository.createBatch(batch);
         insertedCount += batch.length;
 
-        logInfo("BoardScreen", `💾 Inserted batch ${Math.floor(i / batchSize) + 1}`, {
-          batchSize: batch.length,
-          totalInserted: insertedCount,
-          remaining: mockActions.length - insertedCount
-        });
+        logInfo(
+          "BoardScreen",
+          `💾 Inserted batch ${Math.floor(i / batchSize) + 1}`,
+          {
+            batchSize: batch.length,
+            totalInserted: insertedCount,
+            remaining: mockActions.length - insertedCount,
+          }
+        );
       }
 
       // Reload actions from database to display on court
@@ -1625,14 +1637,17 @@ export default function BasketballCourt() {
         matchId: currentMatch.id,
         totalActions: mockActions.length,
         totalPoints: summary.totalPoints,
-        shotPercentage: `${Math.round((summary.shotsMade / summary.shots) * 100)}%`
+        shotPercentage: `${Math.round(
+          (summary.shotsMade / summary.shots) * 100
+        )}%`,
       });
 
-      alert(`✅ 100 actions mockées chargées!\n\nRésumé:\n- Tirs: ${summary.shots} (${summary.shotsMade} réussis)\n- Rebonds: ${summary.rebounds}\n- Fautes: ${summary.fouls}\n- Points totaux: ${summary.totalPoints}`);
-
+      alert(
+        `✅ 100 actions mockées chargées!\n\nRésumé:\n- Tirs: ${summary.shots} (${summary.shotsMade} réussis)\n- Rebonds: ${summary.rebounds}\n- Fautes: ${summary.fouls}\n- Points totaux: ${summary.totalPoints}`
+      );
     } catch (error) {
       logError("BoardScreen", "❌ Error loading mock actions", {
-        error: error instanceof Error ? error.message : error
+        error: error instanceof Error ? error.message : error,
       });
       alert("❌ Erreur lors du chargement des actions mockées");
     }
@@ -2011,7 +2026,10 @@ export default function BasketballCourt() {
     let teamBDisplayName = foundMatch.team_b_name;
 
     // Check if team_a_name or team_b_name is a UUID (contains dashes in UUID format)
-    const isUUID = (str: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+    const isUUID = (str: string) =>
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+        str
+      );
 
     if (foundMatch.team_id && user) {
       try {
@@ -2019,30 +2037,42 @@ export default function BasketballCourt() {
 
         // Load team A if it's a UUID
         if (isUUID(foundMatch.team_a_name)) {
-          logInfo("BoardScreen", "📡 Loading Team A name from Supabase (UUID detected)", {
-            teamId: foundMatch.team_a_name
-          });
+          logInfo(
+            "BoardScreen",
+            "📡 Loading Team A name from Supabase (UUID detected)",
+            {
+              teamId: foundMatch.team_a_name,
+            }
+          );
           const teamA = await teamService.getTeamById(foundMatch.team_a_name);
           if (teamA) {
             teamADisplayName = teamA.name;
-            logInfo("BoardScreen", "✅ Team A name loaded", { name: teamA.name });
+            logInfo("BoardScreen", "✅ Team A name loaded", {
+              name: teamA.name,
+            });
           }
         }
 
         // Load team B if it's a UUID
         if (isUUID(foundMatch.team_b_name)) {
-          logInfo("BoardScreen", "📡 Loading Team B name from Supabase (UUID detected)", {
-            teamId: foundMatch.team_b_name
-          });
+          logInfo(
+            "BoardScreen",
+            "📡 Loading Team B name from Supabase (UUID detected)",
+            {
+              teamId: foundMatch.team_b_name,
+            }
+          );
           const teamB = await teamService.getTeamById(foundMatch.team_b_name);
           if (teamB) {
             teamBDisplayName = teamB.name;
-            logInfo("BoardScreen", "✅ Team B name loaded", { name: teamB.name });
+            logInfo("BoardScreen", "✅ Team B name loaded", {
+              name: teamB.name,
+            });
           }
         }
       } catch (error) {
         logError("BoardScreen", "❌ Error loading team names from Supabase", {
-          error: error instanceof Error ? error.message : error
+          error: error instanceof Error ? error.message : error,
         });
         // Continue with UUID as fallback
       }
@@ -2857,21 +2887,23 @@ export default function BasketballCourt() {
       {DEBUG && !preGameMode && currentMatch && (
         <TouchableOpacity
           style={{
-            position: 'absolute',
+            position: "absolute",
             top: 80,
             right: 10,
-            backgroundColor: '#FF9800',
+            backgroundColor: "#FF9800",
             padding: 10,
             borderRadius: 8,
             zIndex: 1000,
-            flexDirection: 'row',
-            alignItems: 'center',
+            flexDirection: "row",
+            alignItems: "center",
             gap: 5,
           }}
           onPress={loadMockActions}
         >
-          <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 12 }}>🧪</Text>
-          <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 12 }}>
+          <Text style={{ color: "#fff", fontWeight: "bold", fontSize: 12 }}>
+            🧪
+          </Text>
+          <Text style={{ color: "#fff", fontWeight: "bold", fontSize: 12 }}>
             Load 100 Actions
           </Text>
         </TouchableOpacity>
@@ -2942,7 +2974,10 @@ export default function BasketballCourt() {
         canGoBack={hasShownTeamSelection}
         hasClubTeam={selectedTeam !== null}
         onBack={() => {
-          logInfo('BoardScreen', '🔙 User going back from InitTeamModal to TeamSelectionModal');
+          logInfo(
+            "BoardScreen",
+            "🔙 User going back from InitTeamModal to TeamSelectionModal"
+          );
 
           // Reset all team-related state to allow fresh selection
           setSelectedTeam(null);
@@ -2959,8 +2994,18 @@ export default function BasketballCourt() {
           setSubstitutesTeamB([]);
 
           // Reset coach
-          setCoachTeamA({ id: 21, name: "Coach Équipe A", photoUrl: undefined, isCoach: true });
-          setCoachTeamB({ id: 22, name: "Coach Équipe B", photoUrl: undefined, isCoach: true });
+          setCoachTeamA({
+            id: 21,
+            name: "Coach Équipe A",
+            photoUrl: undefined,
+            isCoach: true,
+          });
+          setCoachTeamB({
+            id: 22,
+            name: "Coach Équipe B",
+            photoUrl: undefined,
+            isCoach: true,
+          });
 
           setInitModalVisible(false);
           if (hasShownTeamSelection) {

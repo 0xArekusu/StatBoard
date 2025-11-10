@@ -28,7 +28,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import BasketballCourtSVG from "../components/BasketballCourtSVG";
 import ClubTeamsTab from "../components/ClubTeamsTab";
-import JerseyIcon from "../components/JerseyIcon";
+import JerseyIcon from "../components/icons/JerseyIcon";
 import ColorPicker, {
   Panel1,
   HueSlider,
@@ -92,16 +92,16 @@ export default function ClubFormScreen() {
    */
   useEffect(() => {
     if (isEditMode) {
-      logInfo('ClubFormScreen', '📱 Screen mounted - Edit mode', {
+      logInfo("ClubFormScreen", "📱 Screen mounted - Edit mode", {
         clubId,
         userId: user?.id,
-        userEmail: user?.email
+        userEmail: user?.email,
       });
       loadClub();
     } else {
-      logInfo('ClubFormScreen', '📱 Screen mounted - Create mode (new club)', {
+      logInfo("ClubFormScreen", "📱 Screen mounted - Create mode (new club)", {
         userId: user?.id,
-        userEmail: user?.email
+        userEmail: user?.email,
       });
     }
   }, [clubId]);
@@ -113,18 +113,20 @@ export default function ClubFormScreen() {
   const loadClub = async () => {
     try {
       setLoading(true);
-      logInfo('ClubFormScreen', '📡 Fetching club data from Supabase', { clubId });
+      logInfo("ClubFormScreen", "📡 Fetching club data from Supabase", {
+        clubId,
+      });
 
       const clubService = ServiceFactory.getClubService(supabase);
       const clubData = await clubService.getClubById(clubId!);
 
       if (clubData) {
-        logInfo('ClubFormScreen', '✅ Club data loaded successfully', {
+        logInfo("ClubFormScreen", "✅ Club data loaded successfully", {
           clubId: clubData.id,
           clubName: clubData.name,
           ownerId: clubData.ownerId,
           isOwner: user?.id === clubData.ownerId,
-          hasLogo: !!clubData.logoUrl
+          hasLogo: !!clubData.logoUrl,
         });
 
         setClub(clubData);
@@ -138,18 +140,21 @@ export default function ClubFormScreen() {
 
         // If user is not owner, force teams tab
         if (user && clubData.ownerId !== user.id) {
-          logInfo('ClubFormScreen', '👥 User is not owner, switching to teams tab');
+          logInfo(
+            "ClubFormScreen",
+            "👥 User is not owner, switching to teams tab"
+          );
           setActiveTab("teams");
         }
       } else {
-        logError('ClubFormScreen', '❌ Club not found', { clubId });
+        logError("ClubFormScreen", "❌ Club not found", { clubId });
         Alert.alert("Erreur", "Club introuvable");
         navigation.goBack();
       }
     } catch (error) {
-      logError('ClubFormScreen', '❌ Error loading club data', {
+      logError("ClubFormScreen", "❌ Error loading club data", {
         clubId,
-        error: error instanceof Error ? error.message : error
+        error: error instanceof Error ? error.message : error,
       });
       Alert.alert("Erreur", "Impossible de charger le club");
     } finally {
@@ -180,13 +185,13 @@ export default function ClubFormScreen() {
    * Requests media library permissions and launches image picker
    */
   const handlePickImage = async () => {
-    logInfo('ClubFormScreen', '📸 Requesting media library permissions');
+    logInfo("ClubFormScreen", "📸 Requesting media library permissions");
 
     const permissionResult =
       await ImagePicker.requestMediaLibraryPermissionsAsync();
 
     if (permissionResult.granted === false) {
-      logWarn('ClubFormScreen', '⚠️ Media library permission denied');
+      logWarn("ClubFormScreen", "⚠️ Media library permission denied");
       Alert.alert(
         "Permission requise",
         "Vous devez autoriser l'accès à vos photos pour importer un logo."
@@ -194,7 +199,10 @@ export default function ClubFormScreen() {
       return;
     }
 
-    logInfo('ClubFormScreen', '✅ Media library permission granted, launching picker');
+    logInfo(
+      "ClubFormScreen",
+      "✅ Media library permission granted, launching picker"
+    );
 
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: "images",
@@ -204,14 +212,14 @@ export default function ClubFormScreen() {
     });
 
     if (!result.canceled && result.assets && result.assets.length > 0) {
-      logInfo('ClubFormScreen', '✅ Image selected', {
+      logInfo("ClubFormScreen", "✅ Image selected", {
         uri: result.assets[0].uri,
         width: result.assets[0].width,
-        height: result.assets[0].height
+        height: result.assets[0].height,
       });
       setLogoUri(result.assets[0].uri);
     } else {
-      logInfo('ClubFormScreen', 'ℹ️ Image selection cancelled');
+      logInfo("ClubFormScreen", "ℹ️ Image selection cancelled");
     }
   };
 
@@ -221,7 +229,10 @@ export default function ClubFormScreen() {
    */
   const handleSave = async () => {
     if (saving) {
-      logWarn('ClubFormScreen', '⚠️ Save already in progress, ignoring duplicate request');
+      logWarn(
+        "ClubFormScreen",
+        "⚠️ Save already in progress, ignoring duplicate request"
+      );
       return;
     }
 
@@ -231,11 +242,11 @@ export default function ClubFormScreen() {
 
       if (isEditMode) {
         // Update existing club
-        logInfo('ClubFormScreen', '💾 Updating existing club in Supabase', {
+        logInfo("ClubFormScreen", "💾 Updating existing club in Supabase", {
           clubId,
           clubName,
           acronym: sigle,
-          hasLogo: !!logoUri
+          hasLogo: !!logoUri,
         });
 
         const result = await clubService.updateClub(clubId!, {
@@ -249,9 +260,9 @@ export default function ClubFormScreen() {
         });
 
         if (!result.success) {
-          logError('ClubFormScreen', '❌ Failed to update club', {
+          logError("ClubFormScreen", "❌ Failed to update club", {
             clubId,
-            error: result.error
+            error: result.error,
           });
           Alert.alert(
             "Erreur",
@@ -260,28 +271,28 @@ export default function ClubFormScreen() {
           return;
         }
 
-        logInfo('ClubFormScreen', '✅ Club updated successfully', { clubId });
+        logInfo("ClubFormScreen", "✅ Club updated successfully", { clubId });
         Alert.alert("Succès", "Le club a été mis à jour", [
           { text: "OK", onPress: () => navigation.goBack() },
         ]);
       } else {
         // Create new club
-        logInfo('ClubFormScreen', '📡 Fetching current user for club creation');
+        logInfo("ClubFormScreen", "📡 Fetching current user for club creation");
         const {
           data: { user },
         } = await supabase.auth.getUser();
 
         if (!user) {
-          logError('ClubFormScreen', '❌ No authenticated user found');
+          logError("ClubFormScreen", "❌ No authenticated user found");
           Alert.alert("Erreur", "Vous devez être connecté pour créer un club");
           return;
         }
 
-        logInfo('ClubFormScreen', '➕ Creating new club in Supabase', {
+        logInfo("ClubFormScreen", "➕ Creating new club in Supabase", {
           clubName,
           acronym: sigle,
           ownerId: user.id,
-          hasLogo: !!logoUri
+          hasLogo: !!logoUri,
         });
 
         const result = await clubService.createClub(
@@ -298,17 +309,17 @@ export default function ClubFormScreen() {
         );
 
         if (!result.success) {
-          logError('ClubFormScreen', '❌ Failed to create club', {
+          logError("ClubFormScreen", "❌ Failed to create club", {
             error: result.error,
-            clubName
+            clubName,
           });
           Alert.alert("Erreur", result.error || "Impossible de créer le club");
           return;
         }
 
-        logInfo('ClubFormScreen', '✅ Club created successfully', {
+        logInfo("ClubFormScreen", "✅ Club created successfully", {
           clubId: result.club?.id,
-          clubName: result.club?.name
+          clubName: result.club?.name,
         });
 
         const clubCode = result.club!.code;

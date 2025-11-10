@@ -36,6 +36,7 @@ import { MatchRepository } from "../src/services/database/MatchRepository";
 import { MatchSyncPolicy } from "../src/services/match/MatchSyncPolicy";
 import type { SubscriptionTier } from "../models/Subscription";
 import { shareLogs, logInfo, logError, logWarn } from "../utils/logger";
+import Logo from "../components/icons/Logo";
 
 type RootStackParamList = {
   [ROUTES.MAIN_MENU]: undefined;
@@ -68,7 +69,7 @@ export default function MainMenuScreen() {
    */
   const loadUserClub = useCallback(async () => {
     if (!user) {
-      logInfo('MainMenuScreen', '👤 No user logged in, clearing club data');
+      logInfo("MainMenuScreen", "👤 No user logged in, clearing club data");
       setUserClub(null);
       setUserClubs([]);
       selectedClubIdRef.current = null;
@@ -77,43 +78,52 @@ export default function MainMenuScreen() {
 
     try {
       setLoadingClub(true);
-      logInfo('MainMenuScreen', '📡 Fetching user clubs from Supabase', { userId: user.id });
+      logInfo("MainMenuScreen", "📡 Fetching user clubs from Supabase", {
+        userId: user.id,
+      });
 
       const clubService = ServiceFactory.getClubService(supabase);
       // Get clubs where user is member (includes owned clubs via trigger)
       const clubs = await clubService.getUserMemberClubs(user.id);
 
-      logInfo('MainMenuScreen', '✅ User clubs fetched successfully', {
+      logInfo("MainMenuScreen", "✅ User clubs fetched successfully", {
         userId: user.id,
         clubCount: clubs.length,
-        clubIds: clubs.map(c => c.id),
-        clubNames: clubs.map(c => c.name)
+        clubIds: clubs.map((c) => c.id),
+        clubNames: clubs.map((c) => c.name),
       });
 
       setUserClubs(clubs);
 
       // Restore previously selected club if it still exists
       if (selectedClubIdRef.current) {
-        logInfo('MainMenuScreen', '🔍 Attempting to restore previously selected club', {
-          previousClubId: selectedClubIdRef.current
-        });
+        logInfo(
+          "MainMenuScreen",
+          "🔍 Attempting to restore previously selected club",
+          {
+            previousClubId: selectedClubIdRef.current,
+          }
+        );
 
         const previouslySelected = clubs.find(
           (c) => c.id === selectedClubIdRef.current
         );
 
         if (previouslySelected) {
-          logInfo('MainMenuScreen', '✅ Previously selected club restored', {
+          logInfo("MainMenuScreen", "✅ Previously selected club restored", {
             clubId: previouslySelected.id,
             clubName: previouslySelected.name,
-            subscriptionTier: previouslySelected.subscriptionTier
+            subscriptionTier: previouslySelected.subscriptionTier,
           });
           setUserClub(previouslySelected);
           // Check subscription tier
           setIsFreeSubscription(previouslySelected.subscriptionTier === "free");
           return;
         } else {
-          logWarn('MainMenuScreen', '⚠️ Previously selected club not found in user clubs');
+          logWarn(
+            "MainMenuScreen",
+            "⚠️ Previously selected club not found in user clubs"
+          );
         }
       }
 
@@ -121,13 +131,13 @@ export default function MainMenuScreen() {
       const firstClub = clubs.length > 0 ? clubs[0] : null;
 
       if (firstClub) {
-        logInfo('MainMenuScreen', '✅ Selected first club as default', {
+        logInfo("MainMenuScreen", "✅ Selected first club as default", {
           clubId: firstClub.id,
           clubName: firstClub.name,
-          subscriptionTier: firstClub.subscriptionTier
+          subscriptionTier: firstClub.subscriptionTier,
         });
       } else {
-        logInfo('MainMenuScreen', 'ℹ️ No clubs found for user');
+        logInfo("MainMenuScreen", "ℹ️ No clubs found for user");
       }
 
       setUserClub(firstClub);
@@ -135,9 +145,9 @@ export default function MainMenuScreen() {
       // Check subscription tier
       setIsFreeSubscription(firstClub?.subscriptionTier === "free");
     } catch (error) {
-      logError('MainMenuScreen', '❌ Error loading user clubs', {
+      logError("MainMenuScreen", "❌ Error loading user clubs", {
         userId: user.id,
-        error: error instanceof Error ? error.message : error
+        error: error instanceof Error ? error.message : error,
       });
     } finally {
       setLoadingClub(false);
@@ -150,14 +160,14 @@ export default function MainMenuScreen() {
    */
   const loadMatchCount = useCallback(async () => {
     try {
-      logInfo('MainMenuScreen', '💾 Fetching match count from SQLite');
+      logInfo("MainMenuScreen", "💾 Fetching match count from SQLite");
 
       const matchRepo = new MatchRepository();
       const allMatches = await matchRepo.getAllMatches();
 
-      logInfo('MainMenuScreen', '✅ Matches fetched from SQLite', {
+      logInfo("MainMenuScreen", "✅ Matches fetched from SQLite", {
         totalMatches: allMatches.length,
-        matchIds: allMatches.map(m => m.id)
+        matchIds: allMatches.map((m) => m.id),
       });
 
       // Count only completed matches for the limit
@@ -165,16 +175,16 @@ export default function MainMenuScreen() {
         (match) => match.status === "completed"
       );
 
-      logInfo('MainMenuScreen', '✅ Match count calculated', {
+      logInfo("MainMenuScreen", "✅ Match count calculated", {
         totalMatches: allMatches.length,
         completedMatches: completedMatches.length,
-        pendingMatches: allMatches.length - completedMatches.length
+        pendingMatches: allMatches.length - completedMatches.length,
       });
 
       setMatchCount(completedMatches.length);
     } catch (error) {
-      logError('MainMenuScreen', '❌ Error loading match count from SQLite', {
-        error: error instanceof Error ? error.message : error
+      logError("MainMenuScreen", "❌ Error loading match count from SQLite", {
+        error: error instanceof Error ? error.message : error,
       });
     }
   }, []);
@@ -189,10 +199,10 @@ export default function MainMenuScreen() {
       userClub?.subscriptionTier || (user ? "free" : "free");
     const limits = syncPolicy.getLimits(!!user, tier);
 
-    logInfo('MainMenuScreen', '📊 Updated match limits', {
+    logInfo("MainMenuScreen", "📊 Updated match limits", {
       isLoggedIn: !!user,
       subscriptionTier: tier,
-      maxLocalMatches: limits.maxLocalMatches
+      maxLocalMatches: limits.maxLocalMatches,
     });
 
     setMaxMatches(limits.maxLocalMatches);
@@ -204,7 +214,7 @@ export default function MainMenuScreen() {
    */
   useFocusEffect(
     useCallback(() => {
-      logInfo('MainMenuScreen', '🔄 Screen focused, reloading data');
+      logInfo("MainMenuScreen", "🔄 Screen focused, reloading data");
       loadUserClub();
       loadMatchCount();
     }, [loadUserClub, loadMatchCount])
@@ -215,16 +225,16 @@ export default function MainMenuScreen() {
    * Shows confirmation dialog before signing out
    */
   const handleSignOut = () => {
-    logInfo('MainMenuScreen', '🚪 User initiated sign out');
+    logInfo("MainMenuScreen", "🚪 User initiated sign out");
     Alert.alert("Déconnexion", "Voulez-vous vraiment vous déconnecter ?", [
       { text: "Annuler", style: "cancel" },
       {
         text: "Déconnexion",
         onPress: () => {
-          logInfo('MainMenuScreen', '✅ Sign out confirmed by user');
+          logInfo("MainMenuScreen", "✅ Sign out confirmed by user");
           signOut();
         },
-        style: "destructive"
+        style: "destructive",
       },
     ]);
   };
@@ -234,11 +244,11 @@ export default function MainMenuScreen() {
    * Checks subscription limits before allowing navigation to board
    */
   const handleNewMatch = async () => {
-    logInfo('MainMenuScreen', '➕ User attempting to create new match', {
+    logInfo("MainMenuScreen", "➕ User attempting to create new match", {
       currentMatchCount: matchCount,
       maxMatches: maxMatches,
       hasUser: !!user,
-      clubId: userClub?.id
+      clubId: userClub?.id,
     });
 
     // Check match limit based on subscription tier
@@ -248,20 +258,24 @@ export default function MainMenuScreen() {
     const canCreate = syncPolicy.canCreateMatch(matchCount, !!user, tier);
 
     if (!canCreate.allowed) {
-      logWarn('MainMenuScreen', '⚠️ Match creation blocked - limit reached', {
+      logWarn("MainMenuScreen", "⚠️ Match creation blocked - limit reached", {
         currentMatchCount: matchCount,
         maxMatches: maxMatches,
         subscriptionTier: tier,
-        reason: canCreate.reason
+        reason: canCreate.reason,
       });
       setMatchLimitModalVisible(true);
       return;
     }
 
-    logInfo('MainMenuScreen', '✅ Match creation allowed, navigating to board', {
-      clubId: userClub?.id,
-      clubName: userClub?.name
-    });
+    logInfo(
+      "MainMenuScreen",
+      "✅ Match creation allowed, navigating to board",
+      {
+        clubId: userClub?.id,
+        clubName: userClub?.name,
+      }
+    );
 
     // Navigate to board with selected club ID
     (navigation as any).navigate(ROUTES.BOARD, { clubId: userClub?.id });
@@ -290,7 +304,9 @@ export default function MainMenuScreen() {
         )}
       </View>
 
-      <Text style={styles.title}>🏀 StatBoard</Text>
+      <View style={styles.logoContainer}>
+        <Logo width={300} primaryColor="#000000" secondaryColor="#ffffff" />
+      </View>
 
       <TouchableOpacity
         style={[styles.button, !user && styles.freeButton]}
@@ -506,6 +522,10 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 16,
     fontWeight: "bold",
+  },
+  logoContainer: {
+    marginBottom: 40,
+    alignItems: "center",
   },
   title: {
     fontSize: 36,

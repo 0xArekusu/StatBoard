@@ -1,6 +1,6 @@
 import React from "react";
 import { View, Text, TouchableOpacity, ScrollView, Image } from "react-native";
-import JerseyIcon from "./JerseyIcon";
+import JerseyIcon from "./icons/JerseyIcon";
 
 interface Player {
   id: number;
