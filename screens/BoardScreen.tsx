@@ -1555,10 +1555,17 @@ export default function BasketballCourt() {
     }
 
     try {
-      logInfo("BoardScreen", "🧪 Generating 100 mock actions for load testing", {
+      const totalPeriods = matchFormat === "2_halves" ? 2 : 4;
+      const actionsPerPeriod = 50; // 50 actions per period (was 25)
+      const totalActions = totalPeriods * actionsPerPeriod;
+
+      logInfo("BoardScreen", `🧪 Generating ${totalActions} mock actions for load testing`, {
         matchId: currentMatch.id,
-        currentPeriod,
-        periodDuration
+        matchFormat,
+        totalPeriods,
+        actionsPerPeriod,
+        periodDuration,
+        teamMode
       });
 
       // Get team A players (your club team)
@@ -1572,12 +1579,22 @@ export default function BasketballCourt() {
         return;
       }
 
-      // Generate 100 mock actions
+      // Get team B players if in BOTH mode
+      const teamBPlayers = teamMode === "BOTH"
+        ? substitutesTeamB.map(p => ({
+            jersey_number: p.num,
+            name: p.name
+          }))
+        : undefined;
+
+      // Generate mock actions for all periods
       const mockActions = generateMockActions(
         currentMatch.id,
         teamAPlayers,
-        currentPeriod,
-        periodDuration
+        teamBPlayers,
+        matchFormat,
+        periodDuration,
+        actionsPerPeriod // 50 actions per period
       );
 
       // Get summary for logging

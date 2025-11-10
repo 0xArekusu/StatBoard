@@ -195,9 +195,9 @@ export default function MatchDetailsScreen() {
 
 
   // Calculate individual player statistics
-  const calculatePlayerStats = (playerId: number) => {
+  const calculatePlayerStats = (playerNum: number, playerTeam: "A" | "B") => {
     const playerActions = actions.filter(
-      (action) => action.player === playerId
+      (action) => action.player === playerNum && action.team === playerTeam
     );
 
     // Shots - Include ALL shots
@@ -286,7 +286,7 @@ export default function MatchDetailsScreen() {
   // Get players with stats
   const playersWithStats = players.map((player) => ({
     ...player,
-    stats: calculatePlayerStats(player.num), // Use num instead of id because actions store player.num
+    stats: calculatePlayerStats(player.num, player.team),
   }));
 
   // Filter by team
@@ -798,10 +798,10 @@ export default function MatchDetailsScreen() {
               )}
 
               {/* Other Actions Stats (Assists, Steals, Blocks, Turnovers) */}
-              {ACTION_DEFINITIONS.filter(
-                action => ![ActionType.SHOT, ActionType.REBOUND, ActionType.FOUL].includes(action.id as ActionType)
-              ).map((action, index, array) => (
-                (courtFilterActionType.length === 0 || courtFilterActionType.includes(action.id)) && (
+              {ACTION_DEFINITIONS
+                .filter(action => ![ActionType.SHOT, ActionType.REBOUND, ActionType.FOUL].includes(action.id as ActionType))
+                .filter(action => courtFilterActionType.length === 0 || courtFilterActionType.includes(action.id))
+                .map((action, index, array) => (
                   <View key={action.id} style={[styles.liveStatGroup, index === array.length - 1 && styles.liveStatGroupLast]}>
                     <Text style={styles.liveStatGroupLabel}>{action.icon} {action.label}</Text>
                     <Text style={styles.liveStatGroupValue}>
@@ -811,8 +811,7 @@ export default function MatchDetailsScreen() {
                       })()}
                     </Text>
                   </View>
-                )
-              ))}
+                ))}
             </View>
 
             {/* Center Column - Court: Basketball court SVG with action markers */}
@@ -936,10 +935,10 @@ export default function MatchDetailsScreen() {
                 )}
 
                 {/* Other Actions Stats (Assists, Steals, Blocks, Turnovers) */}
-                {ACTION_DEFINITIONS.filter(
-                  action => ![ActionType.SHOT, ActionType.REBOUND, ActionType.FOUL].includes(action.id as ActionType)
-                ).map((action, index, array) => (
-                  (courtFilterActionType.length === 0 || courtFilterActionType.includes(action.id)) && (
+                {ACTION_DEFINITIONS
+                  .filter(action => ![ActionType.SHOT, ActionType.REBOUND, ActionType.FOUL].includes(action.id as ActionType))
+                  .filter(action => courtFilterActionType.length === 0 || courtFilterActionType.includes(action.id))
+                  .map((action, index, array) => (
                     <View key={action.id} style={[styles.liveStatGroup, index === array.length - 1 && styles.liveStatGroupLast]}>
                       <Text style={styles.liveStatGroupLabel}>{action.icon} {action.label}</Text>
                       <Text style={styles.liveStatGroupValue}>
@@ -949,8 +948,7 @@ export default function MatchDetailsScreen() {
                         })()}
                       </Text>
                     </View>
-                  )
-                ))}
+                  ))}
               </View>
             ) : (
               <View style={styles.rightPanel}>
@@ -1053,7 +1051,7 @@ export default function MatchDetailsScreen() {
           {/* Players List: Individual player cards with detailed statistics */}
           <View style={styles.playersList}>
         {sortedPlayers.map((player) => (
-          <View key={player.id} style={styles.playerCard}>
+          <View key={`${player.team}-${player.id}`} style={styles.playerCard}>
             {/* Player header: Player name, number, and total points */}
             <View style={styles.playerHeader}>
               <View style={styles.playerInfo}>
@@ -1122,7 +1120,7 @@ export default function MatchDetailsScreen() {
                       if (!value || value === 0) return null;
 
                       return (
-                        <View key={key} style={styles.statRow}>
+                        <View key={`${player.team}-${player.id}-${key}`} style={styles.statRow}>
                           <Text style={styles.statLabel}>{label}</Text>
                           <Text style={styles.statValue}>
                             {value} {detail}

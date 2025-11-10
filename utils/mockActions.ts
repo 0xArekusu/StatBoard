@@ -48,22 +48,30 @@ interface MockAction {
 }
 
 /**
- * Generate 100 mock actions for load testing
+ * Generate mock actions for load testing
  *
  * @param matchId - ID of the current match
- * @param players - Array of team players with jersey numbers
- * @param currentPeriod - Current period number (1-4 for quarters, 1-2 for halves)
+ * @param playersTeamA - Array of team A players with jersey numbers
+ * @param playersTeamB - Array of team B players with jersey numbers (optional for single team mode)
+ * @param matchFormat - "2_halves" or "4_quarters"
  * @param periodDuration - Duration of period in seconds
- * @returns Array of 100 mock actions
+ * @param actionsPerPeriod - Number of actions to generate per period (default: 25)
+ * @returns Array of mock actions spread across all periods
  */
 export function generateMockActions(
   matchId: number,
-  players: MockPlayer[],
-  currentPeriod: number = 1,
-  periodDuration: number = 600
+  playersTeamA: MockPlayer[],
+  playersTeamB?: MockPlayer[],
+  matchFormat: "2_halves" | "4_quarters" = "4_quarters",
+  periodDuration: number = 600,
+  actionsPerPeriod: number = 25
 ): MockAction[] {
   const actions: MockAction[] = [];
-  const jerseyNumbers = players.map(p => p.jersey_number);
+  const totalPeriods = matchFormat === "2_halves" ? 2 : 4;
+  const isBothTeamsMode = !!playersTeamB;
+
+  const jerseyNumbersA = playersTeamA.map(p => p.jersey_number);
+  const jerseyNumbersB = (playersTeamB && Array.isArray(playersTeamB)) ? playersTeamB.map(p => p.jersey_number) : [];
 
   // Action distributions (realistic basketball game)
   const distributions = {
@@ -90,24 +98,34 @@ export function generateMockActions(
     3: 0.35   // 35% 3-point success
   };
 
-  for (let i = 0; i < 100; i++) {
-    const actionOrder = i + 1;
+  let globalActionOrder = 1;
 
-    // Random time in period (spread throughout period)
-    const timeInPeriod = Math.floor(Math.random() * periodDuration);
+  // Generate actions for each period
+  for (let period = 1; period <= totalPeriods; period++) {
+    // Generate actions for this period
+    for (let i = 0; i < actionsPerPeriod; i++) {
+      // Progressive time in period (actions spread chronologically)
+      // Add some randomness to avoid perfect spacing
+      const baseTime = (i / actionsPerPeriod) * periodDuration;
+      const randomOffset = (Math.random() - 0.5) * (periodDuration / actionsPerPeriod);
+      const timeInPeriod = Math.max(0, Math.min(periodDuration, baseTime + randomOffset));
 
-    // Random player
-    const playerNumber = jerseyNumbers[Math.floor(Math.random() * jerseyNumbers.length)];
+      // Alternate between teams if both teams mode, otherwise always team A
+      const team: "A" | "B" = isBothTeamsMode && Math.random() < 0.5 ? "B" : "A";
+      const jerseyNumbers = team === "A" ? jerseyNumbersA : jerseyNumbersB;
 
-    // Random position on court (normalized 0-1)
-    const semantic_x = Math.random();
-    const semantic_y = Math.random();
+      // Random player from the selected team
+      const playerNumber = jerseyNumbers[Math.floor(Math.random() * jerseyNumbers.length)];
 
-    // Determine action type based on distribution
-    const rand = Math.random();
-    let actionType: string;
-    let specification: string;
-    let points: number | undefined;
+      // Random position on court (normalized 0-1)
+      const semantic_x = Math.random();
+      const semantic_y = Math.random();
+
+      // Determine action type based on distribution
+      const rand = Math.random();
+      let actionType: string;
+      let specification: string;
+      let points: number | undefined;
 
     if (rand < distributions.shot) {
       // SHOT ACTION
@@ -178,23 +196,29 @@ export function generateMockActions(
       specification = NO_SPECIFICATION;
     }
 
-    actions.push({
-      match_id: matchId,
-      team: "A",
-      player_number: playerNumber,
-      action_type: actionType,
-      specification: specification,
-      points: points,
-      semantic_x: semantic_x,
-      semantic_y: semantic_y,
-      action_order: actionOrder,
-      period_number: currentPeriod,
-      time_in_period: timeInPeriod,
-    });
+      actions.push({
+        match_id: matchId,
+        team: team,
+        player_number: playerNumber,
+        action_type: actionType,
+        specification: specification,
+        points: points,
+        semantic_x: semantic_x,
+        semantic_y: semantic_y,
+        action_order: globalActionOrder++,
+        period_number: period,
+        time_in_period: Math.floor(timeInPeriod),
+      });
+    }
   }
 
-  // Sort by time_in_period for realistic chronological order
-  actions.sort((a, b) => a.time_in_period - b.time_in_period);
+  // Sort by period, then by time_in_period for realistic chronological order
+  actions.sort((a, b) => {
+    if (a.period_number !== b.period_number) {
+      return a.period_number - b.period_number;
+    }
+    return a.time_in_period - b.time_in_period;
+  });
 
   // Re-assign action_order after sorting
   actions.forEach((action, index) => {

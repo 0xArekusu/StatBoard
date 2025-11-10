@@ -393,6 +393,26 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
   const foulsA = calculateFoulsStats("A");
   const foulsB = calculateFoulsStats("B");
 
+  // Calculate other statistics (assists, steals, blocks, turnovers)
+  const calculateOtherStats = (team: "A" | "B") => {
+    const teamActions = actions.filter((action) => action.team === team);
+
+    const assists = teamActions.filter((action) => action.type === ActionType.ASSIST).length;
+    const steals = teamActions.filter((action) => action.type === ActionType.STEAL).length;
+    const blocks = teamActions.filter((action) => action.type === ActionType.BLOCK).length;
+    const turnovers = teamActions.filter((action) => action.type === ActionType.TURNOVER).length;
+
+    return {
+      assists,
+      steals,
+      blocks,
+      turnovers,
+    };
+  };
+
+  const otherStatsA = calculateOtherStats("A");
+  const otherStatsB = calculateOtherStats("B");
+
   // Calculate scores by period
   const calculateScoresByPeriod = () => {
     const totalPeriods = matchFormat === "2_halves" ? 2 : 4;
@@ -1065,9 +1085,9 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
           )}
         </View>
 
-        {/* Rebounds and Fouls Statistics */}
+        {/* Other Statistics */}
         <View style={styles.statsSection}>
-          <Text style={styles.sectionTitle}>Rebonds & Fautes</Text>
+          <Text style={styles.sectionTitle}>Autres statistiques</Text>
 
           <View style={styles.compactStatsContainer}>
             {/* Team A - Show if managing Team A or both */}
@@ -1083,6 +1103,26 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
                   <Text style={styles.compactStatDetail}>
                     (Off: {reboundsA.offensive} | Def: {reboundsA.defensive})
                   </Text>
+                </View>
+
+                <View style={styles.compactStatItem}>
+                  <Text style={styles.compactStatLabel}>Passes décisives</Text>
+                  <Text style={styles.compactStatValue}>{otherStatsA.assists}</Text>
+                </View>
+
+                <View style={styles.compactStatItem}>
+                  <Text style={styles.compactStatLabel}>Interceptions</Text>
+                  <Text style={styles.compactStatValue}>{otherStatsA.steals}</Text>
+                </View>
+
+                <View style={styles.compactStatItem}>
+                  <Text style={styles.compactStatLabel}>Contres</Text>
+                  <Text style={styles.compactStatValue}>{otherStatsA.blocks}</Text>
+                </View>
+
+                <View style={styles.compactStatItem}>
+                  <Text style={styles.compactStatLabel}>Balles perdues</Text>
+                  <Text style={styles.compactStatValue}>{otherStatsA.turnovers}</Text>
                 </View>
 
                 <View style={styles.compactStatItem}>
@@ -1114,6 +1154,26 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
                     (Off: {reboundsB.offensive} | Def: {reboundsB.defensive}
                     )
                   </Text>
+                </View>
+
+                <View style={styles.compactStatItem}>
+                  <Text style={styles.compactStatLabel}>Passes décisives</Text>
+                  <Text style={styles.compactStatValue}>{otherStatsB.assists}</Text>
+                </View>
+
+                <View style={styles.compactStatItem}>
+                  <Text style={styles.compactStatLabel}>Interceptions</Text>
+                  <Text style={styles.compactStatValue}>{otherStatsB.steals}</Text>
+                </View>
+
+                <View style={styles.compactStatItem}>
+                  <Text style={styles.compactStatLabel}>Contres</Text>
+                  <Text style={styles.compactStatValue}>{otherStatsB.blocks}</Text>
+                </View>
+
+                <View style={styles.compactStatItem}>
+                  <Text style={styles.compactStatLabel}>Balles perdues</Text>
+                  <Text style={styles.compactStatValue}>{otherStatsB.turnovers}</Text>
                 </View>
 
                 <View style={styles.compactStatItem}>
