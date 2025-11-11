@@ -14,7 +14,12 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.coachassistant.basketball"
+      "bundleIdentifier": "com.coachassistant.basketball",
+      "config": {
+        "googleSignIn": {
+          "reservedClientId": "com.googleusercontent.apps.14213378665-fhhka3kk9ltj5b2snv3lq6jgo4i0pgtk"
+        }
+      }
     },
     "android": {
       "adaptiveIcon": {
