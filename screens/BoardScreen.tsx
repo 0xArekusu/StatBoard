@@ -340,7 +340,7 @@ export default function BasketballCourt() {
   // State for applied filters
   const [appliedFilters, setAppliedFilters] = useState<{
     teams: ("A" | "B")[];
-    players: number[];
+    players: string[]; // Changed to string[] to support "team-number" format (e.g., "A-5", "B-7")
     actionTypes: string[];
   }>({
     teams: ["A", "B"],
@@ -468,7 +468,7 @@ export default function BasketballCourt() {
    */
   const handleApplyFilters = (filters: {
     teams: ("A" | "B")[];
-    players: number[];
+    players: string[]; // Changed to string[] to support "team-number" format (e.g., "A-5", "B-7")
     actionTypes: string[];
   }) => {
     logInfo("BoardScreen", "🔍 User applied action filters", {
@@ -544,8 +544,10 @@ export default function BasketballCourt() {
       }
 
       // Filter by players (if any players selected)
+      // Players are now stored as "team-number" format (e.g., "A-5", "B-7")
       if (appliedFilters.players.length > 0) {
-        if (!action.player || !appliedFilters.players.includes(action.player)) {
+        const playerIdentifier = `${action.team}-${action.player}`;
+        if (!action.player || !appliedFilters.players.includes(playerIdentifier)) {
           return false;
         }
       }
@@ -1903,7 +1905,7 @@ export default function BasketballCourt() {
       const allPlayers = [...teamAPlayers, ...teamBPlayersEnd];
 
       // Détection de l'équipe du club (utilise UUID pour mode BOTH)
-      const clubTeamOverride = determineClubTeam(teamMode, teamAId, teamBId);
+      const clubTeamOverride = determineClubTeam(teamMode, teamAId ?? undefined, teamBId ?? undefined);
       logInfo("BoardScreen", "🧭 Navigating to Match Summary screen", {
         matchId: currentMatch?.id,
         teamA,
@@ -3424,6 +3426,7 @@ export default function BasketballCourt() {
         players={getAllPlayers()}
         teamA={teamA}
         teamB={teamB}
+        teamMode={teamMode}
         completedActions={completedActions}
         onApplyFilters={handleApplyFilters}
         appliedFilters={appliedFilters}
