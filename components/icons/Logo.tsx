@@ -1,5 +1,5 @@
 import * as React from "react";
-import Svg, { Defs, G, ClipPath, Path, Rect } from "react-native-svg";
+import Svg, { Defs, G, ClipPath, Path, Rect, Circle } from "react-native-svg";
 
 interface LogoProps {
   width?: number;
@@ -7,6 +7,7 @@ interface LogoProps {
   primaryColor?: string;
   secondaryColor?: string;
   ballColor?: string;
+  ballBackgroundColor?: string;
 }
 
 const Logo = ({
@@ -15,6 +16,7 @@ const Logo = ({
   primaryColor = "#000000",
   secondaryColor = "#ffffff",
   ballColor = "#FF8C42",
+  ballBackgroundColor = "#000000",
 }: LogoProps) => {
   const aspectRatio = 375 / 375; // Original viewBox dimensions
   const calculatedHeight = width / aspectRatio;
@@ -139,6 +141,8 @@ const Logo = ({
         fillOpacity={1}
       />
       <G transform="matrix(1, 0, 0, 1, 7, 91)">
+        {/* Cercle en arrière-plan du ballon */}
+        <Circle cx="100.5" cy="67" r="35" fill={ballBackgroundColor} />
         <G clipPath="url(#90a7471506)">
           <G clipPath="url(#aa14aa3478)">
             <G transform="matrix(1, 0, 0, 1, 11, 106)">
