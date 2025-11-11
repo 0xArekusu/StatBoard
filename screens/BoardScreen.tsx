@@ -76,6 +76,7 @@ import type { Club } from "../models/Club";
 import { supabase } from "../src/config/supabase";
 import { ServiceFactory } from "../services/ServiceFactory";
 import { useAuth } from "../src/contexts/AuthContext";
+import { determineClubTeam } from "../src/utils/clubTeamDetection";
 import { logInfo, logError, logWarn } from "../utils/logger";
 import {
   generateMockActions,
@@ -1901,21 +1902,8 @@ export default function BasketballCourt() {
 
       const allPlayers = [...teamAPlayers, ...teamBPlayersEnd];
 
-      // Ajout de la logique de détection de l'équipe du club
-      let clubTeamOverride: "A" | "B" | null = null;
-      if (teamMode === "A" || teamMode === "B") {
-        clubTeamOverride = teamMode;
-      } else if (teamMode === "BOTH" && selectedTeam) {
-        if (teamB === selectedTeam.name) {
-          clubTeamOverride = "B";
-        } else if (teamA === selectedTeam.name) {
-          clubTeamOverride = "A";
-        } else {
-          // Fallback si les noms ont été modifiés
-          if (teamAId) clubTeamOverride = "A";
-          else if (teamBId) clubTeamOverride = "B";
-        }
-      }
+      // Détection de l'équipe du club (utilise UUID pour mode BOTH)
+      const clubTeamOverride = determineClubTeam(teamMode, teamAId, teamBId);
       logInfo("BoardScreen", "🧭 Navigating to Match Summary screen", {
         matchId: currentMatch?.id,
         teamA,

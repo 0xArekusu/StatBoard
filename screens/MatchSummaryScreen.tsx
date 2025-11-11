@@ -247,14 +247,8 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
       : null;
 
   // Determine if club team won or lost
-  // Use clubTeamOverride if provided (from history), otherwise use teamMode logic
-  console.log('clubTeamOverride', clubTeamOverride);
-  console.log('teamMode', teamMode);
-  console.log('teamA', teamA);
-  console.log('teamB', teamB);
-  const clubTeam = clubTeamOverride !== null
-    ? clubTeamOverride
-    : (teamMode === "A" ? "A" : teamMode === "B" ? "B" : null);
+  // Use clubTeamOverride if provided (from history/BoardScreen)
+  const clubTeam = clubTeamOverride;
   const isClubMatch = clubTeam !== null;
   const clubTeamName = clubTeam === "A" ? teamA : clubTeam === "B" ? teamB : null;
   const clubWon = isClubMatch && winner === clubTeamName;

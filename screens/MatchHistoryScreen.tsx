@@ -39,7 +39,8 @@ import SyncErrorModal from "../components/SyncErrorModal";
 import { useAuth } from "../src/contexts/AuthContext";
 import { supabase } from "../src/config/supabase";
 import { resolveTeamNames } from "../src/utils/teamNameResolver";
-import { logInfo, logError, logWarn } from "../utils/logger";
+import { determineClubTeam } from "../src/utils/clubTeamDetection";
+import { logInfo, logError } from "../utils/logger";
 import {
   ActionType,
   ShotSpecification,
@@ -62,7 +63,7 @@ export default function MatchHistoryScreen() {
   const { user } = useAuth();
   const [matches, setMatches] = useState<MatchWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
-  const { isSyncing, syncMatch, checkEligibility } = useMatchSync();
+  const { syncMatch, checkEligibility } = useMatchSync();
   const [syncingMatchId, setSyncingMatchId] = useState<number | null>(null);
   const [syncErrorModalVisible, setSyncErrorModalVisible] = useState(false);
   const [syncErrorReason, setSyncErrorReason] = useState("");
@@ -462,15 +463,8 @@ export default function MatchHistoryScreen() {
         });
       }
 
-      // Determine club team based on team_mode configuration
-      let clubTeamLetter: "A" | "B" | null = null;
-      if (match.team_mode === "A") {
-        clubTeamLetter = "A";
-      } else if (match.team_mode === "B") {
-        clubTeamLetter = "B";
-      } else {
-        clubTeamLetter = null; // BOTH or unknown = no club team detected
-      }
+      // Determine club team based on team_mode configuration and UUID detection
+      const clubTeamLetter = determineClubTeam(match.team_mode, match.team_a, match.team_b);
 
       logInfo('MatchHistoryScreen', '✅ Navigating to match summary', {
         matchId: match.id,
@@ -676,30 +670,8 @@ export default function MatchHistoryScreen() {
 
     const isDraw = !winner;
 
-    // Determine which team is from the club based on team_mode
-    // team_mode "A" = managing team A (our club team)
-    // team_mode "B" = managing team B (our club team)
-    // team_mode "BOTH" = managing both teams, check which one has UUID (club team)
-    let clubTeam: "A" | "B" | null = null;
-
-    if (item.team_mode === "A") {
-      clubTeam = "A";
-    } else if (item.team_mode === "B") {
-      clubTeam = "B";
-    } else if (item.team_mode === "BOTH") {
-      // Check if team_a or team_b is a UUID (club team)
-      const uuidRegex =
-        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-      const teamAIsUUID = item.team_a && uuidRegex.test(item.team_a);
-      const teamBIsUUID = item.team_b && uuidRegex.test(item.team_b);
-
-      if (teamAIsUUID && !teamBIsUUID) {
-        clubTeam = "A"; // Team A is club team
-      } else if (teamBIsUUID && !teamAIsUUID) {
-        clubTeam = "B"; // Team B is club team
-      }
-      // If both are UUIDs or neither, it's a friendly match (clubTeam stays null)
-    }
+    // Determine which team is the club team
+    const clubTeam = determineClubTeam(item.team_mode, item.team_a, item.team_b);
 
     const isClubMatch = clubTeam !== null;
     const clubLost = isClubMatch && winner !== null && winner !== clubTeam;
