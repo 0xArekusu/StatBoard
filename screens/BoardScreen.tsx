@@ -342,10 +342,12 @@ export default function BasketballCourt() {
     teams: ("A" | "B")[];
     players: string[]; // Changed to string[] to support "team-number" format (e.g., "A-5", "B-7")
     actionTypes: string[];
+    periods: number[];
   }>({
     teams: ["A", "B"],
     players: [],
     actionTypes: [],
+    periods: [],
   });
 
   // Ref to store marker animations
@@ -470,6 +472,7 @@ export default function BasketballCourt() {
     teams: ("A" | "B")[];
     players: string[]; // Changed to string[] to support "team-number" format (e.g., "A-5", "B-7")
     actionTypes: string[];
+    periods: number[];
   }) => {
     logInfo("BoardScreen", "🔍 User applied action filters", {
       teams: filters.teams,
@@ -478,6 +481,8 @@ export default function BasketballCourt() {
       playerCount: filters.players.length,
       actionTypes: filters.actionTypes,
       actionTypeCount: filters.actionTypes.length,
+      periods: filters.periods,
+      periodCount: filters.periods.length,
       totalActions: completedActions.length,
     });
     setAppliedFilters(filters);
@@ -496,6 +501,7 @@ export default function BasketballCourt() {
       teams: ["A", "B"],
       players: [],
       actionTypes: [],
+      periods: [],
     });
   };
 
@@ -555,6 +561,13 @@ export default function BasketballCourt() {
       // Filter by action types (if any action types selected)
       if (appliedFilters.actionTypes.length > 0) {
         if (!appliedFilters.actionTypes.includes(action.type)) {
+          return false;
+        }
+      }
+
+      // Filter by periods (if any periods selected)
+      if (appliedFilters.periods.length > 0) {
+        if (!action.period_number || !appliedFilters.periods.includes(action.period_number)) {
           return false;
         }
       }
@@ -3247,7 +3260,8 @@ export default function BasketballCourt() {
               <Text style={styles.navButtonIcon}>🔍</Text>
               {(appliedFilters.teams.length < 2 ||
                 appliedFilters.players.length > 0 ||
-                appliedFilters.actionTypes.length > 0) && (
+                appliedFilters.actionTypes.length > 0 ||
+                appliedFilters.periods.length > 0) && (
                 <View style={styles.navBadge}>
                   <View style={styles.navBadgeDot} />
                 </View>
@@ -3427,6 +3441,7 @@ export default function BasketballCourt() {
         teamA={teamA}
         teamB={teamB}
         teamMode={teamMode}
+        matchFormat={matchFormat}
         completedActions={completedActions}
         onApplyFilters={handleApplyFilters}
         appliedFilters={appliedFilters}

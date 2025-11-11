@@ -43,6 +43,7 @@ interface FilterBottomSheetProps {
   teamA: string;
   teamB: string;
   teamMode: "A" | "B" | "BOTH";
+  matchFormat: "2_halves" | "4_quarters";
   completedActions: ActionData[];
   onApplyFilters: (filters: FilterOptions) => void;
   appliedFilters: FilterOptions;
@@ -53,6 +54,7 @@ interface FilterOptions {
   teams: ("A" | "B")[];
   players: string[]; // Changed to string[] to support "team-number" format (e.g., "A-5", "B-7")
   actionTypes: string[];
+  periods: number[]; // Period numbers (e.g., [1, 2, 3, 4])
 }
 
 export default function FilterBottomSheet({
@@ -62,6 +64,7 @@ export default function FilterBottomSheet({
   teamA,
   teamB,
   teamMode,
+  matchFormat,
   onApplyFilters,
   appliedFilters,
   isPortrait,
@@ -69,6 +72,7 @@ export default function FilterBottomSheet({
   const [selectedTeams, setSelectedTeams] = useState<("A" | "B")[]>(["A", "B"]);
   const [selectedPlayers, setSelectedPlayers] = useState<string[]>([]); // Now stores "team-number" format
   const [selectedActionTypes, setSelectedActionTypes] = useState<string[]>([]);
+  const [selectedPeriods, setSelectedPeriods] = useState<number[]>([]);
 
   // Synchronize local state with applied filters when modal becomes visible
   React.useEffect(() => {
@@ -76,8 +80,12 @@ export default function FilterBottomSheet({
       setSelectedTeams(appliedFilters.teams);
       setSelectedPlayers(appliedFilters.players);
       setSelectedActionTypes(appliedFilters.actionTypes);
+      setSelectedPeriods(appliedFilters.periods);
     }
   }, [visible, appliedFilters]);
+
+  // Calculate total periods based on match format
+  const totalPeriods = matchFormat === "2_halves" ? 2 : 4;
 
   const toggleTeam = (team: "A" | "B") => {
     const newTeams = selectedTeams.includes(team)
@@ -89,6 +97,7 @@ export default function FilterBottomSheet({
       teams: newTeams,
       players: selectedPlayers,
       actionTypes: selectedActionTypes,
+      periods: selectedPeriods,
     });
   };
 
@@ -102,6 +111,7 @@ export default function FilterBottomSheet({
       teams: selectedTeams,
       players: newPlayers,
       actionTypes: selectedActionTypes,
+      periods: selectedPeriods,
     });
   };
 
@@ -115,6 +125,21 @@ export default function FilterBottomSheet({
       teams: selectedTeams,
       players: selectedPlayers,
       actionTypes: newActionTypes,
+      periods: selectedPeriods,
+    });
+  };
+
+  const togglePeriod = (period: number) => {
+    const newPeriods = selectedPeriods.includes(period)
+      ? selectedPeriods.filter((p) => p !== period)
+      : [...selectedPeriods, period];
+    setSelectedPeriods(newPeriods);
+    // Apply filter immediately
+    onApplyFilters({
+      teams: selectedTeams,
+      players: selectedPlayers,
+      actionTypes: selectedActionTypes,
+      periods: newPeriods,
     });
   };
 
@@ -122,11 +147,13 @@ export default function FilterBottomSheet({
     setSelectedTeams(["A", "B"]);
     setSelectedPlayers([]);
     setSelectedActionTypes([]);
+    setSelectedPeriods([]);
     // Apply filter immediately
     onApplyFilters({
       teams: ["A", "B"],
       players: [],
       actionTypes: [],
+      periods: [],
     });
   };
 
@@ -145,6 +172,7 @@ export default function FilterBottomSheet({
       teams: newTeams,
       players: selectedPlayers,
       actionTypes: selectedActionTypes,
+      periods: selectedPeriods,
     });
   };
 
@@ -157,6 +185,7 @@ export default function FilterBottomSheet({
       teams: selectedTeams,
       players: newPlayers,
       actionTypes: selectedActionTypes,
+      periods: selectedPeriods,
     });
   };
 
@@ -169,6 +198,7 @@ export default function FilterBottomSheet({
       teams: selectedTeams,
       players: newPlayers,
       actionTypes: selectedActionTypes,
+      periods: selectedPeriods,
     });
   };
 
@@ -180,6 +210,19 @@ export default function FilterBottomSheet({
       teams: selectedTeams,
       players: selectedPlayers,
       actionTypes: newActionTypes,
+      periods: selectedPeriods,
+    });
+  };
+
+  const selectAllPeriods = () => {
+    const newPeriods = Array.from({ length: totalPeriods }, (_, i) => i + 1);
+    setSelectedPeriods(newPeriods);
+    // Apply filter immediately
+    onApplyFilters({
+      teams: selectedTeams,
+      players: selectedPlayers,
+      actionTypes: selectedActionTypes,
+      periods: newPeriods,
     });
   };
 
@@ -408,6 +451,42 @@ export default function FilterBottomSheet({
                   );
                 })}
               </ScrollView>
+            </View>
+
+            {/* Périodes */}
+            <View style={styles.filterCategory}>
+              <View style={styles.filterCategoryHeader}>
+                <Text style={styles.filterCategoryLabel}>
+                  {matchFormat === "2_halves" ? "Mi-temps" : "Quart-temps"}
+                </Text>
+                <TouchableOpacity
+                  onPress={selectAllPeriods}
+                  style={styles.selectAllButton}
+                >
+                  <Text style={styles.selectAllText}>Tous</Text>
+                </TouchableOpacity>
+              </View>
+              <View style={styles.filterCards}>
+                {Array.from({ length: totalPeriods }, (_, i) => i + 1).map((period) => (
+                  <TouchableOpacity
+                    key={period}
+                    style={[
+                      styles.filterCard,
+                      selectedPeriods.includes(period) && styles.filterCardActive,
+                    ]}
+                    onPress={() => togglePeriod(period)}
+                  >
+                    <Text
+                      style={[
+                        styles.filterCardText,
+                        selectedPeriods.includes(period) && styles.filterCardTextActive,
+                      ]}
+                    >
+                      {matchFormat === "2_halves" ? `MT${period}` : `QT${period}`}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
             </View>
           </ScrollView>
 
