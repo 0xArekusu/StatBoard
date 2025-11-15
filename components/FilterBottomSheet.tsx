@@ -2,19 +2,14 @@
  * FilterBottomSheet
  *
  * Bottom sheet modal for filtering displayed actions on the court.
- * Allows filtering by team, player, and action type.
+ * Uses the reusable MatchFilters component for the filter UI.
  *
  * Features:
- * - Multi-select filters (teams, players, action types)
+ * - Multi-select filters (teams, players, action types, periods)
  * - Reset filters button
- * - Apply/Cancel actions
- * - Shows only players with recorded actions
+ * - Close button
+ * - Immediate filter application
  * - Adapts to portrait/landscape orientation
- *
- * Filter Logic:
- * - Empty filter = show all (no filtering)
- * - Selected items = show only those items
- * - Filters are combined with AND logic (team AND player AND type)
  */
 import React, { useState } from "react";
 import {
@@ -26,7 +21,7 @@ import {
   ScrollView,
 } from "react-native";
 import { ActionData } from "./ActionSystemModal";
-import { ACTION_DEFINITIONS } from "../src/config/actionConfig";
+import MatchFilters from "./MatchFilters";
 
 interface Player {
   id: number;
@@ -47,14 +42,14 @@ interface FilterBottomSheetProps {
   completedActions: ActionData[];
   onApplyFilters: (filters: FilterOptions) => void;
   appliedFilters: FilterOptions;
-  isPortrait: boolean; // Add orientation prop
+  isPortrait: boolean;
 }
 
 interface FilterOptions {
   teams: ("A" | "B")[];
-  players: string[]; // Changed to string[] to support "team-number" format (e.g., "A-5", "B-7")
+  players: string[]; // Format: "team-number" (e.g., "A-5", "B-7")
   actionTypes: string[];
-  periods: number[]; // Period numbers (e.g., [1, 2, 3, 4])
+  periods: number[];
 }
 
 export default function FilterBottomSheet({
@@ -70,7 +65,7 @@ export default function FilterBottomSheet({
   isPortrait,
 }: FilterBottomSheetProps) {
   const [selectedTeams, setSelectedTeams] = useState<("A" | "B")[]>(["A", "B"]);
-  const [selectedPlayers, setSelectedPlayers] = useState<string[]>([]); // Now stores "team-number" format
+  const [selectedPlayers, setSelectedPlayers] = useState<string[]>([]);
   const [selectedActionTypes, setSelectedActionTypes] = useState<string[]>([]);
   const [selectedPeriods, setSelectedPeriods] = useState<number[]>([]);
 
@@ -84,65 +79,6 @@ export default function FilterBottomSheet({
     }
   }, [visible, appliedFilters]);
 
-  // Calculate total periods based on match format
-  const totalPeriods = matchFormat === "2_halves" ? 2 : 4;
-
-  const toggleTeam = (team: "A" | "B") => {
-    const newTeams = selectedTeams.includes(team)
-      ? selectedTeams.filter((t) => t !== team)
-      : [...selectedTeams, team];
-    setSelectedTeams(newTeams);
-    // Apply filter immediately
-    onApplyFilters({
-      teams: newTeams,
-      players: selectedPlayers,
-      actionTypes: selectedActionTypes,
-      periods: selectedPeriods,
-    });
-  };
-
-  const togglePlayer = (playerIdentifier: string) => {
-    const newPlayers = selectedPlayers.includes(playerIdentifier)
-      ? selectedPlayers.filter((id) => id !== playerIdentifier)
-      : [...selectedPlayers, playerIdentifier];
-    setSelectedPlayers(newPlayers);
-    // Apply filter immediately
-    onApplyFilters({
-      teams: selectedTeams,
-      players: newPlayers,
-      actionTypes: selectedActionTypes,
-      periods: selectedPeriods,
-    });
-  };
-
-  const toggleActionType = (actionType: string) => {
-    const newActionTypes = selectedActionTypes.includes(actionType)
-      ? selectedActionTypes.filter((type) => type !== actionType)
-      : [...selectedActionTypes, actionType];
-    setSelectedActionTypes(newActionTypes);
-    // Apply filter immediately
-    onApplyFilters({
-      teams: selectedTeams,
-      players: selectedPlayers,
-      actionTypes: newActionTypes,
-      periods: selectedPeriods,
-    });
-  };
-
-  const togglePeriod = (period: number) => {
-    const newPeriods = selectedPeriods.includes(period)
-      ? selectedPeriods.filter((p) => p !== period)
-      : [...selectedPeriods, period];
-    setSelectedPeriods(newPeriods);
-    // Apply filter immediately
-    onApplyFilters({
-      teams: selectedTeams,
-      players: selectedPlayers,
-      actionTypes: selectedActionTypes,
-      periods: newPeriods,
-    });
-  };
-
   const resetFilters = () => {
     setSelectedTeams(["A", "B"]);
     setSelectedPlayers([]);
@@ -154,75 +90,6 @@ export default function FilterBottomSheet({
       players: [],
       actionTypes: [],
       periods: [],
-    });
-  };
-
-  const selectAllTeams = () => {
-    let newTeams: ("A" | "B")[];
-    if (teamMode === "BOTH") {
-      newTeams = ["A", "B"];
-    } else if (teamMode === "A") {
-      newTeams = ["A"];
-    } else {
-      newTeams = ["B"];
-    }
-    setSelectedTeams(newTeams);
-    // Apply filter immediately
-    onApplyFilters({
-      teams: newTeams,
-      players: selectedPlayers,
-      actionTypes: selectedActionTypes,
-      periods: selectedPeriods,
-    });
-  };
-
-  const selectAllPlayersTeamA = () => {
-    const teamAPlayers = players.filter((p) => p.team === "A").map((p) => `A-${p.num}`);
-    const newPlayers = [...new Set([...selectedPlayers, ...teamAPlayers])];
-    setSelectedPlayers(newPlayers);
-    // Apply filter immediately
-    onApplyFilters({
-      teams: selectedTeams,
-      players: newPlayers,
-      actionTypes: selectedActionTypes,
-      periods: selectedPeriods,
-    });
-  };
-
-  const selectAllPlayersTeamB = () => {
-    const teamBPlayers = players.filter((p) => p.team === "B").map((p) => `B-${p.num}`);
-    const newPlayers = [...new Set([...selectedPlayers, ...teamBPlayers])];
-    setSelectedPlayers(newPlayers);
-    // Apply filter immediately
-    onApplyFilters({
-      teams: selectedTeams,
-      players: newPlayers,
-      actionTypes: selectedActionTypes,
-      periods: selectedPeriods,
-    });
-  };
-
-  const selectAllActionTypes = () => {
-    const newActionTypes = ACTION_DEFINITIONS.map((action) => action.id);
-    setSelectedActionTypes(newActionTypes);
-    // Apply filter immediately
-    onApplyFilters({
-      teams: selectedTeams,
-      players: selectedPlayers,
-      actionTypes: newActionTypes,
-      periods: selectedPeriods,
-    });
-  };
-
-  const selectAllPeriods = () => {
-    const newPeriods = Array.from({ length: totalPeriods }, (_, i) => i + 1);
-    setSelectedPeriods(newPeriods);
-    // Apply filter immediately
-    onApplyFilters({
-      teams: selectedTeams,
-      players: selectedPlayers,
-      actionTypes: selectedActionTypes,
-      periods: newPeriods,
     });
   };
 
@@ -258,236 +125,53 @@ export default function FilterBottomSheet({
             style={styles.scrollContainer}
             showsVerticalScrollIndicator={false}
           >
-            {/* Équipes */}
-            <View style={styles.filterCategory}>
-              <View style={styles.filterCategoryHeader}>
-                <Text style={styles.filterCategoryLabel}>Équipe</Text>
-                <TouchableOpacity
-                  onPress={selectAllTeams}
-                  style={styles.selectAllButton}
-                >
-                  <Text style={styles.selectAllText}>Tous</Text>
-                </TouchableOpacity>
-              </View>
-              <View style={styles.filterCards}>
-                {/* Show Team A option if managing Team A or both */}
-                {(teamMode === "A" || teamMode === "BOTH") && (
-                  <TouchableOpacity
-                    style={[
-                      styles.filterCard,
-                      selectedTeams.includes("A") && styles.filterCardActive,
-                    ]}
-                    onPress={() => toggleTeam("A")}
-                  >
-                    <Text
-                      style={[
-                        styles.filterCardText,
-                        selectedTeams.includes("A") && styles.filterCardTextActive,
-                      ]}
-                    >
-                      {teamA}
-                    </Text>
-                  </TouchableOpacity>
-                )}
-
-                {/* Show Team B option if managing Team B or both */}
-                {(teamMode === "B" || teamMode === "BOTH") && (
-                  <TouchableOpacity
-                    style={[
-                      styles.filterCard,
-                      selectedTeams.includes("B") && styles.filterCardActive,
-                    ]}
-                    onPress={() => toggleTeam("B")}
-                  >
-                    <Text
-                      style={[
-                        styles.filterCardText,
-                        selectedTeams.includes("B") && styles.filterCardTextActive,
-                      ]}
-                    >
-                      {teamB}
-                    </Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-            </View>
-
-            {/* Joueurs */}
-            <View style={styles.filterCategory}>
-              <Text style={styles.filterCategoryLabel}>Joueurs</Text>
-
-              {/* Team A Players - Show if managing Team A or both */}
-              {(selectedTeams.includes("A") || teamMode === "A") && (
-                <>
-                  <View style={styles.filterSubHeader}>
-                    <Text style={styles.filterSubLabel}>{teamA}</Text>
-                    <TouchableOpacity
-                      onPress={selectAllPlayersTeamA}
-                      style={styles.selectAllButton}
-                    >
-                      <Text style={styles.selectAllText}>Tous</Text>
-                    </TouchableOpacity>
-                  </View>
-                  <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    style={styles.filterCardsScroll}
-                  >
-                    {players
-                      .filter((p) => p.team === "A")
-                      .sort((a, b) => a.num - b.num)
-                      .map((player) => {
-                        const playerIdentifier = `A-${player.num}`;
-                        return (
-                          <TouchableOpacity
-                            key={player.id}
-                            style={[
-                              styles.filterCard,
-                              selectedPlayers.includes(playerIdentifier) && styles.filterCardActive,
-                            ]}
-                            onPress={() => togglePlayer(playerIdentifier)}
-                          >
-                            <Text
-                              style={[
-                                styles.filterCardText,
-                                selectedPlayers.includes(playerIdentifier) && styles.filterCardTextActive,
-                              ]}
-                            >
-                              #{player.num} {player.name}
-                            </Text>
-                          </TouchableOpacity>
-                        );
-                      })}
-                  </ScrollView>
-                </>
-              )}
-
-              {/* Team B Players - Show if managing Team B or both */}
-              {(selectedTeams.includes("B") || teamMode === "B") && (
-                <>
-                  <View style={[styles.filterSubHeader, (selectedTeams.includes("A") || teamMode === "BOTH") && styles.filterSubHeaderMargin]}>
-                    <Text style={styles.filterSubLabel}>{teamB}</Text>
-                    <TouchableOpacity
-                      onPress={selectAllPlayersTeamB}
-                      style={styles.selectAllButton}
-                    >
-                      <Text style={styles.selectAllText}>Tous</Text>
-                    </TouchableOpacity>
-                  </View>
-                  <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    style={styles.filterCardsScroll}
-                  >
-                    {players
-                      .filter((p) => p.team === "B")
-                      .sort((a, b) => a.num - b.num)
-                      .map((player) => {
-                        const playerIdentifier = `B-${player.num}`;
-                        return (
-                          <TouchableOpacity
-                            key={player.id}
-                            style={[
-                              styles.filterCard,
-                              selectedPlayers.includes(playerIdentifier) && styles.filterCardActive,
-                            ]}
-                            onPress={() => togglePlayer(playerIdentifier)}
-                          >
-                            <Text
-                              style={[
-                                styles.filterCardText,
-                                selectedPlayers.includes(playerIdentifier) && styles.filterCardTextActive,
-                              ]}
-                            >
-                              #{player.num} {player.name}
-                            </Text>
-                          </TouchableOpacity>
-                        );
-                      })}
-                  </ScrollView>
-                </>
-              )}
-            </View>
-
-            {/* Types d'actions */}
-            <View style={styles.filterCategory}>
-              <View style={styles.filterCategoryHeader}>
-                <Text style={styles.filterCategoryLabel}>Actions</Text>
-                <TouchableOpacity
-                  onPress={selectAllActionTypes}
-                  style={styles.selectAllButton}
-                >
-                  <Text style={styles.selectAllText}>Tous</Text>
-                </TouchableOpacity>
-              </View>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                style={styles.filterCardsScroll}
-              >
-                {ACTION_DEFINITIONS.map((action) => {
-                  const isSelected = selectedActionTypes.includes(action.id);
-                  return (
-                    <TouchableOpacity
-                      key={action.id}
-                      style={[
-                        styles.filterCard,
-                        isSelected && {
-                          backgroundColor: action.backgroundColor,
-                          borderColor: action.backgroundColor,
-                        },
-                      ]}
-                      onPress={() => toggleActionType(action.id)}
-                    >
-                      <Text
-                        style={[
-                          styles.filterCardText,
-                          isSelected && styles.filterCardTextActive,
-                        ]}
-                      >
-                        {action.icon} {action.label}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </ScrollView>
-            </View>
-
-            {/* Périodes */}
-            <View style={styles.filterCategory}>
-              <View style={styles.filterCategoryHeader}>
-                <Text style={styles.filterCategoryLabel}>
-                  {matchFormat === "2_halves" ? "Mi-temps" : "Quart-temps"}
-                </Text>
-                <TouchableOpacity
-                  onPress={selectAllPeriods}
-                  style={styles.selectAllButton}
-                >
-                  <Text style={styles.selectAllText}>Tous</Text>
-                </TouchableOpacity>
-              </View>
-              <View style={styles.filterCards}>
-                {Array.from({ length: totalPeriods }, (_, i) => i + 1).map((period) => (
-                  <TouchableOpacity
-                    key={period}
-                    style={[
-                      styles.filterCard,
-                      selectedPeriods.includes(period) && styles.filterCardActive,
-                    ]}
-                    onPress={() => togglePeriod(period)}
-                  >
-                    <Text
-                      style={[
-                        styles.filterCardText,
-                        selectedPeriods.includes(period) && styles.filterCardTextActive,
-                      ]}
-                    >
-                      {matchFormat === "2_halves" ? `MT${period}` : `QT${period}`}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
+            <MatchFilters
+              teamA={teamA}
+              teamB={teamB}
+              teamMode={teamMode}
+              matchFormat={matchFormat}
+              players={players}
+              selectedTeams={selectedTeams}
+              selectedPlayers={selectedPlayers}
+              selectedActionTypes={selectedActionTypes}
+              selectedPeriods={selectedPeriods}
+              onTeamsChange={(teams) => {
+                setSelectedTeams(teams);
+                onApplyFilters({
+                  teams,
+                  players: selectedPlayers,
+                  actionTypes: selectedActionTypes,
+                  periods: selectedPeriods,
+                });
+              }}
+              onPlayersChange={(players) => {
+                setSelectedPlayers(players);
+                onApplyFilters({
+                  teams: selectedTeams,
+                  players,
+                  actionTypes: selectedActionTypes,
+                  periods: selectedPeriods,
+                });
+              }}
+              onActionTypesChange={(actionTypes) => {
+                setSelectedActionTypes(actionTypes);
+                onApplyFilters({
+                  teams: selectedTeams,
+                  players: selectedPlayers,
+                  actionTypes,
+                  periods: selectedPeriods,
+                });
+              }}
+              onPeriodsChange={(periods) => {
+                setSelectedPeriods(periods);
+                onApplyFilters({
+                  teams: selectedTeams,
+                  players: selectedPlayers,
+                  actionTypes: selectedActionTypes,
+                  periods,
+                });
+              }}
+            />
           </ScrollView>
 
           {/* Boutons d'action */}
@@ -569,78 +253,6 @@ const styles = StyleSheet.create({
   },
   scrollContainer: {
     flex: 1,
-  },
-  // New filter styles matching MatchDetailsScreen
-  filterCategory: {
-    gap: 8,
-    marginBottom: 20,
-  },
-  filterCategoryHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 4,
-  },
-  filterCategoryLabel: {
-    fontSize: 13,
-    fontWeight: "bold",
-    color: "#666",
-    flex: 1,
-  },
-  selectAllButton: {
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-    backgroundColor: "rgba(76,175,80,0.1)",
-    borderRadius: 4,
-  },
-  selectAllText: {
-    fontSize: 12,
-    color: "#4CAF50",
-    fontWeight: "500",
-  },
-  filterCards: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-  },
-  filterCardsScroll: {
-    flexDirection: "row",
-  },
-  filterCard: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    backgroundColor: "#f5f5f5",
-    borderWidth: 2,
-    borderColor: "#e0e0e0",
-    marginRight: 8,
-  },
-  filterCardActive: {
-    backgroundColor: "#4CAF50",
-    borderColor: "#4CAF50",
-  },
-  filterCardText: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: "#666",
-  },
-  filterCardTextActive: {
-    color: "#fff",
-  },
-  filterSubHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginTop: 8,
-    marginBottom: 4,
-  },
-  filterSubHeaderMargin: {
-    marginTop: 16,
-  },
-  filterSubLabel: {
-    fontSize: 11,
-    fontWeight: "600",
-    color: "#888",
   },
   actionButtons: {
     flexDirection: "row",

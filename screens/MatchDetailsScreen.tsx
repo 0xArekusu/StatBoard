@@ -24,6 +24,7 @@ import { useNavigation, useRoute } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { ActionData } from "../components/ActionSystem";
 import BasketballCourtSVG from "../components/BasketballCourtSVG";
+import MatchFilters from "../components/MatchFilters";
 import { logInfo, logError, logWarn } from "../utils/logger";
 import {
   ActionType,
@@ -86,8 +87,10 @@ export default function MatchDetailsScreen() {
   // Tab state
   const [activeTab, setActiveTab] = useState<"court" | "players">("court");
 
-  // Court filters
-  const [courtFilterTeam, setCourtFilterTeam] = useState<"A" | "B" | "BOTH">(teamMode);
+  // Court filters (using same format as FilterBottomSheet)
+  const [courtFilterTeams, setCourtFilterTeams] = useState<("A" | "B")[]>(
+    teamMode === "BOTH" ? ["A", "B"] : teamMode === "A" ? ["A"] : ["B"]
+  );
   const [courtFilterPlayers, setCourtFilterPlayers] = useState<string[]>([]); // Player identifiers "team-num" (e.g., "A-5", "B-7")
   const [courtFilterActionType, setCourtFilterActionType] = useState<string[]>([]); // ["shot", "rebound", "foul"]
   const [courtFilterPeriod, setCourtFilterPeriod] = useState<number[]>([]); // [1, 2, 3, 4] or [1, 2]
@@ -136,10 +139,10 @@ export default function MatchDetailsScreen() {
    */
   useEffect(() => {
     logInfo('MatchDetailsScreen', '🔍 Court team filter changed', {
-      courtFilterTeam,
-      filteringBothTeams: courtFilterTeam === "BOTH"
+      courtFilterTeams,
+      selectedTeams: courtFilterTeams.join(', ')
     });
-  }, [courtFilterTeam]);
+  }, [courtFilterTeams]);
 
   /**
    * Log court filter changes - Players filter
@@ -326,7 +329,7 @@ export default function MatchDetailsScreen() {
   const filteredCourtActions = useMemo(() => {
     return actions.filter((action) => {
       // Team filter
-      if (courtFilterTeam !== "BOTH" && action.team !== courtFilterTeam) {
+      if (courtFilterTeams.length > 0 && !courtFilterTeams.includes(action.team)) {
         return false;
       }
 
@@ -352,7 +355,7 @@ export default function MatchDetailsScreen() {
 
       return true;
     });
-  }, [actions, courtFilterTeam, courtFilterPlayers, courtFilterActionType, courtFilterPeriod]);
+  }, [actions, courtFilterTeams, courtFilterPlayers, courtFilterActionType, courtFilterPeriod]);
 
   // Helper to get marker color based on action
   const getMarkerColor = (
@@ -386,32 +389,6 @@ export default function MatchDetailsScreen() {
     color: getMarkerColor(action.type, action.specification),
     team: action.team,
   }));
-
-  // Toggle helpers
-  const togglePlayerFilter = (playerNum: number, team: "A" | "B") => {
-    const playerIdentifier = `${team}-${playerNum}`;
-    setCourtFilterPlayers((prev) =>
-      prev.includes(playerIdentifier)
-        ? prev.filter((id) => id !== playerIdentifier)
-        : [...prev, playerIdentifier]
-    );
-  };
-
-  const toggleActionTypeFilter = (actionType: string) => {
-    setCourtFilterActionType((prev) =>
-      prev.includes(actionType)
-        ? prev.filter((type) => type !== actionType)
-        : [...prev, actionType]
-    );
-  };
-
-  const togglePeriodFilter = (period: number) => {
-    setCourtFilterPeriod((prev) =>
-      prev.includes(period)
-        ? prev.filter((p) => p !== period)
-        : [...prev, period]
-    );
-  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -479,213 +456,23 @@ export default function MatchDetailsScreen() {
           <View style={styles.courtSection}>
           <Text style={styles.sectionTitle}>Visualisation du terrain</Text>
 
-          {/* Court Filters: Team, Action type, Players, and Period filters */}
+          {/* Court Filters using MatchFilters component */}
           <View style={styles.courtFilters}>
-            {/* Team Filter */}
-            <View style={styles.filterCategory}>
-              <Text style={styles.filterCategoryLabel}>Équipe</Text>
-              <View style={styles.filterCards}>
-                {/* Show "Les deux" option only if managing both teams */}
-                {teamMode === "BOTH" && (
-                  <TouchableOpacity
-                    style={[
-                      styles.filterCard,
-                      courtFilterTeam === "BOTH" && styles.filterCardActive,
-                    ]}
-                    onPress={() => setCourtFilterTeam("BOTH")}
-                  >
-                    <Text
-                      style={[
-                        styles.filterCardText,
-                        courtFilterTeam === "BOTH" && styles.filterCardTextActive,
-                      ]}
-                    >
-                      Les deux
-                    </Text>
-                  </TouchableOpacity>
-                )}
-
-                {/* Show Team A option if managing Team A or both */}
-                {(teamMode === "A" || teamMode === "BOTH") && (
-                  <TouchableOpacity
-                    style={[
-                      styles.filterCard,
-                      courtFilterTeam === "A" && styles.filterCardActive,
-                    ]}
-                    onPress={() => setCourtFilterTeam("A")}
-                  >
-                    <Text
-                      style={[
-                        styles.filterCardText,
-                        courtFilterTeam === "A" && styles.filterCardTextActive,
-                      ]}
-                    >
-                      {teamA}
-                    </Text>
-                  </TouchableOpacity>
-                )}
-
-                {/* Show Team B option if managing Team B or both */}
-                {(teamMode === "B" || teamMode === "BOTH") && (
-                  <TouchableOpacity
-                    style={[
-                      styles.filterCard,
-                      courtFilterTeam === "B" && styles.filterCardActive,
-                    ]}
-                    onPress={() => setCourtFilterTeam("B")}
-                  >
-                    <Text
-                      style={[
-                        styles.filterCardText,
-                        courtFilterTeam === "B" && styles.filterCardTextActive,
-                      ]}
-                    >
-                      {teamB}
-                    </Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-            </View>
-
-            {/* Action Type Filter */}
-            <View style={styles.filterCategory}>
-              <Text style={styles.filterCategoryLabel}>Actions</Text>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                style={styles.filterCardsScroll}
-              >
-                {ACTION_DEFINITIONS.map((action) => (
-                  <TouchableOpacity
-                    key={action.id}
-                    style={[
-                      styles.filterCard,
-                      courtFilterActionType.includes(action.id) && styles.filterCardActive,
-                    ]}
-                    onPress={() => toggleActionTypeFilter(action.id)}
-                  >
-                    <Text
-                      style={[
-                        styles.filterCardText,
-                        courtFilterActionType.includes(action.id) && styles.filterCardTextActive,
-                      ]}
-                    >
-                      {action.icon} {action.label}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-            </View>
-
-            {/* Player Filter */}
-            <View style={styles.filterCategory}>
-              <Text style={styles.filterCategoryLabel}>Joueurs</Text>
-
-              {/* Team A Players - Show if managing Team A or both */}
-              {(courtFilterTeam === "A" || courtFilterTeam === "BOTH") && (
-                <>
-                  <Text style={styles.filterSubLabel}>{teamA}</Text>
-                  <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    style={styles.filterCardsScroll}
-                  >
-                    {players
-                      .filter((p) => p.team === "A")
-                      .sort((a, b) => a.num - b.num)
-                      .map((player) => {
-                        const playerIdentifier = `A-${player.num}`;
-                        return (
-                          <TouchableOpacity
-                            key={player.id}
-                            style={[
-                              styles.filterCard,
-                              courtFilterPlayers.includes(playerIdentifier) && styles.filterCardActive,
-                            ]}
-                            onPress={() => togglePlayerFilter(player.num, "A")}
-                          >
-                            <Text
-                              style={[
-                                styles.filterCardText,
-                                courtFilterPlayers.includes(playerIdentifier) && styles.filterCardTextActive,
-                              ]}
-                            >
-                              #{player.num} {player.name}
-                            </Text>
-                          </TouchableOpacity>
-                        );
-                      })}
-                  </ScrollView>
-                </>
-              )}
-
-              {/* Team B Players - Show if managing Team B or both */}
-              {(courtFilterTeam === "B" || courtFilterTeam === "BOTH") && (
-                <>
-                  <Text style={[styles.filterSubLabel, courtFilterTeam === "BOTH" && styles.filterSubLabelMargin]}>{teamB}</Text>
-                  <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    style={styles.filterCardsScroll}
-                  >
-                    {players
-                      .filter((p) => p.team === "B")
-                      .sort((a, b) => a.num - b.num)
-                      .map((player) => {
-                        const playerIdentifier = `B-${player.num}`;
-                        return (
-                          <TouchableOpacity
-                            key={player.id}
-                            style={[
-                              styles.filterCard,
-                              courtFilterPlayers.includes(playerIdentifier) && styles.filterCardActive,
-                            ]}
-                            onPress={() => togglePlayerFilter(player.num, "B")}
-                          >
-                            <Text
-                              style={[
-                                styles.filterCardText,
-                                courtFilterPlayers.includes(playerIdentifier) && styles.filterCardTextActive,
-                              ]}
-                            >
-                              #{player.num} {player.name}
-                            </Text>
-                          </TouchableOpacity>
-                        );
-                      })}
-                  </ScrollView>
-                </>
-              )}
-            </View>
-
-            {/* Period Filter */}
-            <View style={styles.filterCategory}>
-              <Text style={styles.filterCategoryLabel}>Période</Text>
-              <View style={styles.filterCards}>
-                {Array.from({ length: totalPeriods }).map((_, index) => {
-                  const period = index + 1;
-                  return (
-                    <TouchableOpacity
-                      key={period}
-                      style={[
-                        styles.filterCard,
-                        courtFilterPeriod.includes(period) && styles.filterCardActive,
-                      ]}
-                      onPress={() => togglePeriodFilter(period)}
-                    >
-                      <Text
-                        style={[
-                          styles.filterCardText,
-                          courtFilterPeriod.includes(period) && styles.filterCardTextActive,
-                        ]}
-                      >
-                        {matchFormat === "2_halves" ? `MT${period}` : `Q${period}`}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-            </View>
+            <MatchFilters
+              teamA={teamA}
+              teamB={teamB}
+              teamMode={teamMode}
+              matchFormat={matchFormat}
+              players={players}
+              selectedTeams={courtFilterTeams}
+              selectedPlayers={courtFilterPlayers}
+              selectedActionTypes={courtFilterActionType}
+              selectedPeriods={courtFilterPeriod}
+              onTeamsChange={setCourtFilterTeams}
+              onPlayersChange={setCourtFilterPlayers}
+              onActionTypesChange={setCourtFilterActionType}
+              onPeriodsChange={setCourtFilterPeriod}
+            />
           </View>
 
           {/* Court and Stats Container: 3-column layout with stats on sides and court in center */}
@@ -1381,54 +1168,6 @@ const styles = StyleSheet.create({
   courtFilters: {
     gap: 16,
     marginBottom: 20,
-  },
-  filterCategory: {
-    gap: 8,
-  },
-  filterCategoryLabel: {
-    fontSize: 13,
-    fontWeight: "bold",
-    color: "#666",
-    marginBottom: 4,
-  },
-  filterSubLabel: {
-    fontSize: 11,
-    fontWeight: "600",
-    color: "#888",
-    marginBottom: 4,
-    marginTop: 4,
-  },
-  filterSubLabelMargin: {
-    marginTop: 12,
-  },
-  filterCards: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-  },
-  filterCardsScroll: {
-    flexDirection: "row",
-  },
-  filterCard: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    backgroundColor: "#f5f5f5",
-    borderWidth: 2,
-    borderColor: "#e0e0e0",
-    marginRight: 8,
-  },
-  filterCardActive: {
-    backgroundColor: "#4CAF50",
-    borderColor: "#4CAF50",
-  },
-  filterCardText: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: "#666",
-  },
-  filterCardTextActive: {
-    color: "#fff",
   },
   courtAndStatsContainer: {
     flexDirection: "row",
