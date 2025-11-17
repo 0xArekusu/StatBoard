@@ -46,6 +46,7 @@ import {
 } from "../src/models/ActionTypes";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { logInfo, logError, logWarn } from "../utils/logger";
+import { ServiceFactory } from "../services/ServiceFactory";
 
 interface MatchSummaryScreenProps {}
 
@@ -69,10 +70,13 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
       num: number;
       name: string;
       team: "A" | "B";
+      photoUrl?: string;
     }>;
     fromHistory?: boolean; // Indicates if coming from history (read-only)
     scoreWasManuallyAdjusted?: boolean; // Indicates if score was manually adjusted
     clubTeamOverride?: "A" | "B" | null; // Override for determining club team
+    teamAId?: string | null; // Club team A UUID
+    teamBId?: string | null; // Club team B UUID
   };
 
   const {
@@ -89,6 +93,8 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
     fromHistory = false,
     scoreWasManuallyAdjusted = false,
     clubTeamOverride = null,
+    teamAId = null,
+    teamBId = null,
   } = params;
 
   // Local state for adjustable scores
@@ -100,6 +106,56 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
   const [canEditScoreB, setCanEditScoreB] = useState(teamMode === "A");
   const [scoreManuallyAdjusted, setScoreManuallyAdjusted] = useState(scoreWasManuallyAdjusted);
   const [syncModalVisible, setSyncModalVisible] = useState(false);
+  const [clubLogoUrl, setClubLogoUrl] = useState<string | undefined>(undefined);
+  const [courtBackgroundColor, setCourtBackgroundColor] = useState<string>("#1a472a");
+  const [courtLineColor, setCourtLineColor] = useState<string>("#FFFFFF");
+
+  /**
+   * Load club data (logo and court colors) if available
+   */
+  useEffect(() => {
+    const loadClubData = async () => {
+      try {
+        const clubService = ServiceFactory.getClubService();
+
+        // Determine which team is the club team based on clubTeamOverride or teamAId/teamBId
+        let clubId: string | null = null;
+        if (clubTeamOverride === "A" && teamAId) {
+          clubId = teamAId;
+        } else if (clubTeamOverride === "B" && teamBId) {
+          clubId = teamBId;
+        } else if (teamAId) {
+          clubId = teamAId;
+        } else if (teamBId) {
+          clubId = teamBId;
+        }
+
+        if (clubId) {
+          const club = await clubService.getClubById(clubId);
+          if (club) {
+            if (club.logoUrl) {
+              setClubLogoUrl(club.logoUrl);
+            }
+            // Use club colors if available, otherwise keep defaults
+            setCourtBackgroundColor(club.courtBackgroundColor || "#1a472a");
+            setCourtLineColor(club.courtLineColor || "#FFFFFF");
+
+            logInfo('MatchSummaryScreen', '🖼️ Club data loaded', {
+              clubId,
+              hasLogo: !!club.logoUrl,
+              hasColors: !!(club.courtBackgroundColor || club.courtLineColor),
+              backgroundColor: club.courtBackgroundColor || "default",
+              lineColor: club.courtLineColor || "default"
+            });
+          }
+        }
+      } catch (error) {
+        logError('MatchSummaryScreen', '❌ Error loading club data', { error });
+      }
+    };
+
+    loadClubData();
+  }, [teamAId, teamBId, clubTeamOverride]);
 
   /**
    * Log screen mount when user arrives on the view
@@ -666,6 +722,9 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
         players,
         watermark: false,
         scoreManuallyAdjusted,
+        clubLogoUrl,
+        courtBackgroundColor,
+        courtLineColor,
       });
 
       logInfo('MatchSummaryScreen', '✅ Premium PDF generated and saved successfully', {

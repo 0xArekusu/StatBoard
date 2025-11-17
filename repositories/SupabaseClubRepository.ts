@@ -30,8 +30,8 @@ export class SupabaseClubRepository implements IClubRepository {
       logoUrl: row.logo_url,
       primaryColor: row.primary_color,
       secondaryColor: row.secondary_color,
-      courtBackgroundColor: row.court_background_color,
-      courtLineColor: row.court_line_color,
+      courtBackgroundColor: row.court_background_color || "#1a472a",
+      courtLineColor: row.court_line_color || "#FFFFFF",
       ownerId: row.owner_id,
       ownerEmail: row.owner_email,
       subscriptionTier: row.subscription_tier || 'free',
@@ -106,11 +106,20 @@ export class SupabaseClubRepository implements IClubRepository {
         .eq("id", id)
         .single();
 
-      if (error) throw error;
+      if (error) {
+        // PGRST116 means no rows found, which is expected - don't log it as an error
+        if (error.code !== 'PGRST116') {
+          console.error("Error finding club by id:", error);
+        }
+        return null;
+      }
 
       return data ? this.mapToClub(data) : null;
-    } catch (error) {
-      console.error("Error finding club by id:", error);
+    } catch (error: any) {
+      // PGRST116 means no rows found, which is expected - don't log it as an error
+      if (error?.code !== 'PGRST116') {
+        console.error("Error finding club by id:", error);
+      }
       return null;
     }
   }

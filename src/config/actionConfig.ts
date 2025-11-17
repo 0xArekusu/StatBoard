@@ -47,9 +47,9 @@ export interface ActionConfig {
  *
  * Color palette:
  * - Shot: Orange/Red tones (#FF6B35, #4CAF50, #F44336)
- * - Rebound: Blue tones (#4A90E2, #FF9800, #2196F3)
- * - Foul: Red/Purple tones (#E74C3C, #9C27B0)
- * - Assist: Green (#27AE60)
+ * - Rebound: Blue tones (#4A90E2, #FF9800, #3F51B5)
+ * - Foul: Pink/Purple tones (#E91E63, #9C27B0)
+ * - Assist: Cyan (#00BCD4)
  * - Steal: Yellow (#F39C12)
  * - Block: Purple (#8E44AD)
  * - Turnover: Gray (#95A5A6)
@@ -114,7 +114,7 @@ export const ACTION_CONFIG: Record<string, ActionConfig> = {
         id: ReboundSpecification.DEFENSIVE,
         label: "Défensif",
         emoji: "🛡️",
-        color: "#2196F3",
+        color: "#3F51B5",
       },
     ],
   },
@@ -122,14 +122,14 @@ export const ACTION_CONFIG: Record<string, ActionConfig> = {
     id: ActionType.FOUL,
     emoji: "⚠️",
     label: "Faute",
-    color: "#E74C3C",
+    color: "#E91E63",
     description: "Faute commise",
     specifications: [
       {
         id: FoulSpecification.PERSONAL,
         label: "Personnelle",
         emoji: "👤",
-        color: "#E74C3C",
+        color: "#E91E63",
       },
       {
         id: FoulSpecification.TECHNICAL,
@@ -155,7 +155,7 @@ export const ACTION_CONFIG: Record<string, ActionConfig> = {
     id: ActionType.ASSIST,
     emoji: "🤝",
     label: "Passe décisive",
-    color: "#27AE60",
+    color: "#00BCD4",
     description: "Passe décisive",
     specifications: [],
   },
@@ -222,16 +222,23 @@ export function getActionColor(
   const config = ACTION_CONFIG[actionType];
   if (!config) return "#95A5A6"; // Default gray
 
-  // For shots with points, return points color
-  if (actionType === ActionType.SHOT && points && config.pointsOptions) {
-    const pointOption = config.pointsOptions.find((p) => p.id === points);
-    if (pointOption) return pointOption.color;
+  // For shots, prioritize specification (made/missed) over points
+  // This ensures made shots are green and missed shots are red
+  if (actionType === ActionType.SHOT && specification && config.specifications) {
+    const spec = config.specifications.find((s) => s.id === specification);
+    if (spec) return spec.color;
   }
 
-  // If specification provided, try to find spec color
+  // For other actions with specification, use spec color
   if (specification && config.specifications) {
     const spec = config.specifications.find((s) => s.id === specification);
     if (spec) return spec.color;
+  }
+
+  // For shots with points but no specification (shouldn't happen), return points color
+  if (actionType === ActionType.SHOT && points && config.pointsOptions) {
+    const pointOption = config.pointsOptions.find((p) => p.id === points);
+    if (pointOption) return pointOption.color;
   }
 
   return config.color;

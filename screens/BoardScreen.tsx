@@ -1942,6 +1942,8 @@ export default function BasketballCourt() {
         teamMode,
         players: allPlayers,
         clubTeamOverride,
+        teamAId,
+        teamBId,
       });
     } catch (error) {
       logError("BoardScreen", "❌ Error ending match", {

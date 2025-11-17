@@ -39,7 +39,7 @@ import SyncErrorModal from "../components/SyncErrorModal";
 import { useAuth } from "../src/contexts/AuthContext";
 import { supabase } from "../src/config/supabase";
 import { resolveTeamNames } from "../src/utils/teamNameResolver";
-import { determineClubTeam } from "../src/utils/clubTeamDetection";
+import { determineClubTeam, isUUID } from "../src/utils/clubTeamDetection";
 import { logInfo, logError } from "../utils/logger";
 import {
   ActionType,
@@ -353,6 +353,29 @@ export default function MatchHistoryScreen() {
           serverMatchId: match.serverMatchId
         });
 
+        // First, load match details to get team_a and team_b UUIDs
+        const { data: matchData, error: matchError } = await supabase
+          .from("matches")
+          .select("team_a, team_b")
+          .eq("id", match.serverMatchId)
+          .single();
+
+        if (matchError) {
+          logError('MatchHistoryScreen', '❌ Error loading match from Supabase', {
+            serverMatchId: match.serverMatchId,
+            error: matchError.message
+          });
+        } else if (matchData) {
+          // Update match with team_a and team_b from server
+          match.team_a = matchData.team_a;
+          match.team_b = matchData.team_b;
+          logInfo('MatchHistoryScreen', '✅ Match team IDs loaded', {
+            serverMatchId: match.serverMatchId,
+            teamA: matchData.team_a,
+            teamB: matchData.team_b
+          });
+        }
+
         const { data, error } = await supabase
           .from("match_players")
           .select("*")
@@ -488,6 +511,8 @@ export default function MatchHistoryScreen() {
         fromHistory: true, // Indicate this is from history (read-only mode)
         scoreWasManuallyAdjusted: match.score_manually_adjusted === 1,
         clubTeamOverride: clubTeamLetter, // Override club team detection
+        teamAId: isUUID(match.team_a) ? match.team_a : null,
+        teamBId: isUUID(match.team_b) ? match.team_b : null,
       });
     } catch (error) {
       logError('MatchHistoryScreen', '❌ Error loading match details', {
