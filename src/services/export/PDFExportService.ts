@@ -587,13 +587,13 @@ export class PDFExportService {
       />
     `
       : `
-      <!-- App logo when no club logo -->
+      <!-- App logo when no club logo - sized to fit inside circle radius 76 -->
       <image
         href="${this.generateAppLogoSVG("#FF8C42", "#000000", true)}"
-        x="231"
-        y="497"
-        width="152"
-        height="152"
+        x="245"
+        y="511"
+        width="124"
+        height="124"
         preserveAspectRatio="xMidYMid meet"
       />
     `;
