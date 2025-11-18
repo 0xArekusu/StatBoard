@@ -944,8 +944,13 @@ export class PDFExportService {
       font-size: 14px;
       margin-bottom: 10px;
       padding: 5px;
-      background-color: #4CAF50;
       color: white;
+    }
+    .stats-section.team-a h2 {
+      background-color: #FF6B35;
+    }
+    .stats-section.team-b h2 {
+      background-color: #004E89;
     }
     .stats-table {
       width: 100%;
@@ -1230,7 +1235,7 @@ export class PDFExportService {
     statsTeamA.length > 0
       ? `
   <!-- Team A Stats -->
-  <div class="stats-section">
+  <div class="stats-section team-a">
     <h2>${teamA} - Statistiques individuelles</h2>
     <table class="stats-table">
       <thead>
@@ -1319,7 +1324,7 @@ export class PDFExportService {
     statsTeamB.length > 0
       ? `
   <!-- Team B Stats -->
-  <div class="stats-section">
+  <div class="stats-section team-b">
     <h2>${teamB} - Statistiques individuelles</h2>
     <table class="stats-table">
       <thead>
