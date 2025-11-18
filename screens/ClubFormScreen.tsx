@@ -38,6 +38,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import * as ImagePicker from "expo-image-picker";
 import { supabase } from "../src/config/supabase";
 import { ServiceFactory } from "../services/ServiceFactory";
+import { PhotoUploadService } from "../services/PhotoUploadService";
 import type { Club } from "../models/Club";
 import { ROUTES } from "../constants/routes";
 import { useAuth } from "../src/contexts/AuthContext";
@@ -181,8 +182,8 @@ export default function ClubFormScreen() {
   }, []);
 
   /**
-   * Handle logo image selection
-   * Requests media library permissions and launches image picker
+   * Handle logo image selection and upload to Supabase Storage
+   * Requests media library permissions, launches image picker, and uploads to cloud
    */
   const handlePickImage = async () => {
     logInfo("ClubFormScreen", "📸 Requesting media library permissions");
@@ -212,12 +213,32 @@ export default function ClubFormScreen() {
     });
 
     if (!result.canceled && result.assets && result.assets.length > 0) {
+      const localUri = result.assets[0].uri;
       logInfo("ClubFormScreen", "✅ Image selected", {
-        uri: result.assets[0].uri,
+        uri: localUri,
         width: result.assets[0].width,
         height: result.assets[0].height,
       });
-      setLogoUri(result.assets[0].uri);
+
+      // Upload to Supabase Storage using PhotoUploadService
+      logInfo("ClubFormScreen", "⬆️ Uploading logo to Supabase Storage");
+      const photoService = new PhotoUploadService(supabase);
+      const clubLogoId = clubId || `club-${Date.now()}`;
+      const { url, error } = await photoService.uploadPlayerPhoto(
+        localUri,
+        clubLogoId
+      );
+
+      if (error) {
+        logError("ClubFormScreen", "❌ Failed to upload logo", { error });
+        Alert.alert("Erreur", "Impossible d'uploader le logo");
+        return;
+      }
+
+      if (url) {
+        logInfo("ClubFormScreen", "✅ Logo uploaded successfully", { url });
+        setLogoUri(url);
+      }
     } else {
       logInfo("ClubFormScreen", "ℹ️ Image selection cancelled");
     }

@@ -408,6 +408,7 @@ export default function MatchHistoryScreen() {
             name: mp.player_name,
             team: mp.team,
             isSubstitute: !mp.is_starter,
+            photoUrl: mp.photo_url,
           }));
 
           // Extract all actions from all players
@@ -477,6 +478,7 @@ export default function MatchHistoryScreen() {
           name: mp.player_name,
           team: mp.team,
           isSubstitute: !mp.is_starter,
+          photoUrl: mp.photo_url,
         }));
 
         logInfo('MatchHistoryScreen', '✅ Match data loaded from SQLite', {

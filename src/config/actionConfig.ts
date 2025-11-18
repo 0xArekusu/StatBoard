@@ -229,6 +229,11 @@ export function getActionColor(
     if (spec) return spec.color;
   }
 
+  // For rebounds, always use generic color (not specification colors)
+  if (actionType === ActionType.REBOUND) {
+    return config.color;
+  }
+
   // For other actions with specification, use spec color
   if (specification && config.specifications) {
     const spec = config.specifications.find((s) => s.id === specification);

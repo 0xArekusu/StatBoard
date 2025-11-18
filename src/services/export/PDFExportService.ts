@@ -8,7 +8,7 @@ import {
   FoulSpecification,
 } from "../../models/ActionTypes";
 import type { CourtMarker } from "../../../components/BasketballCourtSVG";
-import { getActionColor } from "../../config/actionConfig";
+import { getActionColor, ACTION_CONFIG } from "../../config/actionConfig";
 
 interface Player {
   id: number;
@@ -41,7 +41,7 @@ export class PDFExportService {
    * Generate StatBoard logo SVG
    */
   private static generateStatBoardLogoSVG(): string {
-    const svgString = ``;
+    const svgString = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="500" zoomAndPan="magnify" viewBox="0 0 375 374.999991" height="500" preserveAspectRatio="xMidYMid meet" version="1.0"><defs><g/><clipPath id="aa14aa3478"><path d="M 11.292969 106.320312 L 350.5625 106.320312 L 350.5625 172.984375 L 11.292969 172.984375 Z M 11.292969 106.320312 " clip-rule="nonzero"/></clipPath><clipPath id="81f306d547"><path d="M 0.292969 0.320312 L 339.5625 0.320312 L 339.5625 66.984375 L 0.292969 66.984375 Z M 0.292969 0.320312 " clip-rule="nonzero"/></clipPath><clipPath id="67bd4031f7"><rect x="0" width="340" y="0" height="67"/></clipPath><clipPath id="1663a2c298"><path d="M 76 55 L 115 55 L 115 99.140625 L 76 99.140625 Z M 76 55 " clip-rule="nonzero"/></clipPath><clipPath id="e3c97b1f62"><path d="M 68.375 49 L 109 49 L 109 88 L 68.375 88 Z M 68.375 49 " clip-rule="nonzero"/></clipPath><clipPath id="de3d5eeaf6"><path d="M 68.375 40 L 103 40 L 103 64 L 68.375 64 Z M 68.375 40 " clip-rule="nonzero"/></clipPath><clipPath id="da684b1408"><path d="M 82 34.832031 L 108 34.832031 L 108 47 L 82 47 Z M 82 34.832031 " clip-rule="nonzero"/></clipPath><clipPath id="07a01cce0b"><path d="M 99 62 L 125 62 L 125 99.140625 L 99 99.140625 Z M 99 62 " clip-rule="nonzero"/></clipPath><clipPath id="7920a7ed85"><path d="M 117 58 L 132.679688 58 L 132.679688 88 L 117 88 Z M 117 58 " clip-rule="nonzero"/></clipPath><clipPath id="2bc0171a2a"><path d="M 111 44 L 132.679688 44 L 132.679688 63 L 111 63 Z M 111 44 " clip-rule="nonzero"/></clipPath><clipPath id="a612a9693e"><path d="M 76 55 L 115 55 L 115 99.140625 L 76 99.140625 Z M 76 55 " clip-rule="nonzero"/></clipPath><clipPath id="7a26b6f0e6"><path d="M 136 0.921875 L 368 0.921875 L 368 133 L 136 133 Z M 136 0.921875 " clip-rule="nonzero"/></clipPath><clipPath id="6caace87a5"><rect x="0" width="232" y="0" height="133"/></clipPath><clipPath id="1455198bf7"><path d="M 0.921875 0.921875 L 69 0.921875 L 69 133 L 0.921875 133 Z M 0.921875 0.921875 " clip-rule="nonzero"/></clipPath><clipPath id="62b2bbf020"><rect x="0" width="69" y="0" height="133"/></clipPath><clipPath id="96f7e14ca3"><path d="M 16 105 L 347 105 L 347 182.839844 L 16 182.839844 Z M 16 105 " clip-rule="nonzero"/></clipPath><clipPath id="09bb9cc649"><rect x="0" width="331" y="0" height="78"/></clipPath><clipPath id="90a7471506"><rect x="0" width="368" y="0" height="183"/></clipPath></defs><rect x="-37.5" width="450" fill="#ffffff" y="-37.499999" height="449.999989" fill-opacity="1"/><rect x="-37.5" width="450" fill="#ffffff" y="-37.499999" height="449.999989" fill-opacity="1"/><g transform="matrix(1, 0, 0, 1, 7, 91)"><g clip-path="url(#90a7471506)"><g clip-path="url(#aa14aa3478)"><g transform="matrix(1, 0, 0, 1, 11, 106)"><g clip-path="url(#67bd4031f7)"><g clip-path="url(#81f306d547)"><path fill="#000000" d="M 0.292969 0.320312 L 339.597656 0.320312 L 339.597656 66.984375 L 0.292969 66.984375 Z M 0.292969 0.320312 " fill-opacity="1" fill-rule="nonzero"/></g></g></g></g><g clip-path="url(#1663a2c298)"><path fill="#000000" d="M 110.460938 55.265625 L 114.6875 60.484375 C 104.394531 68.054688 108.773438 94.378906 97.359375 99.140625 C 89.285156 98.347656 82.082031 94.542969 76.886719 88.863281 C 87.292969 76.316406 98.054688 64.367188 110.460938 55.265625 Z M 110.460938 55.265625 " fill-opacity="1" fill-rule="evenodd"/></g><g clip-path="url(#e3c97b1f62)"><path fill="#000000" d="M 104.394531 49.390625 L 108.945312 53.960938 C 93.871094 66.785156 84.332031 77.53125 76.132812 87.773438 L 75.996094 87.851562 C 71.269531 82.238281 68.421875 74.980469 68.421875 67.0625 C 68.421875 66.421875 68.441406 65.785156 68.476562 65.15625 C 74.183594 53.59375 95.628906 57.382812 104.394531 49.394531 Z M 104.394531 49.390625 " fill-opacity="1" fill-rule="evenodd"/></g><g clip-path="url(#de3d5eeaf6)"><path fill="#000000" d="M 85.402344 40.53125 C 92.570312 40.601562 101.671875 45.230469 102.554688 47.875 C 102.265625 54.515625 71.855469 52.566406 68.65625 63.527344 L 68.613281 63.535156 C 69.617188 54.285156 74.523438 46.207031 81.640625 41 C 82.804688 40.660156 84.078125 40.515625 85.402344 40.53125 Z M 85.402344 40.53125 " fill-opacity="1" fill-rule="evenodd"/></g><g clip-path="url(#da684b1408)"><path fill="#000000" d="M 100.53125 34.828125 C 102.140625 34.828125 103.730469 34.949219 105.277344 35.179688 C 110.054688 40.367188 107.503906 45.03125 104.941406 46.457031 C 102.75 48.023438 97.105469 38.222656 82.945312 40.09375 C 88 36.765625 94.039062 34.828125 100.53125 34.828125 Z M 100.53125 34.828125 " fill-opacity="1" fill-rule="evenodd"/></g><g clip-path="url(#07a01cce0b)"><path fill="#000000" d="M 115.167969 62.195312 C 115.460938 62.199219 115.769531 62.257812 116.089844 62.371094 C 120.277344 65.667969 127.929688 81.53125 123.457031 89.4375 C 123.457031 89.4375 123.457031 89.441406 123.457031 89.441406 C 117.628906 95.410156 109.507812 99.113281 100.53125 99.113281 C 100.28125 99.113281 100.039062 99.113281 99.792969 99.105469 C 109.464844 92.089844 107.359375 64.121094 115.167969 62.195312 Z M 115.167969 62.195312 " fill-opacity="1" fill-rule="evenodd"/></g><g clip-path="url(#7920a7ed85)"><path fill="#000000" d="M 122.894531 58.304688 C 126.410156 58.417969 130.511719 60.265625 132.445312 64.289062 L 132.546875 64.53125 C 132.609375 65.367188 132.644531 66.210938 132.644531 67.0625 C 132.644531 75.035156 129.753906 82.335938 124.96875 87.964844 C 129.398438 74.011719 115.925781 61.742188 117.390625 60.378906 C 118.359375 58.96875 120.488281 58.230469 122.894531 58.304688 Z M 122.894531 58.304688 " fill-opacity="1" fill-rule="evenodd"/></g><g clip-path="url(#2bc0171a2a)"><path fill="#000000" d="M 123.914062 44.976562 C 128.449219 49.816406 131.523438 56.058594 132.394531 62.984375 C 128.980469 57.253906 123.890625 55.175781 115.660156 59.507812 L 111.4375 54.179688 C 114.191406 51.683594 120.007812 47.371094 123.914062 44.976562 Z M 123.914062 44.976562 " fill-opacity="1" fill-rule="evenodd"/></g><path fill="#000000" d="M 106.664062 35.414062 C 112.957031 36.636719 118.59375 39.707031 122.996094 44.035156 L 122.917969 44.175781 C 118.285156 46.292969 114.324219 49.765625 110.242188 52.984375 L 105.371094 48.414062 C 108.546875 45.203125 110.992188 41.695312 106.664062 35.414062 Z M 106.664062 35.414062 " fill-opacity="1" fill-rule="evenodd"/><g clip-path="url(#a612a9693e)"><path fill="#000000" d="M 110.460938 55.265625 L 114.6875 60.484375 C 104.394531 68.054688 108.773438 94.378906 97.359375 99.140625 C 89.285156 98.347656 82.082031 94.542969 76.886719 88.863281 C 87.292969 76.316406 98.054688 64.367188 110.460938 55.265625 Z M 110.460938 55.265625 " fill-opacity="1" fill-rule="evenodd"/></g><g clip-path="url(#7a26b6f0e6)"><g transform="matrix(1, 0, 0, 1, 136, 0)"><g clip-path="url(#6caace87a5)"><g fill="#000000" fill-opacity="1"><g transform="translate(0.380879, 98.97403)"><g><path d="M 55.015625 -32.671875 C 54.753906 -38.421875 53.269531 -42.972656 50.5625 -46.328125 C 47.863281 -49.679688 43.554688 -51.359375 37.640625 -51.359375 C 31.273438 -51.359375 26.695312 -49.523438 23.90625 -45.859375 C 21.125 -42.203125 19.734375 -37.804688 19.734375 -32.671875 C 19.734375 -29.273438 20.320312 -26.160156 21.5 -23.328125 C 22.675781 -20.492188 24.59375 -18.226562 27.25 -16.53125 C 29.90625 -14.832031 33.367188 -13.984375 37.640625 -13.984375 C 43.035156 -13.984375 47.28125 -15.503906 50.375 -18.546875 C 53.46875 -21.597656 55.015625 -26.304688 55.015625 -32.671875 Z M 75.921875 0 L 60.234375 0 C 59.535156 -1.738281 58.925781 -3.4375 58.40625 -5.09375 C 57.882812 -6.75 57.40625 -8.40625 56.96875 -10.0625 C 54.789062 -6.84375 51.9375 -4.25 48.40625 -2.28125 C 44.882812 -0.320312 40.679688 0.65625 35.796875 0.65625 C 29.617188 0.65625 24.132812 -0.820312 19.34375 -3.78125 C 14.550781 -6.75 10.800781 -10.78125 8.09375 -15.875 C 5.394531 -20.96875 4.046875 -26.609375 4.046875 -32.796875 C 4.046875 -38.898438 5.375 -44.453125 8.03125 -49.453125 C 10.6875 -54.460938 14.519531 -58.46875 19.53125 -61.46875 C 24.539062 -64.476562 30.578125 -65.984375 37.640625 -65.984375 C 47.566406 -65.984375 55.46875 -62.976562 61.34375 -56.96875 C 67.226562 -50.957031 70.34375 -42.859375 70.6875 -32.671875 C 70.78125 -30.492188 70.867188 -27.660156 70.953125 -24.171875 C 71.035156 -20.691406 71.40625 -16.859375 72.0625 -12.671875 C 72.71875 -8.492188 74.003906 -4.269531 75.921875 0 Z M 75.921875 0 "/></g></g></g><g fill="#000000" fill-opacity="1"><g transform="translate(78.906652, 98.97403)"><g><path d="M 57.890625 -18.03125 L 57.890625 -1.953125 C 55.097656 -1.085938 51.9375 -0.394531 48.40625 0.125 C 44.882812 0.65625 41.335938 0.921875 37.765625 0.921875 C 30.617188 0.921875 24.519531 -0.582031 19.46875 -3.59375 C 14.414062 -6.601562 10.582031 -10.632812 7.96875 -15.6875 C 5.351562 -20.738281 4.046875 -26.351562 4.046875 -32.53125 C 4.046875 -38.71875 5.351562 -44.335938 7.96875 -49.390625 C 10.582031 -54.441406 14.414062 -58.46875 19.46875 -61.46875 C 24.519531 -64.476562 30.617188 -65.984375 37.765625 -65.984375 C 41.335938 -65.984375 44.882812 -65.742188 48.40625 -65.265625 C 51.9375 -64.785156 55.097656 -64.066406 57.890625 -63.109375 L 57.890625 -47.046875 C 55.710938 -48.265625 52.835938 -49.195312 49.265625 -49.84375 C 45.691406 -50.5 42.117188 -50.828125 38.546875 -50.828125 C 33.835938 -50.828125 30.113281 -50.019531 27.375 -48.40625 C 24.632812 -46.800781 22.675781 -44.625 21.5 -41.875 C 20.320312 -39.132812 19.734375 -36.066406 19.734375 -32.671875 C 19.734375 -29.273438 20.320312 -26.179688 21.5 -23.390625 C 22.675781 -20.597656 24.632812 -18.375 27.375 -16.71875 C 30.113281 -15.070312 33.835938 -14.25 38.546875 -14.25 C 42.117188 -14.25 45.691406 -14.59375 49.265625 -15.28125 C 52.835938 -15.976562 55.710938 -16.894531 57.890625 -18.03125 Z M 57.890625 -18.03125 "/></g></g></g><g fill="#000000" fill-opacity="1"><g transform="translate(142.145347, 98.97403)"><g><path d="M 23.515625 -32.671875 L 23.515625 0 L 7.84375 0 L 7.84375 -91.46875 L 23.515625 -91.46875 L 23.515625 -57.890625 C 25.691406 -60.410156 28.347656 -62.390625 31.484375 -63.828125 C 34.628906 -65.265625 38.203125 -65.984375 42.203125 -65.984375 C 48.210938 -65.984375 53.4375 -64.503906 57.875 -61.546875 C 62.320312 -58.585938 65.765625 -54.582031 68.203125 -49.53125 C 70.648438 -44.476562 71.875 -38.859375 71.875 -32.671875 L 71.875 0 L 56.1875 0 L 56.1875 -32.671875 C 56.1875 -38.242188 54.96875 -42.75 52.53125 -46.1875 C 50.09375 -49.632812 46.085938 -51.359375 40.515625 -51.359375 C 34.929688 -51.359375 30.703125 -49.613281 27.828125 -46.125 C 24.953125 -42.644531 23.515625 -38.160156 23.515625 -32.671875 Z M 23.515625 -32.671875 "/></g></g></g><g fill="#000000" fill-opacity="1"><g transform="translate(220.82559, 98.97403)"><g/></g></g></g></g></g><g clip-path="url(#1455198bf7)"><g transform="matrix(1, 0, 0, 1, -0.000000000000000888, 0)"><g clip-path="url(#62b2bbf020)"><g fill="#000000" fill-opacity="1"><g transform="translate(3.890596, 98.97403)"><g><path d="M 57.890625 -18.03125 L 57.890625 -1.953125 C 55.097656 -1.085938 51.9375 -0.394531 48.40625 0.125 C 44.882812 0.65625 41.335938 0.921875 37.765625 0.921875 C 30.617188 0.921875 24.519531 -0.582031 19.46875 -3.59375 C 14.414062 -6.601562 10.582031 -10.632812 7.96875 -15.6875 C 5.351562 -20.738281 4.046875 -26.351562 4.046875 -32.53125 C 4.046875 -38.71875 5.351562 -44.335938 7.96875 -49.390625 C 10.582031 -54.441406 14.414062 -58.46875 19.46875 -61.46875 C 24.519531 -64.476562 30.617188 -65.984375 37.765625 -65.984375 C 41.335938 -65.984375 44.882812 -65.742188 48.40625 -65.265625 C 51.9375 -64.785156 55.097656 -64.066406 57.890625 -63.109375 L 57.890625 -47.046875 C 55.710938 -48.265625 52.835938 -49.195312 49.265625 -49.84375 C 45.691406 -50.5 42.117188 -50.828125 38.546875 -50.828125 C 33.835938 -50.828125 30.113281 -50.019531 27.375 -48.40625 C 24.632812 -46.800781 22.675781 -44.625 21.5 -41.875 C 20.320312 -39.132812 19.734375 -36.066406 19.734375 -32.671875 C 19.734375 -29.273438 20.320312 -26.179688 21.5 -23.390625 C 22.675781 -20.597656 24.632812 -18.375 27.375 -16.71875 C 30.113281 -15.070312 33.835938 -14.25 38.546875 -14.25 C 42.117188 -14.25 45.691406 -14.59375 49.265625 -15.28125 C 52.835938 -15.976562 55.710938 -16.894531 57.890625 -18.03125 Z M 57.890625 -18.03125 "/></g></g></g></g></g></g><g clip-path="url(#96f7e14ca3)"><g transform="matrix(1, 0, 0, 1, 16, 105)"><g clip-path="url(#09bb9cc649)"><g fill="#ffffff" fill-opacity="1"><g transform="translate(1.065655, 58.007297)"><g><path d="M 32.34375 -19.203125 C 32.1875 -22.578125 31.3125 -25.25 29.71875 -27.21875 C 28.132812 -29.195312 25.601562 -30.1875 22.125 -30.1875 C 18.382812 -30.1875 15.691406 -29.109375 14.046875 -26.953125 C 12.410156 -24.804688 11.59375 -22.222656 11.59375 -19.203125 C 11.59375 -17.203125 11.9375 -15.367188 12.625 -13.703125 C 13.320312 -12.046875 14.453125 -10.71875 16.015625 -9.71875 C 17.578125 -8.71875 19.613281 -8.21875 22.125 -8.21875 C 25.300781 -8.21875 27.796875 -9.113281 29.609375 -10.90625 C 31.429688 -12.695312 32.34375 -15.460938 32.34375 -19.203125 Z M 44.625 0 L 35.40625 0 C 35 -1.019531 34.640625 -2.015625 34.328125 -2.984375 C 34.023438 -3.960938 33.742188 -4.941406 33.484375 -5.921875 C 32.203125 -4.023438 30.523438 -2.5 28.453125 -1.34375 C 26.378906 -0.1875 23.910156 0.390625 21.046875 0.390625 C 17.410156 0.390625 14.179688 -0.476562 11.359375 -2.21875 C 8.546875 -3.96875 6.34375 -6.335938 4.75 -9.328125 C 3.164062 -12.328125 2.375 -15.644531 2.375 -19.28125 C 2.375 -22.863281 3.15625 -26.125 4.71875 -29.0625 C 6.28125 -32.007812 8.535156 -34.367188 11.484375 -36.140625 C 14.429688 -37.910156 17.976562 -38.796875 22.125 -38.796875 C 27.957031 -38.796875 32.601562 -37.023438 36.0625 -33.484375 C 39.519531 -29.953125 41.351562 -25.191406 41.5625 -19.203125 C 41.601562 -17.921875 41.648438 -16.253906 41.703125 -14.203125 C 41.753906 -12.160156 41.972656 -9.910156 42.359375 -7.453125 C 42.742188 -4.992188 43.5 -2.507812 44.625 0 Z M 44.625 0 "/></g></g></g><g fill="#ffffff" fill-opacity="1"><g transform="translate(47.221306, 58.007297)"><g><path d="M 2.84375 -1.234375 L 2.84375 -9.90625 C 4.019531 -9.601562 5.503906 -9.332031 7.296875 -9.09375 C 9.085938 -8.863281 10.941406 -8.6875 12.859375 -8.5625 C 14.785156 -8.4375 16.515625 -8.375 18.046875 -8.375 C 21.066406 -8.375 23.242188 -8.613281 24.578125 -9.09375 C 25.910156 -9.582031 26.578125 -10.363281 26.578125 -11.4375 C 26.578125 -11.957031 26.34375 -12.394531 25.875 -12.75 C 25.414062 -13.101562 24.492188 -13.457031 23.109375 -13.8125 C 21.734375 -14.175781 19.640625 -14.613281 16.828125 -15.125 C 15.847656 -15.332031 14.601562 -15.601562 13.09375 -15.9375 C 11.582031 -16.269531 10.054688 -16.820312 8.515625 -17.59375 C 6.984375 -18.363281 5.707031 -19.476562 4.6875 -20.9375 C 3.664062 -22.394531 3.15625 -24.328125 3.15625 -26.734375 C 3.15625 -29.492188 3.859375 -31.753906 5.265625 -33.515625 C 6.671875 -35.285156 8.613281 -36.609375 11.09375 -37.484375 C 13.582031 -38.359375 16.390625 -38.796875 19.515625 -38.796875 C 20.796875 -38.796875 22.253906 -38.726562 23.890625 -38.59375 C 25.523438 -38.46875 27.1875 -38.273438 28.875 -38.015625 C 30.570312 -37.765625 32.082031 -37.457031 33.40625 -37.09375 L 33.40625 -28.421875 C 32.4375 -28.722656 31.109375 -28.988281 29.421875 -29.21875 C 27.734375 -29.457031 25.976562 -29.640625 24.15625 -29.765625 C 22.34375 -29.890625 20.691406 -29.953125 19.203125 -29.953125 C 16.535156 -29.953125 14.664062 -29.695312 13.59375 -29.1875 C 12.519531 -28.675781 11.984375 -27.957031 11.984375 -27.03125 C 11.984375 -26.0625 12.609375 -25.347656 13.859375 -24.890625 C 15.117188 -24.429688 17.382812 -23.867188 20.65625 -23.203125 C 23.164062 -22.734375 25.546875 -22.15625 27.796875 -21.46875 C 30.054688 -20.78125 31.890625 -19.71875 33.296875 -18.28125 C 34.703125 -16.84375 35.40625 -14.71875 35.40625 -11.90625 C 35.40625 -9.039062 34.609375 -6.6875 33.015625 -4.84375 C 31.429688 -3 29.296875 -1.65625 26.609375 -0.8125 C 23.921875 0.03125 20.914062 0.453125 17.59375 0.453125 C 16.257812 0.453125 14.707031 0.390625 12.9375 0.265625 C 11.175781 0.140625 9.410156 -0.046875 7.640625 -0.296875 C 5.878906 -0.554688 4.28125 -0.867188 2.84375 -1.234375 Z M 2.84375 -1.234375 "/></g></g></g><g fill="#ffffff" fill-opacity="1"><g transform="translate(84.775564, 58.007297)"><g><path d="M 2.84375 -1.234375 L 2.84375 -9.90625 C 4.019531 -9.601562 5.503906 -9.332031 7.296875 -9.09375 C 9.085938 -8.863281 10.941406 -8.6875 12.859375 -8.5625 C 14.785156 -8.4375 16.515625 -8.375 18.046875 -8.375 C 21.066406 -8.375 23.242188 -8.613281 24.578125 -9.09375 C 25.910156 -9.582031 26.578125 -10.363281 26.578125 -11.4375 C 26.578125 -11.957031 26.34375 -12.394531 25.875 -12.75 C 25.414062 -13.101562 24.492188 -13.457031 23.109375 -13.8125 C 21.734375 -14.175781 19.640625 -14.613281 16.828125 -15.125 C 15.847656 -15.332031 14.601562 -15.601562 13.09375 -15.9375 C 11.582031 -16.269531 10.054688 -16.820312 8.515625 -17.59375 C 6.984375 -18.363281 5.707031 -19.476562 4.6875 -20.9375 C 3.664062 -22.394531 3.15625 -24.328125 3.15625 -26.734375 C 3.15625 -29.492188 3.859375 -31.753906 5.265625 -33.515625 C 6.671875 -35.285156 8.613281 -36.609375 11.09375 -37.484375 C 13.582031 -38.359375 16.390625 -38.796875 19.515625 -38.796875 C 20.796875 -38.796875 22.253906 -38.726562 23.890625 -38.59375 C 25.523438 -38.46875 27.1875 -38.273438 28.875 -38.015625 C 30.570312 -37.765625 32.082031 -37.457031 33.40625 -37.09375 L 33.40625 -28.421875 C 32.4375 -28.722656 31.109375 -28.988281 29.421875 -29.21875 C 27.734375 -29.457031 25.976562 -29.640625 24.15625 -29.765625 C 22.34375 -29.890625 20.691406 -29.953125 19.203125 -29.953125 C 16.535156 -29.953125 14.664062 -29.695312 13.59375 -29.1875 C 12.519531 -28.675781 11.984375 -27.957031 11.984375 -27.03125 C 11.984375 -26.0625 12.609375 -25.347656 13.859375 -24.890625 C 15.117188 -24.429688 17.382812 -23.867188 20.65625 -23.203125 C 23.164062 -22.734375 25.546875 -22.15625 27.796875 -21.46875 C 30.054688 -20.78125 31.890625 -19.71875 33.296875 -18.28125 C 34.703125 -16.84375 35.40625 -14.71875 35.40625 -11.90625 C 35.40625 -9.039062 34.609375 -6.6875 33.015625 -4.84375 C 31.429688 -3 29.296875 -1.65625 26.609375 -0.8125 C 23.921875 0.03125 20.914062 0.453125 17.59375 0.453125 C 16.257812 0.453125 14.707031 0.390625 12.9375 0.265625 C 11.175781 0.140625 9.410156 -0.046875 7.640625 -0.296875 C 5.878906 -0.554688 4.28125 -0.867188 2.84375 -1.234375 Z M 2.84375 -1.234375 "/></g></g></g><g fill="#ffffff" fill-opacity="1"><g transform="translate(122.56023, 58.007297)"><g><path d="M 13.828125 -38.40625 L 13.828125 0 L 4.609375 0 L 4.609375 -38.40625 Z M 9.21875 -42.78125 C 7.375 -42.78125 5.925781 -43.367188 4.875 -44.546875 C 3.820312 -45.722656 3.296875 -47.109375 3.296875 -48.703125 C 3.296875 -50.335938 3.820312 -51.71875 4.875 -52.84375 C 5.925781 -53.96875 7.375 -54.53125 9.21875 -54.53125 C 11.0625 -54.53125 12.492188 -53.953125 13.515625 -52.796875 C 14.546875 -51.648438 15.0625 -50.285156 15.0625 -48.703125 C 15.0625 -47.054688 14.546875 -45.65625 13.515625 -44.5 C 12.492188 -43.351562 11.0625 -42.78125 9.21875 -42.78125 Z M 9.21875 -42.78125 "/></g></g></g><g fill="#ffffff" fill-opacity="1"><g transform="translate(140.991777, 58.007297)"><g><path d="M 2.84375 -1.234375 L 2.84375 -9.90625 C 4.019531 -9.601562 5.503906 -9.332031 7.296875 -9.09375 C 9.085938 -8.863281 10.941406 -8.6875 12.859375 -8.5625 C 14.785156 -8.4375 16.515625 -8.375 18.046875 -8.375 C 21.066406 -8.375 23.242188 -8.613281 24.578125 -9.09375 C 25.910156 -9.582031 26.578125 -10.363281 26.578125 -11.4375 C 26.578125 -11.957031 26.34375 -12.394531 25.875 -12.75 C 25.414062 -13.101562 24.492188 -13.457031 23.109375 -13.8125 C 21.734375 -14.175781 19.640625 -14.613281 16.828125 -15.125 C 15.847656 -15.332031 14.601562 -15.601562 13.09375 -15.9375 C 11.582031 -16.269531 10.054688 -16.820312 8.515625 -17.59375 C 6.984375 -18.363281 5.707031 -19.476562 4.6875 -20.9375 C 3.664062 -22.394531 3.15625 -24.328125 3.15625 -26.734375 C 3.15625 -29.492188 3.859375 -31.753906 5.265625 -33.515625 C 6.671875 -35.285156 8.613281 -36.609375 11.09375 -37.484375 C 13.582031 -38.359375 16.390625 -38.796875 19.515625 -38.796875 C 20.796875 -38.796875 22.253906 -38.726562 23.890625 -38.59375 C 25.523438 -38.46875 27.1875 -38.273438 28.875 -38.015625 C 30.570312 -37.765625 32.082031 -37.457031 33.40625 -37.09375 L 33.40625 -28.421875 C 32.4375 -28.722656 31.109375 -28.988281 29.421875 -29.21875 C 27.734375 -29.457031 25.976562 -29.640625 24.15625 -29.765625 C 22.34375 -29.890625 20.691406 -29.953125 19.203125 -29.953125 C 16.535156 -29.953125 14.664062 -29.695312 13.59375 -29.1875 C 12.519531 -28.675781 11.984375 -27.957031 11.984375 -27.03125 C 11.984375 -26.0625 12.609375 -25.347656 13.859375 -24.890625 C 15.117188 -24.429688 17.382812 -23.867188 20.65625 -23.203125 C 23.164062 -22.734375 25.546875 -22.15625 27.796875 -21.46875 C 30.054688 -20.78125 31.890625 -19.71875 33.296875 -18.28125 C 34.703125 -16.84375 35.40625 -14.71875 35.40625 -11.90625 C 35.40625 -9.039062 34.609375 -6.6875 33.015625 -4.84375 C 31.429688 -3 29.296875 -1.65625 26.609375 -0.8125 C 23.921875 0.03125 20.914062 0.453125 17.59375 0.453125 C 16.257812 0.453125 14.707031 0.390625 12.9375 0.265625 C 11.175781 0.140625 9.410156 -0.046875 7.640625 -0.296875 C 5.878906 -0.554688 4.28125 -0.867188 2.84375 -1.234375 Z M 2.84375 -1.234375 "/></g></g></g><g fill="#ffffff" fill-opacity="1"><g transform="translate(178.392412, 58.007297)"><g><path d="M 25.125 -37.09375 L 25.125 -28.5 L 13.21875 -28.5 L 13.21875 -19.203125 C 13.21875 -15.972656 14.0625 -13.332031 15.75 -11.28125 C 17.4375 -9.238281 20.019531 -8.21875 23.5 -8.21875 C 24.269531 -8.21875 24.910156 -8.269531 25.421875 -8.375 C 25.929688 -8.476562 26.445312 -8.554688 26.96875 -8.609375 L 26.96875 0 C 26.300781 0.0507812 25.75 0.128906 25.3125 0.234375 C 24.875 0.335938 24.171875 0.390625 23.203125 0.390625 C 19.253906 0.390625 15.847656 -0.476562 12.984375 -2.21875 C 10.117188 -3.96875 7.90625 -6.328125 6.34375 -9.296875 C 4.78125 -12.265625 4 -15.566406 4 -19.203125 L 4 -47.625 L 13.21875 -47.625 L 13.21875 -37.09375 Z M 25.125 -37.09375 "/></g></g></g><g fill="#ffffff" fill-opacity="1"><g transform="translate(206.577165, 58.007297)"><g><path d="M 32.34375 -19.203125 C 32.1875 -22.578125 31.3125 -25.25 29.71875 -27.21875 C 28.132812 -29.195312 25.601562 -30.1875 22.125 -30.1875 C 18.382812 -30.1875 15.691406 -29.109375 14.046875 -26.953125 C 12.410156 -24.804688 11.59375 -22.222656 11.59375 -19.203125 C 11.59375 -17.203125 11.9375 -15.367188 12.625 -13.703125 C 13.320312 -12.046875 14.453125 -10.71875 16.015625 -9.71875 C 17.578125 -8.71875 19.613281 -8.21875 22.125 -8.21875 C 25.300781 -8.21875 27.796875 -9.113281 29.609375 -10.90625 C 31.429688 -12.695312 32.34375 -15.460938 32.34375 -19.203125 Z M 44.625 0 L 35.40625 0 C 35 -1.019531 34.640625 -2.015625 34.328125 -2.984375 C 34.023438 -3.960938 33.742188 -4.941406 33.484375 -5.921875 C 32.203125 -4.023438 30.523438 -2.5 28.453125 -1.34375 C 26.378906 -0.1875 23.910156 0.390625 21.046875 0.390625 C 17.410156 0.390625 14.179688 -0.476562 11.359375 -2.21875 C 8.546875 -3.96875 6.34375 -6.335938 4.75 -9.328125 C 3.164062 -12.328125 2.375 -15.644531 2.375 -19.28125 C 2.375 -22.863281 3.15625 -26.125 4.71875 -29.0625 C 6.28125 -32.007812 8.535156 -34.367188 11.484375 -36.140625 C 14.429688 -37.910156 17.976562 -38.796875 22.125 -38.796875 C 27.957031 -38.796875 32.601562 -37.023438 36.0625 -33.484375 C 39.519531 -29.953125 41.351562 -25.191406 41.5625 -19.203125 C 41.601562 -17.921875 41.648438 -16.253906 41.703125 -14.203125 C 41.753906 -12.160156 41.972656 -9.910156 42.359375 -7.453125 C 42.742188 -4.992188 43.5 -2.507812 44.625 0 Z M 44.625 0 "/></g></g></g><g fill="#ffffff" fill-opacity="1"><g transform="translate(252.732816, 58.007297)"><g><path d="M 42.25 -19.203125 L 42.25 0 L 33.03125 0 L 33.03125 -19.203125 C 33.03125 -22.429688 32.25 -25.066406 30.6875 -27.109375 C 29.125 -29.160156 26.703125 -30.1875 23.421875 -30.1875 C 20.148438 -30.1875 17.734375 -29.160156 16.171875 -27.109375 C 14.609375 -25.066406 13.828125 -22.429688 13.828125 -19.203125 L 13.828125 0 L 4.609375 0 L 4.609375 -19.203125 C 4.609375 -22.835938 5.347656 -26.140625 6.828125 -29.109375 C 8.316406 -32.078125 10.46875 -34.429688 13.28125 -36.171875 C 16.101562 -37.921875 19.484375 -38.796875 23.421875 -38.796875 C 27.421875 -38.796875 30.816406 -37.921875 33.609375 -36.171875 C 36.398438 -34.429688 38.535156 -32.078125 40.015625 -29.109375 C 41.503906 -26.140625 42.25 -22.835938 42.25 -19.203125 Z M 42.25 -19.203125 "/></g></g></g><g fill="#ffffff" fill-opacity="1"><g transform="translate(298.965251, 58.007297)"><g><path d="M 25.125 -37.09375 L 25.125 -28.5 L 13.21875 -28.5 L 13.21875 -19.203125 C 13.21875 -15.972656 14.0625 -13.332031 15.75 -11.28125 C 17.4375 -9.238281 20.019531 -8.21875 23.5 -8.21875 C 24.269531 -8.21875 24.910156 -8.269531 25.421875 -8.375 C 25.929688 -8.476562 26.445312 -8.554688 26.96875 -8.609375 L 26.96875 0 C 26.300781 0.0507812 25.75 0.128906 25.3125 0.234375 C 24.875 0.335938 24.171875 0.390625 23.203125 0.390625 C 19.253906 0.390625 15.847656 -0.476562 12.984375 -2.21875 C 10.117188 -3.96875 7.90625 -6.328125 6.34375 -9.296875 C 4.78125 -12.265625 4 -15.566406 4 -19.203125 L 4 -47.625 L 13.21875 -47.625 L 13.21875 -37.09375 Z M 25.125 -37.09375 "/></g></g></g></g></g></g></g></g></svg>  `;
     return `data:image/svg+xml;base64,${btoa(svgString)}`;
   }
 
@@ -52,7 +52,7 @@ export class PDFExportService {
     try {
       const response = await fetch(url);
       if (!response.ok) {
-        console.warn(`Failed to fetch image: ${url}`);
+        console.warn(`[PDF Export] Failed to fetch image: ${url}`);
         return null;
       }
       const blob = await response.blob();
@@ -63,7 +63,7 @@ export class PDFExportService {
         reader.readAsDataURL(blob);
       });
     } catch (error) {
-      console.warn(`Error converting image to base64: ${url}`, error);
+      console.warn(`[PDF Export] Error converting image to base64: ${url}`, error);
       return null;
     }
   }
@@ -92,7 +92,7 @@ export class PDFExportService {
     // Convert player photos to base64 for PDF embedding
     const playersWithBase64Photos = await Promise.all(
       players.map(async (player) => {
-        if (player.photoUrl && player.photoUrl.startsWith('http')) {
+        if (player.photoUrl && player.photoUrl.startsWith("http")) {
           const base64Photo = await this.imageUrlToBase64(player.photoUrl);
           return {
             ...player,
@@ -102,6 +102,18 @@ export class PDFExportService {
         return player;
       })
     );
+
+    // Convert club logo to base64 for PDF embedding
+    console.log(`[PDF Export] Club logo URL:`, clubLogoUrl);
+    let clubLogoBase64 = clubLogoUrl;
+    if (clubLogoUrl && clubLogoUrl.startsWith("http")) {
+      console.log(`[PDF Export] Converting club logo to base64`);
+      const base64Logo = await this.imageUrlToBase64(clubLogoUrl);
+      clubLogoBase64 = base64Logo || clubLogoUrl;
+      console.log(`[PDF Export] Club logo conversion complete, has base64:`, !!base64Logo);
+    } else {
+      console.log(`[PDF Export] Club logo not converted (not http or undefined)`);
+    }
 
     const totalPeriods = matchFormat === "2_halves" ? 2 : 4;
     const periodLabel = matchFormat === "2_halves" ? "MT" : "Q";
@@ -126,12 +138,14 @@ export class PDFExportService {
     }
 
     // Calculate player stats - filter by teamMode
-    const playersTeamA = (teamMode === "A" || teamMode === "BOTH")
-      ? playersWithBase64Photos.filter((p) => p.team === "A")
-      : [];
-    const playersTeamB = (teamMode === "B" || teamMode === "BOTH")
-      ? playersWithBase64Photos.filter((p) => p.team === "B")
-      : [];
+    const playersTeamA =
+      teamMode === "A" || teamMode === "BOTH"
+        ? playersWithBase64Photos.filter((p) => p.team === "A")
+        : [];
+    const playersTeamB =
+      teamMode === "B" || teamMode === "BOTH"
+        ? playersWithBase64Photos.filter((p) => p.team === "B")
+        : [];
 
     const statsTeamA = playersTeamA.map((player) => ({
       ...player,
@@ -161,11 +175,11 @@ export class PDFExportService {
       teamMode,
       watermark,
       scoreManuallyAdjusted,
-      clubLogoUrl,
+      clubLogoUrl: clubLogoBase64,
       courtBackgroundColor,
       courtLineColor,
       actions,
-      players,
+      players: playersWithBase64Photos,
     });
 
     // Generate PDF using expo-print
@@ -201,7 +215,10 @@ export class PDFExportService {
         totalPeriods - 1
       );
 
-      if (action.type === ActionType.SHOT && action.specification === ShotSpecification.MADE) {
+      if (
+        action.type === ActionType.SHOT &&
+        action.specification === ShotSpecification.MADE
+      ) {
         const points = action.points || 0;
         if (action.team === "A") {
           periodScoresA[periodIndex] += points;
@@ -222,7 +239,9 @@ export class PDFExportService {
 
     // Shots
     const shots = playerActions.filter((a) => a.type === ActionType.SHOT);
-    const madeShots = shots.filter((a) => a.specification === ShotSpecification.MADE);
+    const madeShots = shots.filter(
+      (a) => a.specification === ShotSpecification.MADE
+    );
 
     const onePtMade = madeShots.filter((a) => a.points === 1).length;
     const twoPtMade = madeShots.filter((a) => a.points === 2).length;
@@ -236,21 +255,41 @@ export class PDFExportService {
 
     // Rebounds
     const rebounds = playerActions.filter((a) => a.type === ActionType.REBOUND);
-    const offRebounds = rebounds.filter((a) => a.specification === ReboundSpecification.OFFENSIVE).length;
-    const defRebounds = rebounds.filter((a) => a.specification === ReboundSpecification.DEFENSIVE).length;
+    const offRebounds = rebounds.filter(
+      (a) => a.specification === ReboundSpecification.OFFENSIVE
+    ).length;
+    const defRebounds = rebounds.filter(
+      (a) => a.specification === ReboundSpecification.DEFENSIVE
+    ).length;
 
     // Fouls
     const fouls = playerActions.filter((a) => a.type === ActionType.FOUL);
-    const personalFouls = fouls.filter((a) => a.specification === FoulSpecification.PERSONAL).length;
-    const technicalFouls = fouls.filter((a) => a.specification === FoulSpecification.TECHNICAL).length;
-    const penalityFouls = fouls.filter((a) => a.specification === FoulSpecification.PENALITY).length;
-    const disqualificationFouls = fouls.filter((a) => a.specification === FoulSpecification.DISQUALIFICATION).length;
+    const personalFouls = fouls.filter(
+      (a) => a.specification === FoulSpecification.PERSONAL
+    ).length;
+    const technicalFouls = fouls.filter(
+      (a) => a.specification === FoulSpecification.TECHNICAL
+    ).length;
+    const penalityFouls = fouls.filter(
+      (a) => a.specification === FoulSpecification.PENALITY
+    ).length;
+    const disqualificationFouls = fouls.filter(
+      (a) => a.specification === FoulSpecification.DISQUALIFICATION
+    ).length;
 
     // New stats
-    const assists = playerActions.filter((a) => a.type === ActionType.ASSIST).length;
-    const steals = playerActions.filter((a) => a.type === ActionType.STEAL).length;
-    const blocks = playerActions.filter((a) => a.type === ActionType.BLOCK).length;
-    const turnovers = playerActions.filter((a) => a.type === ActionType.TURNOVER).length;
+    const assists = playerActions.filter(
+      (a) => a.type === ActionType.ASSIST
+    ).length;
+    const steals = playerActions.filter(
+      (a) => a.type === ActionType.STEAL
+    ).length;
+    const blocks = playerActions.filter(
+      (a) => a.type === ActionType.BLOCK
+    ).length;
+    const turnovers = playerActions.filter(
+      (a) => a.type === ActionType.TURNOVER
+    ).length;
 
     return {
       points: totalPoints,
@@ -326,11 +365,17 @@ export class PDFExportService {
     const xLabelsHTML = Array.from({ length: totalPeriods + 1 }, (_, i) => {
       const x = padding.left + (i * chartWidth) / totalPeriods;
       if (i === 0) {
-        return `<text x="${x}" y="${height - 10}" text-anchor="middle" font-size="10">Début</text>`;
+        return `<text x="${x}" y="${
+          height - 10
+        }" text-anchor="middle" font-size="10">Début</text>`;
       }
       return `
-        <text x="${x}" y="${height - 18}" text-anchor="middle" font-size="9">FIN</text>
-        <text x="${x}" y="${height - 8}" text-anchor="middle" font-size="10" font-weight="bold">${periodLabel}${i}</text>
+        <text x="${x}" y="${
+        height - 18
+      }" text-anchor="middle" font-size="9">FIN</text>
+        <text x="${x}" y="${
+        height - 8
+      }" text-anchor="middle" font-size="10" font-weight="bold">${periodLabel}${i}</text>
       `;
     }).join("");
 
@@ -338,8 +383,10 @@ export class PDFExportService {
     const ySteps = 5;
     const yLabelsHTML = Array.from({ length: ySteps + 1 }, (_, i) => {
       const value = Math.round((maxScore / ySteps) * i);
-      const y = padding.top + chartHeight - (value * yScale);
-      return `<text x="${padding.left - 5}" y="${y + 3}" text-anchor="end" font-size="9">${value}</text>`;
+      const y = padding.top + chartHeight - value * yScale;
+      return `<text x="${padding.left - 5}" y="${
+        y + 3
+      }" text-anchor="end" font-size="9">${value}</text>`;
     }).join("");
 
     return `
@@ -353,46 +400,76 @@ export class PDFExportService {
         <!-- Grid lines -->
         ${Array.from({ length: ySteps + 1 }, (_, i) => {
           const y = padding.top + chartHeight - (chartHeight / ySteps) * i;
-          return `<line x1="${padding.left}" y1="${y}" x2="${width - padding.right}" y2="${y}" stroke="#e0e0e0" stroke-width="1"/>`;
+          return `<line x1="${padding.left}" y1="${y}" x2="${
+            width - padding.right
+          }" y2="${y}" stroke="#e0e0e0" stroke-width="1"/>`;
         }).join("")}
 
         <!-- Axes -->
-        <line x1="${padding.left}" y1="${padding.top}" x2="${padding.left}" y2="${padding.top + chartHeight}" stroke="#333" stroke-width="2"/>
-        <line x1="${padding.left}" y1="${padding.top + chartHeight}" x2="${width - padding.right}" y2="${padding.top + chartHeight}" stroke="#333" stroke-width="2"/>
+        <line x1="${padding.left}" y1="${padding.top}" x2="${
+      padding.left
+    }" y2="${padding.top + chartHeight}" stroke="#333" stroke-width="2"/>
+        <line x1="${padding.left}" y1="${padding.top + chartHeight}" x2="${
+      width - padding.right
+    }" y2="${padding.top + chartHeight}" stroke="#333" stroke-width="2"/>
 
-        ${(teamMode === "A" || teamMode === "BOTH") ? `
+        ${
+          teamMode === "A" || teamMode === "BOTH"
+            ? `
         <!-- Team A line -->
         <path d="${pathA}" fill="none" stroke="#FF6B35" stroke-width="3"/>
-        ${allScoresA.map((score, i) => {
-          const x = padding.left + (i * chartWidth) / totalPeriods;
-          const y = padding.top + chartHeight - score * yScale;
-          return `<circle cx="${x}" cy="${y}" r="4" fill="#FF6B35"/>`;
-        }).join("")}
-        ` : ""}
+        ${allScoresA
+          .map((score, i) => {
+            const x = padding.left + (i * chartWidth) / totalPeriods;
+            const y = padding.top + chartHeight - score * yScale;
+            return `<circle cx="${x}" cy="${y}" r="4" fill="#FF6B35"/>`;
+          })
+          .join("")}
+        `
+            : ""
+        }
 
-        ${(teamMode === "B" || teamMode === "BOTH") ? `
+        ${
+          teamMode === "B" || teamMode === "BOTH"
+            ? `
         <!-- Team B line -->
         <path d="${pathB}" fill="none" stroke="#004E89" stroke-width="3"/>
-        ${allScoresB.map((score, i) => {
-          const x = padding.left + (i * chartWidth) / totalPeriods;
-          const y = padding.top + chartHeight - score * yScale;
-          return `<circle cx="${x}" cy="${y}" r="4" fill="#004E89"/>`;
-        }).join("")}
-        ` : ""}
+        ${allScoresB
+          .map((score, i) => {
+            const x = padding.left + (i * chartWidth) / totalPeriods;
+            const y = padding.top + chartHeight - score * yScale;
+            return `<circle cx="${x}" cy="${y}" r="4" fill="#004E89"/>`;
+          })
+          .join("")}
+        `
+            : ""
+        }
 
         <!-- Labels -->
         ${xLabelsHTML}
         ${yLabelsHTML}
 
         <!-- Legend -->
-        ${(teamMode === "A" || teamMode === "BOTH") ? `
+        ${
+          teamMode === "A" || teamMode === "BOTH"
+            ? `
         <circle cx="50" cy="15" r="4" fill="#FF6B35"/>
         <text x="58" y="18" font-size="10">${teamA}</text>
-        ` : ""}
-        ${(teamMode === "B" || teamMode === "BOTH") ? `
-        <circle cx="${teamMode === "BOTH" ? "150" : "50"}" cy="15" r="4" fill="#004E89"/>
-        <text x="${teamMode === "BOTH" ? "158" : "58"}" y="18" font-size="10">${teamB}</text>
-        ` : ""}
+        `
+            : ""
+        }
+        ${
+          teamMode === "B" || teamMode === "BOTH"
+            ? `
+        <circle cx="${
+          teamMode === "BOTH" ? "150" : "50"
+        }" cy="15" r="4" fill="#004E89"/>
+        <text x="${
+          teamMode === "BOTH" ? "158" : "58"
+        }" y="18" font-size="10">${teamB}</text>
+        `
+            : ""
+        }
       </svg>
     `;
   }
@@ -414,12 +491,17 @@ export class PDFExportService {
 
     // Markers are already in viewBox coordinates (0-615.75 x 0-1146.75)
     // The viewBox attribute handles scaling automatically to the specified width/height
-    const renderMarkers = markers.map((marker) => {
-      return `<circle cx="${marker.svgX}" cy="${marker.svgY}" r="8" fill="${marker.color || "#FF0000"}" stroke="#FFFFFF" stroke-width="2"/>`;
-    }).join("");
+    const renderMarkers = markers
+      .map((marker) => {
+        return `<circle cx="${marker.svgX}" cy="${marker.svgY}" r="8" fill="${
+          marker.color || "#FF0000"
+        }" stroke="#FFFFFF" stroke-width="2"/>`;
+      })
+      .join("");
 
     // Center logo if provided (center at 307, 573 in portrait viewBox space)
-    const renderCenterLogo = logoUrl ? `
+    const renderCenterLogo = logoUrl
+      ? `
       <defs>
         <clipPath id="logoClipPortrait">
           <circle cx="307" cy="573" r="76" />
@@ -434,7 +516,8 @@ export class PDFExportService {
         preserveAspectRatio="xMidYMid slice"
         clip-path="url(#logoClipPortrait)"
       />
-    ` : "";
+    `
+      : "";
 
     return `
       <svg width="${width}" height="${height}" viewBox="0 0 ${SVG_WIDTH} ${SVG_HEIGHT}" xmlns="http://www.w3.org/2000/svg">
@@ -608,7 +691,9 @@ export class PDFExportService {
   ): string {
     const width = 250;
     const height = 465;
-    const shotActions = actions.filter(a => a.type === ActionType.SHOT && a.player === playerId);
+    const shotActions = actions.filter(
+      (a) => a.type === ActionType.SHOT && a.player === playerId
+    );
 
     if (shotActions.length === 0) {
       return `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg"><text x="125" y="232" text-anchor="middle" font-size="14" fill="#999">Aucun tir</text></svg>`;
@@ -623,7 +708,14 @@ export class PDFExportService {
       };
     });
 
-    return this.generateBasketballCourtSVG(width, height, backgroundColor, lineColor, markers, logoUrl);
+    return this.generateBasketballCourtSVG(
+      width,
+      height,
+      backgroundColor,
+      lineColor,
+      markers,
+      logoUrl
+    );
   }
 
   /**
@@ -638,7 +730,9 @@ export class PDFExportService {
   ): string {
     const width = 250;
     const height = 465;
-    const nonShotActions = actions.filter(a => a.player === playerId && a.type !== ActionType.SHOT);
+    const nonShotActions = actions.filter(
+      (a) => a.player === playerId && a.type !== ActionType.SHOT
+    );
 
     if (nonShotActions.length === 0) {
       return `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg"><text x="125" y="232" text-anchor="middle" font-size="14" fill="#999">Aucune action</text></svg>`;
@@ -653,7 +747,14 @@ export class PDFExportService {
       };
     });
 
-    return this.generateBasketballCourtSVG(width, height, backgroundColor, lineColor, markers, logoUrl);
+    return this.generateBasketballCourtSVG(
+      width,
+      height,
+      backgroundColor,
+      lineColor,
+      markers,
+      logoUrl
+    );
   }
 
   /**
@@ -743,7 +844,9 @@ export class PDFExportService {
       font-size: 10px;
       position: relative;
     }
-    ${watermark ? `
+    ${
+      watermark
+        ? `
     body::before {
       content: 'PREVIEW';
       position: fixed;
@@ -757,31 +860,36 @@ export class PDFExportService {
       pointer-events: none;
       white-space: nowrap;
     }
-    ` : ''}
+    `
+        : ""
+    }
     .header {
       position: relative;
       text-align: center;
       margin-bottom: 20px;
       border-bottom: 2px solid #000;
       padding-bottom: 10px;
+      padding-top: 90px;
+      min-height: 100px;
     }
     .header-logo-left {
       position: absolute;
       left: 0;
       top: 0;
-      height: 50px;
+      height: 80px;
       width: auto;
     }
     .header-logo-right {
       position: absolute;
       right: 0;
       top: 0;
-      height: 50px;
+      height: 80px;
       width: auto;
     }
     .header h1 {
       font-size: 18px;
       margin-bottom: 5px;
+      margin-top: 0;
     }
     .header .match-info {
       font-size: 14px;
@@ -884,26 +992,27 @@ export class PDFExportService {
       color: #E65100;
     }
     .individual-stats-section {
-      margin-top: 40px;
-      page-break-before: always;
       position: relative;
     }
     .player-card-page {
-      page-break-after: always;
+      page-break-before: always;
       display: flex;
       flex-direction: column;
       align-items: center;
       min-height: 100vh;
       padding: 20px;
-      padding-top: 60px;
+      padding-top: 20px;
       position: relative;
+    }
+    .player-card-page:last-child {
+      page-break-after: avoid;
     }
     .player-card-header {
       text-align: center;
-      margin-bottom: 15px;
+      margin-bottom: 10px;
       width: 100%;
       max-width: 800px;
-      padding-bottom: 10px;
+      padding-bottom: 6px;
       border-bottom: 1px solid #000;
     }
     .player-card-match-info {
@@ -920,7 +1029,7 @@ export class PDFExportService {
       position: absolute;
       right: 20px;
       top: 20px;
-      height: 80px;
+      height: 120px;
       width: auto;
     }
     .player-card {
@@ -1004,6 +1113,16 @@ export class PDFExportService {
     .stat-label {
       color: #666;
       font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .stat-color-badge {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      display: inline-block;
+      flex-shrink: 0;
     }
     .stat-value {
       color: #333;
@@ -1029,7 +1148,11 @@ export class PDFExportService {
 </head>
 <body>
   <div class="header">
-    ${clubLogoUrl ? `<img src="${clubLogoUrl}" alt="Club Logo" class="header-logo-left" />` : ''}
+    ${
+      clubLogoUrl
+        ? `<img src="${clubLogoUrl}" alt="Club Logo" class="header-logo-left" />`
+        : ""
+    }
     <img src="${statBoardLogoSVG}" alt="StatBoard" class="header-logo-right" />
     <h1>FEUILLE DE MATCH - BASKETBALL</h1>
     <div class="match-info">${teamA} vs ${teamB}</div>
@@ -1039,11 +1162,15 @@ export class PDFExportService {
   <div class="score-summary">
     <div>SCORE FINAL</div>
     <div class="final-score">${scoreA} - ${scoreB}</div>
-    ${scoreManuallyAdjusted ? `
+    ${
+      scoreManuallyAdjusted
+        ? `
     <div class="warning-banner">
       ⚠️ Score ajusté manuellement - Les statistiques peuvent ne pas correspondre au score affiché
     </div>
-    ` : ''}
+    `
+        : ""
+    }
   </div>
 
   <!-- Period Scores -->
@@ -1058,20 +1185,28 @@ export class PDFExportService {
       </tr>
     </thead>
     <tbody>
-      ${(teamMode === "A" || teamMode === "BOTH") ? `
+      ${
+        teamMode === "A" || teamMode === "BOTH"
+          ? `
       <tr>
         <td class="team-name">${teamA}</td>
         ${periodScoresA.map((score) => `<td>${score}</td>`).join("")}
         <td><strong>${scoreA}</strong></td>
       </tr>
-      ` : ""}
-      ${(teamMode === "B" || teamMode === "BOTH") ? `
+      `
+          : ""
+      }
+      ${
+        teamMode === "B" || teamMode === "BOTH"
+          ? `
       <tr>
         <td class="team-name">${teamB}</td>
         ${periodScoresB.map((score) => `<td>${score}</td>`).join("")}
         <td><strong>${scoreB}</strong></td>
       </tr>
-      ` : ""}
+      `
+          : ""
+      }
     </tbody>
   </table>
 
@@ -1081,7 +1216,9 @@ export class PDFExportService {
     ${chartSVG}
   </div>
 
-  ${statsTeamA.length > 0 ? `
+  ${
+    statsTeamA.length > 0
+      ? `
   <!-- Team A Stats -->
   <div class="stats-section">
     <h2>${teamA} - Statistiques individuelles</h2>
@@ -1091,12 +1228,11 @@ export class PDFExportService {
           <th class="player-number">#</th>
           <th class="player-name">Joueur</th>
           <th>PTS</th>
-          <th>2PM</th>
-          <th>3PM</th>
-          <th>LFM</th>
+          <th>2PTS</th>
+          <th>3PTS</th>
+          <th>LF</th>
           <th>RO</th>
           <th>RD</th>
-          <th>RT</th>
           <th>PD</th>
           <th>INT</th>
           <th>CT</th>
@@ -1106,10 +1242,13 @@ export class PDFExportService {
       </thead>
       <tbody>
         ${statsTeamA
-          .map(
-            (player) => {
-              const totalFouls = player.stats.pf + player.stats.tf + player.stats.uf + player.stats.df;
-              return `
+          .map((player) => {
+            const totalFouls =
+              player.stats.pf +
+              player.stats.tf +
+              player.stats.uf +
+              player.stats.df;
+            return `
         <tr>
           <td class="player-number">${player.num}</td>
           <td class="player-name">${player.name}</td>
@@ -1119,7 +1258,6 @@ export class PDFExportService {
           <td>${player.stats.ftm}/${player.stats.fta}</td>
           <td>${player.stats.orb}</td>
           <td>${player.stats.drb}</td>
-          <td>${player.stats.trb}</td>
           <td>${player.stats.ast}</td>
           <td>${player.stats.stl}</td>
           <td>${player.stats.blk}</td>
@@ -1127,35 +1265,49 @@ export class PDFExportService {
           <td>${totalFouls}</td>
         </tr>
         `;
-            }
-          )
+          })
           .join("")}
         <tr class="totals-row">
           <td colspan="2">TOTAL</td>
           <td>${statsTeamA.reduce((sum, p) => sum + p.stats.points, 0)}</td>
-          <td>${statsTeamA.reduce((sum, p) => sum + p.stats.twopm, 0)}/${statsTeamA.reduce((sum, p) => sum + p.stats.twopa, 0)}</td>
-          <td>${statsTeamA.reduce((sum, p) => sum + p.stats.threepm, 0)}/${statsTeamA.reduce((sum, p) => sum + p.stats.threepa, 0)}</td>
-          <td>${statsTeamA.reduce((sum, p) => sum + p.stats.ftm, 0)}/${statsTeamA.reduce((sum, p) => sum + p.stats.fta, 0)}</td>
+          <td>${statsTeamA.reduce(
+            (sum, p) => sum + p.stats.twopm,
+            0
+          )}/${statsTeamA.reduce((sum, p) => sum + p.stats.twopa, 0)}</td>
+          <td>${statsTeamA.reduce(
+            (sum, p) => sum + p.stats.threepm,
+            0
+          )}/${statsTeamA.reduce((sum, p) => sum + p.stats.threepa, 0)}</td>
+          <td>${statsTeamA.reduce(
+            (sum, p) => sum + p.stats.ftm,
+            0
+          )}/${statsTeamA.reduce((sum, p) => sum + p.stats.fta, 0)}</td>
           <td>${statsTeamA.reduce((sum, p) => sum + p.stats.orb, 0)}</td>
           <td>${statsTeamA.reduce((sum, p) => sum + p.stats.drb, 0)}</td>
-          <td>${statsTeamA.reduce((sum, p) => sum + p.stats.trb, 0)}</td>
           <td>${statsTeamA.reduce((sum, p) => sum + p.stats.ast, 0)}</td>
           <td>${statsTeamA.reduce((sum, p) => sum + p.stats.stl, 0)}</td>
           <td>${statsTeamA.reduce((sum, p) => sum + p.stats.blk, 0)}</td>
           <td>${statsTeamA.reduce((sum, p) => sum + p.stats.tov, 0)}</td>
-          <td>${statsTeamA.reduce((sum, p) => sum + p.stats.pf + p.stats.tf + p.stats.uf + p.stats.df, 0)}</td>
+          <td>${statsTeamA.reduce(
+            (sum, p) => sum + p.stats.pf + p.stats.tf + p.stats.uf + p.stats.df,
+            0
+          )}</td>
         </tr>
       </tbody>
     </table>
     <div class="legend">
-      PTS: Points | 2PM: 2 points (marqués/tentés) | 3PM: 3 points | LFM: Lancers francs<br>
-      RO: Rebonds offensifs | RD: Rebonds défensifs | RT: Rebonds totaux<br>
+      PTS: Points | 2PTS: 2 points (marqués/tentés) | 3PTS: 3 points (marqués/tentés) | LF: Lancers francs (marqués/tentés)<br>
+      RO: Rebonds offensifs | RD: Rebonds défensifs<br>
       PD: Passes décisives | INT: Interceptions | CT: Contres | BP: Balles perdues | F: Fautes totales
     </div>
   </div>
-  ` : ""}
+  `
+      : ""
+  }
 
-  ${statsTeamB.length > 0 ? `
+  ${
+    statsTeamB.length > 0
+      ? `
   <!-- Team B Stats -->
   <div class="stats-section">
     <h2>${teamB} - Statistiques individuelles</h2>
@@ -1165,12 +1317,11 @@ export class PDFExportService {
           <th class="player-number">#</th>
           <th class="player-name">Joueur</th>
           <th>PTS</th>
-          <th>2PM</th>
-          <th>3PM</th>
-          <th>LFM</th>
+          <th>2PTS</th>
+          <th>3PTS</th>
+          <th>LF</th>
           <th>RO</th>
           <th>RD</th>
-          <th>RT</th>
           <th>PD</th>
           <th>INT</th>
           <th>CT</th>
@@ -1180,10 +1331,13 @@ export class PDFExportService {
       </thead>
       <tbody>
         ${statsTeamB
-          .map(
-            (player) => {
-              const totalFouls = player.stats.pf + player.stats.tf + player.stats.uf + player.stats.df;
-              return `
+          .map((player) => {
+            const totalFouls =
+              player.stats.pf +
+              player.stats.tf +
+              player.stats.uf +
+              player.stats.df;
+            return `
         <tr>
           <td class="player-number">${player.num}</td>
           <td class="player-name">${player.name}</td>
@@ -1193,7 +1347,6 @@ export class PDFExportService {
           <td>${player.stats.ftm}/${player.stats.fta}</td>
           <td>${player.stats.orb}</td>
           <td>${player.stats.drb}</td>
-          <td>${player.stats.trb}</td>
           <td>${player.stats.ast}</td>
           <td>${player.stats.stl}</td>
           <td>${player.stats.blk}</td>
@@ -1201,51 +1354,89 @@ export class PDFExportService {
           <td>${totalFouls}</td>
         </tr>
         `;
-            }
-          )
+          })
           .join("")}
         <tr class="totals-row">
           <td colspan="2">TOTAL</td>
           <td>${statsTeamB.reduce((sum, p) => sum + p.stats.points, 0)}</td>
-          <td>${statsTeamB.reduce((sum, p) => sum + p.stats.twopm, 0)}/${statsTeamB.reduce((sum, p) => sum + p.stats.twopa, 0)}</td>
-          <td>${statsTeamB.reduce((sum, p) => sum + p.stats.threepm, 0)}/${statsTeamB.reduce((sum, p) => sum + p.stats.threepa, 0)}</td>
-          <td>${statsTeamB.reduce((sum, p) => sum + p.stats.ftm, 0)}/${statsTeamB.reduce((sum, p) => sum + p.stats.fta, 0)}</td>
+          <td>${statsTeamB.reduce(
+            (sum, p) => sum + p.stats.twopm,
+            0
+          )}/${statsTeamB.reduce((sum, p) => sum + p.stats.twopa, 0)}</td>
+          <td>${statsTeamB.reduce(
+            (sum, p) => sum + p.stats.threepm,
+            0
+          )}/${statsTeamB.reduce((sum, p) => sum + p.stats.threepa, 0)}</td>
+          <td>${statsTeamB.reduce(
+            (sum, p) => sum + p.stats.ftm,
+            0
+          )}/${statsTeamB.reduce((sum, p) => sum + p.stats.fta, 0)}</td>
           <td>${statsTeamB.reduce((sum, p) => sum + p.stats.orb, 0)}</td>
           <td>${statsTeamB.reduce((sum, p) => sum + p.stats.drb, 0)}</td>
-          <td>${statsTeamB.reduce((sum, p) => sum + p.stats.trb, 0)}</td>
           <td>${statsTeamB.reduce((sum, p) => sum + p.stats.ast, 0)}</td>
           <td>${statsTeamB.reduce((sum, p) => sum + p.stats.stl, 0)}</td>
           <td>${statsTeamB.reduce((sum, p) => sum + p.stats.blk, 0)}</td>
           <td>${statsTeamB.reduce((sum, p) => sum + p.stats.tov, 0)}</td>
-          <td>${statsTeamB.reduce((sum, p) => sum + p.stats.pf + p.stats.tf + p.stats.uf + p.stats.df, 0)}</td>
+          <td>${statsTeamB.reduce(
+            (sum, p) => sum + p.stats.pf + p.stats.tf + p.stats.uf + p.stats.df,
+            0
+          )}</td>
         </tr>
       </tbody>
     </table>
     <div class="legend">
-      PTS: Points | 2PM: 2 points (marqués/tentés) | 3PM: 3 points | LFM: Lancers francs<br>
-      RO: Rebonds offensifs | RD: Rebonds défensifs | RT: Rebonds totaux<br>
+      PTS: Points | 2PTS: 2 points (marqués/tentés) | 3PTS: 3 points (marqués/tentés) | LF: Lancers francs (marqués/tentés)<br>
+      RO: Rebonds offensifs | RD: Rebonds défensifs<br>
       PD: Passes décisives | INT: Interceptions | CT: Contres | BP: Balles perdues | F: Fautes totales
     </div>
   </div>
-  ` : ""}
+  `
+      : ""
+  }
 
   <!-- Individual Player Stats Section -->
   <div class="individual-stats-section">
     ${players
-      .filter(p => (teamMode === "BOTH") || (teamMode === "A" && p.team === "A") || (teamMode === "B" && p.team === "B"))
+      .filter(
+        (p) =>
+          teamMode === "BOTH" ||
+          (teamMode === "A" && p.team === "A") ||
+          (teamMode === "B" && p.team === "B")
+      )
       .sort((a, b) => {
         if (a.team === b.team) return a.num - b.num;
         return a.team === "A" ? -1 : 1;
       })
-      .map(player => {
+      .map((player) => {
         const playerStats = this.calculatePlayerStats(player.id, actions);
-        const shotCourtSVG = this.generatePlayerShotCourt(actions, player.id, courtBackgroundColor, courtLineColor, clubLogoUrl);
-        const actionCourtSVG = this.generatePlayerActionCourt(actions, player.id, courtBackgroundColor, courtLineColor, clubLogoUrl);
+        const shotCourtSVG = this.generatePlayerShotCourt(
+          actions,
+          player.id,
+          courtBackgroundColor,
+          courtLineColor,
+          clubLogoUrl
+        );
+        const actionCourtSVG = this.generatePlayerActionCourt(
+          actions,
+          player.id,
+          courtBackgroundColor,
+          courtLineColor,
+          clubLogoUrl
+        );
 
         // Calculate shooting percentages
-        const twoPtPct = playerStats.twopa > 0 ? Math.round((playerStats.twopm / playerStats.twopa) * 100) : 0;
-        const threePtPct = playerStats.threepa > 0 ? Math.round((playerStats.threepm / playerStats.threepa) * 100) : 0;
-        const ftPct = playerStats.fta > 0 ? Math.round((playerStats.ftm / playerStats.fta) * 100) : 0;
+        const twoPtPct =
+          playerStats.twopa > 0
+            ? Math.round((playerStats.twopm / playerStats.twopa) * 100)
+            : 0;
+        const threePtPct =
+          playerStats.threepa > 0
+            ? Math.round((playerStats.threepm / playerStats.threepa) * 100)
+            : 0;
+        const ftPct =
+          playerStats.fta > 0
+            ? Math.round((playerStats.ftm / playerStats.fta) * 100)
+            : 0;
 
         // Default person icon SVG
         const personIconSVG = `data:image/svg+xml;base64,${btoa(`
@@ -1256,9 +1447,11 @@ export class PDFExportService {
           </svg>
         `)}`;
 
-        const hasStats = actions.filter(a => a.player === player.id).length > 0;
+        const hasStats =
+          actions.filter((a) => a.player === player.id).length > 0;
         const teamName = player.team === "A" ? teamA : teamB;
-        const totalFouls = playerStats.pf + playerStats.tf + playerStats.uf + playerStats.df;
+        const totalFouls =
+          playerStats.pf + playerStats.tf + playerStats.uf + playerStats.df;
 
         return `
     <div class="player-card-page">
@@ -1269,9 +1462,10 @@ export class PDFExportService {
       </div>
       <div class="player-card">
         <div class="player-header">
-          ${player.photoUrl
-            ? `<img src="${player.photoUrl}" alt="${player.name}" class="player-photo" />`
-            : `<div class="player-icon">👤</div>`
+          ${
+            player.photoUrl
+              ? `<img src="${player.photoUrl}" alt="${player.name}" class="player-photo" />`
+              : `<div class="player-icon">👤</div>`
           }
           <div class="player-info">
             <div class="player-name">
@@ -1282,7 +1476,9 @@ export class PDFExportService {
           </div>
         </div>
 
-      ${hasStats ? `
+      ${
+        hasStats
+          ? `
       <div class="courts-container">
         <div class="court-wrapper">
           <div class="court-title">TIRS</div>
@@ -1298,61 +1494,88 @@ export class PDFExportService {
         <div class="stats-column">
           <div class="stat-row">
             <span class="stat-label">Total</span>
-            <span class="stat-value">${playerStats.twopm + playerStats.threepm}/${playerStats.twopa + playerStats.threepa} (${playerStats.twopa + playerStats.threepa > 0 ? Math.round(((playerStats.twopm + playerStats.threepm) / (playerStats.twopa + playerStats.threepa)) * 100) : 0}%)</span>
+            <span class="stat-value">${
+              playerStats.twopm + playerStats.threepm
+            }/${playerStats.twopa + playerStats.threepa} (${
+              playerStats.twopa + playerStats.threepa > 0
+                ? Math.round(
+                    ((playerStats.twopm + playerStats.threepm) /
+                      (playerStats.twopa + playerStats.threepa)) *
+                      100
+                  )
+                : 0
+            }%)</span>
           </div>
           <div class="stat-row">
             <span class="stat-label">Lancers francs</span>
-            <span class="stat-value">${playerStats.ftm}/${playerStats.fta}${playerStats.fta > 0 ? ` (${ftPct}%)` : ''}</span>
+            <span class="stat-value">${playerStats.ftm}/${playerStats.fta}${
+              playerStats.fta > 0 ? ` (${ftPct}%)` : ""
+            }</span>
           </div>
           <div class="stat-row">
             <span class="stat-label">2 points</span>
-            <span class="stat-value">${playerStats.twopm}/${playerStats.twopa}${playerStats.twopa > 0 ? ` (${twoPtPct}%)` : ''}</span>
+            <span class="stat-value">${playerStats.twopm}/${playerStats.twopa}${
+              playerStats.twopa > 0 ? ` (${twoPtPct}%)` : ""
+            }</span>
           </div>
           <div class="stat-row">
             <span class="stat-label">3 points</span>
-            <span class="stat-value">${playerStats.threepm}/${playerStats.threepa}${playerStats.threepa > 0 ? ` (${threePtPct}%)` : ''}</span>
+            <span class="stat-value">${playerStats.threepm}/${
+              playerStats.threepa
+            }${playerStats.threepa > 0 ? ` (${threePtPct}%)` : ""}</span>
           </div>
         </div>
 
         <div class="stats-column">
           <div class="stat-row">
-            <span class="stat-label">Rebonds</span>
-            <span class="stat-value">${playerStats.orb + playerStats.drb} (Off: ${playerStats.orb} / Def: ${playerStats.drb})</span>
+            <span class="stat-label"><span class="stat-color-badge" style="background-color: ${ACTION_CONFIG[ActionType.REBOUND].color};"></span>Rebonds</span>
+            <span class="stat-value">${
+              playerStats.orb + playerStats.drb
+            } (Off: ${playerStats.orb} / Def: ${playerStats.drb})</span>
           </div>
           <div class="stat-row">
-            <span class="stat-label">Passes décisives</span>
+            <span class="stat-label"><span class="stat-color-badge" style="background-color: ${ACTION_CONFIG[ActionType.ASSIST].color};"></span>Passes décisives</span>
             <span class="stat-value">${playerStats.ast}</span>
           </div>
           <div class="stat-row">
-            <span class="stat-label">Interceptions</span>
+            <span class="stat-label"><span class="stat-color-badge" style="background-color: ${ACTION_CONFIG[ActionType.STEAL].color};"></span>Interceptions</span>
             <span class="stat-value">${playerStats.stl}</span>
           </div>
           <div class="stat-row">
-            <span class="stat-label">Contres</span>
+            <span class="stat-label"><span class="stat-color-badge" style="background-color: ${ACTION_CONFIG[ActionType.BLOCK].color};"></span>Contres</span>
             <span class="stat-value">${playerStats.blk}</span>
           </div>
           <div class="stat-row">
-            <span class="stat-label">Balles perdues</span>
+            <span class="stat-label"><span class="stat-color-badge" style="background-color: ${ACTION_CONFIG[ActionType.TURNOVER].color};"></span>Balles perdues</span>
             <span class="stat-value">${playerStats.tov}</span>
           </div>
           <div class="stat-row">
-            <span class="stat-label">Fautes</span>
-            <span class="stat-value">${totalFouls} (Pers: ${playerStats.pf} / Tech: ${playerStats.tf})</span>
+            <span class="stat-label"><span class="stat-color-badge" style="background-color: ${ACTION_CONFIG[ActionType.FOUL].color};"></span>Fautes</span>
+            <span class="stat-value">${totalFouls}${
+              totalFouls > 0
+                ? ` (${[
+                    playerStats.pf > 0 ? `P: ${playerStats.pf}` : null,
+                    playerStats.tf > 0 ? `T: ${playerStats.tf}` : null,
+                    playerStats.uf > 0 ? `AS: ${playerStats.uf}` : null,
+                    playerStats.df > 0 ? `DQ: ${playerStats.df}` : null,
+                  ]
+                    .filter((f) => f !== null)
+                    .join(" / ")})`
+                : ""
+            }</span>
           </div>
         </div>
       </div>
-      ` : `
+      `
+          : `
       <div class="no-stats">Aucune statistique enregistrée pour ce joueur</div>
-      `}
+      `
+      }
       </div>
     </div>
         `;
       })
-      .join('')}
-  </div>
-
-  <div class="footer">
-    Généré par StatBoard - ${new Date().toLocaleString("fr-FR")}
+      .join("")}
   </div>
 </body>
 </html>

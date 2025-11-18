@@ -47,6 +47,7 @@ import {
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { logInfo, logError, logWarn } from "../utils/logger";
 import { ServiceFactory } from "../services/ServiceFactory";
+import { supabase } from "../src/config/supabase";
 
 interface MatchSummaryScreenProps {}
 
@@ -116,37 +117,50 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
   useEffect(() => {
     const loadClubData = async () => {
       try {
-        const clubService = ServiceFactory.getClubService();
+        const clubService = ServiceFactory.getClubService(supabase);
+        const teamService = ServiceFactory.getTeamService(supabase);
 
         // Determine which team is the club team based on clubTeamOverride or teamAId/teamBId
-        let clubId: string | null = null;
+        let teamId: string | null = null;
         if (clubTeamOverride === "A" && teamAId) {
-          clubId = teamAId;
+          teamId = teamAId;
         } else if (clubTeamOverride === "B" && teamBId) {
-          clubId = teamBId;
+          teamId = teamBId;
         } else if (teamAId) {
-          clubId = teamAId;
+          teamId = teamAId;
         } else if (teamBId) {
-          clubId = teamBId;
+          teamId = teamBId;
         }
 
-        if (clubId) {
-          const club = await clubService.getClubById(clubId);
-          if (club) {
-            if (club.logoUrl) {
-              setClubLogoUrl(club.logoUrl);
-            }
-            // Use club colors if available, otherwise keep defaults
-            setCourtBackgroundColor(club.courtBackgroundColor || "#1a472a");
-            setCourtLineColor(club.courtLineColor || "#FFFFFF");
+        if (teamId) {
+          logInfo('MatchSummaryScreen', '🔍 Loading team to get club ID', { teamId });
+          const team = await teamService.getTeamById(teamId);
 
-            logInfo('MatchSummaryScreen', '🖼️ Club data loaded', {
-              clubId,
-              hasLogo: !!club.logoUrl,
-              hasColors: !!(club.courtBackgroundColor || club.courtLineColor),
-              backgroundColor: club.courtBackgroundColor || "default",
-              lineColor: club.courtLineColor || "default"
-            });
+          if (team && team.clubId) {
+            logInfo('MatchSummaryScreen', '🔍 Loading club data', { clubId: team.clubId });
+            const club = await clubService.getClubById(team.clubId);
+
+            if (club) {
+              if (club.logoUrl) {
+                setClubLogoUrl(club.logoUrl);
+              }
+              // Use club colors if available, otherwise keep defaults
+              setCourtBackgroundColor(club.courtBackgroundColor || "#1a472a");
+              setCourtLineColor(club.courtLineColor || "#FFFFFF");
+
+              logInfo('MatchSummaryScreen', '🖼️ Club data loaded', {
+                clubId: team.clubId,
+                logoUrl: club.logoUrl,
+                hasLogo: !!club.logoUrl,
+                hasColors: !!(club.courtBackgroundColor || club.courtLineColor),
+                backgroundColor: club.courtBackgroundColor || "default",
+                lineColor: club.courtLineColor || "default"
+              });
+            } else {
+              logInfo('MatchSummaryScreen', '⚠️ No club found for clubId', { clubId: team.clubId });
+            }
+          } else {
+            logInfo('MatchSummaryScreen', '⚠️ Team has no clubId', { teamId, team: team ? 'found' : 'not found' });
           }
         }
       } catch (error) {
