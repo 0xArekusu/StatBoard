@@ -37,6 +37,8 @@ import { MatchSyncPolicy } from "../src/services/match/MatchSyncPolicy";
 import type { SubscriptionTier } from "../models/Subscription";
 import { shareLogs, logInfo, logError, logWarn } from "../utils/logger";
 import Logo from "../components/icons/Logo";
+import { useTheme } from "../src/contexts/ThemeContext";
+import ThemeToggleButton from "../components/ThemeToggleButton";
 
 type RootStackParamList = {
   [ROUTES.MAIN_MENU]: undefined;
@@ -52,6 +54,7 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList, "MainMenu">;
 export default function MainMenuScreen() {
   const navigation = useNavigation<NavigationProp>();
   const { signOut, user } = useAuth();
+  const { colors, isDark } = useTheme();
   const [clubModalVisible, setClubModalVisible] = useState(false);
   const [matchLimitModalVisible, setMatchLimitModalVisible] = useState(false);
   const [userClub, setUserClub] = useState<Club | null>(null);
@@ -282,22 +285,22 @@ export default function MainMenuScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={styles.header}>
         {user ? (
           <>
-            <Text style={styles.userEmail}>{user.email}</Text>
+            <Text style={[styles.userEmail, { color: colors.text.secondary }]}>{user.email}</Text>
             <TouchableOpacity
               onPress={handleSignOut}
-              style={styles.logoutButton}
+              style={[styles.logoutButton, { backgroundColor: colors.surfaceVariant }]}
             >
-              <Text style={styles.logoutText}>Déconnexion</Text>
+              <Text style={[styles.logoutText, { color: colors.primary }]}>Déconnexion</Text>
             </TouchableOpacity>
           </>
         ) : (
           <TouchableOpacity
             onPress={() => navigation.navigate(ROUTES.LOGIN as never)}
-            style={styles.loginButton}
+            style={[styles.loginButton, { backgroundColor: colors.button.login }]}
           >
             <Text style={styles.loginText}>Se connecter</Text>
           </TouchableOpacity>
@@ -305,11 +308,14 @@ export default function MainMenuScreen() {
       </View>
 
       <View style={styles.logoContainer}>
-        <Logo width={300} primaryColor="#000000" secondaryColor="#ffffff" />
+        <Logo width={300} primaryColor={colors.text.primary} secondaryColor={colors.background} />
       </View>
 
       <TouchableOpacity
-        style={[styles.button, !user && styles.freeButton]}
+        style={[
+          styles.button,
+          { backgroundColor: !user ? colors.button.free : colors.button.primary }
+        ]}
         onPress={handleNewMatch}
       >
         <Ionicons
@@ -323,7 +329,7 @@ export default function MainMenuScreen() {
       </TouchableOpacity>
 
       <TouchableOpacity
-        style={[styles.button, styles.secondaryButton]}
+        style={[styles.button, { backgroundColor: colors.button.secondary }]}
         onPress={() =>
           (navigation as any).navigate(ROUTES.MATCH_HISTORY, {
             clubId: userClub?.id,
@@ -343,10 +349,13 @@ export default function MainMenuScreen() {
           {/* Club selector for admin user with multi-club enabled */}
           {canUseMultiClub(user.id) && userClubs.length > 1 && (
             <View style={styles.clubSelectorContainer}>
-              <Text style={styles.clubSelectorLabel}>
+              <Text style={[styles.clubSelectorLabel, { color: colors.text.secondary }]}>
                 Sélectionner un club:
               </Text>
-              <View style={styles.pickerContainer}>
+              <View style={[styles.pickerContainer, {
+                borderColor: colors.button.club,
+                backgroundColor: colors.surface
+              }]}>
                 <Picker
                   selectedValue={userClub?.id}
                   onValueChange={(clubId) => {
@@ -371,7 +380,7 @@ export default function MainMenuScreen() {
           )}
 
           <TouchableOpacity
-            style={[styles.button, styles.clubButton]}
+            style={[styles.button, { backgroundColor: colors.button.club }]}
             onPress={() => {
               if (userClub) {
                 (navigation as any).navigate(ROUTES.CLUB_FORM, {
@@ -398,11 +407,15 @@ export default function MainMenuScreen() {
           {/* Add club button for admin user */}
           {canUseMultiClub(user.id) && (
             <TouchableOpacity
-              style={[styles.button, styles.addClubButton]}
+              style={[styles.button, {
+                backgroundColor: colors.background,
+                borderWidth: 2,
+                borderColor: colors.button.club
+              }]}
               onPress={() => setClubModalVisible(true)}
             >
-              <Ionicons name="add-circle-outline" size={24} color="#9C27B0" />
-              <Text style={[styles.buttonText, styles.addClubButtonText]}>
+              <Ionicons name="add-circle-outline" size={24} color={colors.button.club} />
+              <Text style={[styles.buttonText, { color: colors.button.club }]}>
                 Créer/Rejoindre un autre club
               </Text>
             </TouchableOpacity>
@@ -411,7 +424,7 @@ export default function MainMenuScreen() {
       )}
 
       {!user && (
-        <Text style={styles.guestNote}>
+        <Text style={[styles.guestNote, { color: colors.text.tertiary }]}>
           Mode invité : vos données sont sauvegardées localement
         </Text>
       )}
@@ -452,9 +465,12 @@ export default function MainMenuScreen() {
         }}
       />
 
+      {/* Theme toggle button */}
+      <ThemeToggleButton position="left" />
+
       {/* Debug button to share logs */}
       <TouchableOpacity
-        style={styles.debugButton}
+        style={[styles.debugButton, { backgroundColor: colors.surfaceVariant }]}
         onPress={() => {
           Alert.alert(
             "Partager les logs",
@@ -475,10 +491,10 @@ export default function MainMenuScreen() {
           );
         }}
       >
-        <Ionicons name="bug-outline" size={20} color="#666" />
+        <Ionicons name="bug-outline" size={20} color={colors.text.secondary} />
       </TouchableOpacity>
 
-      <StatusBar style="auto" />
+      <StatusBar style={isDark ? "light" : "dark"} />
     </View>
   );
 }
@@ -486,7 +502,6 @@ export default function MainMenuScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -498,24 +513,20 @@ const styles = StyleSheet.create({
   },
   userEmail: {
     fontSize: 12,
-    color: "#666",
     marginBottom: 5,
   },
   logoutButton: {
     paddingHorizontal: 15,
     paddingVertical: 8,
-    backgroundColor: "#f0f0f0",
     borderRadius: 5,
   },
   logoutText: {
-    color: "#FF6B35",
     fontSize: 14,
     fontWeight: "600",
   },
   loginButton: {
     paddingHorizontal: 20,
     paddingVertical: 10,
-    backgroundColor: "#007AFF",
     borderRadius: 8,
   },
   loginText: {
@@ -527,14 +538,7 @@ const styles = StyleSheet.create({
     marginBottom: 40,
     alignItems: "center",
   },
-  title: {
-    fontSize: 36,
-    fontWeight: "bold",
-    color: "#FF6B35",
-    marginBottom: 40,
-  },
   button: {
-    backgroundColor: "#FF6B35",
     paddingHorizontal: 40,
     paddingVertical: 15,
     borderRadius: 10,
@@ -545,38 +549,18 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 10,
   },
-  freeButton: {
-    backgroundColor: "#FFD700",
-  },
-  secondaryButton: {
-    backgroundColor: "#4CAF50",
-  },
-  clubButton: {
-    backgroundColor: "#9C27B0",
-  },
-  addClubButton: {
-    backgroundColor: "#fff",
-    borderWidth: 2,
-    borderColor: "#9C27B0",
-  },
-  addClubButtonText: {
-    color: "#9C27B0",
-  },
   clubSelectorContainer: {
     width: "80%",
     marginVertical: 10,
   },
   clubSelectorLabel: {
     fontSize: 14,
-    color: "#666",
     marginBottom: 5,
     fontWeight: "600",
   },
   pickerContainer: {
     borderWidth: 1,
-    borderColor: "#9C27B0",
     borderRadius: 10,
-    backgroundColor: "#f9f9f9",
   },
   picker: {
     height: 50,
@@ -589,7 +573,6 @@ const styles = StyleSheet.create({
   guestNote: {
     marginTop: 30,
     fontSize: 12,
-    color: "#999",
     fontStyle: "italic",
     textAlign: "center",
     paddingHorizontal: 40,
@@ -598,7 +581,6 @@ const styles = StyleSheet.create({
     position: "absolute",
     bottom: 20,
     right: 20,
-    backgroundColor: "#f0f0f0",
     borderRadius: 30,
     width: 50,
     height: 50,

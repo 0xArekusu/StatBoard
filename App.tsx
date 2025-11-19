@@ -22,6 +22,7 @@ import TeamFormScreen from "./screens/TeamFormScreen";
 import JoinClubScreen from "./screens/JoinClubScreen";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { AuthProvider, useAuth } from "./src/contexts/AuthContext";
+import { ThemeProvider } from "./src/contexts/ThemeContext";
 import { ROUTES } from "./constants/routes";
 import { logInfo, logWarn } from "./utils/logger";
 import DebugCourtClick from "./DebugCourtClick";
@@ -167,9 +168,11 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <SafeAreaView style={{ flex: 1 }}>
-        <AuthProvider>
-          <Navigation />
-        </AuthProvider>
+        <ThemeProvider>
+          <AuthProvider>
+            <Navigation />
+          </AuthProvider>
+        </ThemeProvider>
       </SafeAreaView>
     </SafeAreaProvider>
   );
