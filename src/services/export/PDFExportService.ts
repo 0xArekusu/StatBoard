@@ -207,14 +207,12 @@ export class PDFExportService {
     }
 
     // Calculate player stats - filter by teamMode
-    const playersTeamA =
-      teamMode === "A" || teamMode === "BOTH"
-        ? playersWithBase64Photos.filter((p) => p.team === "A")
-        : [];
-    const playersTeamB =
-      teamMode === "B" || teamMode === "BOTH"
-        ? playersWithBase64Photos.filter((p) => p.team === "B")
-        : [];
+    const playersTeamA = this.shouldShowTeam(teamMode, "A")
+      ? playersWithBase64Photos.filter((p) => p.team === "A")
+      : [];
+    const playersTeamB = this.shouldShowTeam(teamMode, "B")
+      ? playersWithBase64Photos.filter((p) => p.team === "B")
+      : [];
 
     const statsTeamA = playersTeamA.map((player) => ({
       ...player,
@@ -298,6 +296,32 @@ export class PDFExportService {
     });
 
     return { periodScoresA, periodScoresB };
+  }
+
+  /**
+   * Helper: Check if team should be shown based on teamMode
+   */
+  private static shouldShowTeam(teamMode: "A" | "B" | "BOTH", team: "A" | "B"): boolean {
+    return teamMode === team || teamMode === "BOTH";
+  }
+
+  /**
+   * Helper: Calculate total fouls for a player
+   */
+  private static calculateTotalFouls(stats: {
+    pf: number;
+    tf: number;
+    uf: number;
+    df: number;
+  }): number {
+    return stats.pf + stats.tf + stats.uf + stats.df;
+  }
+
+  /**
+   * Helper: Calculate shooting percentage
+   */
+  private static calculateShootingPercentage(made: number, attempts: number): number {
+    return attempts > 0 ? Math.round((made / attempts) * 100) : 0;
   }
 
   /**
@@ -385,6 +409,114 @@ export class PDFExportService {
   }
 
   /**
+   * Stats legend constant
+   */
+  private static readonly STATS_LEGEND = `PTS: Points | 2PTS: 2 points (marqués/tentés) | 3PTS: 3 points (marqués/tentés) | LF: Lancers francs (marqués/tentés)<br>
+      RO: Rebonds offensifs | RD: Rebonds défensifs<br>
+      PD: Passes décisives | INT: Interceptions | CT: Contres | BP: Balles perdues | F: Fautes totales`;
+
+  /**
+   * Calculate team totals from individual player stats
+   */
+  private static calculateTeamTotals(stats: any[]) {
+    return {
+      points: stats.reduce((sum, p) => sum + p.stats.points, 0),
+      twopm: stats.reduce((sum, p) => sum + p.stats.twopm, 0),
+      twopa: stats.reduce((sum, p) => sum + p.stats.twopa, 0),
+      threepm: stats.reduce((sum, p) => sum + p.stats.threepm, 0),
+      threepa: stats.reduce((sum, p) => sum + p.stats.threepa, 0),
+      ftm: stats.reduce((sum, p) => sum + p.stats.ftm, 0),
+      fta: stats.reduce((sum, p) => sum + p.stats.fta, 0),
+      orb: stats.reduce((sum, p) => sum + p.stats.orb, 0),
+      drb: stats.reduce((sum, p) => sum + p.stats.drb, 0),
+      ast: stats.reduce((sum, p) => sum + p.stats.ast, 0),
+      stl: stats.reduce((sum, p) => sum + p.stats.stl, 0),
+      blk: stats.reduce((sum, p) => sum + p.stats.blk, 0),
+      tov: stats.reduce((sum, p) => sum + p.stats.tov, 0),
+      fouls: stats.reduce((sum, p) => sum + this.calculateTotalFouls(p.stats), 0),
+    };
+  }
+
+  /**
+   * Generate team stats table HTML
+   */
+  private static generateTeamStatsTable(
+    teamName: string,
+    stats: any[],
+    teamClass: "team-a" | "team-b"
+  ): string {
+    if (stats.length === 0) return "";
+
+    const totals = this.calculateTeamTotals(stats);
+
+    return `
+  <div class="stats-section ${teamClass}">
+    <h2>${teamName} - Statistiques individuelles</h2>
+    <table class="stats-table">
+      <thead>
+        <tr>
+          <th class="player-number">#</th>
+          <th class="player-name">Joueur</th>
+          <th>PTS</th>
+          <th>2PTS</th>
+          <th>3PTS</th>
+          <th>LF</th>
+          <th>RO</th>
+          <th>RD</th>
+          <th>PD</th>
+          <th>INT</th>
+          <th>CT</th>
+          <th>BP</th>
+          <th>F</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${stats
+          .map((player) => {
+            const totalFouls = this.calculateTotalFouls(player.stats);
+            return `
+        <tr>
+          <td class="player-number">${player.num}</td>
+          <td class="player-name">${player.name}</td>
+          <td>${player.stats.points}</td>
+          <td>${player.stats.twopm}/${player.stats.twopa}</td>
+          <td>${player.stats.threepm}/${player.stats.threepa}</td>
+          <td>${player.stats.ftm}/${player.stats.fta}</td>
+          <td>${player.stats.orb}</td>
+          <td>${player.stats.drb}</td>
+          <td>${player.stats.ast}</td>
+          <td>${player.stats.stl}</td>
+          <td>${player.stats.blk}</td>
+          <td>${player.stats.tov}</td>
+          <td>${totalFouls}</td>
+        </tr>
+        `;
+          })
+          .join("")}
+        <tr class="totals-row">
+          <td colspan="2">TOTAL</td>
+          <td>${totals.points}</td>
+          <td>${totals.twopm}/${totals.twopa}</td>
+          <td>${totals.threepm}/${totals.threepa}</td>
+          <td>${totals.ftm}/${totals.fta}</td>
+          <td>${totals.orb}</td>
+          <td>${totals.drb}</td>
+          <td>${totals.ast}</td>
+          <td>${totals.stl}</td>
+          <td>${totals.blk}</td>
+          <td>${totals.tov}</td>
+          <td>${totals.fouls}</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="legend">
+      ${this.STATS_LEGEND}
+    </div>
+  </div>
+  `;
+  }
+
+  /**
    * Generate score evolution SVG chart
    */
   private static generateScoreChart(
@@ -392,7 +524,7 @@ export class PDFExportService {
     cumulativeScoresB: number[],
     periodLabel: string,
     totalPeriods: number,
-    teamMode: "A" | "B" | "both",
+    teamMode: "A" | "B" | "BOTH",
     teamA: string,
     teamB: string
   ): string {
@@ -403,8 +535,8 @@ export class PDFExportService {
     const chartHeight = height - padding.top - padding.bottom;
 
     const maxScore = Math.max(
-      ...(teamMode === "A" || teamMode === "BOTH" ? cumulativeScoresA : [0]),
-      ...(teamMode === "B" || teamMode === "BOTH" ? cumulativeScoresB : [0])
+      ...(this.shouldShowTeam(teamMode, "A") ? cumulativeScoresA : [0]),
+      ...(this.shouldShowTeam(teamMode, "B") ? cumulativeScoresB : [0])
     );
     const yScale = chartHeight / (maxScore || 1);
 
@@ -422,7 +554,7 @@ export class PDFExportService {
 
     // Generate path for team B
     let pathB = `M ${padding.left} ${padding.top + chartHeight}`;
-    if (teamMode === "B" || teamMode === "BOTH") {
+    if (this.shouldShowTeam(teamMode, "B")) {
       allScoresB.forEach((score, i) => {
         const x = padding.left + (i * chartWidth) / totalPeriods;
         const y = padding.top + chartHeight - score * yScale;
@@ -483,7 +615,7 @@ export class PDFExportService {
     }" y2="${padding.top + chartHeight}" stroke="#333" stroke-width="2"/>
 
         ${
-          teamMode === "A" || teamMode === "BOTH"
+          this.shouldShowTeam(teamMode, "A")
             ? `
         <!-- Team A line -->
         <path d="${pathA}" fill="none" stroke="#FF6B35" stroke-width="3"/>
@@ -499,7 +631,7 @@ export class PDFExportService {
         }
 
         ${
-          teamMode === "B" || teamMode === "BOTH"
+          this.shouldShowTeam(teamMode, "B")
             ? `
         <!-- Team B line -->
         <path d="${pathB}" fill="none" stroke="#004E89" stroke-width="3"/>
@@ -520,7 +652,7 @@ export class PDFExportService {
 
         <!-- Legend -->
         ${
-          teamMode === "A" || teamMode === "BOTH"
+          this.shouldShowTeam(teamMode, "A")
             ? `
         <circle cx="50" cy="15" r="4" fill="#FF6B35"/>
         <text x="58" y="18" font-size="10">${teamA}</text>
@@ -528,7 +660,7 @@ export class PDFExportService {
             : ""
         }
         ${
-          teamMode === "B" || teamMode === "BOTH"
+          this.shouldShowTeam(teamMode, "B")
             ? `
         <circle cx="${
           teamMode === "BOTH" ? "150" : "50"
@@ -1272,7 +1404,7 @@ export class PDFExportService {
     </thead>
     <tbody>
       ${
-        teamMode === "A" || teamMode === "BOTH"
+        this.shouldShowTeam(teamMode, "A")
           ? `
       <tr>
         <td class="team-name">${teamA}</td>
@@ -1283,7 +1415,7 @@ export class PDFExportService {
           : ""
       }
       ${
-        teamMode === "B" || teamMode === "BOTH"
+        this.shouldShowTeam(teamMode, "B")
           ? `
       <tr>
         <td class="team-name">${teamB}</td>
@@ -1302,193 +1434,14 @@ export class PDFExportService {
     ${chartSVG}
   </div>
 
-  ${
-    statsTeamA.length > 0
-      ? `
-  <!-- Team A Stats -->
-  <div class="stats-section team-a">
-    <h2>${teamA} - Statistiques individuelles</h2>
-    <table class="stats-table">
-      <thead>
-        <tr>
-          <th class="player-number">#</th>
-          <th class="player-name">Joueur</th>
-          <th>PTS</th>
-          <th>2PTS</th>
-          <th>3PTS</th>
-          <th>LF</th>
-          <th>RO</th>
-          <th>RD</th>
-          <th>PD</th>
-          <th>INT</th>
-          <th>CT</th>
-          <th>BP</th>
-          <th>F</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${statsTeamA
-          .map((player) => {
-            const totalFouls =
-              player.stats.pf +
-              player.stats.tf +
-              player.stats.uf +
-              player.stats.df;
-            return `
-        <tr>
-          <td class="player-number">${player.num}</td>
-          <td class="player-name">${player.name}</td>
-          <td>${player.stats.points}</td>
-          <td>${player.stats.twopm}/${player.stats.twopa}</td>
-          <td>${player.stats.threepm}/${player.stats.threepa}</td>
-          <td>${player.stats.ftm}/${player.stats.fta}</td>
-          <td>${player.stats.orb}</td>
-          <td>${player.stats.drb}</td>
-          <td>${player.stats.ast}</td>
-          <td>${player.stats.stl}</td>
-          <td>${player.stats.blk}</td>
-          <td>${player.stats.tov}</td>
-          <td>${totalFouls}</td>
-        </tr>
-        `;
-          })
-          .join("")}
-        <tr class="totals-row">
-          <td colspan="2">TOTAL</td>
-          <td>${statsTeamA.reduce((sum, p) => sum + p.stats.points, 0)}</td>
-          <td>${statsTeamA.reduce(
-            (sum, p) => sum + p.stats.twopm,
-            0
-          )}/${statsTeamA.reduce((sum, p) => sum + p.stats.twopa, 0)}</td>
-          <td>${statsTeamA.reduce(
-            (sum, p) => sum + p.stats.threepm,
-            0
-          )}/${statsTeamA.reduce((sum, p) => sum + p.stats.threepa, 0)}</td>
-          <td>${statsTeamA.reduce(
-            (sum, p) => sum + p.stats.ftm,
-            0
-          )}/${statsTeamA.reduce((sum, p) => sum + p.stats.fta, 0)}</td>
-          <td>${statsTeamA.reduce((sum, p) => sum + p.stats.orb, 0)}</td>
-          <td>${statsTeamA.reduce((sum, p) => sum + p.stats.drb, 0)}</td>
-          <td>${statsTeamA.reduce((sum, p) => sum + p.stats.ast, 0)}</td>
-          <td>${statsTeamA.reduce((sum, p) => sum + p.stats.stl, 0)}</td>
-          <td>${statsTeamA.reduce((sum, p) => sum + p.stats.blk, 0)}</td>
-          <td>${statsTeamA.reduce((sum, p) => sum + p.stats.tov, 0)}</td>
-          <td>${statsTeamA.reduce(
-            (sum, p) => sum + p.stats.pf + p.stats.tf + p.stats.uf + p.stats.df,
-            0
-          )}</td>
-        </tr>
-      </tbody>
-    </table>
-    <div class="legend">
-      PTS: Points | 2PTS: 2 points (marqués/tentés) | 3PTS: 3 points (marqués/tentés) | LF: Lancers francs (marqués/tentés)<br>
-      RO: Rebonds offensifs | RD: Rebonds défensifs<br>
-      PD: Passes décisives | INT: Interceptions | CT: Contres | BP: Balles perdues | F: Fautes totales
-    </div>
-  </div>
-  `
-      : ""
-  }
+  ${this.generateTeamStatsTable(teamA, statsTeamA, "team-a")}
 
-  ${
-    statsTeamB.length > 0
-      ? `
-  <!-- Team B Stats -->
-  <div class="stats-section team-b">
-    <h2>${teamB} - Statistiques individuelles</h2>
-    <table class="stats-table">
-      <thead>
-        <tr>
-          <th class="player-number">#</th>
-          <th class="player-name">Joueur</th>
-          <th>PTS</th>
-          <th>2PTS</th>
-          <th>3PTS</th>
-          <th>LF</th>
-          <th>RO</th>
-          <th>RD</th>
-          <th>PD</th>
-          <th>INT</th>
-          <th>CT</th>
-          <th>BP</th>
-          <th>F</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${statsTeamB
-          .map((player) => {
-            const totalFouls =
-              player.stats.pf +
-              player.stats.tf +
-              player.stats.uf +
-              player.stats.df;
-            return `
-        <tr>
-          <td class="player-number">${player.num}</td>
-          <td class="player-name">${player.name}</td>
-          <td>${player.stats.points}</td>
-          <td>${player.stats.twopm}/${player.stats.twopa}</td>
-          <td>${player.stats.threepm}/${player.stats.threepa}</td>
-          <td>${player.stats.ftm}/${player.stats.fta}</td>
-          <td>${player.stats.orb}</td>
-          <td>${player.stats.drb}</td>
-          <td>${player.stats.ast}</td>
-          <td>${player.stats.stl}</td>
-          <td>${player.stats.blk}</td>
-          <td>${player.stats.tov}</td>
-          <td>${totalFouls}</td>
-        </tr>
-        `;
-          })
-          .join("")}
-        <tr class="totals-row">
-          <td colspan="2">TOTAL</td>
-          <td>${statsTeamB.reduce((sum, p) => sum + p.stats.points, 0)}</td>
-          <td>${statsTeamB.reduce(
-            (sum, p) => sum + p.stats.twopm,
-            0
-          )}/${statsTeamB.reduce((sum, p) => sum + p.stats.twopa, 0)}</td>
-          <td>${statsTeamB.reduce(
-            (sum, p) => sum + p.stats.threepm,
-            0
-          )}/${statsTeamB.reduce((sum, p) => sum + p.stats.threepa, 0)}</td>
-          <td>${statsTeamB.reduce(
-            (sum, p) => sum + p.stats.ftm,
-            0
-          )}/${statsTeamB.reduce((sum, p) => sum + p.stats.fta, 0)}</td>
-          <td>${statsTeamB.reduce((sum, p) => sum + p.stats.orb, 0)}</td>
-          <td>${statsTeamB.reduce((sum, p) => sum + p.stats.drb, 0)}</td>
-          <td>${statsTeamB.reduce((sum, p) => sum + p.stats.ast, 0)}</td>
-          <td>${statsTeamB.reduce((sum, p) => sum + p.stats.stl, 0)}</td>
-          <td>${statsTeamB.reduce((sum, p) => sum + p.stats.blk, 0)}</td>
-          <td>${statsTeamB.reduce((sum, p) => sum + p.stats.tov, 0)}</td>
-          <td>${statsTeamB.reduce(
-            (sum, p) => sum + p.stats.pf + p.stats.tf + p.stats.uf + p.stats.df,
-            0
-          )}</td>
-        </tr>
-      </tbody>
-    </table>
-    <div class="legend">
-      PTS: Points | 2PTS: 2 points (marqués/tentés) | 3PTS: 3 points (marqués/tentés) | LF: Lancers francs (marqués/tentés)<br>
-      RO: Rebonds offensifs | RD: Rebonds défensifs<br>
-      PD: Passes décisives | INT: Interceptions | CT: Contres | BP: Balles perdues | F: Fautes totales
-    </div>
-  </div>
-  `
-      : ""
-  }
+  ${this.generateTeamStatsTable(teamB, statsTeamB, "team-b")}
 
   <!-- Individual Player Stats Section -->
   <div class="individual-stats-section">
     ${players
-      .filter(
-        (p) =>
-          teamMode === "BOTH" ||
-          (teamMode === "A" && p.team === "A") ||
-          (teamMode === "B" && p.team === "B")
-      )
+      .filter((p) => this.shouldShowTeam(teamMode, p.team))
       .sort((a, b) => {
         if (a.team === b.team) return a.num - b.num;
         return a.team === "A" ? -1 : 1;
@@ -1511,24 +1464,23 @@ export class PDFExportService {
         );
 
         // Calculate shooting percentages
-        const twoPtPct =
-          playerStats.twopa > 0
-            ? Math.round((playerStats.twopm / playerStats.twopa) * 100)
-            : 0;
-        const threePtPct =
-          playerStats.threepa > 0
-            ? Math.round((playerStats.threepm / playerStats.threepa) * 100)
-            : 0;
-        const ftPct =
-          playerStats.fta > 0
-            ? Math.round((playerStats.ftm / playerStats.fta) * 100)
-            : 0;
+        const twoPtPct = this.calculateShootingPercentage(
+          playerStats.twopm,
+          playerStats.twopa
+        );
+        const threePtPct = this.calculateShootingPercentage(
+          playerStats.threepm,
+          playerStats.threepa
+        );
+        const ftPct = this.calculateShootingPercentage(
+          playerStats.ftm,
+          playerStats.fta
+        );
 
         const hasStats =
           actions.filter((a) => a.player === player.id).length > 0;
         const teamName = player.team === "A" ? teamA : teamB;
-        const totalFouls =
-          playerStats.pf + playerStats.tf + playerStats.uf + playerStats.df;
+        const totalFouls = this.calculateTotalFouls(playerStats);
 
         return `
     <div class="player-card-page">
@@ -1573,15 +1525,10 @@ export class PDFExportService {
             <span class="stat-label">Total</span>
             <span class="stat-value">${
               playerStats.twopm + playerStats.threepm
-            }/${playerStats.twopa + playerStats.threepa} (${
-              playerStats.twopa + playerStats.threepa > 0
-                ? Math.round(
-                    ((playerStats.twopm + playerStats.threepm) /
-                      (playerStats.twopa + playerStats.threepa)) *
-                      100
-                  )
-                : 0
-            }%)</span>
+            }/${playerStats.twopa + playerStats.threepa} (${this.calculateShootingPercentage(
+              playerStats.twopm + playerStats.threepm,
+              playerStats.twopa + playerStats.threepa
+            )}%)</span>
           </div>
           <div class="stat-row">
             <span class="stat-label">Lancers francs</span>
