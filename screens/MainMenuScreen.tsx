@@ -373,7 +373,7 @@ export default function MainMenuScreen() {
                       key={club.id}
                       label={club.name}
                       value={club.id}
-                      color={colors.text.primary}
+                      color={isDark ? "#FFFFFF" : "#000000"}
                     />
                   ))}
                 </Picker>

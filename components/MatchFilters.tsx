@@ -21,6 +21,8 @@ import {
   StyleSheet,
 } from "react-native";
 import { ACTION_DEFINITIONS } from "../src/config/actionConfig";
+import { useTheme } from "../src/contexts/ThemeContext";
+import { STATUS_COLORS, COMMON_COLORS } from "../src/theme";
 
 interface Player {
   id: number;
@@ -70,6 +72,7 @@ export default function MatchFilters({
   onActionTypesChange,
   onPeriodsChange,
 }: MatchFiltersProps) {
+  const { colors } = useTheme();
   const totalPeriods = matchFormat === "2_halves" ? 2 : 4;
 
   const toggleTeam = (team: "A" | "B") => {
@@ -143,12 +146,12 @@ export default function MatchFilters({
       {/* Équipes */}
       <View style={styles.filterCategory}>
         <View style={styles.filterCategoryHeader}>
-          <Text style={styles.filterCategoryLabel}>Équipe</Text>
+          <Text style={[styles.filterCategoryLabel, { color: colors.text.primary }]}>Équipe</Text>
           <TouchableOpacity
             onPress={selectAllTeams}
             style={styles.selectAllButton}
           >
-            <Text style={styles.selectAllText}>Tous</Text>
+            <Text style={[styles.selectAllText, { color: colors.text.tertiary }]}>Tous</Text>
           </TouchableOpacity>
         </View>
         <View style={styles.filterCards}>
@@ -157,14 +160,16 @@ export default function MatchFilters({
             <TouchableOpacity
               style={[
                 styles.filterCard,
-                selectedTeams.includes("A") && styles.filterCardActive,
+                { backgroundColor: colors.surfaceVariant },
+                selectedTeams.includes("A") && { backgroundColor: STATUS_COLORS.success },
               ]}
               onPress={() => toggleTeam("A")}
             >
               <Text
                 style={[
                   styles.filterCardText,
-                  selectedTeams.includes("A") && styles.filterCardTextActive,
+                  { color: colors.text.secondary },
+                  selectedTeams.includes("A") && { color: COMMON_COLORS.white },
                 ]}
               >
                 {teamA}
@@ -177,14 +182,16 @@ export default function MatchFilters({
             <TouchableOpacity
               style={[
                 styles.filterCard,
-                selectedTeams.includes("B") && styles.filterCardActive,
+                { backgroundColor: colors.surfaceVariant },
+                selectedTeams.includes("B") && { backgroundColor: STATUS_COLORS.success },
               ]}
               onPress={() => toggleTeam("B")}
             >
               <Text
                 style={[
                   styles.filterCardText,
-                  selectedTeams.includes("B") && styles.filterCardTextActive,
+                  { color: colors.text.secondary },
+                  selectedTeams.includes("B") && { color: COMMON_COLORS.white },
                 ]}
               >
                 {teamB}
@@ -196,18 +203,18 @@ export default function MatchFilters({
 
       {/* Joueurs */}
       <View style={styles.filterCategory}>
-        <Text style={styles.filterCategoryLabel}>Joueurs</Text>
+        <Text style={[styles.filterCategoryLabel, { color: colors.text.primary }]}>Joueurs</Text>
 
         {/* Team A Players - Show if managing Team A or both */}
         {(selectedTeams.includes("A") || teamMode === "A") && (
           <>
             <View style={styles.filterSubHeader}>
-              <Text style={styles.filterSubLabel}>{teamA}</Text>
+              <Text style={[styles.filterSubLabel, { color: colors.text.secondary }]}>{teamA}</Text>
               <TouchableOpacity
                 onPress={selectAllPlayersTeamA}
                 style={styles.selectAllButton}
               >
-                <Text style={styles.selectAllText}>Tous</Text>
+                <Text style={[styles.selectAllText, { color: colors.text.tertiary }]}>Tous</Text>
               </TouchableOpacity>
             </View>
             <ScrollView
@@ -225,16 +232,18 @@ export default function MatchFilters({
                       key={player.id}
                       style={[
                         styles.filterCard,
+                        { backgroundColor: colors.surfaceVariant },
                         selectedPlayers.includes(playerIdentifier) &&
-                          styles.filterCardActive,
+                          { backgroundColor: STATUS_COLORS.success },
                       ]}
                       onPress={() => togglePlayer(playerIdentifier)}
                     >
                       <Text
                         style={[
                           styles.filterCardText,
+                          { color: colors.text.secondary },
                           selectedPlayers.includes(playerIdentifier) &&
-                            styles.filterCardTextActive,
+                            { color: COMMON_COLORS.white },
                         ]}
                       >
                         #{player.num} {player.name}
@@ -256,12 +265,12 @@ export default function MatchFilters({
                   styles.filterSubHeaderMargin,
               ]}
             >
-              <Text style={styles.filterSubLabel}>{teamB}</Text>
+              <Text style={[styles.filterSubLabel, { color: colors.text.secondary }]}>{teamB}</Text>
               <TouchableOpacity
                 onPress={selectAllPlayersTeamB}
                 style={styles.selectAllButton}
               >
-                <Text style={styles.selectAllText}>Tous</Text>
+                <Text style={[styles.selectAllText, { color: colors.text.tertiary }]}>Tous</Text>
               </TouchableOpacity>
             </View>
             <ScrollView
@@ -279,16 +288,18 @@ export default function MatchFilters({
                       key={player.id}
                       style={[
                         styles.filterCard,
+                        { backgroundColor: colors.surfaceVariant },
                         selectedPlayers.includes(playerIdentifier) &&
-                          styles.filterCardActive,
+                          { backgroundColor: STATUS_COLORS.success },
                       ]}
                       onPress={() => togglePlayer(playerIdentifier)}
                     >
                       <Text
                         style={[
                           styles.filterCardText,
+                          { color: colors.text.secondary },
                           selectedPlayers.includes(playerIdentifier) &&
-                            styles.filterCardTextActive,
+                            { color: COMMON_COLORS.white },
                         ]}
                       >
                         #{player.num} {player.name}
@@ -304,12 +315,12 @@ export default function MatchFilters({
       {/* Types d'actions */}
       <View style={styles.filterCategory}>
         <View style={styles.filterCategoryHeader}>
-          <Text style={styles.filterCategoryLabel}>Actions</Text>
+          <Text style={[styles.filterCategoryLabel, { color: colors.text.primary }]}>Actions</Text>
           <TouchableOpacity
             onPress={selectAllActionTypes}
             style={styles.selectAllButton}
           >
-            <Text style={styles.selectAllText}>Tous</Text>
+            <Text style={[styles.selectAllText, { color: colors.text.tertiary }]}>Tous</Text>
           </TouchableOpacity>
         </View>
         <ScrollView
@@ -324,6 +335,7 @@ export default function MatchFilters({
                 key={action.id}
                 style={[
                   styles.filterCard,
+                  { backgroundColor: colors.surfaceVariant },
                   isSelected && {
                     backgroundColor: action.backgroundColor,
                     borderColor: action.backgroundColor,
@@ -334,7 +346,8 @@ export default function MatchFilters({
                 <Text
                   style={[
                     styles.filterCardText,
-                    isSelected && styles.filterCardTextActive,
+                    { color: colors.text.secondary },
+                    isSelected && { color: COMMON_COLORS.white },
                   ]}
                 >
                   {action.icon} {action.label}
@@ -348,14 +361,14 @@ export default function MatchFilters({
       {/* Périodes */}
       <View style={styles.filterCategory}>
         <View style={styles.filterCategoryHeader}>
-          <Text style={styles.filterCategoryLabel}>
+          <Text style={[styles.filterCategoryLabel, { color: colors.text.primary }]}>
             {matchFormat === "2_halves" ? "Mi-temps" : "Quart-temps"}
           </Text>
           <TouchableOpacity
             onPress={selectAllPeriods}
             style={styles.selectAllButton}
           >
-            <Text style={styles.selectAllText}>Tous</Text>
+            <Text style={[styles.selectAllText, { color: colors.text.tertiary }]}>Tous</Text>
           </TouchableOpacity>
         </View>
         <View style={styles.filterCards}>
@@ -365,15 +378,17 @@ export default function MatchFilters({
                 key={period}
                 style={[
                   styles.filterCard,
-                  selectedPeriods.includes(period) && styles.filterCardActive,
+                  { backgroundColor: colors.surfaceVariant },
+                  selectedPeriods.includes(period) && { backgroundColor: STATUS_COLORS.success },
                 ]}
                 onPress={() => togglePeriod(period)}
               >
                 <Text
                   style={[
                     styles.filterCardText,
+                    { color: colors.text.secondary },
                     selectedPeriods.includes(period) &&
-                      styles.filterCardTextActive,
+                      { color: COMMON_COLORS.white },
                   ]}
                 >
                   {matchFormat === "2_halves" ? `MT${period}` : `QT${period}`}

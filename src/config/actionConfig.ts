@@ -108,13 +108,13 @@ export const ACTION_CONFIG: Record<string, ActionConfig> = {
         id: ReboundSpecification.OFFENSIVE,
         label: "Offensif",
         emoji: "🔵",
-        color: "#FF9800",
+        color: "#2E7D32", // Dark green - rebond offensif
       },
       {
         id: ReboundSpecification.DEFENSIVE,
         label: "Défensif",
         emoji: "🛡️",
-        color: "#3F51B5",
+        color: "#1976D2", // Blue - rebond défensif
       },
     ],
   },
@@ -122,32 +122,32 @@ export const ACTION_CONFIG: Record<string, ActionConfig> = {
     id: ActionType.FOUL,
     emoji: "⚠️",
     label: "Faute",
-    color: "#E91E63",
+    color: "#FFD700",
     description: "Faute commise",
     specifications: [
       {
         id: FoulSpecification.PERSONAL,
         label: "Personnelle",
         emoji: "👤",
-        color: "#E91E63",
+        color: "#FFD700", // Gold/Yellow - faute personnelle
       },
       {
         id: FoulSpecification.TECHNICAL,
         label: "Technique",
         emoji: "⚡",
-        color: "#9C27B0",
+        color: "#FF1744", // Pink/Red - faute technique
       },
       {
         id: FoulSpecification.PENALITY,
         label: "Antisportive",
         emoji: "🚨",
-        color: "#FF5722",
+        color: "#FF6F00", // Dark orange - faute antisportive
       },
       {
         id: FoulSpecification.DISQUALIFICATION,
         label: "Disqualifiante",
         emoji: "🚫",
-        color: "#D32F2F",
+        color: "#000000", // Black - faute disqualifiante
       },
     ],
   },
@@ -227,11 +227,6 @@ export function getActionColor(
   if (actionType === ActionType.SHOT && specification && config.specifications) {
     const spec = config.specifications.find((s) => s.id === specification);
     if (spec) return spec.color;
-  }
-
-  // For rebounds, always use generic color (not specification colors)
-  if (actionType === ActionType.REBOUND) {
-    return config.color;
   }
 
   // For other actions with specification, use spec color

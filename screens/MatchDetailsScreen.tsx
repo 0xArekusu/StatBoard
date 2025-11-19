@@ -22,6 +22,7 @@ import {
 } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
+import Svg, { Circle, Path } from "react-native-svg";
 import { ActionData } from "../components/ActionSystem";
 import BasketballCourtSVG from "../components/BasketballCourtSVG";
 import MatchFilters from "../components/MatchFilters";
@@ -32,9 +33,9 @@ import {
   ReboundSpecification,
   FoulSpecification,
 } from "../src/models/ActionTypes";
-import { ACTION_DEFINITIONS } from "../src/config/actionConfig";
+import { ACTION_DEFINITIONS, ACTION_CONFIG, getActionColor } from "../src/config/actionConfig";
 import { useTheme } from "../src/contexts/ThemeContext";
-import { CommonStyles } from "../src/theme";
+import { CommonStyles, STATUS_COLORS, SPORT_COLORS, COMMON_COLORS } from "../src/theme";
 
 interface MatchDetailsRouteParams {
   teamA: string;
@@ -365,23 +366,7 @@ export default function MatchDetailsScreen() {
     actionType: string,
     specification?: string
   ): string => {
-    if (actionType === ActionType.SHOT) {
-      return specification === ShotSpecification.MADE ? "#4CAF50" : "#F44336";
-    }
-    if (actionType === ActionType.REBOUND) {
-      return specification === ReboundSpecification.OFFENSIVE ? "#FF9800" : "#2196F3";
-    }
-    if (actionType === ActionType.FOUL) {
-      if (specification === FoulSpecification.TECHNICAL) return "#9C27B0";
-      if (specification === FoulSpecification.DISQUALIFICATION) return "#000000";
-      if (specification === FoulSpecification.PENALITY) return "#FF6F00";
-      return "#E74C3C";
-    }
-    if (actionType === ActionType.ASSIST) return "#00BCD4";
-    if (actionType === ActionType.STEAL) return "#8BC34A";
-    if (actionType === ActionType.BLOCK) return "#FF5722";
-    if (actionType === ActionType.TURNOVER) return "#795548";
-    return "#757575";
+    return getActionColor(actionType, specification);
   };
 
   // Convert filtered actions to markers
@@ -415,41 +400,52 @@ export default function MatchDetailsScreen() {
 
       <ScrollView style={styles.mainScroll}>
         {/* Score Summary: Display match score for both teams */}
-        <View style={styles.scoreSummary}>
+        <View style={[styles.scoreSummary, { backgroundColor: colors.surface }]}>
           <View style={styles.teamScoreContainer}>
-            <Text style={styles.teamNameSmall}>{teamA}</Text>
-            <Text style={styles.scoreText}>{scoreA}</Text>
+            <Text style={[styles.teamNameSmall, { color: colors.text.secondary }]}>{teamA}</Text>
+            <Text style={[styles.scoreText, { color: colors.text.primary }]}>{scoreA}</Text>
           </View>
-          <Text style={styles.scoreSeparator}>-</Text>
+          <Text style={[styles.scoreSeparator, { color: colors.text.disabled }]}>-</Text>
           <View style={styles.teamScoreContainer}>
-            <Text style={styles.teamNameSmall}>{teamB}</Text>
-            <Text style={styles.scoreText}>{scoreB}</Text>
+            <Text style={[styles.teamNameSmall, { color: colors.text.secondary }]}>{teamB}</Text>
+            <Text style={[styles.scoreText, { color: colors.text.primary }]}>{scoreB}</Text>
           </View>
         </View>
 
         {/* Tabs: Switch between Court visualization and Player statistics */}
-        <View style={styles.tabsContainer}>
+        <View style={[styles.tabsContainer, {
+          backgroundColor: colors.surface,
+          borderBottomColor: colors.border
+        }]}>
           <TouchableOpacity
-            style={[styles.tab, activeTab === "court" && styles.tabActive]}
+            style={[
+              styles.tab,
+              activeTab === "court" && [styles.tabActive, { borderBottomColor: STATUS_COLORS.success }]
+            ]}
             onPress={() => setActiveTab("court")}
           >
             <Text
               style={[
                 styles.tabText,
-                activeTab === "court" && styles.tabTextActive,
+                { color: colors.text.secondary },
+                activeTab === "court" && [styles.tabTextActive, { color: STATUS_COLORS.success }],
               ]}
             >
               🏀 Terrain
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.tab, activeTab === "players" && styles.tabActive]}
+            style={[
+              styles.tab,
+              activeTab === "players" && [styles.tabActive, { borderBottomColor: STATUS_COLORS.success }]
+            ]}
             onPress={() => setActiveTab("players")}
           >
             <Text
               style={[
                 styles.tabText,
-                activeTab === "players" && styles.tabTextActive,
+                { color: colors.text.secondary },
+                activeTab === "players" && [styles.tabTextActive, { color: STATUS_COLORS.success }],
               ]}
             >
               👥 Joueurs
@@ -459,8 +455,8 @@ export default function MatchDetailsScreen() {
 
         {/* Court Tab Content: Shot visualization with filters and live stats */}
         {activeTab === "court" && (
-          <View style={styles.courtSection}>
-          <Text style={styles.sectionTitle}>Visualisation du terrain</Text>
+          <View style={[styles.courtSection, { backgroundColor: colors.surface }]}>
+          <Text style={[styles.sectionTitle, { color: colors.text.primary }]}>Visualisation du terrain</Text>
 
           {/* Court Filters using MatchFilters component */}
           <View style={styles.courtFilters}>
@@ -484,15 +480,21 @@ export default function MatchDetailsScreen() {
           {/* Court and Stats Container: 3-column layout with stats on sides and court in center */}
           <View style={styles.courtAndStatsContainer}>
             {/* Left Column - Live Stats: Team A statistics (or single team if managing one) */}
-            <View style={styles.liveStats}>
-              <Text style={styles.liveStatsTitle}>{teamMode === "BOTH" ? teamA : "Stats"}</Text>
+            <View style={[styles.liveStats, { backgroundColor: colors.surfaceVariant }]}>
+              <Text style={[styles.liveStatsTitle, { color: colors.text.primary }]}>{teamMode === "BOTH" ? teamA : "Stats"}</Text>
 
               {/* Shooting Stats */}
               {(courtFilterActionType.length === 0 || courtFilterActionType.includes(ActionType.SHOT)) && (
                 <>
-                  <View style={styles.liveStatGroup}>
-                    <Text style={styles.liveStatGroupLabel}>🏀 Tirs</Text>
-                    <Text style={styles.liveStatGroupValue}>
+                  <View style={[styles.liveStatGroup, { borderBottomColor: colors.border }]}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                      <Svg width="12" height="12" viewBox="0 0 24 24" style={{ marginRight: 6 }}>
+                        <Path d="M 12 0 A 12 12 0 0 1 12 24 Z" fill="#4CAF50" />
+                        <Path d="M 12 0 A 12 12 0 0 0 12 24 Z" fill="#F44336" />
+                      </Svg>
+                      <Text style={[styles.liveStatGroupLabel, { color: colors.text.secondary }]}>Tirs</Text>
+                    </View>
+                    <Text style={[styles.liveStatGroupValue, { color: STATUS_COLORS.success }]}>
                       {(() => {
                         const actionsToUse = teamMode === "BOTH" ? filteredCourtActions.filter(a => a.team === "A") : filteredCourtActions;
                         const shots = actionsToUse.filter(a => a.type === ActionType.SHOT);
@@ -504,7 +506,7 @@ export default function MatchDetailsScreen() {
 
                     {/* Detailed breakdown */}
                     <View style={styles.liveStatDetail}>
-                      <Text style={styles.liveStatDetailText}>
+                      <Text style={[styles.liveStatDetailText, { color: colors.text.tertiary }]}>
                         1pt: {(() => {
                           const actionsToUse = teamMode === "BOTH" ? filteredCourtActions.filter(a => a.team === "A") : filteredCourtActions;
                           const onePtShots = actionsToUse.filter(a => a.type === ActionType.SHOT && a.points === 1);
@@ -513,7 +515,7 @@ export default function MatchDetailsScreen() {
                           return `${onePtMade}/${onePtShots.length} (${onePtPercentage}%)`;
                         })()}
                       </Text>
-                      <Text style={styles.liveStatDetailText}>
+                      <Text style={[styles.liveStatDetailText, { color: colors.text.tertiary }]}>
                         2pts: {(() => {
                           const actionsToUse = teamMode === "BOTH" ? filteredCourtActions.filter(a => a.team === "A") : filteredCourtActions;
                           const twoPtShots = actionsToUse.filter(a => a.type === ActionType.SHOT && a.points === 2);
@@ -522,7 +524,7 @@ export default function MatchDetailsScreen() {
                           return `${twoPtMade}/${twoPtShots.length} (${twoPtPercentage}%)`;
                         })()}
                       </Text>
-                      <Text style={styles.liveStatDetailText}>
+                      <Text style={[styles.liveStatDetailText, { color: colors.text.tertiary }]}>
                         3pts: {(() => {
                           const actionsToUse = teamMode === "BOTH" ? filteredCourtActions.filter(a => a.team === "A") : filteredCourtActions;
                           const threePtShots = actionsToUse.filter(a => a.type === ActionType.SHOT && a.points === 3);
@@ -538,54 +540,84 @@ export default function MatchDetailsScreen() {
 
               {/* Rebounds Stats */}
               {(courtFilterActionType.length === 0 || courtFilterActionType.includes(ActionType.REBOUND)) && (
-                <View style={styles.liveStatGroup}>
-                  <Text style={styles.liveStatGroupLabel}>📥 Rebonds</Text>
-                  <Text style={styles.liveStatGroupValue}>
+                <View style={[styles.liveStatGroup, { borderBottomColor: colors.border }]}>
+                  <Text style={[styles.liveStatGroupLabel, { color: colors.text.secondary }]}>Rebonds</Text>
+                  <Text style={[styles.liveStatGroupValue, { color: STATUS_COLORS.success }]}>
                     {(() => {
                       const actionsToUse = teamMode === "BOTH" ? filteredCourtActions.filter(a => a.team === "A") : filteredCourtActions;
                       return actionsToUse.filter(a => a.type === ActionType.REBOUND).length;
                     })()}
                   </Text>
                   <View style={styles.liveStatDetail}>
-                    <Text style={styles.liveStatDetailText}>
-                      Off: {(() => {
-                        const actionsToUse = teamMode === "BOTH" ? filteredCourtActions.filter(a => a.team === "A") : filteredCourtActions;
-                        return actionsToUse.filter(a => a.type === ActionType.REBOUND && a.specification === ReboundSpecification.OFFENSIVE).length;
-                      })()}
-                    </Text>
-                    <Text style={styles.liveStatDetailText}>
-                      Def: {(() => {
-                        const actionsToUse = teamMode === "BOTH" ? filteredCourtActions.filter(a => a.team === "A") : filteredCourtActions;
-                        return actionsToUse.filter(a => a.type === ActionType.REBOUND && a.specification === ReboundSpecification.DEFENSIVE).length;
-                      })()}
-                    </Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
+                      <View style={[styles.colorBadge, { backgroundColor: getActionColor(ActionType.REBOUND, ReboundSpecification.OFFENSIVE) }]} />
+                      <Text style={[styles.liveStatDetailText, { color: colors.text.tertiary }]}>
+                        Off: {(() => {
+                          const actionsToUse = teamMode === "BOTH" ? filteredCourtActions.filter(a => a.team === "A") : filteredCourtActions;
+                          return actionsToUse.filter(a => a.type === ActionType.REBOUND && a.specification === ReboundSpecification.OFFENSIVE).length;
+                        })()}
+                      </Text>
+                    </View>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
+                      <View style={[styles.colorBadge, { backgroundColor: getActionColor(ActionType.REBOUND, ReboundSpecification.DEFENSIVE) }]} />
+                      <Text style={[styles.liveStatDetailText, { color: colors.text.tertiary }]}>
+                        Def: {(() => {
+                          const actionsToUse = teamMode === "BOTH" ? filteredCourtActions.filter(a => a.team === "A") : filteredCourtActions;
+                          return actionsToUse.filter(a => a.type === ActionType.REBOUND && a.specification === ReboundSpecification.DEFENSIVE).length;
+                        })()}
+                      </Text>
+                    </View>
                   </View>
                 </View>
               )}
 
               {/* Fouls Stats */}
               {(courtFilterActionType.length === 0 || courtFilterActionType.includes(ActionType.FOUL)) && (
-                <View style={styles.liveStatGroup}>
-                  <Text style={styles.liveStatGroupLabel}>⚠️ Fautes</Text>
-                  <Text style={styles.liveStatGroupValue}>
+                <View style={[styles.liveStatGroup, { borderBottomColor: colors.border }]}>
+                  <Text style={[styles.liveStatGroupLabel, { color: colors.text.secondary }]}>Fautes</Text>
+                  <Text style={[styles.liveStatGroupValue, { color: STATUS_COLORS.success }]}>
                     {(() => {
                       const actionsToUse = teamMode === "BOTH" ? filteredCourtActions.filter(a => a.team === "A") : filteredCourtActions;
                       return actionsToUse.filter(a => a.type === ActionType.FOUL).length;
                     })()}
                   </Text>
                   <View style={styles.liveStatDetail}>
-                    <Text style={styles.liveStatDetailText}>
-                      Pers: {(() => {
-                        const actionsToUse = teamMode === "BOTH" ? filteredCourtActions.filter(a => a.team === "A") : filteredCourtActions;
-                        return actionsToUse.filter(a => a.type === ActionType.FOUL && a.specification === FoulSpecification.PERSONAL).length;
-                      })()}
-                    </Text>
-                    <Text style={styles.liveStatDetailText}>
-                      Tech: {(() => {
-                        const actionsToUse = teamMode === "BOTH" ? filteredCourtActions.filter(a => a.team === "A") : filteredCourtActions;
-                        return actionsToUse.filter(a => a.type === ActionType.FOUL && a.specification === FoulSpecification.TECHNICAL).length;
-                      })()}
-                    </Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
+                      <View style={[styles.colorBadge, { backgroundColor: getActionColor(ActionType.FOUL, FoulSpecification.PERSONAL) }]} />
+                      <Text style={[styles.liveStatDetailText, { color: colors.text.tertiary }]}>
+                        Pers: {(() => {
+                          const actionsToUse = teamMode === "BOTH" ? filteredCourtActions.filter(a => a.team === "A") : filteredCourtActions;
+                          return actionsToUse.filter(a => a.type === ActionType.FOUL && a.specification === FoulSpecification.PERSONAL).length;
+                        })()}
+                      </Text>
+                    </View>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
+                      <View style={[styles.colorBadge, { backgroundColor: getActionColor(ActionType.FOUL, FoulSpecification.TECHNICAL) }]} />
+                      <Text style={[styles.liveStatDetailText, { color: colors.text.tertiary }]}>
+                        Tech: {(() => {
+                          const actionsToUse = teamMode === "BOTH" ? filteredCourtActions.filter(a => a.team === "A") : filteredCourtActions;
+                          return actionsToUse.filter(a => a.type === ActionType.FOUL && a.specification === FoulSpecification.TECHNICAL).length;
+                        })()}
+                      </Text>
+                    </View>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
+                      <View style={[styles.colorBadge, { backgroundColor: getActionColor(ActionType.FOUL, FoulSpecification.PENALITY) }]} />
+                      <Text style={[styles.liveStatDetailText, { color: colors.text.tertiary }]}>
+                        Anti: {(() => {
+                          const actionsToUse = teamMode === "BOTH" ? filteredCourtActions.filter(a => a.team === "A") : filteredCourtActions;
+                          return actionsToUse.filter(a => a.type === ActionType.FOUL && a.specification === FoulSpecification.PENALITY).length;
+                        })()}
+                      </Text>
+                    </View>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
+                      <View style={[styles.colorBadge, { backgroundColor: getActionColor(ActionType.FOUL, FoulSpecification.DISQUALIFICATION) }]} />
+                      <Text style={[styles.liveStatDetailText, { color: colors.text.tertiary }]}>
+                        Disq: {(() => {
+                          const actionsToUse = teamMode === "BOTH" ? filteredCourtActions.filter(a => a.team === "A") : filteredCourtActions;
+                          return actionsToUse.filter(a => a.type === ActionType.FOUL && a.specification === FoulSpecification.DISQUALIFICATION).length;
+                        })()}
+                      </Text>
+                    </View>
                   </View>
                 </View>
               )}
@@ -594,21 +626,26 @@ export default function MatchDetailsScreen() {
               {ACTION_DEFINITIONS
                 .filter(action => ![ActionType.SHOT, ActionType.REBOUND, ActionType.FOUL].includes(action.id as ActionType))
                 .filter(action => courtFilterActionType.length === 0 || courtFilterActionType.includes(action.id))
-                .map((action, index, array) => (
-                  <View key={action.id} style={[styles.liveStatGroup, index === array.length - 1 && styles.liveStatGroupLast]}>
-                    <Text style={styles.liveStatGroupLabel}>{action.icon} {action.label}</Text>
-                    <Text style={styles.liveStatGroupValue}>
-                      {(() => {
-                        const actionsToUse = teamMode === "BOTH" ? filteredCourtActions.filter(a => a.team === "A") : filteredCourtActions;
-                        return actionsToUse.filter(a => a.type === action.id).length;
-                      })()}
-                    </Text>
-                  </View>
-                ))}
+                .map((action, index, array) => {
+                  return (
+                    <View key={action.id} style={[styles.liveStatGroup, { borderBottomColor: colors.border }, index === array.length - 1 && styles.liveStatGroupLast]}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <View style={[styles.colorBadge, { backgroundColor: getActionColor(action.id) }]} />
+                        <Text style={[styles.liveStatGroupLabel, { color: colors.text.secondary }]}>{action.label}</Text>
+                      </View>
+                      <Text style={[styles.liveStatGroupValue, { color: STATUS_COLORS.success }]}>
+                        {(() => {
+                          const actionsToUse = teamMode === "BOTH" ? filteredCourtActions.filter(a => a.team === "A") : filteredCourtActions;
+                          return actionsToUse.filter(a => a.type === action.id).length;
+                        })()}
+                      </Text>
+                    </View>
+                  );
+                })}
             </View>
 
             {/* Center Column - Court: Basketball court SVG with action markers */}
-            <View style={styles.courtContainer}>
+            <View style={[styles.courtContainer, { backgroundColor: colors.surfaceVariant }]}>
               <View style={{ width: 320, height: 595 }}>
                 <BasketballCourtSVG
                   width={300}
@@ -621,15 +658,21 @@ export default function MatchDetailsScreen() {
 
             {/* Right Column - Team B Stats: Team B statistics (only shown when managing both teams) */}
             {teamMode === "BOTH" ? (
-              <View style={styles.liveStats}>
-                <Text style={styles.liveStatsTitle}>{teamB}</Text>
+              <View style={[styles.liveStats, { backgroundColor: colors.surfaceVariant }]}>
+                <Text style={[styles.liveStatsTitle, { color: colors.text.primary }]}>{teamB}</Text>
 
                 {/* Shooting Stats */}
                 {(courtFilterActionType.length === 0 || courtFilterActionType.includes(ActionType.SHOT)) && (
                   <>
-                    <View style={styles.liveStatGroup}>
-                      <Text style={styles.liveStatGroupLabel}>🏀 Tirs</Text>
-                      <Text style={styles.liveStatGroupValue}>
+                    <View style={[styles.liveStatGroup, { borderBottomColor: colors.border }]}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <Svg width="12" height="12" viewBox="0 0 24 24" style={{ marginRight: 6 }}>
+                          <Path d="M 12 0 A 12 12 0 0 1 12 24 Z" fill="#4CAF50" />
+                          <Path d="M 12 0 A 12 12 0 0 0 12 24 Z" fill="#F44336" />
+                        </Svg>
+                        <Text style={[styles.liveStatGroupLabel, { color: colors.text.secondary }]}>Tirs</Text>
+                      </View>
+                      <Text style={[styles.liveStatGroupValue, { color: STATUS_COLORS.success }]}>
                         {(() => {
                           const actionsTeamB = filteredCourtActions.filter(a => a.team === "B");
                           const shots = actionsTeamB.filter(a => a.type === ActionType.SHOT);
@@ -641,7 +684,7 @@ export default function MatchDetailsScreen() {
 
                       {/* Detailed breakdown */}
                       <View style={styles.liveStatDetail}>
-                        <Text style={styles.liveStatDetailText}>
+                        <Text style={[styles.liveStatDetailText, { color: colors.text.tertiary }]}>
                           1pt: {(() => {
                             const actionsTeamB = filteredCourtActions.filter(a => a.team === "B");
                             const onePtShots = actionsTeamB.filter(a => a.type === ActionType.SHOT && a.points === 1);
@@ -650,7 +693,7 @@ export default function MatchDetailsScreen() {
                             return `${onePtMade}/${onePtShots.length} (${onePtPercentage}%)`;
                           })()}
                         </Text>
-                        <Text style={styles.liveStatDetailText}>
+                        <Text style={[styles.liveStatDetailText, { color: colors.text.tertiary }]}>
                           2pts: {(() => {
                             const actionsTeamB = filteredCourtActions.filter(a => a.team === "B");
                             const twoPtShots = actionsTeamB.filter(a => a.type === ActionType.SHOT && a.points === 2);
@@ -659,7 +702,7 @@ export default function MatchDetailsScreen() {
                             return `${twoPtMade}/${twoPtShots.length} (${twoPtPercentage}%)`;
                           })()}
                         </Text>
-                        <Text style={styles.liveStatDetailText}>
+                        <Text style={[styles.liveStatDetailText, { color: colors.text.tertiary }]}>
                           3pts: {(() => {
                             const actionsTeamB = filteredCourtActions.filter(a => a.team === "B");
                             const threePtShots = actionsTeamB.filter(a => a.type === ActionType.SHOT && a.points === 3);
@@ -675,54 +718,84 @@ export default function MatchDetailsScreen() {
 
                 {/* Rebounds Stats */}
                 {(courtFilterActionType.length === 0 || courtFilterActionType.includes(ActionType.REBOUND)) && (
-                  <View style={styles.liveStatGroup}>
-                    <Text style={styles.liveStatGroupLabel}>📥 Rebonds</Text>
-                    <Text style={styles.liveStatGroupValue}>
+                  <View style={[styles.liveStatGroup, { borderBottomColor: colors.border }]}>
+                    <Text style={[styles.liveStatGroupLabel, { color: colors.text.secondary }]}>Rebonds</Text>
+                    <Text style={[styles.liveStatGroupValue, { color: STATUS_COLORS.success }]}>
                       {(() => {
                         const actionsTeamB = filteredCourtActions.filter(a => a.team === "B");
                         return actionsTeamB.filter(a => a.type === ActionType.REBOUND).length;
                       })()}
                     </Text>
                     <View style={styles.liveStatDetail}>
-                      <Text style={styles.liveStatDetailText}>
-                        Off: {(() => {
-                          const actionsTeamB = filteredCourtActions.filter(a => a.team === "B");
-                          return actionsTeamB.filter(a => a.type === ActionType.REBOUND && a.specification === ReboundSpecification.OFFENSIVE).length;
-                        })()}
-                      </Text>
-                      <Text style={styles.liveStatDetailText}>
-                        Def: {(() => {
-                          const actionsTeamB = filteredCourtActions.filter(a => a.team === "B");
-                          return actionsTeamB.filter(a => a.type === ActionType.REBOUND && a.specification === ReboundSpecification.DEFENSIVE).length;
-                        })()}
-                      </Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
+                        <View style={[styles.colorBadge, { backgroundColor: getActionColor(ActionType.REBOUND, ReboundSpecification.OFFENSIVE) }]} />
+                        <Text style={[styles.liveStatDetailText, { color: colors.text.tertiary }]}>
+                          Off: {(() => {
+                            const actionsTeamB = filteredCourtActions.filter(a => a.team === "B");
+                            return actionsTeamB.filter(a => a.type === ActionType.REBOUND && a.specification === ReboundSpecification.OFFENSIVE).length;
+                          })()}
+                        </Text>
+                      </View>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
+                        <View style={[styles.colorBadge, { backgroundColor: getActionColor(ActionType.REBOUND, ReboundSpecification.DEFENSIVE) }]} />
+                        <Text style={[styles.liveStatDetailText, { color: colors.text.tertiary }]}>
+                          Def: {(() => {
+                            const actionsTeamB = filteredCourtActions.filter(a => a.team === "B");
+                            return actionsTeamB.filter(a => a.type === ActionType.REBOUND && a.specification === ReboundSpecification.DEFENSIVE).length;
+                          })()}
+                        </Text>
+                      </View>
                     </View>
                   </View>
                 )}
 
                 {/* Fouls Stats */}
                 {(courtFilterActionType.length === 0 || courtFilterActionType.includes(ActionType.FOUL)) && (
-                  <View style={styles.liveStatGroup}>
-                    <Text style={styles.liveStatGroupLabel}>⚠️ Fautes</Text>
-                    <Text style={styles.liveStatGroupValue}>
+                  <View style={[styles.liveStatGroup, { borderBottomColor: colors.border }]}>
+                    <Text style={[styles.liveStatGroupLabel, { color: colors.text.secondary }]}>Fautes</Text>
+                    <Text style={[styles.liveStatGroupValue, { color: STATUS_COLORS.success }]}>
                       {(() => {
                         const actionsTeamB = filteredCourtActions.filter(a => a.team === "B");
                         return actionsTeamB.filter(a => a.type === ActionType.FOUL).length;
                       })()}
                     </Text>
                     <View style={styles.liveStatDetail}>
-                      <Text style={styles.liveStatDetailText}>
-                        Pers: {(() => {
-                          const actionsTeamB = filteredCourtActions.filter(a => a.team === "B");
-                          return actionsTeamB.filter(a => a.type === ActionType.FOUL && a.specification === FoulSpecification.PERSONAL).length;
-                        })()}
-                      </Text>
-                      <Text style={styles.liveStatDetailText}>
-                        Tech: {(() => {
-                          const actionsTeamB = filteredCourtActions.filter(a => a.team === "B");
-                          return actionsTeamB.filter(a => a.type === ActionType.FOUL && a.specification === FoulSpecification.TECHNICAL).length;
-                        })()}
-                      </Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
+                        <View style={[styles.colorBadge, { backgroundColor: getActionColor(ActionType.FOUL, FoulSpecification.PERSONAL) }]} />
+                        <Text style={[styles.liveStatDetailText, { color: colors.text.tertiary }]}>
+                          Pers: {(() => {
+                            const actionsTeamB = filteredCourtActions.filter(a => a.team === "B");
+                            return actionsTeamB.filter(a => a.type === ActionType.FOUL && a.specification === FoulSpecification.PERSONAL).length;
+                          })()}
+                        </Text>
+                      </View>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
+                        <View style={[styles.colorBadge, { backgroundColor: getActionColor(ActionType.FOUL, FoulSpecification.TECHNICAL) }]} />
+                        <Text style={[styles.liveStatDetailText, { color: colors.text.tertiary }]}>
+                          Tech: {(() => {
+                            const actionsTeamB = filteredCourtActions.filter(a => a.team === "B");
+                            return actionsTeamB.filter(a => a.type === ActionType.FOUL && a.specification === FoulSpecification.TECHNICAL).length;
+                          })()}
+                        </Text>
+                      </View>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
+                        <View style={[styles.colorBadge, { backgroundColor: getActionColor(ActionType.FOUL, FoulSpecification.PENALITY) }]} />
+                        <Text style={[styles.liveStatDetailText, { color: colors.text.tertiary }]}>
+                          Anti: {(() => {
+                            const actionsTeamB = filteredCourtActions.filter(a => a.team === "B");
+                            return actionsTeamB.filter(a => a.type === ActionType.FOUL && a.specification === FoulSpecification.PENALITY).length;
+                          })()}
+                        </Text>
+                      </View>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
+                        <View style={[styles.colorBadge, { backgroundColor: getActionColor(ActionType.FOUL, FoulSpecification.DISQUALIFICATION) }]} />
+                        <Text style={[styles.liveStatDetailText, { color: colors.text.tertiary }]}>
+                          Disq: {(() => {
+                            const actionsTeamB = filteredCourtActions.filter(a => a.team === "B");
+                            return actionsTeamB.filter(a => a.type === ActionType.FOUL && a.specification === FoulSpecification.DISQUALIFICATION).length;
+                          })()}
+                        </Text>
+                      </View>
                     </View>
                   </View>
                 )}
@@ -731,17 +804,22 @@ export default function MatchDetailsScreen() {
                 {ACTION_DEFINITIONS
                   .filter(action => ![ActionType.SHOT, ActionType.REBOUND, ActionType.FOUL].includes(action.id as ActionType))
                   .filter(action => courtFilterActionType.length === 0 || courtFilterActionType.includes(action.id))
-                  .map((action, index, array) => (
-                    <View key={action.id} style={[styles.liveStatGroup, index === array.length - 1 && styles.liveStatGroupLast]}>
-                      <Text style={styles.liveStatGroupLabel}>{action.icon} {action.label}</Text>
-                      <Text style={styles.liveStatGroupValue}>
-                        {(() => {
-                          const actionsTeamB = filteredCourtActions.filter(a => a.team === "B");
-                          return actionsTeamB.filter(a => a.type === action.id).length;
-                        })()}
-                      </Text>
-                    </View>
-                  ))}
+                  .map((action, index, array) => {
+                    return (
+                      <View key={action.id} style={[styles.liveStatGroup, { borderBottomColor: colors.border }, index === array.length - 1 && styles.liveStatGroupLast]}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                          <View style={[styles.colorBadge, { backgroundColor: getActionColor(action.id) }]} />
+                          <Text style={[styles.liveStatGroupLabel, { color: colors.text.secondary }]}>{action.label}</Text>
+                        </View>
+                        <Text style={[styles.liveStatGroupValue, { color: STATUS_COLORS.success }]}>
+                          {(() => {
+                            const actionsTeamB = filteredCourtActions.filter(a => a.team === "B");
+                            return actionsTeamB.filter(a => a.type === action.id).length;
+                          })()}
+                        </Text>
+                      </View>
+                    );
+                  })}
               </View>
             ) : (
               <View style={styles.rightPanel}>
@@ -754,25 +832,27 @@ export default function MatchDetailsScreen() {
 
         {/* Players Tab Content: Detailed player statistics table */}
         {activeTab === "players" && (
-          <View style={styles.playerStatsSection}>
-            <Text style={styles.sectionTitle}>Statistiques des joueurs</Text>
+          <View style={[styles.playerStatsSection, { backgroundColor: colors.surface }]}>
+            <Text style={[styles.sectionTitle, { color: colors.text.primary }]}>Statistiques des joueurs</Text>
 
             {/* Filters: Team selection and sort options */}
-            <View style={styles.filtersContainer}>
+            <View style={[styles.filtersContainer, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
             {/* Team filter: Filter players by team (only shown when managing both teams) */}
         {teamMode === "BOTH" && (
           <View style={styles.teamFilter}>
             <TouchableOpacity
               style={[
                 styles.teamFilterButton,
-                selectedTeam === "BOTH" && styles.teamFilterButtonActive,
+                { backgroundColor: colors.surfaceVariant, borderColor: colors.border },
+                selectedTeam === "BOTH" && { backgroundColor: STATUS_COLORS.success, borderColor: STATUS_COLORS.success },
               ]}
               onPress={() => setSelectedTeam("BOTH")}
             >
               <Text
                 style={[
                   styles.teamFilterText,
-                  selectedTeam === "BOTH" && styles.teamFilterTextActive,
+                  { color: colors.text.secondary },
+                  selectedTeam === "BOTH" && { color: COMMON_COLORS.white },
                 ]}
               >
                 Tous
@@ -781,14 +861,16 @@ export default function MatchDetailsScreen() {
             <TouchableOpacity
               style={[
                 styles.teamFilterButton,
-                selectedTeam === "A" && styles.teamFilterButtonActive,
+                { backgroundColor: colors.surfaceVariant, borderColor: colors.border },
+                selectedTeam === "A" && { backgroundColor: STATUS_COLORS.success, borderColor: STATUS_COLORS.success },
               ]}
               onPress={() => setSelectedTeam("A")}
             >
               <Text
                 style={[
                   styles.teamFilterText,
-                  selectedTeam === "A" && styles.teamFilterTextActive,
+                  { color: colors.text.secondary },
+                  selectedTeam === "A" && { color: COMMON_COLORS.white },
                 ]}
               >
                 {teamA}
@@ -797,14 +879,16 @@ export default function MatchDetailsScreen() {
             <TouchableOpacity
               style={[
                 styles.teamFilterButton,
-                selectedTeam === "B" && styles.teamFilterButtonActive,
+                { backgroundColor: colors.surfaceVariant, borderColor: colors.border },
+                selectedTeam === "B" && { backgroundColor: STATUS_COLORS.success, borderColor: STATUS_COLORS.success },
               ]}
               onPress={() => setSelectedTeam("B")}
             >
               <Text
                 style={[
                   styles.teamFilterText,
-                  selectedTeam === "B" && styles.teamFilterTextActive,
+                  { color: colors.text.secondary },
+                  selectedTeam === "B" && { color: COMMON_COLORS.white },
                 ]}
               >
                 {teamB}
@@ -824,14 +908,16 @@ export default function MatchDetailsScreen() {
               key={option.key}
               style={[
                 styles.sortButton,
-                sortBy === option.key && styles.sortButtonActive,
+                { backgroundColor: colors.surfaceVariant },
+                sortBy === option.key && { backgroundColor: SPORT_COLORS.basketball.orange },
               ]}
               onPress={() => setSortBy(option.key)}
             >
               <Text
                 style={[
                   styles.sortButtonText,
-                  sortBy === option.key && styles.sortButtonTextActive,
+                  { color: colors.text.secondary },
+                  sortBy === option.key && { color: COMMON_COLORS.white },
                 ]}
               >
                 {option.label}
@@ -844,14 +930,14 @@ export default function MatchDetailsScreen() {
           {/* Players List: Individual player cards with detailed statistics */}
           <View style={styles.playersList}>
         {sortedPlayers.map((player) => (
-          <View key={`${player.team}-${player.id}`} style={styles.playerCard}>
+          <View key={`${player.team}-${player.id}`} style={[styles.playerCard, { backgroundColor: colors.surfaceVariant }]}>
             {/* Player header: Player name, number, and total points */}
-            <View style={styles.playerHeader}>
+            <View style={[styles.playerHeader, { borderBottomColor: colors.border }]}>
               <View style={styles.playerInfo}>
-                <Text style={styles.playerNumber}>#{player.num}</Text>
-                <Text style={styles.playerName}>{player.name}</Text>
+                <Text style={[styles.playerNumber, { color: STATUS_COLORS.success }]}>#{player.num}</Text>
+                <Text style={[styles.playerName, { color: colors.text.primary }]}>{player.name}</Text>
               </View>
-              <Text style={styles.playerPoints}>{player.stats.totalPoints} pts</Text>
+              <Text style={[styles.playerPoints, { color: SPORT_COLORS.basketball.orange }]}>{player.stats.totalPoints} pts</Text>
             </View>
 
             {/* Player stats: Detailed breakdown by category */}
@@ -859,28 +945,28 @@ export default function MatchDetailsScreen() {
               {/* Shooting stats: Total shots and breakdown by point value (1pt, 2pts, 3pts) */}
               {player.stats.shots > 0 && (
                 <View style={styles.statSection}>
-                  <Text style={styles.statSectionTitle}>Tirs</Text>
+                  <Text style={[styles.statSectionTitle, { color: colors.text.secondary }]}>Tirs</Text>
                   <View style={styles.statRow}>
-                    <Text style={styles.statLabel}>Total</Text>
-                    <Text style={styles.statValue}>
+                    <Text style={[styles.statLabel, { color: colors.text.secondary }]}>Total</Text>
+                    <Text style={[styles.statValue, { color: colors.text.primary }]}>
                       {player.stats.madeShots}/{player.stats.shots} ({player.stats.shotPercentage}%)
                     </Text>
                   </View>
                   <View style={styles.statRow}>
-                    <Text style={styles.statLabel}>1pt</Text>
-                    <Text style={styles.statValue}>
+                    <Text style={[styles.statLabel, { color: colors.text.secondary }]}>1pt</Text>
+                    <Text style={[styles.statValue, { color: colors.text.primary }]}>
                       {player.stats.onePtMade}/{player.stats.onePtTotal} ({player.stats.onePtPercentage}%)
                     </Text>
                   </View>
                   <View style={styles.statRow}>
-                    <Text style={styles.statLabel}>2pts</Text>
-                    <Text style={styles.statValue}>
+                    <Text style={[styles.statLabel, { color: colors.text.secondary }]}>2pts</Text>
+                    <Text style={[styles.statValue, { color: colors.text.primary }]}>
                       {player.stats.twoPtMade}/{player.stats.twoPtTotal} ({player.stats.twoPtPercentage}%)
                     </Text>
                   </View>
                   <View style={styles.statRow}>
-                    <Text style={styles.statLabel}>3pts</Text>
-                    <Text style={styles.statValue}>
+                    <Text style={[styles.statLabel, { color: colors.text.secondary }]}>3pts</Text>
+                    <Text style={[styles.statValue, { color: colors.text.primary }]}>
                       {player.stats.threePtMade}/{player.stats.threePtTotal} ({player.stats.threePtPercentage}%)
                     </Text>
                   </View>
@@ -907,15 +993,15 @@ export default function MatchDetailsScreen() {
 
                 return (
                   <View style={styles.statSection}>
-                    <Text style={styles.statSectionTitle}>Autres</Text>
+                    <Text style={[styles.statSectionTitle, { color: colors.text.secondary }]}>Autres</Text>
                     {otherStatsConfig.map(({ key, label, detail }) => {
                       const value = player.stats[key as keyof typeof player.stats];
                       if (!value || value === 0) return null;
 
                       return (
                         <View key={`${player.team}-${player.id}-${key}`} style={styles.statRow}>
-                          <Text style={styles.statLabel}>{label}</Text>
-                          <Text style={styles.statValue}>
+                          <Text style={[styles.statLabel, { color: colors.text.secondary }]}>{label}</Text>
+                          <Text style={[styles.statValue, { color: colors.text.primary }]}>
                             {value} {detail}
                           </Text>
                         </View>
@@ -931,7 +1017,7 @@ export default function MatchDetailsScreen() {
             {/* Empty state: Shown when no players match the current filters */}
             {sortedPlayers.length === 0 && (
               <View style={styles.emptyState}>
-                <Text style={styles.emptyStateText}>Aucune statistique disponible</Text>
+                <Text style={[styles.emptyStateText, { color: colors.text.tertiary }]}>Aucune statistique disponible</Text>
               </View>
             )}
           </View>
@@ -1232,6 +1318,13 @@ const styles = StyleSheet.create({
   liveStatDetailText: {
     fontSize: 9,
     color: "#999",
+  },
+  // Color badge for action types
+  colorBadge: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginRight: 6,
   },
   // Player Stats Section
   playerStatsSection: {

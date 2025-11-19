@@ -726,22 +726,26 @@ export default function MatchHistoryScreen() {
     return (
       /* Match card - tap to view details */
       <TouchableOpacity
-        style={styles.matchCard}
+        style={[styles.matchCard, {
+          backgroundColor: colors.surface,
+          borderColor: colors.border
+        }]}
         onPress={() => handleMatchPress(item)}
       >
         {/* Match header - date and duration */}
         <View style={styles.matchHeader}>
-          <Text style={styles.matchDate}>{formatDate(item.created_at)}</Text>
-          <Text style={styles.matchDuration}>{formatDuration(item)}</Text>
+          <Text style={[styles.matchDate, { color: colors.text.secondary }]}>{formatDate(item.created_at)}</Text>
+          <Text style={[styles.matchDuration, { color: colors.text.tertiary }]}>{formatDuration(item)}</Text>
         </View>
 
         {/* Match score section - teams and scores */}
-        <View style={[styles.matchScore]}>
+        <View style={[styles.matchScore, { backgroundColor: colors.surfaceVariant }]}>
           {/* Team A */}
           <View style={styles.teamContainer}>
             <Text
               style={[
                 styles.teamName,
+                { color: colors.text.secondary },
                 winner === "A" && !clubLost && styles.winnerText,
                 clubLost && winner === "A" && styles.loserText,
               ]}
@@ -751,6 +755,7 @@ export default function MatchHistoryScreen() {
             <Text
               style={[
                 styles.score,
+                { color: colors.text.primary },
                 winner === "A" && !clubLost && styles.winnerScore,
                 clubLost && winner === "A" && styles.loserScore,
               ]}
@@ -759,13 +764,14 @@ export default function MatchHistoryScreen() {
             </Text>
           </View>
 
-          <Text style={styles.scoreSeparator}>-</Text>
+          <Text style={[styles.scoreSeparator, { color: colors.text.disabled }]}>-</Text>
 
           {/* Team B */}
           <View style={styles.teamContainer}>
             <Text
               style={[
                 styles.teamName,
+                { color: colors.text.secondary },
                 winner === "B" && !clubLost && styles.winnerText,
                 clubLost && winner === "B" && styles.loserText,
               ]}
@@ -775,6 +781,7 @@ export default function MatchHistoryScreen() {
             <Text
               style={[
                 styles.score,
+                { color: colors.text.primary },
                 winner === "B" && !clubLost && styles.winnerScore,
                 clubLost && winner === "B" && styles.loserScore,
               ]}
@@ -1010,10 +1017,10 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   matchCard: {
-    backgroundColor: "#fff",
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
+    borderWidth: 1,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -1028,12 +1035,10 @@ const styles = StyleSheet.create({
   },
   matchDate: {
     fontSize: 12,
-    color: "#666",
     fontWeight: "600",
   },
   matchDuration: {
     fontSize: 12,
-    color: "#999",
   },
   matchScore: {
     flexDirection: "row",
@@ -1042,7 +1047,6 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     padding: 12,
     borderRadius: 8,
-    backgroundColor: "#f9f9f9",
   },
   matchScoreLost: {
     backgroundColor: "#ffebee",
@@ -1055,18 +1059,15 @@ const styles = StyleSheet.create({
   },
   teamName: {
     fontSize: 14,
-    color: "#666",
     marginBottom: 4,
     fontWeight: "600",
   },
   score: {
     fontSize: 32,
     fontWeight: "bold",
-    color: "#333",
   },
   scoreSeparator: {
     fontSize: 24,
-    color: "#ccc",
     marginHorizontal: 16,
   },
   normalText: {
