@@ -365,13 +365,15 @@ export default function MainMenuScreen() {
                       selectedClubIdRef.current = clubId;
                     }
                   }}
-                  style={styles.picker}
+                  style={[styles.picker, { color: colors.text.primary }]}
+                  dropdownIconColor={colors.text.primary}
                 >
                   {userClubs.map((club) => (
                     <Picker.Item
                       key={club.id}
                       label={club.name}
                       value={club.id}
+                      color={colors.text.primary}
                     />
                   ))}
                 </Picker>

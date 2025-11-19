@@ -21,10 +21,13 @@ import { supabase } from "../src/config/supabase";
 import { ServiceFactory } from "../services/ServiceFactory";
 import { useAuth } from "../src/contexts/AuthContext";
 import { logInfo, logError, logWarn } from "../utils/logger";
+import { useTheme } from "../src/contexts/ThemeContext";
+import { CommonStyles } from "../src/theme";
 
 export default function JoinClubScreen() {
   const navigation = useNavigation();
   const { user } = useAuth();
+  const { colors } = useTheme();
   const [clubCode, setClubCode] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -155,28 +158,45 @@ export default function JoinClubScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <View
+        style={[
+          CommonStyles.header,
+          {
+            backgroundColor: colors.surface,
+            borderBottomColor: colors.border,
+          },
+        ]}
+      >
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={28} color="#333" />
+          <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Rejoindre un club</Text>
-        <View style={{ width: 28 }} />
+        <Text
+          style={[CommonStyles.headerTitle, { color: colors.text.primary }]}
+        >
+          Rejoindre un club
+        </Text>
+        <View style={{ width: 24 }} />
       </View>
 
       <View style={styles.content}>
         <View style={styles.iconContainer}>
-          <Ionicons name="enter" size={80} color="#4CAF50" />
+          <Ionicons name="enter" size={80} color={colors.button.secondary} />
         </View>
 
-        <Text style={styles.title}>Entrez le code du club</Text>
-        <Text style={styles.subtitle}>
+        <Text style={[styles.title, { color: colors.text.primary }]}>Entrez le code du club</Text>
+        <Text style={[styles.subtitle, { color: colors.text.secondary }]}>
           Demandez le code à 6 chiffres à l'administrateur du club
         </Text>
 
         <TextInput
-          style={styles.codeInput}
+          style={[styles.codeInput, {
+            borderColor: colors.button.secondary,
+            color: colors.text.primary,
+            backgroundColor: colors.surface
+          }]}
           placeholder="000000"
+          placeholderTextColor={colors.text.tertiary}
           value={clubCode}
           onChangeText={(text) => setClubCode(formatCode(text))}
           keyboardType="number-pad"
@@ -185,7 +205,11 @@ export default function JoinClubScreen() {
         />
 
         <TouchableOpacity
-          style={[styles.joinButton, loading && styles.joinButtonDisabled]}
+          style={[
+            styles.joinButton,
+            { backgroundColor: colors.button.secondary },
+            loading && [styles.joinButtonDisabled, { backgroundColor: colors.text.disabled }]
+          ]}
           onPress={handleJoinClub}
           disabled={loading}
         >
@@ -212,22 +236,6 @@ export default function JoinClubScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
-  },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 20,
-    paddingTop: 50,
-    paddingBottom: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: "#eee",
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#333",
   },
   content: {
     flex: 1,
@@ -241,12 +249,10 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: "bold",
-    color: "#333",
     marginBottom: 10,
   },
   subtitle: {
     fontSize: 14,
-    color: "#666",
     textAlign: "center",
     marginBottom: 40,
     paddingHorizontal: 20,
@@ -257,21 +263,17 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     letterSpacing: 10,
     borderWidth: 2,
-    borderColor: "#4CAF50",
     borderRadius: 15,
     padding: 20,
     marginBottom: 30,
-    color: "#333",
   },
   joinButton: {
-    backgroundColor: "#4CAF50",
     width: "100%",
     padding: 18,
     borderRadius: 10,
     alignItems: "center",
   },
   joinButtonDisabled: {
-    backgroundColor: "#ccc",
   },
   joinButtonText: {
     color: "#fff",

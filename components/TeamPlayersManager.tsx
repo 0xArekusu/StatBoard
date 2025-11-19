@@ -15,6 +15,7 @@ import { supabase } from "../src/config/supabase";
 import { ServiceFactory } from "../services/ServiceFactory";
 import type { Player } from "../models/Player";
 import PlayerCard from "./PlayerCard";
+import { useTheme } from "../src/contexts/ThemeContext";
 
 interface TeamPlayersManagerProps {
   teamId?: string;
@@ -35,6 +36,7 @@ export default function TeamPlayersManager({
   coachPhotoUrl: initialCoachPhotoUrl,
   onCoachChange
 }: TeamPlayersManagerProps) {
+  const { colors } = useTheme();
   const [players, setPlayers] = useState<Player[]>(initialPlayers || []);
   const [loading, setLoading] = useState(!!teamId);
   const [showAddForm, setShowAddForm] = useState(false);
@@ -192,7 +194,7 @@ export default function TeamPlayersManager({
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#9C27B0" />
+        <ActivityIndicator size="large" color={colors.button.club} />
       </View>
     );
   }
@@ -218,15 +220,17 @@ export default function TeamPlayersManager({
       {/* Coach Section */}
       <View style={styles.section}>
         <TouchableOpacity
-          style={styles.sectionHeader}
+          style={[styles.sectionHeader, {
+            backgroundColor: colors.surfaceVariant
+          }]}
           onPress={() => setShowCoachSection(!showCoachSection)}
           activeOpacity={0.7}
         >
-          <Text style={styles.sectionTitle}>Coach</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text.primary }]}>Coach</Text>
           <Ionicons
             name={showCoachSection ? "chevron-up" : "chevron-down"}
             size={20}
-            color="#666"
+            color={colors.text.secondary}
           />
         </TouchableOpacity>
 
@@ -250,20 +254,22 @@ export default function TeamPlayersManager({
 
       {/* Header */}
       <TouchableOpacity
-        style={styles.header}
+        style={[styles.header, {
+          backgroundColor: colors.surfaceVariant
+        }]}
         onPress={() => setShowTeamSection(!showTeamSection)}
         activeOpacity={0.7}
       >
         <View style={styles.headerContent}>
-          <Text style={styles.title}>Joueurs de l'équipe</Text>
-          <Text style={styles.subtitle}>
+          <Text style={[styles.title, { color: colors.text.primary }]}>Joueurs de l'équipe</Text>
+          <Text style={[styles.subtitle, { color: colors.text.secondary }]}>
             {players.length}/15 joueurs {needsMorePlayers && "(min. 5 requis)"}
           </Text>
         </View>
         <Ionicons
           name={showTeamSection ? "chevron-up" : "chevron-down"}
           size={24}
-          color="#666"
+          color={colors.text.secondary}
         />
       </TouchableOpacity>
 
@@ -273,7 +279,9 @@ export default function TeamPlayersManager({
       {/* Add Player Button */}
       {canEdit && canAddMore && (
         <TouchableOpacity
-          style={styles.addButton}
+          style={[styles.addButton, {
+            backgroundColor: colors.button.club
+          }]}
           onPress={() => setShowAddForm(!showAddForm)}
         >
           <Ionicons
@@ -298,9 +306,9 @@ export default function TeamPlayersManager({
       {/* Players List */}
       {players.length === 0 ? (
         <View style={styles.emptyState}>
-          <Ionicons name="basketball-outline" size={60} color="#ccc" />
-          <Text style={styles.emptyStateText}>Aucun joueur</Text>
-          <Text style={styles.emptyStateSubtext}>
+          <Ionicons name="basketball-outline" size={60} color={colors.text.tertiary} />
+          <Text style={[styles.emptyStateText, { color: colors.text.tertiary }]}>Aucun joueur</Text>
+          <Text style={[styles.emptyStateSubtext, { color: colors.text.disabled }]}>
             Ajoutez au moins 5 joueurs pour créer votre équipe
           </Text>
         </View>
@@ -310,17 +318,19 @@ export default function TeamPlayersManager({
           {players.filter((p) => p.isStarter).length > 0 && (
             <View style={styles.section}>
               <TouchableOpacity
-                style={styles.sectionHeader}
+                style={[styles.sectionHeader, {
+                  backgroundColor: colors.surfaceVariant
+                }]}
                 onPress={() => setShowStartersSection(!showStartersSection)}
                 activeOpacity={0.7}
               >
-                <Text style={styles.sectionTitle}>
+                <Text style={[styles.sectionTitle, { color: colors.text.primary }]}>
                   Titulaires ({startersCount}/5)
                 </Text>
                 <Ionicons
                   name={showStartersSection ? "chevron-up" : "chevron-down"}
                   size={20}
-                  color="#666"
+                  color={colors.text.secondary}
                 />
               </TouchableOpacity>
               {showStartersSection && players
@@ -343,17 +353,19 @@ export default function TeamPlayersManager({
           {players.filter((p) => !p.isStarter).length > 0 && (
             <View style={styles.section}>
               <TouchableOpacity
-                style={styles.sectionHeader}
+                style={[styles.sectionHeader, {
+                  backgroundColor: colors.surfaceVariant
+                }]}
                 onPress={() => setShowBenchSection(!showBenchSection)}
                 activeOpacity={0.7}
               >
-                <Text style={styles.sectionTitle}>
+                <Text style={[styles.sectionTitle, { color: colors.text.primary }]}>
                   Remplaçants ({benchCount}/{15 - startersCount})
                 </Text>
                 <Ionicons
                   name={showBenchSection ? "chevron-up" : "chevron-down"}
                   size={20}
-                  color="#666"
+                  color={colors.text.secondary}
                 />
               </TouchableOpacity>
               {showBenchSection && players
@@ -380,9 +392,11 @@ export default function TeamPlayersManager({
 
       {/* Info Box */}
       {needsMorePlayers && (
-        <View style={styles.infoBox}>
-          <Ionicons name="information-circle-outline" size={24} color="#F44336" />
-          <Text style={styles.infoText}>
+        <View style={[styles.infoBox, {
+          backgroundColor: colors.surfaceVariant
+        }]}>
+          <Ionicons name="information-circle-outline" size={24} color={colors.error} />
+          <Text style={[styles.infoText, { color: colors.error }]}>
             Vous devez ajouter au moins {5 - players.length} joueur(s) supplémentaire(s).
           </Text>
         </View>
@@ -409,7 +423,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 20,
     padding: 15,
-    backgroundColor: "#f9f9f9",
     borderRadius: 10,
   },
   headerContent: {
@@ -418,18 +431,15 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: "bold",
-    color: "#333",
   },
   subtitle: {
     fontSize: 14,
-    color: "#666",
     marginTop: 4,
   },
   addButton: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#9C27B0",
     padding: 15,
     borderRadius: 10,
     marginBottom: 20,
@@ -449,13 +459,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 15,
     padding: 12,
-    backgroundColor: "#f9f9f9",
     borderRadius: 8,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: "bold",
-    color: "#333",
   },
   emptyState: {
     alignItems: "center",
@@ -464,18 +472,15 @@ const styles = StyleSheet.create({
   emptyStateText: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#999",
     marginTop: 15,
   },
   emptyStateSubtext: {
     fontSize: 14,
-    color: "#bbb",
     marginTop: 5,
     textAlign: "center",
   },
   infoBox: {
     flexDirection: "row",
-    backgroundColor: "#FFEBEE",
     padding: 15,
     borderRadius: 10,
     marginTop: 20,
@@ -484,7 +489,6 @@ const styles = StyleSheet.create({
   infoText: {
     flex: 1,
     fontSize: 14,
-    color: "#C62828",
     lineHeight: 20,
   },
 });

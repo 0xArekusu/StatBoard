@@ -17,6 +17,8 @@ import { useAuth } from "../src/contexts/AuthContext";
 import type { TeamGender, Team } from "../models/Team";
 import TeamPlayersManager from "../components/TeamPlayersManager";
 import { PhotoUploadService } from "../services/PhotoUploadService";
+import { useTheme } from "../src/contexts/ThemeContext";
+import { CommonStyles } from "../src/theme";
 
 type RootStackParamList = {
   TeamForm: { clubId?: string; teamId?: string };
@@ -34,6 +36,7 @@ export default function TeamFormScreen() {
   const navigation = useNavigation();
   const route = useRoute<TeamFormRouteProp>();
   const { user } = useAuth();
+  const { colors } = useTheme();
   const teamId = route.params?.teamId;
   const clubId = route.params?.clubId;
   const isEditMode = !!teamId;
@@ -41,16 +44,48 @@ export default function TeamFormScreen() {
   const [team, setTeam] = useState<Team | null>(null);
   const [loading, setLoading] = useState(isEditMode);
   const [teamName, setTeamName] = useState("");
-  const [selectedGender, setSelectedGender] = useState<TeamGender | undefined>(undefined);
+  const [selectedGender, setSelectedGender] = useState<TeamGender | undefined>(
+    undefined
+  );
   const [coachName, setCoachName] = useState("Coach");
   const [coachPhotoUrl, setCoachPhotoUrl] = useState<string | undefined>();
   const [saving, setSaving] = useState(false);
   const [players, setPlayers] = useState<any[]>([
-    { id: "temp-1", name: "Player 1", jerseyNumber: 1, position: 1, isStarter: true },
-    { id: "temp-2", name: "Player 2", jerseyNumber: 2, position: 2, isStarter: true },
-    { id: "temp-3", name: "Player 3", jerseyNumber: 3, position: 3, isStarter: true },
-    { id: "temp-4", name: "Player 4", jerseyNumber: 4, position: 4, isStarter: true },
-    { id: "temp-5", name: "Player 5", jerseyNumber: 5, position: 5, isStarter: true },
+    {
+      id: "temp-1",
+      name: "Player 1",
+      jerseyNumber: 1,
+      position: 1,
+      isStarter: true,
+    },
+    {
+      id: "temp-2",
+      name: "Player 2",
+      jerseyNumber: 2,
+      position: 2,
+      isStarter: true,
+    },
+    {
+      id: "temp-3",
+      name: "Player 3",
+      jerseyNumber: 3,
+      position: 3,
+      isStarter: true,
+    },
+    {
+      id: "temp-4",
+      name: "Player 4",
+      jerseyNumber: 4,
+      position: 4,
+      isStarter: true,
+    },
+    {
+      id: "temp-5",
+      name: "Player 5",
+      jerseyNumber: 5,
+      position: 5,
+      isStarter: true,
+    },
   ]);
 
   // Load team data if in edit mode
@@ -110,7 +145,10 @@ export default function TeamFormScreen() {
                   { text: "OK", onPress: () => navigation.goBack() },
                 ]);
               } else {
-                Alert.alert("Erreur", result.error || "Impossible de supprimer l'équipe");
+                Alert.alert(
+                  "Erreur",
+                  result.error || "Impossible de supprimer l'équipe"
+                );
               }
             } catch (error) {
               console.error("Error deleting team:", error);
@@ -126,20 +164,26 @@ export default function TeamFormScreen() {
    * Upload photo to Supabase if it's a local URI
    * Returns Supabase URL or original value if already uploaded
    */
-  const uploadPhotoIfNeeded = async (photoUrl: string | undefined, playerId: string): Promise<string | undefined> => {
+  const uploadPhotoIfNeeded = async (
+    photoUrl: string | undefined,
+    playerId: string
+  ): Promise<string | undefined> => {
     if (!photoUrl) return undefined;
 
     // If already a Supabase URL, return as is
-    if (photoUrl.startsWith('http://') || photoUrl.startsWith('https://')) {
+    if (photoUrl.startsWith("http://") || photoUrl.startsWith("https://")) {
       return photoUrl;
     }
 
     // Local URI - need to upload
     const photoService = new PhotoUploadService(supabase);
-    const { url, error } = await photoService.uploadPlayerPhoto(photoUrl, playerId);
+    const { url, error } = await photoService.uploadPlayerPhoto(
+      photoUrl,
+      playerId
+    );
 
     if (error) {
-      console.error('Error uploading player photo:', error);
+      console.error("Error uploading player photo:", error);
       return undefined; // Continue without photo rather than failing
     }
 
@@ -164,9 +208,12 @@ export default function TeamFormScreen() {
     }
 
     // Validate exactly 5 starters
-    const startersCount = players.filter(p => p.isStarter).length;
+    const startersCount = players.filter((p) => p.isStarter).length;
     if (startersCount !== 5) {
-      Alert.alert("Erreur", "Votre équipe doit avoir exactement 5 joueurs titulaires");
+      Alert.alert(
+        "Erreur",
+        "Votre équipe doit avoir exactement 5 joueurs titulaires"
+      );
       return;
     }
 
@@ -189,7 +236,10 @@ export default function TeamFormScreen() {
         );
 
         if (!result.success) {
-          Alert.alert("Erreur", result.error || "Impossible de modifier l'équipe");
+          Alert.alert(
+            "Erreur",
+            result.error || "Impossible de modifier l'équipe"
+          );
           setSaving(false);
           return;
         }
@@ -199,15 +249,20 @@ export default function TeamFormScreen() {
 
         // Get existing players from DB
         const existingPlayers = await playerService.getTeamPlayers(teamId);
-        const existingIds = new Set(existingPlayers.map(p => p.id));
-        const currentIds = new Set(players.filter(p => !p.id.startsWith('temp-')).map(p => p.id));
+        const existingIds = new Set(existingPlayers.map((p) => p.id));
+        const currentIds = new Set(
+          players.filter((p) => !p.id.startsWith("temp-")).map((p) => p.id)
+        );
 
         // Update or create players
         for (const player of players) {
           // Upload photo if it's a local URI
-          const uploadedPhotoUrl = await uploadPhotoIfNeeded(player.photoUrl, player.id);
+          const uploadedPhotoUrl = await uploadPhotoIfNeeded(
+            player.photoUrl,
+            player.id
+          );
 
-          if (player.id.startsWith('temp-')) {
+          if (player.id.startsWith("temp-")) {
             // New player - CREATE
             await playerService.createPlayer({
               teamId,
@@ -268,7 +323,10 @@ export default function TeamFormScreen() {
         const playerService = ServiceFactory.getPlayerService(supabase);
         for (const player of players) {
           // Upload photo if it's a local URI
-          const uploadedPhotoUrl = await uploadPhotoIfNeeded(player.photoUrl, player.id);
+          const uploadedPhotoUrl = await uploadPhotoIfNeeded(
+            player.photoUrl,
+            player.id
+          );
 
           await playerService.createPlayer({
             teamId: newTeamId,
@@ -297,7 +355,7 @@ export default function TeamFormScreen() {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#9C27B0" />
+        <ActivityIndicator size="large" color={colors.button.club} />
       </View>
     );
   }
@@ -305,20 +363,38 @@ export default function TeamFormScreen() {
   const isOwner = team && user && team.ownerId === user.id;
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <View
+        style={[
+          CommonStyles.header,
+          {
+            backgroundColor: colors.surface,
+            borderBottomColor: colors.border,
+          },
+        ]}
+      >
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={28} color="#333" />
+          <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>
+        <Text
+          style={[CommonStyles.headerTitle, { color: colors.text.primary }]}
+        >
           {isEditMode ? team?.name || "Mon équipe" : "Créer une équipe"}
         </Text>
-        <View style={{ width: 28 }} />
+        <View style={{ width: 24 }} />
       </View>
 
       {/* Inactive team banner */}
       {isEditMode && team && !team.isActive && (
-        <View style={styles.inactiveBanner}>
+        <View
+          style={[
+            styles.inactiveBanner,
+            {
+              backgroundColor: colors.surfaceVariant,
+              borderBottomColor: colors.border,
+            },
+          ]}
+        >
           <Ionicons name="warning-outline" size={24} color="#F57C00" />
           <View style={styles.inactiveBannerText}>
             <Text style={styles.inactiveBannerTitle}>Équipe désactivée</Text>
@@ -331,10 +407,20 @@ export default function TeamFormScreen() {
 
       <ScrollView style={styles.content}>
         <View style={styles.section}>
-          <Text style={styles.label}>Nom de l'équipe *</Text>
+          <Text style={[styles.label, { color: colors.text.secondary }]}>
+            Nom de l'équipe *
+          </Text>
           <TextInput
-            style={styles.input}
+            style={[
+              styles.input,
+              {
+                backgroundColor: colors.surface,
+                borderColor: colors.border,
+                color: colors.text.primary,
+              },
+            ]}
             placeholder="Ex: Les Lions U15"
+            placeholderTextColor={colors.text.tertiary}
             value={teamName}
             onChangeText={setTeamName}
             maxLength={50}
@@ -342,23 +428,39 @@ export default function TeamFormScreen() {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.label}>Genre (optionnel)</Text>
+          <Text style={[styles.label, { color: colors.text.secondary }]}>
+            Genre (optionnel)
+          </Text>
           <View style={styles.optionGrid}>
             {GENDERS.map((gender) => (
               <TouchableOpacity
                 key={gender.value}
                 style={[
                   styles.optionButton,
-                  selectedGender === gender.value && styles.optionButtonSelected,
+                  {
+                    borderColor: colors.border,
+                    backgroundColor: colors.surface,
+                  },
+                  selectedGender === gender.value && [
+                    styles.optionButtonSelected,
+                    {
+                      borderColor: colors.button.club,
+                      backgroundColor: colors.button.club,
+                    },
+                  ],
                 ]}
                 onPress={() =>
-                  setSelectedGender(selectedGender === gender.value ? undefined : gender.value)
+                  setSelectedGender(
+                    selectedGender === gender.value ? undefined : gender.value
+                  )
                 }
               >
                 <Text
                   style={[
                     styles.optionText,
-                    selectedGender === gender.value && styles.optionTextSelected,
+                    { color: colors.text.secondary },
+                    selectedGender === gender.value &&
+                      styles.optionTextSelected,
                   ]}
                 >
                   {gender.label}
@@ -385,32 +487,65 @@ export default function TeamFormScreen() {
         </View>
 
         {!isEditMode && (
-          <View style={styles.infoBox}>
-            <Ionicons name="information-circle-outline" size={24} color="#2196F3" />
+          <View
+            style={[
+              styles.infoBox,
+              {
+                backgroundColor: colors.surfaceVariant,
+              },
+            ]}
+          >
+            <Ionicons
+              name="information-circle-outline"
+              size={24}
+              color="#2196F3"
+            />
             <Text style={styles.infoText}>
-              Votre équipe sera créée et en attente de validation par le responsable du club.
+              Votre équipe sera créée et en attente de validation par le
+              responsable du club.
             </Text>
           </View>
         )}
 
         <TouchableOpacity
-          style={[styles.saveButton, saving && styles.saveButtonDisabled]}
+          style={[
+            styles.saveButton,
+            { backgroundColor: colors.button.club },
+            saving && [
+              styles.saveButtonDisabled,
+              { backgroundColor: colors.text.disabled },
+            ],
+          ]}
           onPress={handleSave}
           disabled={saving}
         >
           <Text style={styles.saveButtonText}>
-            {saving ? (isEditMode ? "Sauvegarde..." : "Création...") : (isEditMode ? "Sauvegarder" : "Créer l'équipe")}
+            {saving
+              ? isEditMode
+                ? "Sauvegarde..."
+                : "Création..."
+              : isEditMode
+              ? "Sauvegarder"
+              : "Créer l'équipe"}
           </Text>
         </TouchableOpacity>
 
         {/* Delete button - only for team owner in edit mode */}
         {isEditMode && isOwner && (
           <TouchableOpacity
-            style={styles.deleteButton}
+            style={[
+              styles.deleteButton,
+              {
+                backgroundColor: colors.background,
+                borderColor: colors.error,
+              },
+            ]}
             onPress={handleDelete}
           >
-            <Ionicons name="trash-outline" size={20} color="#F44336" />
-            <Text style={styles.deleteButtonText}>Supprimer l'équipe</Text>
+            <Ionicons name="trash-outline" size={20} color={colors.error} />
+            <Text style={[styles.deleteButtonText, { color: colors.error }]}>
+              Supprimer l'équipe
+            </Text>
           </TouchableOpacity>
         )}
       </ScrollView>
@@ -421,22 +556,6 @@ export default function TeamFormScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
-  },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 20,
-    paddingTop: 45,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "#eee",
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#333",
   },
   content: {
     flex: 1,
@@ -448,16 +567,13 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#333",
     marginBottom: 10,
   },
   input: {
     borderWidth: 1,
-    borderColor: "#ddd",
     borderRadius: 10,
     padding: 15,
     fontSize: 16,
-    backgroundColor: "#f9f9f9",
   },
   optionGrid: {
     flexDirection: "row",
@@ -469,24 +585,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderRadius: 20,
     borderWidth: 2,
-    borderColor: "#ddd",
-    backgroundColor: "#fff",
   },
-  optionButtonSelected: {
-    borderColor: "#9C27B0",
-    backgroundColor: "#9C27B0",
-  },
+  optionButtonSelected: {},
   optionText: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#666",
   },
   optionTextSelected: {
     color: "#fff",
   },
   infoBox: {
     flexDirection: "row",
-    backgroundColor: "#E3F2FD",
     padding: 15,
     borderRadius: 10,
     marginBottom: 25,
@@ -499,15 +608,12 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   saveButton: {
-    backgroundColor: "#9C27B0",
     padding: 18,
     borderRadius: 10,
     alignItems: "center",
     marginBottom: 30,
   },
-  saveButtonDisabled: {
-    backgroundColor: "#ccc",
-  },
+  saveButtonDisabled: {},
   saveButtonText: {
     color: "#fff",
     fontSize: 18,
@@ -519,13 +625,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   inactiveBanner: {
-    backgroundColor: "#FFF3E0",
     padding: 15,
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "#FFE0B2",
   },
   inactiveBannerText: {
     flex: 1,
@@ -544,16 +648,13 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#fff",
     padding: 15,
     borderRadius: 10,
     borderWidth: 2,
-    borderColor: "#F44336",
     marginBottom: 30,
     gap: 8,
   },
   deleteButtonText: {
-    color: "#F44336",
     fontSize: 16,
     fontWeight: "bold",
   },

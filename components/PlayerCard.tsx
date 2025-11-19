@@ -11,6 +11,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import type { Player, PlayerPosition } from "../models/Player";
+import { useTheme } from "../src/contexts/ThemeContext";
 
 interface PlayerCardProps {
   player?: Player;
@@ -51,6 +52,7 @@ export default function PlayerCard({
   hidePosition = false,
   hideStarter = false,
 }: PlayerCardProps) {
+  const { colors } = useTheme();
   const [name, setName] = useState(player?.name || "");
   const [jerseyNumber, setJerseyNumber] = useState(
     player?.jerseyNumber?.toString() || ""
@@ -151,12 +153,19 @@ export default function PlayerCard({
   };
 
   return (
-    <View style={[styles.card, isStarter && styles.starterCard]}>
+    <View style={[
+      styles.card,
+      { backgroundColor: colors.surface, borderColor: colors.border },
+      isStarter && [styles.starterCard, { backgroundColor: colors.surfaceVariant }]
+    ]}>
       {/* Starter Badge */}
       {isStarter && (
-        <View style={styles.starterBadge}>
+        <View style={[styles.starterBadge, {
+          backgroundColor: colors.surface,
+          borderColor: "#FFD700"
+        }]}>
           <Ionicons name="star" size={16} color="#FFD700" />
-          <Text style={styles.starterText}>Titulaire</Text>
+          <Text style={[styles.starterText, { color: colors.text.primary }]}>Titulaire</Text>
         </View>
       )}
 
@@ -169,8 +178,8 @@ export default function PlayerCard({
         {photoUrl ? (
           <Image source={{ uri: photoUrl }} style={styles.photo} />
         ) : (
-          <View style={styles.photoPlaceholder}>
-            <Ionicons name="person" size={40} color="#ccc" />
+          <View style={[styles.photoPlaceholder, { backgroundColor: colors.surfaceVariant }]}>
+            <Ionicons name="person" size={40} color={colors.text.tertiary} />
           </View>
         )}
         {canEdit && isEditing && (
@@ -185,16 +194,26 @@ export default function PlayerCard({
         {isEditing ? (
           <>
             <TextInput
-              style={styles.input}
+              style={[styles.input, {
+                borderColor: colors.border,
+                backgroundColor: colors.background,
+                color: colors.text.primary
+              }]}
               placeholder="Nom du joueur"
+              placeholderTextColor={colors.text.tertiary}
               value={name}
               onChangeText={setName}
               maxLength={30}
             />
             {!hideJerseyNumber && (
               <TextInput
-                style={[styles.input, styles.numberInput]}
+                style={[styles.input, styles.numberInput, {
+                  borderColor: colors.border,
+                  backgroundColor: colors.background,
+                  color: colors.text.primary
+                }]}
                 placeholder="N°"
+                placeholderTextColor={colors.text.tertiary}
                 value={jerseyNumber}
                 onChangeText={setJerseyNumber}
                 keyboardType="number-pad"
@@ -204,9 +223,9 @@ export default function PlayerCard({
           </>
         ) : (
           <>
-            <Text style={styles.playerName}>{player?.name}</Text>
+            <Text style={[styles.playerName, { color: colors.text.primary }]}>{player?.name}</Text>
             {!hideJerseyNumber && (
-              <Text style={styles.playerNumber}>#{player?.jerseyNumber}</Text>
+              <Text style={[styles.playerNumber, { color: colors.button.club }]}>#{player?.jerseyNumber}</Text>
             )}
           </>
         )}
@@ -220,13 +239,18 @@ export default function PlayerCard({
                   key={pos.value}
                   style={[
                     styles.positionButton,
-                    position === pos.value && styles.positionButtonSelected,
+                    { borderColor: colors.border },
+                    position === pos.value && [
+                      styles.positionButtonSelected,
+                      { borderColor: colors.button.club, backgroundColor: colors.button.club }
+                    ],
                   ]}
                   onPress={() => setPosition(pos.value as PlayerPosition)}
                 >
                   <Text
                     style={[
                       styles.positionText,
+                      { color: colors.text.secondary },
                       position === pos.value && styles.positionTextSelected,
                     ]}
                   >
@@ -237,7 +261,7 @@ export default function PlayerCard({
             </View>
           ) : (
             player?.position && (
-              <Text style={styles.positionLabel}>
+              <Text style={[styles.positionLabel, { color: colors.text.secondary }]}>
                 Poste {player.position}
               </Text>
             )
@@ -304,19 +328,16 @@ export default function PlayerCard({
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: "#fff",
     borderRadius: 12,
     padding: 15,
     marginBottom: 15,
     borderWidth: 2,
-    borderColor: "#eee",
     flexDirection: "row",
     alignItems: "center",
     gap: 15,
   },
   starterCard: {
     borderColor: "#FFD700",
-    backgroundColor: "#FFFEF0",
   },
   starterBadge: {
     position: "absolute",
@@ -324,18 +345,15 @@ const styles = StyleSheet.create({
     right: 5,
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#FFF",
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,
     gap: 4,
     borderWidth: 1,
-    borderColor: "#FFD700",
   },
   starterText: {
     fontSize: 10,
     fontWeight: "bold",
-    color: "#333",
   },
   photoContainer: {
     width: 80,
@@ -350,7 +368,6 @@ const styles = StyleSheet.create({
   photoPlaceholder: {
     width: "100%",
     height: "100%",
-    backgroundColor: "#f5f5f5",
     justifyContent: "center",
     alignItems: "center",
   },
@@ -369,7 +386,6 @@ const styles = StyleSheet.create({
   },
   input: {
     borderWidth: 1,
-    borderColor: "#ddd",
     borderRadius: 8,
     padding: 10,
     marginBottom: 8,
@@ -381,13 +397,11 @@ const styles = StyleSheet.create({
   playerName: {
     fontSize: 18,
     fontWeight: "bold",
-    color: "#333",
     marginBottom: 4,
   },
   playerNumber: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#9C27B0",
     marginBottom: 8,
   },
   positionContainer: {
@@ -400,25 +414,20 @@ const styles = StyleSheet.create({
     height: 36,
     borderRadius: 18,
     borderWidth: 2,
-    borderColor: "#ddd",
     justifyContent: "center",
     alignItems: "center",
   },
   positionButtonSelected: {
-    borderColor: "#9C27B0",
-    backgroundColor: "#9C27B0",
   },
   positionText: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#666",
   },
   positionTextSelected: {
     color: "#fff",
   },
   positionLabel: {
     fontSize: 12,
-    color: "#666",
     fontStyle: "italic",
   },
   actions: {

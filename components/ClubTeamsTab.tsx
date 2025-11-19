@@ -38,6 +38,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import { supabase } from "../src/config/supabase";
 import { ServiceFactory } from "../services/ServiceFactory";
 import { useAuth } from "../src/contexts/AuthContext";
+import { useTheme } from "../src/contexts/ThemeContext";
 import type { Team } from "../models/Team";
 import { logInfo, logError, logWarn } from "../utils/logger";
 
@@ -50,6 +51,7 @@ interface ClubTeamsTabProps {
 
 export default function ClubTeamsTab({ clubId, isOwner, onCreateTeam, onEditTeam }: ClubTeamsTabProps) {
   const { user } = useAuth();
+  const { colors } = useTheme();
   const [pendingTeams, setPendingTeams] = useState<Team[]>([]);
   const [approvedTeams, setApprovedTeams] = useState<Team[]>([]);
   const [loading, setLoading] = useState(true);
@@ -272,11 +274,15 @@ export default function ClubTeamsTab({ clubId, isOwner, onCreateTeam, onEditTeam
     const isTeamOwner = user && team.ownerId === user.id;
 
     return (
-      <View key={team.id} style={[styles.teamCard, !team.isActive && styles.teamCardInactive]}>
+      <View key={team.id} style={[
+        styles.teamCard,
+        { backgroundColor: colors.surface, borderColor: colors.border },
+        !team.isActive && styles.teamCardInactive
+      ]}>
         {/* Team information */}
         <View style={styles.teamInfo}>
           <View style={styles.teamNameRow}>
-            <Text style={styles.teamName}>{team.name}</Text>
+            <Text style={[styles.teamName, { color: colors.text.primary }]}>{team.name}</Text>
             {!team.isActive && (
               <View style={styles.inactiveBadge}>
                 <Text style={styles.inactiveBadgeText}>Désactivée</Text>
@@ -284,13 +290,13 @@ export default function ClubTeamsTab({ clubId, isOwner, onCreateTeam, onEditTeam
             )}
           </View>
           {team.gender && (
-            <Text style={styles.teamDetails}>
+            <Text style={[styles.teamDetails, { color: colors.text.secondary }]}>
               {genderLabel}
             </Text>
           )}
           {isOwner && team.ownerEmail && (
-            <Text style={styles.teamEmail}>
-              <Ionicons name="person-outline" size={12} color="#666" /> {team.ownerEmail}
+            <Text style={[styles.teamEmail, { color: colors.text.secondary }]}>
+              <Ionicons name="person-outline" size={12} color={colors.text.secondary} /> {team.ownerEmail}
             </Text>
           )}
         </View>
@@ -321,7 +327,7 @@ export default function ClubTeamsTab({ clubId, isOwner, onCreateTeam, onEditTeam
                 style={styles.editButton}
                 onPress={() => onEditTeam(team.id)}
               >
-                <Ionicons name="create-outline" size={22} color="#9C27B0" />
+                <Ionicons name="create-outline" size={22} color={colors.button.club} />
               </TouchableOpacity>
             )}
             {isOwner && (
@@ -355,7 +361,7 @@ export default function ClubTeamsTab({ clubId, isOwner, onCreateTeam, onEditTeam
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#9C27B0" />
+        <ActivityIndicator size="large" color={colors.button.club} />
       </View>
     );
   }
@@ -399,14 +405,17 @@ export default function ClubTeamsTab({ clubId, isOwner, onCreateTeam, onEditTeam
     <View style={styles.container}>
       {/* Subscription information card */}
       {subscriptionInfo && (
-        <View style={styles.subscriptionInfo}>
+        <View style={[styles.subscriptionInfo, {
+          backgroundColor: colors.surface,
+          borderColor: colors.button.club
+        }]}>
           <View style={styles.subscriptionHeader}>
-            <Ionicons name="star" size={20} color="#9C27B0" />
-            <Text style={styles.subscriptionTier}>
+            <Ionicons name="star" size={20} color={colors.button.club} />
+            <Text style={[styles.subscriptionTier, { color: colors.button.club }]}>
               Abonnement {subscriptionInfo.tier.toUpperCase()}
             </Text>
           </View>
-          <Text style={styles.subscriptionLimit}>
+          <Text style={[styles.subscriptionLimit, { color: colors.text.secondary }]}>
             Équipes: {subscriptionInfo.currentTeamCount}/{subscriptionInfo.maxTeams}
           </Text>
         </View>
@@ -414,7 +423,7 @@ export default function ClubTeamsTab({ clubId, isOwner, onCreateTeam, onEditTeam
 
       {/* Create team button */}
       <TouchableOpacity
-        style={styles.createButton}
+        style={[styles.createButton, { backgroundColor: colors.button.club }]}
         onPress={handleCreateTeam}
       >
         <Ionicons name="add-circle-outline" size={24} color="#fff" />
@@ -424,15 +433,15 @@ export default function ClubTeamsTab({ clubId, isOwner, onCreateTeam, onEditTeam
       {/* Toggle to show/hide pending teams (non-owners only) */}
       {!isOwner && pendingTeams.length > 0 && (
         <TouchableOpacity
-          style={styles.toggleContainer}
+          style={[styles.toggleContainer, { backgroundColor: colors.surface }]}
           onPress={() => setShowPending(!showPending)}
         >
           <Ionicons
             name={showPending ? "checkbox" : "square-outline"}
             size={24}
-            color="#9C27B0"
+            color={colors.button.club}
           />
-          <Text style={styles.toggleText}>
+          <Text style={[styles.toggleText, { color: colors.text.primary }]}>
             Afficher les équipes en attente ({pendingTeams.length})
           </Text>
         </TouchableOpacity>
@@ -442,7 +451,7 @@ export default function ClubTeamsTab({ clubId, isOwner, onCreateTeam, onEditTeam
       {((isOwner && pendingTeams.length > 0) || (showPending && pendingTeams.length > 0)) && (
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>En attente de validation</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text.primary }]}>En attente de validation</Text>
             <View style={styles.badge}>
               <Text style={styles.badgeText}>{pendingTeams.length}</Text>
             </View>
@@ -453,12 +462,12 @@ export default function ClubTeamsTab({ clubId, isOwner, onCreateTeam, onEditTeam
 
       {/* Approved teams section */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Équipes actives</Text>
+        <Text style={[styles.sectionTitle, { color: colors.text.primary }]}>Équipes actives</Text>
         {approvedTeams.length === 0 ? (
           <View style={styles.emptyState}>
-            <Ionicons name="people-outline" size={60} color="#ccc" />
-            <Text style={styles.emptyStateText}>Aucune équipe active</Text>
-            <Text style={styles.emptyStateSubtext}>
+            <Ionicons name="people-outline" size={60} color={colors.text.disabled} />
+            <Text style={[styles.emptyStateText, { color: colors.text.tertiary }]}>Aucune équipe active</Text>
+            <Text style={[styles.emptyStateSubtext, { color: colors.text.disabled }]}>
               Créez votre première équipe pour commencer
             </Text>
           </View>
@@ -481,12 +490,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   subscriptionInfo: {
-    backgroundColor: "#f5f0fa",
     padding: 15,
     borderRadius: 10,
     marginBottom: 15,
     borderWidth: 1,
-    borderColor: "#9C27B0",
   },
   subscriptionHeader: {
     flexDirection: "row",
@@ -497,18 +504,15 @@ const styles = StyleSheet.create({
   subscriptionTier: {
     fontSize: 14,
     fontWeight: "bold",
-    color: "#9C27B0",
   },
   subscriptionLimit: {
     fontSize: 13,
-    color: "#666",
     marginLeft: 28,
   },
   createButton: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#9C27B0",
     padding: 15,
     borderRadius: 10,
     marginBottom: 25,
@@ -525,13 +529,11 @@ const styles = StyleSheet.create({
     gap: 10,
     paddingVertical: 12,
     paddingHorizontal: 15,
-    backgroundColor: "#f5f5f5",
     borderRadius: 10,
     marginBottom: 20,
   },
   toggleText: {
     fontSize: 15,
-    color: "#333",
     fontWeight: "500",
   },
   section: {
@@ -546,7 +548,6 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: "bold",
-    color: "#333",
   },
   badge: {
     backgroundColor: "#F44336",
@@ -565,12 +566,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: "#f9f9f9",
     padding: 15,
     borderRadius: 10,
     marginBottom: 10,
     borderWidth: 1,
-    borderColor: "#eee",
   },
   teamCardInactive: {
     backgroundColor: "#FFF3E0",
@@ -590,7 +589,6 @@ const styles = StyleSheet.create({
   teamName: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#333",
   },
   inactiveBadge: {
     backgroundColor: "#FF9800",
@@ -605,11 +603,9 @@ const styles = StyleSheet.create({
   },
   teamDetails: {
     fontSize: 14,
-    color: "#666",
   },
   teamEmail: {
     fontSize: 12,
-    color: "#666",
     marginTop: 4,
     fontStyle: "italic",
   },
@@ -644,12 +640,10 @@ const styles = StyleSheet.create({
   emptyStateText: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#999",
     marginTop: 15,
   },
   emptyStateSubtext: {
     fontSize: 14,
-    color: "#bbb",
     marginTop: 5,
   },
 });

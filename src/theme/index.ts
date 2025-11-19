@@ -11,3 +11,5 @@ export type { SpacingKey } from './spacing';
 
 export { Typography } from './typography';
 export type { FontSize, FontWeight } from './typography';
+
+export { CommonStyles } from './commonStyles';

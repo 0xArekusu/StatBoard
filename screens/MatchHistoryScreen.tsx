@@ -45,6 +45,8 @@ import {
   ActionType,
   ShotSpecification,
 } from "../src/models/ActionTypes";
+import { useTheme } from "../src/contexts/ThemeContext";
+import { CommonStyles } from "../src/theme";
 
 interface MatchWithDetails extends Match {
   scoreA: number;
@@ -61,6 +63,7 @@ export default function MatchHistoryScreen() {
   const route = useRoute();
   const clubId = (route.params as any)?.clubId || null;
   const { user } = useAuth();
+  const { colors } = useTheme();
   const [matches, setMatches] = useState<MatchWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
   const { syncMatch, checkEligibility } = useMatchSync();
@@ -879,38 +882,44 @@ export default function MatchHistoryScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+        <View style={[CommonStyles.header, {
+          backgroundColor: colors.surface,
+          borderBottomColor: colors.border
+        }]}>
           <TouchableOpacity
             style={styles.backButton}
             onPress={() => navigation.goBack()}
           >
-            <Ionicons name="arrow-back" size={24} color="#666" />
-            <Text style={styles.backButtonText}>Retour</Text>
+            <Ionicons name="arrow-back" size={24} color={colors.text.secondary} />
+            <Text style={[styles.backButtonText, { color: colors.text.secondary }]}>Retour</Text>
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Historique des matchs</Text>
+          <Text style={[CommonStyles.headerTitle, { color: colors.text.primary }]}>Historique des matchs</Text>
           <View style={styles.backButton} />
         </View>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#4CAF50" />
-          <Text style={styles.loadingText}>Chargement...</Text>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={[styles.loadingText, { color: colors.text.secondary }]}>Chargement...</Text>
         </View>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header with back button and title */}
-      <View style={styles.header}>
+      <View style={[CommonStyles.header, {
+        backgroundColor: colors.surface,
+        borderBottomColor: colors.border
+      }]}>
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => navigation.goBack()}
         >
-          <Ionicons name="arrow-back" size={24} color="#666" />
-          <Text style={styles.backButtonText}>Retour</Text>
+          <Ionicons name="arrow-back" size={24} color={colors.text.secondary} />
+          <Text style={[styles.backButtonText, { color: colors.text.secondary }]}>Retour</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Historique des matchs</Text>
+        <Text style={[CommonStyles.headerTitle, { color: colors.text.primary }]}>Historique des matchs</Text>
         <View style={styles.backButton} />
       </View>
 
@@ -956,16 +965,6 @@ export default function MatchHistoryScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    padding: 16,
-    backgroundColor: "#fff",
-    borderBottomWidth: 1,
-    borderBottomColor: "#e0e0e0",
   },
   backButton: {
     width: 80,
@@ -975,13 +974,7 @@ const styles = StyleSheet.create({
   },
   backButtonText: {
     fontSize: 16,
-    color: "#666",
     fontWeight: "600",
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#333",
   },
   loadingContainer: {
     flex: 1,
@@ -991,7 +984,6 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: 16,
-    color: "#666",
   },
   emptyContainer: {
     flex: 1,

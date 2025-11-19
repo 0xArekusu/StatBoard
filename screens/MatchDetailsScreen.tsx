@@ -33,6 +33,8 @@ import {
   FoulSpecification,
 } from "../src/models/ActionTypes";
 import { ACTION_DEFINITIONS } from "../src/config/actionConfig";
+import { useTheme } from "../src/contexts/ThemeContext";
+import { CommonStyles } from "../src/theme";
 
 interface MatchDetailsRouteParams {
   teamA: string;
@@ -69,6 +71,7 @@ export default function MatchDetailsScreen() {
   const navigation = useNavigation();
   const route = useRoute();
   const params = route.params as MatchDetailsRouteParams;
+  const { colors } = useTheme();
 
   const {
     teamA,
@@ -391,19 +394,22 @@ export default function MatchDetailsScreen() {
   }));
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header: Back button, title, and empty right side for alignment */}
-      <View style={styles.header}>
+      <View style={[CommonStyles.header, {
+        backgroundColor: colors.surface,
+        borderBottomColor: colors.border
+      }]}>
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => {
             navigation.goBack();
           }}
         >
-          <Ionicons name="arrow-back" size={24} color="#666" />
-          <Text style={styles.backButtonText}>Retour</Text>
+          <Ionicons name="arrow-back" size={24} color={colors.text.secondary} />
+          <Text style={[styles.backButtonText, { color: colors.text.secondary }]}>Retour</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Détails du match</Text>
+        <Text style={[CommonStyles.headerTitle, { color: colors.text.primary }]}>Détails du match</Text>
         <View style={styles.backButton} />
       </View>
 
@@ -939,19 +945,9 @@ export default function MatchDetailsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
   },
   mainScroll: {
     flex: 1,
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    padding: 16,
-    backgroundColor: "#fff",
-    borderBottomWidth: 1,
-    borderBottomColor: "#e0e0e0",
   },
   backButton: {
     width: 80,
@@ -961,13 +957,7 @@ const styles = StyleSheet.create({
   },
   backButtonText: {
     fontSize: 16,
-    color: "#666",
     fontWeight: "600",
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#333",
   },
   scoreSummary: {
     flexDirection: "row",

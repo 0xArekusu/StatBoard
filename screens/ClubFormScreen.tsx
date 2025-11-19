@@ -42,6 +42,9 @@ import { PhotoUploadService } from "../services/PhotoUploadService";
 import type { Club } from "../models/Club";
 import { ROUTES } from "../constants/routes";
 import { useAuth } from "../src/contexts/AuthContext";
+import { useTheme } from "../src/contexts/ThemeContext";
+import { CommonStyles } from "../src/theme";
+import ThemeToggleButton from "../components/ThemeToggleButton";
 import { logInfo, logError, logWarn } from "../utils/logger";
 
 const PRESET_COLORS = [
@@ -64,6 +67,7 @@ export default function ClubFormScreen() {
   const navigation = useNavigation();
   const route = useRoute<ClubFormRouteProp>();
   const { user } = useAuth();
+  const { colors, isDark } = useTheme();
   const clubId = route.params?.clubId;
   const isEditMode = !!clubId;
 
@@ -372,9 +376,9 @@ export default function ClubFormScreen() {
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#9C27B0" />
-        <Text style={styles.loadingText}>Chargement...</Text>
+      <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
+        <ActivityIndicator size="large" color={colors.button.club} />
+        <Text style={[styles.loadingText, { color: colors.text.secondary }]}>Chargement...</Text>
       </View>
     );
   }
@@ -389,36 +393,42 @@ export default function ClubFormScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header with back button and title */}
-      <View style={styles.header}>
+      <View style={[CommonStyles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={28} color="#333" />
+          <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>
+        <Text style={[CommonStyles.headerTitle, { color: colors.text.primary }]}>
           {isEditMode ? "Mon club" : "Créer un club"}
         </Text>
-        <View style={{ width: 28 }} />
+        <View style={{ width: 24 }} />
       </View>
+
+      {/* Theme toggle button */}
+      <ThemeToggleButton position="left" />
 
       {/* Navigation tabs: Info (owner only) and Teams (edit mode only) */}
       {isEditMode && (
-        <View style={styles.tabsContainer}>
+        <View style={[styles.tabsContainer, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
           {/* Info tab - only visible for club owner */}
           {isOwner && (
             <TouchableOpacity
-              style={[styles.tab, activeTab === "info" && styles.tabActive]}
+              style={[
+                styles.tab,
+                activeTab === "info" && { borderBottomColor: colors.button.club }
+              ]}
               onPress={() => setActiveTab("info")}
             >
               <Ionicons
                 name="information-circle-outline"
                 size={20}
-                color={activeTab === "info" ? "#9C27B0" : "#999"}
+                color={activeTab === "info" ? colors.button.club : colors.text.tertiary}
               />
               <Text
                 style={[
                   styles.tabText,
-                  activeTab === "info" && styles.tabTextActive,
+                  { color: activeTab === "info" ? colors.button.club : colors.text.secondary }
                 ]}
               >
                 Infos
@@ -429,7 +439,7 @@ export default function ClubFormScreen() {
           <TouchableOpacity
             style={[
               styles.tab,
-              activeTab === "teams" && styles.tabActive,
+              activeTab === "teams" && { borderBottomColor: colors.button.club },
               !isOwner && styles.tabFullWidth,
             ]}
             onPress={() => setActiveTab("teams")}
@@ -437,12 +447,12 @@ export default function ClubFormScreen() {
             <Ionicons
               name="people-outline"
               size={20}
-              color={activeTab === "teams" ? "#9C27B0" : "#999"}
+              color={activeTab === "teams" ? colors.button.club : colors.text.tertiary}
             />
             <Text
               style={[
                 styles.tabText,
-                activeTab === "teams" && styles.tabTextActive,
+                { color: activeTab === "teams" ? colors.button.club : colors.text.secondary }
               ]}
             >
               Équipes
@@ -468,20 +478,23 @@ export default function ClubFormScreen() {
         >
           {/* Club code section - displays shareable 6-digit code (edit mode only) */}
           {isEditMode && club && (
-            <View style={styles.codeSection}>
-              <Text style={styles.codeLabel}>Code du club</Text>
+            <View style={[styles.codeSection, { backgroundColor: colors.surface }]}>
+              <Text style={[styles.codeLabel, { color: colors.text.secondary }]}>Code du club</Text>
               <View style={styles.codeRow}>
-                <Text style={styles.codeText}>{club.code}</Text>
+                <Text style={[styles.codeText, { color: colors.button.club }]}>{club.code}</Text>
                 <TouchableOpacity
-                  style={styles.copyButton}
+                  style={[styles.copyButton, {
+                    backgroundColor: colors.background,
+                    borderColor: colors.button.club
+                  }]}
                   onPress={() => {
                     Clipboard.setString(club.code);
                   }}
                 >
-                  <Ionicons name="copy-outline" size={24} color="#9C27B0" />
+                  <Ionicons name="copy-outline" size={24} color={colors.button.club} />
                 </TouchableOpacity>
               </View>
-              <Text style={styles.codeHint}>
+              <Text style={[styles.codeHint, { color: colors.text.tertiary }]}>
                 Partagez ce code pour inviter des membres
               </Text>
             </View>
@@ -489,21 +502,31 @@ export default function ClubFormScreen() {
 
           {/* Basic information section - club name and acronym */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Informations</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text.primary }]}>Informations</Text>
 
-            <Text style={styles.label}>Nom du club *</Text>
+            <Text style={[styles.label, { color: colors.text.secondary }]}>Nom du club *</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, {
+                backgroundColor: colors.surface,
+                borderColor: colors.border,
+                color: colors.text.primary
+              }]}
               placeholder="Mon super club"
+              placeholderTextColor={colors.text.tertiary}
               value={clubName}
               onChangeText={setClubName}
               maxLength={30}
             />
 
-            <Text style={styles.label}>Sigle *</Text>
+            <Text style={[styles.label, { color: colors.text.secondary }]}>Sigle *</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, {
+                backgroundColor: colors.surface,
+                borderColor: colors.border,
+                color: colors.text.primary
+              }]}
               placeholder="Ex: LAL, GSW, CHI"
+              placeholderTextColor={colors.text.tertiary}
               value={sigle}
               onChangeText={setSigle}
               maxLength={5}
@@ -513,12 +536,12 @@ export default function ClubFormScreen() {
 
           {/* Customization section - colors, logo, court appearance */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Personnalisation</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text.primary }]}>Personnalisation</Text>
 
             {/* Team colors selection */}
             <View style={styles.colorsRow}>
               <View style={styles.colorsColumn}>
-                <Text style={styles.label}>Couleur principale</Text>
+                <Text style={[styles.label, { color: colors.text.secondary }]}>Couleur principale</Text>
                 <View style={styles.colorPicker}>
                   {PRESET_COLORS.map((color) => (
                     <TouchableOpacity
@@ -576,7 +599,7 @@ export default function ClubFormScreen() {
                   </TouchableOpacity>
                 </View>
 
-                <Text style={styles.label}>Couleur secondaire</Text>
+                <Text style={[styles.label, { color: colors.text.secondary }]}>Couleur secondaire</Text>
                 <View style={styles.colorPicker}>
                   {PRESET_COLORS.map((color) => (
                     <TouchableOpacity
@@ -647,17 +670,17 @@ export default function ClubFormScreen() {
             </View>
 
             {/* Logo upload section */}
-            <Text style={styles.label}>Logo du club</Text>
+            <Text style={[styles.label, { color: colors.text.secondary }]}>Logo du club</Text>
             <View style={styles.logoSection}>
               <TouchableOpacity
-                style={styles.logoButton}
+                style={[styles.logoButton, { borderColor: colors.border }]}
                 onPress={handlePickImage}
               >
-                <Ionicons name="camera" size={24} color="#666" />
-                <Text style={styles.logoButtonText}>Importer un logo</Text>
+                <Ionicons name="camera" size={24} color={colors.text.secondary} />
+                <Text style={[styles.logoButtonText, { color: colors.text.secondary }]}>Importer un logo</Text>
               </TouchableOpacity>
               {logoUri && (
-                <View style={styles.logoPreview}>
+                <View style={[styles.logoPreview, { borderColor: colors.border }]}>
                   <Image source={{ uri: logoUri }} style={styles.logoImage} />
                 </View>
               )}
@@ -666,9 +689,9 @@ export default function ClubFormScreen() {
 
           {/* Court preview section - shows how club will appear on basketball court */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Aperçu du terrain</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text.primary }]}>Aperçu du terrain</Text>
 
-            <View style={styles.courtPreview}>
+            <View style={[styles.courtPreview, { backgroundColor: colors.surface }]}>
               {/* Court color customization buttons */}
               <View style={styles.courtColorPickers}>
                 <TouchableOpacity
@@ -707,7 +730,7 @@ export default function ClubFormScreen() {
               </View>
               {/* Club name display */}
               {clubName && (
-                <Text style={styles.clubNamePreview}>
+                <Text style={[styles.clubNamePreview, { color: colors.text.primary }]}>
                   {clubName} {sigle && `(${sigle})`}
                 </Text>
               )}
@@ -847,39 +870,19 @@ export default function ClubFormScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
   },
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#fff",
   },
   loadingText: {
     marginTop: 10,
     fontSize: 16,
-    color: "#666",
-  },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 20,
-    paddingTop: 45,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "#eee",
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#333",
   },
   tabsContainer: {
     flexDirection: "row",
     borderBottomWidth: 1,
-    borderBottomColor: "#eee",
-    backgroundColor: "#fff",
   },
   tab: {
     flex: 1,
@@ -891,16 +894,9 @@ const styles = StyleSheet.create({
     borderBottomWidth: 2,
     borderBottomColor: "transparent",
   },
-  tabActive: {
-    borderBottomColor: "#9C27B0",
-  },
   tabText: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#999",
-  },
-  tabTextActive: {
-    color: "#9C27B0",
   },
   tabFullWidth: {
     flex: 1,
@@ -910,7 +906,6 @@ const styles = StyleSheet.create({
     paddingTop: 15,
   },
   codeSection: {
-    backgroundColor: "#f8f8f8",
     padding: 20,
     borderRadius: 15,
     marginBottom: 30,
@@ -918,7 +913,6 @@ const styles = StyleSheet.create({
   },
   codeLabel: {
     fontSize: 14,
-    color: "#666",
     marginBottom: 5,
   },
   codeRow: {
@@ -929,19 +923,15 @@ const styles = StyleSheet.create({
   codeText: {
     fontSize: 32,
     fontWeight: "bold",
-    color: "#9C27B0",
     letterSpacing: 4,
   },
   copyButton: {
     padding: 8,
-    backgroundColor: "#fff",
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: "#9C27B0",
   },
   codeHint: {
     fontSize: 12,
-    color: "#999",
     marginTop: 5,
     fontStyle: "italic",
   },
@@ -951,23 +941,19 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: "bold",
-    color: "#333",
     marginBottom: 15,
   },
   label: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#666",
     marginBottom: 8,
     marginTop: 10,
   },
   input: {
     borderWidth: 1,
-    borderColor: "#ddd",
     borderRadius: 10,
     padding: 12,
     fontSize: 16,
-    backgroundColor: "#f8f8f8",
   },
   colorsRow: {
     flexDirection: "row",
@@ -1034,13 +1020,11 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderWidth: 2,
-    borderColor: "#ddd",
     borderRadius: 10,
     borderStyle: "dashed",
   },
   logoButtonText: {
     fontSize: 14,
-    color: "#666",
   },
   logoPreview: {
     width: 60,
@@ -1048,7 +1032,6 @@ const styles = StyleSheet.create({
     borderRadius: 30,
     overflow: "hidden",
     borderWidth: 2,
-    borderColor: "#ddd",
   },
   logoImage: {
     width: "100%",
@@ -1082,7 +1065,6 @@ const styles = StyleSheet.create({
     position: "relative",
     alignItems: "center",
     padding: 20,
-    backgroundColor: "#f8f8f8",
     borderRadius: 15,
   },
   courtContainer: {
@@ -1093,7 +1075,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold",
     marginTop: 12,
-    color: "#333",
   },
   saveButton: {
     backgroundColor: "#9C27B0",
