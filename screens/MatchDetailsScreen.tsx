@@ -19,6 +19,7 @@ import {
   TouchableOpacity,
   SafeAreaView,
   BackHandler,
+  Image,
 } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
@@ -51,6 +52,7 @@ interface MatchDetailsRouteParams {
     name: string;
     team: "A" | "B";
     isSubstitute: boolean;
+    photoUrl?: string;
   }>;
 }
 
@@ -246,6 +248,12 @@ export default function MatchDetailsScreen() {
     const technicalFouls = fouls.filter(
       (action) => action.specification === FoulSpecification.TECHNICAL
     ).length;
+    const antisportiveFouls = fouls.filter(
+      (action) => action.specification === FoulSpecification.PENALITY
+    ).length;
+    const disqualifyingFouls = fouls.filter(
+      (action) => action.specification === FoulSpecification.DISQUALIFICATION
+    ).length;
 
     // Other actions
     const assists = playerActions.filter((action) => action.type === ActionType.ASSIST).length;
@@ -283,6 +291,8 @@ export default function MatchDetailsScreen() {
       fouls: fouls.length,
       personalFouls,
       technicalFouls,
+      antisportiveFouls,
+      disqualifyingFouls,
       assists,
       steals,
       blocks,
@@ -934,8 +944,19 @@ export default function MatchDetailsScreen() {
             {/* Player header: Player name, number, and total points */}
             <View style={[styles.playerHeader, { borderBottomColor: colors.border }]}>
               <View style={styles.playerInfo}>
-                <Text style={[styles.playerNumber, { color: STATUS_COLORS.success }]}>#{player.num}</Text>
-                <Text style={[styles.playerName, { color: colors.text.primary }]}>{player.name}</Text>
+                <View style={[styles.playerAvatar, { backgroundColor: colors.surface }]}>
+                  {player.photoUrl ? (
+                    <Image source={{ uri: player.photoUrl }} style={styles.playerAvatarImage} />
+                  ) : (
+                    <Text style={styles.playerAvatarText}>👤</Text>
+                  )}
+                </View>
+                <View>
+                  <View style={styles.playerNameRow}>
+                    <Text style={[styles.playerNumber, { color: STATUS_COLORS.success }]}>#{player.num}</Text>
+                    <Text style={[styles.playerName, { color: colors.text.primary }]}>{player.name}</Text>
+                  </View>
+                </View>
               </View>
               <Text style={[styles.playerPoints, { color: SPORT_COLORS.basketball.orange }]}>{player.stats.totalPoints} pts</Text>
             </View>
@@ -984,11 +1005,11 @@ export default function MatchDetailsScreen() {
                 // Map of stat keys to their display config
                 const otherStatsConfig = [
                   { key: 'rebounds', label: 'Rebonds', detail: `(Off: ${player.stats.offensiveRebounds} / Def: ${player.stats.defensiveRebounds})` },
-                  { key: ActionType.ASSIST, label: ACTION_DEFINITIONS.find(a => a.id === ActionType.ASSIST)?.label || 'Passes', detail: null },
-                  { key: ActionType.STEAL, label: ACTION_DEFINITIONS.find(a => a.id === ActionType.STEAL)?.label || 'Interceptions', detail: null },
-                  { key: ActionType.BLOCK, label: ACTION_DEFINITIONS.find(a => a.id === ActionType.BLOCK)?.label || 'Contres', detail: null },
-                  { key: ActionType.TURNOVER, label: ACTION_DEFINITIONS.find(a => a.id === ActionType.TURNOVER)?.label || 'Balles perdues', detail: null },
-                  { key: 'fouls', label: 'Fautes', detail: `(Pers: ${player.stats.personalFouls} / Tech: ${player.stats.technicalFouls})` },
+                  { key: 'assists', label: ACTION_DEFINITIONS.find(a => a.id === ActionType.ASSIST)?.label || 'Passes', detail: null },
+                  { key: 'steals', label: ACTION_DEFINITIONS.find(a => a.id === ActionType.STEAL)?.label || 'Interceptions', detail: null },
+                  { key: 'blocks', label: ACTION_DEFINITIONS.find(a => a.id === ActionType.BLOCK)?.label || 'Contres', detail: null },
+                  { key: 'turnovers', label: ACTION_DEFINITIONS.find(a => a.id === ActionType.TURNOVER)?.label || 'Balles perdues', detail: null },
+                  { key: 'fouls', label: 'Fautes', detail: player.stats.fouls > 0 ? `(Pers: ${player.stats.personalFouls} / Tech: ${player.stats.technicalFouls} / Anti: ${player.stats.antisportiveFouls} / Disq: ${player.stats.disqualifyingFouls})` : null },
                 ];
 
                 return (
@@ -1175,6 +1196,27 @@ const styles = StyleSheet.create({
     borderBottomColor: "#f0f0f0",
   },
   playerInfo: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  playerAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#f0f0f0",
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "hidden",
+  },
+  playerAvatarImage: {
+    width: 40,
+    height: 40,
+  },
+  playerAvatarText: {
+    fontSize: 20,
+  },
+  playerNameRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
