@@ -76,6 +76,8 @@ import type { Club } from "../models/Club";
 import { supabase } from "../src/config/supabase";
 import { ServiceFactory } from "../services/ServiceFactory";
 import { useAuth } from "../src/contexts/AuthContext";
+import { useTheme } from "../src/contexts/ThemeContext";
+import { STATUS_COLORS, COMMON_COLORS, TEAM_CHART_COLORS } from "../src/theme";
 import { determineClubTeam } from "../src/utils/clubTeamDetection";
 import { logInfo, logError, logWarn } from "../utils/logger";
 import {
@@ -258,6 +260,7 @@ export default function BasketballCourt() {
   const route = useRoute();
   const clubId = (route.params as any)?.clubId || null;
   const { user } = useAuth();
+  const { colors } = useTheme();
   const insets = useSafeAreaInsets(); // Provides status bar and notch margins
   const window = useWindowDimensions(); // Automatically reacts to rotation
   const [showSheet, setShowSheet] = useState(true);
@@ -529,7 +532,7 @@ export default function BasketballCourt() {
 
   // Function to get team color
   const getTeamColor = (team: "A" | "B") => {
-    return team === "A" ? "#4CAF50" : "#2196F3"; // Green for team A, Blue for team B
+    return team === "A" ? TEAM_CHART_COLORS.teamA : TEAM_CHART_COLORS.teamB;
   };
 
   // Function to get team name
@@ -3342,15 +3345,15 @@ export default function BasketballCourt() {
         onRequestClose={cancelUndoAction}
       >
         <View style={styles.undoModalOverlay}>
-          <View style={styles.undoModalContainer}>
-            <Text style={styles.undoModalTitle}>Confirmer l'annulation</Text>
-            <Text style={styles.undoModalMessage}>
+          <View style={[styles.undoModalContainer, { backgroundColor: colors.surface }]}>
+            <Text style={[styles.undoModalTitle, { color: colors.text.primary }]}>Confirmer l'annulation</Text>
+            <Text style={[styles.undoModalMessage, { color: colors.text.secondary }]}>
               Êtes-vous sûr de vouloir annuler la dernière action ?
             </Text>
 
             {completedActions.length > 0 && (
               <View style={styles.undoActionDetails}>
-                <Text style={styles.undoActionTitle}>Action à annuler :</Text>
+                <Text style={[styles.undoActionTitle, { color: colors.text.secondary }]}>Action à annuler :</Text>
                 <View
                   style={[
                     styles.undoActionInfo,
@@ -3360,7 +3363,7 @@ export default function BasketballCourt() {
                       ),
                       borderLeftWidth: 6,
                       paddingLeft: 16,
-                      backgroundColor: "rgba(255,255,255,0.9)",
+                      backgroundColor: colors.surfaceVariant,
                       borderTopRightRadius: 8,
                       borderBottomRightRadius: 8,
                     },
@@ -3385,7 +3388,7 @@ export default function BasketballCourt() {
                     </Text>
                   </View>
                   <View style={styles.undoActionText}>
-                    <Text style={styles.undoActionType}>
+                    <Text style={[styles.undoActionType, { color: colors.text.primary }]}>
                       {getTeamName(
                         completedActions[completedActions.length - 1].team
                       )}{" "}
@@ -3402,11 +3405,11 @@ export default function BasketballCourt() {
                           .specification
                       }
                     </Text>
-                    <Text style={styles.undoActionPlayer}>
+                    <Text style={[styles.undoActionPlayer, { color: colors.text.secondary }]}>
                       Joueur #
                       {completedActions[completedActions.length - 1].player}
                     </Text>
-                    <Text style={styles.undoActionTime}>
+                    <Text style={[styles.undoActionTime, { color: colors.text.tertiary }]}>
                       {new Date(
                         completedActions[completedActions.length - 1].timestamp
                       ).toLocaleTimeString("fr-FR")}
@@ -3418,17 +3421,17 @@ export default function BasketballCourt() {
 
             <View style={styles.undoModalButtons}>
               <TouchableOpacity
-                style={[styles.undoModalButton, styles.undoModalButtonCancel]}
+                style={[styles.undoModalButton, styles.undoModalButtonCancel, { backgroundColor: colors.surfaceVariant }]}
                 onPress={cancelUndoAction}
               >
-                <Text style={styles.undoModalButtonTextCancel}>Annuler</Text>
+                <Text style={[styles.undoModalButtonTextCancel, { color: colors.text.secondary }]}>Annuler</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={[styles.undoModalButton, styles.undoModalButtonConfirm]}
+                style={[styles.undoModalButton, styles.undoModalButtonConfirm, { backgroundColor: STATUS_COLORS.error }]}
                 onPress={confirmUndoAction}
               >
-                <Text style={styles.undoModalButtonTextConfirm}>Confirmer</Text>
+                <Text style={[styles.undoModalButtonTextConfirm, { color: COMMON_COLORS.white }]}>Confirmer</Text>
               </TouchableOpacity>
             </View>
           </View>

@@ -1,5 +1,6 @@
 import React from "react";
 import Svg, { Path, G, ClipPath, Defs, Circle, Image } from "react-native-svg";
+import { useTheme } from "../src/contexts/ThemeContext";
 
 export interface CourtMarker {
   id: string;
@@ -34,6 +35,7 @@ export default function BasketballCourtSVG({
   markers = [],
   logoUri = null,
 }: BasketballCourtSVGProps) {
+  const { colors } = useTheme();
   // Calculate court elements proportionally
   const isPortrait = height > width;
 

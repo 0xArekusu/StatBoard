@@ -24,6 +24,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { supabase } from "../src/config/supabase";
 import { ServiceFactory } from "../services/ServiceFactory";
 import { useAuth } from "../src/contexts/AuthContext";
+import { useTheme } from "../src/contexts/ThemeContext";
+import { STATUS_COLORS, COMMON_COLORS } from "../src/theme";
 import type { Team } from "../models/Team";
 import type { Player } from "../models/Player";
 import { logInfo, logError, logWarn } from "../utils/logger";
@@ -44,6 +46,7 @@ export default function TeamSelectionModal({
   onBack,
 }: TeamSelectionModalProps) {
   const { user } = useAuth();
+  const { colors } = useTheme();
   const [teams, setTeams] = useState<Team[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -221,13 +224,13 @@ export default function TeamSelectionModal({
 
   const renderTeam = ({ item }: { item: Team }) => (
     <TouchableOpacity
-      style={styles.teamCard}
+      style={[styles.teamCard, { backgroundColor: colors.surfaceVariant, borderColor: colors.border }]}
       onPress={() => loadTeamPlayers(item)}
     >
       <View style={styles.teamInfo}>
-        <Text style={styles.teamName}>{item.name}</Text>
+        <Text style={[styles.teamName, { color: colors.text.primary }]}>{item.name}</Text>
         {item.gender && (
-          <Text style={styles.teamGender}>
+          <Text style={[styles.teamGender, { color: colors.text.secondary }]}>
             {item.gender === "male"
               ? "Masculin"
               : item.gender === "female"
@@ -236,7 +239,7 @@ export default function TeamSelectionModal({
           </Text>
         )}
       </View>
-      <Ionicons name="chevron-forward" size={24} color="#9C27B0" />
+      <Ionicons name="chevron-forward" size={24} color={STATUS_COLORS.info} />
     </TouchableOpacity>
   );
 
@@ -251,29 +254,29 @@ export default function TeamSelectionModal({
       }}
     >
       <View style={styles.overlay}>
-        <View style={styles.container}>
-          <View style={styles.header}>
-            <Text style={styles.title}>Sélectionner une équipe</Text>
+        <View style={[styles.container, { backgroundColor: colors.surface }]}>
+          <View style={[styles.header, { borderBottomColor: colors.border }]}>
+            <Text style={[styles.title, { color: colors.text.primary }]}>Sélectionner une équipe</Text>
           </View>
 
           {loading ? (
             <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color="#9C27B0" />
-              <Text style={styles.loadingText}>Chargement des équipes...</Text>
+              <ActivityIndicator size="large" color={STATUS_COLORS.info} />
+              <Text style={[styles.loadingText, { color: colors.text.secondary }]}>Chargement des équipes...</Text>
             </View>
           ) : teams.length === 0 ? (
             <View style={styles.emptyContainer}>
-              <Ionicons name="basketball-outline" size={80} color="#ccc" />
-              <Text style={styles.emptyTitle}>Aucune équipe disponible</Text>
-              <Text style={styles.emptyText}>
+              <Ionicons name="basketball-outline" size={80} color={colors.text.disabled} />
+              <Text style={[styles.emptyTitle, { color: colors.text.secondary }]}>Aucune équipe disponible</Text>
+              <Text style={[styles.emptyText, { color: colors.text.tertiary }]}>
                 Créez une équipe dans votre club pour l'utiliser ici
               </Text>
               <View style={styles.buttonContainer}>
-                <TouchableOpacity style={styles.backButtonSmall} onPress={handleBack}>
-                  <Text style={styles.backButtonText}>Retour</Text>
+                <TouchableOpacity style={[styles.backButtonSmall, { backgroundColor: colors.surfaceVariant, borderColor: colors.border }]} onPress={handleBack}>
+                  <Text style={[styles.backButtonText, { color: colors.text.secondary }]}>Retour</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.skipButton} onPress={handleSkip}>
-                  <Text style={styles.skipButtonText} numberOfLines={1}>
+                <TouchableOpacity style={[styles.skipButton, { backgroundColor: STATUS_COLORS.info }]} onPress={handleSkip}>
+                  <Text style={[styles.skipButtonText, { color: COMMON_COLORS.white }]} numberOfLines={1}>
                     Continuer sans équipe
                   </Text>
                 </TouchableOpacity>
@@ -291,11 +294,11 @@ export default function TeamSelectionModal({
                 />
               </View>
               <View style={styles.buttonContainer}>
-                <TouchableOpacity style={styles.backButton} onPress={handleBack}>
-                  <Text style={styles.backButtonText}>Retour</Text>
+                <TouchableOpacity style={[styles.backButton, { backgroundColor: colors.surfaceVariant, borderColor: colors.border }]} onPress={handleBack}>
+                  <Text style={[styles.backButtonText, { color: colors.text.secondary }]}>Retour</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.skipButton} onPress={handleSkip}>
-                  <Text style={styles.skipButtonText}>Continuer sans équipe</Text>
+                <TouchableOpacity style={[styles.skipButton, { backgroundColor: STATUS_COLORS.info }]} onPress={handleSkip}>
+                  <Text style={[styles.skipButtonText, { color: COMMON_COLORS.white }]}>Continuer sans équipe</Text>
                 </TouchableOpacity>
               </View>
             </>

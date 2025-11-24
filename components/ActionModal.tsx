@@ -34,9 +34,15 @@ import {
   ScrollView,
 } from "react-native";
 import { ACTION_DEFINITIONS } from "../src/config/actionConfig";
+import { useTheme } from "../src/contexts/ThemeContext";
+import { STATUS_COLORS } from "../src/theme";
 
 // Debug: Check if ACTION_DEFINITIONS is loaded
-console.log('[ActionModal] ACTION_DEFINITIONS loaded:', ACTION_DEFINITIONS?.length, 'actions');
+console.log(
+  "[ActionModal] ACTION_DEFINITIONS loaded:",
+  ACTION_DEFINITIONS?.length,
+  "actions"
+);
 
 interface ActionModalProps {
   visible: boolean;
@@ -96,6 +102,8 @@ export default function ActionModal({
   teamA,
   teamB,
 }: ActionModalProps) {
+  const { colors } = useTheme();
+
   /**
    * Render back button with conditional visibility
    * Hidden at step 1 and at step 2 for single-team mode
@@ -109,8 +117,13 @@ export default function ActionModal({
     if (teamMode !== "BOTH" && currentStep === 2) return null;
 
     return (
-      <TouchableOpacity style={styles.backButton} onPress={onGoBack}>
-        <Text style={styles.backButtonText}>←</Text>
+      <TouchableOpacity
+        style={[styles.backButton, { backgroundColor: colors.surfaceVariant }]}
+        onPress={onGoBack}
+      >
+        <Text style={[styles.backButtonText, { color: colors.text.secondary }]}>
+          ←
+        </Text>
       </TouchableOpacity>
     );
   };
@@ -258,9 +271,10 @@ export default function ActionModal({
    */
   const renderPlayerSelection = () => {
     // Filter players according to selected team only if in "BOTH" mode
-    const filteredPlayers = teamMode === "BOTH" && selectedTeam
-      ? players.filter((player) => player.team === selectedTeam)
-      : players;
+    const filteredPlayers =
+      teamMode === "BOTH" && selectedTeam
+        ? players.filter((player) => player.team === selectedTeam)
+        : players;
 
     return (
       <View style={styles.actionsContainer}>
@@ -274,15 +288,26 @@ export default function ActionModal({
               key={player.id}
               style={[
                 styles.playerButton,
+                {
+                  backgroundColor: colors.surfaceVariant,
+                  borderColor: colors.border,
+                },
                 index < filteredPlayers.length - 1 && styles.actionButtonMargin,
               ]}
               onPress={() => onPlayerSelect(player.num)}
               activeOpacity={0.8}
             >
-              <View style={styles.playerNumber}>
+              <View
+                style={[
+                  styles.playerNumber,
+                  { backgroundColor: STATUS_COLORS.success },
+                ]}
+              >
                 <Text style={styles.playerNumberText}>{player.num}</Text>
               </View>
-              <Text style={styles.playerName}>{player.name}</Text>
+              <Text style={[styles.playerName, { color: colors.text.primary }]}>
+                {player.name}
+              </Text>
             </TouchableOpacity>
           ))}
         </ScrollView>
@@ -327,6 +352,7 @@ export default function ActionModal({
           style={[
             styles.actionModal,
             {
+              backgroundColor: colors.surface,
               left: position.x,
               top: position.y,
               height: MODAL_HEIGHT, // 🎯 Constant size, no more changes at step 4
@@ -341,6 +367,7 @@ export default function ActionModal({
           <View
             style={[
               styles.pointer,
+              { borderTopColor: colors.surface },
               position.showPointerOnTop
                 ? styles.pointerTop
                 : styles.pointerBottom,
@@ -485,7 +512,6 @@ const styles = StyleSheet.create({
     backgroundColor: "transparent",
     borderLeftColor: "transparent",
     borderRightColor: "transparent",
-    borderTopColor: "white",
     zIndex: 1,
   },
   pointerTop: {

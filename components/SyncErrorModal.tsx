@@ -2,6 +2,8 @@ import React from "react";
 import { Modal, View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
+import { useTheme } from "../src/contexts/ThemeContext";
+import { STATUS_COLORS, COMMON_COLORS } from "../src/theme";
 
 interface SyncErrorModalProps {
   visible: boolean;
@@ -20,35 +22,37 @@ export default function SyncErrorModal({
   onClose,
   onUpgrade,
 }: SyncErrorModalProps) {
+  const { colors } = useTheme();
+
   return (
     <Modal visible={visible} transparent animationType="fade">
       <View style={styles.overlay}>
-        <View style={styles.modal}>
-          <View style={styles.iconContainer}>
+        <View style={[styles.modal, { backgroundColor: colors.surface }]}>
+          <View style={[styles.iconContainer, { backgroundColor: STATUS_COLORS.error + "20" }]}>
             <MaterialCommunityIcons
               name="cloud-off-outline"
               size={70}
-              color="#FF6B6B"
+              color={STATUS_COLORS.error}
             />
           </View>
 
-          <Text style={styles.title}>Synchronisation impossible</Text>
+          <Text style={[styles.title, { color: colors.text.primary }]}>Synchronisation impossible</Text>
 
-          <Text style={styles.message}>{reason}</Text>
+          <Text style={[styles.message, { color: colors.text.secondary }]}>{reason}</Text>
 
           {isNotConnected && (
-            <View style={styles.infoBox}>
-              <Ionicons name="information-circle-outline" size={24} color="#2196F3" />
-              <Text style={styles.infoText}>
+            <View style={[styles.infoBox, { backgroundColor: STATUS_COLORS.info + "20", borderColor: STATUS_COLORS.info }]}>
+              <Ionicons name="information-circle-outline" size={24} color={STATUS_COLORS.info} />
+              <Text style={[styles.infoText, { color: STATUS_COLORS.info }]}>
                 Connectez-vous pour sauvegarder vos matchs sur le cloud et y accéder depuis n'importe quel appareil.
               </Text>
             </View>
           )}
 
           {isFreemium && (
-            <View style={styles.upgradeBox}>
-              <Ionicons name="rocket-outline" size={24} color="#9C27B0" />
-              <Text style={styles.upgradeText}>
+            <View style={[styles.upgradeBox, { backgroundColor: STATUS_COLORS.info + "15", borderColor: STATUS_COLORS.info }]}>
+              <Ionicons name="rocket-outline" size={24} color={STATUS_COLORS.info} />
+              <Text style={[styles.upgradeText, { color: STATUS_COLORS.info }]}>
                 Passez à un abonnement payant pour synchroniser automatiquement vos matchs et profiter d'un stockage illimité.
               </Text>
             </View>
@@ -57,22 +61,22 @@ export default function SyncErrorModal({
           <View style={styles.actions}>
             {isFreemium && onUpgrade && (
               <TouchableOpacity
-                style={[styles.button, styles.upgradeButton]}
+                style={[styles.button, styles.upgradeButton, { backgroundColor: STATUS_COLORS.info }]}
                 onPress={() => {
                   onClose();
                   onUpgrade();
                 }}
               >
-                <Ionicons name="star" size={18} color="#fff" style={styles.buttonIcon} />
-                <Text style={styles.upgradeButtonText}>Passer à Premium</Text>
+                <Ionicons name="star" size={18} color={COMMON_COLORS.white} style={styles.buttonIcon} />
+                <Text style={[styles.upgradeButtonText, { color: COMMON_COLORS.white }]}>Passer à Premium</Text>
               </TouchableOpacity>
             )}
 
             <TouchableOpacity
-              style={[styles.button, styles.closeButton]}
+              style={[styles.button, styles.closeButton, { backgroundColor: colors.surfaceVariant }]}
               onPress={onClose}
             >
-              <Text style={styles.closeButtonText}>Fermer</Text>
+              <Text style={[styles.closeButtonText, { color: colors.text.secondary }]}>Fermer</Text>
             </TouchableOpacity>
           </View>
         </View>

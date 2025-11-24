@@ -22,6 +22,8 @@ import {
 } from "react-native";
 import { ActionData } from "./ActionSystemModal";
 import MatchFilters from "./MatchFilters";
+import { useTheme } from "../src/contexts/ThemeContext";
+import { STATUS_COLORS, COMMON_COLORS } from "../src/theme";
 
 interface Player {
   id: number;
@@ -64,6 +66,7 @@ export default function FilterBottomSheet({
   appliedFilters,
   isPortrait,
 }: FilterBottomSheetProps) {
+  const { colors } = useTheme();
   const [selectedTeams, setSelectedTeams] = useState<("A" | "B")[]>(["A", "B"]);
   const [selectedPlayers, setSelectedPlayers] = useState<string[]>([]);
   const [selectedActionTypes, setSelectedActionTypes] = useState<string[]>([]);
@@ -112,14 +115,15 @@ export default function FilterBottomSheet({
           onPress={onClose}
         />
         <View
-          style={
+          style={[
             isPortrait
               ? styles.filterSheetContainer
-              : styles.filterSheetContainerLandscape
-          }
+              : styles.filterSheetContainerLandscape,
+            { backgroundColor: colors.surface }
+          ]}
         >
-          <View style={styles.filterSheetHandle} />
-          <Text style={styles.filterSheetTitle}>Filtrer les actions</Text>
+          <View style={[styles.filterSheetHandle, { backgroundColor: colors.text.disabled }]} />
+          <Text style={[styles.filterSheetTitle, { color: colors.text.primary }]}>Filtrer les actions</Text>
 
           <ScrollView
             style={styles.scrollContainer}
@@ -176,11 +180,11 @@ export default function FilterBottomSheet({
 
           {/* Boutons d'action */}
           <View style={styles.actionButtons}>
-            <TouchableOpacity style={styles.resetButton} onPress={resetFilters}>
-              <Text style={styles.resetButtonText}>Reset</Text>
+            <TouchableOpacity style={[styles.resetButton, { backgroundColor: STATUS_COLORS.error + "20", borderColor: STATUS_COLORS.error }]} onPress={resetFilters}>
+              <Text style={[styles.resetButtonText, { color: STATUS_COLORS.error }]}>Reset</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-              <Text style={styles.closeButtonText}>Fermer</Text>
+            <TouchableOpacity style={[styles.closeButton, { backgroundColor: colors.surfaceVariant }]} onPress={onClose}>
+              <Text style={[styles.closeButtonText, { color: colors.text.secondary }]}>Fermer</Text>
             </TouchableOpacity>
           </View>
         </View>

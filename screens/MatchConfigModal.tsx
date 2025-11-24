@@ -13,6 +13,8 @@ import React from "react";
 import { Modal, View, Text, TouchableOpacity } from "react-native";
 import { MatchFormat } from "../src/models/types";
 import { MATCH_FORMATS, MATCH_FORMAT_LABELS } from "../constants/matchConstants";
+import { useTheme } from "../src/contexts/ThemeContext";
+import { STATUS_COLORS, COMMON_COLORS } from "../src/theme";
 import { logInfo } from "../utils/logger";
 
 interface MatchConfigModalProps {
@@ -26,6 +28,7 @@ export default function MatchConfigModal({
   onConfirm,
   onRequestClose,
 }: MatchConfigModalProps) {
+  const { colors } = useTheme();
   const [matchFormat, setMatchFormat] = React.useState<MatchFormat>(MATCH_FORMATS.FOUR_QUARTERS);
   const [periodDuration, setPeriodDuration] = React.useState<number>(600);
 
@@ -92,7 +95,7 @@ export default function MatchConfigModal({
       >
         <View
           style={{
-            backgroundColor: "white",
+            backgroundColor: colors.surface,
             borderRadius: 16,
             padding: 24,
             minWidth: 300,
@@ -105,6 +108,7 @@ export default function MatchConfigModal({
               fontWeight: "bold",
               marginBottom: 24,
               textAlign: "center",
+              color: colors.text.primary,
             }}
           >
             Configuration du match
@@ -112,7 +116,7 @@ export default function MatchConfigModal({
 
           {/* Match format configuration */}
           <View style={{ width: 250 }}>
-            <Text style={{ fontSize: 16, fontWeight: "bold", marginBottom: 12, textAlign: "center" }}>
+            <Text style={{ fontSize: 16, fontWeight: "bold", marginBottom: 12, textAlign: "center", color: colors.text.primary }}>
               Format du match
             </Text>
             
@@ -132,9 +136,9 @@ export default function MatchConfigModal({
                     paddingVertical: 8,
                     paddingHorizontal: 12,
                     borderRadius: 8,
-                    backgroundColor: matchFormat === format.key ? "#e3f2fd" : "#f5f5f5",
+                    backgroundColor: matchFormat === format.key ? STATUS_COLORS.info + "20" : colors.surfaceVariant,
                     borderWidth: 1,
-                    borderColor: matchFormat === format.key ? "#1976d2" : "#ddd",
+                    borderColor: matchFormat === format.key ? STATUS_COLORS.info : colors.border,
                   }}
                   onPress={() => {
                     const newFormat = format.key as MatchFormat;
@@ -150,7 +154,7 @@ export default function MatchConfigModal({
                   <Text
                     style={{
                       fontSize: 12,
-                      color: matchFormat === format.key ? "#1976d2" : "#333",
+                      color: matchFormat === format.key ? STATUS_COLORS.info : colors.text.primary,
                       fontWeight: matchFormat === format.key ? "bold" : "normal",
                       textAlign: "center",
                     }}
@@ -161,15 +165,15 @@ export default function MatchConfigModal({
               ))}
             </View>
 
-            <Text style={{ fontSize: 14, fontWeight: "600", marginBottom: 8, textAlign: "center" }}>
+            <Text style={{ fontSize: 14, fontWeight: "600", marginBottom: 8, textAlign: "center", color: colors.text.primary }}>
               Durée par période
             </Text>
-            
+
             <View style={{ alignItems: "center", marginBottom: 16 }}>
               <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 8 }}>
                 <TouchableOpacity
                   style={{
-                    backgroundColor: "#f0f0f0",
+                    backgroundColor: colors.surfaceVariant,
                     borderRadius: 20,
                     width: 32,
                     height: 32,
@@ -187,16 +191,16 @@ export default function MatchConfigModal({
                     setPeriodDuration(newDuration);
                   }}
                 >
-                  <Text style={{ fontSize: 18, fontWeight: "bold", color: "#666" }}>-</Text>
+                  <Text style={{ fontSize: 18, fontWeight: "bold", color: colors.text.secondary }}>-</Text>
                 </TouchableOpacity>
-                
-                <Text style={{ fontSize: 18, fontWeight: "bold", minWidth: 60, textAlign: "center" }}>
+
+                <Text style={{ fontSize: 18, fontWeight: "bold", minWidth: 60, textAlign: "center", color: colors.text.primary }}>
                   {formatDurationDisplay(periodDuration)}
                 </Text>
-                
+
                 <TouchableOpacity
                   style={{
-                    backgroundColor: "#f0f0f0",
+                    backgroundColor: colors.surfaceVariant,
                     borderRadius: 20,
                     width: 32,
                     height: 32,
@@ -214,11 +218,11 @@ export default function MatchConfigModal({
                     setPeriodDuration(newDuration);
                   }}
                 >
-                  <Text style={{ fontSize: 18, fontWeight: "bold", color: "#666" }}>+</Text>
+                  <Text style={{ fontSize: 18, fontWeight: "bold", color: colors.text.secondary }}>+</Text>
                 </TouchableOpacity>
               </View>
-              
-              <Text style={{ fontSize: 12, color: "#888", textAlign: "center" }}>
+
+              <Text style={{ fontSize: 12, color: colors.text.tertiary, textAlign: "center" }}>
                 Durée totale : {getTotalMatchDuration()}
               </Text>
             </View>
@@ -227,30 +231,30 @@ export default function MatchConfigModal({
           <View style={{ flexDirection: "row", gap: 12 }}>
             <TouchableOpacity
               style={{
-                backgroundColor: "#f5f5f5",
+                backgroundColor: colors.surfaceVariant,
                 borderRadius: 8,
                 paddingVertical: 10,
                 paddingHorizontal: 24,
                 borderWidth: 1,
-                borderColor: "#ddd",
+                borderColor: colors.border,
               }}
               onPress={handleBack}
             >
-              <Text style={{ color: "#666", fontWeight: "bold", fontSize: 16 }}>
+              <Text style={{ color: colors.text.secondary, fontWeight: "bold", fontSize: 16 }}>
                 Retour
               </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               style={{
-                backgroundColor: "#007AFF",
+                backgroundColor: STATUS_COLORS.success,
                 borderRadius: 8,
                 paddingVertical: 10,
                 paddingHorizontal: 24,
               }}
               onPress={handleConfirm}
             >
-              <Text style={{ color: "white", fontWeight: "bold", fontSize: 16 }}>
+              <Text style={{ color: COMMON_COLORS.white, fontWeight: "bold", fontSize: 16 }}>
                 Commencer
               </Text>
             </TouchableOpacity>

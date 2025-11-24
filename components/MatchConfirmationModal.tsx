@@ -24,6 +24,8 @@ import {
   Modal,
   StyleSheet,
 } from "react-native";
+import { useTheme } from "../src/contexts/ThemeContext";
+import { STATUS_COLORS, COMMON_COLORS } from "../src/theme";
 
 interface MatchConfirmationModalProps {
   visible: boolean;
@@ -46,6 +48,8 @@ export default function MatchConfirmationModal({
   confirmButtonText = "Confirmer",
   cancelButtonText = "Annuler",
 }: MatchConfirmationModalProps) {
+  const { colors } = useTheme();
+
   /**
    * Format seconds to MM:SS display
    */
@@ -63,18 +67,18 @@ export default function MatchConfirmationModal({
       onRequestClose={onCancel}
     >
       <View style={styles.overlay}>
-        <View style={styles.container}>
+        <View style={[styles.container, { backgroundColor: colors.surface }]}>
           {/* Modal title */}
-          <Text style={styles.title}>{title}</Text>
+          <Text style={[styles.title, { color: colors.text.primary }]}>{title}</Text>
 
           {/* Confirmation message */}
-          <Text style={styles.message}>{message}</Text>
+          <Text style={[styles.message, { color: colors.text.secondary }]}>{message}</Text>
 
           {/* Time remaining warning (only shown if time > 0) */}
           {timeRemaining > 0 && (
-            <View style={styles.timeWarning}>
+            <View style={[styles.timeWarning, { backgroundColor: STATUS_COLORS.warning + "20", borderColor: STATUS_COLORS.warning }]}>
               <Text style={styles.timeWarningIcon}>⏰</Text>
-              <Text style={styles.timeWarningText}>
+              <Text style={[styles.timeWarningText, { color: STATUS_COLORS.warning }]}>
                 Temps restant : {formatTime(timeRemaining)}
               </Text>
             </View>
@@ -83,17 +87,17 @@ export default function MatchConfirmationModal({
           {/* Action buttons: Cancel (left) and Confirm (right) */}
           <View style={styles.buttonsContainer}>
             <TouchableOpacity
-              style={[styles.button, styles.cancelButton]}
+              style={[styles.button, styles.cancelButton, { backgroundColor: colors.surfaceVariant, borderColor: colors.border }]}
               onPress={onCancel}
             >
-              <Text style={styles.cancelButtonText}>{cancelButtonText}</Text>
+              <Text style={[styles.cancelButtonText, { color: colors.text.secondary }]}>{cancelButtonText}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.button, styles.confirmButton]}
+              style={[styles.button, styles.confirmButton, { backgroundColor: STATUS_COLORS.error }]}
               onPress={onConfirm}
             >
-              <Text style={styles.confirmButtonText}>{confirmButtonText}</Text>
+              <Text style={[styles.confirmButtonText, { color: COMMON_COLORS.white }]}>{confirmButtonText}</Text>
             </TouchableOpacity>
           </View>
         </View>

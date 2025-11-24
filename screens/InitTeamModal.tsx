@@ -12,6 +12,8 @@
 import React from "react";
 import { Modal, View, Text, TextInput, TouchableOpacity } from "react-native";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
+import { useTheme } from "../src/contexts/ThemeContext";
+import { STATUS_COLORS, COMMON_COLORS } from "../src/theme";
 import { logInfo } from "../utils/logger";
 
 interface InitTeamModalProps {
@@ -53,6 +55,7 @@ export default function InitTeamModal({
   onGoToMenu,
   hasClubTeam = false,
 }: InitTeamModalProps) {
+  const { colors } = useTheme();
   const [selectedTeamMode, setSelectedTeamMode] = React.useState<
     "A" | "B" | "BOTH" | null
   >(null);
@@ -161,7 +164,7 @@ export default function InitTeamModal({
       >
         <View
           style={{
-            backgroundColor: "white",
+            backgroundColor: colors.surface,
             borderRadius: 16,
             padding: 24,
             minWidth: 300,
@@ -174,6 +177,7 @@ export default function InitTeamModal({
               fontWeight: "bold",
               marginBottom: 16,
               textAlign: "center",
+              color: colors.text.primary,
             }}
           >
             {getFormattedDate()}
@@ -181,20 +185,22 @@ export default function InitTeamModal({
           <TextInput
             style={{
               borderWidth: 1,
-              borderColor: "#ccc",
+              borderColor: colors.border,
               borderRadius: 8,
               padding: 10,
               width: 200,
               marginBottom: 2,
               textAlign: "center",
               fontSize: 16,
+              backgroundColor: colors.background,
+              color: colors.text.primary,
             }}
             value={teamA}
             onChangeText={setTeamA}
             placeholder="Nom équipe A"
-            placeholderTextColor="#aaa"
+            placeholderTextColor={colors.text.disabled}
           />
-          <Text style={{ fontSize: 12, color: "#888", marginBottom: 8 }}>
+          <Text style={{ fontSize: 12, color: colors.text.tertiary, marginBottom: 8 }}>
             Domicile
           </Text>
 
@@ -210,11 +216,11 @@ export default function InitTeamModal({
           >
             <TouchableOpacity
               style={{
-                backgroundColor: "#f0f0f0",
+                backgroundColor: colors.surfaceVariant,
                 borderRadius: 20,
                 padding: 4,
                 borderWidth: 1,
-                borderColor: "#ddd",
+                borderColor: colors.border,
                 minWidth: 30,
                 minHeight: 30,
                 alignItems: "center",
@@ -223,33 +229,35 @@ export default function InitTeamModal({
               }}
               onPress={swapTeams}
             >
-              <MaterialCommunityIcons name="swap-vertical" size={20} color="#666" />
+              <MaterialCommunityIcons name="swap-vertical" size={20} color={colors.text.secondary} />
             </TouchableOpacity>
-            <Text style={{ fontSize: 16, fontWeight: "bold" }}>VS</Text>
+            <Text style={{ fontSize: 16, fontWeight: "bold", color: colors.text.primary }}>VS</Text>
             <View style={{ width: 30 }} />
           </View>
 
           <TextInput
             style={{
               borderWidth: 1,
-              borderColor: "#ccc",
+              borderColor: colors.border,
               borderRadius: 8,
               padding: 10,
               width: 200,
               marginBottom: 2,
               textAlign: "center",
               fontSize: 16,
+              backgroundColor: colors.background,
+              color: colors.text.primary,
             }}
             value={teamB}
             onChangeText={setTeamB}
             placeholder="Nom équipe B"
-            placeholderTextColor="#aaa"
+            placeholderTextColor={colors.text.disabled}
           />
-          <Text style={{ fontSize: 12, color: "#888", marginBottom: 16 }}>
+          <Text style={{ fontSize: 12, color: colors.text.tertiary, marginBottom: 16 }}>
             Extérieur
           </Text>
 
-          <Text style={{ fontSize: 16, fontWeight: "bold", marginBottom: 12 }}>
+          <Text style={{ fontSize: 16, fontWeight: "bold", marginBottom: 12, color: colors.text.primary }}>
             Quelle équipe gérez-vous ?
           </Text>
 
@@ -273,10 +281,10 @@ export default function InitTeamModal({
                   paddingHorizontal: 12,
                   borderRadius: 8,
                   backgroundColor:
-                    selectedTeamMode === option.key ? "#e3f2fd" : "transparent",
+                    selectedTeamMode === option.key ? STATUS_COLORS.info + "20" : "transparent",
                   borderWidth: 1,
                   borderColor:
-                    selectedTeamMode === option.key ? "#1976d2" : isDisabled ? "#f0f0f0" : "#ddd",
+                    selectedTeamMode === option.key ? STATUS_COLORS.info : isDisabled ? colors.surfaceVariant : colors.border,
                   minWidth: 250,
                   opacity: isDisabled ? 0.4 : 1,
                 }}
@@ -296,16 +304,16 @@ export default function InitTeamModal({
                     borderRadius: 10,
                     borderWidth: 2,
                     borderColor:
-                      selectedTeamMode === option.key ? "#1976d2" : isDisabled ? "#ccc" : "#ddd",
+                      selectedTeamMode === option.key ? STATUS_COLORS.info : isDisabled ? colors.text.disabled : colors.border,
                     backgroundColor:
-                      selectedTeamMode === option.key ? "#1976d2" : "transparent",
+                      selectedTeamMode === option.key ? STATUS_COLORS.info : "transparent",
                     marginRight: 10,
                   }}
                 />
                 <Text
                   style={{
                     fontSize: 14,
-                    color: selectedTeamMode === option.key ? "#1976d2" : isDisabled ? "#aaa" : "#333",
+                    color: selectedTeamMode === option.key ? STATUS_COLORS.info : isDisabled ? colors.text.disabled : colors.text.primary,
                   }}
                 >
                   {option.label}
@@ -318,16 +326,16 @@ export default function InitTeamModal({
             {(canGoBack && onBack) || (!canGoBack && onGoToMenu) ? (
               <TouchableOpacity
                 style={{
-                  backgroundColor: "#f0f0f0",
+                  backgroundColor: colors.surfaceVariant,
                   borderRadius: 8,
                   paddingVertical: 10,
                   paddingHorizontal: 20,
                   borderWidth: 1,
-                  borderColor: "#ddd",
+                  borderColor: colors.border,
                 }}
                 onPress={handleBack}
               >
-                <Text style={{ color: "#666", fontWeight: "600", fontSize: 16 }}>
+                <Text style={{ color: colors.text.secondary, fontWeight: "600", fontSize: 16 }}>
                   Retour
                 </Text>
               </TouchableOpacity>
@@ -335,7 +343,7 @@ export default function InitTeamModal({
 
             <TouchableOpacity
               style={{
-                backgroundColor: isFullyDisabled ? "#aaa" : "#007AFF",
+                backgroundColor: isFullyDisabled ? colors.text.disabled : STATUS_COLORS.success,
                 borderRadius: 8,
                 paddingVertical: 10,
                 paddingHorizontal: 32,
@@ -344,7 +352,7 @@ export default function InitTeamModal({
               onPress={handleConfirm}
               disabled={isFullyDisabled}
             >
-              <Text style={{ color: "white", fontWeight: "bold", fontSize: 16 }}>
+              <Text style={{ color: COMMON_COLORS.white, fontWeight: "bold", fontSize: 16 }}>
                 Confirmer
               </Text>
             </TouchableOpacity>

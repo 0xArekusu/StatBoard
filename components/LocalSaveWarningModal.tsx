@@ -16,6 +16,8 @@
 import React from "react";
 import { Modal, View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useTheme } from "../src/contexts/ThemeContext";
+import { STATUS_COLORS, COMMON_COLORS } from "../src/theme";
 
 interface LocalSaveWarningModalProps {
   visible: boolean;
@@ -28,39 +30,41 @@ export default function LocalSaveWarningModal({
   isConnected,
   onClose,
 }: LocalSaveWarningModalProps) {
+  const { colors } = useTheme();
+
   return (
     <Modal visible={visible} transparent animationType="fade">
       {/* Semi-transparent overlay */}
       <View style={styles.overlay}>
         {/* Modal container */}
-        <View style={styles.modal}>
+        <View style={[styles.modal, { backgroundColor: colors.surface }]}>
           {/* Save icon */}
           <View style={styles.iconContainer}>
-            <Ionicons name="save-outline" size={60} color="#2196F3" />
+            <Ionicons name="save-outline" size={60} color={STATUS_COLORS.info} />
           </View>
 
           {/* Modal title */}
-          <Text style={styles.title}>Match sauvegardé localement</Text>
+          <Text style={[styles.title, { color: colors.text.primary }]}>Match sauvegardé localement</Text>
 
           {/* Success message */}
-          <Text style={styles.message}>
+          <Text style={[styles.message, { color: colors.text.secondary }]}>
             Votre match a été enregistré sur cet appareil.
           </Text>
 
           {/* Warning box: content varies based on connection status */}
           {!isConnected ? (
             /* Warning for non-authenticated users */
-            <View style={styles.warningBox}>
-              <Ionicons name="warning-outline" size={24} color="#FF9800" />
-              <Text style={styles.warningText}>
+            <View style={[styles.warningBox, { backgroundColor: STATUS_COLORS.warning + "20", borderColor: STATUS_COLORS.warning, borderWidth: 1 }]}>
+              <Ionicons name="warning-outline" size={24} color={STATUS_COLORS.warning} />
+              <Text style={[styles.warningText, { color: STATUS_COLORS.warning }]}>
                 Sans compte, vos statistiques ne sont pas sauvegardées sur le cloud et peuvent être perdues si vous désinstallez l'application.
               </Text>
             </View>
           ) : (
             /* Warning for authenticated but non-premium users */
-            <View style={styles.warningBox}>
-              <Ionicons name="cloud-offline-outline" size={24} color="#FF9800" />
-              <Text style={styles.warningText}>
+            <View style={[styles.warningBox, { backgroundColor: STATUS_COLORS.warning + "20", borderColor: STATUS_COLORS.warning, borderWidth: 1 }]}>
+              <Ionicons name="cloud-offline-outline" size={24} color={STATUS_COLORS.warning} />
+              <Text style={[styles.warningText, { color: STATUS_COLORS.warning }]}>
                 Sans abonnement, vos statistiques ne sont pas synchronisées sur le cloud. Passez à un abonnement premium pour un accès illimité et une sauvegarde automatique.
               </Text>
             </View>
@@ -69,10 +73,10 @@ export default function LocalSaveWarningModal({
           {/* Action button: Close modal */}
           <View style={styles.actions}>
             <TouchableOpacity
-              style={[styles.button, styles.primaryButton]}
+              style={[styles.button, styles.primaryButton, { backgroundColor: STATUS_COLORS.success }]}
               onPress={onClose}
             >
-              <Text style={styles.primaryButtonText}>Fermer</Text>
+              <Text style={[styles.primaryButtonText, { color: COMMON_COLORS.white }]}>Fermer</Text>
             </TouchableOpacity>
           </View>
         </View>

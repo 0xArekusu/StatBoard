@@ -10,6 +10,8 @@ import {
 import { Match } from "../src/models/types";
 import { supabase } from "../src/config/supabase";
 import { resolveTeamName } from "../src/utils/teamNameResolver";
+import { useTheme } from "../src/contexts/ThemeContext";
+import { STATUS_COLORS, COMMON_COLORS } from "../src/theme";
 
 interface ResumeMatchModalProps {
   visible: boolean;
@@ -26,6 +28,7 @@ export default function ResumeMatchModal({
   onDiscardMatch,
   onGoBack,
 }: ResumeMatchModalProps) {
+  const { colors } = useTheme();
   const [showDiscardConfirmation, setShowDiscardConfirmation] = useState(false);
   const [teamAName, setTeamAName] = useState<string>("");
   const [teamBName, setTeamBName] = useState<string>("");
@@ -86,30 +89,30 @@ export default function ResumeMatchModal({
         onRequestClose={cancelDiscard}
       >
         <View style={styles.overlay}>
-          <View style={styles.confirmationContainer}>
-            <Text style={styles.confirmationTitle}>⚠️ Supprimer le match</Text>
+          <View style={[styles.confirmationContainer, { backgroundColor: colors.surface }]}>
+            <Text style={[styles.confirmationTitle, { color: colors.text.primary }]}>⚠️ Supprimer le match</Text>
 
-            <Text style={styles.confirmationMessage}>
+            <Text style={[styles.confirmationMessage, { color: colors.text.secondary }]}>
               Êtes-vous sûr de vouloir supprimer ce match en cours ?
             </Text>
 
-            <Text style={styles.warningText}>
+            <Text style={[styles.warningText, { color: STATUS_COLORS.error }]}>
               Le match et toutes ses statistiques seront définitivement supprimés. Cette action est irréversible.
             </Text>
 
             <View style={styles.confirmationButtons}>
               <TouchableOpacity
-                style={[styles.button, styles.cancelButton]}
+                style={[styles.button, styles.cancelButton, { backgroundColor: colors.surfaceVariant, borderColor: colors.border }]}
                 onPress={cancelDiscard}
               >
-                <Text style={styles.cancelButtonText}>Annuler</Text>
+                <Text style={[styles.cancelButtonText, { color: colors.text.secondary }]}>Annuler</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={[styles.button, styles.discardButton]}
+                style={[styles.button, styles.discardButton, { backgroundColor: STATUS_COLORS.error }]}
                 onPress={confirmDiscard}
               >
-                <Text style={styles.discardButtonText}>Confirmer</Text>
+                <Text style={[styles.discardButtonText, { color: COMMON_COLORS.white }]}>Confirmer</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -126,49 +129,49 @@ export default function ResumeMatchModal({
       onRequestClose={onGoBack}
     >
       <View style={styles.overlay}>
-        <View style={styles.container}>
-          <Text style={styles.title}>🏀 Match en cours détecté</Text>
-          
-          <View style={styles.matchInfo}>
-            <Text style={styles.matchTitle}>
+        <View style={[styles.container, { backgroundColor: colors.surface }]}>
+          <Text style={[styles.title, { color: colors.text.primary }]}>🏀 Match en cours détecté</Text>
+
+          <View style={[styles.matchInfo, { backgroundColor: colors.surfaceVariant }]}>
+            <Text style={[styles.matchTitle, { color: colors.text.primary }]}>
               {displayTeamA} vs {displayTeamB}
             </Text>
-            
+
             {match.started_at && (
-              <Text style={styles.matchStarted}>
+              <Text style={[styles.matchStarted, { color: colors.text.secondary }]}>
                 Match démarré le {formatDate(match.started_at)}
               </Text>
             )}
           </View>
 
-          <Text style={styles.message}>
+          <Text style={[styles.message, { color: colors.text.secondary }]}>
             Voulez-vous reprendre ce match ou en commencer un nouveau ?
           </Text>
 
           <View style={styles.buttons}>
             <TouchableOpacity
-              style={[styles.button, styles.resumeButton]}
+              style={[styles.button, styles.resumeButton, { backgroundColor: STATUS_COLORS.success }]}
               onPress={onResumeMatch}
             >
-              <Text style={styles.resumeButtonText}>
+              <Text style={[styles.resumeButtonText, { color: COMMON_COLORS.white }]}>
                 🔄 Reprendre le match
               </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.button, styles.newMatchButton]}
+              style={[styles.button, styles.newMatchButton, { backgroundColor: STATUS_COLORS.info }]}
               onPress={handleDiscardPress}
             >
-              <Text style={styles.newMatchButtonText}>
+              <Text style={[styles.newMatchButtonText, { color: COMMON_COLORS.white }]}>
                 🆕 Nouveau match
               </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.button, styles.backButton]}
+              style={[styles.button, styles.backButton, { backgroundColor: colors.surfaceVariant, borderColor: colors.border }]}
               onPress={onGoBack}
             >
-              <Text style={styles.backButtonText}>
+              <Text style={[styles.backButtonText, { color: colors.text.secondary }]}>
                 ← Menu principal
               </Text>
             </TouchableOpacity>

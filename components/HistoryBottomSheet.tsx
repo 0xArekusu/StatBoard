@@ -38,6 +38,8 @@ import {
   REBOUND_SPECIFICATION_FR,
   FOUL_SPECIFICATION_FR,
 } from "../src/models/ActionTypes";
+import { useTheme } from "../src/contexts/ThemeContext";
+import { STATUS_COLORS, COMMON_COLORS, TEAM_CHART_COLORS } from "../src/theme";
 
 interface Player {
   id: number;
@@ -67,6 +69,7 @@ export default function HistoryBottomSheet({
   teamB,
   isPortrait,
 }: HistoryBottomSheetProps) {
+  const { colors } = useTheme();
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [actionToDelete, setActionToDelete] = useState<number | null>(null);
 
@@ -83,7 +86,7 @@ export default function HistoryBottomSheet({
 
   // Get team color
   const getTeamColor = (team: "A" | "B") => {
-    return team === "A" ? "#4CAF50" : "#2196F3"; // Green for team A, Blue for team B
+    return team === "A" ? TEAM_CHART_COLORS.teamA : TEAM_CHART_COLORS.teamB;
   };
 
   // Format action description
@@ -192,21 +195,22 @@ export default function HistoryBottomSheet({
           onPress={onClose}
         />
         <View
-          style={
+          style={[
             isPortrait
               ? styles.historySheetContainer
-              : styles.historySheetContainerLandscape
-          }
+              : styles.historySheetContainerLandscape,
+            { backgroundColor: colors.surface }
+          ]}
         >
-          <View style={styles.historySheetHandle} />
-          <Text style={styles.historySheetTitle}>Historique des actions</Text>
+          <View style={[styles.historySheetHandle, { backgroundColor: colors.text.disabled }]} />
+          <Text style={[styles.historySheetTitle, { color: colors.text.primary }]}>Historique des actions</Text>
 
           {sortedActions.length === 0 ? (
             <View style={styles.emptyState}>
-              <Text style={styles.emptyStateText}>
+              <Text style={[styles.emptyStateText, { color: colors.text.secondary }]}>
                 Aucune action enregistrée
               </Text>
-              <Text style={styles.emptyStateSubtext}>
+              <Text style={[styles.emptyStateSubtext, { color: colors.text.tertiary }]}>
                 Les actions apparaîtront ici une fois que vous en aurez
                 enregistré
               </Text>
@@ -219,7 +223,7 @@ export default function HistoryBottomSheet({
               {sortedActions.map((action, index) => (
                 <View
                   key={`${action.timestamp}-${index}`}
-                  style={styles.actionItem}
+                  style={[styles.actionItem, { backgroundColor: colors.surfaceVariant }]}
                 >
                   {/* Color indicator bar */}
                   <View
@@ -241,15 +245,15 @@ export default function HistoryBottomSheet({
                       </Text>
                     </View>
                     <View style={styles.actionDetails}>
-                      <Text style={styles.actionDescription}>
+                      <Text style={[styles.actionDescription, { color: colors.text.primary }]}>
                         {formatActionDescription(action)}
                       </Text>
-                      <Text style={styles.actionTime}>
+                      <Text style={[styles.actionTime, { color: colors.text.tertiary }]}>
                         {formatTime(new Date(action.timestamp))}
                       </Text>
                     </View>
                     <TouchableOpacity
-                      style={styles.deleteButton}
+                      style={[styles.deleteButton, { backgroundColor: STATUS_COLORS.error + "20" }]}
                       onPress={() => handleDeleteAction(index)}
                     >
                       <Text style={styles.deleteButtonIcon}>🗑️</Text>
@@ -260,8 +264,8 @@ export default function HistoryBottomSheet({
             </ScrollView>
           )}
 
-          <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-            <Text style={styles.closeButtonText}>Fermer</Text>
+          <TouchableOpacity style={[styles.closeButton, { backgroundColor: colors.surfaceVariant }]} onPress={onClose}>
+            <Text style={[styles.closeButtonText, { color: colors.text.secondary }]}>Fermer</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -274,17 +278,17 @@ export default function HistoryBottomSheet({
         onRequestClose={cancelDeleteAction}
       >
         <View style={styles.deleteModalOverlay}>
-          <View style={styles.deleteModalContainer}>
-            <Text style={styles.deleteModalTitle}>
+          <View style={[styles.deleteModalContainer, { backgroundColor: colors.surface }]}>
+            <Text style={[styles.deleteModalTitle, { color: colors.text.primary }]}>
               Confirmer la suppression
             </Text>
-            <Text style={styles.deleteModalMessage}>
+            <Text style={[styles.deleteModalMessage, { color: colors.text.secondary }]}>
               Êtes-vous sûr de vouloir supprimer cette action ?
             </Text>
 
             {actionToDelete !== null && completedActions[actionToDelete] && (
               <View style={styles.deleteActionDetails}>
-                <Text style={styles.deleteActionTitle}>
+                <Text style={[styles.deleteActionTitle, { color: colors.text.secondary }]}>
                   Action à supprimer :
                 </Text>
                 <View
@@ -296,7 +300,7 @@ export default function HistoryBottomSheet({
                       ),
                       borderLeftWidth: 6,
                       paddingLeft: 16,
-                      backgroundColor: "rgba(255,255,255,0.9)",
+                      backgroundColor: colors.surfaceVariant,
                       borderTopRightRadius: 8,
                       borderBottomRightRadius: 8,
                     },
@@ -320,12 +324,12 @@ export default function HistoryBottomSheet({
                     </Text>
                   </View>
                   <View style={styles.deleteActionText}>
-                    <Text style={styles.deleteActionType}>
+                    <Text style={[styles.deleteActionType, { color: colors.text.primary }]}>
                       {formatActionDescription(
                         completedActions[actionToDelete]
                       )}
                     </Text>
-                    <Text style={styles.deleteActionTime}>
+                    <Text style={[styles.deleteActionTime, { color: colors.text.tertiary }]}>
                       {formatTime(
                         new Date(completedActions[actionToDelete].timestamp)
                       )}
@@ -340,20 +344,22 @@ export default function HistoryBottomSheet({
                 style={[
                   styles.deleteModalButton,
                   styles.deleteModalButtonCancel,
+                  { backgroundColor: colors.surfaceVariant }
                 ]}
                 onPress={cancelDeleteAction}
               >
-                <Text style={styles.deleteModalButtonTextCancel}>Annuler</Text>
+                <Text style={[styles.deleteModalButtonTextCancel, { color: colors.text.secondary }]}>Annuler</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
                 style={[
                   styles.deleteModalButton,
                   styles.deleteModalButtonConfirm,
+                  { backgroundColor: STATUS_COLORS.error }
                 ]}
                 onPress={confirmDeleteAction}
               >
-                <Text style={styles.deleteModalButtonTextConfirm}>
+                <Text style={[styles.deleteModalButtonTextConfirm, { color: COMMON_COLORS.white }]}>
                   Supprimer
                 </Text>
               </TouchableOpacity>
