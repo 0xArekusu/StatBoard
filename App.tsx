@@ -9,6 +9,7 @@ import { useState, useEffect, useRef } from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { AppState, AppStateStatus } from "react-native";
+import AuthScreen from "./screens/AuthScreen";
 import MainMenuScreen from "./screens/MainMenuScreen";
 import BoardScreen from "./screens/BoardScreen";
 import MatchDetailsScreen from "./screens/MatchDetailsScreen";
@@ -55,11 +56,12 @@ function Navigation() {
   return (
     <NavigationContainer>
       <Stack.Navigator
-        initialRouteName={ROUTES.MAIN_MENU}
+        initialRouteName={ROUTES.AUTH}
         screenOptions={{
           headerShown: false,
         }}
       >
+        <Stack.Screen name={ROUTES.AUTH} component={AuthScreen} />
         <Stack.Screen name={ROUTES.DEBUG_COURT} component={DebugCourtClick} />
         <Stack.Screen name={ROUTES.MAIN_MENU} component={MainMenuScreen} />
         <Stack.Screen name={ROUTES.BOARD} component={BoardScreen} />

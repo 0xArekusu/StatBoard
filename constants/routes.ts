@@ -3,6 +3,7 @@
  * Centralized constants to avoid typos and ensure type safety
  */
 export const ROUTES = {
+  AUTH: "Auth",
   MAIN_MENU: "MainMenu",
   BOARD: "Board",
   MATCH_HISTORY: "MatchHistory",

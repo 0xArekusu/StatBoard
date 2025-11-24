@@ -24,4 +24,6 @@ export {
   SPORT_COLORS,
   SUBSCRIPTION_COLORS,
   TEAM_CHART_COLORS,
+  BRAND_COLORS,
+  SLATE_COLORS,
 } from './clubDefaults';

@@ -93,6 +93,36 @@ export const TEAM_CHART_COLORS = {
   teamB: "#004E89",  // Dark Blue - Team B
 };
 
+/**
+ * Brand colors for authentication and branding
+ * Matches the color palette from the web version
+ */
+export const BRAND_COLORS = {
+  50: "#fff7ed",
+  100: "#ffedd5",
+  500: "#f97316",  // Orange standard (main brand color)
+  600: "#ea580c",
+  900: "#7c2d12",
+};
+
+/**
+ * Slate colors for UI elements (grays)
+ * Used for backgrounds, borders, and text in light/dark modes
+ */
+export const SLATE_COLORS = {
+  50: "#f8fafc",
+  100: "#f1f5f9",
+  200: "#e2e8f0",
+  300: "#cbd5e1",
+  400: "#94a3b8",
+  500: "#64748b",
+  600: "#475569",
+  700: "#334155",
+  800: "#1e293b",
+  900: "#0f172a",
+  950: "#020617",
+};
+
 // ===========================
 // SUBSCRIPTION TIERS
 // ===========================
