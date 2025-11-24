@@ -16,7 +16,7 @@ interface AuthContextType {
   session: Session | null;
   user: User | null;
   loading: boolean;
-  signUp: (email: string, password: string) => Promise<{ error: any }>;
+  signUp: (email: string, password: string, fullName?: string) => Promise<{ error: any }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signInWithGoogle: () => Promise<{ error: any }>;
   signOut: () => Promise<void>;
@@ -90,14 +90,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
    * Sign up a new user with email and password
    * @param email - User's email address
    * @param password - User's password
+   * @param fullName - User's full name (optional)
    * @returns Object with error if sign up failed
    */
-  const signUp = async (email: string, password: string) => {
-    logInfo('AuthProvider', '📝 Attempting to sign up user', { email });
+  const signUp = async (email: string, password: string, fullName?: string) => {
+    logInfo('AuthProvider', '📝 Attempting to sign up user', { email, fullName });
 
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
+      options: fullName ? {
+        data: {
+          full_name: fullName,
+        }
+      } : undefined,
     });
 
     if (error) {
@@ -109,6 +115,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } else {
       logInfo('AuthProvider', '✅ Sign up successful', {
         email,
+        fullName,
         userId: data.user?.id,
         needsEmailConfirmation: !data.session
       });

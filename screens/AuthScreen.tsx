@@ -10,14 +10,19 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Alert,
+  ActivityIndicator,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { useTheme } from "../src/contexts/ThemeContext";
+import { useAuth } from "../src/contexts/AuthContext";
 import { BRAND_COLORS, COMMON_COLORS, SLATE_COLORS } from "../src/theme";
 import { ROUTES } from "../constants/routes";
 import Logo from "../components/icons/Logo";
+import GoogleLogo from "../components/icons/GoogleLogo";
+import FacebookLogo from "../components/icons/FacebookLogo";
 
 const { width, height } = Dimensions.get("window");
 
@@ -27,10 +32,88 @@ export default function AuthScreen() {
   const [view, setView] = useState<ViewType>("landing");
   const { colors, isDark } = useTheme();
   const navigation = useNavigation();
+  const { signIn, signUp, signInWithGoogle } = useAuth();
 
-  const handleLogin = (isGuest: boolean) => {
-    // Navigate to main menu after login
+  // Form states
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  // Guest login
+  const handleGuestLogin = () => {
     navigation.navigate(ROUTES.MAIN_MENU as never);
+  };
+
+  // Email/Password login
+  const handleLogin = async () => {
+    if (!email || !password) {
+      Alert.alert("Erreur", "Veuillez remplir tous les champs");
+      return;
+    }
+
+    setLoading(true);
+    const { error } = await signIn(email, password);
+    setLoading(false);
+
+    if (error) {
+      Alert.alert("Erreur de connexion", error.message);
+    } else {
+      navigation.navigate(ROUTES.MAIN_MENU as never);
+    }
+  };
+
+  // Email/Password registration
+  const handleRegister = async () => {
+    if (!fullName || !email || !password || !confirmPassword) {
+      Alert.alert("Erreur", "Veuillez remplir tous les champs");
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      Alert.alert("Erreur", "Les mots de passe ne correspondent pas");
+      return;
+    }
+
+    if (password.length < 6) {
+      Alert.alert(
+        "Erreur",
+        "Le mot de passe doit contenir au moins 6 caractères"
+      );
+      return;
+    }
+
+    setLoading(true);
+    const { error } = await signUp(email, password, fullName);
+    setLoading(false);
+
+    if (error) {
+      Alert.alert("Erreur d'inscription", error.message);
+    } else {
+      navigation.navigate(ROUTES.MAIN_MENU as never);
+    }
+  };
+
+  // Google sign in
+  const handleGoogleSignIn = async () => {
+    setLoading(true);
+    const { error } = await signInWithGoogle();
+    setLoading(false);
+
+    if (error) {
+      Alert.alert("Erreur de connexion Google", error.message);
+    } else {
+      navigation.navigate(ROUTES.MAIN_MENU as never);
+    }
+  };
+
+  // Facebook sign in (placeholder)
+  const handleFacebookSignIn = () => {
+    Alert.alert(
+      "Bientôt disponible",
+      "La connexion avec Facebook sera bientôt disponible"
+    );
   };
 
   if (view === "landing") {
@@ -89,10 +172,7 @@ export default function AuthScreen() {
                 <Text style={styles.secondaryButtonText}>Se connecter</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity
-                onPress={() => handleLogin(true)}
-                activeOpacity={0.7}
-              >
+              <TouchableOpacity onPress={handleGuestLogin} activeOpacity={0.7}>
                 <Text style={styles.guestButtonText}>
                   Essayer gratuitement (Invité)
                 </Text>
@@ -180,6 +260,9 @@ export default function AuthScreen() {
                     placeholder="Coach Carter"
                     placeholderTextColor={textDisabledColor}
                     style={[styles.input, { color: textPrimaryColor }]}
+                    value={fullName}
+                    onChangeText={setFullName}
+                    editable={!loading}
                   />
                 </View>
               </View>
@@ -210,6 +293,9 @@ export default function AuthScreen() {
                   style={[styles.input, { color: textPrimaryColor }]}
                   keyboardType="email-address"
                   autoCapitalize="none"
+                  value={email}
+                  onChangeText={setEmail}
+                  editable={!loading}
                 />
               </View>
             </View>
@@ -238,9 +324,46 @@ export default function AuthScreen() {
                   placeholderTextColor={textDisabledColor}
                   style={[styles.input, { color: textPrimaryColor }]}
                   secureTextEntry
+                  value={password}
+                  onChangeText={setPassword}
+                  editable={!loading}
                 />
               </View>
             </View>
+
+            {/* Confirm Password (only for register) */}
+            {view === "register" && (
+              <View style={styles.inputGroup}>
+                <Text style={[styles.label, { color: textSecondaryColor }]}>
+                  Confirmer le mot de passe
+                </Text>
+                <View
+                  style={[
+                    styles.inputContainer,
+                    {
+                      backgroundColor: inputBgColor,
+                      borderColor: inputBorderColor,
+                    },
+                  ]}
+                >
+                  <MaterialCommunityIcons
+                    name="lock-check"
+                    size={20}
+                    color={textDisabledColor}
+                    style={styles.inputIcon}
+                  />
+                  <TextInput
+                    placeholder="••••••••"
+                    placeholderTextColor={textDisabledColor}
+                    style={[styles.input, { color: textPrimaryColor }]}
+                    secureTextEntry
+                    value={confirmPassword}
+                    onChangeText={setConfirmPassword}
+                    editable={!loading}
+                  />
+                </View>
+              </View>
+            )}
           </View>
 
           {/* Submit Button */}
@@ -248,14 +371,98 @@ export default function AuthScreen() {
             style={[
               styles.submitButton,
               { backgroundColor: BRAND_COLORS[500] },
+              loading && styles.submitButtonDisabled,
             ]}
-            onPress={() => handleLogin(false)}
+            onPress={view === "login" ? handleLogin : handleRegister}
             activeOpacity={0.8}
+            disabled={loading}
           >
-            <Text style={styles.submitButtonText}>
-              {view === "login" ? "Se connecter" : "S'inscrire"}
-            </Text>
+            {loading ? (
+              <ActivityIndicator color={COMMON_COLORS.white} />
+            ) : (
+              <Text style={styles.submitButtonText}>
+                {view === "login" ? "Se connecter" : "S'inscrire"}
+              </Text>
+            )}
           </TouchableOpacity>
+
+          {/* Social Login Separator */}
+          <View style={styles.dividerContainer}>
+            <View
+              style={[
+                styles.dividerLine,
+                { backgroundColor: inputBorderColor },
+              ]}
+            />
+            <Text
+              style={[
+                styles.dividerText,
+                { color: textSecondaryColor, backgroundColor: formBgColor },
+              ]}
+            >
+              Ou continuer avec
+            </Text>
+            <View
+              style={[
+                styles.dividerLine,
+                { backgroundColor: inputBorderColor },
+              ]}
+            />
+          </View>
+
+          {/* Social Login Buttons */}
+          <View style={styles.socialButtonsContainer}>
+            <TouchableOpacity
+              style={[
+                styles.socialButton,
+                {
+                  backgroundColor: inputBgColor,
+                  borderColor: inputBorderColor,
+                },
+                loading && styles.submitButtonDisabled,
+              ]}
+              onPress={handleGoogleSignIn}
+              activeOpacity={0.8}
+              disabled={loading}
+            >
+              {loading ? (
+                <ActivityIndicator size="small" color={textPrimaryColor} />
+              ) : (
+                <>
+                  <GoogleLogo />
+                  <Text
+                    style={[
+                      styles.socialButtonText,
+                      { color: textPrimaryColor },
+                    ]}
+                  >
+                    Google
+                  </Text>
+                </>
+              )}
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.socialButton,
+                {
+                  backgroundColor: inputBgColor,
+                  borderColor: inputBorderColor,
+                },
+                loading && styles.submitButtonDisabled,
+              ]}
+              onPress={handleFacebookSignIn}
+              activeOpacity={0.8}
+              disabled={loading}
+            >
+              <FacebookLogo />
+              <Text
+                style={[styles.socialButtonText, { color: textPrimaryColor }]}
+              >
+                Facebook
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -403,16 +610,58 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     borderRadius: 12,
     alignItems: "center",
-    shadowColor: BRAND_COLORS[500],
+    shadowColor: BRAND_COLORS[900],
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 8,
     elevation: 4,
     marginTop: "auto",
   },
+  submitButtonDisabled: {
+    opacity: 0.6,
+  },
   submitButtonText: {
     color: COMMON_COLORS.white,
     fontSize: 16,
     fontWeight: "700",
+  },
+  dividerContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginVertical: 24,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+  },
+  dividerText: {
+    paddingHorizontal: 16,
+    fontSize: 14,
+    fontWeight: "500",
+  },
+  socialButtonsContainer: {
+    flexDirection: "row",
+    gap: 16,
+    marginBottom: 24,
+  },
+  socialButton: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    gap: 12,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  socialButtonText: {
+    fontSize: 14,
+    fontWeight: "600",
   },
 });
