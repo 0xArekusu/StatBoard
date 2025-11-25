@@ -13,9 +13,8 @@ import ClubScreen from '../screens/ClubScreen';
 const Tab = createBottomTabNavigator();
 
 export default function MainTabNavigator() {
-  const { theme } = useTheme();
+  const { isDark } = useTheme();
   const { user } = useAuth();
-  const isDark = theme === 'dark';
 
   const isGuest = !user;
 

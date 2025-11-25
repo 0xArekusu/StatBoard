@@ -36,7 +36,7 @@ const Stack = createNativeStackNavigator();
  * Displays splash screen during loading, then shows the main navigation stack
  */
 function Navigation() {
-  const { loading } = useAuth();
+  const { loading, user } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -54,10 +54,20 @@ function Navigation() {
     return <SplashScreen />;
   }
 
+  // Determine initial route based on authentication state
+  const initialRoute = user ? ROUTES.MAIN_TABS : ROUTES.AUTH;
+
+  logInfo("App", "🧭 Determining initial route", {
+    hasUser: !!user,
+    userId: user?.id,
+    email: user?.email,
+    initialRoute
+  });
+
   return (
     <NavigationContainer>
       <Stack.Navigator
-        initialRouteName={ROUTES.AUTH}
+        initialRouteName={initialRoute}
         screenOptions={{
           headerShown: false,
         }}
