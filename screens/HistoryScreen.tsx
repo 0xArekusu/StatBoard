@@ -1,29 +1,529 @@
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { useTheme } from '../src/contexts/ThemeContext';
-import { SLATE_COLORS } from '../src/theme/clubDefaults';
+import React, { useState, useEffect } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  ActivityIndicator,
+} from "react-native";
+import { Picker } from "@react-native-picker/picker";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { useTheme } from "../src/contexts/ThemeContext";
+import { useAuth } from "../src/contexts/AuthContext";
+import {
+  SLATE_COLORS,
+  BRAND_COLORS,
+  COMMON_COLORS,
+} from "../src/theme/clubDefaults";
+import { MatchRepository } from "../src/services/database/MatchRepository";
+import { ServiceFactory } from "../services/ServiceFactory";
+import { Match } from "../src/models/types";
+import { Club } from "../models/Club";
+import { Team } from "../models/Team";
+import JerseyIcon from "../components/icons/JerseyIcon";
+import { supabase } from "../src/config/supabase";
 
-export default function HistoryScreen() {
-  const { theme } = useTheme();
-  const isDark = theme === 'dark';
+interface HistoryScreenProps {
+  navigation: any;
+}
+
+export default function HistoryScreen({ navigation }: HistoryScreenProps) {
+  const { isDark } = useTheme();
+  const { user } = useAuth();
+
+  const [loading, setLoading] = useState(true);
+  const [matches, setMatches] = useState<Match[]>([]);
+  const [club, setClub] = useState<Club | null>(null);
+  const [teams, setTeams] = useState<Team[]>([]);
+  const [activeTeamId, setActiveTeamId] = useState<string | null>(null);
+
+  const isGuest = !user;
+
+  useEffect(() => {
+    loadHistoryData();
+  }, [user?.id, activeTeamId]);
+
+  const loadHistoryData = async () => {
+    try {
+      setLoading(true);
+
+      const matchRepo = new MatchRepository();
+
+      // 1. Load LOCAL matches
+      const allLocalMatches = await matchRepo.getAllMatches();
+      let localMatches = allLocalMatches.filter((m) => !m.synced_to_server);
+
+      // 2. Load SERVER matches if user authenticated
+      let serverMatches: Match[] = [];
+      if (user) {
+        try {
+          const { data: serverMatchesData, error } = await supabase
+            .from("matches")
+            .select("*")
+            .eq("created_by", user.id)
+            .order("played_at", { ascending: false });
+
+          if (!error && serverMatchesData) {
+            serverMatches = serverMatchesData.map((sm, index) => ({
+              id: sm.local_match_id || -(index + 1),
+              team_a_name: sm.team_a,
+              team_b_name: sm.team_b,
+              team_mode: sm.team_mode,
+              status: "completed" as const,
+              match_format: sm.match_format,
+              period_duration: sm.period_duration,
+              club_id: sm.club_id,
+              team_id: sm.team_id,
+              current_period: 0,
+              time_elapsed: 0,
+              final_score_a: sm.final_score_a,
+              final_score_b: sm.final_score_b,
+              score_manually_adjusted: sm.score_manually_adjusted ? 1 : 0,
+              synced_to_server: true,
+              created_at: sm.played_at,
+              started_at: sm.played_at,
+              ended_at: sm.played_at,
+              last_updated: sm.created_at,
+            }));
+          }
+        } catch (error) {
+          console.error("Error loading server matches:", error);
+        }
+      }
+
+      // 3. Merge and filter
+      let allMatches = [...localMatches, ...serverMatches];
+
+      // Filter by team if selected
+      if (activeTeamId) {
+        allMatches = allMatches.filter((m) => m.team_id === activeTeamId);
+      }
+
+      // Sort by date (most recent first)
+      allMatches.sort(
+        (a, b) =>
+          new Date(b.ended_at || b.created_at).getTime() -
+          new Date(a.ended_at || a.created_at).getTime()
+      );
+
+      setMatches(allMatches);
+
+      // Load club and teams if authenticated
+      if (user) {
+        try {
+          const clubService = ServiceFactory.getClubService(supabase);
+          const clubs = await clubService.getUserMemberClubs(user.id);
+          const firstClub = clubs.length > 0 ? clubs[0] : null;
+          setClub(firstClub);
+
+          if (firstClub) {
+            const teamService = ServiceFactory.getTeamService(supabase);
+            const clubTeams = await teamService.getClubTeams(firstClub.id);
+            setTeams(clubTeams);
+          }
+        } catch (error) {
+          console.error("Error loading clubs/teams:", error);
+        }
+      }
+    } catch (error) {
+      console.error("Error loading history data:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const bgColor = isDark ? SLATE_COLORS[950] : SLATE_COLORS[50];
+  const surfaceColor = isDark ? SLATE_COLORS[900] : COMMON_COLORS.white;
+  const textPrimary = isDark ? COMMON_COLORS.white : SLATE_COLORS[900];
+  const textSecondary = isDark ? SLATE_COLORS[400] : SLATE_COLORS[500];
+  const borderColor = isDark ? SLATE_COLORS[800] : SLATE_COLORS[200];
+
+  if (loading) {
+    return (
+      <View
+        style={[
+          styles.container,
+          {
+            backgroundColor: bgColor,
+            justifyContent: "center",
+            alignItems: "center",
+          },
+        ]}
+      >
+        <ActivityIndicator size="large" color={BRAND_COLORS[500]} />
+      </View>
+    );
+  }
 
   return (
-    <View style={[styles.container, { backgroundColor: isDark ? SLATE_COLORS[950] : SLATE_COLORS[50] }]}>
-      <Text style={[styles.text, { color: isDark ? SLATE_COLORS[100] : SLATE_COLORS[900] }]}>
-        Historique
-      </Text>
-    </View>
+    <ScrollView style={[styles.container, { backgroundColor: bgColor }]}>
+      <View style={styles.content}>
+        {/* Title */}
+        <Text style={[styles.title, { color: textPrimary }]}>
+          Historique des matchs
+        </Text>
+
+        {/* Team Selector */}
+        {club && teams.length > 0 && (
+          <View
+            style={[
+              styles.teamSelector,
+              { backgroundColor: surfaceColor, borderColor },
+            ]}
+          >
+            <View style={styles.teamSelectorIcon}>
+              <JerseyIcon
+                width={16}
+                height={16}
+                primaryColor={BRAND_COLORS[500]}
+                secondaryColor={BRAND_COLORS[500]}
+                number=""
+              />
+            </View>
+            <Picker
+              selectedValue={activeTeamId || ""}
+              onValueChange={(value) => setActiveTeamId(value || null)}
+              style={[styles.picker, { color: textPrimary }]}
+              dropdownIconColor={textSecondary}
+            >
+              <Picker.Item label="Toutes les équipes" value="" />
+              {teams.map((team) => (
+                <Picker.Item
+                  key={team.id}
+                  label={`${team.name}`}
+                  value={team.id}
+                />
+              ))}
+            </Picker>
+          </View>
+        )}
+
+        {/* Matches List */}
+        {matches.length === 0 ? (
+          <View
+            style={[
+              styles.emptyState,
+              {
+                backgroundColor: isDark
+                  ? `${SLATE_COLORS[900]}80`
+                  : SLATE_COLORS[100],
+                borderColor,
+              },
+            ]}
+          >
+            <MaterialCommunityIcons
+              name="calendar-blank"
+              size={40}
+              color={textSecondary}
+              style={{ opacity: 0.5 }}
+            />
+            <Text style={[styles.emptyStateText, { color: textSecondary }]}>
+              Aucun match enregistré.
+            </Text>
+            {activeTeamId && (
+              <Text
+                style={[styles.emptyStateSubtext, { color: textSecondary }]}
+              >
+                Pour l'équipe sélectionnée
+              </Text>
+            )}
+          </View>
+        ) : (
+          <View style={styles.matchesList}>
+            {matches.map((match, index) => (
+              <MatchCard
+                key={`match-${match.id}-${index}`}
+                match={match}
+                isDark={isDark}
+                surfaceColor={surfaceColor}
+                textPrimary={textPrimary}
+                textSecondary={textSecondary}
+                borderColor={borderColor}
+                onPress={() => {
+                  // Navigate to match details (to be implemented)
+                  console.log("Navigate to match:", match.id);
+                }}
+              />
+            ))}
+          </View>
+        )}
+      </View>
+    </ScrollView>
+  );
+}
+
+interface MatchCardProps {
+  match: Match;
+  isDark: boolean;
+  surfaceColor: string;
+  textPrimary: string;
+  textSecondary: string;
+  borderColor: string;
+  onPress: () => void;
+}
+
+function MatchCard({
+  match,
+  isDark,
+  surfaceColor,
+  textPrimary,
+  textSecondary,
+  borderColor,
+  onPress,
+}: MatchCardProps) {
+  const scoreA = match.final_score_a || 0;
+  const scoreB = match.final_score_b || 0;
+  const isWin = scoreA > scoreB;
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString("fr-FR", {
+      weekday: "short",
+      day: "numeric",
+      month: "long",
+    });
+  };
+
+  // Determine location label - for now we don't have this info, so we skip it
+  // In the future, you could add a location field to the Match model
+
+  return (
+    <TouchableOpacity
+      style={[styles.matchCard, { backgroundColor: surfaceColor, borderColor }]}
+      onPress={onPress}
+      activeOpacity={0.7}
+    >
+      {/* Date and Location */}
+      <View style={styles.matchCardHeader}>
+        <View style={styles.matchCardInfo}>
+          <MaterialCommunityIcons
+            name="calendar"
+            size={12}
+            color={textSecondary}
+          />
+          <Text style={[styles.matchCardInfoText, { color: textSecondary }]}>
+            {formatDate(match.ended_at || match.created_at)}
+          </Text>
+        </View>
+      </View>
+
+      {/* Scores */}
+      <View style={styles.matchScores}>
+        {/* Team A (Us) */}
+        <View style={styles.matchTeamContainer}>
+          <Text style={[styles.matchScoreValue, { color: textPrimary }]}>
+            {scoreA}
+          </Text>
+          <Text
+            style={[styles.matchTeamLabel, { color: textSecondary }]}
+            numberOfLines={1}
+          >
+            {match.team_a_name || "NOUS"}
+          </Text>
+        </View>
+
+        {/* VS */}
+        <View
+          style={[
+            styles.matchVs,
+            {
+              backgroundColor: isDark ? SLATE_COLORS[950] : SLATE_COLORS[100],
+            },
+          ]}
+        >
+          <Text style={[styles.matchVsText, { color: textSecondary }]}>VS</Text>
+        </View>
+
+        {/* Team B (Opponent) */}
+        <View style={styles.matchTeamContainer}>
+          <Text
+            style={[
+              styles.matchScoreValue,
+              { color: isWin ? textSecondary : textPrimary },
+            ]}
+          >
+            {scoreB}
+          </Text>
+          <Text
+            style={[styles.matchTeamLabel, { color: textSecondary }]}
+            numberOfLines={1}
+          >
+            {match.team_b_name}
+          </Text>
+        </View>
+      </View>
+
+      {/* Result and Action */}
+      <View
+        style={[
+          styles.matchCardFooter,
+          { borderTopColor: isDark ? SLATE_COLORS[800] : SLATE_COLORS[100] },
+        ]}
+      >
+        <View
+          style={[
+            styles.matchResultBadge,
+            {
+              backgroundColor: isWin
+                ? isDark
+                  ? "#10b98133"
+                  : "#10b9811A"
+                : isDark
+                ? "#ef444433"
+                : "#ef44441A",
+            },
+          ]}
+        >
+          <Text
+            style={[
+              styles.matchResultText,
+              { color: isWin ? "#10b981" : "#ef4444" },
+            ]}
+          >
+            {isWin ? "VICTOIRE" : "DÉFAITE"}
+          </Text>
+        </View>
+
+        <TouchableOpacity style={styles.matchAnalyzeButton} onPress={onPress}>
+          <MaterialCommunityIcons
+            name="chart-bar"
+            size={14}
+            color={BRAND_COLORS[500]}
+          />
+          <Text style={[styles.matchAnalyzeText, { color: BRAND_COLORS[500] }]}>
+            ANALYSER
+          </Text>
+        </TouchableOpacity>
+      </View>
+    </TouchableOpacity>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
-  text: {
+  content: {
+    padding: 24,
+    paddingTop: 20,
+  },
+  title: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontWeight: "bold",
+    marginBottom: 24,
+  },
+  teamSelector: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingLeft: 12,
+    marginBottom: 24,
+  },
+  teamSelectorIcon: {
+    marginRight: 8,
+  },
+  picker: {
+    flex: 1,
+    height: 58,
+  },
+  emptyState: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 64,
+    paddingHorizontal: 32,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderStyle: "dashed",
+    marginTop: 80,
+  },
+  emptyStateText: {
+    fontSize: 16,
+    fontWeight: "600",
+    marginTop: 16,
+    textAlign: "center",
+  },
+  emptyStateSubtext: {
+    fontSize: 12,
+    marginTop: 8,
+    textAlign: "center",
+  },
+  matchesList: {
+    gap: 16,
+  },
+  matchCard: {
+    borderRadius: 16,
+    padding: 20,
+    borderWidth: 1,
+  },
+  matchCardHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 16,
+  },
+  matchCardInfo: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  matchCardInfoText: {
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  matchScores: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 12,
+  },
+  matchTeamContainer: {
+    flex: 1,
+    alignItems: "center",
+  },
+  matchScoreValue: {
+    fontSize: 28,
+    fontWeight: "900",
+  },
+  matchTeamLabel: {
+    fontSize: 12,
+    fontWeight: "bold",
+    marginTop: 4,
+    textAlign: "center",
+  },
+  matchVs: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 999,
+    marginHorizontal: 8,
+  },
+  matchVsText: {
+    fontSize: 12,
+    fontWeight: "bold",
+  },
+  matchCardFooter: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingTop: 12,
+    borderTopWidth: 1,
+  },
+  matchResultBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  matchResultText: {
+    fontSize: 12,
+    fontWeight: "bold",
+  },
+  matchAnalyzeButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  matchAnalyzeText: {
+    fontSize: 12,
+    fontWeight: "bold",
   },
 });

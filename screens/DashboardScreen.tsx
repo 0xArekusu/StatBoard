@@ -48,7 +48,7 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
   // Block hardware back button to prevent going back to auth screen
   useEffect(() => {
     const backHandler = BackHandler.addEventListener(
-      'hardwareBackPress',
+      "hardwareBackPress",
       () => {
         // Return true to prevent default behavior (going back)
         return true;
@@ -60,7 +60,7 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
 
   // Reload dashboard data when user changes (login/logout/switch account)
   useEffect(() => {
-    console.log('🔄 DashboardScreen: User changed, reloading dashboard', {
+    console.log("🔄 DashboardScreen: User changed, reloading dashboard", {
       userId: user?.id,
       isGuest,
     });
@@ -339,11 +339,7 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
                 },
               ]}
             >
-              <MaterialCommunityIcons
-                name="logout"
-                size={20}
-                color="#ef4444"
-              />
+              <MaterialCommunityIcons name="logout" size={20} color="#ef4444" />
             </TouchableOpacity>
 
             {club && club.logoUrl ? (
@@ -782,7 +778,7 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: 24,
-    paddingTop: 40,
+    paddingTop: 20,
   },
   header: {
     flexDirection: "row",
