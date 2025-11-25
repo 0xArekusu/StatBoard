@@ -2,9 +2,11 @@ import React from 'react';
 import { Alert } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../src/contexts/ThemeContext';
 import { useAuth } from '../src/contexts/AuthContext';
 import { SLATE_COLORS, BRAND_COLORS, COMMON_COLORS } from '../src/theme/clubDefaults';
+import { ROUTES } from '../constants/routes';
 
 import DashboardScreen from '../screens/DashboardScreen';
 import HistoryScreen from '../screens/HistoryScreen';
@@ -14,7 +16,8 @@ const Tab = createBottomTabNavigator();
 
 export default function MainTabNavigator() {
   const { isDark } = useTheme();
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
+  const navigation = useNavigation();
 
   const isGuest = !user;
 
@@ -26,10 +29,14 @@ export default function MainTabNavigator() {
         'Vous devez être connecté pour accéder à la section Club. Voulez-vous vous connecter maintenant ?',
         [
           { text: 'Annuler', style: 'cancel' },
-          { text: 'Se connecter', onPress: () => {
-            // Navigate to Auth screen
-            // This will be handled by the navigation prop
-          }},
+          {
+            text: 'Se connecter',
+            onPress: async () => {
+              // Sign out guest session and navigate to Auth screen
+              await signOut();
+              navigation.navigate(ROUTES.AUTH as never);
+            }
+          },
         ]
       );
     }

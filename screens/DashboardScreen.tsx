@@ -7,6 +7,7 @@ import {
   ScrollView,
   ActivityIndicator,
   Image,
+  BackHandler,
 } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
@@ -44,9 +45,35 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
   const userName =
     user?.user_metadata?.full_name || user?.email?.split("@")[0] || "Invité";
 
+  // Block hardware back button to prevent going back to auth screen
   useEffect(() => {
-    loadDashboardData();
+    const backHandler = BackHandler.addEventListener(
+      'hardwareBackPress',
+      () => {
+        // Return true to prevent default behavior (going back)
+        return true;
+      }
+    );
+
+    return () => backHandler.remove();
   }, []);
+
+  // Reload dashboard data when user changes (login/logout/switch account)
+  useEffect(() => {
+    console.log('🔄 DashboardScreen: User changed, reloading dashboard', {
+      userId: user?.id,
+      isGuest,
+    });
+
+    // Reset state when user changes
+    setClub(null);
+    setTeams([]);
+    setActiveTeamId(null);
+    setMatches([]);
+
+    // Load fresh data
+    loadDashboardData();
+  }, [user?.id]); // Re-run when user ID changes
 
   const loadDashboardData = async () => {
     try {
@@ -300,26 +327,24 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
               />
             </TouchableOpacity>
 
-            {!isGuest && (
-              <TouchableOpacity
-                onPress={handleSignOut}
-                style={[
-                  styles.iconButton,
-                  {
-                    backgroundColor: isDark
-                      ? SLATE_COLORS[800]
-                      : SLATE_COLORS[100],
-                    borderColor,
-                  },
-                ]}
-              >
-                <MaterialCommunityIcons
-                  name="logout"
-                  size={20}
-                  color={isDark ? "#ef4444" : "#ef4444"}
-                />
-              </TouchableOpacity>
-            )}
+            <TouchableOpacity
+              onPress={handleSignOut}
+              style={[
+                styles.iconButton,
+                {
+                  backgroundColor: isDark
+                    ? SLATE_COLORS[800]
+                    : SLATE_COLORS[100],
+                  borderColor,
+                },
+              ]}
+            >
+              <MaterialCommunityIcons
+                name="logout"
+                size={20}
+                color="#ef4444"
+              />
+            </TouchableOpacity>
 
             {club && club.logoUrl ? (
               <View
@@ -497,7 +522,8 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
                     },
                   ]}
                 >
-                  Mode Invité : Les matchs sont sauvegardés sur cet appareil.
+                  Mode Invité : Les matchs sont sauvegardés en local sur cet
+                  appareil.
                 </Text>
               </View>
             )}

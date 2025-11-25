@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -15,7 +15,7 @@ import {
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { useTheme } from "../src/contexts/ThemeContext";
 import { useAuth } from "../src/contexts/AuthContext";
 import { BRAND_COLORS, COMMON_COLORS, SLATE_COLORS } from "../src/theme";
@@ -40,6 +40,17 @@ export default function AuthScreen() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // Reset to landing view when screen comes into focus (e.g., after logout)
+  useFocusEffect(
+    React.useCallback(() => {
+      setView("landing");
+      setFullName("");
+      setEmail("");
+      setPassword("");
+      setConfirmPassword("");
+    }, [])
+  );
 
   // Guest login
   const handleGuestLogin = () => {
