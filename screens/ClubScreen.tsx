@@ -17,18 +17,20 @@ import Svg, {
   Circle,
   Path,
   Defs,
-  LinearGradient,
+  LinearGradient as SvgLinearGradient,
   Stop,
   Text as SvgText,
 } from "react-native-svg";
-import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { MaterialCommunityIcons, Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
+import { LinearGradient } from "expo-linear-gradient";
 import { useTheme } from "../src/contexts/ThemeContext";
 import { useAuth } from "../src/contexts/AuthContext";
 import {
   SLATE_COLORS,
   BRAND_COLORS,
   COMMON_COLORS,
+  COURT_PRESET_COLORS,
 } from "../src/theme/clubDefaults";
 import { ServiceFactory } from "../services/ServiceFactory";
 import { supabase } from "../src/config/supabase";
@@ -52,7 +54,7 @@ const TIER_LIMITS = {
   ULTIMATE: 999,
 };
 
-const TEAM_COLORS = [
+const CLUB_COLORS = [
   "#ef4444",
   "#f97316",
   "#f59e0b",
@@ -79,8 +81,6 @@ const COURT_COLORS = [
   "#f59e0b",
 ];
 
-const LINE_COLORS = ["#ffffff", "#000000", "#ef4444", "#3b82f6", "#facc15"];
-
 export default function ClubScreen({ navigation }: ClubScreenProps) {
   const { isDark } = useTheme();
   const { user } = useAuth();
@@ -98,11 +98,16 @@ export default function ClubScreen({ navigation }: ClubScreenProps) {
     gender: "M" as "M" | "F" | "MIXED",
     code: "",
     logoUri: null as string | null,
-    primaryColor: "#f97316",
-    secondaryColor: "#1e1b4b",
+    primaryColor: "#FF0000",
+    secondaryColor: "#0000FF",
     courtColor: "#c2410c",
     courtLinesColor: "#ffffff",
   });
+
+  const [showPrimaryPicker, setShowPrimaryPicker] = useState(false);
+  const [showSecondaryPicker, setShowSecondaryPicker] = useState(false);
+  const [isCustomPrimary, setIsCustomPrimary] = useState(false);
+  const [isCustomSecondary, setIsCustomSecondary] = useState(false);
 
   // Add Team Logic
   const [isAddingTeam, setIsAddingTeam] = useState(false);
@@ -797,73 +802,29 @@ export default function ClubScreen({ navigation }: ClubScreenProps) {
               />
             </View>
 
-            {/* Acronym & Gender */}
-            <View style={styles.formRow}>
-              <View style={styles.formCol1}>
-                <Text style={[styles.formLabel, { color: textSecondary }]}>
-                  SIGLE
-                </Text>
-                <TextInput
-                  placeholder="LAL"
-                  placeholderTextColor={textSecondary}
-                  value={formData.acronym}
-                  onChangeText={(value) =>
-                    setFormData({ ...formData, acronym: value.toUpperCase() })
-                  }
-                  maxLength={4}
-                  style={[
-                    styles.formInput,
-                    styles.acronymInput,
-                    {
-                      backgroundColor: surfaceColor,
-                      borderColor,
-                      color: textPrimary,
-                    },
-                  ]}
-                />
-              </View>
-              <View style={styles.formCol2}>
-                <Text style={[styles.formLabel, { color: textSecondary }]}>
-                  TYPE D'ÉQUIPE
-                </Text>
-                <View
-                  style={[
-                    styles.genderButtons,
-                    {
-                      backgroundColor: isDark
-                        ? SLATE_COLORS[800]
-                        : SLATE_COLORS[100],
-                    },
-                  ]}
-                >
-                  {(["M", "F", "MIXED"] as const).map((g) => (
-                    <TouchableOpacity
-                      key={g}
-                      onPress={() => setFormData({ ...formData, gender: g })}
-                      style={[
-                        styles.genderButton,
-                        formData.gender === g && {
-                          backgroundColor: surfaceColor,
-                        },
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          styles.genderButtonText,
-                          {
-                            color:
-                              formData.gender === g
-                                ? BRAND_COLORS[600]
-                                : textSecondary,
-                          },
-                        ]}
-                      >
-                        {g === "M" ? "Masc." : g === "F" ? "Fém." : "Mixte"}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </View>
+            {/* Acronym */}
+            <View style={styles.formSection}>
+              <Text style={[styles.formLabel, { color: textSecondary }]}>
+                SIGLE
+              </Text>
+              <TextInput
+                placeholder="LAL"
+                placeholderTextColor={textSecondary}
+                value={formData.acronym}
+                onChangeText={(value) =>
+                  setFormData({ ...formData, acronym: value.toUpperCase() })
+                }
+                maxLength={6}
+                style={[
+                  styles.formInput,
+                  styles.acronymInput,
+                  {
+                    backgroundColor: surfaceColor,
+                    borderColor,
+                    color: textPrimary,
+                  },
+                ]}
+              />
             </View>
 
             {/* Colors Section */}
@@ -887,52 +848,127 @@ export default function ClubScreen({ navigation }: ClubScreenProps) {
 
               {/* Primary Color */}
               <Text style={[styles.colorLabel, { color: textSecondary }]}>
-                Principale
+                Couleur principale
               </Text>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                style={styles.colorPicker}
-              >
-                {TEAM_COLORS.map((c) => (
+              <View style={styles.colorPickerRow}>
+                {CLUB_COLORS.map((color) => (
                   <TouchableOpacity
-                    key={`p-${c}`}
-                    onPress={() =>
-                      setFormData({ ...formData, primaryColor: c })
-                    }
+                    key={color}
                     style={[
-                      styles.colorButton,
-                      { backgroundColor: c },
-                      formData.primaryColor === c && styles.colorButtonSelected,
+                      styles.colorOption,
+                      { backgroundColor: color },
+                      formData.primaryColor === color &&
+                        styles.colorOptionSelected,
                     ]}
-                  />
+                    onPress={() => {
+                      setFormData({ ...formData, primaryColor: color });
+                      setIsCustomPrimary(false);
+                    }}
+                  >
+                    {formData.primaryColor === color && (
+                      <Ionicons
+                        name="checkmark"
+                        size={20}
+                        color={COMMON_COLORS.white}
+                      />
+                    )}
+                  </TouchableOpacity>
                 ))}
-              </ScrollView>
+                <TouchableOpacity
+                  style={styles.gradientContainer}
+                  onPress={() => setShowPrimaryPicker(true)}
+                >
+                  <View
+                    style={[
+                      styles.gradientBorder,
+                      isCustomPrimary && styles.gradientBorderSelected,
+                    ]}
+                  >
+                    <LinearGradient
+                      colors={[...COURT_PRESET_COLORS]}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                      style={styles.gradientButton}
+                    >
+                      {isCustomPrimary ? (
+                        <Ionicons
+                          name="checkmark"
+                          size={20}
+                          color={COMMON_COLORS.white}
+                        />
+                      ) : (
+                        <Ionicons
+                          name="color-palette"
+                          size={24}
+                          color={COMMON_COLORS.white}
+                        />
+                      )}
+                    </LinearGradient>
+                  </View>
+                </TouchableOpacity>
+              </View>
 
               {/* Secondary Color */}
               <Text style={[styles.colorLabel, { color: textSecondary }]}>
-                Secondaire
+                Couleur secondaire
               </Text>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                style={styles.colorPicker}
-              >
-                {TEAM_COLORS.map((c) => (
+              <View style={styles.colorPickerRow}>
+                {CLUB_COLORS.map((color) => (
                   <TouchableOpacity
-                    key={`s-${c}`}
-                    onPress={() =>
-                      setFormData({ ...formData, secondaryColor: c })
-                    }
+                    key={color}
                     style={[
-                      styles.colorButton,
-                      { backgroundColor: c },
-                      formData.secondaryColor === c &&
-                        styles.colorButtonSelected,
+                      styles.colorOption,
+                      { backgroundColor: color },
+                      formData.secondaryColor === color &&
+                        styles.colorOptionSelected,
                     ]}
-                  />
+                    onPress={() => {
+                      setFormData({ ...formData, secondaryColor: color });
+                      setIsCustomSecondary(false);
+                    }}
+                  >
+                    {formData.secondaryColor === color && (
+                      <Ionicons
+                        name="checkmark"
+                        size={20}
+                        color={COMMON_COLORS.white}
+                      />
+                    )}
+                  </TouchableOpacity>
                 ))}
-              </ScrollView>
+                <TouchableOpacity
+                  style={styles.gradientContainer}
+                  onPress={() => setShowSecondaryPicker(true)}
+                >
+                  <View
+                    style={[
+                      styles.gradientBorder,
+                      isCustomSecondary && styles.gradientBorderSelected,
+                    ]}
+                  >
+                    <LinearGradient
+                      colors={[...COURT_PRESET_COLORS]}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                      style={styles.gradientButton}
+                    >
+                      {isCustomSecondary ? (
+                        <Ionicons
+                          name="checkmark"
+                          size={20}
+                          color={COMMON_COLORS.white}
+                        />
+                      ) : (
+                        <Ionicons
+                          name="color-palette"
+                          size={24}
+                          color={COMMON_COLORS.white}
+                        />
+                      )}
+                    </LinearGradient>
+                  </View>
+                </TouchableOpacity>
+              </View>
             </View>
 
             {/* Court Customization */}
@@ -957,11 +993,7 @@ export default function ClubScreen({ navigation }: ClubScreenProps) {
               <Text style={[styles.colorLabel, { color: textSecondary }]}>
                 Couleur du Parquet
               </Text>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                style={styles.colorPicker}
-              >
+              <View style={styles.colorPickerRow}>
                 {COURT_COLORS.map((c) => (
                   <TouchableOpacity
                     key={`c-${c}`}
@@ -969,35 +1001,31 @@ export default function ClubScreen({ navigation }: ClubScreenProps) {
                     style={[
                       styles.courtColorButton,
                       { backgroundColor: c },
-                      formData.courtColor === c && styles.colorButtonSelected,
+                      formData.courtColor === c && styles.colorOptionSelected,
                     ]}
                   />
                 ))}
-              </ScrollView>
+              </View>
 
               <Text style={[styles.colorLabel, { color: textSecondary }]}>
                 Couleur des Lignes
               </Text>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                style={styles.colorPicker}
-              >
-                {LINE_COLORS.map((c) => (
+              <View style={styles.colorPickerRow}>
+                {CLUB_COLORS.map((c) => (
                   <TouchableOpacity
                     key={`l-${c}`}
                     onPress={() =>
                       setFormData({ ...formData, courtLinesColor: c })
                     }
                     style={[
-                      styles.colorButton,
+                      styles.colorOption,
                       { backgroundColor: c },
                       formData.courtLinesColor === c &&
-                        styles.colorButtonSelected,
+                        styles.colorOptionSelected,
                     ]}
                   />
                 ))}
-              </ScrollView>
+              </View>
             </View>
 
             {/* Court Preview */}
@@ -1263,10 +1291,10 @@ function CourtPreview({ courtColor, linesColor, acronym }: CourtPreviewProps) {
 
       {/* Gradient Overlay */}
       <Defs>
-        <LinearGradient id="woodGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+        <SvgLinearGradient id="woodGradient" x1="0%" y1="0%" x2="0%" y2="100%">
           <Stop offset="0%" stopColor="#000" stopOpacity="0" />
           <Stop offset="100%" stopColor="#000" stopOpacity="0.2" />
-        </LinearGradient>
+        </SvgLinearGradient>
       </Defs>
       <Rect
         x="0"
@@ -1602,25 +1630,16 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   acronymInput: {
-    textAlign: "center",
     textTransform: "uppercase",
     letterSpacing: 2,
   },
-  genderButtons: {
-    flexDirection: "row",
-    padding: 4,
+  pickerContainer: {
+    borderWidth: 1,
     borderRadius: 12,
+    overflow: "hidden",
+  },
+  picker: {
     height: 58,
-  },
-  genderButton: {
-    flex: 1,
-    borderRadius: 8,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  genderButtonText: {
-    fontSize: 12,
-    fontWeight: "bold",
   },
   borderTop: {
     paddingTop: 24,
@@ -1637,27 +1656,50 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
   colorLabel: {
-    fontSize: 12,
-    fontWeight: "bold",
-    marginTop: 8,
+    fontSize: 14,
+    fontWeight: "600",
     marginBottom: 8,
+    marginTop: 10,
   },
-  colorPicker: {
+  colorPickerRow: {
     flexDirection: "row",
-    gap: 12,
-    marginBottom: 16,
+    gap: 10,
+    marginTop: 5,
   },
-  colorButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    marginRight: 12,
-    borderWidth: 2,
+  colorOption: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 3,
     borderColor: "transparent",
   },
-  colorButtonSelected: {
-    borderColor: SLATE_COLORS[900],
-    transform: [{ scale: 1.1 }],
+  colorOptionSelected: {
+    borderColor: "#333",
+  },
+  gradientContainer: {
+    width: 50,
+    height: 50,
+  },
+  gradientBorder: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    borderWidth: 3,
+    borderColor: "transparent",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  gradientBorderSelected: {
+    borderColor: "#333",
+  },
+  gradientButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: "center",
+    alignItems: "center",
   },
   courtColorButton: {
     width: 64,
