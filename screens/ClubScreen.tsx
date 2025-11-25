@@ -106,8 +106,12 @@ export default function ClubScreen({ navigation }: ClubScreenProps) {
 
   const [showPrimaryPicker, setShowPrimaryPicker] = useState(false);
   const [showSecondaryPicker, setShowSecondaryPicker] = useState(false);
+  const [showCourtPicker, setShowCourtPicker] = useState(false);
+  const [showCourtLinesPicker, setShowCourtLinesPicker] = useState(false);
   const [isCustomPrimary, setIsCustomPrimary] = useState(false);
   const [isCustomSecondary, setIsCustomSecondary] = useState(false);
+  const [isCustomCourt, setIsCustomCourt] = useState(false);
+  const [isCustomCourtLines, setIsCustomCourtLines] = useState(false);
 
   // Add Team Logic
   const [isAddingTeam, setIsAddingTeam] = useState(false);
@@ -851,6 +855,25 @@ export default function ClubScreen({ navigation }: ClubScreenProps) {
                 Couleur principale
               </Text>
               <View style={styles.colorPickerRow}>
+                <TouchableOpacity
+                  style={[
+                    styles.colorOption,
+                    styles.pickerButton,
+                    { borderColor: borderColor },
+                    isCustomPrimary && styles.colorOptionSelected,
+                  ]}
+                  onPress={() => setShowPrimaryPicker(true)}
+                >
+                  {isCustomPrimary ? (
+                    <Ionicons
+                      name="checkmark"
+                      size={20}
+                      color={COMMON_COLORS.white}
+                    />
+                  ) : (
+                    <Ionicons name="add" size={28} color={textSecondary} />
+                  )}
+                </TouchableOpacity>
                 {CLUB_COLORS.map((color) => (
                   <TouchableOpacity
                     key={color}
@@ -874,38 +897,6 @@ export default function ClubScreen({ navigation }: ClubScreenProps) {
                     )}
                   </TouchableOpacity>
                 ))}
-                <TouchableOpacity
-                  style={styles.gradientContainer}
-                  onPress={() => setShowPrimaryPicker(true)}
-                >
-                  <View
-                    style={[
-                      styles.gradientBorder,
-                      isCustomPrimary && styles.gradientBorderSelected,
-                    ]}
-                  >
-                    <LinearGradient
-                      colors={[...COURT_PRESET_COLORS]}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 1 }}
-                      style={styles.gradientButton}
-                    >
-                      {isCustomPrimary ? (
-                        <Ionicons
-                          name="checkmark"
-                          size={20}
-                          color={COMMON_COLORS.white}
-                        />
-                      ) : (
-                        <Ionicons
-                          name="color-palette"
-                          size={24}
-                          color={COMMON_COLORS.white}
-                        />
-                      )}
-                    </LinearGradient>
-                  </View>
-                </TouchableOpacity>
               </View>
 
               {/* Secondary Color */}
@@ -913,6 +904,25 @@ export default function ClubScreen({ navigation }: ClubScreenProps) {
                 Couleur secondaire
               </Text>
               <View style={styles.colorPickerRow}>
+                <TouchableOpacity
+                  style={[
+                    styles.colorOption,
+                    styles.pickerButton,
+                    { borderColor: borderColor },
+                    isCustomSecondary && styles.colorOptionSelected,
+                  ]}
+                  onPress={() => setShowSecondaryPicker(true)}
+                >
+                  {isCustomSecondary ? (
+                    <Ionicons
+                      name="checkmark"
+                      size={20}
+                      color={COMMON_COLORS.white}
+                    />
+                  ) : (
+                    <Ionicons name="add" size={28} color={textSecondary} />
+                  )}
+                </TouchableOpacity>
                 {CLUB_COLORS.map((color) => (
                   <TouchableOpacity
                     key={color}
@@ -936,38 +946,6 @@ export default function ClubScreen({ navigation }: ClubScreenProps) {
                     )}
                   </TouchableOpacity>
                 ))}
-                <TouchableOpacity
-                  style={styles.gradientContainer}
-                  onPress={() => setShowSecondaryPicker(true)}
-                >
-                  <View
-                    style={[
-                      styles.gradientBorder,
-                      isCustomSecondary && styles.gradientBorderSelected,
-                    ]}
-                  >
-                    <LinearGradient
-                      colors={[...COURT_PRESET_COLORS]}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 1 }}
-                      style={styles.gradientButton}
-                    >
-                      {isCustomSecondary ? (
-                        <Ionicons
-                          name="checkmark"
-                          size={20}
-                          color={COMMON_COLORS.white}
-                        />
-                      ) : (
-                        <Ionicons
-                          name="color-palette"
-                          size={24}
-                          color={COMMON_COLORS.white}
-                        />
-                      )}
-                    </LinearGradient>
-                  </View>
-                </TouchableOpacity>
               </View>
             </View>
 
@@ -994,10 +972,32 @@ export default function ClubScreen({ navigation }: ClubScreenProps) {
                 Couleur du Parquet
               </Text>
               <View style={styles.colorPickerRow}>
+                <TouchableOpacity
+                  style={[
+                    styles.courtColorButton,
+                    styles.pickerButton,
+                    { borderColor: borderColor },
+                    isCustomCourt && styles.colorOptionSelected,
+                  ]}
+                  onPress={() => setShowCourtPicker(true)}
+                >
+                  {isCustomCourt ? (
+                    <Ionicons
+                      name="checkmark"
+                      size={20}
+                      color={COMMON_COLORS.white}
+                    />
+                  ) : (
+                    <Ionicons name="add" size={28} color={textSecondary} />
+                  )}
+                </TouchableOpacity>
                 {COURT_COLORS.map((c) => (
                   <TouchableOpacity
                     key={`c-${c}`}
-                    onPress={() => setFormData({ ...formData, courtColor: c })}
+                    onPress={() => {
+                      setFormData({ ...formData, courtColor: c });
+                      setIsCustomCourt(false);
+                    }}
                     style={[
                       styles.courtColorButton,
                       { backgroundColor: c },
@@ -1011,12 +1011,32 @@ export default function ClubScreen({ navigation }: ClubScreenProps) {
                 Couleur des Lignes
               </Text>
               <View style={styles.colorPickerRow}>
+                <TouchableOpacity
+                  style={[
+                    styles.colorOption,
+                    styles.pickerButton,
+                    { borderColor: borderColor },
+                    isCustomCourtLines && styles.colorOptionSelected,
+                  ]}
+                  onPress={() => setShowCourtLinesPicker(true)}
+                >
+                  {isCustomCourtLines ? (
+                    <Ionicons
+                      name="checkmark"
+                      size={20}
+                      color={COMMON_COLORS.white}
+                    />
+                  ) : (
+                    <Ionicons name="add" size={28} color={textSecondary} />
+                  )}
+                </TouchableOpacity>
                 {CLUB_COLORS.map((c) => (
                   <TouchableOpacity
                     key={`l-${c}`}
-                    onPress={() =>
-                      setFormData({ ...formData, courtLinesColor: c })
-                    }
+                    onPress={() => {
+                      setFormData({ ...formData, courtLinesColor: c });
+                      setIsCustomCourtLines(false);
+                    }}
                     style={[
                       styles.colorOption,
                       { backgroundColor: c },
@@ -1678,28 +1698,10 @@ const styles = StyleSheet.create({
   colorOptionSelected: {
     borderColor: "#333",
   },
-  gradientContainer: {
-    width: 50,
-    height: 50,
-  },
-  gradientBorder: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    borderWidth: 3,
-    borderColor: "transparent",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  gradientBorderSelected: {
-    borderColor: "#333",
-  },
-  gradientButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    justifyContent: "center",
-    alignItems: "center",
+  pickerButton: {
+    backgroundColor: "transparent",
+    borderWidth: 2,
+    borderStyle: "dashed",
   },
   courtColorButton: {
     width: 64,
@@ -1708,6 +1710,8 @@ const styles = StyleSheet.create({
     marginRight: 12,
     borderWidth: 2,
     borderColor: "transparent",
+    justifyContent: "center",
+    alignItems: "center",
   },
   courtPreview: {
     width: "100%",
