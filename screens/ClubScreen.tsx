@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -8,25 +8,39 @@ import {
   TextInput,
   Alert,
   ActivityIndicator,
-} from 'react-native';
-import Svg, { Rect, G, Line, Circle, Path, Defs, LinearGradient, Stop, Text as SvgText } from 'react-native-svg';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useTheme } from '../src/contexts/ThemeContext';
-import { useAuth } from '../src/contexts/AuthContext';
-import { SLATE_COLORS, BRAND_COLORS, COMMON_COLORS } from '../src/theme/clubDefaults';
-import { ServiceFactory } from '../services/ServiceFactory';
-import { supabase } from '../src/config/supabase';
-import { Club } from '../models/Club';
-import { Team } from '../models/Team';
-import Logo from '../components/icons/Logo';
+} from "react-native";
+import Svg, {
+  Rect,
+  G,
+  Line,
+  Circle,
+  Path,
+  Defs,
+  LinearGradient,
+  Stop,
+  Text as SvgText,
+} from "react-native-svg";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { useTheme } from "../src/contexts/ThemeContext";
+import { useAuth } from "../src/contexts/AuthContext";
+import {
+  SLATE_COLORS,
+  BRAND_COLORS,
+  COMMON_COLORS,
+} from "../src/theme/clubDefaults";
+import { ServiceFactory } from "../services/ServiceFactory";
+import { supabase } from "../src/config/supabase";
+import { Club } from "../models/Club";
+import { Team } from "../models/Team";
+import Logo from "../components/icons/Logo";
 
 interface ClubScreenProps {
   navigation: any;
 }
 
-type TabType = 'create' | 'join';
-type SubTabType = 'info' | 'subscription';
-type SubscriptionTier = 'FREE' | 'BASIC' | 'PRO' | 'ULTIMATE';
+type TabType = "create" | "join";
+type SubTabType = "info" | "subscription";
+type SubscriptionTier = "FREE" | "BASIC" | "PRO" | "ULTIMATE";
 
 const TIER_LIMITS = {
   FREE: 1,
@@ -36,15 +50,33 @@ const TIER_LIMITS = {
 };
 
 const TEAM_COLORS = [
-  '#ef4444', '#f97316', '#f59e0b', '#84cc16', '#22c55e', '#06b6d4',
-  '#3b82f6', '#6366f1', '#a855f7', '#ec4899', '#1e293b', '#000000', '#ffffff',
+  "#ef4444",
+  "#f97316",
+  "#f59e0b",
+  "#84cc16",
+  "#22c55e",
+  "#06b6d4",
+  "#3b82f6",
+  "#6366f1",
+  "#a855f7",
+  "#ec4899",
+  "#1e293b",
+  "#000000",
+  "#ffffff",
 ];
 
 const COURT_COLORS = [
-  '#c2410c', '#eab308', '#1e1b4b', '#15803d', '#334155', '#7f1d1d', '#d4d4d4', '#f59e0b',
+  "#c2410c",
+  "#eab308",
+  "#1e1b4b",
+  "#15803d",
+  "#334155",
+  "#7f1d1d",
+  "#d4d4d4",
+  "#f59e0b",
 ];
 
-const LINE_COLORS = ['#ffffff', '#000000', '#ef4444', '#3b82f6', '#facc15'];
+const LINE_COLORS = ["#ffffff", "#000000", "#ef4444", "#3b82f6", "#facc15"];
 
 export default function ClubScreen({ navigation }: ClubScreenProps) {
   const { isDark } = useTheme();
@@ -53,26 +85,26 @@ export default function ClubScreen({ navigation }: ClubScreenProps) {
   const [loading, setLoading] = useState(true);
   const [club, setClub] = useState<Club | null>(null);
   const [teams, setTeams] = useState<Team[]>([]);
-  const [activeTab, setActiveTab] = useState<TabType>('create');
-  const [subTab, setSubTab] = useState<SubTabType>('info');
+  const [activeTab, setActiveTab] = useState<TabType>("create");
+  const [subTab, setSubTab] = useState<SubTabType>("info");
 
   // Create Club Form
   const [formData, setFormData] = useState({
-    name: '',
-    acronym: '',
-    gender: 'M' as 'M' | 'F' | 'MIXED',
-    code: '',
-    logoUrl: '',
-    primaryColor: '#f97316',
-    secondaryColor: '#1e1b4b',
-    courtColor: '#c2410c',
-    courtLinesColor: '#ffffff',
+    name: "",
+    acronym: "",
+    gender: "M" as "M" | "F" | "MIXED",
+    code: "",
+    logoUrl: "",
+    primaryColor: "#f97316",
+    secondaryColor: "#1e1b4b",
+    courtColor: "#c2410c",
+    courtLinesColor: "#ffffff",
   });
 
   // Add Team Logic
   const [isAddingTeam, setIsAddingTeam] = useState(false);
-  const [newTeamName, setNewTeamName] = useState('');
-  const [newTeamCategory, setNewTeamCategory] = useState('');
+  const [newTeamName, setNewTeamName] = useState("");
+  const [newTeamCategory, setNewTeamCategory] = useState("");
 
   const isGuest = !user;
 
@@ -99,14 +131,15 @@ export default function ClubScreen({ navigation }: ClubScreenProps) {
         setTeams(clubTeams);
       }
     } catch (error) {
-      console.error('Error loading club data:', error);
+      console.error("Error loading club data:", error);
     } finally {
       setLoading(false);
     }
   };
 
   const currentTeamCount = teams.length;
-  const currentTier: SubscriptionTier = (club?.subscriptionTier as SubscriptionTier) || 'FREE';
+  const currentTier: SubscriptionTier =
+    (club?.subscriptionTier as SubscriptionTier) || "FREE";
   const maxTeams = TIER_LIMITS[currentTier];
   const isLimitReached = currentTeamCount >= maxTeams;
   const isOwner = club?.ownerId === user?.id;
@@ -125,7 +158,7 @@ export default function ClubScreen({ navigation }: ClubScreenProps) {
       const teamService = ServiceFactory.getTeamService(supabase);
       await teamService.createTeam({
         name: newTeamName,
-        category: newTeamCategory || 'Général',
+        category: newTeamCategory || "Général",
         clubId: club.id,
       });
 
@@ -133,59 +166,60 @@ export default function ClubScreen({ navigation }: ClubScreenProps) {
       await loadClubData();
 
       setIsAddingTeam(false);
-      setNewTeamName('');
-      setNewTeamCategory('');
+      setNewTeamName("");
+      setNewTeamCategory("");
     } catch (error) {
-      console.error('Error adding team:', error);
-      Alert.alert('Erreur', 'Impossible de créer l\'équipe');
+      console.error("Error adding team:", error);
+      Alert.alert("Erreur", "Impossible de créer l'équipe");
     }
   };
 
   const handleUpgrade = (tier: SubscriptionTier) => {
     if (!club) return;
-    Alert.alert(
-      'Upgrade',
-      `Confirmer le passage à l'offre ${tier} ?`,
-      [
-        { text: 'Annuler', style: 'cancel' },
-        {
-          text: 'Confirmer',
-          onPress: () => {
-            // TODO: Implement payment process
-            Alert.alert('Succès', 'Abonnement mis à jour avec succès !');
-            setSubTab('info');
-          }
-        }
-      ]
-    );
+    Alert.alert("Upgrade", `Confirmer le passage à l'offre ${tier} ?`, [
+      { text: "Annuler", style: "cancel" },
+      {
+        text: "Confirmer",
+        onPress: () => {
+          // TODO: Implement payment process
+          Alert.alert("Succès", "Abonnement mis à jour avec succès !");
+          setSubTab("info");
+        },
+      },
+    ]);
   };
 
   const handleSubmit = async () => {
-    if (activeTab === 'create') {
+    if (activeTab === "create") {
       if (!formData.name || !user) return;
 
       try {
         const clubService = ServiceFactory.getClubService(supabase);
-        const code = (formData.name.substring(0, 3) + Math.floor(Math.random() * 1000)).toUpperCase();
+        const code = (
+          formData.name.substring(0, 3) + Math.floor(Math.random() * 1000)
+        ).toUpperCase();
 
         await clubService.createClub({
           name: formData.name,
           code,
           ownerId: user.id,
-          logoUrl: formData.logoUrl || '',
-          subscriptionTier: 'FREE',
+          logoUrl: formData.logoUrl || "",
+          subscriptionTier: "FREE",
         });
 
         await loadClubData();
-        Alert.alert('Succès', 'Club créé avec succès !');
+        Alert.alert("Succès", "Club créé avec succès !");
       } catch (error) {
-        console.error('Error creating club:', error);
-        Alert.alert('Erreur', 'Impossible de créer le club');
+        console.error("Error creating club:", error);
+        Alert.alert("Erreur", "Impossible de créer le club");
       }
     } else {
       // Join logic
       if (!formData.code) return;
-      Alert.alert('Info', `Tentative de rejoindre le club avec le code: ${formData.code}`);
+      Alert.alert(
+        "Info",
+        `Tentative de rejoindre le club avec le code: ${formData.code}`
+      );
     }
   };
 
@@ -197,7 +231,16 @@ export default function ClubScreen({ navigation }: ClubScreenProps) {
 
   if (loading) {
     return (
-      <View style={[styles.container, { backgroundColor: bgColor, justifyContent: 'center', alignItems: 'center' }]}>
+      <View
+        style={[
+          styles.container,
+          {
+            backgroundColor: bgColor,
+            justifyContent: "center",
+            alignItems: "center",
+          },
+        ]}
+      >
         <ActivityIndicator size="large" color={BRAND_COLORS[500]} />
       </View>
     );
@@ -213,73 +256,165 @@ export default function ClubScreen({ navigation }: ClubScreenProps) {
             <Text style={[styles.title, { color: textPrimary }]}>Mon Club</Text>
             {isOwner && (
               <TouchableOpacity
-                onPress={() => setSubTab(subTab === 'subscription' ? 'info' : 'subscription')}
+                onPress={() =>
+                  setSubTab(subTab === "subscription" ? "info" : "subscription")
+                }
                 style={[
                   styles.headerButton,
                   {
-                    backgroundColor: subTab === 'subscription' ? BRAND_COLORS[600] : surfaceColor,
-                    borderColor: subTab === 'subscription' ? BRAND_COLORS[500] : borderColor,
-                  }
+                    backgroundColor:
+                      subTab === "subscription"
+                        ? BRAND_COLORS[600]
+                        : surfaceColor,
+                    borderColor:
+                      subTab === "subscription"
+                        ? BRAND_COLORS[500]
+                        : borderColor,
+                  },
                 ]}
               >
                 <MaterialCommunityIcons
-                  name={currentTier === 'ULTIMATE' ? 'crown' : 'star'}
+                  name={currentTier === "ULTIMATE" ? "crown" : "star"}
                   size={12}
-                  color={subTab === 'subscription' ? COMMON_COLORS.white : BRAND_COLORS[500]}
+                  color={
+                    subTab === "subscription"
+                      ? COMMON_COLORS.white
+                      : BRAND_COLORS[500]
+                  }
                 />
-                <Text style={[
-                  styles.headerButtonText,
-                  { color: subTab === 'subscription' ? COMMON_COLORS.white : textSecondary }
-                ]}>
-                  {subTab === 'subscription' ? 'Fermer' : 'Offre'}
+                <Text
+                  style={[
+                    styles.headerButtonText,
+                    {
+                      color:
+                        subTab === "subscription"
+                          ? COMMON_COLORS.white
+                          : textSecondary,
+                    },
+                  ]}
+                >
+                  {subTab === "subscription" ? "Fermer" : "Offre"}
                 </Text>
               </TouchableOpacity>
             )}
           </View>
 
           {/* SUBSCRIPTION VIEW */}
-          {subTab === 'subscription' ? (
+          {subTab === "subscription" ? (
             <View style={styles.subscriptionView}>
               <Text style={[styles.subscriptionTitle, { color: textPrimary }]}>
                 Gérez votre offre
               </Text>
-              <Text style={[styles.subscriptionSubtitle, { color: textSecondary }]}>
+              <Text
+                style={[styles.subscriptionSubtitle, { color: textSecondary }]}
+              >
                 Passez au niveau supérieur pour ajouter plus d'équipes.
               </Text>
 
               <View style={styles.pricingCards}>
-                <PricingCard tier="FREE" currentTier={currentTier} price="0€" limit={TIER_LIMITS.FREE} isDark={isDark} onSelect={handleUpgrade} />
-                <PricingCard tier="BASIC" currentTier={currentTier} price="9.99€" limit={TIER_LIMITS.BASIC} isDark={isDark} onSelect={handleUpgrade} />
-                <PricingCard tier="PRO" currentTier={currentTier} price="24.99€" limit={TIER_LIMITS.PRO} isDark={isDark} isPopular onSelect={handleUpgrade} />
-                <PricingCard tier="ULTIMATE" currentTier={currentTier} price="49.99€" limit={TIER_LIMITS.ULTIMATE} isDark={isDark} onSelect={handleUpgrade} />
+                <PricingCard
+                  tier="FREE"
+                  currentTier={currentTier}
+                  price="0€"
+                  limit={TIER_LIMITS.FREE}
+                  isDark={isDark}
+                  onSelect={handleUpgrade}
+                />
+                <PricingCard
+                  tier="BASIC"
+                  currentTier={currentTier}
+                  price="9.99€"
+                  limit={TIER_LIMITS.BASIC}
+                  isDark={isDark}
+                  onSelect={handleUpgrade}
+                />
+                <PricingCard
+                  tier="PRO"
+                  currentTier={currentTier}
+                  price="24.99€"
+                  limit={TIER_LIMITS.PRO}
+                  isDark={isDark}
+                  isPopular
+                  onSelect={handleUpgrade}
+                />
+                <PricingCard
+                  tier="ULTIMATE"
+                  currentTier={currentTier}
+                  price="49.99€"
+                  limit={TIER_LIMITS.ULTIMATE}
+                  isDark={isDark}
+                  onSelect={handleUpgrade}
+                />
               </View>
             </View>
           ) : (
             <>
               {/* Club Info Card */}
-              <View style={[styles.clubCard, { backgroundColor: surfaceColor, borderColor }]}>
-                <View style={[styles.clubLogo, {
-                  backgroundColor: isDark ? SLATE_COLORS[700] : SLATE_COLORS[100]
-                }]}>
+              <View
+                style={[
+                  styles.clubCard,
+                  { backgroundColor: surfaceColor, borderColor },
+                ]}
+              >
+                <View
+                  style={[
+                    styles.clubLogo,
+                    {
+                      backgroundColor: isDark
+                        ? SLATE_COLORS[700]
+                        : SLATE_COLORS[100],
+                    },
+                  ]}
+                >
                   {club.logoUrl ? (
                     <Text style={{ color: textPrimary }}>IMG</Text>
                   ) : (
-                    <Logo width={40} height={40} primaryColor={BRAND_COLORS[500]} secondaryColor={COMMON_COLORS.white} />
+                    <Logo
+                      width={40}
+                      height={40}
+                      primaryColor={BRAND_COLORS[500]}
+                      secondaryColor={COMMON_COLORS.white}
+                    />
                   )}
                 </View>
 
-                <Text style={[styles.clubName, { color: textPrimary }]}>{club.name}</Text>
+                <Text style={[styles.clubName, { color: textPrimary }]}>
+                  {club.name}
+                </Text>
 
                 {isOwner && (
-                  <View style={[styles.clubCodeCard, {
-                    backgroundColor: isDark ? SLATE_COLORS[900] : SLATE_COLORS[50],
-                    borderColor: isDark ? SLATE_COLORS[700] : SLATE_COLORS[100],
-                  }]}>
-                    <Text style={[styles.clubCodeLabel, { color: textSecondary }]}>CODE CLUB</Text>
+                  <View
+                    style={[
+                      styles.clubCodeCard,
+                      {
+                        backgroundColor: isDark
+                          ? SLATE_COLORS[900]
+                          : SLATE_COLORS[50],
+                        borderColor: isDark
+                          ? SLATE_COLORS[700]
+                          : SLATE_COLORS[100],
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[styles.clubCodeLabel, { color: textSecondary }]}
+                    >
+                      CODE CLUB
+                    </Text>
                     <View style={styles.clubCodeRow}>
-                      <Text style={[styles.clubCodeValue, { color: textPrimary }]}>{club.code}</Text>
-                      <TouchableOpacity onPress={() => Alert.alert('Copié', club.code)}>
-                        <MaterialCommunityIcons name="content-copy" size={14} color={BRAND_COLORS[500]} />
+                      <Text
+                        style={[styles.clubCodeValue, { color: textPrimary }]}
+                      >
+                        {club.code}
+                      </Text>
+                      <TouchableOpacity
+                        onPress={() => Alert.alert("Copié", club.code)}
+                      >
+                        <MaterialCommunityIcons
+                          name="content-copy"
+                          size={14}
+                          color={BRAND_COLORS[500]}
+                        />
                       </TouchableOpacity>
                     </View>
                   </View>
@@ -288,30 +423,58 @@ export default function ClubScreen({ navigation }: ClubScreenProps) {
                 {/* Team Usage Bar */}
                 <View style={styles.usageBar}>
                   <View style={styles.usageBarHeader}>
-                    <Text style={[styles.usageBarLabel, { color: textSecondary }]}>
+                    <Text
+                      style={[styles.usageBarLabel, { color: textSecondary }]}
+                    >
                       Abonnement {currentTier}
                     </Text>
-                    <Text style={[
-                      styles.usageBarValue,
-                      { color: isLimitReached ? '#ef4444' : BRAND_COLORS[600] }
-                    ]}>
-                      {currentTeamCount} / {maxTeams > 100 ? '∞' : maxTeams} Équipes
+                    <Text
+                      style={[
+                        styles.usageBarValue,
+                        {
+                          color: isLimitReached ? "#ef4444" : BRAND_COLORS[600],
+                        },
+                      ]}
+                    >
+                      {currentTeamCount} / {maxTeams > 100 ? "∞" : maxTeams}{" "}
+                      Équipes
                     </Text>
                   </View>
-                  <View style={[styles.usageBarTrack, {
-                    backgroundColor: isDark ? SLATE_COLORS[700] : SLATE_COLORS[100]
-                  }]}>
-                    <View style={[
-                      styles.usageBarFill,
+                  <View
+                    style={[
+                      styles.usageBarTrack,
                       {
-                        backgroundColor: isLimitReached ? '#ef4444' : BRAND_COLORS[500],
-                        width: `${Math.min(100, (currentTeamCount / (maxTeams > 100 ? 20 : maxTeams)) * 100)}%`
-                      }
-                    ]} />
+                        backgroundColor: isDark
+                          ? SLATE_COLORS[700]
+                          : SLATE_COLORS[100],
+                      },
+                    ]}
+                  >
+                    <View
+                      style={[
+                        styles.usageBarFill,
+                        {
+                          backgroundColor: isLimitReached
+                            ? "#ef4444"
+                            : BRAND_COLORS[500],
+                          width: `${Math.min(
+                            100,
+                            (currentTeamCount /
+                              (maxTeams > 100 ? 20 : maxTeams)) *
+                              100
+                          )}%`,
+                        },
+                      ]}
+                    />
                   </View>
                   {isLimitReached && isOwner && (
-                    <TouchableOpacity onPress={() => setSubTab('subscription')}>
-                      <Text style={[styles.upgradeLink, { color: BRAND_COLORS[600] }]}>
+                    <TouchableOpacity onPress={() => setSubTab("subscription")}>
+                      <Text
+                        style={[
+                          styles.upgradeLink,
+                          { color: BRAND_COLORS[600] },
+                        ]}
+                      >
                         Augmenter la limite
                       </Text>
                     </TouchableOpacity>
@@ -322,13 +485,17 @@ export default function ClubScreen({ navigation }: ClubScreenProps) {
               {/* Teams Section */}
               <View style={styles.teamsSection}>
                 <View style={styles.teamsSectionHeader}>
-                  <Text style={[styles.teamsSectionTitle, { color: textPrimary }]}>Nos Équipes</Text>
+                  <Text
+                    style={[styles.teamsSectionTitle, { color: textPrimary }]}
+                  >
+                    Nos Équipes
+                  </Text>
                   {!isAddingTeam && (
                     <TouchableOpacity
                       onPress={() => {
                         if (isLimitReached) {
                           Alert.alert(
-                            'Limite atteinte',
+                            "Limite atteinte",
                             `Votre abonnement ${currentTier} est limité à ${maxTeams} équipes. Veuillez mettre à jour votre offre.`
                           );
                         } else {
@@ -337,12 +504,16 @@ export default function ClubScreen({ navigation }: ClubScreenProps) {
                       }}
                       style={[
                         styles.addTeamButton,
-                        { backgroundColor: isLimitReached ? SLATE_COLORS[400] : BRAND_COLORS[600] }
+                        {
+                          backgroundColor: isLimitReached
+                            ? SLATE_COLORS[400]
+                            : BRAND_COLORS[600],
+                        },
                       ]}
                       disabled={!isOwner && isLimitReached}
                     >
                       <MaterialCommunityIcons
-                        name={isLimitReached ? 'lock' : 'plus'}
+                        name={isLimitReached ? "lock" : "plus"}
                         size={20}
                         color={COMMON_COLORS.white}
                       />
@@ -351,27 +522,70 @@ export default function ClubScreen({ navigation }: ClubScreenProps) {
                 </View>
 
                 {isAddingTeam && (
-                  <View style={[styles.addTeamForm, { backgroundColor: surfaceColor, borderColor }]}>
-                    <Text style={[styles.addTeamFormTitle, { color: textPrimary }]}>Nouvelle Équipe</Text>
+                  <View
+                    style={[
+                      styles.addTeamForm,
+                      { backgroundColor: surfaceColor, borderColor },
+                    ]}
+                  >
+                    <Text
+                      style={[styles.addTeamFormTitle, { color: textPrimary }]}
+                    >
+                      Nouvelle Équipe
+                    </Text>
                     <TextInput
                       placeholder="Nom (ex: Seniors A)"
                       placeholderTextColor={textSecondary}
                       value={newTeamName}
                       onChangeText={setNewTeamName}
-                      style={[styles.input, { backgroundColor: isDark ? SLATE_COLORS[800] : SLATE_COLORS[50], borderColor, color: textPrimary }]}
+                      style={[
+                        styles.input,
+                        {
+                          backgroundColor: isDark
+                            ? SLATE_COLORS[800]
+                            : SLATE_COLORS[50],
+                          borderColor,
+                          color: textPrimary,
+                        },
+                      ]}
                     />
                     <TextInput
                       placeholder="Catégorie (ex: Régional 1)"
                       placeholderTextColor={textSecondary}
                       value={newTeamCategory}
                       onChangeText={setNewTeamCategory}
-                      style={[styles.input, { backgroundColor: isDark ? SLATE_COLORS[800] : SLATE_COLORS[50], borderColor, color: textPrimary }]}
+                      style={[
+                        styles.input,
+                        {
+                          backgroundColor: isDark
+                            ? SLATE_COLORS[800]
+                            : SLATE_COLORS[50],
+                          borderColor,
+                          color: textPrimary,
+                        },
+                      ]}
                     />
                     <View style={styles.addTeamFormButtons}>
-                      <TouchableOpacity onPress={() => setIsAddingTeam(false)} style={styles.cancelButton}>
-                        <Text style={[styles.cancelButtonText, { color: textSecondary }]}>Annuler</Text>
+                      <TouchableOpacity
+                        onPress={() => setIsAddingTeam(false)}
+                        style={styles.cancelButton}
+                      >
+                        <Text
+                          style={[
+                            styles.cancelButtonText,
+                            { color: textSecondary },
+                          ]}
+                        >
+                          Annuler
+                        </Text>
                       </TouchableOpacity>
-                      <TouchableOpacity onPress={handleAddTeam} style={[styles.createButton, { backgroundColor: BRAND_COLORS[600] }]}>
+                      <TouchableOpacity
+                        onPress={handleAddTeam}
+                        style={[
+                          styles.createButton,
+                          { backgroundColor: BRAND_COLORS[600] },
+                        ]}
+                      >
                         <Text style={styles.createButtonText}>Créer</Text>
                       </TouchableOpacity>
                     </View>
@@ -380,12 +594,39 @@ export default function ClubScreen({ navigation }: ClubScreenProps) {
 
                 {teams.length > 0 ? (
                   teams.map((team) => (
-                    <TeamCard key={team.id} team={team} isDark={isDark} surfaceColor={surfaceColor} textPrimary={textPrimary} textSecondary={textSecondary} borderColor={borderColor} />
+                    <TeamCard
+                      key={team.id}
+                      team={team}
+                      isDark={isDark}
+                      surfaceColor={surfaceColor}
+                      textPrimary={textPrimary}
+                      textSecondary={textSecondary}
+                      borderColor={borderColor}
+                    />
                   ))
                 ) : (
-                  <View style={[styles.emptyTeams, { backgroundColor: isDark ? `${SLATE_COLORS[900]}80` : SLATE_COLORS[100], borderColor }]}>
-                    <MaterialCommunityIcons name="account-group" size={24} color={textSecondary} style={{ opacity: 0.5 }} />
-                    <Text style={[styles.emptyTeamsText, { color: textSecondary }]}>Aucune équipe créée.</Text>
+                  <View
+                    style={[
+                      styles.emptyTeams,
+                      {
+                        backgroundColor: isDark
+                          ? `${SLATE_COLORS[900]}80`
+                          : SLATE_COLORS[100],
+                        borderColor,
+                      },
+                    ]}
+                  >
+                    <MaterialCommunityIcons
+                      name="account-group"
+                      size={24}
+                      color={textSecondary}
+                      style={{ opacity: 0.5 }}
+                    />
+                    <Text
+                      style={[styles.emptyTeamsText, { color: textSecondary }]}
+                    >
+                      Aucune équipe créée.
+                    </Text>
                   </View>
                 )}
               </View>
@@ -399,103 +640,189 @@ export default function ClubScreen({ navigation }: ClubScreenProps) {
   // --- JOIN OR CREATE SCREEN ---
   return (
     <View style={[styles.container, { backgroundColor: bgColor }]}>
-      <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        style={styles.content}
+        contentContainerStyle={styles.scrollContent}
+      >
         <Text style={[styles.title, { color: textPrimary }]}>Espace Club</Text>
 
         {/* Tabs */}
-        <View style={[styles.tabs, { backgroundColor: isDark ? SLATE_COLORS[900] : SLATE_COLORS[100], borderColor }]}>
+        <View
+          style={[
+            styles.tabs,
+            {
+              backgroundColor: isDark ? SLATE_COLORS[900] : SLATE_COLORS[100],
+              borderColor,
+            },
+          ]}
+        >
           <TouchableOpacity
-            onPress={() => setActiveTab('create')}
+            onPress={() => setActiveTab("create")}
             style={[
               styles.tab,
-              activeTab === 'create' && { backgroundColor: BRAND_COLORS[600] }
+              activeTab === "create" && { backgroundColor: BRAND_COLORS[600] },
             ]}
           >
-            <Text style={[
-              styles.tabText,
-              { color: activeTab === 'create' ? COMMON_COLORS.white : textSecondary }
-            ]}>
+            <Text
+              style={[
+                styles.tabText,
+                {
+                  color:
+                    activeTab === "create"
+                      ? COMMON_COLORS.white
+                      : textSecondary,
+                },
+              ]}
+            >
               Créer
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
-            onPress={() => setActiveTab('join')}
+            onPress={() => setActiveTab("join")}
             style={[
               styles.tab,
-              activeTab === 'join' && { backgroundColor: BRAND_COLORS[600] }
+              activeTab === "join" && { backgroundColor: BRAND_COLORS[600] },
             ]}
           >
-            <Text style={[
-              styles.tabText,
-              { color: activeTab === 'join' ? COMMON_COLORS.white : textSecondary }
-            ]}>
+            <Text
+              style={[
+                styles.tabText,
+                {
+                  color:
+                    activeTab === "join" ? COMMON_COLORS.white : textSecondary,
+                },
+              ]}
+            >
               Rejoindre
             </Text>
           </TouchableOpacity>
         </View>
 
-        {activeTab === 'create' ? (
+        {activeTab === "create" ? (
           <View style={styles.formContainer}>
             {/* Logo Section */}
             <View style={styles.logoSection}>
-              <View style={[styles.logoPlaceholder, { backgroundColor: isDark ? SLATE_COLORS[800] : SLATE_COLORS[100], borderColor }]}>
+              <View
+                style={[
+                  styles.logoPlaceholder,
+                  {
+                    backgroundColor: isDark
+                      ? SLATE_COLORS[800]
+                      : SLATE_COLORS[100],
+                    borderColor,
+                  },
+                ]}
+              >
                 {formData.logoUrl ? (
                   <Text style={{ color: textPrimary }}>IMG</Text>
                 ) : (
-                  <Logo width={48} height={48} primaryColor={SLATE_COLORS[300]} secondaryColor={SLATE_COLORS[600]} />
+                  <Logo
+                    width={48}
+                    height={48}
+                    primaryColor={SLATE_COLORS[300]}
+                    secondaryColor={SLATE_COLORS[600]}
+                  />
                 )}
               </View>
               <TextInput
                 placeholder="URL du logo (http://...)"
                 placeholderTextColor={textSecondary}
                 value={formData.logoUrl}
-                onChangeText={(value) => setFormData({ ...formData, logoUrl: value })}
-                style={[styles.logoInput, { color: textSecondary, borderBottomColor: borderColor }]}
+                onChangeText={(value) =>
+                  setFormData({ ...formData, logoUrl: value })
+                }
+                style={[
+                  styles.logoInput,
+                  { color: textSecondary, borderBottomColor: borderColor },
+                ]}
               />
             </View>
 
             {/* Club Name */}
             <View style={styles.formSection}>
-              <Text style={[styles.formLabel, { color: textSecondary }]}>NOM DU CLUB</Text>
+              <Text style={[styles.formLabel, { color: textSecondary }]}>
+                NOM DU CLUB
+              </Text>
               <TextInput
                 placeholder="Ex: Los Angeles Lakers"
                 placeholderTextColor={textSecondary}
                 value={formData.name}
-                onChangeText={(value) => setFormData({ ...formData, name: value })}
-                style={[styles.formInput, { backgroundColor: surfaceColor, borderColor, color: textPrimary }]}
+                onChangeText={(value) =>
+                  setFormData({ ...formData, name: value })
+                }
+                style={[
+                  styles.formInput,
+                  {
+                    backgroundColor: surfaceColor,
+                    borderColor,
+                    color: textPrimary,
+                  },
+                ]}
               />
             </View>
 
             {/* Acronym & Gender */}
             <View style={styles.formRow}>
               <View style={styles.formCol1}>
-                <Text style={[styles.formLabel, { color: textSecondary }]}>SIGLE</Text>
+                <Text style={[styles.formLabel, { color: textSecondary }]}>
+                  SIGLE
+                </Text>
                 <TextInput
                   placeholder="LAL"
                   placeholderTextColor={textSecondary}
                   value={formData.acronym}
-                  onChangeText={(value) => setFormData({ ...formData, acronym: value.toUpperCase() })}
+                  onChangeText={(value) =>
+                    setFormData({ ...formData, acronym: value.toUpperCase() })
+                  }
                   maxLength={4}
-                  style={[styles.formInput, styles.acronymInput, { backgroundColor: surfaceColor, borderColor, color: textPrimary }]}
+                  style={[
+                    styles.formInput,
+                    styles.acronymInput,
+                    {
+                      backgroundColor: surfaceColor,
+                      borderColor,
+                      color: textPrimary,
+                    },
+                  ]}
                 />
               </View>
               <View style={styles.formCol2}>
-                <Text style={[styles.formLabel, { color: textSecondary }]}>TYPE D'ÉQUIPE</Text>
-                <View style={[styles.genderButtons, { backgroundColor: isDark ? SLATE_COLORS[800] : SLATE_COLORS[100] }]}>
-                  {(['M', 'F', 'MIXED'] as const).map((g) => (
+                <Text style={[styles.formLabel, { color: textSecondary }]}>
+                  TYPE D'ÉQUIPE
+                </Text>
+                <View
+                  style={[
+                    styles.genderButtons,
+                    {
+                      backgroundColor: isDark
+                        ? SLATE_COLORS[800]
+                        : SLATE_COLORS[100],
+                    },
+                  ]}
+                >
+                  {(["M", "F", "MIXED"] as const).map((g) => (
                     <TouchableOpacity
                       key={g}
                       onPress={() => setFormData({ ...formData, gender: g })}
                       style={[
                         styles.genderButton,
-                        formData.gender === g && { backgroundColor: surfaceColor }
+                        formData.gender === g && {
+                          backgroundColor: surfaceColor,
+                        },
                       ]}
                     >
-                      <Text style={[
-                        styles.genderButtonText,
-                        { color: formData.gender === g ? BRAND_COLORS[600] : textSecondary }
-                      ]}>
-                        {g === 'M' ? 'Masc.' : g === 'F' ? 'Fém.' : 'Mixte'}
+                      <Text
+                        style={[
+                          styles.genderButtonText,
+                          {
+                            color:
+                              formData.gender === g
+                                ? BRAND_COLORS[600]
+                                : textSecondary,
+                          },
+                        ]}
+                      >
+                        {g === "M" ? "Masc." : g === "F" ? "Fém." : "Mixte"}
                       </Text>
                     </TouchableOpacity>
                   ))}
@@ -504,39 +831,68 @@ export default function ClubScreen({ navigation }: ClubScreenProps) {
             </View>
 
             {/* Colors Section */}
-            <View style={[styles.formSection, styles.borderTop, { borderTopColor: borderColor }]}>
+            <View
+              style={[
+                styles.formSection,
+                styles.borderTop,
+                { borderTopColor: borderColor },
+              ]}
+            >
               <View style={styles.sectionHeader}>
-                <MaterialCommunityIcons name="palette" size={16} color={BRAND_COLORS[500]} />
-                <Text style={[styles.sectionTitle, { color: textPrimary }]}>Couleurs du Club</Text>
+                <MaterialCommunityIcons
+                  name="palette"
+                  size={16}
+                  color={BRAND_COLORS[500]}
+                />
+                <Text style={[styles.sectionTitle, { color: textPrimary }]}>
+                  Couleurs du Club
+                </Text>
               </View>
 
               {/* Primary Color */}
-              <Text style={[styles.colorLabel, { color: textSecondary }]}>Principale</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.colorPicker}>
+              <Text style={[styles.colorLabel, { color: textSecondary }]}>
+                Principale
+              </Text>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                style={styles.colorPicker}
+              >
                 {TEAM_COLORS.map((c) => (
                   <TouchableOpacity
                     key={`p-${c}`}
-                    onPress={() => setFormData({ ...formData, primaryColor: c })}
+                    onPress={() =>
+                      setFormData({ ...formData, primaryColor: c })
+                    }
                     style={[
                       styles.colorButton,
                       { backgroundColor: c },
-                      formData.primaryColor === c && styles.colorButtonSelected
+                      formData.primaryColor === c && styles.colorButtonSelected,
                     ]}
                   />
                 ))}
               </ScrollView>
 
               {/* Secondary Color */}
-              <Text style={[styles.colorLabel, { color: textSecondary }]}>Secondaire</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.colorPicker}>
+              <Text style={[styles.colorLabel, { color: textSecondary }]}>
+                Secondaire
+              </Text>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                style={styles.colorPicker}
+              >
                 {TEAM_COLORS.map((c) => (
                   <TouchableOpacity
                     key={`s-${c}`}
-                    onPress={() => setFormData({ ...formData, secondaryColor: c })}
+                    onPress={() =>
+                      setFormData({ ...formData, secondaryColor: c })
+                    }
                     style={[
                       styles.colorButton,
                       { backgroundColor: c },
-                      formData.secondaryColor === c && styles.colorButtonSelected
+                      formData.secondaryColor === c &&
+                        styles.colorButtonSelected,
                     ]}
                   />
                 ))}
@@ -544,14 +900,32 @@ export default function ClubScreen({ navigation }: ClubScreenProps) {
             </View>
 
             {/* Court Customization */}
-            <View style={[styles.formSection, styles.borderTop, { borderTopColor: borderColor }]}>
+            <View
+              style={[
+                styles.formSection,
+                styles.borderTop,
+                { borderTopColor: borderColor },
+              ]}
+            >
               <View style={styles.sectionHeader}>
-                <MaterialCommunityIcons name="basketball-hoop" size={16} color={BRAND_COLORS[500]} />
-                <Text style={[styles.sectionTitle, { color: textPrimary }]}>Personnalisation Terrain</Text>
+                <MaterialCommunityIcons
+                  name="basketball-hoop"
+                  size={16}
+                  color={BRAND_COLORS[500]}
+                />
+                <Text style={[styles.sectionTitle, { color: textPrimary }]}>
+                  Personnalisation Terrain
+                </Text>
               </View>
 
-              <Text style={[styles.colorLabel, { color: textSecondary }]}>Couleur du Parquet</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.colorPicker}>
+              <Text style={[styles.colorLabel, { color: textSecondary }]}>
+                Couleur du Parquet
+              </Text>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                style={styles.colorPicker}
+              >
                 {COURT_COLORS.map((c) => (
                   <TouchableOpacity
                     key={`c-${c}`}
@@ -559,22 +933,31 @@ export default function ClubScreen({ navigation }: ClubScreenProps) {
                     style={[
                       styles.courtColorButton,
                       { backgroundColor: c },
-                      formData.courtColor === c && styles.colorButtonSelected
+                      formData.courtColor === c && styles.colorButtonSelected,
                     ]}
                   />
                 ))}
               </ScrollView>
 
-              <Text style={[styles.colorLabel, { color: textSecondary }]}>Couleur des Lignes</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.colorPicker}>
+              <Text style={[styles.colorLabel, { color: textSecondary }]}>
+                Couleur des Lignes
+              </Text>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                style={styles.colorPicker}
+              >
                 {LINE_COLORS.map((c) => (
                   <TouchableOpacity
                     key={`l-${c}`}
-                    onPress={() => setFormData({ ...formData, courtLinesColor: c })}
+                    onPress={() =>
+                      setFormData({ ...formData, courtLinesColor: c })
+                    }
                     style={[
                       styles.colorButton,
                       { backgroundColor: c },
-                      formData.courtLinesColor === c && styles.colorButtonSelected
+                      formData.courtLinesColor === c &&
+                        styles.colorButtonSelected,
                     ]}
                   />
                 ))}
@@ -593,18 +976,42 @@ export default function ClubScreen({ navigation }: ClubScreenProps) {
         ) : (
           <View style={styles.formContainer}>
             <View style={styles.formSection}>
-              <Text style={[styles.formLabel, { color: textSecondary }]}>CODE D'ÉQUIPE</Text>
+              <Text style={[styles.formLabel, { color: textSecondary }]}>
+                CODE D'ÉQUIPE
+              </Text>
               <TextInput
                 placeholder="Ex: LION69"
                 placeholderTextColor={textSecondary}
                 value={formData.code}
-                onChangeText={(value) => setFormData({ ...formData, code: value.toUpperCase() })}
-                style={[styles.formInput, styles.codeInput, { backgroundColor: surfaceColor, borderColor, color: textPrimary }]}
+                onChangeText={(value) =>
+                  setFormData({ ...formData, code: value.toUpperCase() })
+                }
+                style={[
+                  styles.formInput,
+                  styles.codeInput,
+                  {
+                    backgroundColor: surfaceColor,
+                    borderColor,
+                    color: textPrimary,
+                  },
+                ]}
               />
             </View>
-            <View style={[styles.infoBox, { backgroundColor: isDark ? `${SLATE_COLORS[800]}80` : SLATE_COLORS[100], borderColor }]}>
+            <View
+              style={[
+                styles.infoBox,
+                {
+                  backgroundColor: isDark
+                    ? `${SLATE_COLORS[800]}80`
+                    : SLATE_COLORS[100],
+                  borderColor,
+                },
+              ]}
+            >
               <Text style={[styles.infoText, { color: textSecondary }]}>
-                En rejoignant un club existant, vous n'avez pas besoin de payer d'abonnement. C'est le propriétaire du club qui gère les quotas d'équipes.
+                En rejoignant un club existant, vous n'avez pas besoin de payer
+                d'abonnement. C'est le propriétaire du club qui gère les quotas
+                d'équipes.
               </Text>
             </View>
           </View>
@@ -612,10 +1019,17 @@ export default function ClubScreen({ navigation }: ClubScreenProps) {
       </ScrollView>
 
       <View style={[styles.footer, { borderTopColor: borderColor }]}>
-        <TouchableOpacity onPress={handleSubmit} style={[styles.submitButton, { backgroundColor: BRAND_COLORS[600] }]}>
-          <MaterialCommunityIcons name="check" size={20} color={COMMON_COLORS.white} />
+        <TouchableOpacity
+          onPress={handleSubmit}
+          style={[styles.submitButton, { backgroundColor: BRAND_COLORS[600] }]}
+        >
+          <MaterialCommunityIcons
+            name="check"
+            size={20}
+            color={COMMON_COLORS.white}
+          />
           <Text style={styles.submitButtonText}>
-            {activeTab === 'create' ? 'Créer mon club' : 'Rejoindre'}
+            {activeTab === "create" ? "Créer mon club" : "Rejoindre"}
           </Text>
         </TouchableOpacity>
       </View>
@@ -634,21 +1048,45 @@ interface TeamCardProps {
   borderColor: string;
 }
 
-function TeamCard({ team, isDark, surfaceColor, textPrimary, textSecondary, borderColor }: TeamCardProps) {
+function TeamCard({
+  team,
+  isDark,
+  surfaceColor,
+  textPrimary,
+  textSecondary,
+  borderColor,
+}: TeamCardProps) {
   return (
-    <TouchableOpacity style={[styles.teamCard, { backgroundColor: surfaceColor, borderColor }]}>
+    <TouchableOpacity
+      style={[styles.teamCard, { backgroundColor: surfaceColor, borderColor }]}
+    >
       <View style={styles.teamCardLeft}>
-        <View style={[styles.teamIcon, { backgroundColor: isDark ? SLATE_COLORS[700] : SLATE_COLORS[100] }]}>
-          <MaterialCommunityIcons name="tshirt-crew" size={20} color={BRAND_COLORS[600]} />
+        <View
+          style={[
+            styles.teamIcon,
+            { backgroundColor: isDark ? SLATE_COLORS[700] : SLATE_COLORS[100] },
+          ]}
+        >
+          <MaterialCommunityIcons
+            name="tshirt-crew"
+            size={20}
+            color={BRAND_COLORS[600]}
+          />
         </View>
         <View>
-          <Text style={[styles.teamName, { color: textPrimary }]}>{team.name}</Text>
+          <Text style={[styles.teamName, { color: textPrimary }]}>
+            {team.name}
+          </Text>
           <Text style={[styles.teamCategory, { color: textSecondary }]}>
             {team.category} • 0 Joueurs
           </Text>
         </View>
       </View>
-      <MaterialCommunityIcons name="chevron-right" size={18} color={textSecondary} />
+      <MaterialCommunityIcons
+        name="chevron-right"
+        size={18}
+        color={textSecondary}
+      />
     </TouchableOpacity>
   );
 }
@@ -663,13 +1101,21 @@ interface PricingCardProps {
   onSelect: (tier: SubscriptionTier) => void;
 }
 
-function PricingCard({ tier, currentTier, price, limit, isDark, isPopular, onSelect }: PricingCardProps) {
+function PricingCard({
+  tier,
+  currentTier,
+  price,
+  limit,
+  isDark,
+  isPopular,
+  onSelect,
+}: PricingCardProps) {
   const isCurrent = tier === currentTier;
   const colors = {
-    FREE: '#64748b',
-    BASIC: '#3b82f6',
-    PRO: '#a855f7',
-    ULTIMATE: '#f59e0b',
+    FREE: "#64748b",
+    BASIC: "#3b82f6",
+    PRO: "#a855f7",
+    ULTIMATE: "#f59e0b",
   };
 
   return (
@@ -680,10 +1126,14 @@ function PricingCard({ tier, currentTier, price, limit, isDark, isPopular, onSel
         styles.pricingCard,
         {
           backgroundColor: isDark ? SLATE_COLORS[900] : COMMON_COLORS.white,
-          borderColor: isCurrent ? BRAND_COLORS[500] : isDark ? SLATE_COLORS[800] : SLATE_COLORS[200],
+          borderColor: isCurrent
+            ? BRAND_COLORS[500]
+            : isDark
+            ? SLATE_COLORS[800]
+            : SLATE_COLORS[200],
           borderWidth: isCurrent ? 2 : 1,
           opacity: isCurrent ? 1 : 0.8,
-        }
+        },
       ]}
     >
       {isPopular && (
@@ -695,30 +1145,68 @@ function PricingCard({ tier, currentTier, price, limit, isDark, isPopular, onSel
         <View style={styles.pricingCardLeft}>
           <View style={[styles.pricingIcon, { backgroundColor: colors[tier] }]}>
             <MaterialCommunityIcons
-              name={tier === 'ULTIMATE' ? 'crown' : 'star'}
+              name={tier === "ULTIMATE" ? "crown" : "star"}
               size={20}
               color={COMMON_COLORS.white}
             />
           </View>
           <View>
             <View style={styles.tierNameRow}>
-              <Text style={[styles.tierName, { color: isDark ? COMMON_COLORS.white : SLATE_COLORS[900] }]}>
+              <Text
+                style={[
+                  styles.tierName,
+                  { color: isDark ? COMMON_COLORS.white : SLATE_COLORS[900] },
+                ]}
+              >
                 {tier}
               </Text>
               {isCurrent && (
-                <View style={[styles.currentBadge, { backgroundColor: isDark ? SLATE_COLORS[800] : SLATE_COLORS[100], borderColor: isDark ? SLATE_COLORS[700] : SLATE_COLORS[200] }]}>
-                  <Text style={[styles.currentBadgeText, { color: isDark ? SLATE_COLORS[500] : SLATE_COLORS[500] }]}>Actuel</Text>
+                <View
+                  style={[
+                    styles.currentBadge,
+                    {
+                      backgroundColor: isDark
+                        ? SLATE_COLORS[800]
+                        : SLATE_COLORS[100],
+                      borderColor: isDark
+                        ? SLATE_COLORS[700]
+                        : SLATE_COLORS[200],
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.currentBadgeText,
+                      { color: isDark ? SLATE_COLORS[500] : SLATE_COLORS[500] },
+                    ]}
+                  >
+                    Actuel
+                  </Text>
                 </View>
               )}
             </View>
-            <Text style={[styles.tierLimit, { color: isDark ? SLATE_COLORS[400] : SLATE_COLORS[500] }]}>
-              {limit > 100 ? 'Équipes illimitées' : `Jusqu'à ${limit} équipes`}
+            <Text
+              style={[
+                styles.tierLimit,
+                { color: isDark ? SLATE_COLORS[400] : SLATE_COLORS[500] },
+              ]}
+            >
+              {limit > 100 ? "Équipes illimitées" : `Jusqu'à ${limit} équipes`}
             </Text>
           </View>
         </View>
         <View style={styles.pricingCardRight}>
-          <Text style={[styles.priceValue, { color: isDark ? COMMON_COLORS.white : SLATE_COLORS[900] }]}>{price}</Text>
-          <Text style={[styles.priceLabel, { color: SLATE_COLORS[400] }]}>/ mois</Text>
+          <Text
+            style={[
+              styles.priceValue,
+              { color: isDark ? COMMON_COLORS.white : SLATE_COLORS[900] },
+            ]}
+          >
+            {price}
+          </Text>
+          <Text style={[styles.priceLabel, { color: SLATE_COLORS[400] }]}>
+            / mois
+          </Text>
         </View>
       </View>
     </TouchableOpacity>
@@ -744,7 +1232,14 @@ function CourtPreview({ courtColor, linesColor, acronym }: CourtPreviewProps) {
           <Stop offset="100%" stopColor="#000" stopOpacity="0.2" />
         </LinearGradient>
       </Defs>
-      <Rect x="0" y="0" width="100" height="50" fill="url(#woodGradient)" opacity="0.1" />
+      <Rect
+        x="0"
+        y="0"
+        width="100"
+        height="50"
+        fill="url(#woodGradient)"
+        opacity="0.1"
+      />
 
       {/* Lines */}
       <G fill="none" stroke={linesColor} strokeWidth="0.8">
@@ -770,7 +1265,7 @@ function CourtPreview({ courtColor, linesColor, acronym }: CourtPreviewProps) {
         fontWeight="bold"
         opacity="0.5"
       >
-        {acronym || 'TEAM'}
+        {acronym || "TEAM"}
       </SvgText>
     </Svg>
   );
@@ -783,25 +1278,26 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     padding: 24,
-    paddingTop: 40,
+    paddingTop: 20,
+    marginBottom: 20,
   },
   scrollContent: {
     paddingBottom: 100,
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 24,
   },
   title: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginBottom: 24,
   },
   headerButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 4,
     paddingHorizontal: 12,
     paddingVertical: 6,
@@ -810,19 +1306,19 @@ const styles = StyleSheet.create({
   },
   headerButtonText: {
     fontSize: 12,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   subscriptionView: {
     gap: 24,
   },
   subscriptionTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
-    textAlign: 'center',
+    fontWeight: "bold",
+    textAlign: "center",
   },
   subscriptionSubtitle: {
     fontSize: 14,
-    textAlign: 'center',
+    textAlign: "center",
     marginTop: -16,
   },
   pricingCards: {
@@ -832,24 +1328,24 @@ const styles = StyleSheet.create({
     padding: 24,
     borderRadius: 24,
     borderWidth: 1,
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: 24,
   },
   clubLogo: {
     width: 80,
     height: 80,
     borderRadius: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     marginBottom: 12,
   },
   clubName: {
     fontSize: 20,
-    fontWeight: '900',
+    fontWeight: "900",
     marginBottom: 16,
   },
   clubCodeCard: {
-    width: '100%',
+    width: "100%",
     padding: 12,
     borderRadius: 12,
     borderWidth: 1,
@@ -857,71 +1353,71 @@ const styles = StyleSheet.create({
   },
   clubCodeLabel: {
     fontSize: 10,
-    fontWeight: 'bold',
-    textTransform: 'uppercase',
+    fontWeight: "bold",
+    textTransform: "uppercase",
     letterSpacing: 1,
     marginBottom: 4,
   },
   clubCodeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
   clubCodeValue: {
     fontSize: 14,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     letterSpacing: 2,
-    fontFamily: 'monospace',
+    fontFamily: "monospace",
   },
   usageBar: {
-    width: '100%',
+    width: "100%",
   },
   usageBarHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     marginBottom: 4,
   },
   usageBarLabel: {
     fontSize: 12,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   usageBarValue: {
     fontSize: 12,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   usageBarTrack: {
     height: 8,
     borderRadius: 999,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   usageBarFill: {
-    height: '100%',
+    height: "100%",
     borderRadius: 999,
   },
   upgradeLink: {
     fontSize: 12,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginTop: 8,
-    textAlign: 'center',
+    textAlign: "center",
   },
   teamsSection: {
     gap: 16,
   },
   teamsSectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
   teamsSectionTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   addTeamButton: {
     width: 40,
     height: 40,
     borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   addTeamForm: {
     padding: 16,
@@ -930,7 +1426,7 @@ const styles = StyleSheet.create({
   },
   addTeamFormTitle: {
     fontSize: 14,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginBottom: 12,
   },
   input: {
@@ -941,70 +1437,70 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   addTeamFormButtons: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 8,
   },
   cancelButton: {
     flex: 1,
     padding: 8,
-    alignItems: 'center',
+    alignItems: "center",
   },
   cancelButtonText: {
     fontSize: 14,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   createButton: {
     flex: 1,
     padding: 8,
     borderRadius: 8,
-    alignItems: 'center',
+    alignItems: "center",
   },
   createButtonText: {
     fontSize: 14,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     color: COMMON_COLORS.white,
   },
   emptyTeams: {
     padding: 32,
     borderRadius: 12,
     borderWidth: 1,
-    borderStyle: 'dashed',
-    alignItems: 'center',
+    borderStyle: "dashed",
+    alignItems: "center",
   },
   emptyTeamsText: {
     fontSize: 14,
     marginTop: 8,
   },
   teamCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     padding: 16,
     borderRadius: 12,
     borderWidth: 1,
   },
   teamCardLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 16,
   },
   teamIcon: {
     width: 40,
     height: 40,
     borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   teamName: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   teamCategory: {
     fontSize: 12,
     marginTop: 2,
   },
   tabs: {
-    flexDirection: 'row',
+    flexDirection: "row",
     padding: 4,
     borderRadius: 12,
     marginBottom: 32,
@@ -1014,17 +1510,17 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 12,
     borderRadius: 8,
-    alignItems: 'center',
+    alignItems: "center",
   },
   tabText: {
     fontSize: 14,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   formContainer: {
     gap: 24,
   },
   logoSection: {
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: 8,
   },
   logoPlaceholder: {
@@ -1032,15 +1528,15 @@ const styles = StyleSheet.create({
     height: 96,
     borderRadius: 48,
     borderWidth: 2,
-    borderStyle: 'dashed',
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
+    borderStyle: "dashed",
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "hidden",
   },
   logoInput: {
     marginTop: 12,
     fontSize: 12,
-    textAlign: 'center',
+    textAlign: "center",
     paddingBottom: 4,
     borderBottomWidth: 1,
   },
@@ -1049,8 +1545,8 @@ const styles = StyleSheet.create({
   },
   formLabel: {
     fontSize: 10,
-    fontWeight: 'bold',
-    textTransform: 'uppercase',
+    fontWeight: "bold",
+    textTransform: "uppercase",
     letterSpacing: 1,
   },
   formInput: {
@@ -1058,10 +1554,10 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   formRow: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 16,
   },
   formCol1: {
@@ -1073,12 +1569,12 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   acronymInput: {
-    textAlign: 'center',
-    textTransform: 'uppercase',
+    textAlign: "center",
+    textTransform: "uppercase",
     letterSpacing: 2,
   },
   genderButtons: {
-    flexDirection: 'row',
+    flexDirection: "row",
     padding: 4,
     borderRadius: 12,
     height: 58,
@@ -1086,35 +1582,35 @@ const styles = StyleSheet.create({
   genderButton: {
     flex: 1,
     borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   genderButtonText: {
     fontSize: 12,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   borderTop: {
     paddingTop: 24,
     borderTopWidth: 1,
   },
   sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
     marginBottom: 16,
   },
   sectionTitle: {
     fontSize: 14,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   colorLabel: {
     fontSize: 12,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginTop: 8,
     marginBottom: 8,
   },
   colorPicker: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 12,
     marginBottom: 16,
   },
@@ -1124,7 +1620,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     marginRight: 12,
     borderWidth: 2,
-    borderColor: 'transparent',
+    borderColor: "transparent",
   },
   colorButtonSelected: {
     borderColor: SLATE_COLORS[900],
@@ -1136,21 +1632,21 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginRight: 12,
     borderWidth: 2,
-    borderColor: 'transparent',
+    borderColor: "transparent",
   },
   courtPreview: {
-    width: '100%',
+    width: "100%",
     aspectRatio: 2,
     borderRadius: 12,
-    overflow: 'hidden',
+    overflow: "hidden",
     borderWidth: 1,
   },
   codeInput: {
-    textAlign: 'center',
-    textTransform: 'uppercase',
+    textAlign: "center",
+    textTransform: "uppercase",
     letterSpacing: 4,
     fontSize: 18,
-    fontFamily: 'monospace',
+    fontFamily: "monospace",
   },
   infoBox: {
     padding: 16,
@@ -1161,7 +1657,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   footer: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 0,
     left: 0,
     right: 0,
@@ -1169,27 +1665,27 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
   },
   submitButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     gap: 8,
     padding: 16,
     borderRadius: 12,
   },
   submitButtonText: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     color: COMMON_COLORS.white,
   },
   pricingCard: {
     padding: 16,
     borderRadius: 16,
-    position: 'relative',
+    position: "relative",
   },
   popularBadge: {
-    position: 'absolute',
+    position: "absolute",
     top: -12,
-    left: '50%',
+    left: "50%",
     transform: [{ translateX: -50 }],
     backgroundColor: BRAND_COLORS[600],
     paddingHorizontal: 12,
@@ -1199,33 +1695,33 @@ const styles = StyleSheet.create({
   popularBadgeText: {
     color: COMMON_COLORS.white,
     fontSize: 10,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   pricingCardContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
   pricingCardLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 16,
   },
   pricingIcon: {
     width: 48,
     height: 48,
     borderRadius: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   tierNameRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
   },
   tierName: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   currentBadge: {
     paddingHorizontal: 8,
@@ -1241,11 +1737,11 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   pricingCardRight: {
-    alignItems: 'flex-end',
+    alignItems: "flex-end",
   },
   priceValue: {
     fontSize: 18,
-    fontWeight: '900',
+    fontWeight: "900",
   },
   priceLabel: {
     fontSize: 10,
