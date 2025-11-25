@@ -8,6 +8,7 @@ import {
   TextInput,
   Alert,
   ActivityIndicator,
+  Image,
 } from "react-native";
 import Svg, {
   Rect,
@@ -21,6 +22,7 @@ import Svg, {
   Text as SvgText,
 } from "react-native-svg";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import * as ImagePicker from "expo-image-picker";
 import { useTheme } from "../src/contexts/ThemeContext";
 import { useAuth } from "../src/contexts/AuthContext";
 import {
@@ -30,6 +32,7 @@ import {
 } from "../src/theme/clubDefaults";
 import { ServiceFactory } from "../services/ServiceFactory";
 import { supabase } from "../src/config/supabase";
+import { PhotoUploadService } from "../services/PhotoUploadService";
 import { Club } from "../models/Club";
 import { Team } from "../models/Team";
 import Logo from "../components/icons/Logo";
@@ -94,7 +97,7 @@ export default function ClubScreen({ navigation }: ClubScreenProps) {
     acronym: "",
     gender: "M" as "M" | "F" | "MIXED",
     code: "",
-    logoUrl: "",
+    logoUri: null as string | null,
     primaryColor: "#f97316",
     secondaryColor: "#1e1b4b",
     courtColor: "#c2410c",
@@ -189,6 +192,47 @@ export default function ClubScreen({ navigation }: ClubScreenProps) {
     ]);
   };
 
+  const handlePickImage = async () => {
+    const permissionResult =
+      await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+    if (permissionResult.granted === false) {
+      Alert.alert(
+        "Permission requise",
+        "Vous devez autoriser l'accès à vos photos pour importer un logo."
+      );
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: "images",
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets && result.assets.length > 0) {
+      const localUri = result.assets[0].uri;
+
+      // Upload to Supabase Storage
+      const photoService = new PhotoUploadService(supabase);
+      const clubLogoId = `club-${Date.now()}`;
+      const { url, error } = await photoService.uploadPlayerPhoto(
+        localUri,
+        clubLogoId
+      );
+
+      if (error) {
+        Alert.alert("Erreur", "Impossible d'uploader le logo");
+        return;
+      }
+
+      if (url) {
+        setFormData({ ...formData, logoUri: url });
+      }
+    }
+  };
+
   const handleSubmit = async () => {
     if (activeTab === "create") {
       if (!formData.name || !user) return;
@@ -203,7 +247,7 @@ export default function ClubScreen({ navigation }: ClubScreenProps) {
           name: formData.name,
           code,
           ownerId: user.id,
-          logoUrl: formData.logoUrl || "",
+          logoUrl: formData.logoUri || "",
           subscriptionTier: "FREE",
         });
 
@@ -702,7 +746,7 @@ export default function ClubScreen({ navigation }: ClubScreenProps) {
           <View style={styles.formContainer}>
             {/* Logo Section */}
             <View style={styles.logoSection}>
-              <View
+              <TouchableOpacity
                 style={[
                   styles.logoPlaceholder,
                   {
@@ -712,9 +756,13 @@ export default function ClubScreen({ navigation }: ClubScreenProps) {
                     borderColor,
                   },
                 ]}
+                onPress={handlePickImage}
               >
-                {formData.logoUrl ? (
-                  <Text style={{ color: textPrimary }}>IMG</Text>
+                {formData.logoUri ? (
+                  <Image
+                    source={{ uri: formData.logoUri }}
+                    style={styles.logoImage}
+                  />
                 ) : (
                   <Logo
                     width={48}
@@ -723,19 +771,7 @@ export default function ClubScreen({ navigation }: ClubScreenProps) {
                     secondaryColor={SLATE_COLORS[600]}
                   />
                 )}
-              </View>
-              <TextInput
-                placeholder="URL du logo (http://...)"
-                placeholderTextColor={textSecondary}
-                value={formData.logoUrl}
-                onChangeText={(value) =>
-                  setFormData({ ...formData, logoUrl: value })
-                }
-                style={[
-                  styles.logoInput,
-                  { color: textSecondary, borderBottomColor: borderColor },
-                ]}
-              />
+              </TouchableOpacity>
             </View>
 
             {/* Club Name */}
@@ -1533,12 +1569,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     overflow: "hidden",
   },
-  logoInput: {
-    marginTop: 12,
-    fontSize: 12,
-    textAlign: "center",
-    paddingBottom: 4,
-    borderBottomWidth: 1,
+  logoImage: {
+    width: "100%",
+    height: "100%",
   },
   formSection: {
     gap: 8,
