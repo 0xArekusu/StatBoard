@@ -4,6 +4,7 @@
  */
 export const ROUTES = {
   AUTH: "Auth",
+  MAIN_TABS: "MainTabs",
   MAIN_MENU: "MainMenu",
   BOARD: "Board",
   MATCH_HISTORY: "MatchHistory",

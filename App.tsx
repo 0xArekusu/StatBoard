@@ -21,6 +21,7 @@ import SignUpScreen from "./screens/SignUpScreen";
 import ClubFormScreen from "./screens/ClubFormScreen";
 import TeamFormScreen from "./screens/TeamFormScreen";
 import JoinClubScreen from "./screens/JoinClubScreen";
+import MainTabNavigator from "./navigation/MainTabNavigator";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { AuthProvider, useAuth } from "./src/contexts/AuthContext";
 import { ThemeProvider } from "./src/contexts/ThemeContext";
@@ -62,6 +63,7 @@ function Navigation() {
         }}
       >
         <Stack.Screen name={ROUTES.AUTH} component={AuthScreen} />
+        <Stack.Screen name={ROUTES.MAIN_TABS} component={MainTabNavigator} />
         <Stack.Screen name={ROUTES.DEBUG_COURT} component={DebugCourtClick} />
         <Stack.Screen name={ROUTES.MAIN_MENU} component={MainMenuScreen} />
         <Stack.Screen name={ROUTES.BOARD} component={BoardScreen} />

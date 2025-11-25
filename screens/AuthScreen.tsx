@@ -43,7 +43,7 @@ export default function AuthScreen() {
 
   // Guest login
   const handleGuestLogin = () => {
-    navigation.navigate(ROUTES.MAIN_MENU as never);
+    navigation.navigate(ROUTES.MAIN_TABS as never);
   };
 
   // Email/Password login
@@ -60,7 +60,7 @@ export default function AuthScreen() {
     if (error) {
       Alert.alert("Erreur de connexion", error.message);
     } else {
-      navigation.navigate(ROUTES.MAIN_MENU as never);
+      navigation.navigate(ROUTES.MAIN_TABS as never);
     }
   };
 
@@ -91,7 +91,7 @@ export default function AuthScreen() {
     if (error) {
       Alert.alert("Erreur d'inscription", error.message);
     } else {
-      navigation.navigate(ROUTES.MAIN_MENU as never);
+      navigation.navigate(ROUTES.MAIN_TABS as never);
     }
   };
 
@@ -104,7 +104,7 @@ export default function AuthScreen() {
     if (error) {
       Alert.alert("Erreur de connexion Google", error.message);
     } else {
-      navigation.navigate(ROUTES.MAIN_MENU as never);
+      navigation.navigate(ROUTES.MAIN_TABS as never);
     }
   };
 
