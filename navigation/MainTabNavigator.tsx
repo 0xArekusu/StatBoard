@@ -1,16 +1,20 @@
-import React from 'react';
-import { Alert } from 'react-native';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
-import { useTheme } from '../src/contexts/ThemeContext';
-import { useAuth } from '../src/contexts/AuthContext';
-import { SLATE_COLORS, BRAND_COLORS, COMMON_COLORS } from '../src/theme/clubDefaults';
-import { ROUTES } from '../constants/routes';
+import React from "react";
+import { Alert } from "react-native";
+import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { useNavigation } from "@react-navigation/native";
+import { useTheme } from "../src/contexts/ThemeContext";
+import { useAuth } from "../src/contexts/AuthContext";
+import {
+  SLATE_COLORS,
+  BRAND_COLORS,
+  COMMON_COLORS,
+} from "../src/theme/clubDefaults";
+import { ROUTES } from "../constants/routes";
 
-import DashboardScreen from '../screens/DashboardScreen';
-import HistoryScreen from '../screens/HistoryScreen';
-import ClubScreen from '../screens/ClubScreen';
+import DashboardScreen from "../screens/DashboardScreen";
+import HistoryScreen from "../screens/HistoryScreen";
+import ClubScreen from "../screens/ClubScreen";
 
 const Tab = createBottomTabNavigator();
 
@@ -25,17 +29,17 @@ export default function MainTabNavigator() {
     if (isGuest) {
       e.preventDefault();
       Alert.alert(
-        'Connexion requise',
-        'Vous devez être connecté pour accéder à la section Club. Voulez-vous vous connecter maintenant ?',
+        "Connexion requise",
+        "Vous devez être connecté pour accéder à la section Club. Voulez-vous vous connecter maintenant ?",
         [
-          { text: 'Annuler', style: 'cancel' },
+          { text: "Annuler", style: "cancel" },
           {
-            text: 'Se connecter',
+            text: "Se connecter",
             onPress: async () => {
               // Sign out guest session and navigate to Auth screen
               await signOut();
               navigation.navigate(ROUTES.AUTH as never);
-            }
+            },
           },
         ]
       );
@@ -58,7 +62,7 @@ export default function MainTabNavigator() {
         tabBarInactiveTintColor: isDark ? SLATE_COLORS[400] : SLATE_COLORS[500],
         tabBarLabelStyle: {
           fontSize: 12,
-          fontWeight: '600',
+          fontWeight: "600",
         },
       }}
     >
@@ -66,9 +70,13 @@ export default function MainTabNavigator() {
         name="Dashboard"
         component={DashboardScreen}
         options={{
-          tabBarLabel: 'Tableau de bord',
+          tabBarLabel: "Tableau de bord",
           tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="view-dashboard" size={size} color={color} />
+            <MaterialCommunityIcons
+              name="view-dashboard-outline"
+              size={size}
+              color={color}
+            />
           ),
         }}
       />
@@ -76,7 +84,7 @@ export default function MainTabNavigator() {
         name="History"
         component={HistoryScreen}
         options={{
-          tabBarLabel: 'Historique',
+          tabBarLabel: "Historique",
           tabBarIcon: ({ color, size }) => (
             <MaterialCommunityIcons name="history" size={size} color={color} />
           ),
@@ -86,9 +94,13 @@ export default function MainTabNavigator() {
         name="Club"
         component={ClubScreen}
         options={{
-          tabBarLabel: 'Club',
+          tabBarLabel: "Club",
           tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="account-group" size={size} color={color} />
+            <MaterialCommunityIcons
+              name="account-group-outline"
+              size={size}
+              color={color}
+            />
           ),
         }}
         listeners={{

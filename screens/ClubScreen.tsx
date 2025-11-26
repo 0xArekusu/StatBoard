@@ -89,7 +89,6 @@ export default function ClubScreen({ navigation }: ClubScreenProps) {
   const [formData, setFormData] = useState({
     name: "",
     acronym: "",
-    gender: "M" as "M" | "F" | "MIXED",
     code: "",
     logoUri: null as string | null,
     primaryColor: "#FF0000",
@@ -855,7 +854,7 @@ export default function ClubScreen({ navigation }: ClubScreenProps) {
             >
               <View style={styles.sectionHeader}>
                 <MaterialCommunityIcons
-                  name="palette"
+                  name="palette-outline"
                   size={16}
                   color={BRAND_COLORS[500]}
                 />
@@ -868,7 +867,12 @@ export default function ClubScreen({ navigation }: ClubScreenProps) {
               <Text style={[styles.colorLabel, { color: textSecondary }]}>
                 Couleur principale
               </Text>
-              <View style={styles.colorPickerRow}>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                style={styles.colorPickerScrollView}
+                contentContainerStyle={styles.colorPickerRow}
+              >
                 <TouchableOpacity
                   style={[
                     styles.colorOption,
@@ -911,13 +915,18 @@ export default function ClubScreen({ navigation }: ClubScreenProps) {
                     )}
                   </TouchableOpacity>
                 ))}
-              </View>
+              </ScrollView>
 
               {/* Secondary Color */}
               <Text style={[styles.colorLabel, { color: textSecondary }]}>
                 Couleur secondaire
               </Text>
-              <View style={styles.colorPickerRow}>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                style={styles.colorPickerScrollView}
+                contentContainerStyle={styles.colorPickerRow}
+              >
                 <TouchableOpacity
                   style={[
                     styles.colorOption,
@@ -960,7 +969,7 @@ export default function ClubScreen({ navigation }: ClubScreenProps) {
                     )}
                   </TouchableOpacity>
                 ))}
-              </View>
+              </ScrollView>
             </View>
 
             {/* Court Customization */}
@@ -973,19 +982,24 @@ export default function ClubScreen({ navigation }: ClubScreenProps) {
             >
               <View style={styles.sectionHeader}>
                 <MaterialCommunityIcons
-                  name="basketball-hoop"
+                  name="basketball-hoop-outline"
                   size={16}
                   color={BRAND_COLORS[500]}
                 />
                 <Text style={[styles.sectionTitle, { color: textPrimary }]}>
-                  Personnalisation Terrain
+                  Personnalisation du terrain
                 </Text>
               </View>
 
               <Text style={[styles.colorLabel, { color: textSecondary }]}>
-                Couleur du Parquet
+                Couleur du parquet
               </Text>
-              <View style={styles.colorPickerRow}>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                style={styles.colorPickerScrollView}
+                contentContainerStyle={styles.colorPickerRow}
+              >
                 <TouchableOpacity
                   style={[
                     styles.courtColorButton,
@@ -1027,12 +1041,17 @@ export default function ClubScreen({ navigation }: ClubScreenProps) {
                     )}
                   </TouchableOpacity>
                 ))}
-              </View>
+              </ScrollView>
 
               <Text style={[styles.colorLabel, { color: textSecondary }]}>
-                Couleur des Lignes
+                Couleur des lignes
               </Text>
-              <View style={styles.colorPickerRow}>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                style={styles.colorPickerScrollView}
+                contentContainerStyle={styles.colorPickerRow}
+              >
                 <TouchableOpacity
                   style={[
                     styles.colorOption,
@@ -1075,7 +1094,7 @@ export default function ClubScreen({ navigation }: ClubScreenProps) {
                     )}
                   </TouchableOpacity>
                 ))}
-              </View>
+              </ScrollView>
             </View>
 
             {/* Court Preview */}
@@ -1788,10 +1807,12 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     marginTop: 10,
   },
+  colorPickerScrollView: {
+    marginTop: 5,
+  },
   colorPickerRow: {
     flexDirection: "row",
     gap: 10,
-    marginTop: 5,
   },
   colorOption: {
     width: 50,

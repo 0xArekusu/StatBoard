@@ -408,7 +408,7 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
               ]}
             >
               <MaterialCommunityIcons
-                name="shield"
+                name="shield-outline"
                 size={24}
                 color={BRAND_COLORS[500]}
               />
