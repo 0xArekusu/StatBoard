@@ -181,11 +181,14 @@ export default function ClubScreen({ navigation }: ClubScreenProps) {
 
     try {
       const teamService = ServiceFactory.getTeamService(supabase);
-      await teamService.createTeam({
-        name: newTeamName,
-        category: newTeamCategory || "Général",
-        clubId: club.id,
-      });
+      await teamService.createTeam(
+        {
+          name: newTeamName,
+          category: newTeamCategory || "Général",
+          clubId: club.id,
+        },
+        user!.id
+      );
 
       // Reload teams
       await loadClubData();
@@ -265,13 +268,18 @@ export default function ClubScreen({ navigation }: ClubScreenProps) {
           formData.name.substring(0, 3) + Math.floor(Math.random() * 1000)
         ).toUpperCase();
 
-        await clubService.createClub({
-          name: formData.name,
-          code,
-          ownerId: user.id,
-          logoUrl: formData.logoUri || "",
-          subscriptionTier: "FREE",
-        });
+        await clubService.createClub(
+          {
+            name: formData.name,
+            acronym: formData.acronym,
+            logoUrl: formData.logoUri || undefined,
+            primaryColor: formData.primaryColor,
+            secondaryColor: formData.secondaryColor,
+            courtBackgroundColor: formData.courtColor,
+            courtLineColor: formData.courtLinesColor,
+          },
+          user!.id
+        );
 
         await loadClubData();
         Alert.alert("Succès", "Club créé avec succès !");
@@ -1097,25 +1105,18 @@ export default function ClubScreen({ navigation }: ClubScreenProps) {
 
             {/* Court Preview */}
             <View style={[styles.courtPreview, { borderColor }]}>
-              <View style={styles.courtContainer}>
-                <BasketballCourtSVG
-                  width={320}
-                  height={180}
-                  backgroundColor={formData.courtColor}
-                  lineColor={formData.courtLinesColor}
-                  logoUri={
-                    formData.logoUri ||
-                    Image.resolveAssetSource(
-                      require("../components/icons/coachassistant-logo-margin.png")
-                    ).uri
-                  }
-                />
-              </View>
-              {formData.name && (
-                <Text style={[styles.clubNamePreview, { color: textPrimary }]}>
-                  {formData.name} {formData.acronym && `(${formData.acronym})`}
-                </Text>
-              )}
+              <BasketballCourtSVG
+                width={320}
+                height={180}
+                backgroundColor={formData.courtColor}
+                lineColor={formData.courtLinesColor}
+                logoUri={
+                  formData.logoUri ||
+                  Image.resolveAssetSource(
+                    require("../components/icons/coachassistant-logo-margin.png")
+                  ).uri
+                }
+              />
             </View>
           </View>
         ) : (
