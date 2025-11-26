@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   Alert,
   ActivityIndicator,
   Image,
+  Modal,
 } from "react-native";
 import Svg, {
   Rect,
@@ -23,14 +24,17 @@ import Svg, {
 } from "react-native-svg";
 import { MaterialCommunityIcons, Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
-import { LinearGradient } from "expo-linear-gradient";
+import ColorPicker, {
+  Panel1,
+  HueSlider,
+  type ColorFormatsObject,
+} from "reanimated-color-picker";
 import { useTheme } from "../src/contexts/ThemeContext";
 import { useAuth } from "../src/contexts/AuthContext";
 import {
   SLATE_COLORS,
   BRAND_COLORS,
   COMMON_COLORS,
-  COURT_PRESET_COLORS,
 } from "../src/theme/clubDefaults";
 import { ServiceFactory } from "../services/ServiceFactory";
 import { supabase } from "../src/config/supabase";
@@ -119,6 +123,26 @@ export default function ClubScreen({ navigation }: ClubScreenProps) {
   const [newTeamCategory, setNewTeamCategory] = useState("");
 
   const isGuest = !user;
+
+  const onPrimaryColorChange = useCallback((colors: ColorFormatsObject) => {
+    setFormData((prev) => ({ ...prev, primaryColor: colors.hex }));
+    setIsCustomPrimary(true);
+  }, []);
+
+  const onSecondaryColorChange = useCallback((colors: ColorFormatsObject) => {
+    setFormData((prev) => ({ ...prev, secondaryColor: colors.hex }));
+    setIsCustomSecondary(true);
+  }, []);
+
+  const onCourtColorChange = useCallback((colors: ColorFormatsObject) => {
+    setFormData((prev) => ({ ...prev, courtColor: colors.hex }));
+    setIsCustomCourt(true);
+  }, []);
+
+  const onCourtLinesColorChange = useCallback((colors: ColorFormatsObject) => {
+    setFormData((prev) => ({ ...prev, courtLinesColor: colors.hex }));
+    setIsCustomCourtLines(true);
+  }, []);
 
   useEffect(() => {
     loadClubData();
@@ -1003,7 +1027,15 @@ export default function ClubScreen({ navigation }: ClubScreenProps) {
                       { backgroundColor: c },
                       formData.courtColor === c && styles.colorOptionSelected,
                     ]}
-                  />
+                  >
+                    {formData.courtColor === c && (
+                      <Ionicons
+                        name="checkmark"
+                        size={20}
+                        color={COMMON_COLORS.white}
+                      />
+                    )}
+                  </TouchableOpacity>
                 ))}
               </View>
 
@@ -1043,7 +1075,15 @@ export default function ClubScreen({ navigation }: ClubScreenProps) {
                       formData.courtLinesColor === c &&
                         styles.colorOptionSelected,
                     ]}
-                  />
+                  >
+                    {formData.courtLinesColor === c && (
+                      <Ionicons
+                        name="checkmark"
+                        size={20}
+                        color={COMMON_COLORS.white}
+                      />
+                    )}
+                  </TouchableOpacity>
                 ))}
               </View>
             </View>
@@ -1061,7 +1101,7 @@ export default function ClubScreen({ navigation }: ClubScreenProps) {
           <View style={styles.formContainer}>
             <View style={styles.formSection}>
               <Text style={[styles.formLabel, { color: textSecondary }]}>
-                CODE D'ÉQUIPE
+                CODE CLUB
               </Text>
               <TextInput
                 placeholder="Ex: LION69"
@@ -1101,6 +1141,139 @@ export default function ClubScreen({ navigation }: ClubScreenProps) {
           </View>
         )}
       </ScrollView>
+
+      {/* Color Picker Modals */}
+      <Modal visible={showPrimaryPicker} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View
+            style={[styles.modalContent, { backgroundColor: surfaceColor }]}
+          >
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: textPrimary }]}>
+                Couleur principale
+              </Text>
+              <TouchableOpacity onPress={() => setShowPrimaryPicker(false)}>
+                <Ionicons name="close" size={28} color={textPrimary} />
+              </TouchableOpacity>
+            </View>
+            <ColorPicker
+              value={formData.primaryColor}
+              onCompleteJS={onPrimaryColorChange}
+            >
+              <Panel1 style={styles.colorPanel} />
+              <HueSlider style={styles.hueSlider} />
+            </ColorPicker>
+            <TouchableOpacity
+              style={[
+                styles.modalConfirmButton,
+                { backgroundColor: BRAND_COLORS[600] },
+              ]}
+              onPress={() => setShowPrimaryPicker(false)}
+            >
+              <Text style={styles.modalConfirmText}>Confirmer</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal visible={showSecondaryPicker} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View
+            style={[styles.modalContent, { backgroundColor: surfaceColor }]}
+          >
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: textPrimary }]}>
+                Couleur secondaire
+              </Text>
+              <TouchableOpacity onPress={() => setShowSecondaryPicker(false)}>
+                <Ionicons name="close" size={28} color={textPrimary} />
+              </TouchableOpacity>
+            </View>
+            <ColorPicker
+              value={formData.secondaryColor}
+              onCompleteJS={onSecondaryColorChange}
+            >
+              <Panel1 style={styles.colorPanel} />
+              <HueSlider style={styles.hueSlider} />
+            </ColorPicker>
+            <TouchableOpacity
+              style={[
+                styles.modalConfirmButton,
+                { backgroundColor: BRAND_COLORS[600] },
+              ]}
+              onPress={() => setShowSecondaryPicker(false)}
+            >
+              <Text style={styles.modalConfirmText}>Confirmer</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal visible={showCourtPicker} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View
+            style={[styles.modalContent, { backgroundColor: surfaceColor }]}
+          >
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: textPrimary }]}>
+                Couleur du parquet
+              </Text>
+              <TouchableOpacity onPress={() => setShowCourtPicker(false)}>
+                <Ionicons name="close" size={28} color={textPrimary} />
+              </TouchableOpacity>
+            </View>
+            <ColorPicker
+              value={formData.courtColor}
+              onCompleteJS={onCourtColorChange}
+            >
+              <Panel1 style={styles.colorPanel} />
+              <HueSlider style={styles.hueSlider} />
+            </ColorPicker>
+            <TouchableOpacity
+              style={[
+                styles.modalConfirmButton,
+                { backgroundColor: BRAND_COLORS[600] },
+              ]}
+              onPress={() => setShowCourtPicker(false)}
+            >
+              <Text style={styles.modalConfirmText}>Confirmer</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal visible={showCourtLinesPicker} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View
+            style={[styles.modalContent, { backgroundColor: surfaceColor }]}
+          >
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: textPrimary }]}>
+                Couleur des lignes
+              </Text>
+              <TouchableOpacity onPress={() => setShowCourtLinesPicker(false)}>
+                <Ionicons name="close" size={28} color={textPrimary} />
+              </TouchableOpacity>
+            </View>
+            <ColorPicker
+              value={formData.courtLinesColor}
+              onCompleteJS={onCourtLinesColorChange}
+            >
+              <Panel1 style={styles.colorPanel} />
+              <HueSlider style={styles.hueSlider} />
+            </ColorPicker>
+            <TouchableOpacity
+              style={[
+                styles.modalConfirmButton,
+                { backgroundColor: BRAND_COLORS[600] },
+              ]}
+              onPress={() => setShowCourtLinesPicker(false)}
+            >
+              <Text style={styles.modalConfirmText}>Confirmer</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
 
       <View style={[styles.footer, { borderTopColor: borderColor }]}>
         <TouchableOpacity
@@ -1824,5 +1997,48 @@ const styles = StyleSheet.create({
   },
   priceLabel: {
     fontSize: 10,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "flex-end",
+  },
+  modalContent: {
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 20,
+    paddingBottom: 40,
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 20,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+  },
+  colorPanel: {
+    width: "100%",
+    height: 200,
+    marginBottom: 20,
+    borderRadius: 10,
+  },
+  hueSlider: {
+    width: "100%",
+    height: 40,
+    borderRadius: 20,
+    marginBottom: 20,
+  },
+  modalConfirmButton: {
+    padding: 15,
+    borderRadius: 10,
+    alignItems: "center",
+  },
+  modalConfirmText: {
+    color: COMMON_COLORS.white,
+    fontSize: 16,
+    fontWeight: "600",
   },
 });
