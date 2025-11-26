@@ -441,13 +441,14 @@ export default function ClubScreen({ navigation }: ClubScreenProps) {
                   ]}
                 >
                   {club.logoUrl ? (
-                    <Text style={{ color: textPrimary }}>IMG</Text>
+                    <Image
+                      source={{ uri: club.logoUrl }}
+                      style={styles.clubLogoImage}
+                    />
                   ) : (
-                    <Logo
-                      width={40}
-                      height={40}
-                      primaryColor={BRAND_COLORS[500]}
-                      secondaryColor={COMMON_COLORS.white}
+                    <Image
+                      source={require("../components/icons/coachassistant-logo-margin.png")}
+                      style={styles.clubLogoImage}
                     />
                   )}
                 </View>
@@ -1559,6 +1560,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 12,
+    overflow: "hidden",
+  },
+  clubLogoImage: {
+    width: "100%",
+    height: "100%",
+    resizeMode: "cover",
   },
   clubName: {
     fontSize: 20,
