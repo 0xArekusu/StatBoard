@@ -11,17 +11,6 @@ import {
   Image,
   Modal,
 } from "react-native";
-import Svg, {
-  Rect,
-  G,
-  Line,
-  Circle,
-  Path,
-  Defs,
-  LinearGradient as SvgLinearGradient,
-  Stop,
-  Text as SvgText,
-} from "react-native-svg";
 import { MaterialCommunityIcons, Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import ColorPicker, {
@@ -42,6 +31,7 @@ import { PhotoUploadService } from "../services/PhotoUploadService";
 import { Club } from "../models/Club";
 import { Team } from "../models/Team";
 import Logo from "../components/icons/Logo";
+import BasketballCourtSVG from "../components/BasketballCourtSVG";
 
 interface ClubScreenProps {
   navigation: any;
@@ -1090,10 +1080,12 @@ export default function ClubScreen({ navigation }: ClubScreenProps) {
 
             {/* Court Preview */}
             <View style={[styles.courtPreview, { borderColor }]}>
-              <CourtPreview
-                courtColor={formData.courtColor}
-                linesColor={formData.courtLinesColor}
-                acronym={formData.acronym}
+              <BasketballCourtSVG
+                width={320}
+                height={180}
+                backgroundColor={formData.courtColor}
+                lineColor={formData.courtLinesColor}
+                logoUri={formData.logoUri}
               />
             </View>
           </View>
@@ -1275,7 +1267,7 @@ export default function ClubScreen({ navigation }: ClubScreenProps) {
         </View>
       </Modal>
 
-      <View style={[styles.footer, { borderTopColor: borderColor }]}>
+      <View style={[styles.footer]}>
         <TouchableOpacity
           onPress={handleSubmit}
           style={[styles.submitButton, { backgroundColor: BRAND_COLORS[600] }]}
@@ -1467,64 +1459,6 @@ function PricingCard({
         </View>
       </View>
     </TouchableOpacity>
-  );
-}
-
-interface CourtPreviewProps {
-  courtColor: string;
-  linesColor: string;
-  acronym: string;
-}
-
-function CourtPreview({ courtColor, linesColor, acronym }: CourtPreviewProps) {
-  return (
-    <Svg width="100%" height="100%" viewBox="0 0 100 50">
-      {/* Floor Base */}
-      <Rect x="0" y="0" width="100" height="50" fill={courtColor} />
-
-      {/* Gradient Overlay */}
-      <Defs>
-        <SvgLinearGradient id="woodGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-          <Stop offset="0%" stopColor="#000" stopOpacity="0" />
-          <Stop offset="100%" stopColor="#000" stopOpacity="0.2" />
-        </SvgLinearGradient>
-      </Defs>
-      <Rect
-        x="0"
-        y="0"
-        width="100"
-        height="50"
-        fill="url(#woodGradient)"
-        opacity="0.1"
-      />
-
-      {/* Lines */}
-      <G fill="none" stroke={linesColor} strokeWidth="0.8">
-        <Line x1="50" y1="0" x2="50" y2="50" />
-        <Circle cx="50" cy="25" r="6" />
-
-        <Path d="M 0 17 L 16 17 L 16 33 L 0 33" />
-        <Path d="M 16 17 A 6 6 0 0 1 16 33" />
-        <Path d="M 0 4 L 4 4 Q 28 25 4 46 L 0 46" />
-
-        <Path d="M 100 17 L 84 17 L 84 33 L 100 33" />
-        <Path d="M 84 17 A 6 6 0 0 0 84 33" />
-        <Path d="M 100 4 L 96 4 Q 72 25 96 46 L 100 46" />
-      </G>
-
-      {/* Branding */}
-      <SvgText
-        x="50"
-        y="27"
-        textAnchor="middle"
-        fill={linesColor}
-        fontSize="4"
-        fontWeight="bold"
-        opacity="0.5"
-      >
-        {acronym || "TEAM"}
-      </SvgText>
-    </Svg>
   );
 }
 
@@ -1889,9 +1823,7 @@ const styles = StyleSheet.create({
   courtPreview: {
     width: "100%",
     aspectRatio: 2,
-    borderRadius: 12,
     overflow: "hidden",
-    borderWidth: 1,
   },
   codeInput: {
     textAlign: "center",
@@ -1914,7 +1846,6 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     padding: 24,
-    borderTopWidth: 1,
   },
   submitButton: {
     flexDirection: "row",
