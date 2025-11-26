@@ -1,22 +1,27 @@
 import * as React from "react";
 import Svg, { Path } from "react-native-svg";
+import { BRAND_COLORS } from "../../src/theme";
 
 interface JerseyIconProps {
+  width?: number;
+  height?: number;
   primaryColor?: string;
   secondaryColor?: string;
   strokeWidth?: number;
 }
 
 const JerseyIconSimple = ({
-  primaryColor = "#f37021",
-  secondaryColor = "#000000",
-  strokeWidth = 6,
+  width = 40,
+  height = 40,
+  primaryColor = "none",
+  secondaryColor = BRAND_COLORS[500],
+  strokeWidth = 20,
 }: JerseyIconProps) => {
   return (
     <Svg
-      width={120}
+      width={width}
+      height={height}
       viewBox="0 0 375 374.999991"
-      height={120}
       preserveAspectRatio="xMidYMid meet"
     >
       <Path

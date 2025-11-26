@@ -30,8 +30,8 @@ import { supabase } from "../src/config/supabase";
 import { PhotoUploadService } from "../services/PhotoUploadService";
 import { Club } from "../models/Club";
 import { Team } from "../models/Team";
-import Logo from "../components/icons/Logo";
 import BasketballCourtSVG from "../components/BasketballCourtSVG";
+import JerseyIconSimple from "../components/icons/JerseySimpleIcon";
 
 interface ClubScreenProps {
   navigation: any;
@@ -1347,11 +1347,7 @@ function TeamCard({
             { backgroundColor: isDark ? SLATE_COLORS[700] : SLATE_COLORS[100] },
           ]}
         >
-          <MaterialCommunityIcons
-            name="tshirt-crew"
-            size={20}
-            color={BRAND_COLORS[600]}
-          />
+          <JerseyIconSimple />
         </View>
         <View>
           <Text style={[styles.teamName, { color: textPrimary }]}>
@@ -1713,8 +1709,8 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   teamIcon: {
-    width: 40,
-    height: 40,
+    width: 50,
+    height: 50,
     borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
