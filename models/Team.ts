@@ -10,6 +10,7 @@ export interface Team {
   gender?: TeamGender;
   coachName?: string; // Name of the team coach
   coachPhotoUrl?: string; // Photo URL of the team coach
+  playerCount?: number; // Number of players in the team (updated when players are added/removed)
   status: TeamStatus;
   isActive: boolean; // Club owner can activate/deactivate teams
   isDeleted: boolean; // Soft delete - archived but not physically removed

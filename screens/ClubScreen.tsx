@@ -30,6 +30,7 @@ import { supabase } from "../src/config/supabase";
 import { PhotoUploadService } from "../services/PhotoUploadService";
 import { Club } from "../models/Club";
 import { Team } from "../models/Team";
+import { SubscriptionTier, SUBSCRIPTION_LIMITS } from "../models/Subscription";
 import BasketballCourtSVG from "../components/BasketballCourtSVG";
 import JerseyIconSimple from "../components/icons/JerseySimpleIcon";
 
@@ -39,14 +40,6 @@ interface ClubScreenProps {
 
 type TabType = "create" | "join";
 type SubTabType = "info" | "subscription";
-type SubscriptionTier = "FREE" | "BASIC" | "PRO" | "ULTIMATE";
-
-const TIER_LIMITS = {
-  FREE: 1,
-  BASIC: 3,
-  PRO: 10,
-  ULTIMATE: 999,
-};
 
 const CLUB_COLORS = [
   "#ef4444",
@@ -163,9 +156,8 @@ export default function ClubScreen({ navigation }: ClubScreenProps) {
   };
 
   const currentTeamCount = teams.length;
-  const currentTier: SubscriptionTier =
-    (club?.subscriptionTier as SubscriptionTier) || "FREE";
-  const maxTeams = TIER_LIMITS[currentTier];
+  const currentTier: SubscriptionTier = club?.subscriptionTier || "free";
+  const maxTeams = SUBSCRIPTION_LIMITS[currentTier].maxTeams;
   const isLimitReached = currentTeamCount >= maxTeams;
   const isOwner = club?.ownerId === user?.id;
 
@@ -387,35 +379,26 @@ export default function ClubScreen({ navigation }: ClubScreenProps) {
 
               <View style={styles.pricingCards}>
                 <PricingCard
-                  tier="FREE"
-                  currentTier={currentTier}
-                  price="0€"
-                  limit={TIER_LIMITS.FREE}
-                  isDark={isDark}
-                  onSelect={handleUpgrade}
-                />
-                <PricingCard
-                  tier="BASIC"
+                  tier="basic"
                   currentTier={currentTier}
                   price="9.99€"
-                  limit={TIER_LIMITS.BASIC}
+                  limit={SUBSCRIPTION_LIMITS.basic.maxTeams}
                   isDark={isDark}
                   onSelect={handleUpgrade}
                 />
                 <PricingCard
-                  tier="PRO"
+                  tier="premium"
                   currentTier={currentTier}
                   price="24.99€"
-                  limit={TIER_LIMITS.PRO}
+                  limit={SUBSCRIPTION_LIMITS.premium.maxTeams}
                   isDark={isDark}
-                  isPopular
                   onSelect={handleUpgrade}
                 />
                 <PricingCard
-                  tier="ULTIMATE"
+                  tier="ultimate"
                   currentTier={currentTier}
                   price="49.99€"
-                  limit={TIER_LIMITS.ULTIMATE}
+                  limit={SUBSCRIPTION_LIMITS.ultimate.maxTeams}
                   isDark={isDark}
                   onSelect={handleUpgrade}
                 />
@@ -1354,7 +1337,7 @@ function TeamCard({
             {team.name}
           </Text>
           <Text style={[styles.teamCategory, { color: textSecondary }]}>
-            {team.category} • 0 Joueurs
+            {team.gender === 'male' ? 'Hommes' : team.gender === 'female' ? 'Femmes' : 'Mixte'} • {team.playerCount ?? 0} Joueur{(team.playerCount ?? 0) > 1 ? 's' : ''}
           </Text>
         </View>
       </View>
@@ -1373,7 +1356,6 @@ interface PricingCardProps {
   price: string;
   limit: number;
   isDark: boolean;
-  isPopular?: boolean;
   onSelect: (tier: SubscriptionTier) => void;
 }
 
@@ -1383,15 +1365,14 @@ function PricingCard({
   price,
   limit,
   isDark,
-  isPopular,
   onSelect,
 }: PricingCardProps) {
   const isCurrent = tier === currentTier;
-  const colors = {
-    FREE: "#64748b",
-    BASIC: "#3b82f6",
-    PRO: "#a855f7",
-    ULTIMATE: "#f59e0b",
+  const colors: Record<SubscriptionTier, string> = {
+    free: SLATE_COLORS[600],
+    basic: BRAND_COLORS[500],
+    premium: BRAND_COLORS[600],
+    ultimate: BRAND_COLORS[900],
   };
 
   return (
@@ -1412,16 +1393,16 @@ function PricingCard({
         },
       ]}
     >
-      {isPopular && (
-        <View style={styles.popularBadge}>
-          <Text style={styles.popularBadgeText}>RECOMMANDÉ</Text>
+      {isCurrent && (
+        <View style={styles.currentBadge}>
+          <Text style={styles.currentBadgeText}>ACTUEL</Text>
         </View>
       )}
       <View style={styles.pricingCardContent}>
         <View style={styles.pricingCardLeft}>
           <View style={[styles.pricingIcon, { backgroundColor: colors[tier] }]}>
             <MaterialCommunityIcons
-              name={tier === "ULTIMATE" ? "crown" : "star"}
+              name={tier === "ultimate" ? "crown" : "star"}
               size={20}
               color={COMMON_COLORS.white}
             />
@@ -1436,30 +1417,6 @@ function PricingCard({
               >
                 {tier}
               </Text>
-              {isCurrent && (
-                <View
-                  style={[
-                    styles.currentBadge,
-                    {
-                      backgroundColor: isDark
-                        ? SLATE_COLORS[800]
-                        : SLATE_COLORS[100],
-                      borderColor: isDark
-                        ? SLATE_COLORS[700]
-                        : SLATE_COLORS[200],
-                    },
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.currentBadgeText,
-                      { color: isDark ? SLATE_COLORS[500] : SLATE_COLORS[500] },
-                    ]}
-                  >
-                    Actuel
-                  </Text>
-                </View>
-              )}
             </View>
             <Text
               style={[
@@ -1900,17 +1857,17 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     position: "relative",
   },
-  popularBadge: {
+  currentBadge: {
     position: "absolute",
     top: -12,
     left: "50%",
     transform: [{ translateX: -50 }],
-    backgroundColor: BRAND_COLORS[600],
+    backgroundColor: BRAND_COLORS[500],
     paddingHorizontal: 12,
     paddingVertical: 4,
     borderRadius: 999,
   },
-  popularBadgeText: {
+  currentBadgeText: {
     color: COMMON_COLORS.white,
     fontSize: 10,
     fontWeight: "bold",
@@ -1940,15 +1897,6 @@ const styles = StyleSheet.create({
   tierName: {
     fontSize: 16,
     fontWeight: "bold",
-  },
-  currentBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 999,
-    borderWidth: 1,
-  },
-  currentBadgeText: {
-    fontSize: 10,
   },
   tierLimit: {
     fontSize: 12,
