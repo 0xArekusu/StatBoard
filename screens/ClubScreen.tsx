@@ -786,11 +786,9 @@ export default function ClubScreen({ navigation }: ClubScreenProps) {
                     style={styles.logoImage}
                   />
                 ) : (
-                  <Logo
-                    width={48}
-                    height={48}
-                    primaryColor={SLATE_COLORS[300]}
-                    secondaryColor={SLATE_COLORS[600]}
+                  <Image
+                    source={require("../components/icons/coachassistant-logo-margin.png")}
+                    style={styles.logoImage}
                   />
                 )}
               </TouchableOpacity>
@@ -1099,13 +1097,25 @@ export default function ClubScreen({ navigation }: ClubScreenProps) {
 
             {/* Court Preview */}
             <View style={[styles.courtPreview, { borderColor }]}>
-              <BasketballCourtSVG
-                width={320}
-                height={180}
-                backgroundColor={formData.courtColor}
-                lineColor={formData.courtLinesColor}
-                logoUri={formData.logoUri}
-              />
+              <View style={styles.courtContainer}>
+                <BasketballCourtSVG
+                  width={320}
+                  height={180}
+                  backgroundColor={formData.courtColor}
+                  lineColor={formData.courtLinesColor}
+                  logoUri={
+                    formData.logoUri ||
+                    Image.resolveAssetSource(
+                      require("../components/icons/coachassistant-logo-margin.png")
+                    ).uri
+                  }
+                />
+              </View>
+              {formData.name && (
+                <Text style={[styles.clubNamePreview, { color: textPrimary }]}>
+                  {formData.name} {formData.acronym && `(${formData.acronym})`}
+                </Text>
+              )}
             </View>
           </View>
         ) : (
