@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
+import { useFocusEffect } from "@react-navigation/native";
 import {
   View,
   Text,
@@ -33,6 +34,7 @@ import { Team } from "../models/Team";
 import { SubscriptionTier, SUBSCRIPTION_LIMITS } from "../models/Subscription";
 import BasketballCourtSVG from "../components/BasketballCourtSVG";
 import JerseyIconSimple from "../components/icons/JerseySimpleIcon";
+import { ROUTES } from "../constants/routes";
 
 interface ClubScreenProps {
   navigation: any;
@@ -100,9 +102,6 @@ export default function ClubScreen({ navigation }: ClubScreenProps) {
   const [isCustomCourtLines, setIsCustomCourtLines] = useState(false);
 
   // Add Team Logic
-  const [isAddingTeam, setIsAddingTeam] = useState(false);
-  const [newTeamName, setNewTeamName] = useState("");
-  const [newTeamCategory, setNewTeamCategory] = useState("");
 
   const isGuest = !user;
 
@@ -129,6 +128,14 @@ export default function ClubScreen({ navigation }: ClubScreenProps) {
   useEffect(() => {
     loadClubData();
   }, [user?.id]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (club) {
+        loadClubData();
+      }
+    }, [club?.id])
+  );
 
   const loadClubData = async () => {
     if (!user) {
@@ -161,8 +168,8 @@ export default function ClubScreen({ navigation }: ClubScreenProps) {
   const isLimitReached = currentTeamCount >= maxTeams;
   const isOwner = club?.ownerId === user?.id;
 
-  const handleAddTeam = async () => {
-    if (!club || !newTeamName || !user) return;
+  const handleAddTeam = () => {
+    if (!club) return;
     if (isLimitReached) {
       Alert.alert(
         "Limite atteinte",
@@ -171,27 +178,7 @@ export default function ClubScreen({ navigation }: ClubScreenProps) {
       return;
     }
 
-    try {
-      const teamService = ServiceFactory.getTeamService(supabase);
-      await teamService.createTeam(
-        {
-          name: newTeamName,
-          category: newTeamCategory || "Général",
-          clubId: club.id,
-        },
-        user!.id
-      );
-
-      // Reload teams
-      await loadClubData();
-
-      setIsAddingTeam(false);
-      setNewTeamName("");
-      setNewTeamCategory("");
-    } catch (error) {
-      console.error("Error adding team:", error);
-      Alert.alert("Erreur", "Impossible de créer l'équipe");
-    }
+    navigation.navigate(ROUTES.TEAM_INFO, { clubId: club.id });
   };
 
   const handleUpgrade = (tier: SubscriptionTier) => {
@@ -548,107 +535,25 @@ export default function ClubScreen({ navigation }: ClubScreenProps) {
                   >
                     Nos Équipes
                   </Text>
-                  {!isAddingTeam && (
-                    <TouchableOpacity
-                      onPress={() => {
-                        if (isLimitReached) {
-                          Alert.alert(
-                            "Limite atteinte",
-                            `Votre abonnement ${currentTier} est limité à ${maxTeams} équipes. Veuillez mettre à jour votre offre.`
-                          );
-                        } else {
-                          setIsAddingTeam(true);
-                        }
-                      }}
-                      style={[
-                        styles.addTeamButton,
-                        {
-                          backgroundColor: isLimitReached
-                            ? SLATE_COLORS[400]
-                            : BRAND_COLORS[600],
-                        },
-                      ]}
-                      disabled={!isOwner && isLimitReached}
-                    >
-                      <MaterialCommunityIcons
-                        name={isLimitReached ? "lock" : "plus"}
-                        size={20}
-                        color={COMMON_COLORS.white}
-                      />
-                    </TouchableOpacity>
-                  )}
-                </View>
-
-                {isAddingTeam && (
-                  <View
+                  <TouchableOpacity
+                    onPress={handleAddTeam}
                     style={[
-                      styles.addTeamForm,
-                      { backgroundColor: surfaceColor, borderColor },
+                      styles.addTeamButton,
+                      {
+                        backgroundColor: isLimitReached
+                          ? SLATE_COLORS[400]
+                          : BRAND_COLORS[600],
+                      },
                     ]}
+                    disabled={!isOwner && isLimitReached}
                   >
-                    <Text
-                      style={[styles.addTeamFormTitle, { color: textPrimary }]}
-                    >
-                      Nouvelle Équipe
-                    </Text>
-                    <TextInput
-                      placeholder="Nom (ex: Seniors A)"
-                      placeholderTextColor={textSecondary}
-                      value={newTeamName}
-                      onChangeText={setNewTeamName}
-                      style={[
-                        styles.input,
-                        {
-                          backgroundColor: isDark
-                            ? SLATE_COLORS[800]
-                            : SLATE_COLORS[50],
-                          borderColor,
-                          color: textPrimary,
-                        },
-                      ]}
+                    <MaterialCommunityIcons
+                      name={isLimitReached ? "lock" : "plus"}
+                      size={20}
+                      color={COMMON_COLORS.white}
                     />
-                    <TextInput
-                      placeholder="Catégorie (ex: Régional 1)"
-                      placeholderTextColor={textSecondary}
-                      value={newTeamCategory}
-                      onChangeText={setNewTeamCategory}
-                      style={[
-                        styles.input,
-                        {
-                          backgroundColor: isDark
-                            ? SLATE_COLORS[800]
-                            : SLATE_COLORS[50],
-                          borderColor,
-                          color: textPrimary,
-                        },
-                      ]}
-                    />
-                    <View style={styles.addTeamFormButtons}>
-                      <TouchableOpacity
-                        onPress={() => setIsAddingTeam(false)}
-                        style={styles.cancelButton}
-                      >
-                        <Text
-                          style={[
-                            styles.cancelButtonText,
-                            { color: textSecondary },
-                          ]}
-                        >
-                          Annuler
-                        </Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        onPress={handleAddTeam}
-                        style={[
-                          styles.createButton,
-                          { backgroundColor: BRAND_COLORS[600] },
-                        ]}
-                      >
-                        <Text style={styles.createButtonText}>Créer</Text>
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                )}
+                  </TouchableOpacity>
+                </View>
 
                 {teams.length > 0 ? (
                   teams.map((team) => (
@@ -660,6 +565,8 @@ export default function ClubScreen({ navigation }: ClubScreenProps) {
                       textPrimary={textPrimary}
                       textSecondary={textSecondary}
                       borderColor={borderColor}
+                      navigation={navigation}
+                      clubId={club?.id}
                     />
                   ))
                 ) : (
@@ -1309,6 +1216,8 @@ interface TeamCardProps {
   textPrimary: string;
   textSecondary: string;
   borderColor: string;
+  navigation: any;
+  clubId?: string;
 }
 
 function TeamCard({
@@ -1318,10 +1227,13 @@ function TeamCard({
   textPrimary,
   textSecondary,
   borderColor,
+  navigation,
+  clubId,
 }: TeamCardProps) {
   return (
     <TouchableOpacity
       style={[styles.teamCard, { backgroundColor: surfaceColor, borderColor }]}
+      onPress={() => navigation.navigate(ROUTES.TEAM_INFO, { teamId: team.id, clubId })}
     >
       <View style={styles.teamCardLeft}>
         <View
@@ -1599,47 +1511,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
-  },
-  addTeamForm: {
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-  },
-  addTeamFormTitle: {
-    fontSize: 14,
-    fontWeight: "bold",
-    marginBottom: 12,
-  },
-  input: {
-    padding: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    marginBottom: 8,
-    fontSize: 14,
-  },
-  addTeamFormButtons: {
-    flexDirection: "row",
-    gap: 8,
-  },
-  cancelButton: {
-    flex: 1,
-    padding: 8,
-    alignItems: "center",
-  },
-  cancelButtonText: {
-    fontSize: 14,
-    fontWeight: "bold",
-  },
-  createButton: {
-    flex: 1,
-    padding: 8,
-    borderRadius: 8,
-    alignItems: "center",
-  },
-  createButtonText: {
-    fontSize: 14,
-    fontWeight: "bold",
-    color: COMMON_COLORS.white,
   },
   emptyTeams: {
     padding: 32,

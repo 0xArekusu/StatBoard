@@ -14,6 +14,9 @@ export const ROUTES = {
   SIGN_UP: "SignUp",
   CLUB_FORM: "ClubForm",
   TEAM_FORM: "TeamForm",
+  TEAM_INFO: "TeamInfo",
+  TEAM_ROSTER: "TeamRoster",
+  TEAM_STARTERS: "TeamStarters",
   JOIN_CLUB: "JoinClub",
   DEBUG_COURT: "DebugCourt",
 } as const;

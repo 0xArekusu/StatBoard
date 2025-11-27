@@ -1,0 +1,303 @@
+import React, { useState } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  TextInput,
+  Alert,
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
+import { useTheme } from "../src/contexts/ThemeContext";
+import { CommonStyles, BRAND_COLORS, SLATE_COLORS } from "../src/theme";
+import { ROUTES } from "../constants/routes";
+import type { TeamGender } from "../models/Team";
+
+type RootStackParamList = {
+  TeamInfo: {
+    clubId: string;
+    teamId?: string;
+    teamData?: {
+      name: string;
+      category: string;
+      gender: TeamGender;
+    };
+  };
+};
+
+type TeamInfoRouteProp = RouteProp<RootStackParamList, "TeamInfo">;
+
+const GENDERS: { value: TeamGender; label: string; color: string }[] = [
+  { value: "male", label: "Masculin", color: BRAND_COLORS[500] },
+  { value: "female", label: "Féminin", color: "BRAND_COLORS[500]" },
+  { value: "mixed", label: "Mixte", color: "BRAND_COLORS[500]" },
+  // { value: "female", label: "Féminin", color: "#ec4899" },
+  // { value: "mixed", label: "Mixte", color: "#a855f7" },
+];
+
+export default function TeamInfoScreen() {
+  const navigation = useNavigation();
+  const route = useRoute<TeamInfoRouteProp>();
+  const { colors, isDark } = useTheme();
+  const { clubId, teamId, teamData } = route.params;
+
+  const [name, setName] = useState(teamData?.name || "");
+  const [category, setCategory] = useState(teamData?.category || "");
+  const [gender, setGender] = useState<TeamGender>(teamData?.gender || "male");
+
+  const bgColor = isDark ? SLATE_COLORS[950] : SLATE_COLORS[50];
+  const surfaceColor = isDark ? SLATE_COLORS[900] : "#FFFFFF";
+
+  const handleNext = () => {
+    if (!name.trim()) {
+      Alert.alert("Erreur", "Le nom de l'équipe est obligatoire");
+      return;
+    }
+
+    navigation.navigate(ROUTES.TEAM_ROSTER, {
+      clubId,
+      teamId,
+      teamData: {
+        name: name.trim(),
+        category: category.trim(),
+        gender,
+      },
+    });
+  };
+
+  return (
+    <View style={[styles.container, { backgroundColor: bgColor }]}>
+      {/* Header */}
+      <View
+        style={[
+          CommonStyles.header,
+          {
+            backgroundColor: surfaceColor,
+            borderBottomColor: colors.border,
+          },
+        ]}
+      >
+        <TouchableOpacity onPress={() => navigation.goBack()}>
+          <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
+        </TouchableOpacity>
+        <Text
+          style={[CommonStyles.headerTitle, { color: colors.text.primary }]}
+        >
+          {teamId ? "Modification d'équipe" : "Création d'équipe"}
+        </Text>
+        <View style={{ width: 24 }} />
+      </View>
+
+      {/* Progress */}
+      <View style={styles.progressContainer}>
+        <View
+          style={[styles.progressBar, { backgroundColor: BRAND_COLORS[500] }]}
+        />
+        <View
+          style={[styles.progressBar, { backgroundColor: colors.border }]}
+        />
+        <View
+          style={[styles.progressBar, { backgroundColor: colors.border }]}
+        />
+      </View>
+
+      {/* Content */}
+      <View style={styles.content}>
+        <Text style={[styles.stepTitle, { color: colors.text.secondary }]}>
+          ÉTAPE 1/3
+        </Text>
+        <Text style={[styles.title, { color: colors.text.primary }]}>
+          Informations de base
+        </Text>
+
+        {/* Team Name */}
+        <View style={styles.section}>
+          <Text style={[styles.label, { color: colors.text.secondary }]}>
+            Nom de l'équipe <Text style={styles.required}>*</Text>
+          </Text>
+          <TextInput
+            style={[
+              styles.input,
+              {
+                backgroundColor: surfaceColor,
+                borderColor: colors.border,
+                color: colors.text.primary,
+              },
+            ]}
+            placeholder="Ex: U15 Région"
+            placeholderTextColor={colors.text.tertiary}
+            value={name}
+            onChangeText={setName}
+            maxLength={50}
+          />
+        </View>
+
+        {/* Category */}
+        <View style={styles.section}>
+          <Text style={[styles.label, { color: colors.text.secondary }]}>
+            Catégorie / Niveau
+          </Text>
+          <TextInput
+            style={[
+              styles.input,
+              {
+                backgroundColor: surfaceColor,
+                borderColor: colors.border,
+                color: colors.text.primary,
+              },
+            ]}
+            placeholder="Ex: Départemental 1"
+            placeholderTextColor={colors.text.tertiary}
+            value={category}
+            onChangeText={setCategory}
+            maxLength={50}
+          />
+        </View>
+
+        {/* Gender */}
+        <View style={styles.section}>
+          <Text style={[styles.label, { color: colors.text.secondary }]}>
+            Genre
+          </Text>
+          <View style={styles.genderGrid}>
+            {GENDERS.map((g) => (
+              <TouchableOpacity
+                key={g.value}
+                onPress={() => setGender(g.value)}
+                style={[
+                  styles.genderButton,
+                  {
+                    backgroundColor:
+                      gender === g.value ? `${g.color}15` : SLATE_COLORS[900],
+                    borderColor: gender === g.value ? g.color : colors.border,
+                    borderWidth: 2,
+                  },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.genderText,
+                    {
+                      color:
+                        gender === g.value ? g.color : colors.text.secondary,
+                      fontWeight: gender === g.value ? "bold" : "600",
+                    },
+                  ]}
+                >
+                  {g.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+      </View>
+
+      {/* Footer */}
+      <View
+        style={[
+          styles.footer,
+          {
+            backgroundColor: SLATE_COLORS[900],
+            borderTopColor: colors.border,
+          },
+        ]}
+      >
+        <TouchableOpacity
+          style={[
+            styles.nextButton,
+            {
+              backgroundColor: name.trim()
+                ? BRAND_COLORS[600]
+                : colors.text.disabled,
+            },
+          ]}
+          onPress={handleNext}
+          disabled={!name.trim()}
+        >
+          <Text style={styles.nextButtonText}>Suivant</Text>
+          <Ionicons name="chevron-forward" size={20} color="#fff" />
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  progressContainer: {
+    flexDirection: "row",
+    gap: 8,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+  },
+  progressBar: {
+    flex: 1,
+    height: 4,
+    borderRadius: 2,
+  },
+  content: {
+    flex: 1,
+    padding: 20,
+  },
+  stepTitle: {
+    fontSize: 11,
+    fontWeight: "bold",
+    letterSpacing: 1,
+    marginBottom: 8,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: "bold",
+    marginBottom: 32,
+  },
+  section: {
+    marginBottom: 24,
+  },
+  label: {
+    fontSize: 14,
+    fontWeight: "bold",
+    marginBottom: 8,
+  },
+  required: {
+    color: "#ef4444",
+  },
+  input: {
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 16,
+    fontSize: 16,
+  },
+  genderGrid: {
+    flexDirection: "row",
+    gap: 12,
+  },
+  genderButton: {
+    flex: 1,
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: "center",
+  },
+  genderText: {
+    fontSize: 14,
+  },
+  footer: {
+    padding: 20,
+    borderTopWidth: 1,
+  },
+  nextButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 18,
+    borderRadius: 12,
+    gap: 8,
+  },
+  nextButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+});
