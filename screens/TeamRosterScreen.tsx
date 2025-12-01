@@ -147,20 +147,29 @@ export default function TeamRosterScreen() {
   };
 
   const handleRemovePlayer = (id: string, playerName: string) => {
-    Alert.alert(
-      "Supprimer le joueur",
-      `Êtes-vous sûr de vouloir supprimer ${playerName} ?\n\n⚠️ Attention : Toutes les statistiques associées à ce joueur seront définitivement perdues.`,
-      [
-        { text: "Annuler", style: "cancel" },
-        {
-          text: "Supprimer",
-          style: "destructive",
-          onPress: () => {
-            setRoster(roster.filter((p) => p.id !== id));
+    // Check if player is new (temp ID) or existing
+    const isNewPlayer = id.startsWith("temp-");
+
+    if (isNewPlayer) {
+      // For new players, no warning needed - just remove
+      setRoster(roster.filter((p) => p.id !== id));
+    } else {
+      // For existing players in edit mode, show warning about stats
+      Alert.alert(
+        "Supprimer le joueur",
+        `Êtes-vous sûr de vouloir supprimer ${playerName} ?\n\n⚠️ Attention : Toutes les statistiques associées à ce joueur seront définitivement perdues.`,
+        [
+          { text: "Annuler", style: "cancel" },
+          {
+            text: "Supprimer",
+            style: "destructive",
+            onPress: () => {
+              setRoster(roster.filter((p) => p.id !== id));
+            },
           },
-        },
-      ]
-    );
+        ]
+      );
+    }
   };
 
   const handleEditPlayer = (playerId: string) => {
