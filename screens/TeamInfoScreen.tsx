@@ -6,9 +6,10 @@ import {
   TouchableOpacity,
   TextInput,
   Alert,
+  BackHandler,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
+import { useNavigation, useRoute, RouteProp, useFocusEffect } from "@react-navigation/native";
 import { useTheme } from "../src/contexts/ThemeContext";
 import { useAuth } from "../src/contexts/AuthContext";
 import {
@@ -64,6 +65,20 @@ export default function TeamInfoScreen() {
       loadTeamData();
     }
   }, [teamId]);
+
+  // Handle hardware back button
+  useFocusEffect(
+    React.useCallback(() => {
+      const onBackPress = () => {
+        navigation.goBack();
+        return true;
+      };
+
+      const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+
+      return () => subscription.remove();
+    }, [navigation])
+  );
 
   const loadTeamData = async () => {
     try {

@@ -9,10 +9,11 @@ import {
   Alert,
   Image,
   ActivityIndicator,
+  BackHandler,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
-import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
+import { useNavigation, useRoute, RouteProp, useFocusEffect } from "@react-navigation/native";
 import { useAuth } from "../src/contexts/AuthContext";
 import { useTheme } from "../src/contexts/ThemeContext";
 import {
@@ -80,6 +81,20 @@ export default function TeamRosterScreen() {
       loadTeamData();
     }
   }, [teamId]);
+
+  // Handle hardware back button
+  useFocusEffect(
+    React.useCallback(() => {
+      const onBackPress = () => {
+        navigation.goBack();
+        return true;
+      };
+
+      const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+
+      return () => subscription.remove();
+    }, [navigation])
+  );
 
   const loadTeamData = async () => {
     try {
@@ -291,26 +306,34 @@ export default function TeamRosterScreen() {
 
     if (!result.canceled && result.assets && result.assets.length > 0) {
       const localUri = result.assets[0].uri;
+      console.log("📸 Image selected:", localUri);
 
       // Upload to Supabase Storage
       const photoService = new PhotoUploadService(supabase);
       const playerPhotoId = `player-${Date.now()}`;
+      console.log("☁️ Uploading to Supabase...");
       const { url, error } = await photoService.uploadPlayerPhoto(
         localUri,
         playerPhotoId
       );
 
       if (error) {
+        console.error("❌ Upload error:", error);
         Alert.alert("Erreur", "Impossible d'uploader la photo");
         return;
       }
 
       if (url) {
+        console.log("✅ Upload success, URL:", url);
         if (isEditing) {
           setEditingPlayerPhoto(url);
+          console.log("✅ Set editing player photo");
         } else {
           setNewPlayerPhoto(url);
+          console.log("✅ Set new player photo");
         }
+      } else {
+        console.warn("⚠️ No URL returned from upload");
       }
     }
   };
@@ -703,7 +726,7 @@ export default function TeamRosterScreen() {
 
             <View style={styles.addPlayerForm}>
               <TouchableOpacity
-                onPress={handlePickPlayerPhoto}
+                onPress={() => handlePickPlayerPhoto(false)}
                 style={[
                   styles.playerPhotoPreview,
                   {
