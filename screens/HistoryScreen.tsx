@@ -21,7 +21,7 @@ import { ServiceFactory } from "../services/ServiceFactory";
 import { Match } from "../src/models/types";
 import { Club } from "../models/Club";
 import { Team } from "../models/Team";
-import JerseyIcon from "../components/icons/JerseyIcon";
+import JerseyIconSimple from "../components/icons/JerseySimpleIcon";
 import { supabase } from "../src/config/supabase";
 
 interface HistoryScreenProps {
@@ -173,13 +173,7 @@ export default function HistoryScreen({ navigation }: HistoryScreenProps) {
             ]}
           >
             <View style={styles.teamSelectorIcon}>
-              <JerseyIcon
-                width={16}
-                height={16}
-                primaryColor={BRAND_COLORS[500]}
-                secondaryColor={BRAND_COLORS[500]}
-                number=""
-              />
+              <JerseyIconSimple width={30} height={30} />
             </View>
             <Picker
               selectedValue={activeTeamId || ""}

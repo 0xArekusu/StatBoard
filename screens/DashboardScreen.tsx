@@ -24,9 +24,8 @@ import { ServiceFactory } from "../services/ServiceFactory";
 import { Match } from "../src/models/types";
 import { Club } from "../models/Club";
 import { Team, TeamStatus } from "../models/Team";
-import Logo from "../components/icons/Logo";
-import JerseyIcon from "../components/icons/JerseyIcon";
 import { supabase } from "../src/config/supabase";
+import JerseyIconSimple from "../components/icons/JerseySimpleIcon";
 
 interface DashboardScreenProps {
   navigation: any;
@@ -207,7 +206,8 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
 
             // Filter to only show approved teams where user is the owner
             const myApprovedTeams = clubTeams.filter(
-              (team) => team.ownerId === user.id && team.status === TeamStatus.APPROVED
+              (team) =>
+                team.ownerId === user.id && team.status === TeamStatus.APPROVED
             );
 
             console.log("✅ DashboardScreen: Teams fetched", {
@@ -364,7 +364,8 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
                   backgroundColor: isDark
                     ? SLATE_COLORS[800]
                     : SLATE_COLORS[100],
-                  borderColor: club && club.logoUrl ? BRAND_COLORS[500] : borderColor,
+                  borderColor:
+                    club && club.logoUrl ? BRAND_COLORS[500] : borderColor,
                 },
               ]}
             >
@@ -413,7 +414,9 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
               />
             </View>
             <Text style={[styles.ctaTitle, { color: textPrimary }]}>
-              {!club ? "Rejoignez ou créez un club" : "Créez votre première équipe"}
+              {!club
+                ? "Rejoignez ou créez un club"
+                : "Créez votre première équipe"}
             </Text>
             <Text style={[styles.ctaDescription, { color: textSecondary }]}>
               {!club
@@ -465,13 +468,7 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
                 ]}
               >
                 <View style={styles.teamSelectorIcon}>
-                  <JerseyIcon
-                    width={20}
-                    height={20}
-                    primaryColor={BRAND_COLORS[500]}
-                    secondaryColor={BRAND_COLORS[500]}
-                    number=""
-                  />
+                  <JerseyIconSimple width={30} height={30} />
                 </View>
                 <Picker
                   selectedValue={activeTeamId || ""}
