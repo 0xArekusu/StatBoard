@@ -331,29 +331,44 @@ export default function TeamRosterScreen() {
         await teamService.updateTeam(
           teamId,
           {
+            name: teamData.name,
+            category: teamData.category,
+            gender: teamData.gender,
             coachName: coachName.trim(),
             coachPhotoUrl: coachPhotoUrl || undefined,
           },
           user!.id
         );
 
-        // Update players
+        // Update players intelligently
         const playerService = ServiceFactory.getPlayerService(supabase);
-
-        // Delete all existing players and re-create them
         const existingPlayers = await playerService.getTeamPlayers(teamId);
-        for (const player of existingPlayers) {
-          await playerService.deletePlayer(player.id, teamId);
+
+        // 1. Update or create players from roster
+        for (const player of roster) {
+          if (player.id.startsWith("temp-")) {
+            // New player - create it
+            await playerService.createPlayer({
+              teamId,
+              name: player.name,
+              jerseyNumber: player.jerseyNumber,
+              photoUrl: player.photoUrl,
+            });
+          } else {
+            // Existing player - update it
+            await playerService.updatePlayer(player.id, {
+              name: player.name,
+              jerseyNumber: player.jerseyNumber,
+              photoUrl: player.photoUrl,
+            });
+          }
         }
 
-        // Create new players
-        for (const player of roster) {
-          await playerService.createPlayer({
-            teamId,
-            name: player.name,
-            jerseyNumber: player.jerseyNumber,
-            photoUrl: player.photoUrl,
-          });
+        // 2. Delete players that are no longer in roster
+        const rosterIds = roster.filter(p => !p.id.startsWith("temp-")).map(p => p.id);
+        const playersToDelete = existingPlayers.filter(p => !rosterIds.includes(p.id));
+        for (const player of playersToDelete) {
+          await playerService.deletePlayer(player.id, teamId);
         }
 
         setIsSubmitting(false);
