@@ -13,7 +13,12 @@ import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { useAuth } from "../src/contexts/AuthContext";
 import { useTheme } from "../src/contexts/ThemeContext";
-import { CommonStyles, BRAND_COLORS, SLATE_COLORS } from "../src/theme";
+import {
+  CommonStyles,
+  BRAND_COLORS,
+  SLATE_COLORS,
+  COMMON_COLORS,
+} from "../src/theme";
 import { ServiceFactory } from "../services/ServiceFactory";
 import { supabase } from "../src/config/supabase";
 import type { TeamGender } from "../models/Team";
@@ -56,7 +61,7 @@ export default function TeamStartersScreen() {
   const [saving, setSaving] = useState(false);
 
   const bgColor = isDark ? SLATE_COLORS[950] : SLATE_COLORS[50];
-  const surfaceColor = isDark ? SLATE_COLORS[900] : "#FFFFFF";
+  const surfaceColor = isDark ? SLATE_COLORS[900] : COMMON_COLORS.white;
 
   const toggleStarter = (playerId: string) => {
     if (starters.includes(playerId)) {
@@ -261,9 +266,6 @@ export default function TeamStartersScreen() {
       </View>
 
       <ScrollView style={styles.content}>
-        <Text style={[styles.stepTitle, { color: colors.text.secondary }]}>
-          ÉTAPE 3/3
-        </Text>
         <Text style={[styles.title, { color: colors.text.primary }]}>
           Sélectionnez le 5 Majeur
         </Text>
@@ -289,7 +291,7 @@ export default function TeamStartersScreen() {
               styles.starterBadge,
               {
                 backgroundColor:
-                  starters.length === 5 ? "#10b981" : SLATE_COLORS[200],
+                  starters.length === 5 ? BRAND_COLORS[500] : SLATE_COLORS[200],
               },
             ]}
           >
@@ -308,9 +310,9 @@ export default function TeamStartersScreen() {
 
         {/* Error if not 5 starters */}
         {starters.length !== 5 && (
-          <View style={styles.errorBox}>
-            <Ionicons name="alert-circle" size={16} color="#dc2626" />
-            <Text style={styles.errorText}>
+          <View style={[styles.errorBox, { backgroundColor: `${BRAND_COLORS[500]}15`, borderColor: BRAND_COLORS[500] }]}>
+            <Ionicons name="alert-circle" size={16} color={BRAND_COLORS[500]} />
+            <Text style={[styles.errorText, { color: BRAND_COLORS[700] }]}>
               Le 5 majeur doit être complet pour valider.
             </Text>
           </View>
@@ -369,19 +371,33 @@ export default function TeamStartersScreen() {
                   )}
                 </View>
 
-                <Text
-                  style={[
-                    styles.playerName,
-                    {
-                      color: isStarter
-                        ? colors.text.primary
-                        : colors.text.secondary,
-                    },
-                  ]}
-                  numberOfLines={1}
-                >
-                  {player.name}
-                </Text>
+                <View style={styles.playerNameContainer}>
+                  <Text
+                    style={[
+                      styles.playerNumberText,
+                      {
+                        color: isStarter
+                          ? colors.text.secondary
+                          : colors.text.tertiary,
+                      },
+                    ]}
+                  >
+                    #{player.jerseyNumber}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.playerName,
+                      {
+                        color: isStarter
+                          ? colors.text.primary
+                          : colors.text.secondary,
+                      },
+                    ]}
+                    numberOfLines={1}
+                  >
+                    {player.name}
+                  </Text>
+                </View>
               </TouchableOpacity>
             );
           })}
@@ -493,13 +509,13 @@ const styles = StyleSheet.create({
     gap: 8,
     padding: 12,
     borderRadius: 12,
-    backgroundColor: "#fee2e2",
+    borderWidth: 1,
     marginBottom: 16,
   },
   errorText: {
     flex: 1,
     fontSize: 12,
-    color: "#dc2626",
+    fontWeight: "bold",
   },
   playerGrid: {
     flexDirection: "row",
@@ -538,6 +554,15 @@ const styles = StyleSheet.create({
   playerNumberBig: {
     fontSize: 18,
     fontWeight: "bold",
+  },
+  playerNameContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 2,
+  },
+  playerNumberText: {
+    fontSize: 10,
+    fontWeight: "600",
   },
   playerName: {
     fontSize: 12,

@@ -1,4 +1,9 @@
-export type TeamStatus = 'pending' | 'approved' | 'rejected';
+export enum TeamStatus {
+  PENDING = 'pending',
+  APPROVED = 'approved',
+  REJECTED = 'rejected',
+}
+
 export type TeamGender = 'male' | 'female' | 'mixed';
 
 export interface Team {
@@ -7,6 +12,7 @@ export interface Team {
   clubId: string;
   ownerId: string;
   ownerEmail?: string; // Email from club_members (optional, populated via JOIN)
+  category?: string; // Team category (U12, U15, Senior, etc.)
   gender?: TeamGender;
   coachName?: string; // Name of the team coach
   coachPhotoUrl?: string; // Photo URL of the team coach
@@ -22,6 +28,7 @@ export interface Team {
 export interface CreateTeamData {
   name: string;
   clubId: string;
+  category?: string;
   gender?: TeamGender;
   coachName?: string;
   coachPhotoUrl?: string;
@@ -29,6 +36,7 @@ export interface CreateTeamData {
 
 export interface UpdateTeamData {
   name?: string;
+  category?: string;
   gender?: TeamGender;
   coachName?: string;
   coachPhotoUrl?: string;

@@ -13,6 +13,7 @@ export const ROUTES = {
   LOGIN: "Login",
   SIGN_UP: "SignUp",
   CLUB_FORM: "ClubForm",
+  CLUB: "Club",
   TEAM_FORM: "TeamForm",
   TEAM_INFO: "TeamInfo",
   TEAM_ROSTER: "TeamRoster",

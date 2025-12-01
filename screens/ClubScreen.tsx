@@ -26,11 +26,12 @@ import {
   BRAND_COLORS,
   COMMON_COLORS,
 } from "../src/theme/clubDefaults";
+import { Colors } from "../src/theme/colors";
 import { ServiceFactory } from "../services/ServiceFactory";
 import { supabase } from "../src/config/supabase";
 import { PhotoUploadService } from "../services/PhotoUploadService";
 import { Club } from "../models/Club";
-import { Team } from "../models/Team";
+import { Team, TeamStatus } from "../models/Team";
 import { SubscriptionTier, SUBSCRIPTION_LIMITS } from "../models/Subscription";
 import BasketballCourtSVG from "../components/BasketballCourtSVG";
 import JerseyIconSimple from "../components/icons/JerseySimpleIcon";
@@ -79,6 +80,7 @@ export default function ClubScreen({ navigation }: ClubScreenProps) {
   const [teams, setTeams] = useState<Team[]>([]);
   const [activeTab, setActiveTab] = useState<TabType>("create");
   const [subTab, setSubTab] = useState<SubTabType>("info");
+  const [isEditingClub, setIsEditingClub] = useState(false);
 
   // Create Club Form
   const [formData, setFormData] = useState({
@@ -162,7 +164,18 @@ export default function ClubScreen({ navigation }: ClubScreenProps) {
     }
   };
 
-  const currentTeamCount = teams.length;
+  // Filter teams: owners see all, members see only their own
+  const visibleTeams = teams.filter((team) => {
+    if (!club || !user) return false;
+    if (club.ownerId === user.id) return true; // Owner sees all
+    return team.ownerId === user.id; // Members see only their teams
+  });
+
+  // Count only approved teams for subscription limits
+  const approvedTeams = teams.filter(
+    (team) => team.status === TeamStatus.APPROVED
+  );
+  const currentTeamCount = approvedTeams.length;
   const currentTier: SubscriptionTier = club?.subscriptionTier || "free";
   const maxTeams = SUBSCRIPTION_LIMITS[currentTier].maxTeams;
   const isLimitReached = currentTeamCount >= maxTeams;
@@ -179,6 +192,91 @@ export default function ClubScreen({ navigation }: ClubScreenProps) {
     }
 
     navigation.navigate(ROUTES.TEAM_INFO, { clubId: club.id });
+  };
+
+  const handleApproveTeam = async (teamId: string) => {
+    if (!club || !isOwner || !user) return;
+    Alert.alert(
+      "Valider l'équipe",
+      "Confirmer la validation de cette équipe ?",
+      [
+        { text: "Annuler", style: "cancel" },
+        {
+          text: "Valider",
+          onPress: async () => {
+            try {
+              const teamService = ServiceFactory.getTeamService(supabase);
+              await teamService.updateTeamStatus(
+                teamId,
+                TeamStatus.APPROVED,
+                user.id
+              );
+              await loadClubData();
+              Alert.alert("Succès", "Équipe validée");
+            } catch (error) {
+              console.error("Error approving team:", error);
+              Alert.alert("Erreur", "Impossible de valider l'équipe");
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleRejectTeam = async (teamId: string) => {
+    if (!club || !isOwner || !user) return;
+    Alert.alert(
+      "Refuser l'équipe",
+      "Confirmer le refus de cette équipe ? Elle apparaîtra comme refusée au créateur.",
+      [
+        { text: "Annuler", style: "cancel" },
+        {
+          text: "Refuser",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              const teamService = ServiceFactory.getTeamService(supabase);
+              await teamService.updateTeamStatus(
+                teamId,
+                TeamStatus.REJECTED,
+                user.id
+              );
+              await loadClubData();
+              Alert.alert("Équipe refusée");
+            } catch (error) {
+              console.error("Error rejecting team:", error);
+              Alert.alert("Erreur", "Impossible de refuser l'équipe");
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleDeleteTeam = async (teamId: string) => {
+    if (!club || !isOwner || !user) return;
+    Alert.alert(
+      "Supprimer l'équipe",
+      "Êtes-vous sûr de vouloir supprimer définitivement cette équipe ? Cette action est irréversible.",
+      [
+        { text: "Annuler", style: "cancel" },
+        {
+          text: "Supprimer",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              const teamService = ServiceFactory.getTeamService(supabase);
+              await teamService.deleteTeam(teamId, user.id);
+              await loadClubData();
+              Alert.alert("Équipe supprimée");
+            } catch (error) {
+              console.error("Error deleting team:", error);
+              Alert.alert("Erreur", "Impossible de supprimer l'équipe");
+            }
+          },
+        },
+      ]
+    );
   };
 
   const handleUpgrade = (tier: SubscriptionTier) => {
@@ -238,8 +336,32 @@ export default function ClubScreen({ navigation }: ClubScreenProps) {
   };
 
   const handleSubmit = async () => {
-    if (activeTab === "create") {
-      if (!formData.name || !user) return;
+    if (isEditingClub) {
+      // EDIT MODE
+      if (!club || !user) return;
+      try {
+        const clubService = ServiceFactory.getClubService(supabase);
+        await clubService.updateClub(club.id, {
+          logoUrl: formData.logoUri || undefined,
+          primaryColor: formData.primaryColor,
+          secondaryColor: formData.secondaryColor,
+          courtBackgroundColor: formData.courtColor,
+          courtLineColor: formData.courtLinesColor,
+        });
+        await loadClubData();
+        setIsEditingClub(false);
+        Alert.alert("Succès", "Club modifié avec succès !");
+      } catch (error) {
+        console.error("Error updating club:", error);
+        Alert.alert("Erreur", "Impossible de modifier le club");
+      }
+    } else if (activeTab === "create") {
+      // CREATE MODE - Validation
+      if (!formData.name || !formData.acronym) {
+        Alert.alert("Erreur", "Veuillez renseigner le nom du club et le sigle");
+        return;
+      }
+      if (!user) return;
 
       try {
         const clubService = ServiceFactory.getClubService(supabase);
@@ -267,12 +389,51 @@ export default function ClubScreen({ navigation }: ClubScreenProps) {
         Alert.alert("Erreur", "Impossible de créer le club");
       }
     } else {
-      // Join logic
-      if (!formData.code) return;
-      Alert.alert(
-        "Info",
-        `Tentative de rejoindre le club avec le code: ${formData.code}`
-      );
+      // Join logic - Validation
+      if (!formData.code) {
+        Alert.alert("Erreur", "Veuillez renseigner le code du club");
+        return;
+      }
+      if (!user) return;
+
+      try {
+        // Find club by code
+        const clubService = ServiceFactory.getClubService(supabase);
+        const clubToJoin = await clubService.getClubByCode(formData.code);
+
+        if (!clubToJoin) {
+          Alert.alert("Erreur", "Aucun club trouvé avec ce code");
+          return;
+        }
+
+        // Join the club as a member
+        const clubMemberService = ServiceFactory.getClubMemberService(supabase);
+        const result = await clubMemberService.joinClub(
+          clubToJoin.id,
+          user.id,
+          user.email!
+        );
+
+        if (!result.success) {
+          Alert.alert(
+            "Erreur",
+            result.error || "Impossible de rejoindre le club"
+          );
+          return;
+        }
+
+        await loadClubData();
+        Alert.alert(
+          "Succès",
+          `Vous avez rejoint le club "${clubToJoin.name}" !`
+        );
+      } catch (error) {
+        console.error("Error joining club:", error);
+        Alert.alert(
+          "Erreur",
+          "Une erreur est survenue lors de la tentative de rejoindre le club"
+        );
+      }
     }
   };
 
@@ -281,6 +442,7 @@ export default function ClubScreen({ navigation }: ClubScreenProps) {
   const textPrimary = isDark ? COMMON_COLORS.white : SLATE_COLORS[900];
   const textSecondary = isDark ? SLATE_COLORS[400] : SLATE_COLORS[500];
   const borderColor = isDark ? SLATE_COLORS[800] : SLATE_COLORS[200];
+  const requiredColor = isDark ? Colors.dark.required : Colors.light.required;
 
   if (loading) {
     return (
@@ -300,7 +462,7 @@ export default function ClubScreen({ navigation }: ClubScreenProps) {
   }
 
   // --- INSIDE A CLUB ---
-  if (club) {
+  if (club && !isEditingClub) {
     return (
       <ScrollView style={[styles.container, { backgroundColor: bgColor }]}>
         <View style={styles.content}>
@@ -308,47 +470,79 @@ export default function ClubScreen({ navigation }: ClubScreenProps) {
           <View style={styles.header}>
             <Text style={[styles.title, { color: textPrimary }]}>Mon Club</Text>
             {isOwner && (
-              <TouchableOpacity
-                onPress={() =>
-                  setSubTab(subTab === "subscription" ? "info" : "subscription")
-                }
-                style={[
-                  styles.headerButton,
-                  {
-                    backgroundColor:
-                      subTab === "subscription"
-                        ? BRAND_COLORS[600]
-                        : surfaceColor,
-                    borderColor:
-                      subTab === "subscription"
-                        ? BRAND_COLORS[500]
-                        : borderColor,
-                  },
-                ]}
-              >
-                <MaterialCommunityIcons
-                  name={currentTier === "ULTIMATE" ? "crown" : "star"}
-                  size={12}
-                  color={
-                    subTab === "subscription"
-                      ? COMMON_COLORS.white
-                      : BRAND_COLORS[500]
-                  }
-                />
-                <Text
+              <View style={styles.headerButtons}>
+                <TouchableOpacity
+                  onPress={() => {
+                    setFormData({
+                      name: club.name,
+                      acronym: club.acronym || "",
+                      code: club.code,
+                      logoUri: club.logoUrl || null,
+                      primaryColor: club.primaryColor || "#FF0000",
+                      secondaryColor: club.secondaryColor || "#0000FF",
+                      courtColor: club.courtBackgroundColor || "#c2410c",
+                      courtLinesColor: club.courtLineColor || "#ffffff",
+                    });
+                    setIsEditingClub(true);
+                  }}
                   style={[
-                    styles.headerButtonText,
+                    styles.editButton,
                     {
-                      color:
-                        subTab === "subscription"
-                          ? COMMON_COLORS.white
-                          : textSecondary,
+                      backgroundColor: surfaceColor,
+                      borderColor,
                     },
                   ]}
                 >
-                  {subTab === "subscription" ? "Fermer" : "Offre"}
-                </Text>
-              </TouchableOpacity>
+                  <MaterialCommunityIcons
+                    name="palette"
+                    size={16}
+                    color={BRAND_COLORS[500]}
+                  />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() =>
+                    setSubTab(
+                      subTab === "subscription" ? "info" : "subscription"
+                    )
+                  }
+                  style={[
+                    styles.headerButton,
+                    {
+                      backgroundColor:
+                        subTab === "subscription"
+                          ? BRAND_COLORS[600]
+                          : surfaceColor,
+                      borderColor:
+                        subTab === "subscription"
+                          ? BRAND_COLORS[500]
+                          : borderColor,
+                    },
+                  ]}
+                >
+                  <MaterialCommunityIcons
+                    name={currentTier === "ultimate" ? "crown" : "star"}
+                    size={12}
+                    color={
+                      subTab === "subscription"
+                        ? COMMON_COLORS.white
+                        : BRAND_COLORS[500]
+                    }
+                  />
+                  <Text
+                    style={[
+                      styles.headerButtonText,
+                      {
+                        color:
+                          subTab === "subscription"
+                            ? COMMON_COLORS.white
+                            : textSecondary,
+                      },
+                    ]}
+                  >
+                    {subTab === "subscription" ? "Fermer" : "Offre"}
+                  </Text>
+                </TouchableOpacity>
+              </View>
             )}
           </View>
 
@@ -555,8 +749,8 @@ export default function ClubScreen({ navigation }: ClubScreenProps) {
                   </TouchableOpacity>
                 </View>
 
-                {teams.length > 0 ? (
-                  teams.map((team) => (
+                {visibleTeams.length > 0 ? (
+                  visibleTeams.map((team) => (
                     <TeamCard
                       key={team.id}
                       team={team}
@@ -567,6 +761,10 @@ export default function ClubScreen({ navigation }: ClubScreenProps) {
                       borderColor={borderColor}
                       navigation={navigation}
                       clubId={club?.id}
+                      isOwner={isOwner}
+                      onApprove={() => handleApproveTeam(team.id)}
+                      onReject={() => handleRejectTeam(team.id)}
+                      onDelete={() => handleDeleteTeam(team.id)}
                     />
                   ))
                 ) : (
@@ -590,7 +788,9 @@ export default function ClubScreen({ navigation }: ClubScreenProps) {
                     <Text
                       style={[styles.emptyTeamsText, { color: textSecondary }]}
                     >
-                      Aucune équipe créée.
+                      {isOwner
+                        ? "Aucune équipe créée."
+                        : "Aucune équipe assignée."}
                     </Text>
                   </View>
                 )}
@@ -602,68 +802,91 @@ export default function ClubScreen({ navigation }: ClubScreenProps) {
     );
   }
 
-  // --- JOIN OR CREATE SCREEN ---
+  // --- JOIN OR CREATE SCREEN (or EDIT) ---
   return (
     <View style={[styles.container, { backgroundColor: bgColor }]}>
       <ScrollView
         style={styles.content}
         contentContainerStyle={styles.scrollContent}
       >
-        <Text style={[styles.title, { color: textPrimary }]}>Espace Club</Text>
+        {isEditingClub ? (
+          <View style={styles.header}>
+            <TouchableOpacity
+              onPress={() => setIsEditingClub(false)}
+              style={styles.backButton}
+            >
+              <Ionicons name="arrow-back" size={24} color={textPrimary} />
+            </TouchableOpacity>
+            <Text style={[styles.title, { color: textPrimary }]}>
+              Modifier mon club
+            </Text>
+            <View style={{ width: 24 }} />
+          </View>
+        ) : (
+          <Text style={[styles.title, { color: textPrimary }]}>
+            Espace Club
+          </Text>
+        )}
 
-        {/* Tabs */}
-        <View
-          style={[
-            styles.tabs,
-            {
-              backgroundColor: isDark ? SLATE_COLORS[900] : SLATE_COLORS[100],
-              borderColor,
-            },
-          ]}
-        >
-          <TouchableOpacity
-            onPress={() => setActiveTab("create")}
+        {/* Tabs - Only show if not editing */}
+        {!isEditingClub && (
+          <View
             style={[
-              styles.tab,
-              activeTab === "create" && { backgroundColor: BRAND_COLORS[600] },
+              styles.tabs,
+              {
+                backgroundColor: isDark ? SLATE_COLORS[900] : SLATE_COLORS[100],
+                borderColor,
+              },
             ]}
           >
-            <Text
+            <TouchableOpacity
+              onPress={() => setActiveTab("create")}
               style={[
-                styles.tabText,
-                {
-                  color:
-                    activeTab === "create"
-                      ? COMMON_COLORS.white
-                      : textSecondary,
+                styles.tab,
+                activeTab === "create" && {
+                  backgroundColor: BRAND_COLORS[600],
                 },
               ]}
             >
-              Créer
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => setActiveTab("join")}
-            style={[
-              styles.tab,
-              activeTab === "join" && { backgroundColor: BRAND_COLORS[600] },
-            ]}
-          >
-            <Text
+              <Text
+                style={[
+                  styles.tabText,
+                  {
+                    color:
+                      activeTab === "create"
+                        ? COMMON_COLORS.white
+                        : textSecondary,
+                  },
+                ]}
+              >
+                Créer
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => setActiveTab("join")}
               style={[
-                styles.tabText,
-                {
-                  color:
-                    activeTab === "join" ? COMMON_COLORS.white : textSecondary,
-                },
+                styles.tab,
+                activeTab === "join" && { backgroundColor: BRAND_COLORS[600] },
               ]}
             >
-              Rejoindre
-            </Text>
-          </TouchableOpacity>
-        </View>
+              <Text
+                style={[
+                  styles.tabText,
+                  {
+                    color:
+                      activeTab === "join"
+                        ? COMMON_COLORS.white
+                        : textSecondary,
+                  },
+                ]}
+              >
+                Rejoindre
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
-        {activeTab === "create" ? (
+        {activeTab === "create" || isEditingClub ? (
           <View style={styles.formContainer}>
             {/* Logo Section */}
             <View style={styles.logoSection}>
@@ -693,53 +916,57 @@ export default function ClubScreen({ navigation }: ClubScreenProps) {
               </TouchableOpacity>
             </View>
 
-            {/* Club Name */}
-            <View style={styles.formSection}>
-              <Text style={[styles.formLabel, { color: textSecondary }]}>
-                NOM DU CLUB
-              </Text>
-              <TextInput
-                placeholder="Ex: Los Angeles Lakers"
-                placeholderTextColor={textSecondary}
-                value={formData.name}
-                onChangeText={(value) =>
-                  setFormData({ ...formData, name: value })
-                }
-                style={[
-                  styles.formInput,
-                  {
-                    backgroundColor: surfaceColor,
-                    borderColor,
-                    color: textPrimary,
-                  },
-                ]}
-              />
-            </View>
+            {/* Club Name - Only show in create mode */}
+            {!isEditingClub && (
+              <View style={styles.formSection}>
+                <Text style={[styles.formLabel, { color: textSecondary }]}>
+                  NOM DU CLUB <Text style={{ color: requiredColor }}>*</Text>
+                </Text>
+                <TextInput
+                  placeholder="Ex: Los Angeles Lakers"
+                  placeholderTextColor={textSecondary}
+                  value={formData.name}
+                  onChangeText={(value) =>
+                    setFormData({ ...formData, name: value })
+                  }
+                  style={[
+                    styles.formInput,
+                    {
+                      backgroundColor: surfaceColor,
+                      borderColor,
+                      color: textPrimary,
+                    },
+                  ]}
+                />
+              </View>
+            )}
 
-            {/* Acronym */}
-            <View style={styles.formSection}>
-              <Text style={[styles.formLabel, { color: textSecondary }]}>
-                SIGLE
-              </Text>
-              <TextInput
-                placeholder="LAL"
-                placeholderTextColor={textSecondary}
-                value={formData.acronym}
-                onChangeText={(value) =>
-                  setFormData({ ...formData, acronym: value.toUpperCase() })
-                }
-                maxLength={6}
-                style={[
-                  styles.formInput,
-                  styles.acronymInput,
-                  {
-                    backgroundColor: surfaceColor,
-                    borderColor,
-                    color: textPrimary,
-                  },
-                ]}
-              />
-            </View>
+            {/* Acronym - Only show in create mode */}
+            {!isEditingClub && (
+              <View style={styles.formSection}>
+                <Text style={[styles.formLabel, { color: textSecondary }]}>
+                  SIGLE <Text style={{ color: requiredColor }}>*</Text>
+                </Text>
+                <TextInput
+                  placeholder="LAL"
+                  placeholderTextColor={textSecondary}
+                  value={formData.acronym}
+                  onChangeText={(value) =>
+                    setFormData({ ...formData, acronym: value.toUpperCase() })
+                  }
+                  maxLength={6}
+                  style={[
+                    styles.formInput,
+                    styles.acronymInput,
+                    {
+                      backgroundColor: surfaceColor,
+                      borderColor,
+                      color: textPrimary,
+                    },
+                  ]}
+                />
+              </View>
+            )}
 
             {/* Colors Section */}
             <View
@@ -1014,7 +1241,7 @@ export default function ClubScreen({ navigation }: ClubScreenProps) {
           <View style={styles.formContainer}>
             <View style={styles.formSection}>
               <Text style={[styles.formLabel, { color: textSecondary }]}>
-                CODE CLUB
+                CODE CLUB <Text style={{ color: requiredColor }}>*</Text>
               </Text>
               <TextInput
                 placeholder="Ex: LION69"
@@ -1199,7 +1426,11 @@ export default function ClubScreen({ navigation }: ClubScreenProps) {
             color={COMMON_COLORS.white}
           />
           <Text style={styles.submitButtonText}>
-            {activeTab === "create" ? "Créer mon club" : "Rejoindre"}
+            {isEditingClub
+              ? "Modifier"
+              : activeTab === "create"
+              ? "Créer mon club"
+              : "Rejoindre"}
           </Text>
         </TouchableOpacity>
       </View>
@@ -1218,6 +1449,10 @@ interface TeamCardProps {
   borderColor: string;
   navigation: any;
   clubId?: string;
+  isOwner: boolean;
+  onApprove?: () => void;
+  onReject?: () => void;
+  onDelete?: () => void;
 }
 
 function TeamCard({
@@ -1229,12 +1464,44 @@ function TeamCard({
   borderColor,
   navigation,
   clubId,
+  isOwner,
+  onApprove,
+  onReject,
+  onDelete,
 }: TeamCardProps) {
+  const isClickable = team.status === TeamStatus.APPROVED;
+
   return (
     <TouchableOpacity
-      style={[styles.teamCard, { backgroundColor: surfaceColor, borderColor }]}
-      onPress={() => navigation.navigate(ROUTES.TEAM_INFO, { teamId: team.id, clubId })}
+      style={[
+        styles.teamCard,
+        {
+          backgroundColor: surfaceColor,
+          borderColor,
+          opacity: team.status === TeamStatus.APPROVED ? 1 : 0.9,
+        },
+      ]}
+      onPress={() => {
+        if (isClickable) {
+          navigation.navigate(ROUTES.TEAM_INFO, { teamId: team.id, clubId });
+        }
+      }}
+      disabled={!isClickable}
     >
+      {/* Status Badge */}
+      {team.status === TeamStatus.PENDING && (
+        <View style={[styles.statusBadge, styles.statusPending]}>
+          <Ionicons name="time-outline" size={10} color={COMMON_COLORS.white} />
+          <Text style={styles.statusBadgeText}>EN ATTENTE</Text>
+        </View>
+      )}
+      {team.status === TeamStatus.REJECTED && (
+        <View style={[styles.statusBadge, styles.statusRejected]}>
+          <Ionicons name="close-circle" size={10} color={COMMON_COLORS.white} />
+          <Text style={styles.statusBadgeText}>REFUSÉ</Text>
+        </View>
+      )}
+
       <View style={styles.teamCardLeft}>
         <View
           style={[
@@ -1244,20 +1511,71 @@ function TeamCard({
         >
           <JerseyIconSimple />
         </View>
-        <View>
-          <Text style={[styles.teamName, { color: textPrimary }]}>
+        <View style={styles.teamInfo}>
+          <Text
+            style={[
+              styles.teamName,
+              {
+                color:
+                  team.status === TeamStatus.REJECTED
+                    ? textSecondary
+                    : textPrimary,
+                textDecorationLine:
+                  team.status === TeamStatus.REJECTED ? "line-through" : "none",
+              },
+            ]}
+          >
             {team.name}
           </Text>
           <Text style={[styles.teamCategory, { color: textSecondary }]}>
-            {team.gender === 'male' ? 'Hommes' : team.gender === 'female' ? 'Femmes' : 'Mixte'} • {team.playerCount ?? 0} Joueur{(team.playerCount ?? 0) > 1 ? 's' : ''}
+            {team.gender === "male"
+              ? "Hommes"
+              : team.gender === "female"
+              ? "Femmes"
+              : "Mixte"}{" "}
+            • {team.playerCount ?? 0} Joueur
+            {(team.playerCount ?? 0) > 1 ? "s" : ""}
           </Text>
+          {team.coachName && (
+            <Text style={[styles.teamCoach, { color: textSecondary }]}>
+              {team.coachName}
+            </Text>
+          )}
         </View>
       </View>
-      <MaterialCommunityIcons
-        name="chevron-right"
-        size={18}
-        color={textSecondary}
-      />
+
+      <View style={styles.teamCardRight}>
+        {team.status === TeamStatus.PENDING && isOwner ? (
+          <View style={styles.actionButtons}>
+            <TouchableOpacity
+              onPress={(e) => {
+                e.stopPropagation();
+                onReject?.();
+              }}
+              style={[styles.actionButton, styles.rejectButton]}
+            >
+              <Ionicons name="close-circle" size={20} color="#dc2626" />
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={(e) => {
+                e.stopPropagation();
+                onApprove?.();
+              }}
+              style={[styles.actionButton, styles.approveButton]}
+            >
+              <Ionicons name="checkmark-circle" size={20} color="#16a34a" />
+            </TouchableOpacity>
+          </View>
+        ) : (
+          team.status === TeamStatus.APPROVED && (
+            <MaterialCommunityIcons
+              name="chevron-right"
+              size={18}
+              color={textSecondary}
+            />
+          )
+        )}
+      </View>
     </TouchableOpacity>
   );
 }
@@ -1381,6 +1699,24 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: "bold",
     marginBottom: 24,
+  },
+  headerButtons: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 24,
+  },
+  editButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  backButton: {
+    padding: 4,
+    marginBottom: 20,
   },
   headerButton: {
     flexDirection: "row",
@@ -1530,11 +1866,36 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 12,
     borderWidth: 1,
+    position: "relative",
+    overflow: "hidden",
+  },
+  statusBadge: {
+    position: "absolute",
+    top: 0,
+    right: 0,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderBottomLeftRadius: 8,
+  },
+  statusPending: {
+    backgroundColor: "#fbbf24",
+  },
+  statusRejected: {
+    backgroundColor: "#ef4444",
+  },
+  statusBadgeText: {
+    color: "#fff",
+    fontSize: 9,
+    fontWeight: "bold",
   },
   teamCardLeft: {
     flexDirection: "row",
     alignItems: "center",
     gap: 16,
+    flex: 1,
   },
   teamIcon: {
     width: 50,
@@ -1543,11 +1904,44 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  teamInfo: {
+    flex: 1,
+  },
   teamName: {
     fontSize: 16,
     fontWeight: "bold",
   },
   teamCategory: {
+    fontSize: 12,
+    marginTop: 4,
+  },
+  teamCoach: {
+    fontSize: 10,
+    marginTop: 2,
+  },
+  teamCardRight: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  deleteButton: {
+    padding: 8,
+  },
+  actionButtons: {
+    flexDirection: "row",
+    gap: 4,
+  },
+  actionButton: {
+    padding: 8,
+    borderRadius: 999,
+  },
+  approveButton: {
+    backgroundColor: "#dcfce7",
+  },
+  rejectButton: {
+    backgroundColor: "#fee2e2",
+  },
+  oldTeamCategory: {
     fontSize: 12,
     marginTop: 2,
   },

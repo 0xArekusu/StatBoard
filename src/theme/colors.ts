@@ -34,6 +34,7 @@ export const Colors = {
     success: '#4CAF50',
     warning: '#FFC107',
     error: '#F44336',
+    required: '#ef4444',
     info: '#2196F3',
 
     // Court colors (basketball)
@@ -83,6 +84,7 @@ export const Colors = {
     success: '#66BB6A',
     warning: '#FFD54F',
     error: '#EF5350',
+    required: '#ef4444',
     info: '#42A5F5',
 
     // Court colors (basketball)

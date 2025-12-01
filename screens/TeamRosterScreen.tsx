@@ -8,15 +8,22 @@ import {
   TextInput,
   Alert,
   Image,
+  ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import * as ImagePicker from "expo-image-picker";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { useAuth } from "../src/contexts/AuthContext";
 import { useTheme } from "../src/contexts/ThemeContext";
-import { CommonStyles, BRAND_COLORS, SLATE_COLORS } from "../src/theme";
+import {
+  CommonStyles,
+  BRAND_COLORS,
+  SLATE_COLORS,
+  COMMON_COLORS,
+} from "../src/theme";
 import { ServiceFactory } from "../services/ServiceFactory";
 import { supabase } from "../src/config/supabase";
-import { ROUTES } from "../constants/routes";
+import { PhotoUploadService } from "../services/PhotoUploadService";
 import type { TeamGender } from "../models/Team";
 
 interface Player {
@@ -48,7 +55,7 @@ export default function TeamRosterScreen() {
   const { colors, isDark } = useTheme();
   const { clubId, teamId, teamData } = route.params;
 
-  const [coachName, setCoachName] = useState(user?.name || "");
+  const [coachName, setCoachName] = useState("");
   const [coachPhotoUrl, setCoachPhotoUrl] = useState("");
   const [isEditingCoach, setIsEditingCoach] = useState(false);
 
@@ -57,9 +64,15 @@ export default function TeamRosterScreen() {
   const [newPlayerNumber, setNewPlayerNumber] = useState("");
   const [newPlayerPhoto, setNewPlayerPhoto] = useState("");
   const [addPlayerError, setAddPlayerError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [editingPlayerId, setEditingPlayerId] = useState<string | null>(null);
+  const [editingPlayerName, setEditingPlayerName] = useState("");
+  const [editingPlayerNumber, setEditingPlayerNumber] = useState("");
+  const [editingPlayerPhoto, setEditingPlayerPhoto] = useState("");
+  const [editPlayerError, setEditPlayerError] = useState<string | null>(null);
 
   const bgColor = isDark ? SLATE_COLORS[950] : SLATE_COLORS[50];
-  const surfaceColor = isDark ? SLATE_COLORS[900] : "#FFFFFF";
+  const surfaceColor = isDark ? SLATE_COLORS[900] : COMMON_COLORS.white;
 
   // Load existing team data if editing
   useEffect(() => {
@@ -74,7 +87,7 @@ export default function TeamRosterScreen() {
       const team = await teamService.getTeamById(teamId!);
 
       if (team) {
-        setCoachName(team.coachName || user?.name || "");
+        setCoachName(team.coachName || "");
         setCoachPhotoUrl(team.coachPhotoUrl || "");
 
         const playerService = ServiceFactory.getPlayerService(supabase);
@@ -93,6 +106,12 @@ export default function TeamRosterScreen() {
 
     if (!trimmedName || !trimmedNumber) return;
 
+    // Validation: Check max roster size
+    if (roster.length >= 15) {
+      setAddPlayerError("Limite maximale de 15 joueurs atteinte.");
+      return;
+    }
+
     // Validation: Check duplicate name
     const isDuplicate = roster.some(
       (p) => p.name.toLowerCase() === trimmedName.toLowerCase()
@@ -102,10 +121,15 @@ export default function TeamRosterScreen() {
       return;
     }
 
-    // Validation: Check negative number
+    // Validation: Check if number is valid integer
     const numValue = parseInt(trimmedNumber, 10);
-    if (numValue < 0) {
-      setAddPlayerError("Le numéro ne peut pas être négatif.");
+    if (
+      isNaN(numValue) ||
+      numValue < 0 ||
+      numValue > 99 ||
+      !Number.isInteger(Number(trimmedNumber))
+    ) {
+      setAddPlayerError("Le numéro doit être entre 0 et 99.");
       return;
     }
 
@@ -122,11 +146,167 @@ export default function TeamRosterScreen() {
     setNewPlayerPhoto("");
   };
 
-  const handleRemovePlayer = (id: string) => {
-    setRoster(roster.filter((p) => p.id !== id));
+  const handleRemovePlayer = (id: string, playerName: string) => {
+    Alert.alert(
+      "Supprimer le joueur",
+      `Êtes-vous sûr de vouloir supprimer ${playerName} ?\n\n⚠️ Attention : Toutes les statistiques associées à ce joueur seront définitivement perdues.`,
+      [
+        { text: "Annuler", style: "cancel" },
+        {
+          text: "Supprimer",
+          style: "destructive",
+          onPress: () => {
+            setRoster(roster.filter((p) => p.id !== id));
+          },
+        },
+      ]
+    );
   };
 
-  const handleNext = () => {
+  const handleEditPlayer = (playerId: string) => {
+    const player = roster.find((p) => p.id === playerId);
+    if (player) {
+      setEditingPlayerId(playerId);
+      setEditingPlayerName(player.name);
+      setEditingPlayerNumber(player.jerseyNumber.toString());
+      setEditingPlayerPhoto(player.photoUrl || "");
+      setEditPlayerError(null);
+    }
+  };
+
+  const handleSavePlayerEdit = (playerId: string) => {
+    setEditPlayerError(null);
+
+    const trimmedName = editingPlayerName.trim();
+    const trimmedNumber = editingPlayerNumber.trim();
+
+    if (!trimmedName || !trimmedNumber) return;
+
+    const numValue = parseInt(trimmedNumber, 10);
+    if (
+      isNaN(numValue) ||
+      numValue < 0 ||
+      numValue > 99 ||
+      !Number.isInteger(Number(trimmedNumber))
+    ) {
+      setEditPlayerError("Le numéro doit être entre 0 et 99.");
+      return;
+    }
+
+    // Check if name already exists (excluding current player)
+    const isDuplicate = roster.some(
+      (p) => p.id !== playerId && p.name.toLowerCase() === trimmedName.toLowerCase()
+    );
+
+    if (isDuplicate) {
+      setEditPlayerError("Un joueur avec ce nom existe déjà.");
+      return;
+    }
+
+    setRoster(
+      roster.map((p) =>
+        p.id === playerId
+          ? {
+              ...p,
+              name: trimmedName,
+              jerseyNumber: numValue,
+              photoUrl: editingPlayerPhoto || p.photoUrl,
+            }
+          : p
+      )
+    );
+    setEditingPlayerId(null);
+    setEditingPlayerPhoto("");
+    setEditPlayerError(null);
+  };
+
+  const handlePickCoachPhoto = async () => {
+    const permissionResult =
+      await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+    if (permissionResult.granted === false) {
+      Alert.alert(
+        "Permission requise",
+        "Vous devez autoriser l'accès à vos photos."
+      );
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: "images",
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets && result.assets.length > 0) {
+      const localUri = result.assets[0].uri;
+
+      // Upload to Supabase Storage
+      const photoService = new PhotoUploadService(supabase);
+      const coachPhotoId = `coach-${Date.now()}`;
+      const { url, error } = await photoService.uploadPlayerPhoto(
+        localUri,
+        coachPhotoId
+      );
+
+      if (error) {
+        Alert.alert("Erreur", "Impossible d'uploader la photo");
+        return;
+      }
+
+      if (url) {
+        setCoachPhotoUrl(url);
+      }
+    }
+  };
+
+  const handlePickPlayerPhoto = async (isEditing: boolean = false) => {
+    const permissionResult =
+      await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+    if (permissionResult.granted === false) {
+      Alert.alert(
+        "Permission requise",
+        "Vous devez autoriser l'accès à vos photos."
+      );
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: "images",
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets && result.assets.length > 0) {
+      const localUri = result.assets[0].uri;
+
+      // Upload to Supabase Storage
+      const photoService = new PhotoUploadService(supabase);
+      const playerPhotoId = `player-${Date.now()}`;
+      const { url, error } = await photoService.uploadPlayerPhoto(
+        localUri,
+        playerPhotoId
+      );
+
+      if (error) {
+        Alert.alert("Erreur", "Impossible d'uploader la photo");
+        return;
+      }
+
+      if (url) {
+        if (isEditing) {
+          setEditingPlayerPhoto(url);
+        } else {
+          setNewPlayerPhoto(url);
+        }
+      }
+    }
+  };
+
+  const handleNext = async () => {
     if (!coachName.trim()) {
       Alert.alert("Erreur", "Le nom du coach est obligatoire");
       setIsEditingCoach(true);
@@ -141,16 +321,100 @@ export default function TeamRosterScreen() {
       return;
     }
 
-    navigation.navigate(ROUTES.TEAM_STARTERS, {
-      clubId,
-      teamId,
-      teamData,
-      coachData: {
-        name: coachName.trim(),
-        photoUrl: coachPhotoUrl,
-      },
-      roster,
-    });
+    setIsSubmitting(true);
+
+    try {
+      const teamService = ServiceFactory.getTeamService(supabase);
+
+      if (teamId) {
+        // Update existing team
+        await teamService.updateTeam(
+          teamId,
+          {
+            coachName: coachName.trim(),
+            coachPhotoUrl: coachPhotoUrl || undefined,
+          },
+          user!.id
+        );
+
+        // Update players
+        const playerService = ServiceFactory.getPlayerService(supabase);
+
+        // Delete all existing players and re-create them
+        const existingPlayers = await playerService.getTeamPlayers(teamId);
+        for (const player of existingPlayers) {
+          await playerService.deletePlayer(player.id, teamId);
+        }
+
+        // Create new players
+        for (const player of roster) {
+          await playerService.createPlayer({
+            teamId,
+            name: player.name,
+            jerseyNumber: player.jerseyNumber,
+            photoUrl: player.photoUrl,
+          });
+        }
+
+        setIsSubmitting(false);
+        Alert.alert("Succès", "Équipe modifiée avec succès !", [
+          {
+            text: "OK",
+            onPress: () => {
+              // Go back to previous screen (Club)
+              navigation.goBack();
+              navigation.goBack();
+            },
+          },
+        ]);
+      } else {
+        // Create new team
+        const result = await teamService.createTeam(
+          {
+            clubId,
+            name: teamData.name,
+            category: teamData.category,
+            gender: teamData.gender,
+            coachName: coachName.trim(),
+            coachPhotoUrl: coachPhotoUrl || undefined,
+          },
+          user!.id
+        );
+
+        if (!result.success || !result.team) {
+          setIsSubmitting(false);
+          Alert.alert("Erreur", result.error || "Impossible de créer l'équipe");
+          return;
+        }
+
+        // Create players
+        const playerService = ServiceFactory.getPlayerService(supabase);
+        for (const player of roster) {
+          await playerService.createPlayer({
+            teamId: result.team.id,
+            name: player.name,
+            jerseyNumber: player.jerseyNumber,
+            photoUrl: player.photoUrl,
+          });
+        }
+
+        setIsSubmitting(false);
+        Alert.alert("Succès", "Équipe créée avec succès !", [
+          {
+            text: "OK",
+            onPress: () => {
+              // Go back to previous screen (Club)
+              navigation.goBack();
+              navigation.goBack();
+            },
+          },
+        ]);
+      }
+    } catch (error) {
+      console.error("Error saving team:", error);
+      setIsSubmitting(false);
+      Alert.alert("Erreur", "Impossible de sauvegarder l'équipe");
+    }
   };
 
   return (
@@ -178,15 +442,15 @@ export default function TeamRosterScreen() {
 
       {/* Progress */}
       <View style={styles.progressContainer}>
-        <View style={[styles.progressBar, { backgroundColor: BRAND_COLORS[500] }]} />
-        <View style={[styles.progressBar, { backgroundColor: BRAND_COLORS[500] }]} />
-        <View style={[styles.progressBar, { backgroundColor: colors.border }]} />
+        <View
+          style={[styles.progressBar, { backgroundColor: BRAND_COLORS[500] }]}
+        />
+        <View
+          style={[styles.progressBar, { backgroundColor: BRAND_COLORS[500] }]}
+        />
       </View>
 
       <ScrollView style={styles.content}>
-        <Text style={[styles.stepTitle, { color: colors.text.secondary }]}>
-          ÉTAPE 2/3
-        </Text>
         <Text style={[styles.title, { color: colors.text.primary }]}>
           Staff & Effectif
         </Text>
@@ -230,10 +494,16 @@ export default function TeamRosterScreen() {
                 </View>
 
                 <View style={styles.coachEditContent}>
-                  <View
+                  <TouchableOpacity
+                    onPress={handlePickCoachPhoto}
                     style={[
                       styles.coachPhoto,
-                      { backgroundColor: isDark ? SLATE_COLORS[800] : SLATE_COLORS[100] },
+                      {
+                        borderColor: colors.border,
+                        backgroundColor: isDark
+                          ? SLATE_COLORS[800]
+                          : SLATE_COLORS[100],
+                      },
                     ]}
                   >
                     {coachPhotoUrl ? (
@@ -248,7 +518,7 @@ export default function TeamRosterScreen() {
                         color={colors.text.tertiary}
                       />
                     )}
-                  </View>
+                  </TouchableOpacity>
 
                   <View style={styles.coachEditInputs}>
                     <TextInput
@@ -267,29 +537,11 @@ export default function TeamRosterScreen() {
                       value={coachName}
                       onChangeText={setCoachName}
                     />
-                    <TextInput
-                      style={[
-                        styles.coachInputSmall,
-                        {
-                          backgroundColor: isDark
-                            ? SLATE_COLORS[800]
-                            : SLATE_COLORS[50],
-                          borderColor: colors.border,
-                          color: colors.text.secondary,
-                        },
-                      ]}
-                      placeholder="URL Photo (Optionnel)"
-                      placeholderTextColor={colors.text.tertiary}
-                      value={coachPhotoUrl}
-                      onChangeText={setCoachPhotoUrl}
-                    />
                     <TouchableOpacity
                       style={[
                         styles.saveCoachButton,
                         {
-                          backgroundColor: isDark
-                            ? SLATE_COLORS[700]
-                            : SLATE_COLORS[900],
+                          backgroundColor: BRAND_COLORS[600],
                         },
                       ]}
                       onPress={() => setIsEditingCoach(false)}
@@ -303,10 +555,7 @@ export default function TeamRosterScreen() {
               <View style={styles.coachDisplay}>
                 <View style={styles.coachInfo}>
                   <View
-                    style={[
-                      styles.coachPhoto,
-                      { borderColor: `${BRAND_COLORS[500]}30` },
-                    ]}
+                    style={[styles.coachPhoto, { borderColor: colors.border }]}
                   >
                     {coachPhotoUrl ? (
                       <Image
@@ -331,9 +580,7 @@ export default function TeamRosterScreen() {
                       >
                         {coachName || "Nom du Coach"}
                       </Text>
-                      {!coachName && (
-                        <Text style={styles.required}> *</Text>
-                      )}
+                      {!coachName && <Text style={styles.required}> *</Text>}
                     </View>
                     <View style={styles.coachRole}>
                       <Ionicons
@@ -377,7 +624,7 @@ export default function TeamRosterScreen() {
         {/* Roster Section */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.text.tertiary }]}>
-            JOUEURS ({roster.length})
+            JOUEURS ({roster.length}/15)
           </Text>
 
           {/* Warning if less than 5 players */}
@@ -386,13 +633,26 @@ export default function TeamRosterScreen() {
               style={[
                 styles.warningBox,
                 {
-                  backgroundColor: "#fef3c7",
-                  borderColor: "#fbbf24",
+                  backgroundColor: isDark
+                    ? `${BRAND_COLORS[900]}`
+                    : `${BRAND_COLORS[50]}`,
+                  borderColor: isDark ? BRAND_COLORS[600] : BRAND_COLORS[500],
                 },
               ]}
             >
-              <Ionicons name="alert-circle" size={16} color="#d97706" />
-              <Text style={styles.warningText}>
+              <Ionicons
+                name="alert-circle"
+                size={16}
+                color={BRAND_COLORS[500]}
+              />
+              <Text
+                style={{
+                  flex: 1,
+                  fontSize: 12,
+                  fontWeight: "bold",
+                  color: BRAND_COLORS[500],
+                }}
+              >
                 Il manque encore {5 - roster.length} joueur(s) pour continuer.
               </Text>
             </View>
@@ -418,7 +678,8 @@ export default function TeamRosterScreen() {
             </View>
 
             <View style={styles.addPlayerForm}>
-              <View
+              <TouchableOpacity
+                onPress={handlePickPlayerPhoto}
                 style={[
                   styles.playerPhotoPreview,
                   {
@@ -441,7 +702,7 @@ export default function TeamRosterScreen() {
                     color={colors.text.tertiary}
                   />
                 )}
-              </View>
+              </TouchableOpacity>
 
               <View style={styles.addPlayerInputs}>
                 <TextInput
@@ -479,24 +740,28 @@ export default function TeamRosterScreen() {
                     placeholderTextColor={colors.text.tertiary}
                     value={newPlayerNumber}
                     onChangeText={(text) => {
-                      setNewPlayerNumber(text);
+                      // Only allow digits (no dots, minus, etc)
+                      const filtered = text.replace(/[^0-9]/g, "");
+                      setNewPlayerNumber(filtered);
                       setAddPlayerError(null);
                     }}
                     keyboardType="number-pad"
-                    maxLength={3}
+                    maxLength={2}
                   />
                   <TouchableOpacity
                     style={[
                       styles.addButton,
                       {
                         backgroundColor:
-                          newPlayerName && newPlayerNumber
+                          newPlayerName && newPlayerNumber && roster.length < 15
                             ? BRAND_COLORS[600]
                             : colors.text.disabled,
                       },
                     ]}
                     onPress={handleAddPlayer}
-                    disabled={!newPlayerName || !newPlayerNumber}
+                    disabled={
+                      !newPlayerName || !newPlayerNumber || roster.length >= 15
+                    }
                   >
                     <Text style={styles.addButtonText}>Ajouter</Text>
                   </TouchableOpacity>
@@ -506,24 +771,6 @@ export default function TeamRosterScreen() {
                 )}
               </View>
             </View>
-
-            {/* Photo URL input (optional) */}
-            <TextInput
-              style={[
-                styles.photoUrlInput,
-                {
-                  backgroundColor: isDark
-                    ? SLATE_COLORS[800]
-                    : SLATE_COLORS[50],
-                  borderColor: colors.border,
-                  color: colors.text.secondary,
-                },
-              ]}
-              placeholder="URL Photo (optionnel)"
-              placeholderTextColor={colors.text.tertiary}
-              value={newPlayerPhoto}
-              onChangeText={setNewPlayerPhoto}
-            />
           </View>
 
           {/* Player List */}
@@ -551,75 +798,220 @@ export default function TeamRosterScreen() {
             </View>
           ) : (
             <View style={styles.playerList}>
-              {roster.map((player) => (
-                <View
-                  key={player.id}
-                  style={[
-                    styles.playerCard,
-                    {
-                      backgroundColor: surfaceColor,
-                      borderColor: colors.border,
-                    },
-                  ]}
-                >
-                  <View style={styles.playerInfo}>
-                    <View
-                      style={[
-                        styles.playerNumber,
-                        {
-                          backgroundColor: isDark
-                            ? SLATE_COLORS[800]
-                            : SLATE_COLORS[200],
-                        },
-                      ]}
-                    >
-                      {player.photoUrl ? (
-                        <Image
-                          source={{ uri: player.photoUrl }}
-                          style={styles.photoImage}
-                        />
-                      ) : (
-                        <Text
+              {roster.map((player) => {
+                const isEditing = editingPlayerId === player.id;
+
+                return (
+                  <View
+                    key={player.id}
+                    style={[
+                      styles.playerCard,
+                      {
+                        backgroundColor: surfaceColor,
+                        borderColor: colors.border,
+                      },
+                    ]}
+                  >
+                    {isEditing ? (
+                      // Edit mode
+                      <View style={styles.playerEditForm}>
+                        <TouchableOpacity
+                          onPress={() => handlePickPlayerPhoto(true)}
                           style={[
-                            styles.playerNumberText,
-                            { color: colors.text.secondary },
+                            styles.playerPhotoPreview,
+                            {
+                              backgroundColor: isDark
+                                ? SLATE_COLORS[800]
+                                : SLATE_COLORS[100],
+                              borderColor: colors.border,
+                            },
                           ]}
                         >
-                          {player.jerseyNumber}
-                        </Text>
-                      )}
-                    </View>
-                    <View>
-                      <Text
-                        style={[
-                          styles.playerName,
-                          { color: colors.text.primary },
-                        ]}
-                      >
-                        {player.name}
-                      </Text>
-                      <Text
-                        style={[
-                          styles.playerMeta,
-                          { color: colors.text.secondary },
-                        ]}
-                      >
-                        Numéro {player.jerseyNumber}
-                      </Text>
-                    </View>
+                          {editingPlayerPhoto || player.photoUrl ? (
+                            <Image
+                              source={{
+                                uri: editingPlayerPhoto || player.photoUrl,
+                              }}
+                              style={styles.photoImage}
+                            />
+                          ) : (
+                            <Ionicons
+                              name="person"
+                              size={20}
+                              color={colors.text.tertiary}
+                            />
+                          )}
+                        </TouchableOpacity>
+                        <View style={styles.playerEditInputs}>
+                          <TextInput
+                            style={[
+                              styles.playerInput,
+                              {
+                                backgroundColor: isDark
+                                  ? SLATE_COLORS[800]
+                                  : SLATE_COLORS[50],
+                                borderColor: colors.border,
+                                color: colors.text.primary,
+                              },
+                            ]}
+                            placeholder="Nom du joueur"
+                            placeholderTextColor={colors.text.tertiary}
+                            value={editingPlayerName}
+                            onChangeText={(text) => {
+                              setEditingPlayerName(text);
+                              setEditPlayerError(null);
+                            }}
+                          />
+                          <View style={styles.playerEditActions}>
+                            <TextInput
+                              style={[
+                                styles.numberInput,
+                                {
+                                  backgroundColor: isDark
+                                    ? SLATE_COLORS[800]
+                                    : SLATE_COLORS[50],
+                                  borderColor: colors.border,
+                                  color: colors.text.primary,
+                                },
+                              ]}
+                              placeholder="#"
+                              placeholderTextColor={colors.text.tertiary}
+                              value={editingPlayerNumber}
+                              onChangeText={(text) => {
+                                const filtered = text.replace(/[^0-9]/g, "");
+                                setEditingPlayerNumber(filtered);
+                                setEditPlayerError(null);
+                              }}
+                              keyboardType="number-pad"
+                              maxLength={2}
+                            />
+                            <TouchableOpacity
+                              onPress={() => handleSavePlayerEdit(player.id)}
+                              style={[
+                                styles.saveButton,
+                                { backgroundColor: BRAND_COLORS[600] },
+                              ]}
+                            >
+                              <Ionicons
+                                name="checkmark"
+                                size={16}
+                                color="#fff"
+                              />
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                              onPress={() => {
+                                setEditingPlayerId(null);
+                                setEditingPlayerPhoto("");
+                                setEditPlayerError(null);
+                              }}
+                              style={[
+                                styles.cancelButton,
+                                {
+                                  backgroundColor: isDark
+                                    ? SLATE_COLORS[800]
+                                    : SLATE_COLORS[100],
+                                },
+                              ]}
+                            >
+                              <Ionicons
+                                name="close"
+                                size={16}
+                                color={colors.text.secondary}
+                              />
+                            </TouchableOpacity>
+                          </View>
+                          {editPlayerError && (
+                            <Text style={styles.errorText}>
+                              {editPlayerError}
+                            </Text>
+                          )}
+                        </View>
+                      </View>
+                    ) : (
+                      // Display mode
+                      <>
+                        <View style={styles.playerInfo}>
+                          <View
+                            style={[
+                              styles.playerNumber,
+                              {
+                                backgroundColor: isDark
+                                  ? SLATE_COLORS[800]
+                                  : SLATE_COLORS[200],
+                              },
+                            ]}
+                          >
+                            {player.photoUrl ? (
+                              <Image
+                                source={{ uri: player.photoUrl }}
+                                style={styles.photoImage}
+                              />
+                            ) : (
+                              <Text
+                                style={[
+                                  styles.playerNumberText,
+                                  { color: colors.text.secondary },
+                                ]}
+                              >
+                                {player.jerseyNumber}
+                              </Text>
+                            )}
+                          </View>
+                          <View>
+                            <Text
+                              style={[
+                                styles.playerName,
+                                { color: colors.text.primary },
+                              ]}
+                            >
+                              {player.name}
+                            </Text>
+                            <Text
+                              style={[
+                                styles.playerMeta,
+                                { color: colors.text.secondary },
+                              ]}
+                            >
+                              #{player.jerseyNumber}
+                            </Text>
+                          </View>
+                        </View>
+                        <View style={styles.playerActions}>
+                          <TouchableOpacity
+                            onPress={() => handleEditPlayer(player.id)}
+                            style={[
+                              styles.editButton,
+                              {
+                                backgroundColor: isDark
+                                  ? SLATE_COLORS[800]
+                                  : SLATE_COLORS[50],
+                              },
+                            ]}
+                          >
+                            <Ionicons
+                              name="pencil"
+                              size={16}
+                              color={colors.text.secondary}
+                            />
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            onPress={() =>
+                              handleRemovePlayer(player.id, player.name)
+                            }
+                            style={styles.deleteButton}
+                          >
+                            <Ionicons
+                              name="trash-outline"
+                              size={16}
+                              color="#ef4444"
+                            />
+                          </TouchableOpacity>
+                        </View>
+                      </>
+                    )}
                   </View>
-                  <TouchableOpacity
-                    onPress={() => handleRemovePlayer(player.id)}
-                    style={styles.deleteButton}
-                  >
-                    <Ionicons
-                      name="trash-outline"
-                      size={16}
-                      color={colors.text.tertiary}
-                    />
-                  </TouchableOpacity>
-                </View>
-              ))}
+                );
+              })}
             </View>
           )}
         </View>
@@ -630,7 +1022,7 @@ export default function TeamRosterScreen() {
         style={[
           styles.footer,
           {
-            backgroundColor: colors.surface,
+            backgroundColor: surfaceColor,
             borderTopColor: colors.border,
           },
         ]}
@@ -640,16 +1032,29 @@ export default function TeamRosterScreen() {
             styles.nextButton,
             {
               backgroundColor:
-                coachName.trim() && roster.length >= 5
+                coachName.trim() && roster.length >= 5 && !isSubmitting
                   ? BRAND_COLORS[600]
                   : colors.text.disabled,
             },
           ]}
           onPress={handleNext}
-          disabled={!coachName.trim() || roster.length < 5}
+          disabled={!coachName.trim() || roster.length < 5 || isSubmitting}
         >
-          <Text style={styles.nextButtonText}>Suivant</Text>
-          <Ionicons name="chevron-forward" size={20} color="#fff" />
+          {isSubmitting ? (
+            <>
+              <ActivityIndicator size="small" color="#fff" />
+              <Text style={[styles.nextButtonText, { marginLeft: 8 }]}>
+                {teamId ? "Modification..." : "Création..."}
+              </Text>
+            </>
+          ) : (
+            <>
+              <Text style={styles.nextButtonText}>
+                {teamId ? "Modifier l'équipe" : "Créer l'équipe"}
+              </Text>
+              <Ionicons name="checkmark" size={20} color="#fff" />
+            </>
+          )}
         </TouchableOpacity>
       </View>
     </View>
@@ -782,12 +1187,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "bold",
   },
-  coachInputSmall: {
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: 10,
-    fontSize: 12,
-  },
   saveCoachButton: {
     padding: 12,
     borderRadius: 8,
@@ -811,7 +1210,6 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 12,
     fontWeight: "bold",
-    color: "#d97706",
   },
   addPlayerCard: {
     borderWidth: 1,
@@ -841,6 +1239,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
+    overflow: "hidden",
   },
   addPlayerInputs: {
     flex: 1,
@@ -880,12 +1279,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#ef4444",
     fontWeight: "bold",
-  },
-  photoUrlInput: {
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: 10,
-    fontSize: 12,
   },
   emptyRoster: {
     padding: 32,
@@ -935,8 +1328,38 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: 2,
   },
+  playerActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
   deleteButton: {
     padding: 8,
+  },
+  playerEditForm: {
+    flex: 1,
+    flexDirection: "row",
+    gap: 12,
+  },
+  playerEditInputs: {
+    flex: 1,
+    gap: 8,
+  },
+  playerEditActions: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  saveButton: {
+    padding: 10,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  cancelButton: {
+    padding: 10,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
   },
   footer: {
     padding: 20,

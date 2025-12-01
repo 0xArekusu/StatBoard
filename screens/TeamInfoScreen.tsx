@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -10,9 +10,16 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { useTheme } from "../src/contexts/ThemeContext";
-import { CommonStyles, BRAND_COLORS, SLATE_COLORS } from "../src/theme";
+import {
+  CommonStyles,
+  BRAND_COLORS,
+  SLATE_COLORS,
+  COMMON_COLORS,
+} from "../src/theme";
 import { ROUTES } from "../constants/routes";
 import type { TeamGender } from "../models/Team";
+import { ServiceFactory } from "../services/ServiceFactory";
+import { supabase } from "../src/config/supabase";
 
 type RootStackParamList = {
   TeamInfo: {
@@ -30,8 +37,8 @@ type TeamInfoRouteProp = RouteProp<RootStackParamList, "TeamInfo">;
 
 const GENDERS: { value: TeamGender; label: string; color: string }[] = [
   { value: "male", label: "Masculin", color: BRAND_COLORS[500] },
-  { value: "female", label: "Féminin", color: "BRAND_COLORS[500]" },
-  { value: "mixed", label: "Mixte", color: "BRAND_COLORS[500]" },
+  { value: "female", label: "Féminin", color: BRAND_COLORS[500] },
+  { value: "mixed", label: "Mixte", color: BRAND_COLORS[500] },
   // { value: "female", label: "Féminin", color: "#ec4899" },
   // { value: "mixed", label: "Mixte", color: "#a855f7" },
 ];
@@ -47,7 +54,29 @@ export default function TeamInfoScreen() {
   const [gender, setGender] = useState<TeamGender>(teamData?.gender || "male");
 
   const bgColor = isDark ? SLATE_COLORS[950] : SLATE_COLORS[50];
-  const surfaceColor = isDark ? SLATE_COLORS[900] : "#FFFFFF";
+  const surfaceColor = isDark ? SLATE_COLORS[900] : COMMON_COLORS.white;
+
+  // Load team data if editing
+  useEffect(() => {
+    if (teamId && !teamData) {
+      loadTeamData();
+    }
+  }, [teamId]);
+
+  const loadTeamData = async () => {
+    try {
+      const teamService = ServiceFactory.getTeamService(supabase);
+      const team = await teamService.getTeamById(teamId!);
+
+      if (team) {
+        setName(team.name || "");
+        setCategory(team.category || "");
+        setGender(team.gender || "male");
+      }
+    } catch (error) {
+      console.error("Error loading team data:", error);
+    }
+  };
 
   const handleNext = () => {
     if (!name.trim()) {
@@ -97,16 +126,10 @@ export default function TeamInfoScreen() {
         <View
           style={[styles.progressBar, { backgroundColor: colors.border }]}
         />
-        <View
-          style={[styles.progressBar, { backgroundColor: colors.border }]}
-        />
       </View>
 
       {/* Content */}
       <View style={styles.content}>
-        <Text style={[styles.stepTitle, { color: colors.text.secondary }]}>
-          ÉTAPE 1/3
-        </Text>
         <Text style={[styles.title, { color: colors.text.primary }]}>
           Informations de base
         </Text>
@@ -169,7 +192,7 @@ export default function TeamInfoScreen() {
                   styles.genderButton,
                   {
                     backgroundColor:
-                      gender === g.value ? `${g.color}15` : SLATE_COLORS[900],
+                      gender === g.value ? `${g.color}15` : surfaceColor,
                     borderColor: gender === g.value ? g.color : colors.border,
                     borderWidth: 2,
                   },
@@ -198,7 +221,7 @@ export default function TeamInfoScreen() {
         style={[
           styles.footer,
           {
-            backgroundColor: SLATE_COLORS[900],
+            backgroundColor: surfaceColor,
             borderTopColor: colors.border,
           },
         ]}

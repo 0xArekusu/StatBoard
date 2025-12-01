@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   Image,
   BackHandler,
 } from "react-native";
+import { useFocusEffect } from "@react-navigation/native";
 import { Picker } from "@react-native-picker/picker";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useTheme } from "../src/contexts/ThemeContext";
@@ -22,7 +23,7 @@ import { MatchRepository } from "../src/services/database/MatchRepository";
 import { ServiceFactory } from "../services/ServiceFactory";
 import { Match } from "../src/models/types";
 import { Club } from "../models/Club";
-import { Team } from "../models/Team";
+import { Team, TeamStatus } from "../models/Team";
 import Logo from "../components/icons/Logo";
 import JerseyIcon from "../components/icons/JerseyIcon";
 import { supabase } from "../src/config/supabase";
@@ -74,6 +75,14 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
     // Load fresh data
     loadDashboardData();
   }, [user?.id]); // Re-run when user ID changes
+
+  // Reload dashboard data when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      console.log("🔄 DashboardScreen: Screen focused, reloading data");
+      loadDashboardData();
+    }, [user?.id])
+  );
 
   const loadDashboardData = async () => {
     try {
@@ -192,21 +201,27 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
               clubName: firstClub.name,
             });
 
-            // Load teams for the club
+            // Load teams for the club - only approved teams where user is owner
             const teamService = ServiceFactory.getTeamService(supabase);
             const clubTeams = await teamService.getClubTeams(firstClub.id);
 
+            // Filter to only show approved teams where user is the owner
+            const myApprovedTeams = clubTeams.filter(
+              (team) => team.ownerId === user.id && team.status === TeamStatus.APPROVED
+            );
+
             console.log("✅ DashboardScreen: Teams fetched", {
               clubId: firstClub.id,
-              teamsCount: clubTeams.length,
-              teamNames: clubTeams.map((t) => t.name),
+              totalTeams: clubTeams.length,
+              myApprovedTeams: myApprovedTeams.length,
+              teamNames: myApprovedTeams.map((t) => t.name),
             });
 
-            setTeams(clubTeams);
+            setTeams(myApprovedTeams);
 
             // Select first team if available
-            if (clubTeams.length > 0) {
-              setActiveTeamId(clubTeams[0].id);
+            if (myApprovedTeams.length > 0) {
+              setActiveTeamId(myApprovedTeams[0].id);
             }
           } else {
             console.log("ℹ️ DashboardScreen: No clubs found for user");
@@ -342,50 +357,34 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
               <MaterialCommunityIcons name="logout" size={20} color="#ef4444" />
             </TouchableOpacity>
 
-            {club && club.logoUrl ? (
-              <View
-                style={[styles.clubLogo, { borderColor: BRAND_COLORS[500] }]}
-              >
+            <View
+              style={[
+                styles.clubLogo,
+                {
+                  backgroundColor: isDark
+                    ? SLATE_COLORS[800]
+                    : SLATE_COLORS[100],
+                  borderColor: club && club.logoUrl ? BRAND_COLORS[500] : borderColor,
+                },
+              ]}
+            >
+              {club && club.logoUrl ? (
                 <Image
                   source={{ uri: club.logoUrl }}
                   style={styles.clubLogoImage}
                 />
-              </View>
-            ) : (
-              <View
-                style={[
-                  styles.clubLogo,
-                  {
-                    backgroundColor: isDark
-                      ? SLATE_COLORS[800]
-                      : SLATE_COLORS[100],
-                    borderColor,
-                  },
-                ]}
-              >
-                {isGuest ? (
-                  <Logo
-                    width={24}
-                    height={24}
-                    primaryColor={COMMON_COLORS.black}
-                    secondaryColor={COMMON_COLORS.white}
-                    ballColor={BRAND_COLORS[500]}
-                    ballBackgroundColor={BRAND_COLORS[900]}
-                  />
-                ) : (
-                  <MaterialCommunityIcons
-                    name="shield"
-                    size={24}
-                    color={SLATE_COLORS[400]}
-                  />
-                )}
-              </View>
-            )}
+              ) : (
+                <Image
+                  source={require("../components/icons/coachassistant-logo-margin.png")}
+                  style={styles.clubLogoImage}
+                />
+              )}
+            </View>
           </View>
         </View>
 
-        {/* No Club CTA - Only for non-guests who haven't set up a club yet */}
-        {!club && !isGuest && (
+        {/* No Club/Team CTA - Only for non-guests who haven't set up a club/team yet */}
+        {(!club || teams.length === 0) && !isGuest && (
           <View
             style={[
               styles.ctaCard,
@@ -408,17 +407,18 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
               ]}
             >
               <MaterialCommunityIcons
-                name="shield-outline"
+                name={!club ? "shield-outline" : "account-group"}
                 size={24}
                 color={BRAND_COLORS[500]}
               />
             </View>
             <Text style={[styles.ctaTitle, { color: textPrimary }]}>
-              Rejoignez ou créez un club
+              {!club ? "Rejoignez ou créez un club" : "Créez votre première équipe"}
             </Text>
             <Text style={[styles.ctaDescription, { color: textSecondary }]}>
-              Pour commencer à suivre les statistiques, vous devez associer
-              votre compte à une équipe.
+              {!club
+                ? "Pour commencer à suivre les statistiques, vous devez associer votre compte à une équipe."
+                : "Vous faites partie d'un club, créez maintenant une équipe pour commencer à suivre vos matchs."}
             </Text>
             <TouchableOpacity
               style={[
@@ -592,27 +592,29 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
               </View>
             </View>
 
-            {/* Action Bar - New Match Button */}
-            <TouchableOpacity
-              style={styles.newMatchButton}
-              onPress={() => {
-                // Navigation to be implemented later
-              }}
-            >
-              <View style={styles.newMatchButtonLeft}>
-                <Text style={styles.newMatchButtonTitle}>Nouveau Match</Text>
-                <Text style={styles.newMatchButtonSubtitle}>
-                  {activeTeamName ? `Pour ${activeTeamName}` : "Match Rapide"}
-                </Text>
-              </View>
-              <View style={styles.newMatchButtonIcon}>
-                <MaterialCommunityIcons
-                  name="plus"
-                  size={24}
-                  color={COMMON_COLORS.white}
-                />
-              </View>
-            </TouchableOpacity>
+            {/* Action Bar - New Match Button - Only show if user has teams */}
+            {teams.length > 0 && (
+              <TouchableOpacity
+                style={styles.newMatchButton}
+                onPress={() => {
+                  // Navigation to be implemented later
+                }}
+              >
+                <View style={styles.newMatchButtonLeft}>
+                  <Text style={styles.newMatchButtonTitle}>Nouveau Match</Text>
+                  <Text style={styles.newMatchButtonSubtitle}>
+                    Pour {activeTeamName}
+                  </Text>
+                </View>
+                <View style={styles.newMatchButtonIcon}>
+                  <MaterialCommunityIcons
+                    name="plus"
+                    size={24}
+                    color={COMMON_COLORS.white}
+                  />
+                </View>
+              </TouchableOpacity>
+            )}
 
             {/* Recent History */}
             <View style={styles.section}>

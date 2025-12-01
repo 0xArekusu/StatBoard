@@ -12,9 +12,6 @@ export class SupabasePlayerRepository implements IPlayerRepository {
       name: row.name,
       jerseyNumber: row.jersey_number,
       photoUrl: row.photo_url,
-      position: row.position,
-      isStarter: row.is_starter,
-      displayOrder: row.display_order,
       createdAt: new Date(row.created_at),
       updatedAt: new Date(row.updated_at),
     };
@@ -28,8 +25,6 @@ export class SupabasePlayerRepository implements IPlayerRepository {
         name: data.name,
         jersey_number: data.jerseyNumber,
         photo_url: data.photoUrl,
-        position: data.position,
-        is_starter: data.isStarter || false,
       })
       .select()
       .single();
@@ -47,8 +42,6 @@ export class SupabasePlayerRepository implements IPlayerRepository {
     if (data.name !== undefined) updateData.name = data.name;
     if (data.jerseyNumber !== undefined) updateData.jersey_number = data.jerseyNumber;
     if (data.photoUrl !== undefined) updateData.photo_url = data.photoUrl;
-    if (data.position !== undefined) updateData.position = data.position;
-    if (data.isStarter !== undefined) updateData.is_starter = data.isStarter;
 
     const { data: player, error } = await this.supabase
       .from("players")
@@ -84,8 +77,7 @@ export class SupabasePlayerRepository implements IPlayerRepository {
       .from("players")
       .select("*")
       .eq("team_id", teamId)
-      .order("is_starter", { ascending: false })
-      .order("display_order", { ascending: true });
+      .order("created_at", { ascending: true });
 
     if (error) {
       console.error("Error fetching players:", error);
