@@ -64,7 +64,10 @@ export class SupabaseTeamRepository implements ITeamRepository {
   async findByClubId(clubId: string): Promise<Team[]> {
     const { data, error } = await this.supabase
       .from("teams")
-      .select("*")
+      .select(`
+        *,
+        players:players(count)
+      `)
       .eq("club_id", clubId)
       .eq("is_deleted", false)
       .order("created_at", { ascending: false });
@@ -74,7 +77,10 @@ export class SupabaseTeamRepository implements ITeamRepository {
       return [];
     }
 
-    return data.map(this.mapToTeam);
+    return data.map(row => ({
+      ...this.mapToTeam(row),
+      playerCount: row.players?.[0]?.count || 0
+    }));
   }
 
   async findByClubIdAndStatus(clubId: string, status: TeamStatus): Promise<Team[]> {
