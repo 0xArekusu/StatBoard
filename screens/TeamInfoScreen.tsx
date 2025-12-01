@@ -10,6 +10,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { useTheme } from "../src/contexts/ThemeContext";
+import { useAuth } from "../src/contexts/AuthContext";
 import {
   CommonStyles,
   BRAND_COLORS,
@@ -47,6 +48,7 @@ export default function TeamInfoScreen() {
   const navigation = useNavigation();
   const route = useRoute<TeamInfoRouteProp>();
   const { colors, isDark } = useTheme();
+  const { user } = useAuth();
   const { clubId, teamId, teamData } = route.params;
 
   const [name, setName] = useState(teamData?.name || "");
@@ -93,6 +95,40 @@ export default function TeamInfoScreen() {
         gender,
       },
     });
+  };
+
+  const handleDeleteTeam = async () => {
+    if (!teamId || !user) return;
+
+    Alert.alert(
+      "Supprimer l'équipe",
+      "Êtes-vous sûr de vouloir supprimer définitivement cette équipe ?\n\n⚠️ Attention : Cette action archivera l'équipe et toutes ses données associées.",
+      [
+        { text: "Annuler", style: "cancel" },
+        {
+          text: "Supprimer",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              const teamService = ServiceFactory.getTeamService(supabase);
+              await teamService.deleteTeam(teamId, user.id);
+              Alert.alert("Succès", "Équipe supprimée", [
+                {
+                  text: "OK",
+                  onPress: () => {
+                    navigation.goBack();
+                    navigation.goBack();
+                  },
+                },
+              ]);
+            } catch (error) {
+              console.error("Error deleting team:", error);
+              Alert.alert("Erreur", "Impossible de supprimer l'équipe");
+            }
+          },
+        },
+      ]
+    );
   };
 
   return (
@@ -226,6 +262,23 @@ export default function TeamInfoScreen() {
           },
         ]}
       >
+        {teamId && (
+          <TouchableOpacity
+            style={[
+              styles.deleteButton,
+              {
+                backgroundColor: isDark
+                  ? `${SLATE_COLORS[800]}`
+                  : `${SLATE_COLORS[100]}`,
+                borderColor: "#ef4444",
+              },
+            ]}
+            onPress={handleDeleteTeam}
+          >
+            <Ionicons name="trash-outline" size={20} color="#ef4444" />
+            <Text style={styles.deleteButtonText}>Supprimer l'équipe</Text>
+          </TouchableOpacity>
+        )}
         <TouchableOpacity
           style={[
             styles.nextButton,
@@ -309,6 +362,21 @@ const styles = StyleSheet.create({
   footer: {
     padding: 20,
     borderTopWidth: 1,
+    gap: 12,
+  },
+  deleteButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 18,
+    borderRadius: 12,
+    gap: 8,
+    borderWidth: 2,
+  },
+  deleteButtonText: {
+    color: "#ef4444",
+    fontSize: 16,
+    fontWeight: "bold",
   },
   nextButton: {
     flexDirection: "row",
