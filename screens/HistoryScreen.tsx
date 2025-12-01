@@ -187,7 +187,6 @@ export default function HistoryScreen({ navigation }: HistoryScreenProps) {
               style={[styles.picker, { color: textPrimary }]}
               dropdownIconColor={textSecondary}
             >
-              <Picker.Item label="Toutes les équipes" value="" />
               {teams.map((team) => (
                 <Picker.Item
                   key={team.id}
