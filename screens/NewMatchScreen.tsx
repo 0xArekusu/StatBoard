@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   TextInput,
   Alert,
   ActivityIndicator,
+  Animated,
 } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useTheme } from "../src/contexts/ThemeContext";
@@ -60,6 +61,7 @@ export default function NewMatchScreen({
 
   // STEP 2: Rosters
   const [rosterTab, setRosterTab] = useState<"HOME" | "AWAY">("HOME");
+  const toggleAnimation = useRef(new Animated.Value(0)).current;
 
   // My Team Management
   const [availableHomePlayers, setAvailableHomePlayers] = useState<Player[]>(
@@ -156,6 +158,20 @@ export default function NewMatchScreen({
   };
 
   // --- HANDLERS: STEP 2 (HOME) ---
+
+  const handleToggleRoster = () => {
+    const newTab = rosterTab === "HOME" ? "AWAY" : "HOME";
+    const toValue = newTab === "HOME" ? 0 : 1;
+
+    Animated.spring(toggleAnimation, {
+      toValue,
+      useNativeDriver: true,
+      tension: 80,
+      friction: 10,
+    }).start();
+
+    setRosterTab(newTab);
+  };
 
   const isInRoster = (player: Player, list: Player[]) =>
     list.some((p) => p.id === player.id);
@@ -753,65 +769,67 @@ export default function NewMatchScreen({
               { backgroundColor: surfaceColor, borderBottomColor: borderColor },
             ]}
           >
-            <View
+            <TouchableOpacity
+              onPress={handleToggleRoster}
               style={[
-                styles.tabs,
+                styles.toggleButton,
                 {
                   backgroundColor: isDark
-                    ? SLATE_COLORS[900]
-                    : SLATE_COLORS[200],
+                    ? SLATE_COLORS[800]
+                    : SLATE_COLORS[100],
+                  borderColor,
                 },
               ]}
             >
-              <TouchableOpacity
-                onPress={() => setRosterTab("HOME")}
+              <Animated.View
                 style={[
-                  styles.tab,
+                  styles.toggleSlider,
                   {
-                    backgroundColor:
-                      rosterTab === "HOME" ? surfaceColor : "transparent",
+                    backgroundColor: BRAND_COLORS[600],
+                    transform: [
+                      {
+                        translateX: toggleAnimation.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: [0, 120],
+                        }),
+                      },
+                    ],
                   },
                 ]}
-              >
+              />
+              <View style={styles.toggleOption}>
                 <Text
                   style={[
-                    styles.tabText,
+                    styles.toggleText,
                     {
                       color:
                         rosterTab === "HOME"
-                          ? BRAND_COLORS[600]
+                          ? COMMON_COLORS.white
                           : textSecondary,
+                      fontWeight: rosterTab === "HOME" ? "bold" : "normal",
                     },
                   ]}
                 >
                   NOUS ({selectedHomePlayers.length})
                 </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => setRosterTab("AWAY")}
-                style={[
-                  styles.tab,
-                  {
-                    backgroundColor:
-                      rosterTab === "AWAY" ? surfaceColor : "transparent",
-                  },
-                ]}
-              >
+              </View>
+              <View style={styles.toggleOption}>
                 <Text
                   style={[
-                    styles.tabText,
+                    styles.toggleText,
                     {
                       color:
                         rosterTab === "AWAY"
-                          ? BRAND_COLORS[600]
+                          ? COMMON_COLORS.white
                           : textSecondary,
+                      fontWeight: rosterTab === "AWAY" ? "bold" : "normal",
                     },
                   ]}
                 >
                   EUX ({opponentRoster.length})
                 </Text>
-              </TouchableOpacity>
-            </View>
+              </View>
+            </TouchableOpacity>
           </View>
 
           <ScrollView
@@ -1555,21 +1573,34 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 16,
     borderBottomWidth: 1,
-  },
-  tabs: {
-    flexDirection: "row",
-    padding: 4,
-    borderRadius: 12,
-  },
-  tab: {
-    flex: 1,
-    paddingVertical: 8,
-    borderRadius: 8,
     alignItems: "center",
   },
-  tabText: {
+  toggleButton: {
+    flexDirection: "row",
+    width: 240,
+    height: 48,
+    borderRadius: 10,
+    borderWidth: 2,
+    position: "relative",
+    overflow: "hidden",
+  },
+  toggleSlider: {
+    position: "absolute",
+    width: 112,
+    height: 44,
+    borderRadius: 10,
+    left: 0,
+    top: 0,
+    zIndex: 1,
+  },
+  toggleOption: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 2,
+  },
+  toggleText: {
     fontSize: 12,
-    fontWeight: "bold",
   },
   rosterContent: {
     flex: 1,
