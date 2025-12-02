@@ -277,22 +277,26 @@ export default function NewMatchScreen({
     const team = teams.find((t) => t.id === selectedTeamId);
     if (!team) return;
 
-    // TODO: Create match with all this data
-    console.log("Starting match with:", {
-      club,
-      team,
+    // Create match object
+    const matchData = {
+      id: Date.now().toString(),
+      clubId: club?.id || "",
+      teamId: team.id,
       opponent,
       location,
       trackOpponentStats,
       periodCount,
       periodDuration,
-      selectedHomePlayers,
+      homePlayers: selectedHomePlayers,
       starters,
-      opponentRoster,
-    });
+      awayPlayers: trackOpponentStats ? opponentRoster : [],
+      teamName: team.name,
+      teamLogo: team.logo,
+      createdAt: new Date(),
+    };
 
-    // Navigate to match screen (to be implemented)
-    navigation.goBack();
+    // Navigate to LiveMatch screen
+    navigation.navigate("LiveMatch", { matchData });
   };
 
   const bgColor = isDark ? SLATE_COLORS[950] : SLATE_COLORS[50];

@@ -21,6 +21,7 @@ export const ROUTES = {
   JOIN_CLUB: "JoinClub",
   DEBUG_COURT: "DebugCourt",
   NEW_MATCH: "NewMatch",
+  LIVE_MATCH: "LiveMatch",
 } as const;
 
 // Type for route names
