@@ -24,6 +24,7 @@ import TeamInfoScreen from "./screens/TeamInfoScreen";
 import TeamRosterScreen from "./screens/TeamRosterScreen";
 import TeamStartersScreen from "./screens/TeamStartersScreen";
 import JoinClubScreen from "./screens/JoinClubScreen";
+import NewMatchScreen from "./screens/NewMatchScreen";
 import MainTabNavigator from "./navigation/MainTabNavigator";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { AuthProvider, useAuth } from "./src/contexts/AuthContext";
@@ -100,6 +101,7 @@ function Navigation() {
         <Stack.Screen name={ROUTES.TEAM_ROSTER} component={TeamRosterScreen} />
         <Stack.Screen name={ROUTES.TEAM_STARTERS} component={TeamStartersScreen} />
         <Stack.Screen name={ROUTES.JOIN_CLUB} component={JoinClubScreen} />
+        <Stack.Screen name={ROUTES.NEW_MATCH} component={NewMatchScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

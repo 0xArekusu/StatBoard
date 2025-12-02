@@ -594,7 +594,7 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
               <TouchableOpacity
                 style={styles.newMatchButton}
                 onPress={() => {
-                  // Navigation to be implemented later
+                  navigation.navigate("NewMatch", { teamId: activeTeamId });
                 }}
               >
                 <View style={styles.newMatchButtonLeft}>
