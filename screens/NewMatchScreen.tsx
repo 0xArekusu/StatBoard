@@ -22,7 +22,6 @@ import { supabase } from "../src/config/supabase";
 import { Club } from "../models/Club";
 import { Team, TeamStatus } from "../models/Team";
 import { Player } from "../models/Player";
-import { MatchFormat } from "../src/models/types";
 
 interface NewMatchScreenProps {
   navigation: any;
@@ -89,13 +88,13 @@ export default function NewMatchScreen({
 
   // Load roster when team changes
   useEffect(() => {
-    if (club && selectedTeamId) {
+    if (club && selectedTeamId && teams.length > 0) {
       const team = teams.find((t) => t.id === selectedTeamId);
       if (team) {
         loadTeamRoster(team.id);
       }
     }
-  }, [selectedTeamId, club]);
+  }, [selectedTeamId, club, teams]);
 
   const loadClubData = async () => {
     if (!user) {
@@ -115,7 +114,8 @@ export default function NewMatchScreen({
         const clubTeams = await teamService.getClubTeams(firstClub.id);
         // Filter to only show approved teams where user is the owner
         const myApprovedTeams = clubTeams.filter(
-          (team) => team.ownerId === user.id && team.status === TeamStatus.APPROVED
+          (team) =>
+            team.ownerId === user.id && team.status === TeamStatus.APPROVED
         );
         setTeams(myApprovedTeams);
       }
@@ -190,10 +190,10 @@ export default function NewMatchScreen({
     const newPlayer: Player = {
       id: `temp-${Date.now()}`,
       name: tempHomePlayerName,
-      jerseyNumber: tempHomePlayerNumber,
+      jerseyNumber: parseInt(tempHomePlayerNumber, 10),
       teamId: selectedTeamId,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+      createdAt: new Date(),
+      updatedAt: new Date(),
     };
     // Add to both lists so it appears as selectable and selected
     setAvailableHomePlayers([...availableHomePlayers, newPlayer]);
@@ -213,10 +213,10 @@ export default function NewMatchScreen({
     const newPlayer: Player = {
       id: `opp-${Date.now()}`,
       name: newOppPlayerName || `Joueur ${newOppPlayerNumber}`,
-      jerseyNumber: newOppPlayerNumber,
+      jerseyNumber: parseInt(newOppPlayerNumber, 10),
       teamId: "",
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+      createdAt: new Date(),
+      updatedAt: new Date(),
     };
     setOpponentRoster([...opponentRoster, newPlayer]);
     setNewOppPlayerName("");
@@ -227,10 +227,10 @@ export default function NewMatchScreen({
     const generated: Player[] = Array.from({ length: count }).map((_, i) => ({
       id: `opp-gen-${Date.now()}-${i}`,
       name: `Joueur ${i + 4}`,
-      jerseyNumber: `${i + 4}`,
+      jerseyNumber: i + 4,
       teamId: "",
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+      createdAt: new Date(),
+      updatedAt: new Date(),
     }));
     setOpponentRoster([...opponentRoster, ...generated]);
   };
@@ -243,10 +243,7 @@ export default function NewMatchScreen({
 
   const handleStart = () => {
     if (selectedHomePlayers.length < 1) {
-      Alert.alert(
-        "Erreur",
-        "Il faut au moins 1 joueur dans votre équipe."
-      );
+      Alert.alert("Erreur", "Il faut au moins 1 joueur dans votre équipe.");
       return;
     }
 
@@ -306,7 +303,12 @@ export default function NewMatchScreen({
   return (
     <View style={[styles.container, { backgroundColor: bgColor }]}>
       {/* Header */}
-      <View style={[styles.header, { backgroundColor: surfaceColor, borderBottomColor: borderColor }]}>
+      <View
+        style={[
+          styles.header,
+          { backgroundColor: surfaceColor, borderBottomColor: borderColor },
+        ]}
+      >
         <TouchableOpacity
           onPress={() => (step === 2 ? setStep(1) : navigation.goBack())}
           style={styles.backButton}
@@ -324,14 +326,18 @@ export default function NewMatchScreen({
       </View>
 
       {/* Progress Bar */}
-      <View style={[styles.progressContainer, { backgroundColor: surfaceColor, borderBottomColor: borderColor }]}>
+      <View
+        style={[
+          styles.progressContainer,
+          { backgroundColor: surfaceColor, borderBottomColor: borderColor },
+        ]}
+      >
         <View style={styles.progressBar}>
           <View
             style={[
               styles.progressStep,
               {
-                backgroundColor:
-                  step >= 1 ? BRAND_COLORS[500] : borderColor,
+                backgroundColor: step >= 1 ? BRAND_COLORS[500] : borderColor,
               },
             ]}
           />
@@ -339,8 +345,7 @@ export default function NewMatchScreen({
             style={[
               styles.progressStep,
               {
-                backgroundColor:
-                  step >= 2 ? BRAND_COLORS[500] : borderColor,
+                backgroundColor: step >= 2 ? BRAND_COLORS[500] : borderColor,
               },
             ]}
           />
@@ -401,7 +406,11 @@ export default function NewMatchScreen({
               placeholderTextColor={textSecondary}
               style={[
                 styles.formInput,
-                { backgroundColor: surfaceColor, borderColor, color: textPrimary },
+                {
+                  backgroundColor: surfaceColor,
+                  borderColor,
+                  color: textPrimary,
+                },
               ]}
             />
           </View>
@@ -507,7 +516,9 @@ export default function NewMatchScreen({
                       size={16}
                       color={textSecondary}
                     />
-                    <Text style={[styles.durationValue, { color: textPrimary }]}>
+                    <Text
+                      style={[styles.durationValue, { color: textPrimary }]}
+                    >
                       {periodCount}
                     </Text>
                   </View>
@@ -565,7 +576,9 @@ export default function NewMatchScreen({
                       size={16}
                       color={textSecondary}
                     />
-                    <Text style={[styles.durationValue, { color: textPrimary }]}>
+                    <Text
+                      style={[styles.durationValue, { color: textPrimary }]}
+                    >
                       {periodDuration}
                     </Text>
                   </View>
@@ -683,9 +696,7 @@ export default function NewMatchScreen({
                 <MaterialCommunityIcons
                   name="chart-bar"
                   size={20}
-                  color={
-                    trackOpponentStats ? BRAND_COLORS[600] : textSecondary
-                  }
+                  color={trackOpponentStats ? BRAND_COLORS[600] : textSecondary}
                 />
               </View>
               <View style={styles.optionTextContainer}>
@@ -700,7 +711,7 @@ export default function NewMatchScreen({
                   Stats Adversaires
                 </Text>
                 <Text style={[styles.optionSubtitle, { color: textSecondary }]}>
-                  Suivre aussi les tirs/fautes adverses
+                  Saisir aussi les tirs/fautes adverses
                 </Text>
               </View>
             </View>
@@ -733,7 +744,12 @@ export default function NewMatchScreen({
       {step === 2 && (
         <View style={styles.rosterContainer}>
           {/* Tabs */}
-          <View style={[styles.tabsContainer, { backgroundColor: surfaceColor, borderBottomColor: borderColor }]}>
+          <View
+            style={[
+              styles.tabsContainer,
+              { backgroundColor: surfaceColor, borderBottomColor: borderColor },
+            ]}
+          >
             <View
               style={[
                 styles.tabs,
@@ -750,9 +766,7 @@ export default function NewMatchScreen({
                   styles.tab,
                   {
                     backgroundColor:
-                      rosterTab === "HOME"
-                        ? surfaceColor
-                        : "transparent",
+                      rosterTab === "HOME" ? surfaceColor : "transparent",
                   },
                 ]}
               >
@@ -761,7 +775,9 @@ export default function NewMatchScreen({
                     styles.tabText,
                     {
                       color:
-                        rosterTab === "HOME" ? BRAND_COLORS[600] : textSecondary,
+                        rosterTab === "HOME"
+                          ? BRAND_COLORS[600]
+                          : textSecondary,
                     },
                   ]}
                 >
@@ -774,9 +790,7 @@ export default function NewMatchScreen({
                   styles.tab,
                   {
                     backgroundColor:
-                      rosterTab === "AWAY"
-                        ? surfaceColor
-                        : "transparent",
+                      rosterTab === "AWAY" ? surfaceColor : "transparent",
                   },
                 ]}
               >
@@ -785,7 +799,9 @@ export default function NewMatchScreen({
                     styles.tabText,
                     {
                       color:
-                        rosterTab === "AWAY" ? BRAND_COLORS[600] : textSecondary,
+                        rosterTab === "AWAY"
+                          ? BRAND_COLORS[600]
+                          : textSecondary,
                     },
                   ]}
                 >
@@ -823,7 +839,7 @@ export default function NewMatchScreen({
                   <Text
                     style={[styles.infoBoxText, { color: BRAND_COLORS[600] }]}
                   >
-                    Sélectionnez les présents (gauche) et{" "}
+                    Sélectionnez les présents et{" "}
                     <Text style={{ fontWeight: "bold" }}>le 5 de départ</Text>{" "}
                     (étoile à droite).
                   </Text>
@@ -944,8 +960,10 @@ export default function NewMatchScreen({
                               styles.starButton,
                               {
                                 backgroundColor: isStarter
-                                  ? "#fef3c7"
+                                  ? "rgba(234, 179, 8, 0.2)"
                                   : "transparent",
+                                borderWidth: isStarter ? 2 : 0,
+                                borderColor: isStarter ? "#eab308" : "transparent",
                               },
                             ]}
                           >
@@ -1264,7 +1282,12 @@ export default function NewMatchScreen({
       )}
 
       {/* --- FOOTER ACTION --- */}
-      <View style={[styles.footer, { backgroundColor: surfaceColor, borderTopColor: borderColor }]}>
+      <View
+        style={[
+          styles.footer,
+          { backgroundColor: surfaceColor, borderTopColor: borderColor },
+        ]}
+      >
         {step === 1 ? (
           <TouchableOpacity
             onPress={handleNextStep}
@@ -1296,7 +1319,27 @@ export default function NewMatchScreen({
         ) : (
           <TouchableOpacity
             onPress={handleStart}
-            style={[styles.primaryButton, { backgroundColor: BRAND_COLORS[600] }]}
+            disabled={
+              selectedHomePlayers.length < 1 ||
+              starters.length !== Math.min(5, selectedHomePlayers.length)
+            }
+            style={[
+              styles.primaryButton,
+              {
+                backgroundColor:
+                  selectedHomePlayers.length >= 1 &&
+                  starters.length === Math.min(5, selectedHomePlayers.length)
+                    ? BRAND_COLORS[600]
+                    : isDark
+                    ? SLATE_COLORS[800]
+                    : SLATE_COLORS[300],
+                opacity:
+                  selectedHomePlayers.length >= 1 &&
+                  starters.length === Math.min(5, selectedHomePlayers.length)
+                    ? 1
+                    : 0.6,
+              },
+            ]}
           >
             <MaterialCommunityIcons
               name="play-circle"
@@ -1324,7 +1367,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 24,
-    paddingTop: 60,
+    paddingTop: 20,
     paddingBottom: 16,
     borderBottomWidth: 1,
   },
