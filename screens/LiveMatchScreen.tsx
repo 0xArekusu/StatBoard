@@ -12,7 +12,6 @@ import {
   SLATE_COLORS,
   BRAND_COLORS,
   COMMON_COLORS,
-  STATUS_COLORS,
 } from "../src/theme/clubDefaults";
 import { MatchStatus } from "../src/models/types";
 import { Player } from "../models/Player";
@@ -27,6 +26,7 @@ import {
   SubstitutionModal,
   EndMatchModal,
   OvertimeModal,
+  PeriodConfirmModal,
 } from "../components/LiveMatchModals";
 
 interface LiveMatchScreenProps {
@@ -264,6 +264,7 @@ export default function LiveMatchScreen({
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [showOvertimeModal, setShowOvertimeModal] = useState(false);
+  const [showPeriodConfirm, setShowPeriodConfirm] = useState(false);
   const [overtimeDuration, setOvertimeDuration] = useState(5);
 
   // Toolbar State
@@ -302,6 +303,18 @@ export default function LiveMatchScreen({
 
   const handleNextQuarter = () => {
     setIsRunning(false);
+
+    // If timer is not zero, ask for confirmation
+    if (timer > 0) {
+      setShowPeriodConfirm(true);
+      return;
+    }
+
+    proceedToNextPeriod();
+  };
+
+  const proceedToNextPeriod = () => {
+    setShowPeriodConfirm(false);
 
     if (quarter >= maxPeriods) {
       setShowOvertimeModal(true);
@@ -922,7 +935,7 @@ export default function LiveMatchScreen({
           ]}
         >
           <MaterialCommunityIcons
-            name="view-grid"
+            name="view-grid-outline"
             size={16}
             color={viewMode === "GRID" ? COMMON_COLORS.white : textSecondary}
           />
@@ -953,7 +966,7 @@ export default function LiveMatchScreen({
           ]}
         >
           <MaterialCommunityIcons
-            name="map"
+            name="map-outline"
             size={16}
             color={viewMode === "COURT" ? COMMON_COLORS.white : textSecondary}
           />
@@ -1015,7 +1028,7 @@ export default function LiveMatchScreen({
           style={styles.toolbarButton}
         >
           <MaterialCommunityIcons
-            name="filter"
+            name="filter-outline"
             size={22}
             color={filterMode !== "ALL" ? BRAND_COLORS[500] : textSecondary}
           />
@@ -1149,6 +1162,19 @@ export default function LiveMatchScreen({
         visible={showEndConfirm}
         onClose={() => setShowEndConfirm(false)}
         onConfirm={confirmEndMatch}
+        isDark={isDark}
+        surfaceColor={surfaceColor}
+        textPrimary={textPrimary}
+        textSecondary={textSecondary}
+        borderColor={borderColor}
+      />
+
+      <PeriodConfirmModal
+        visible={showPeriodConfirm}
+        onClose={() => setShowPeriodConfirm(false)}
+        onConfirm={proceedToNextPeriod}
+        timer={timer}
+        formatTime={formatTime}
         isDark={isDark}
         surfaceColor={surfaceColor}
         textPrimary={textPrimary}

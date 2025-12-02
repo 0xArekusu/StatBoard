@@ -101,9 +101,7 @@ export const HistoryModal: React.FC<HistoryModalProps> = ({
             style={[
               styles.historyCloseButton,
               {
-                backgroundColor: isDark
-                  ? SLATE_COLORS[800]
-                  : SLATE_COLORS[200],
+                backgroundColor: isDark ? SLATE_COLORS[800] : SLATE_COLORS[200],
               },
             ]}
           >
@@ -115,7 +113,10 @@ export const HistoryModal: React.FC<HistoryModalProps> = ({
           </TouchableOpacity>
         </View>
 
-        <ScrollView style={styles.historyScroll} contentContainerStyle={styles.historyContent}>
+        <ScrollView
+          style={styles.historyScroll}
+          contentContainerStyle={styles.historyContent}
+        >
           {events && events.length > 0 ? (
             events.map((evt) => (
               <View
@@ -126,19 +127,22 @@ export const HistoryModal: React.FC<HistoryModalProps> = ({
                     backgroundColor: isDark
                       ? SLATE_COLORS[800]
                       : COMMON_COLORS.white,
-                    borderColor: isDark
-                      ? SLATE_COLORS[700]
-                      : SLATE_COLORS[100],
+                    borderColor: isDark ? SLATE_COLORS[700] : SLATE_COLORS[100],
                   },
                 ]}
               >
                 <View style={styles.historyItemLeft}>
                   <Text
-                    style={[styles.historyItemDescription, { color: textPrimary }]}
+                    style={[
+                      styles.historyItemDescription,
+                      { color: textPrimary },
+                    ]}
                   >
                     {evt.description}
                   </Text>
-                  <Text style={[styles.historyItemMeta, { color: textSecondary }]}>
+                  <Text
+                    style={[styles.historyItemMeta, { color: textSecondary }]}
+                  >
                     {new Date(evt.timestamp).toLocaleTimeString()} •{" "}
                     {evt.teamId === "HOME"
                       ? match.myTeamName || "Nous"
@@ -252,9 +256,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                     ? SLATE_COLORS[800]
                     : SLATE_COLORS[50],
                 borderColor:
-                  filterMode === "ALL"
-                    ? BRAND_COLORS[500]
-                    : borderColor,
+                  filterMode === "ALL" ? BRAND_COLORS[500] : borderColor,
               },
             ]}
           >
@@ -262,10 +264,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
               style={[
                 styles.filterOptionText,
                 {
-                  color:
-                    filterMode === "ALL"
-                      ? BRAND_COLORS[600]
-                      : textPrimary,
+                  color: filterMode === "ALL" ? BRAND_COLORS[600] : textPrimary,
                 },
               ]}
             >
@@ -297,9 +296,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                     ? SLATE_COLORS[800]
                     : SLATE_COLORS[50],
                 borderColor:
-                  filterMode === "SCORING"
-                    ? BRAND_COLORS[500]
-                    : borderColor,
+                  filterMode === "SCORING" ? BRAND_COLORS[500] : borderColor,
               },
             ]}
           >
@@ -308,9 +305,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                 styles.filterOptionText,
                 {
                   color:
-                    filterMode === "SCORING"
-                      ? BRAND_COLORS[600]
-                      : textPrimary,
+                    filterMode === "SCORING" ? BRAND_COLORS[600] : textPrimary,
                 },
               ]}
             >
@@ -342,9 +337,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                     ? SLATE_COLORS[800]
                     : SLATE_COLORS[50],
                 borderColor:
-                  filterMode === "DEFENSE"
-                    ? BRAND_COLORS[500]
-                    : borderColor,
+                  filterMode === "DEFENSE" ? BRAND_COLORS[500] : borderColor,
               },
             ]}
           >
@@ -353,9 +346,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                 styles.filterOptionText,
                 {
                   color:
-                    filterMode === "DEFENSE"
-                      ? BRAND_COLORS[600]
-                      : textPrimary,
+                    filterMode === "DEFENSE" ? BRAND_COLORS[600] : textPrimary,
                 },
               ]}
             >
@@ -428,7 +419,9 @@ export const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
             <Text style={[styles.playerModalTitle, { color: textPrimary }]}>
               QUI ?
             </Text>
-            <Text style={[styles.playerModalSubtitle, { color: BRAND_COLORS[600] }]}>
+            <Text
+              style={[styles.playerModalSubtitle, { color: BRAND_COLORS[600] }]}
+            >
               {pendingEvent.type
                 ? `Validation : ${pendingEvent.type.replace("_", " ")}`
                 : "Sélectionnez le joueur"}
@@ -439,9 +432,7 @@ export const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
             style={[
               styles.playerModalClose,
               {
-                backgroundColor: isDark
-                  ? SLATE_COLORS[800]
-                  : SLATE_COLORS[100],
+                backgroundColor: isDark ? SLATE_COLORS[800] : SLATE_COLORS[100],
               },
             ]}
           >
@@ -458,9 +449,7 @@ export const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
             style={[
               styles.playerTabs,
               {
-                backgroundColor: isDark
-                  ? SLATE_COLORS[800]
-                  : SLATE_COLORS[100],
+                backgroundColor: isDark ? SLATE_COLORS[800] : SLATE_COLORS[100],
               },
             ]}
           >
@@ -496,9 +485,7 @@ export const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
                 styles.playerTab,
                 {
                   backgroundColor:
-                    playerSelectionTab === "AWAY"
-                      ? "#ef4444"
-                      : "transparent",
+                    playerSelectionTab === "AWAY" ? "#ef4444" : "transparent",
                 },
               ]}
             >
@@ -573,7 +560,8 @@ export const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
                     styles.playerCardNumberText,
                     {
                       color:
-                        match.trackOpponentStats && playerSelectionTab === "AWAY"
+                        match.trackOpponentStats &&
+                        playerSelectionTab === "AWAY"
                           ? "#ef4444"
                           : isDark
                           ? SLATE_COLORS[200]
@@ -638,7 +626,9 @@ export const CourtActionModal: React.FC<CourtActionModalProps> = ({
             <Text style={[styles.courtActionTitle, { color: textPrimary }]}>
               ACTION
             </Text>
-            <Text style={[styles.courtActionSubtitle, { color: textSecondary }]}>
+            <Text
+              style={[styles.courtActionSubtitle, { color: textSecondary }]}
+            >
               Que s'est-il passé ici ?
             </Text>
           </View>
@@ -647,9 +637,7 @@ export const CourtActionModal: React.FC<CourtActionModalProps> = ({
             style={[
               styles.courtActionClose,
               {
-                backgroundColor: isDark
-                  ? SLATE_COLORS[800]
-                  : SLATE_COLORS[100],
+                backgroundColor: isDark ? SLATE_COLORS[800] : SLATE_COLORS[100],
               },
             ]}
           >
@@ -710,7 +698,12 @@ export const SubstitutionModal: React.FC<SubstitutionModalProps> = ({
   return (
     <Modal visible={visible} transparent animationType="slide">
       <View style={styles.modalOverlay}>
-        <View style={[styles.subModal, { backgroundColor: surfaceColor, borderColor }]}>
+        <View
+          style={[
+            styles.subModal,
+            { backgroundColor: surfaceColor, borderColor },
+          ]}
+        >
           <View style={styles.subHeader}>
             <View style={styles.subHeaderLeft}>
               <MaterialCommunityIcons
@@ -882,7 +875,9 @@ export const SubstitutionModal: React.FC<SubstitutionModalProps> = ({
                         style={[
                           styles.subPlayerName,
                           {
-                            color: isDark ? SLATE_COLORS[300] : SLATE_COLORS[700],
+                            color: isDark
+                              ? SLATE_COLORS[300]
+                              : SLATE_COLORS[700],
                           },
                         ]}
                         numberOfLines={1}
@@ -941,7 +936,9 @@ export const SubstitutionModal: React.FC<SubstitutionModalProps> = ({
                             : isDark
                             ? SLATE_COLORS[800]
                             : COMMON_COLORS.white,
-                          borderColor: isIn ? STATUS_COLORS.success : "transparent",
+                          borderColor: isIn
+                            ? STATUS_COLORS.success
+                            : "transparent",
                           borderWidth: isIn ? 2 : 1,
                         },
                       ]}
@@ -962,9 +959,7 @@ export const SubstitutionModal: React.FC<SubstitutionModalProps> = ({
                           style={[
                             styles.subPlayerNumberText,
                             {
-                              color: isIn
-                                ? COMMON_COLORS.white
-                                : textSecondary,
+                              color: isIn ? COMMON_COLORS.white : textSecondary,
                             },
                           ]}
                         >
@@ -972,16 +967,18 @@ export const SubstitutionModal: React.FC<SubstitutionModalProps> = ({
                         </Text>
                       </View>
                       <Text
-                        style={[
-                          styles.subPlayerName,
-                          { color: textSecondary },
-                        ]}
+                        style={[styles.subPlayerName, { color: textSecondary }]}
                         numberOfLines={1}
                       >
                         {player.name.split(" ").pop()}
                       </Text>
                       {isIn && (
-                        <View style={[styles.subPlayerBadge, { backgroundColor: STATUS_COLORS.success }]}>
+                        <View
+                          style={[
+                            styles.subPlayerBadge,
+                            { backgroundColor: STATUS_COLORS.success },
+                          ]}
+                        >
                           <MaterialCommunityIcons
                             name="arrow-right"
                             size={10}
@@ -1107,9 +1104,7 @@ export const EndMatchModal: React.FC<EndMatchModalProps> = ({
             style={[
               styles.endMatchCancelButton,
               {
-                backgroundColor: isDark
-                  ? SLATE_COLORS[800]
-                  : SLATE_COLORS[100],
+                backgroundColor: isDark ? SLATE_COLORS[800] : SLATE_COLORS[100],
               },
             ]}
           >
@@ -1187,12 +1182,23 @@ export const OvertimeModal: React.FC<OvertimeModalProps> = ({
             { backgroundColor: surfaceColor, borderColor },
           ]}
         >
-          <TouchableOpacity onPress={onClose} style={styles.overtimeCloseButton}>
-            <MaterialCommunityIcons name="close-circle" size={20} color={textSecondary} />
+          <TouchableOpacity
+            onPress={onClose}
+            style={styles.overtimeCloseButton}
+          >
+            <MaterialCommunityIcons
+              name="close-circle"
+              size={20}
+              color={textSecondary}
+            />
           </TouchableOpacity>
 
           <View style={styles.overtimeIcon}>
-            <MaterialCommunityIcons name="flag" size={32} color={BRAND_COLORS[600]} />
+            <MaterialCommunityIcons
+              name="flag"
+              size={32}
+              color={BRAND_COLORS[600]}
+            />
           </View>
 
           <Text style={[styles.overtimeTitle, { color: textPrimary }]}>
@@ -1229,7 +1235,9 @@ export const OvertimeModal: React.FC<OvertimeModalProps> = ({
                 size={20}
                 color={textSecondary}
               />
-              <Text style={[styles.overtimeDurationValue, { color: textPrimary }]}>
+              <Text
+                style={[styles.overtimeDurationValue, { color: textPrimary }]}
+              >
                 {duration} min
               </Text>
             </View>
@@ -1238,7 +1246,10 @@ export const OvertimeModal: React.FC<OvertimeModalProps> = ({
           <View style={styles.overtimeActions}>
             <TouchableOpacity
               onPress={onStartOvertime}
-              style={[styles.overtimePrimaryButton, { backgroundColor: BRAND_COLORS[600] }]}
+              style={[
+                styles.overtimePrimaryButton,
+                { backgroundColor: BRAND_COLORS[600] },
+              ]}
             >
               <MaterialCommunityIcons
                 name="play"
@@ -1262,7 +1273,12 @@ export const OvertimeModal: React.FC<OvertimeModalProps> = ({
                 { backgroundColor: surfaceColor, borderColor },
               ]}
             >
-              <Text style={[styles.overtimeSecondaryButtonText, { color: textPrimary }]}>
+              <Text
+                style={[
+                  styles.overtimeSecondaryButtonText,
+                  { color: textPrimary },
+                ]}
+              >
                 Terminer le match
               </Text>
             </TouchableOpacity>
@@ -1272,6 +1288,135 @@ export const OvertimeModal: React.FC<OvertimeModalProps> = ({
     </Modal>
   );
 };
+
+// Period Confirm Modal
+interface PeriodConfirmModalProps {
+  visible: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+  timer: number;
+  formatTime: (seconds: number) => string;
+  isDark: boolean;
+  surfaceColor: string;
+  textPrimary: string;
+  textSecondary: string;
+  borderColor: string;
+}
+
+export const PeriodConfirmModal: React.FC<PeriodConfirmModalProps> = ({
+  visible,
+  onClose,
+  onConfirm,
+  timer,
+  formatTime,
+  isDark,
+  surfaceColor,
+  textPrimary,
+  textSecondary,
+  borderColor,
+}) => (
+  <Modal visible={visible} transparent animationType="fade">
+    <View style={styles.modalOverlay}>
+      <View
+        style={[
+          styles.periodConfirmModal,
+          { backgroundColor: surfaceColor, borderColor },
+        ]}
+      >
+        <TouchableOpacity
+          onPress={onClose}
+          style={[
+            styles.periodConfirmCloseButton,
+            {
+              backgroundColor: isDark ? SLATE_COLORS[800] : SLATE_COLORS[100],
+            },
+          ]}
+        >
+          <MaterialCommunityIcons
+            name="close-circle"
+            size={20}
+            color={textSecondary}
+          />
+        </TouchableOpacity>
+
+        <View
+          style={[
+            styles.periodConfirmIcon,
+            {
+              backgroundColor: isDark ? "#78350f" : "#fef3c7",
+              borderColor: isDark ? "#78350f" : "#fcd34d",
+            },
+          ]}
+        >
+          <MaterialCommunityIcons
+            name="alert-circle"
+            size={32}
+            color={isDark ? "#fbbf24" : "#f59e0b"}
+          />
+        </View>
+
+        <Text style={[styles.periodConfirmTitle, { color: textPrimary }]}>
+          Attention
+        </Text>
+
+        <Text
+          style={[styles.periodConfirmDescription, { color: textSecondary }]}
+        >
+          Il reste{" "}
+          <Text style={{ fontWeight: "bold", color: textPrimary }}>
+            {formatTime(timer)}
+          </Text>{" "}
+          au chronomètre.
+          {"\n"}
+          Voulez-vous vraiment passer à la période suivante ?
+        </Text>
+
+        <View style={styles.periodConfirmActions}>
+          <TouchableOpacity
+            onPress={onConfirm}
+            style={[
+              styles.periodConfirmForceButton,
+              { backgroundColor: "#f59e0b" },
+            ]}
+          >
+            <Text
+              style={[
+                styles.periodConfirmForceButtonText,
+                { color: COMMON_COLORS.white },
+              ]}
+            >
+              Passer à la suivante
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={onClose}
+            style={[
+              styles.periodConfirmCancelButton,
+              {
+                backgroundColor: isDark
+                  ? SLATE_COLORS[800]
+                  : COMMON_COLORS.white,
+                borderColor: isDark ? SLATE_COLORS[700] : SLATE_COLORS[200],
+              },
+            ]}
+          >
+            <Text
+              style={[
+                styles.periodConfirmCancelButtonText,
+                {
+                  color: isDark ? SLATE_COLORS[300] : SLATE_COLORS[700],
+                },
+              ]}
+            >
+              Annuler
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </View>
+  </Modal>
+);
 
 const styles = StyleSheet.create({
   modalOverlay: {
@@ -1784,6 +1929,70 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   overtimeSecondaryButtonText: {
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  // Period Confirm Modal
+  periodConfirmModal: {
+    width: "100%",
+    maxWidth: 400,
+    borderRadius: 16,
+    padding: 24,
+    borderWidth: 1,
+    alignItems: "center",
+  },
+  periodConfirmCloseButton: {
+    position: "absolute",
+    top: 12,
+    right: 12,
+    padding: 8,
+    borderRadius: 999,
+  },
+  periodConfirmIcon: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 16,
+    borderWidth: 1,
+  },
+  periodConfirmTitle: {
+    fontSize: 20,
+    fontWeight: "900",
+    marginBottom: 8,
+    textAlign: "center",
+  },
+  periodConfirmDescription: {
+    fontSize: 14,
+    textAlign: "center",
+    marginBottom: 24,
+    lineHeight: 20,
+  },
+  periodConfirmActions: {
+    width: "100%",
+    gap: 12,
+  },
+  periodConfirmForceButton: {
+    padding: 16,
+    borderRadius: 12,
+    alignItems: "center",
+    shadowColor: "#f59e0b",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+  },
+  periodConfirmForceButtonText: {
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  periodConfirmCancelButton: {
+    padding: 12,
+    borderRadius: 12,
+    alignItems: "center",
+    borderWidth: 1,
+  },
+  periodConfirmCancelButtonText: {
     fontSize: 16,
     fontWeight: "bold",
   },
