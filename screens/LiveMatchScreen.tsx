@@ -163,33 +163,54 @@ export default function LiveMatchScreen({
   route,
 }: LiveMatchScreenProps) {
   const { colors, isDark } = useTheme();
-  const matchId = route.params?.matchId;
+  const matchData = route.params?.matchData;
 
-  // Mock match data - In real app, load from database
-  const [match, setMatch] = useState<any>({
-    id: matchId,
-    myTeamName: "Mon Équipe",
-    opponent: "Adversaire",
-    location: "HOME",
-    scoreHome: 0,
-    scoreAway: 0,
-    status: "in_progress" as MatchStatus,
-    trackOpponentStats: false,
-    roster: MOCK_ROSTER,
-    opponentRoster: MOCK_OPPONENT_ROSTER,
-    starters: ["p1", "p2", "p3", "p4", "p5"],
-    periodCount: 4,
-    periodDuration: 10,
-    events: [] as MatchEvent[],
+  // Initialize match with data from NewMatchScreen or use mock data
+  const [match, setMatch] = useState<any>(() => {
+    if (matchData) {
+      return {
+        id: matchData.id,
+        myTeamName: matchData.teamName || "Mon Équipe",
+        opponent: matchData.opponent || "Adversaire",
+        location: matchData.location || "HOME",
+        scoreHome: 0,
+        scoreAway: 0,
+        status: "in_progress" as MatchStatus,
+        trackOpponentStats: matchData.trackOpponentStats || false,
+        roster: matchData.homePlayers || [],
+        opponentRoster: matchData.awayPlayers || [],
+        starters: matchData.starters || [],
+        periodCount: matchData.periodCount || 4,
+        periodDuration: matchData.periodDuration || 10,
+        events: [] as MatchEvent[],
+      };
+    }
+    // Fallback to mock data
+    return {
+      id: Date.now().toString(),
+      myTeamName: "Mon Équipe",
+      opponent: "Adversaire",
+      location: "HOME",
+      scoreHome: 0,
+      scoreAway: 0,
+      status: "in_progress" as MatchStatus,
+      trackOpponentStats: false,
+      roster: MOCK_ROSTER,
+      opponentRoster: MOCK_OPPONENT_ROSTER,
+      starters: ["p1", "p2", "p3", "p4", "p5"],
+      periodCount: 4,
+      periodDuration: 10,
+      events: [] as MatchEvent[],
+    };
   });
 
   // Determine Rosters
   const homeRoster =
-    match?.roster && match.roster.length > 0 ? match.roster : MOCK_ROSTER;
+    match?.roster && match.roster.length > 0 ? match.roster : [];
   const opponentRoster =
     match?.opponentRoster && match.opponentRoster.length > 0
       ? match.opponentRoster
-      : MOCK_OPPONENT_ROSTER;
+      : [];
 
   // Match Configuration
   const periodDurationMin = match?.periodDuration || 10;
