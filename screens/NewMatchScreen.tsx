@@ -16,6 +16,8 @@ import {
   SLATE_COLORS,
   BRAND_COLORS,
   COMMON_COLORS,
+  UI_COLORS,
+  STATUS_COLORS,
 } from "../src/theme/clubDefaults";
 import { ServiceFactory } from "../services/ServiceFactory";
 import { supabase } from "../src/config/supabase";
@@ -397,7 +399,8 @@ export default function NewMatchScreen({
           {/* Opponent */}
           <View style={styles.formSection}>
             <Text style={[styles.formLabel, { color: textSecondary }]}>
-              ADVERSAIRE
+              ADVERSAIRE{" "}
+              <Text style={{ color: STATUS_COLORS.required }}>*</Text>
             </Text>
             <TextInput
               value={opponent}
@@ -448,7 +451,7 @@ export default function NewMatchScreen({
                     },
                   ]}
                 >
-                  Quarts-temps
+                  4 Quarts-temps
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
@@ -477,7 +480,7 @@ export default function NewMatchScreen({
                     },
                   ]}
                 >
-                  Mi-temps
+                  2 Mi-temps
                 </Text>
               </TouchableOpacity>
             </View>
@@ -960,17 +963,19 @@ export default function NewMatchScreen({
                               styles.starButton,
                               {
                                 backgroundColor: isStarter
-                                  ? "rgba(234, 179, 8, 0.2)"
+                                  ? UI_COLORS.starBackground
                                   : "transparent",
                                 borderWidth: isStarter ? 2 : 0,
-                                borderColor: isStarter ? "#eab308" : "transparent",
+                                borderColor: isStarter
+                                  ? UI_COLORS.star
+                                  : "transparent",
                               },
                             ]}
                           >
                             <MaterialCommunityIcons
                               name={isStarter ? "star" : "star-outline"}
                               size={20}
-                              color={isStarter ? "#eab308" : textSecondary}
+                              color={isStarter ? UI_COLORS.star : textSecondary}
                             />
                           </TouchableOpacity>
                         )}

@@ -72,6 +72,15 @@ export const STATUS_COLORS = {
   error: "#F44336",     // Red
   warning: "#F57C00",   // Orange
   info: "#2196F3",      // Blue
+  required: "#ef4444",  // Red for required fields
+};
+
+/**
+ * UI element colors (stars, badges, highlights)
+ */
+export const UI_COLORS = {
+  star: "#eab308",                    // Yellow for star/favorite
+  starBackground: "rgba(234, 179, 8, 0.2)",  // Yellow transparent background
 };
 
 /**
