@@ -292,6 +292,9 @@ export default function NewMatchScreen({
       awayPlayers: trackOpponentStats ? opponentRoster : [],
       teamName: team.name,
       teamLogo: team.logo,
+      clubLogoUrl: club?.logoUrl || null,
+      courtBackgroundColor: club?.courtBackgroundColor || "#1a472a",
+      courtLineColor: club?.courtLineColor || "#FFFFFF",
       createdAt: new Date(),
     };
 

@@ -1,14 +1,10 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Modal,
-  TextInput,
-  Dimensions,
-  Animated,
 } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useTheme } from "../src/contexts/ThemeContext";
@@ -18,9 +14,10 @@ import {
   COMMON_COLORS,
   STATUS_COLORS,
 } from "../src/theme/clubDefaults";
-import { Match, MatchStatus } from "../src/models/types";
+import { MatchStatus } from "../src/models/types";
 import { Player } from "../models/Player";
-import Svg, { Rect, Line, Circle, Path } from "react-native-svg";
+import { useAuth } from "../src/contexts/AuthContext";
+import BasketballCourtSVG from "../components/BasketballCourtSVG";
 import {
   HistoryModal,
   FilterModal,
@@ -163,6 +160,7 @@ export default function LiveMatchScreen({
   route,
 }: LiveMatchScreenProps) {
   const { colors, isDark } = useTheme();
+  const { user } = useAuth();
   const matchData = route.params?.matchData;
 
   // Initialize match with data from NewMatchScreen or use mock data
@@ -183,6 +181,9 @@ export default function LiveMatchScreen({
         periodCount: matchData.periodCount || 4,
         periodDuration: matchData.periodDuration || 10,
         events: [] as MatchEvent[],
+        clubLogoUrl: matchData.clubLogoUrl || null,
+        courtBackgroundColor: matchData.courtBackgroundColor || "#1a472a",
+        courtLineColor: matchData.courtLineColor || "#FFFFFF",
       };
     }
     // Fallback to mock data
@@ -201,6 +202,9 @@ export default function LiveMatchScreen({
       periodCount: 4,
       periodDuration: 10,
       events: [] as MatchEvent[],
+      clubLogoUrl: null,
+      courtBackgroundColor: "#1a472a",
+      courtLineColor: "#FFFFFF",
     };
   });
 
@@ -329,9 +333,15 @@ export default function LiveMatchScreen({
       lastEvent.value
     ) {
       if (lastEvent.teamId === "HOME") {
-        updatedMatch.scoreHome = Math.max(0, updatedMatch.scoreHome - lastEvent.value);
+        updatedMatch.scoreHome = Math.max(
+          0,
+          updatedMatch.scoreHome - lastEvent.value
+        );
       } else {
-        updatedMatch.scoreAway = Math.max(0, updatedMatch.scoreAway - lastEvent.value);
+        updatedMatch.scoreAway = Math.max(
+          0,
+          updatedMatch.scoreAway - lastEvent.value
+        );
       }
     }
 
@@ -340,15 +350,20 @@ export default function LiveMatchScreen({
 
   const deleteEvent = (eventId: string) => {
     if (!match.events) return;
-    const eventToDelete = match.events.find((e: MatchEvent) => e.id === eventId);
+    const eventToDelete = match.events.find(
+      (e: MatchEvent) => e.id === eventId
+    );
     if (!eventToDelete) return;
 
-    const updatedEvents = match.events.filter((e: MatchEvent) => e.id !== eventId);
+    const updatedEvents = match.events.filter(
+      (e: MatchEvent) => e.id !== eventId
+    );
     const updatedMatch = { ...match, events: updatedEvents };
 
     // Revert Score
     if (
-      (eventToDelete.type.includes("POINT") || eventToDelete.type === "POINT") &&
+      (eventToDelete.type.includes("POINT") ||
+        eventToDelete.type === "POINT") &&
       eventToDelete.value
     ) {
       if (eventToDelete.teamId === "HOME") {
@@ -438,9 +453,9 @@ export default function LiveMatchScreen({
     );
     const newActivePlayers = [...remainingPlayers, ...subSelection.in];
 
-    const subDescription = `Changements (${
-      isHome ? "Nous" : "Eux"
-    }): ${subSelection.in.length} joueur(s)`;
+    const subDescription = `Changements (${isHome ? "Nous" : "Eux"}): ${
+      subSelection.in.length
+    } joueur(s)`;
 
     const newEvent: MatchEvent = {
       id: `evt-${Date.now()}`,
@@ -571,7 +586,9 @@ export default function LiveMatchScreen({
     if (subTeamTab === "HOME") {
       return {
         onCourt: homeRoster.filter((p: Player) => activePlayers.includes(p.id)),
-        onBench: homeRoster.filter((p: Player) => !activePlayers.includes(p.id)),
+        onBench: homeRoster.filter(
+          (p: Player) => !activePlayers.includes(p.id)
+        ),
       };
     } else {
       return {
@@ -956,7 +973,10 @@ export default function LiveMatchScreen({
       {/* Main Content */}
       <View style={styles.mainContent}>
         {viewMode === "GRID" && (
-          <ScrollView style={styles.gridScroll} contentContainerStyle={styles.gridContent}>
+          <ScrollView
+            style={styles.gridScroll}
+            contentContainerStyle={styles.gridContent}
+          >
             <ActionGrid onAction={handleActionClick} isDark={isDark} />
           </ScrollView>
         )}
@@ -968,6 +988,9 @@ export default function LiveMatchScreen({
             showMarkers={showMarkers}
             filterMode={filterMode}
             isDark={isDark}
+            clubLogoUrl={match.clubLogoUrl}
+            courtBackgroundColor={match.courtBackgroundColor}
+            courtLineColor={match.courtLineColor}
           />
         )}
       </View>
@@ -979,15 +1002,8 @@ export default function LiveMatchScreen({
           { backgroundColor: surfaceColor, borderTopColor: borderColor },
         ]}
       >
-        <TouchableOpacity
-          onPress={undoLastAction}
-          style={styles.toolbarButton}
-        >
-          <MaterialCommunityIcons
-            name="undo"
-            size={22}
-            color={textSecondary}
-          />
+        <TouchableOpacity onPress={undoLastAction} style={styles.toolbarButton}>
+          <MaterialCommunityIcons name="undo" size={22} color={textSecondary} />
           <Text style={[styles.toolbarButtonText, { color: textSecondary }]}>
             Annuler
           </Text>
@@ -1000,9 +1016,7 @@ export default function LiveMatchScreen({
           <MaterialCommunityIcons
             name="filter"
             size={22}
-            color={
-              filterMode !== "ALL" ? BRAND_COLORS[500] : textSecondary
-            }
+            color={filterMode !== "ALL" ? BRAND_COLORS[500] : textSecondary}
           />
           <Text style={[styles.toolbarButtonText, { color: textSecondary }]}>
             Filtres
@@ -1283,7 +1297,12 @@ const ActionButton: React.FC<ActionButtonProps> = ({
     ]}
     activeOpacity={0.8}
   >
-    <Text style={[styles.actionButtonLabel, { color: textColor, fontSize: textSize }]}>
+    <Text
+      style={[
+        styles.actionButtonLabel,
+        { color: textColor, fontSize: textSize },
+      ]}
+    >
       {label}
     </Text>
     {sub && (
@@ -1299,6 +1318,9 @@ interface CourtViewProps {
   showMarkers: boolean;
   filterMode: FilterMode;
   isDark: boolean;
+  clubLogoUrl: string | null;
+  courtBackgroundColor: string;
+  courtLineColor: string;
 }
 
 const CourtView: React.FC<CourtViewProps> = ({
@@ -1307,8 +1329,14 @@ const CourtView: React.FC<CourtViewProps> = ({
   showMarkers,
   filterMode,
   isDark,
+  clubLogoUrl,
+  courtBackgroundColor,
+  courtLineColor,
 }) => {
-  const [courtDimensions, setCourtDimensions] = useState({ width: 0, height: 0 });
+  const [courtDimensions, setCourtDimensions] = useState({
+    width: 0,
+    height: 0,
+  });
 
   const handleLayout = (event: any) => {
     const { width, height } = event.nativeEvent.layout;
@@ -1334,57 +1362,39 @@ const CourtView: React.FC<CourtViewProps> = ({
     return true;
   });
 
+  const markers = showMarkers
+    ? filteredEvents?.map((evt: MatchEvent) => {
+        let markerColor = SLATE_COLORS[500];
+        if (evt.type.includes("POINT"))
+          markerColor = evt.teamId === "AWAY" ? "#ef4444" : "#22c55e";
+        if (evt.type.includes("MISS"))
+          markerColor = evt.teamId === "AWAY" ? "#ea580c" : "#b91c1c";
+
+        return {
+          id: evt.id,
+          svgX: evt.coordinates!.x,
+          svgY: evt.coordinates!.y,
+          color: markerColor,
+        };
+      }) || []
+    : [];
+
+  const defaultLogoUri = require("../components/icons/coachassistant-logo-margin.png");
+  const logoUri = clubLogoUrl || defaultLogoUri;
+
   return (
-    <View style={styles.courtContainer}>
-      <TouchableOpacity
-        activeOpacity={1}
-        onPress={handlePress}
-        onLayout={handleLayout}
-        style={styles.courtTouchable}
-      >
-        <View style={styles.court}>
-          {/* SVG Court Background */}
-          <Svg width="100%" height="100%" viewBox="0 0 50 94" style={styles.courtSvg}>
-            <Rect width="50" height="94" fill={isDark ? "#1e1b4b" : "#f0fdf4"} opacity="0.3" />
-            <Line x1="0" y1="47" x2="50" y2="47" stroke="white" strokeWidth="0.5" />
-            <Circle cx="25" cy="47" r="6" stroke="white" strokeWidth="0.5" fill="none" />
-
-            {/* Top Key */}
-            <Rect x="17" y="0" width="16" height="19" stroke="white" strokeWidth="0.5" fill="none" />
-            <Path d="M 17 19 A 6 6 0 0 0 33 19" stroke="white" strokeWidth="0.5" fill="none" />
-            <Circle cx="25" cy="5.25" r="1.5" stroke="white" strokeWidth="0.5" />
-
-            {/* Bottom Key */}
-            <Rect x="17" y="75" width="16" height="19" stroke="white" strokeWidth="0.5" fill="none" />
-            <Path d="M 17 75 A 6 6 0 0 1 33 75" stroke="white" strokeWidth="0.5" fill="none" />
-            <Circle cx="25" cy="88.75" r="1.5" stroke="white" strokeWidth="0.5" />
-          </Svg>
-
-          {/* Event Markers */}
-          {showMarkers &&
-            filteredEvents?.map((evt: MatchEvent) => {
-              let markerColor = SLATE_COLORS[500];
-              if (evt.type.includes("POINT"))
-                markerColor = evt.teamId === "AWAY" ? "#ef4444" : "#22c55e";
-              if (evt.type.includes("MISS"))
-                markerColor = evt.teamId === "AWAY" ? "#ea580c" : "#b91c1c";
-
-              return (
-                <View
-                  key={evt.id}
-                  style={[
-                    styles.eventMarker,
-                    {
-                      backgroundColor: markerColor,
-                      left: `${evt.coordinates!.x}%`,
-                      top: `${evt.coordinates!.y}%`,
-                    },
-                  ]}
-                />
-              );
-            })}
-        </View>
-      </TouchableOpacity>
+    <View style={styles.courtContainer} onLayout={handleLayout}>
+      <BasketballCourtSVG
+        width={courtDimensions.width || 400}
+        height={courtDimensions.height || 600}
+        onCourtPress={(svgX: number, svgY: number) => {
+          onCourtClick(svgX, svgY);
+        }}
+        backgroundColor={courtBackgroundColor}
+        lineColor={courtLineColor}
+        logoUri={logoUri}
+        markers={markers}
+      />
     </View>
   );
 };
@@ -1396,7 +1406,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    paddingTop: 60,
+    paddingTop: 20,
     paddingBottom: 16,
     paddingHorizontal: 8,
     borderBottomWidth: 1,
@@ -1480,7 +1490,7 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     borderWidth: 1,
     borderColor: SLATE_COLORS[800],
-    width: 128,
+    width: 170,
     alignItems: "center",
   },
   timerText: {
