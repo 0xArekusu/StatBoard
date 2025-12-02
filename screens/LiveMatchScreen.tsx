@@ -18,6 +18,7 @@ import { MatchStatus } from "../src/models/types";
 import { Player } from "../models/Player";
 import { useAuth } from "../src/contexts/AuthContext";
 import BasketballCourtSVG from "../components/BasketballCourtSVG";
+import { MatchActionGrid } from "../components/MatchActionGrid";
 import {
   HistoryModal,
   FilterModal,
@@ -390,9 +391,9 @@ export default function LiveMatchScreen({
     setWorkflowStep("SELECT_PLAYER");
   };
 
-  const handleCourtClick = (x: number, y: number) => {
-    setPendingEvent({ coords: { x, y } });
-    setPlayerSelectionTab("HOME");
+  const handleCourtClick = (svgX: number, svgY: number) => {
+    // Store coordinates and show action selection modal
+    setPendingEvent({ coords: { x: svgX, y: svgY } });
     setWorkflowStep("SELECT_ACTION_FROM_COURT");
   };
 
@@ -977,7 +978,7 @@ export default function LiveMatchScreen({
             style={styles.gridScroll}
             contentContainerStyle={styles.gridContent}
           >
-            <ActionGrid onAction={handleActionClick} isDark={isDark} />
+            <MatchActionGrid onAction={handleActionClick} isDark={isDark} />
           </ScrollView>
         )}
 
@@ -1159,157 +1160,6 @@ export default function LiveMatchScreen({
 }
 
 // ==================== COMPONENTS ====================
-
-// Action Grid Component
-interface ActionGridProps {
-  onAction: (type: EventType, value?: number) => void;
-  isDark: boolean;
-}
-
-const ActionGrid: React.FC<ActionGridProps> = ({ onAction, isDark }) => (
-  <View style={styles.actionGrid}>
-    {/* Row 1: Scoring Positive */}
-    <View style={styles.actionRow}>
-      <ActionButton
-        onPress={() => onAction("POINT_1", 1)}
-        label="+1"
-        sub="Lancer"
-        color={STATUS_COLORS.success}
-      />
-      <ActionButton
-        onPress={() => onAction("POINT_2", 2)}
-        label="+2"
-        sub="Points"
-        color="#4ade80"
-      />
-      <ActionButton
-        onPress={() => onAction("POINT_3", 3)}
-        label="+3"
-        sub="Points"
-        color="#86efac"
-      />
-    </View>
-
-    {/* Row 2: Scoring Negative (Misses) */}
-    <View style={[styles.actionRow, { height: 64 }]}>
-      <ActionButton
-        onPress={() => onAction("MISS_1", 0)}
-        label="Raté"
-        sub="Lancer"
-        color={isDark ? SLATE_COLORS[800] : SLATE_COLORS[200]}
-        textColor="#ef4444"
-      />
-      <ActionButton
-        onPress={() => onAction("MISS_2", 0)}
-        label="Raté"
-        sub="2 Pts"
-        color={isDark ? SLATE_COLORS[800] : SLATE_COLORS[200]}
-        textColor="#ef4444"
-      />
-      <ActionButton
-        onPress={() => onAction("MISS_3", 0)}
-        label="Raté"
-        sub="3 Pts"
-        color={isDark ? SLATE_COLORS[800] : SLATE_COLORS[200]}
-        textColor="#ef4444"
-      />
-    </View>
-
-    {/* Row 3: Rebounds */}
-    <View style={[styles.actionRow, { height: 80 }]}>
-      <ActionButton
-        onPress={() => onAction("REBOUND_DEF")}
-        label="REB DEF"
-        sub="Défensif"
-        color="#2563eb"
-      />
-      <ActionButton
-        onPress={() => onAction("REBOUND_OFF")}
-        label="REB OFF"
-        sub="Offensif"
-        color="#06b6d4"
-      />
-    </View>
-
-    {/* Row 4: Other Stats */}
-    <View style={styles.actionRow}>
-      <ActionButton
-        onPress={() => onAction("ASSIST")}
-        label="PASSE D"
-        sub="Assist"
-        color="#6366f1"
-      />
-      <ActionButton
-        onPress={() => onAction("STEAL")}
-        label="INTERC"
-        sub="Vol"
-        color="#8b5cf6"
-      />
-      <View style={styles.miniColumn}>
-        <ActionButton
-          onPress={() => onAction("BLOCK")}
-          label="CONTRE"
-          color={SLATE_COLORS[600]}
-          textSize={14}
-        />
-        <ActionButton
-          onPress={() => onAction("FOUL")}
-          label="FAUTE"
-          color="#b91c1c"
-          textSize={14}
-        />
-      </View>
-    </View>
-
-    {/* Row 5: Turnover */}
-    <View style={[styles.actionRow, { height: 56 }]}>
-      <ActionButton
-        onPress={() => onAction("TURNOVER")}
-        label="BALLE PERDUE"
-        color="#ea580c"
-      />
-    </View>
-  </View>
-);
-
-interface ActionButtonProps {
-  onPress: () => void;
-  label: string;
-  sub?: string;
-  color: string;
-  textColor?: string;
-  textSize?: number;
-}
-
-const ActionButton: React.FC<ActionButtonProps> = ({
-  onPress,
-  label,
-  sub,
-  color,
-  textColor = COMMON_COLORS.white,
-  textSize = 20,
-}) => (
-  <TouchableOpacity
-    onPress={onPress}
-    style={[
-      styles.actionButton,
-      { backgroundColor: color, borderBottomColor: "rgba(0,0,0,0.1)" },
-    ]}
-    activeOpacity={0.8}
-  >
-    <Text
-      style={[
-        styles.actionButtonLabel,
-        { color: textColor, fontSize: textSize },
-      ]}
-    >
-      {label}
-    </Text>
-    {sub && (
-      <Text style={[styles.actionButtonSub, { color: textColor }]}>{sub}</Text>
-    )}
-  </TouchableOpacity>
-);
 
 // Court View Component
 interface CourtViewProps {

@@ -15,6 +15,7 @@ import {
   STATUS_COLORS,
 } from "../src/theme/clubDefaults";
 import { Player } from "../models/Player";
+import { MatchActionGrid } from "./MatchActionGrid";
 
 // Types
 type EventType =
@@ -661,60 +662,11 @@ export const CourtActionModal: React.FC<CourtActionModalProps> = ({
         </View>
 
         <ScrollView>
-          <View style={styles.courtActionGrid}>
-            {/* Simplified action grid for court - just the main actions */}
-            <View style={styles.courtActionRow}>
-              <CourtActionButton
-                onPress={() => onActionSelect("POINT_1", 1)}
-                label="+1"
-                color={STATUS_COLORS.success}
-              />
-              <CourtActionButton
-                onPress={() => onActionSelect("POINT_2", 2)}
-                label="+2"
-                color="#4ade80"
-              />
-              <CourtActionButton
-                onPress={() => onActionSelect("POINT_3", 3)}
-                label="+3"
-                color="#86efac"
-              />
-            </View>
-            <View style={styles.courtActionRow}>
-              <CourtActionButton
-                onPress={() => onActionSelect("MISS_1", 0)}
-                label="Raté 1pt"
-                color="#ef4444"
-              />
-              <CourtActionButton
-                onPress={() => onActionSelect("MISS_2", 0)}
-                label="Raté 2pts"
-                color="#dc2626"
-              />
-              <CourtActionButton
-                onPress={() => onActionSelect("MISS_3", 0)}
-                label="Raté 3pts"
-                color="#b91c1c"
-              />
-            </View>
-          </View>
+          <MatchActionGrid onAction={onActionSelect} isDark={isDark} />
         </ScrollView>
       </View>
     </View>
   </Modal>
-);
-
-const CourtActionButton: React.FC<{
-  onPress: () => void;
-  label: string;
-  color: string;
-}> = ({ onPress, label, color }) => (
-  <TouchableOpacity
-    onPress={onPress}
-    style={[styles.courtActionButton, { backgroundColor: color }]}
-  >
-    <Text style={styles.courtActionButtonText}>{label}</Text>
-  </TouchableOpacity>
 );
 
 // Substitution Modal
