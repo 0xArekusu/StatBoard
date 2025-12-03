@@ -74,6 +74,7 @@ export default function NewMatchScreen({
 
   // Opponent Management
   const [opponentRoster, setOpponentRoster] = useState<Player[]>([]);
+  const [opponentStarters, setOpponentStarters] = useState<string[]>([]);
   const [newOppPlayerName, setNewOppPlayerName] = useState("");
   const [newOppPlayerNumber, setNewOppPlayerNumber] = useState("");
 
@@ -81,6 +82,32 @@ export default function NewMatchScreen({
   useEffect(() => {
     loadClubData();
   }, []);
+
+  // Auto-create 5 opponent players when trackOpponentStats is enabled
+  useEffect(() => {
+    if (trackOpponentStats && opponentRoster.length === 0) {
+      const defaultOpponents: Player[] = [];
+      for (let i = 1; i <= 5; i++) {
+        defaultOpponents.push({
+          id: `opp-${Date.now()}-${i}`,
+          name: `Joueur ${i}`,
+          jerseyNumber: i,
+          teamId: "opponent",
+          clubId: "",
+          position: i as 1 | 2 | 3 | 4 | 5,
+          isStarter: true,
+          photoUrl: null,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        });
+      }
+      setOpponentRoster(defaultOpponents);
+      setOpponentStarters(defaultOpponents.map((p) => p.id));
+    } else if (!trackOpponentStats) {
+      setOpponentRoster([]);
+      setOpponentStarters([]);
+    }
+  }, [trackOpponentStats]);
 
   useEffect(() => {
     if (club && defaultTeamId) {
@@ -203,6 +230,21 @@ export default function NewMatchScreen({
     }
   };
 
+  const toggleOpponentStarter = (playerId: string) => {
+    if (opponentStarters.includes(playerId)) {
+      setOpponentStarters(opponentStarters.filter((id) => id !== playerId));
+    } else {
+      if (opponentStarters.length >= 5) {
+        Alert.alert(
+          "5 majeur complet",
+          "Le 5 majeur est complet. Retirez un joueur avant d'en ajouter un."
+        );
+        return;
+      }
+      setOpponentStarters([...opponentStarters, playerId]);
+    }
+  };
+
   const addTempHomePlayer = () => {
     if (!tempHomePlayerName || !tempHomePlayerNumber) return;
     const newPlayer: Player = {
@@ -255,6 +297,7 @@ export default function NewMatchScreen({
 
   const removeOpponentPlayer = (id: string) => {
     setOpponentRoster(opponentRoster.filter((p) => p.id !== id));
+    setOpponentStarters(opponentStarters.filter((starterId) => starterId !== id));
   };
 
   // --- START MATCH ---
@@ -272,6 +315,24 @@ export default function NewMatchScreen({
         `Veuillez sélectionner ${requiredStarters} joueurs pour le 5 de départ.`
       );
       return;
+    }
+
+    // Validate opponent roster if tracking stats
+    if (trackOpponentStats) {
+      if (opponentRoster.length < 5) {
+        Alert.alert(
+          "Erreur",
+          "L'équipe adverse doit avoir au moins 5 joueurs."
+        );
+        return;
+      }
+      if (opponentStarters.length !== 5) {
+        Alert.alert(
+          "Erreur",
+          "Veuillez sélectionner 5 joueurs de départ pour l'équipe adverse."
+        );
+        return;
+      }
     }
 
     const team = teams.find((t) => t.id === selectedTeamId);
@@ -1240,56 +1301,88 @@ export default function NewMatchScreen({
 
                     <View style={styles.opponentList}>
                       {opponentRoster.length > 0 ? (
-                        opponentRoster.map((p) => (
-                          <View
-                            key={p.id}
-                            style={[
-                              styles.opponentCard,
-                              { backgroundColor: surfaceColor, borderColor },
-                            ]}
-                          >
-                            <View style={styles.opponentCardLeft}>
-                              <View
-                                style={[
-                                  styles.opponentNumber,
-                                  {
-                                    backgroundColor: isDark
-                                      ? SLATE_COLORS[800]
-                                      : SLATE_COLORS[100],
-                                    borderColor,
-                                  },
-                                ]}
-                              >
-                                <Text
+                        opponentRoster.map((p) => {
+                          const isOpponentStarter = opponentStarters.includes(p.id);
+                          return (
+                            <View
+                              key={p.id}
+                              style={[
+                                styles.opponentCard,
+                                { backgroundColor: surfaceColor, borderColor },
+                              ]}
+                            >
+                              <View style={styles.opponentCardLeft}>
+                                <View
                                   style={[
-                                    styles.opponentNumberText,
-                                    { color: textPrimary },
+                                    styles.opponentNumber,
+                                    {
+                                      backgroundColor: isDark
+                                        ? SLATE_COLORS[800]
+                                        : SLATE_COLORS[100],
+                                    },
                                   ]}
                                 >
-                                  {p.jerseyNumber}
+                                  <Text
+                                    style={[
+                                      styles.opponentNumberText,
+                                      { color: textPrimary },
+                                    ]}
+                                  >
+                                    {p.jerseyNumber}
+                                  </Text>
+                                </View>
+                                <Text
+                                  style={[
+                                    styles.opponentName,
+                                    { color: textPrimary },
+                                  ]}
+                                  numberOfLines={1}
+                                >
+                                  {p.name}
                                 </Text>
                               </View>
-                              <Text
-                                style={[
-                                  styles.opponentName,
-                                  { color: textPrimary },
-                                ]}
-                                numberOfLines={1}
-                              >
-                                {p.name}
-                              </Text>
+
+                              <View style={styles.opponentCardRight}>
+                                <TouchableOpacity
+                                  onPress={() => toggleOpponentStarter(p.id)}
+                                  style={[
+                                    styles.starButton,
+                                    {
+                                      backgroundColor: isOpponentStarter
+                                        ? UI_COLORS.starBackground
+                                        : "transparent",
+                                      borderWidth: isOpponentStarter ? 2 : 0,
+                                      borderColor: isOpponentStarter
+                                        ? UI_COLORS.star
+                                        : "transparent",
+                                    },
+                                  ]}
+                                >
+                                  <MaterialCommunityIcons
+                                    name={isOpponentStarter ? "star" : "star-outline"}
+                                    size={20}
+                                    color={
+                                      isOpponentStarter
+                                        ? UI_COLORS.star
+                                        : textSecondary
+                                    }
+                                  />
+                                </TouchableOpacity>
+
+                                <TouchableOpacity
+                                  onPress={() => removeOpponentPlayer(p.id)}
+                                  style={styles.deleteButton}
+                                >
+                                  <MaterialCommunityIcons
+                                    name="delete"
+                                    size={20}
+                                    color="#ef4444"
+                                  />
+                                </TouchableOpacity>
+                              </View>
                             </View>
-                            <TouchableOpacity
-                              onPress={() => removeOpponentPlayer(p.id)}
-                            >
-                              <MaterialCommunityIcons
-                                name="delete"
-                                size={16}
-                                color="#ef4444"
-                              />
-                            </TouchableOpacity>
-                          </View>
-                        ))
+                          );
+                        })
                       ) : (
                         <View style={styles.emptyOpponentList}>
                           <Text
@@ -1809,7 +1902,14 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 1,
+  },
+  opponentCardRight: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  deleteButton: {
+    padding: 4,
   },
   opponentNumberText: {
     fontSize: 12,

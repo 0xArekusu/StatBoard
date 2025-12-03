@@ -81,6 +81,7 @@ export const STATUS_COLORS = {
 export const UI_COLORS = {
   star: "#eab308",                    // Yellow for star/favorite
   starBackground: "rgba(234, 179, 8, 0.2)",  // Yellow transparent background
+  starForeground: "#eab308",          // Yellow for star icon (same as star)
 };
 
 /**
