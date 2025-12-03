@@ -27,12 +27,14 @@ export interface IMatchRepository {
   findById(id: number): Promise<Match | null>;
   findActiveMatch(): Promise<Match | null>;
   getAllMatches(): Promise<Match[]>;
+  getMatchesByTeamId(teamId: string): Promise<Match[]>;
   updateStatus(id: number, status: MatchStatus, endedAt?: Date): Promise<void>;
   startMatch(id: number): Promise<void>;
   abandonMatch(id: number): Promise<void>;
   completeMatch(id: number): Promise<void>;
   updateMatchState(id: number, currentPeriod: number, timeElapsed: number): Promise<void>;
-  updateFinalScores(id: number, scoreA: number, scoreB: number, manuallyAdjusted?: boolean): Promise<void>;
+  updateFinalScores(id: number, myTeamScore: number, opponentScore: number, manuallyAdjusted?: boolean): Promise<void>;
+  updateOvertimePeriods(id: number, overtimePeriods: number): Promise<void>;
   updateSyncStatus(id: number, synced: boolean): Promise<void>;
   findUnsyncedCompletedMatches(): Promise<Match[]>;
   delete(id: number): Promise<void>;
@@ -51,29 +53,43 @@ export class MatchRepository implements IMatchRepository {
    */
   async create(data: CreateMatchData): Promise<Match> {
     const sql = `
-      INSERT INTO matches (team_a_name, team_b_name, team_mode, status, match_format, period_duration, club_id, team_id)
-      VALUES (?, ?, ?, 'in_progress', ?, ?, ?, ?)
+      INSERT INTO matches (
+        opponent_name,
+        is_home,
+        total_periods,
+        period_duration,
+        overtime_duration,
+        overtime_periods,
+        my_team_score,
+        opponent_score,
+        status,
+        club_id,
+        team_id,
+        played_at
+      )
+      VALUES (?, ?, ?, ?, ?, 0, 0, 0, 'in_progress', ?, ?, ?)
     `;
 
     try {
       logInfo('MatchRepository', '🏀 Creating new match in SQLite', {
-        teamA: data.team_a_name,
-        teamB: data.team_b_name,
-        teamMode: data.team_mode,
-        matchFormat: data.match_format,
+        opponent: data.opponent_name,
+        isHome: data.is_home,
+        totalPeriods: data.total_periods,
         periodDuration: data.period_duration,
+        overtimeDuration: data.overtime_duration,
         clubId: data.club_id,
         teamId: data.team_id
       });
 
       await this.db.execute(sql, [
-        data.team_a_name,
-        data.team_b_name,
-        data.team_mode,
-        data.match_format,
+        data.opponent_name,
+        data.is_home ? 1 : 0,
+        data.total_periods,
         data.period_duration,
+        data.overtime_duration || 300,
         data.club_id || null,
-        data.team_id || null
+        data.team_id || null,
+        data.played_at || new Date().toISOString()
       ]);
 
       // Get the created match
@@ -88,16 +104,15 @@ export class MatchRepository implements IMatchRepository {
 
       logInfo('MatchRepository', '✅ Match created successfully in SQLite', {
         matchId: matches[0].id,
-        teamA: data.team_a_name,
-        teamB: data.team_b_name
+        opponent: data.opponent_name,
+        isHome: data.is_home
       });
 
       return matches[0] as Match;
     } catch (error) {
       logError('MatchRepository', '❌ Error creating match in SQLite', {
         error: error instanceof Error ? error.message : error,
-        teamA: data.team_a_name,
-        teamB: data.team_b_name
+        opponent: data.opponent_name
       });
       throw error;
     }
@@ -177,6 +192,7 @@ export class MatchRepository implements IMatchRepository {
   /**
    * Get all matches ordered by creation date (newest first)
    * Used for match history display
+   * @deprecated Use getMatchesByClubId instead to filter by club ownership
    */
   async getAllMatches(): Promise<Match[]> {
     try {
@@ -193,6 +209,34 @@ export class MatchRepository implements IMatchRepository {
       return matches as Match[];
     } catch (error) {
       logError('MatchRepository', '❌ Error getting all matches', {
+        error: error instanceof Error ? error.message : error
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Get matches for a specific team (filtered by team ownership)
+   * Used for match history display - only shows matches for teams the user owns
+   */
+  async getMatchesByTeamId(teamId: string): Promise<Match[]> {
+    try {
+      logInfo('MatchRepository', '📚 Fetching matches for team', { teamId });
+
+      const matches = await this.db.query(
+        'SELECT * FROM matches WHERE team_id = ? ORDER BY created_at DESC',
+        [teamId]
+      );
+
+      logInfo('MatchRepository', '✅ Team matches retrieved', {
+        teamId,
+        matchCount: matches.length
+      });
+
+      return matches as Match[];
+    } catch (error) {
+      logError('MatchRepository', '❌ Error getting matches for team', {
+        teamId,
         error: error instanceof Error ? error.message : error
       });
       throw error;
@@ -350,31 +394,61 @@ export class MatchRepository implements IMatchRepository {
    * Update final scores for match
    * Called at match completion, optionally marks as manually adjusted
    */
-  async updateFinalScores(id: number, scoreA: number, scoreB: number, manuallyAdjusted: boolean = false): Promise<void> {
+  async updateFinalScores(id: number, myTeamScore: number, opponentScore: number, manuallyAdjusted: boolean = false): Promise<void> {
     try {
       logInfo('MatchRepository', '📊 Updating final scores', {
         matchId: id,
-        scoreA,
-        scoreB,
+        myTeamScore,
+        opponentScore,
         manuallyAdjusted
       });
 
       await this.db.execute(
-        'UPDATE matches SET final_score_a = ?, final_score_b = ?, score_manually_adjusted = ? WHERE id = ?',
-        [scoreA, scoreB, manuallyAdjusted ? 1 : 0, id]
+        'UPDATE matches SET my_team_score = ?, opponent_score = ?, score_manually_adjusted = ? WHERE id = ?',
+        [myTeamScore, opponentScore, manuallyAdjusted ? 1 : 0, id]
       );
 
       logInfo('MatchRepository', '✅ Final scores updated', {
         matchId: id,
-        scoreA,
-        scoreB,
+        myTeamScore,
+        opponentScore,
         manuallyAdjusted
       });
     } catch (error) {
       logError('MatchRepository', '❌ Error updating final scores', {
         matchId: id,
-        scoreA,
-        scoreB,
+        myTeamScore,
+        opponentScore,
+        error: error instanceof Error ? error.message : error
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Update overtime periods count
+   * Called at match completion to record how many OT were played
+   */
+  async updateOvertimePeriods(id: number, overtimePeriods: number): Promise<void> {
+    try {
+      logInfo('MatchRepository', '⏱️ Updating overtime periods', {
+        matchId: id,
+        overtimePeriods
+      });
+
+      await this.db.execute(
+        'UPDATE matches SET overtime_periods = ? WHERE id = ?',
+        [overtimePeriods, id]
+      );
+
+      logInfo('MatchRepository', '✅ Overtime periods updated', {
+        matchId: id,
+        overtimePeriods
+      });
+    } catch (error) {
+      logError('MatchRepository', '❌ Error updating overtime periods', {
+        matchId: id,
+        overtimePeriods,
         error: error instanceof Error ? error.message : error
       });
       throw error;

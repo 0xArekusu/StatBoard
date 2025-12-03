@@ -32,25 +32,47 @@ export class SQLiteAdapter implements IStorageAdapter {
   }
 
   private initializeTables(): void {
-    // Create matches table
+    // Create matches table (new schema)
     this.db.execSync(`
       CREATE TABLE IF NOT EXISTS matches (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        team_a_name TEXT NOT NULL,
-        team_b_name TEXT NOT NULL,
-        status TEXT NOT NULL CHECK(status IN ('in_progress', 'completed', 'paused', 'abandoned')),
+
+        -- Club & Team
+        club_id TEXT,
+        team_id TEXT,
+
+        -- Match Info
+        opponent_name TEXT NOT NULL,
+        is_home INTEGER NOT NULL DEFAULT 1,
+
+        -- Match Configuration
+        total_periods INTEGER NOT NULL DEFAULT 4,
+        period_duration INTEGER NOT NULL DEFAULT 600,
+        overtime_duration INTEGER NOT NULL DEFAULT 300,
+        overtime_periods INTEGER NOT NULL DEFAULT 0,
+
+        -- Scores
+        my_team_score INTEGER NOT NULL DEFAULT 0,
+        opponent_score INTEGER NOT NULL DEFAULT 0,
+        score_manually_adjusted INTEGER DEFAULT 0,
+
+        -- Match State (local only)
+        status TEXT NOT NULL DEFAULT 'in_progress' CHECK(status IN ('in_progress', 'completed', 'abandoned')),
+        current_period INTEGER DEFAULT 1,
+        time_elapsed INTEGER DEFAULT 0,
+
+        -- Timestamps
+        created_by TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         started_at DATETIME,
         ended_at DATETIME,
-        team_mode TEXT NOT NULL CHECK(team_mode IN ('A', 'B', 'BOTH')),
-        match_format TEXT NOT NULL DEFAULT '2_halves' CHECK(match_format IN ('2_halves', '4_quarters')),
-        period_duration INTEGER NOT NULL DEFAULT 1200,
-        current_period INTEGER DEFAULT 1,
-        time_elapsed INTEGER DEFAULT 0,
-        final_score_a INTEGER DEFAULT 0,
-        final_score_b INTEGER DEFAULT 0,
-        score_manually_adjusted INTEGER DEFAULT 0,
-        last_updated DATETIME DEFAULT CURRENT_TIMESTAMP
+        played_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        synced_at DATETIME,
+        last_updated DATETIME DEFAULT CURRENT_TIMESTAMP,
+
+        -- Legacy
+        synced_to_server INTEGER DEFAULT 0,
+        created_with_tier TEXT DEFAULT 'not_connected'
       );
     `);
 
@@ -78,67 +100,6 @@ export class SQLiteAdapter implements IStorageAdapter {
     try {
       this.db.execSync(`
         ALTER TABLE match_actions ADD COLUMN points INTEGER;
-      `);
-    } catch (error) {
-      // Column might already exist, ignore error
-    }
-
-    // Add final score columns if they don't exist (migration for existing databases)
-    try {
-      this.db.execSync(`
-        ALTER TABLE matches ADD COLUMN final_score_a INTEGER DEFAULT 0;
-      `);
-    } catch (error) {
-      // Column might already exist, ignore error
-    }
-
-    try {
-      this.db.execSync(`
-        ALTER TABLE matches ADD COLUMN final_score_b INTEGER DEFAULT 0;
-      `);
-    } catch (error) {
-      // Column might already exist, ignore error
-    }
-
-    try {
-      this.db.execSync(`
-        ALTER TABLE matches ADD COLUMN score_manually_adjusted INTEGER DEFAULT 0;
-      `);
-    } catch (error) {
-      // Column might already exist, ignore error
-    }
-
-    // Add synced_to_server column if it doesn't exist (for cloud sync feature)
-    try {
-      this.db.execSync(`
-        ALTER TABLE matches ADD COLUMN synced_to_server INTEGER DEFAULT 0;
-      `);
-    } catch (error) {
-      // Column might already exist, ignore error
-    }
-
-    // Add created_with_tier column if it doesn't exist (to track subscription tier at creation)
-    try {
-      this.db.execSync(`
-        ALTER TABLE matches ADD COLUMN created_with_tier TEXT DEFAULT 'not_connected';
-      `);
-    } catch (error) {
-      // Column might already exist, ignore error
-    }
-
-    // Add club_id column if it doesn't exist (to filter matches by club)
-    try {
-      this.db.execSync(`
-        ALTER TABLE matches ADD COLUMN club_id TEXT;
-      `);
-    } catch (error) {
-      // Column might already exist, ignore error
-    }
-
-    // Add team_id column if it doesn't exist (to link to specific club team)
-    try {
-      this.db.execSync(`
-        ALTER TABLE matches ADD COLUMN team_id TEXT;
       `);
     } catch (error) {
       // Column might already exist, ignore error

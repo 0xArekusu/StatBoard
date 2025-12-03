@@ -296,13 +296,14 @@ export default function LiveMatchScreen({
     const initializeMatch = async () => {
       try {
         const matchCreateData: CreateMatchData = {
-          team_a_name: match.myTeamName || "Mon Équipe",
-          team_b_name: match.opponent || "Adversaire",
-          team_mode: "BOTH" as const,
-          match_format: match.periodCount === 2 ? "2_halves" : "4_quarters",
-          period_duration: match.periodDuration || 10,
+          opponent_name: match.opponent || "Adversaire",
+          is_home: match.location === "HOME",
+          total_periods: match.periodCount || 4,
+          period_duration: (match.periodDuration || 10) * 60, // Convert minutes to seconds
+          overtime_duration: overtimeDuration * 60, // Convert minutes to seconds
           club_id: user?.clubId || null,
           team_id: match.teamId || null,
+          played_at: new Date().toISOString(),
         };
 
         logInfo("LiveMatchScreen", "💾 Creating match in SQLite database", matchCreateData);
@@ -310,8 +311,8 @@ export default function LiveMatchScreen({
         setCurrentMatchId(createdMatch.id);
         logInfo("LiveMatchScreen", "✅ Match created successfully in SQLite", {
           matchId: createdMatch.id,
-          teamA: createdMatch.team_a_name,
-          teamB: createdMatch.team_b_name,
+          opponent: createdMatch.opponent_name,
+          isHome: createdMatch.is_home,
         });
       } catch (error) {
         logError("LiveMatchScreen", "❌ Failed to create match in database", error);
@@ -623,7 +624,7 @@ export default function LiveMatchScreen({
 
     // Save to database
     if (currentMatchId && player) {
-      saveActionToDatabase(type, value, player.jerseyNumber, teamId === "HOME" ? "A" : "B", coords);
+      saveActionToDatabase(type, value, player.jerseyNumber, teamId === "HOME" ? Team.MY_TEAM : Team.OPPONENT, coords);
     }
 
     closeWorkflow();
@@ -634,7 +635,7 @@ export default function LiveMatchScreen({
     eventType: EventType,
     value: number,
     playerNumber: number,
-    team: Team,
+    team: Team.MY_TEAM | Team.OPPONENT,
     coords?: { x: number; y: number }
   ) => {
     if (!currentMatchId) return;
@@ -770,7 +771,7 @@ export default function LiveMatchScreen({
 
       const actionForDB: CreateActionData = {
         match_id: currentMatchId,
-        team: "B",
+        team: Team.OPPONENT,
         player_number: 99, // Generic opponent number
         action_type: actionType,
         specification,
@@ -787,7 +788,7 @@ export default function LiveMatchScreen({
 
       logInfo("LiveMatchScreen", "✅ Opponent score enqueued for database save", {
         points: value,
-        team: "B",
+        team: Team.OPPONENT,
       });
     }
   };
@@ -795,16 +796,21 @@ export default function LiveMatchScreen({
   const confirmEndMatch = async () => {
     try {
       if (currentMatchId) {
+        // Calculate overtime periods played
+        const overtimesPlayed = Math.max(0, quarter - maxPeriods);
+
         logInfo("LiveMatchScreen", "🏁 Ending match", {
           matchId: currentMatchId,
-          scoreHome: match.scoreHome,
-          scoreAway: match.scoreAway,
+          myTeamScore: match.scoreHome,
+          opponentScore: match.scoreAway,
+          totalPeriodsPlayed: quarter,
+          overtimePeriods: overtimesPlayed,
         });
 
         // Wait for action queue to flush
         await new Promise((resolve) => setTimeout(resolve, 1000));
 
-        // Update final scores
+        // Update final scores and overtime info
         await matchRepository.updateFinalScores(
           currentMatchId,
           match.scoreHome || 0,
@@ -812,12 +818,16 @@ export default function LiveMatchScreen({
           false
         );
 
+        // Update overtime periods count
+        await matchRepository.updateOvertimePeriods(currentMatchId, overtimesPlayed);
+
         // Mark match as completed and compact actions
         await matchManager.endMatch(currentMatchId);
 
         logInfo("LiveMatchScreen", "✅ Match ended successfully", {
           matchId: currentMatchId,
           finalScores: `${match.scoreHome} - ${match.scoreAway}`,
+          overtimes: overtimesPlayed,
         });
       }
 

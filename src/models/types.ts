@@ -1,39 +1,71 @@
-export type MatchStatus = 'in_progress' | 'completed' | 'paused' | 'abandoned';
-export type TeamMode = 'A' | 'B' | 'BOTH';
-export type Team = 'A' | 'B';
-export type MatchFormat = '2_halves' | '4_quarters';
+export enum MatchStatus {
+  IN_PROGRESS = 'in_progress',
+  COMPLETED = 'completed',
+  ABANDONED = 'abandoned',
+}
+
+export enum Team {
+  MY_TEAM = 'A',
+  OPPONENT = 'B',
+}
 
 export interface Match {
   id: number;
-  team_a_name: string;  // Can be team UUID or name (SQLite uses team_a_name)
-  team_b_name: string;  // Can be team UUID or name (SQLite uses team_b_name)
-  status: MatchStatus;
+
+  // Club & Team
+  club_id?: string | null;
+  team_id?: string | null;  // Mon équipe (celle du club)
+
+  // Match Info
+  opponent_name: string;  // Nom de l'équipe adverse
+  is_home: boolean;  // À domicile ou à l'extérieur
+
+  // Match Configuration
+  total_periods: number;  // Nombre de périodes réglementaires (2, 3, 4, 5, etc.)
+  period_duration: number;  // Durée d'une période en secondes
+  overtime_duration: number;  // Durée d'une prolongation en secondes
+  overtime_periods: number;  // Nombre de prolongations jouées
+
+  // Scores
+  my_team_score: number;
+  opponent_score: number;
+  score_manually_adjusted?: boolean;
+
+  // Match State (pour SQLite local uniquement)
+  status: MatchStatus | string; // string for backward compatibility
+  current_period?: number;  // Période en cours (local uniquement)
+  time_elapsed?: number;  // Temps écoulé (local uniquement)
+
+  // Timestamps
+  created_by?: string | null;
   created_at: string;
   started_at: string | null;
   ended_at: string | null;
-  team_mode: TeamMode;
-  match_format: MatchFormat;
-  period_duration: number;
-  current_period: number;
-  time_elapsed: number;
-  last_updated: string;
-  synced_to_server?: boolean;         // Si le match a été synchronisé avec le serveur
-  created_with_tier?: string;         // Tier d'abonnement lors de la création du match
-  club_id?: string | null;            // ID du club associé au match
-  team_id?: string | null;            // ID de l'équipe du club qui joue
-  final_score_a?: number;
-  final_score_b?: number;
-  score_manually_adjusted?: number;
+  played_at: string;  // Date/heure prévue du match
+  synced_at?: string | null;
+  last_updated?: string;
+
+  // Legacy
+  synced_to_server?: boolean;
+  created_with_tier?: string;
 }
 
 export interface CreateMatchData {
-  team_a_name: string;
-  team_b_name: string;
-  team_mode: TeamMode;
-  match_format: MatchFormat;
-  period_duration: number;
+  // Club & Team
   club_id?: string | null;
   team_id?: string | null;
+
+  // Match Info
+  opponent_name: string;
+  is_home: boolean;
+
+  // Match Configuration
+  total_periods: number;
+  period_duration: number;
+  overtime_duration?: number;
+
+  // Date
+  played_at?: string;
 }
 
 export interface Action {

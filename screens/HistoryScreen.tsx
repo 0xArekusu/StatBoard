@@ -119,8 +119,8 @@ export default function HistoryScreen({ navigation }: HistoryScreenProps) {
 
           if (firstClub) {
             const teamService = ServiceFactory.getTeamService(supabase);
-            const clubTeams = await teamService.getClubTeams(firstClub.id);
-            setTeams(clubTeams);
+            const userTeams = await teamService.getUserTeams(user.id);
+            setTeams(userTeams);
           }
         } catch (error) {
           console.error("Error loading clubs/teams:", error);
