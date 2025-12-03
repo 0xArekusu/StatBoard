@@ -26,9 +26,9 @@ import {
 import Clipboard from "@react-native-clipboard/clipboard";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
-import BasketballCourtSVG from "../components/BasketballCourtSVG";
-import ClubTeamsTab from "../components/ClubTeamsTab";
-import JerseyIcon from "../components/icons/JerseyIcon";
+import BasketballCourtSVG from "../../components/BasketballCourtSVG";
+import ClubTeamsTab from "../../components/ClubTeamsTab";
+import JerseyIcon from "../../components/icons/JerseyIcon";
 import ColorPicker, {
   Panel1,
   HueSlider,
@@ -36,13 +36,13 @@ import ColorPicker, {
 } from "reanimated-color-picker";
 import { LinearGradient } from "expo-linear-gradient";
 import * as ImagePicker from "expo-image-picker";
-import { supabase } from "../src/config/supabase";
-import { ServiceFactory } from "../services/ServiceFactory";
-import { PhotoUploadService } from "../services/PhotoUploadService";
-import type { Club } from "../models/Club";
-import { ROUTES } from "../constants/routes";
-import { useAuth } from "../src/contexts/AuthContext";
-import { useTheme } from "../src/contexts/ThemeContext";
+import { supabase } from "../../src/config/supabase";
+import { ServiceFactory } from "../../services/ServiceFactory";
+import { PhotoUploadService } from "../../services/PhotoUploadService";
+import type { Club } from "../../models/Club";
+import { ROUTES } from "../../constants/routes";
+import { useAuth } from "../../src/contexts/AuthContext";
+import { useTheme } from "../../src/contexts/ThemeContext";
 import {
   CommonStyles,
   CLUB_PRESET_COLORS,
@@ -50,9 +50,9 @@ import {
   COURT_PRESET_COLORS,
   DEFAULT_COURT_COLORS,
   COMMON_COLORS,
-} from "../src/theme";
-import ThemeToggleButton from "../components/ThemeToggleButton";
-import { logInfo, logError, logWarn } from "../utils/logger";
+} from "../../src/theme";
+import ThemeToggleButton from "../../components/ThemeToggleButton";
+import { logInfo, logError, logWarn } from "../../utils/logger";
 
 type RootStackParamList = {
   ClubForm: { clubId?: string };
@@ -77,9 +77,15 @@ export default function ClubFormScreen() {
   const [clubName, setClubName] = useState("");
   const [sigle, setSigle] = useState("");
   const [primaryColor, setPrimaryColor] = useState(DEFAULT_CLUB_COLORS.primary);
-  const [secondaryColor, setSecondaryColor] = useState(DEFAULT_CLUB_COLORS.secondary);
-  const [courtBackgroundColor, setCourtBackgroundColor] = useState(DEFAULT_COURT_COLORS.background);
-  const [courtLineColor, setCourtLineColor] = useState(DEFAULT_COURT_COLORS.line);
+  const [secondaryColor, setSecondaryColor] = useState(
+    DEFAULT_CLUB_COLORS.secondary
+  );
+  const [courtBackgroundColor, setCourtBackgroundColor] = useState(
+    DEFAULT_COURT_COLORS.background
+  );
+  const [courtLineColor, setCourtLineColor] = useState(
+    DEFAULT_COURT_COLORS.line
+  );
   const [logoUri, setLogoUri] = useState<string | null>(null);
   const [showPrimaryPicker, setShowPrimaryPicker] = useState(false);
   const [showSecondaryPicker, setShowSecondaryPicker] = useState(false);
@@ -373,9 +379,16 @@ export default function ClubFormScreen() {
 
   if (loading) {
     return (
-      <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
+      <View
+        style={[
+          styles.loadingContainer,
+          { backgroundColor: colors.background },
+        ]}
+      >
         <ActivityIndicator size="large" color={colors.button.club} />
-        <Text style={[styles.loadingText, { color: colors.text.secondary }]}>Chargement...</Text>
+        <Text style={[styles.loadingText, { color: colors.text.secondary }]}>
+          Chargement...
+        </Text>
       </View>
     );
   }
@@ -392,11 +405,18 @@ export default function ClubFormScreen() {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header with back button and title */}
-      <View style={[CommonStyles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
+      <View
+        style={[
+          CommonStyles.header,
+          { backgroundColor: colors.surface, borderBottomColor: colors.border },
+        ]}
+      >
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
         </TouchableOpacity>
-        <Text style={[CommonStyles.headerTitle, { color: colors.text.primary }]}>
+        <Text
+          style={[CommonStyles.headerTitle, { color: colors.text.primary }]}
+        >
           {isEditMode ? "Mon club" : "Créer un club"}
         </Text>
         <View style={{ width: 24 }} />
@@ -407,25 +427,44 @@ export default function ClubFormScreen() {
 
       {/* Navigation tabs: Info (owner only) and Teams (edit mode only) */}
       {isEditMode && (
-        <View style={[styles.tabsContainer, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
+        <View
+          style={[
+            styles.tabsContainer,
+            {
+              backgroundColor: colors.surface,
+              borderBottomColor: colors.border,
+            },
+          ]}
+        >
           {/* Info tab - only visible for club owner */}
           {isOwner && (
             <TouchableOpacity
               style={[
                 styles.tab,
-                activeTab === "info" && { borderBottomColor: colors.button.club }
+                activeTab === "info" && {
+                  borderBottomColor: colors.button.club,
+                },
               ]}
               onPress={() => setActiveTab("info")}
             >
               <Ionicons
                 name="information-circle-outline"
                 size={20}
-                color={activeTab === "info" ? colors.button.club : colors.text.tertiary}
+                color={
+                  activeTab === "info"
+                    ? colors.button.club
+                    : colors.text.tertiary
+                }
               />
               <Text
                 style={[
                   styles.tabText,
-                  { color: activeTab === "info" ? colors.button.club : colors.text.secondary }
+                  {
+                    color:
+                      activeTab === "info"
+                        ? colors.button.club
+                        : colors.text.secondary,
+                  },
                 ]}
               >
                 Infos
@@ -436,7 +475,9 @@ export default function ClubFormScreen() {
           <TouchableOpacity
             style={[
               styles.tab,
-              activeTab === "teams" && { borderBottomColor: colors.button.club },
+              activeTab === "teams" && {
+                borderBottomColor: colors.button.club,
+              },
               !isOwner && styles.tabFullWidth,
             ]}
             onPress={() => setActiveTab("teams")}
@@ -444,12 +485,21 @@ export default function ClubFormScreen() {
             <Ionicons
               name="people-outline"
               size={20}
-              color={activeTab === "teams" ? colors.button.club : colors.text.tertiary}
+              color={
+                activeTab === "teams"
+                  ? colors.button.club
+                  : colors.text.tertiary
+              }
             />
             <Text
               style={[
                 styles.tabText,
-                { color: activeTab === "teams" ? colors.button.club : colors.text.secondary }
+                {
+                  color:
+                    activeTab === "teams"
+                      ? colors.button.club
+                      : colors.text.secondary,
+                },
               ]}
             >
               Équipes
@@ -475,20 +525,35 @@ export default function ClubFormScreen() {
         >
           {/* Club code section - displays shareable 6-digit code (edit mode only) */}
           {isEditMode && club && (
-            <View style={[styles.codeSection, { backgroundColor: colors.surface }]}>
-              <Text style={[styles.codeLabel, { color: colors.text.secondary }]}>Code du club</Text>
+            <View
+              style={[styles.codeSection, { backgroundColor: colors.surface }]}
+            >
+              <Text
+                style={[styles.codeLabel, { color: colors.text.secondary }]}
+              >
+                Code du club
+              </Text>
               <View style={styles.codeRow}>
-                <Text style={[styles.codeText, { color: colors.button.club }]}>{club.code}</Text>
+                <Text style={[styles.codeText, { color: colors.button.club }]}>
+                  {club.code}
+                </Text>
                 <TouchableOpacity
-                  style={[styles.copyButton, {
-                    backgroundColor: colors.background,
-                    borderColor: colors.button.club
-                  }]}
+                  style={[
+                    styles.copyButton,
+                    {
+                      backgroundColor: colors.background,
+                      borderColor: colors.button.club,
+                    },
+                  ]}
                   onPress={() => {
                     Clipboard.setString(club.code);
                   }}
                 >
-                  <Ionicons name="copy-outline" size={24} color={colors.button.club} />
+                  <Ionicons
+                    name="copy-outline"
+                    size={24}
+                    color={colors.button.club}
+                  />
                 </TouchableOpacity>
               </View>
               <Text style={[styles.codeHint, { color: colors.text.tertiary }]}>
@@ -499,15 +564,22 @@ export default function ClubFormScreen() {
 
           {/* Basic information section - club name and acronym */}
           <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: colors.text.primary }]}>Informations</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text.primary }]}>
+              Informations
+            </Text>
 
-            <Text style={[styles.label, { color: colors.text.secondary }]}>Nom du club *</Text>
+            <Text style={[styles.label, { color: colors.text.secondary }]}>
+              Nom du club *
+            </Text>
             <TextInput
-              style={[styles.input, {
-                backgroundColor: colors.surface,
-                borderColor: colors.border,
-                color: colors.text.primary
-              }]}
+              style={[
+                styles.input,
+                {
+                  backgroundColor: colors.surface,
+                  borderColor: colors.border,
+                  color: colors.text.primary,
+                },
+              ]}
               placeholder="Mon super club"
               placeholderTextColor={colors.text.tertiary}
               value={clubName}
@@ -515,13 +587,18 @@ export default function ClubFormScreen() {
               maxLength={30}
             />
 
-            <Text style={[styles.label, { color: colors.text.secondary }]}>Sigle *</Text>
+            <Text style={[styles.label, { color: colors.text.secondary }]}>
+              Sigle *
+            </Text>
             <TextInput
-              style={[styles.input, {
-                backgroundColor: colors.surface,
-                borderColor: colors.border,
-                color: colors.text.primary
-              }]}
+              style={[
+                styles.input,
+                {
+                  backgroundColor: colors.surface,
+                  borderColor: colors.border,
+                  color: colors.text.primary,
+                },
+              ]}
               placeholder="Ex: LAL, GSW, CHI"
               placeholderTextColor={colors.text.tertiary}
               value={sigle}
@@ -533,12 +610,16 @@ export default function ClubFormScreen() {
 
           {/* Customization section - colors, logo, court appearance */}
           <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: colors.text.primary }]}>Personnalisation</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text.primary }]}>
+              Personnalisation
+            </Text>
 
             {/* Team colors selection */}
             <View style={styles.colorsRow}>
               <View style={styles.colorsColumn}>
-                <Text style={[styles.label, { color: colors.text.secondary }]}>Couleur principale</Text>
+                <Text style={[styles.label, { color: colors.text.secondary }]}>
+                  Couleur principale
+                </Text>
                 <View style={styles.colorPicker}>
                   {CLUB_PRESET_COLORS.map((color) => (
                     <TouchableOpacity
@@ -554,7 +635,11 @@ export default function ClubFormScreen() {
                       }}
                     >
                       {primaryColor === color && (
-                        <Ionicons name="checkmark" size={20} color={COMMON_COLORS.white} />
+                        <Ionicons
+                          name="checkmark"
+                          size={20}
+                          color={COMMON_COLORS.white}
+                        />
                       )}
                     </TouchableOpacity>
                   ))}
@@ -575,7 +660,11 @@ export default function ClubFormScreen() {
                         style={styles.gradientButton}
                       >
                         {isCustomPrimary ? (
-                          <Ionicons name="checkmark" size={20} color={COMMON_COLORS.white} />
+                          <Ionicons
+                            name="checkmark"
+                            size={20}
+                            color={COMMON_COLORS.white}
+                          />
                         ) : (
                           <Ionicons
                             name="color-palette"
@@ -588,7 +677,9 @@ export default function ClubFormScreen() {
                   </TouchableOpacity>
                 </View>
 
-                <Text style={[styles.label, { color: colors.text.secondary }]}>Couleur secondaire</Text>
+                <Text style={[styles.label, { color: colors.text.secondary }]}>
+                  Couleur secondaire
+                </Text>
                 <View style={styles.colorPicker}>
                   {CLUB_PRESET_COLORS.map((color) => (
                     <TouchableOpacity
@@ -604,7 +695,11 @@ export default function ClubFormScreen() {
                       }}
                     >
                       {secondaryColor === color && (
-                        <Ionicons name="checkmark" size={20} color={COMMON_COLORS.white} />
+                        <Ionicons
+                          name="checkmark"
+                          size={20}
+                          color={COMMON_COLORS.white}
+                        />
                       )}
                     </TouchableOpacity>
                   ))}
@@ -625,7 +720,11 @@ export default function ClubFormScreen() {
                         style={styles.gradientButton}
                       >
                         {isCustomSecondary ? (
-                          <Ionicons name="checkmark" size={20} color={COMMON_COLORS.white} />
+                          <Ionicons
+                            name="checkmark"
+                            size={20}
+                            color={COMMON_COLORS.white}
+                          />
                         ) : (
                           <Ionicons
                             name="color-palette"
@@ -651,17 +750,32 @@ export default function ClubFormScreen() {
             </View>
 
             {/* Logo upload section */}
-            <Text style={[styles.label, { color: colors.text.secondary }]}>Logo du club</Text>
+            <Text style={[styles.label, { color: colors.text.secondary }]}>
+              Logo du club
+            </Text>
             <View style={styles.logoSection}>
               <TouchableOpacity
                 style={[styles.logoButton, { borderColor: colors.border }]}
                 onPress={handlePickImage}
               >
-                <Ionicons name="camera" size={24} color={colors.text.secondary} />
-                <Text style={[styles.logoButtonText, { color: colors.text.secondary }]}>Importer un logo</Text>
+                <Ionicons
+                  name="camera"
+                  size={24}
+                  color={colors.text.secondary}
+                />
+                <Text
+                  style={[
+                    styles.logoButtonText,
+                    { color: colors.text.secondary },
+                  ]}
+                >
+                  Importer un logo
+                </Text>
               </TouchableOpacity>
               {logoUri && (
-                <View style={[styles.logoPreview, { borderColor: colors.border }]}>
+                <View
+                  style={[styles.logoPreview, { borderColor: colors.border }]}
+                >
                   <Image source={{ uri: logoUri }} style={styles.logoImage} />
                 </View>
               )}
@@ -670,9 +784,13 @@ export default function ClubFormScreen() {
 
           {/* Court preview section - shows how club will appear on basketball court */}
           <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: colors.text.primary }]}>Aperçu du terrain</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text.primary }]}>
+              Aperçu du terrain
+            </Text>
 
-            <View style={[styles.courtPreview, { backgroundColor: colors.surface }]}>
+            <View
+              style={[styles.courtPreview, { backgroundColor: colors.surface }]}
+            >
               {/* Court color customization buttons */}
               <View style={styles.courtColorPickers}>
                 <TouchableOpacity
@@ -682,7 +800,11 @@ export default function ClubFormScreen() {
                   ]}
                   onPress={() => setShowCourtBgPicker(true)}
                 >
-                  <Ionicons name="color-palette" size={20} color={COMMON_COLORS.white} />
+                  <Ionicons
+                    name="color-palette"
+                    size={20}
+                    color={COMMON_COLORS.white}
+                  />
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[
@@ -694,7 +816,11 @@ export default function ClubFormScreen() {
                   <Ionicons
                     name="brush"
                     size={20}
-                    color={courtLineColor === COMMON_COLORS.white ? COMMON_COLORS.black : COMMON_COLORS.white}
+                    color={
+                      courtLineColor === COMMON_COLORS.white
+                        ? COMMON_COLORS.black
+                        : COMMON_COLORS.white
+                    }
                   />
                 </TouchableOpacity>
               </View>
@@ -711,7 +837,12 @@ export default function ClubFormScreen() {
               </View>
               {/* Club name display */}
               {clubName && (
-                <Text style={[styles.clubNamePreview, { color: colors.text.primary }]}>
+                <Text
+                  style={[
+                    styles.clubNamePreview,
+                    { color: colors.text.primary },
+                  ]}
+                >
                   {clubName} {sigle && `(${sigle})`}
                 </Text>
               )}
@@ -723,7 +854,10 @@ export default function ClubFormScreen() {
             style={[
               styles.saveButton,
               { backgroundColor: colors.button.club },
-              saving && [styles.saveButtonDisabled, { backgroundColor: colors.text.disabled }]
+              saving && [
+                styles.saveButtonDisabled,
+                { backgroundColor: colors.text.disabled },
+              ],
             ]}
             onPress={handleSave}
             disabled={saving}
@@ -744,9 +878,13 @@ export default function ClubFormScreen() {
       {/* Primary color picker modal */}
       <Modal visible={showPrimaryPicker} transparent animationType="slide">
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
+          <View
+            style={[styles.modalContent, { backgroundColor: colors.surface }]}
+          >
             <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, { color: colors.text.primary }]}>Couleur principale</Text>
+              <Text style={[styles.modalTitle, { color: colors.text.primary }]}>
+                Couleur principale
+              </Text>
               <TouchableOpacity onPress={() => setShowPrimaryPicker(false)}>
                 <Ionicons name="close" size={28} color={colors.text.primary} />
               </TouchableOpacity>
@@ -759,7 +897,10 @@ export default function ClubFormScreen() {
               <HueSlider style={styles.hueSlider} />
             </ColorPicker>
             <TouchableOpacity
-              style={[styles.modalConfirmButton, { backgroundColor: colors.button.club }]}
+              style={[
+                styles.modalConfirmButton,
+                { backgroundColor: colors.button.club },
+              ]}
               onPress={() => setShowPrimaryPicker(false)}
             >
               <Text style={styles.modalConfirmText}>Confirmer</Text>
@@ -771,9 +912,13 @@ export default function ClubFormScreen() {
       {/* Secondary color picker modal */}
       <Modal visible={showSecondaryPicker} transparent animationType="slide">
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
+          <View
+            style={[styles.modalContent, { backgroundColor: colors.surface }]}
+          >
             <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, { color: colors.text.primary }]}>Couleur secondaire</Text>
+              <Text style={[styles.modalTitle, { color: colors.text.primary }]}>
+                Couleur secondaire
+              </Text>
               <TouchableOpacity onPress={() => setShowSecondaryPicker(false)}>
                 <Ionicons name="close" size={28} color={colors.text.primary} />
               </TouchableOpacity>
@@ -786,7 +931,10 @@ export default function ClubFormScreen() {
               <HueSlider style={styles.hueSlider} />
             </ColorPicker>
             <TouchableOpacity
-              style={[styles.modalConfirmButton, { backgroundColor: colors.button.club }]}
+              style={[
+                styles.modalConfirmButton,
+                { backgroundColor: colors.button.club },
+              ]}
               onPress={() => setShowSecondaryPicker(false)}
             >
               <Text style={styles.modalConfirmText}>Confirmer</Text>
@@ -797,9 +945,13 @@ export default function ClubFormScreen() {
 
       <Modal visible={showCourtBgPicker} transparent animationType="slide">
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
+          <View
+            style={[styles.modalContent, { backgroundColor: colors.surface }]}
+          >
             <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, { color: colors.text.primary }]}>Couleur du fond du terrain</Text>
+              <Text style={[styles.modalTitle, { color: colors.text.primary }]}>
+                Couleur du fond du terrain
+              </Text>
               <TouchableOpacity onPress={() => setShowCourtBgPicker(false)}>
                 <Ionicons name="close" size={28} color={colors.text.primary} />
               </TouchableOpacity>
@@ -812,7 +964,10 @@ export default function ClubFormScreen() {
               <HueSlider style={styles.hueSlider} />
             </ColorPicker>
             <TouchableOpacity
-              style={[styles.modalConfirmButton, { backgroundColor: colors.button.club }]}
+              style={[
+                styles.modalConfirmButton,
+                { backgroundColor: colors.button.club },
+              ]}
               onPress={() => setShowCourtBgPicker(false)}
             >
               <Text style={styles.modalConfirmText}>Confirmer</Text>
@@ -823,7 +978,9 @@ export default function ClubFormScreen() {
 
       <Modal visible={showCourtLinePicker} transparent animationType="slide">
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
+          <View
+            style={[styles.modalContent, { backgroundColor: colors.surface }]}
+          >
             <View style={styles.modalHeader}>
               <Text style={[styles.modalTitle, { color: colors.text.primary }]}>
                 Couleur des lignes du terrain
@@ -840,7 +997,10 @@ export default function ClubFormScreen() {
               <HueSlider style={styles.hueSlider} />
             </ColorPicker>
             <TouchableOpacity
-              style={[styles.modalConfirmButton, { backgroundColor: colors.button.club }]}
+              style={[
+                styles.modalConfirmButton,
+                { backgroundColor: colors.button.club },
+              ]}
               onPress={() => setShowCourtLinePicker(false)}
             >
               <Text style={styles.modalConfirmText}>Confirmer</Text>
@@ -1067,8 +1227,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 30,
   },
-  saveButtonDisabled: {
-  },
+  saveButtonDisabled: {},
   saveButtonText: {
     color: COMMON_COLORS.white,
     fontSize: 18,

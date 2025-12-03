@@ -13,9 +13,13 @@ import {
   BRAND_COLORS,
   COMMON_COLORS,
 } from "../src/theme/clubDefaults";
-import { MatchStatus } from "../src/models/types";
+import { MatchStatus, Match, CreateMatchData, CreateActionData, Team } from "../src/models/types";
 import { Player } from "../models/Player";
 import { useAuth } from "../src/contexts/AuthContext";
+import { MatchManager } from "../src/services/match/MatchManager";
+import { ActionQueue } from "../src/services/match/ActionQueue";
+import { MatchRepository } from "../src/services/database/MatchRepository";
+import { logInfo, logError } from "../utils/logger";
 import BasketballCourtSVG from "../components/BasketballCourtSVG";
 import { MatchActionGrid } from "../components/MatchActionGrid";
 import {
@@ -164,6 +168,13 @@ export default function LiveMatchScreen({
   const { user } = useAuth();
   const matchData = route.params?.matchData;
 
+  // Database services
+  const [matchManager] = useState(() => new MatchManager());
+  const [matchRepository] = useState(() => new MatchRepository());
+  const [actionQueue] = useState(() => new ActionQueue());
+  const [currentMatchId, setCurrentMatchId] = useState<number | null>(null);
+  const [actionCounter, setActionCounter] = useState(0);
+
   // Initialize match with data from NewMatchScreen or use mock data
   const [match, setMatch] = useState<any>(() => {
     if (matchData) {
@@ -280,6 +291,36 @@ export default function LiveMatchScreen({
     playerId?: string;
   }>({});
 
+  // Initialize match in database on mount
+  useEffect(() => {
+    const initializeMatch = async () => {
+      try {
+        const matchCreateData: CreateMatchData = {
+          team_a_name: match.myTeamName || "Mon Équipe",
+          team_b_name: match.opponent || "Adversaire",
+          team_mode: "BOTH" as const,
+          match_format: match.periodCount === 2 ? "2_halves" : "4_quarters",
+          period_duration: match.periodDuration || 10,
+          club_id: user?.clubId || null,
+          team_id: match.teamId || null,
+        };
+
+        logInfo("LiveMatchScreen", "💾 Creating match in SQLite database", matchCreateData);
+        const createdMatch = await matchManager.startMatch(matchCreateData);
+        setCurrentMatchId(createdMatch.id);
+        logInfo("LiveMatchScreen", "✅ Match created successfully in SQLite", {
+          matchId: createdMatch.id,
+          teamA: createdMatch.team_a_name,
+          teamB: createdMatch.team_b_name,
+        });
+      } catch (error) {
+        logError("LiveMatchScreen", "❌ Failed to create match in database", error);
+      }
+    };
+
+    initializeMatch();
+  }, []);
+
   // Timer Effect
   useEffect(() => {
     let interval: any;
@@ -292,6 +333,21 @@ export default function LiveMatchScreen({
     }
     return () => clearInterval(interval);
   }, [isRunning, timer]);
+
+  // Save match state periodically (every 10 seconds when running)
+  useEffect(() => {
+    if (!currentMatchId || !isRunning) return;
+
+    const saveInterval = setInterval(async () => {
+      try {
+        await matchManager.updateMatchState(currentMatchId, quarter, timer);
+      } catch (error) {
+        logError("LiveMatchScreen", "❌ Failed to save match state", error);
+      }
+    }, 10000); // Save every 10 seconds
+
+    return () => clearInterval(saveInterval);
+  }, [currentMatchId, isRunning, quarter, timer]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -564,7 +620,114 @@ export default function LiveMatchScreen({
     }
 
     setMatch(updatedMatch);
+
+    // Save to database
+    if (currentMatchId && player) {
+      saveActionToDatabase(type, value, player.jerseyNumber, teamId === "HOME" ? "A" : "B", coords);
+    }
+
     closeWorkflow();
+  };
+
+  // Helper function to map EventType to database action format
+  const saveActionToDatabase = (
+    eventType: EventType,
+    value: number,
+    playerNumber: number,
+    team: Team,
+    coords?: { x: number; y: number }
+  ) => {
+    if (!currentMatchId) return;
+
+    let actionType = "";
+    let specification = "";
+    let points: number | undefined = undefined;
+
+    switch (eventType) {
+      case "POINT_1":
+        actionType = "SHOT";
+        specification = "FREE_THROW_MADE";
+        points = 1;
+        break;
+      case "POINT_2":
+        actionType = "SHOT";
+        specification = "TWO_POINT_MADE";
+        points = 2;
+        break;
+      case "POINT_3":
+        actionType = "SHOT";
+        specification = "THREE_POINT_MADE";
+        points = 3;
+        break;
+      case "MISS_1":
+        actionType = "SHOT";
+        specification = "FREE_THROW_MISSED";
+        break;
+      case "MISS_2":
+        actionType = "SHOT";
+        specification = "TWO_POINT_MISSED";
+        break;
+      case "MISS_3":
+        actionType = "SHOT";
+        specification = "THREE_POINT_MISSED";
+        break;
+      case "FOUL":
+        actionType = "FOUL";
+        specification = "PERSONAL";
+        break;
+      case "REBOUND_DEF":
+        actionType = "REBOUND";
+        specification = "DEFENSIVE";
+        break;
+      case "REBOUND_OFF":
+        actionType = "REBOUND";
+        specification = "OFFENSIVE";
+        break;
+      case "ASSIST":
+        actionType = "ASSIST";
+        specification = "STANDARD";
+        break;
+      case "STEAL":
+        actionType = "STEAL";
+        specification = "STANDARD";
+        break;
+      case "BLOCK":
+        actionType = "BLOCK";
+        specification = "STANDARD";
+        break;
+      case "TURNOVER":
+        actionType = "TURNOVER";
+        specification = "STANDARD";
+        break;
+      default:
+        logError("LiveMatchScreen", "Unknown event type", { eventType });
+        return;
+    }
+
+    const actionForDB: CreateActionData = {
+      match_id: currentMatchId,
+      team,
+      player_number: playerNumber,
+      action_type: actionType,
+      specification,
+      points,
+      semantic_x: coords?.x || 50,
+      semantic_y: coords?.y || 50,
+      action_order: actionCounter,
+      period_number: quarter,
+      time_in_period: (periodDurationMin * 60) - timer,
+    };
+
+    actionQueue.enqueue(actionForDB);
+    setActionCounter((prev) => prev + 1);
+
+    logInfo("LiveMatchScreen", "✅ Action enqueued for database save", {
+      actionType,
+      specification,
+      playerNumber,
+      team,
+      points,
+    });
   };
 
   const closeWorkflow = () => {
@@ -588,11 +751,83 @@ export default function LiveMatchScreen({
     updatedMatch.events = [newEvent, ...updatedMatch.events];
 
     setMatch(updatedMatch);
+
+    // Save to database - use a generic opponent player number (99)
+    if (currentMatchId) {
+      let actionType = "SHOT";
+      let specification = "";
+      switch (value) {
+        case 1:
+          specification = "FREE_THROW_MADE";
+          break;
+        case 2:
+          specification = "TWO_POINT_MADE";
+          break;
+        case 3:
+          specification = "THREE_POINT_MADE";
+          break;
+      }
+
+      const actionForDB: CreateActionData = {
+        match_id: currentMatchId,
+        team: "B",
+        player_number: 99, // Generic opponent number
+        action_type: actionType,
+        specification,
+        points: value,
+        semantic_x: 50,
+        semantic_y: 50,
+        action_order: actionCounter,
+        period_number: quarter,
+        time_in_period: (periodDurationMin * 60) - timer,
+      };
+
+      actionQueue.enqueue(actionForDB);
+      setActionCounter((prev) => prev + 1);
+
+      logInfo("LiveMatchScreen", "✅ Opponent score enqueued for database save", {
+        points: value,
+        team: "B",
+      });
+    }
   };
 
-  const confirmEndMatch = () => {
-    setMatch({ ...match, status: MatchStatus.COMPLETED });
-    navigation.goBack();
+  const confirmEndMatch = async () => {
+    try {
+      if (currentMatchId) {
+        logInfo("LiveMatchScreen", "🏁 Ending match", {
+          matchId: currentMatchId,
+          scoreHome: match.scoreHome,
+          scoreAway: match.scoreAway,
+        });
+
+        // Wait for action queue to flush
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+
+        // Update final scores
+        await matchRepository.updateFinalScores(
+          currentMatchId,
+          match.scoreHome || 0,
+          match.scoreAway || 0,
+          false
+        );
+
+        // Mark match as completed and compact actions
+        await matchManager.endMatch(currentMatchId);
+
+        logInfo("LiveMatchScreen", "✅ Match ended successfully", {
+          matchId: currentMatchId,
+          finalScores: `${match.scoreHome} - ${match.scoreAway}`,
+        });
+      }
+
+      setMatch({ ...match, status: MatchStatus.COMPLETED });
+      navigation.goBack();
+    } catch (error) {
+      logError("LiveMatchScreen", "❌ Failed to end match", error);
+      // Still navigate back even if save fails
+      navigation.goBack();
+    }
   };
 
   // Helpers

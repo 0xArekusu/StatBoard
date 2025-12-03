@@ -27,29 +27,31 @@ import {
 } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
-import { ActionData } from "../components/ActionSystem";
-import { PDFExportService } from "../src/services/export/PDFExportService";
+import { ActionData } from "../../components/ActionSystem";
+import { PDFExportService } from "../../src/services/export/PDFExportService";
 import { LineChart } from "react-native-chart-kit";
-import { ROUTES } from "../constants/routes";
-import PDFPreviewModal from "../components/PDFPreviewModal";
-import LocalSaveWarningModal from "../components/LocalSaveWarningModal";
-import { MatchRepository } from "../src/services/database/MatchRepository";
-import { useAuth } from "../src/contexts/AuthContext";
-import { MatchSyncPolicy } from "../src/services/match/MatchSyncPolicy";
-import type { SubscriptionTier } from "../models/Subscription";
-import { useMatchSync } from "../src/hooks/useMatchSync";
+import { ROUTES } from "../../constants/routes";
+import PDFPreviewModal from "../../components/PDFPreviewModal";
+import LocalSaveWarningModal from "../../components/LocalSaveWarningModal";
+import { MatchRepository } from "../../src/services/database/MatchRepository";
+import { useAuth } from "../../src/contexts/AuthContext";
+import { useMatchSync } from "../../src/hooks/useMatchSync";
 import {
   ActionType,
   ShotSpecification,
   ReboundSpecification,
   FoulSpecification,
-} from "../src/models/ActionTypes";
-import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
-import { logInfo, logError, logWarn } from "../utils/logger";
-import { ServiceFactory } from "../services/ServiceFactory";
-import { supabase } from "../src/config/supabase";
-import { useTheme } from "../src/contexts/ThemeContext";
-import { COMMON_COLORS, STATUS_COLORS, SUBSCRIPTION_COLORS, TEAM_CHART_COLORS } from "../src/theme";
+} from "../../src/models/ActionTypes";
+import { logInfo, logError, logWarn } from "../../utils/logger";
+import { ServiceFactory } from "../../services/ServiceFactory";
+import { supabase } from "../../src/config/supabase";
+import { useTheme } from "../../src/contexts/ThemeContext";
+import {
+  COMMON_COLORS,
+  STATUS_COLORS,
+  SUBSCRIPTION_COLORS,
+  TEAM_CHART_COLORS,
+} from "../../src/theme";
 
 interface MatchSummaryScreenProps {}
 
@@ -58,7 +60,12 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
   const route = useRoute();
   const { user } = useAuth();
   const { colors, isDark } = useTheme();
-  const { isSyncing, error: syncError, syncMatch, checkEligibility } = useMatchSync();
+  const {
+    isSyncing,
+    error: syncError,
+    syncMatch,
+    checkEligibility,
+  } = useMatchSync();
   const params = route.params as {
     matchId?: number;
     teamA: string;
@@ -108,10 +115,13 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
   const [localSaveWarningVisible, setLocalSaveWarningVisible] = useState(false);
   const [canEditScoreA, setCanEditScoreA] = useState(teamMode === "B");
   const [canEditScoreB, setCanEditScoreB] = useState(teamMode === "A");
-  const [scoreManuallyAdjusted, setScoreManuallyAdjusted] = useState(scoreWasManuallyAdjusted);
+  const [scoreManuallyAdjusted, setScoreManuallyAdjusted] = useState(
+    scoreWasManuallyAdjusted
+  );
   const [syncModalVisible, setSyncModalVisible] = useState(false);
   const [clubLogoUrl, setClubLogoUrl] = useState<string | undefined>(undefined);
-  const [courtBackgroundColor, setCourtBackgroundColor] = useState<string>("#1a472a");
+  const [courtBackgroundColor, setCourtBackgroundColor] =
+    useState<string>("#1a472a");
   const [courtLineColor, setCourtLineColor] = useState<string>("#FFFFFF");
 
   /**
@@ -136,11 +146,15 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
         }
 
         if (teamId) {
-          logInfo('MatchSummaryScreen', '🔍 Loading team to get club ID', { teamId });
+          logInfo("MatchSummaryScreen", "🔍 Loading team to get club ID", {
+            teamId,
+          });
           const team = await teamService.getTeamById(teamId);
 
           if (team && team.clubId) {
-            logInfo('MatchSummaryScreen', '🔍 Loading club data', { clubId: team.clubId });
+            logInfo("MatchSummaryScreen", "🔍 Loading club data", {
+              clubId: team.clubId,
+            });
             const club = await clubService.getClubById(team.clubId);
 
             if (club) {
@@ -151,23 +165,28 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
               setCourtBackgroundColor(club.courtBackgroundColor || "#1a472a");
               setCourtLineColor(club.courtLineColor || "#FFFFFF");
 
-              logInfo('MatchSummaryScreen', '🖼️ Club data loaded', {
+              logInfo("MatchSummaryScreen", "🖼️ Club data loaded", {
                 clubId: team.clubId,
                 logoUrl: club.logoUrl,
                 hasLogo: !!club.logoUrl,
                 hasColors: !!(club.courtBackgroundColor || club.courtLineColor),
                 backgroundColor: club.courtBackgroundColor || "default",
-                lineColor: club.courtLineColor || "default"
+                lineColor: club.courtLineColor || "default",
               });
             } else {
-              logInfo('MatchSummaryScreen', '⚠️ No club found for clubId', { clubId: team.clubId });
+              logInfo("MatchSummaryScreen", "⚠️ No club found for clubId", {
+                clubId: team.clubId,
+              });
             }
           } else {
-            logInfo('MatchSummaryScreen', '⚠️ Team has no clubId', { teamId, team: team ? 'found' : 'not found' });
+            logInfo("MatchSummaryScreen", "⚠️ Team has no clubId", {
+              teamId,
+              team: team ? "found" : "not found",
+            });
           }
         }
       } catch (error) {
-        logError('MatchSummaryScreen', '❌ Error loading club data', { error });
+        logError("MatchSummaryScreen", "❌ Error loading club data", { error });
       }
     };
 
@@ -178,17 +197,21 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
    * Log screen mount when user arrives on the view
    */
   useEffect(() => {
-    logInfo('MatchSummaryScreen', '📱 Screen mounted - User arrived on match summary', {
-      matchId,
-      teamA,
-      teamB,
-      scoreA,
-      scoreB,
-      fromHistory,
-      teamMode,
-      playersCount: players.length,
-      actionsCount: actions.length
-    });
+    logInfo(
+      "MatchSummaryScreen",
+      "📱 Screen mounted - User arrived on match summary",
+      {
+        matchId,
+        teamA,
+        teamB,
+        scoreA,
+        scoreB,
+        fromHistory,
+        teamMode,
+        playersCount: players.length,
+        actionsCount: actions.length,
+      }
+    );
   }, []);
 
   /**
@@ -206,28 +229,32 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
   React.useEffect(() => {
     const saveInitialScores = async () => {
       if (matchId && !fromHistory) {
-        logInfo('MatchSummaryScreen', '💾 Saving initial scores to SQLite', {
+        logInfo("MatchSummaryScreen", "💾 Saving initial scores to SQLite", {
           matchId,
           scoreA,
-          scoreB
+          scoreB,
         });
 
         try {
           const matchRepo = new MatchRepository();
           await matchRepo.updateFinalScores(matchId, scoreA, scoreB);
 
-          logInfo('MatchSummaryScreen', '✅ Initial scores saved to SQLite', {
-            matchId,
-            scoreA,
-            scoreB
-          });
-        } catch (error) {
-          logError('MatchSummaryScreen', '❌ Error saving initial scores to SQLite', {
+          logInfo("MatchSummaryScreen", "✅ Initial scores saved to SQLite", {
             matchId,
             scoreA,
             scoreB,
-            error: error instanceof Error ? error.message : error
           });
+        } catch (error) {
+          logError(
+            "MatchSummaryScreen",
+            "❌ Error saving initial scores to SQLite",
+            {
+              matchId,
+              scoreA,
+              scoreB,
+              error: error instanceof Error ? error.message : error,
+            }
+          );
         }
       }
     };
@@ -243,27 +270,40 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
   React.useEffect(() => {
     const saveScores = async () => {
       if (matchId && !fromHistory) {
-        logInfo('MatchSummaryScreen', '💾 Saving adjusted Team A score to SQLite', {
-          matchId,
-          adjustedScoreA,
-          adjustedScoreB,
-          scoreManuallyAdjusted
-        });
+        logInfo(
+          "MatchSummaryScreen",
+          "💾 Saving adjusted Team A score to SQLite",
+          {
+            matchId,
+            adjustedScoreA,
+            adjustedScoreB,
+            scoreManuallyAdjusted,
+          }
+        );
 
         try {
           const matchRepo = new MatchRepository();
-          await matchRepo.updateFinalScores(matchId, adjustedScoreA, adjustedScoreB, scoreManuallyAdjusted);
-
-          logInfo('MatchSummaryScreen', '✅ Team A score saved to SQLite', {
-            matchId,
-            adjustedScoreA
-          });
-        } catch (error) {
-          logError('MatchSummaryScreen', '❌ Error saving Team A score to SQLite', {
+          await matchRepo.updateFinalScores(
             matchId,
             adjustedScoreA,
-            error: error instanceof Error ? error.message : error
+            adjustedScoreB,
+            scoreManuallyAdjusted
+          );
+
+          logInfo("MatchSummaryScreen", "✅ Team A score saved to SQLite", {
+            matchId,
+            adjustedScoreA,
           });
+        } catch (error) {
+          logError(
+            "MatchSummaryScreen",
+            "❌ Error saving Team A score to SQLite",
+            {
+              matchId,
+              adjustedScoreA,
+              error: error instanceof Error ? error.message : error,
+            }
+          );
         }
       }
     };
@@ -272,7 +312,15 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
       // Save scores when adjusted
       saveScores();
     }
-  }, [adjustedScoreA, scoreA, canEditScoreA, matchId, fromHistory, teamMode, scoreManuallyAdjusted]);
+  }, [
+    adjustedScoreA,
+    scoreA,
+    canEditScoreA,
+    matchId,
+    fromHistory,
+    teamMode,
+    scoreManuallyAdjusted,
+  ]);
 
   /**
    * Track when Team B score changes and save to SQLite database
@@ -280,27 +328,40 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
   React.useEffect(() => {
     const saveScores = async () => {
       if (matchId && !fromHistory) {
-        logInfo('MatchSummaryScreen', '💾 Saving adjusted Team B score to SQLite', {
-          matchId,
-          adjustedScoreA,
-          adjustedScoreB,
-          scoreManuallyAdjusted
-        });
+        logInfo(
+          "MatchSummaryScreen",
+          "💾 Saving adjusted Team B score to SQLite",
+          {
+            matchId,
+            adjustedScoreA,
+            adjustedScoreB,
+            scoreManuallyAdjusted,
+          }
+        );
 
         try {
           const matchRepo = new MatchRepository();
-          await matchRepo.updateFinalScores(matchId, adjustedScoreA, adjustedScoreB, scoreManuallyAdjusted);
-
-          logInfo('MatchSummaryScreen', '✅ Team B score saved to SQLite', {
+          await matchRepo.updateFinalScores(
             matchId,
-            adjustedScoreB
-          });
-        } catch (error) {
-          logError('MatchSummaryScreen', '❌ Error saving Team B score to SQLite', {
+            adjustedScoreA,
+            adjustedScoreB,
+            scoreManuallyAdjusted
+          );
+
+          logInfo("MatchSummaryScreen", "✅ Team B score saved to SQLite", {
             matchId,
             adjustedScoreB,
-            error: error instanceof Error ? error.message : error
           });
+        } catch (error) {
+          logError(
+            "MatchSummaryScreen",
+            "❌ Error saving Team B score to SQLite",
+            {
+              matchId,
+              adjustedScoreB,
+              error: error instanceof Error ? error.message : error,
+            }
+          );
         }
       }
     };
@@ -309,7 +370,16 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
       // Save scores when adjusted
       saveScores();
     }
-  }, [adjustedScoreB, scoreB, canEditScoreB, matchId, fromHistory, adjustedScoreA, teamMode, scoreManuallyAdjusted]);
+  }, [
+    adjustedScoreB,
+    scoreB,
+    canEditScoreB,
+    matchId,
+    fromHistory,
+    adjustedScoreA,
+    teamMode,
+    scoreManuallyAdjusted,
+  ]);
 
   // Calculate winner based on adjusted scores
   const winner =
@@ -323,12 +393,13 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
   // Use clubTeamOverride if provided (from history/BoardScreen)
   const clubTeam = clubTeamOverride;
   const isClubMatch = clubTeam !== null;
-  const clubTeamName = clubTeam === "A" ? teamA : clubTeam === "B" ? teamB : null;
+  const clubTeamName =
+    clubTeam === "A" ? teamA : clubTeam === "B" ? teamB : null;
   const clubWon = isClubMatch && winner === clubTeamName;
   const clubLost = isClubMatch && winner !== null && winner !== clubTeamName;
 
   // Log winner logic for debugging win/loss detection
-  logInfo('MatchSummaryScreen', '🏆 Winner logic calculated', {
+  logInfo("MatchSummaryScreen", "🏆 Winner logic calculated", {
     teamMode,
     clubTeamOverride,
     clubTeam,
@@ -340,7 +411,7 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
     adjustedScoreA,
     adjustedScoreB,
     clubWon,
-    clubLost
+    clubLost,
   });
 
   // Calculate shooting statistics
@@ -468,10 +539,18 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
   const calculateOtherStats = (team: "A" | "B") => {
     const teamActions = actions.filter((action) => action.team === team);
 
-    const assists = teamActions.filter((action) => action.type === ActionType.ASSIST).length;
-    const steals = teamActions.filter((action) => action.type === ActionType.STEAL).length;
-    const blocks = teamActions.filter((action) => action.type === ActionType.BLOCK).length;
-    const turnovers = teamActions.filter((action) => action.type === ActionType.TURNOVER).length;
+    const assists = teamActions.filter(
+      (action) => action.type === ActionType.ASSIST
+    ).length;
+    const steals = teamActions.filter(
+      (action) => action.type === ActionType.STEAL
+    ).length;
+    const blocks = teamActions.filter(
+      (action) => action.type === ActionType.BLOCK
+    ).length;
+    const turnovers = teamActions.filter(
+      (action) => action.type === ActionType.TURNOVER
+    ).length;
 
     return {
       assists,
@@ -506,7 +585,10 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
       );
 
       // Only count successful shots for scoring
-      if (action.type === ActionType.SHOT && action.specification === ShotSpecification.MADE) {
+      if (
+        action.type === ActionType.SHOT &&
+        action.specification === ShotSpecification.MADE
+      ) {
         const points = action.points || 0;
         if (action.team === "A") {
           periodScoresA[periodIndex] += points;
@@ -539,7 +621,9 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
 
     // Shots
     const shots = playerActions.filter((a) => a.type === ActionType.SHOT);
-    const madeShots = shots.filter((a) => a.specification === ShotSpecification.MADE);
+    const madeShots = shots.filter(
+      (a) => a.specification === ShotSpecification.MADE
+    );
 
     const onePtMade = madeShots.filter((a) => a.points === 1).length;
     const twoPtMade = madeShots.filter((a) => a.points === 2).length;
@@ -553,21 +637,41 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
 
     // Rebounds
     const rebounds = playerActions.filter((a) => a.type === ActionType.REBOUND);
-    const offRebounds = rebounds.filter((a) => a.specification === ReboundSpecification.OFFENSIVE).length;
-    const defRebounds = rebounds.filter((a) => a.specification === ReboundSpecification.DEFENSIVE).length;
+    const offRebounds = rebounds.filter(
+      (a) => a.specification === ReboundSpecification.OFFENSIVE
+    ).length;
+    const defRebounds = rebounds.filter(
+      (a) => a.specification === ReboundSpecification.DEFENSIVE
+    ).length;
 
     // New stats
-    const assists = playerActions.filter((a) => a.type === ActionType.ASSIST).length;
-    const steals = playerActions.filter((a) => a.type === ActionType.STEAL).length;
-    const blocks = playerActions.filter((a) => a.type === ActionType.BLOCK).length;
-    const turnovers = playerActions.filter((a) => a.type === ActionType.TURNOVER).length;
+    const assists = playerActions.filter(
+      (a) => a.type === ActionType.ASSIST
+    ).length;
+    const steals = playerActions.filter(
+      (a) => a.type === ActionType.STEAL
+    ).length;
+    const blocks = playerActions.filter(
+      (a) => a.type === ActionType.BLOCK
+    ).length;
+    const turnovers = playerActions.filter(
+      (a) => a.type === ActionType.TURNOVER
+    ).length;
 
     // Fouls
     const fouls = playerActions.filter((a) => a.type === ActionType.FOUL);
-    const personalFouls = fouls.filter((a) => a.specification === FoulSpecification.PERSONAL).length;
-    const technicalFouls = fouls.filter((a) => a.specification === FoulSpecification.TECHNICAL).length;
-    const penalityFouls = fouls.filter((a) => a.specification === FoulSpecification.PENALITY).length;
-    const disqualificationFouls = fouls.filter((a) => a.specification === FoulSpecification.DISQUALIFICATION).length;
+    const personalFouls = fouls.filter(
+      (a) => a.specification === FoulSpecification.PERSONAL
+    ).length;
+    const technicalFouls = fouls.filter(
+      (a) => a.specification === FoulSpecification.TECHNICAL
+    ).length;
+    const penalityFouls = fouls.filter(
+      (a) => a.specification === FoulSpecification.PENALITY
+    ).length;
+    const disqualificationFouls = fouls.filter(
+      (a) => a.specification === FoulSpecification.DISQUALIFICATION
+    ).length;
 
     return {
       points: totalPoints,
@@ -587,19 +691,21 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
     };
   };
 
-  const playersTeamA = (teamMode === "A" || teamMode === "BOTH")
-    ? players.filter(p => p.team === "A")
-    : [];
-  const playersTeamB = (teamMode === "B" || teamMode === "BOTH")
-    ? players.filter(p => p.team === "B")
-    : [];
+  const playersTeamA =
+    teamMode === "A" || teamMode === "BOTH"
+      ? players.filter((p) => p.team === "A")
+      : [];
+  const playersTeamB =
+    teamMode === "B" || teamMode === "BOTH"
+      ? players.filter((p) => p.team === "B")
+      : [];
 
-  const statsTeamA = playersTeamA.map(player => ({
+  const statsTeamA = playersTeamA.map((player) => ({
     ...player,
     stats: calculatePlayerStats(player.id),
   }));
 
-  const statsTeamB = playersTeamB.map(player => ({
+  const statsTeamB = playersTeamB.map((player) => ({
     ...player,
     stats: calculatePlayerStats(player.id),
   }));
@@ -607,7 +713,11 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
   const periodLabel = matchFormat === "2_halves" ? "MT" : "Q";
 
   const handleViewDetails = () => {
-    (navigation.navigate as any)("MatchDetails", { ...params, scoreA: adjustedScoreA, scoreB: adjustedScoreB });
+    (navigation.navigate as any)("MatchDetails", {
+      ...params,
+      scoreA: adjustedScoreA,
+      scoreB: adjustedScoreB,
+    });
   };
 
   const handleBackToMenu = async () => {
@@ -619,48 +729,62 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
 
     // Check if we should sync or show local warning
     if (matchId) {
-      logInfo('MatchSummaryScreen', '🔍 Checking sync eligibility for match', { matchId });
+      logInfo("MatchSummaryScreen", "🔍 Checking sync eligibility for match", {
+        matchId,
+      });
 
       const eligibility = await checkEligibility(matchId);
 
-      logInfo('MatchSummaryScreen', '✅ Eligibility check complete', {
+      logInfo("MatchSummaryScreen", "✅ Eligibility check complete", {
         matchId,
         canSync: eligibility.canSync,
-        reason: eligibility.reason
+        reason: eligibility.reason,
       });
 
       if (eligibility.canSync) {
         // User has paid subscription - auto sync
-        logInfo('MatchSummaryScreen', '📡 User can sync, starting sync process', { matchId });
+        logInfo(
+          "MatchSummaryScreen",
+          "📡 User can sync, starting sync process",
+          { matchId }
+        );
 
         setSyncModalVisible(true);
         const result = await syncMatch(matchId);
         setSyncModalVisible(false);
 
-        logInfo('MatchSummaryScreen', '📊 Sync operation completed', {
+        logInfo("MatchSummaryScreen", "📊 Sync operation completed", {
           matchId,
           success: result.success,
-          error: result.error
+          error: result.error,
         });
 
         if (!result.success) {
           // If sync fails, show error but don't block navigation
-          logError('MatchSummaryScreen', '❌ Auto-sync failed', {
+          logError("MatchSummaryScreen", "❌ Auto-sync failed", {
             matchId,
-            error: result.error
+            error: result.error,
           });
         } else {
-          logInfo('MatchSummaryScreen', '✅ Match synced successfully to Supabase', {
-            matchId
-          });
+          logInfo(
+            "MatchSummaryScreen",
+            "✅ Match synced successfully to Supabase",
+            {
+              matchId,
+            }
+          );
         }
       } else {
         // User cannot sync (not connected or freemium) - show local warning
-        logWarn('MatchSummaryScreen', '⚠️ User cannot sync, showing local warning modal', {
-          matchId,
-          reason: eligibility.reason,
-          isAuthenticated: !!user
-        });
+        logWarn(
+          "MatchSummaryScreen",
+          "⚠️ User cannot sync, showing local warning modal",
+          {
+            matchId,
+            reason: eligibility.reason,
+            isAuthenticated: !!user,
+          }
+        );
         setLocalSaveWarningVisible(true);
         // Wait for modal to be closed before navigating
         return;
@@ -668,7 +792,7 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
     }
 
     // Navigate to main menu
-    logInfo('MatchSummaryScreen', '🏠 Navigating to main menu');
+    logInfo("MatchSummaryScreen", "🏠 Navigating to main menu");
     navigation.navigate(ROUTES.MAIN_MENU as never);
   };
 
@@ -698,7 +822,7 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
    * Opens the PDF preview modal to show match summary
    */
   const handlePreviewPDF = () => {
-    logInfo('MatchSummaryScreen', '👁️ User clicked PDF preview button', {
+    logInfo("MatchSummaryScreen", "👁️ User clicked PDF preview button", {
       teamA,
       teamB,
       scoreA: adjustedScoreA,
@@ -706,7 +830,7 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
       matchFormat,
       playersCount: players.length,
       actionsCount: actions.length,
-      fromHistory
+      fromHistory,
     });
     setPreviewModalVisible(true);
   };
@@ -716,14 +840,14 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
    * Generates and saves match summary as PDF file without watermark
    */
   const handleExportPDF = async () => {
-    logInfo('MatchSummaryScreen', '⭐ User clicked Premium PDF export button', {
+    logInfo("MatchSummaryScreen", "⭐ User clicked Premium PDF export button", {
       teamA,
       teamB,
       scoreA: adjustedScoreA,
       scoreB: adjustedScoreB,
       matchFormat,
       playersCount: players.length,
-      actionsCount: actions.length
+      actionsCount: actions.length,
     });
 
     try {
@@ -744,23 +868,26 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
         courtLineColor,
       });
 
-      logInfo('MatchSummaryScreen', '✅ Premium PDF generated and saved successfully', {
-        teamA,
-        teamB,
-        finalScoreA: adjustedScoreA,
-        finalScoreB: adjustedScoreB,
-        withWatermark: false
-      });
+      logInfo(
+        "MatchSummaryScreen",
+        "✅ Premium PDF generated and saved successfully",
+        {
+          teamA,
+          teamB,
+          finalScoreA: adjustedScoreA,
+          finalScoreB: adjustedScoreB,
+          withWatermark: false,
+        }
+      );
     } catch (error) {
-      logError('MatchSummaryScreen', '❌ Error generating PDF', {
+      logError("MatchSummaryScreen", "❌ Error generating PDF", {
         error: error instanceof Error ? error.message : error,
         teamA,
-        teamB
+        teamB,
       });
       Alert.alert("Erreur", "Impossible de générer le PDF");
     }
   };
-
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -772,17 +899,25 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
             onPress={() => navigation.goBack()}
           >
             <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
-            <Text style={[styles.backButtonText, { color: colors.text.primary }]}>Retour</Text>
+            <Text
+              style={[styles.backButtonText, { color: colors.text.primary }]}
+            >
+              Retour
+            </Text>
           </TouchableOpacity>
         )}
-        <Text style={[styles.title, { color: colors.text.primary }]}>🏀 Match Terminé</Text>
+        <Text style={[styles.title, { color: colors.text.primary }]}>
+          🏀 Match Terminé
+        </Text>
         {fromHistory && <View style={styles.backButton} />}
       </View>
 
       <ScrollView style={styles.scrollContent}>
         {/* Final Score */}
         <View style={styles.scoreSection}>
-          <Text style={[styles.sectionTitle, { color: colors.text.primary }]}>Score Final</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text.primary }]}>
+            Score Final
+          </Text>
 
           <View style={styles.scoreContainer}>
             {/* Team A Score */}
@@ -810,19 +945,37 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
               <View style={styles.scoreAdjustContainer}>
                 {!fromHistory && canEditScoreA && (
                   <TouchableOpacity
-                    style={[styles.adjustButton, { backgroundColor: colors.surfaceVariant, borderColor: colors.border }]}
+                    style={[
+                      styles.adjustButton,
+                      {
+                        backgroundColor: colors.surfaceVariant,
+                        borderColor: colors.border,
+                      },
+                    ]}
                     onPress={() => {
                       setAdjustedScoreA(Math.max(0, adjustedScoreA - 1));
                     }}
                   >
-                    <Text style={[styles.adjustButtonText, { color: colors.text.primary }]}>−</Text>
+                    <Text
+                      style={[
+                        styles.adjustButtonText,
+                        { color: colors.text.primary },
+                      ]}
+                    >
+                      −
+                    </Text>
                   </TouchableOpacity>
                 )}
                 <TextInput
                   style={[
                     styles.scoreInput,
-                    { color: colors.text.primary, backgroundColor: colors.surfaceVariant, borderColor: colors.border },
-                    (fromHistory || !canEditScoreA) && styles.scoreInputReadOnly,
+                    {
+                      color: colors.text.primary,
+                      backgroundColor: colors.surfaceVariant,
+                      borderColor: colors.border,
+                    },
+                    (fromHistory || !canEditScoreA) &&
+                      styles.scoreInputReadOnly,
                     winner === teamA && !clubLost && styles.winnerScore,
                     clubLost && winner === teamA && styles.loserScore,
                   ]}
@@ -839,16 +992,31 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
                 />
                 {!fromHistory && canEditScoreA && (
                   <TouchableOpacity
-                    style={[styles.adjustButton, { backgroundColor: colors.surfaceVariant, borderColor: colors.border }]}
+                    style={[
+                      styles.adjustButton,
+                      {
+                        backgroundColor: colors.surfaceVariant,
+                        borderColor: colors.border,
+                      },
+                    ]}
                     onPress={() => setAdjustedScoreA(adjustedScoreA + 1)}
                   >
-                    <Text style={[styles.adjustButtonText, { color: colors.text.primary }]}>+</Text>
+                    <Text
+                      style={[
+                        styles.adjustButtonText,
+                        { color: colors.text.primary },
+                      ]}
+                    >
+                      +
+                    </Text>
                   </TouchableOpacity>
                 )}
               </View>
             </View>
 
-            <Text style={[styles.scoreSeparator, { color: colors.border }]}>-</Text>
+            <Text style={[styles.scoreSeparator, { color: colors.border }]}>
+              -
+            </Text>
 
             {/* Team B Score */}
             <View style={styles.teamScore}>
@@ -875,19 +1043,37 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
               <View style={styles.scoreAdjustContainer}>
                 {!fromHistory && canEditScoreB && (
                   <TouchableOpacity
-                    style={[styles.adjustButton, { backgroundColor: colors.surfaceVariant, borderColor: colors.border }]}
+                    style={[
+                      styles.adjustButton,
+                      {
+                        backgroundColor: colors.surfaceVariant,
+                        borderColor: colors.border,
+                      },
+                    ]}
                     onPress={() => {
                       setAdjustedScoreB(Math.max(0, adjustedScoreB - 1));
                     }}
                   >
-                    <Text style={[styles.adjustButtonText, { color: colors.text.primary }]}>−</Text>
+                    <Text
+                      style={[
+                        styles.adjustButtonText,
+                        { color: colors.text.primary },
+                      ]}
+                    >
+                      −
+                    </Text>
                   </TouchableOpacity>
                 )}
                 <TextInput
                   style={[
                     styles.scoreInput,
-                    { color: colors.text.primary, backgroundColor: colors.surfaceVariant, borderColor: colors.border },
-                    (fromHistory || !canEditScoreB) && styles.scoreInputReadOnly,
+                    {
+                      color: colors.text.primary,
+                      backgroundColor: colors.surfaceVariant,
+                      borderColor: colors.border,
+                    },
+                    (fromHistory || !canEditScoreB) &&
+                      styles.scoreInputReadOnly,
                     winner === teamB && !clubLost && styles.winnerScore,
                     clubLost && winner === teamB && styles.loserScore,
                   ]}
@@ -904,10 +1090,23 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
                 />
                 {!fromHistory && canEditScoreB && (
                   <TouchableOpacity
-                    style={[styles.adjustButton, { backgroundColor: colors.surfaceVariant, borderColor: colors.border }]}
+                    style={[
+                      styles.adjustButton,
+                      {
+                        backgroundColor: colors.surfaceVariant,
+                        borderColor: colors.border,
+                      },
+                    ]}
                     onPress={() => setAdjustedScoreB(adjustedScoreB + 1)}
                   >
-                    <Text style={[styles.adjustButtonText, { color: colors.text.primary }]}>+</Text>
+                    <Text
+                      style={[
+                        styles.adjustButtonText,
+                        { color: colors.text.primary },
+                      ]}
+                    >
+                      +
+                    </Text>
                   </TouchableOpacity>
                 )}
               </View>
@@ -916,51 +1115,126 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
 
           {/* Winner announcement */}
           {winner ? (
-            <View style={[styles.winnerBanner, { backgroundColor: clubLost ? STATUS_COLORS.error : STATUS_COLORS.success }]}>
+            <View
+              style={[
+                styles.winnerBanner,
+                {
+                  backgroundColor: clubLost
+                    ? STATUS_COLORS.error
+                    : STATUS_COLORS.success,
+                },
+              ]}
+            >
               <Text style={[styles.winnerText, { color: COMMON_COLORS.white }]}>
                 {clubLost ? "😔" : "🏆"} {winner} remporte le match !
               </Text>
             </View>
           ) : (
-            <View style={[styles.drawBanner, { backgroundColor: STATUS_COLORS.warning }]}>
-              <Text style={[styles.drawText, { color: COMMON_COLORS.white }]}>Match nul</Text>
+            <View
+              style={[
+                styles.drawBanner,
+                { backgroundColor: STATUS_COLORS.warning },
+              ]}
+            >
+              <Text style={[styles.drawText, { color: COMMON_COLORS.white }]}>
+                Match nul
+              </Text>
             </View>
           )}
 
           {/* Manual score adjustment warning */}
           {scoreManuallyAdjusted && (
-            <View style={[styles.warningBanner, { backgroundColor: isDark ? colors.surfaceVariant : "#FFF3E0", borderColor: STATUS_COLORS.warning }]}>
-              <Text style={[styles.warningText, { color: STATUS_COLORS.warning }]}>
-                ⚠️ Score ajusté manuellement - Les statistiques peuvent ne pas correspondre au score affiché
+            <View
+              style={[
+                styles.warningBanner,
+                {
+                  backgroundColor: isDark ? colors.surfaceVariant : "#FFF3E0",
+                  borderColor: STATUS_COLORS.warning,
+                },
+              ]}
+            >
+              <Text
+                style={[styles.warningText, { color: STATUS_COLORS.warning }]}
+              >
+                ⚠️ Score ajusté manuellement - Les statistiques peuvent ne pas
+                correspondre au score affiché
               </Text>
             </View>
           )}
 
           {/* Period Scores Table */}
           <View style={[styles.periodTable, { borderColor: colors.border }]}>
-            <View style={[styles.periodTableHeader, { backgroundColor: colors.surfaceVariant, borderBottomColor: colors.border }]}>
+            <View
+              style={[
+                styles.periodTableHeader,
+                {
+                  backgroundColor: colors.surfaceVariant,
+                  borderBottomColor: colors.border,
+                },
+              ]}
+            >
               <View style={styles.periodTableCellTeam}>
-                <Text style={[styles.periodTableHeaderText, { color: colors.text.secondary }]}></Text>
+                <Text
+                  style={[
+                    styles.periodTableHeaderText,
+                    { color: colors.text.secondary },
+                  ]}
+                ></Text>
               </View>
               {Array.from({ length: totalPeriods }).map((_, index) => (
-                <View key={index} style={[styles.periodTableCell, { borderLeftColor: colors.border }]}>
-                  <Text style={[styles.periodTableHeaderText, { color: colors.text.secondary }]}>
+                <View
+                  key={index}
+                  style={[
+                    styles.periodTableCell,
+                    { borderLeftColor: colors.border },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.periodTableHeaderText,
+                      { color: colors.text.secondary },
+                    ]}
+                  >
                     {matchFormat === "2_halves"
                       ? `MT${index + 1}`
                       : `Q${index + 1}`}
                   </Text>
                 </View>
               ))}
-              <View style={[styles.periodTableCell, { borderLeftColor: colors.border }]}>
-                <Text style={[styles.periodTableHeaderText, { color: colors.text.secondary }]}>Total</Text>
+              <View
+                style={[
+                  styles.periodTableCell,
+                  { borderLeftColor: colors.border },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.periodTableHeaderText,
+                    { color: colors.text.secondary },
+                  ]}
+                >
+                  Total
+                </Text>
               </View>
             </View>
 
             {/* Team A Row - Show if managing Team A or both */}
             {(teamMode === "A" || teamMode === "BOTH") && (
-              <View style={[styles.periodTableRow, { borderBottomColor: colors.border }]}>
+              <View
+                style={[
+                  styles.periodTableRow,
+                  { borderBottomColor: colors.border },
+                ]}
+              >
                 <View style={styles.periodTableCellTeam}>
-                  <Text style={[styles.periodTableTeamText, { color: colors.text.primary }]}>{teamA}</Text>
+                  <Text
+                    style={[
+                      styles.periodTableTeamText,
+                      { color: colors.text.primary },
+                    ]}
+                  >
+                    {teamA}
+                  </Text>
                 </View>
                 {periodScoresA.map((score, index) => {
                   // Only highlight winner if managing both teams
@@ -972,7 +1246,9 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
                       style={[
                         styles.periodTableCell,
                         { borderLeftColor: colors.border },
-                        isWinner && { backgroundColor: isDark ? "#1b4d1f" : "#e8f5e9" },
+                        isWinner && {
+                          backgroundColor: isDark ? "#1b4d1f" : "#e8f5e9",
+                        },
                       ]}
                     >
                       <Text
@@ -987,8 +1263,18 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
                     </View>
                   );
                 })}
-                <View style={[styles.periodTableCell, { borderLeftColor: colors.border }]}>
-                  <Text style={[styles.periodTableTotalText, { color: colors.text.primary }]}>
+                <View
+                  style={[
+                    styles.periodTableCell,
+                    { borderLeftColor: colors.border },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.periodTableTotalText,
+                      { color: colors.text.primary },
+                    ]}
+                  >
                     {adjustedScoreA}
                   </Text>
                 </View>
@@ -997,19 +1283,34 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
 
             {/* Team B Row - Show if managing Team B or both */}
             {(teamMode === "B" || teamMode === "BOTH") && (
-              <View style={[styles.periodTableRow, { borderBottomColor: colors.border }]}>
+              <View
+                style={[
+                  styles.periodTableRow,
+                  { borderBottomColor: colors.border },
+                ]}
+              >
                 <View style={styles.periodTableCellTeam}>
-                  <Text style={[styles.periodTableTeamText, { color: colors.text.primary }]}>{teamB}</Text>
+                  <Text
+                    style={[
+                      styles.periodTableTeamText,
+                      { color: colors.text.primary },
+                    ]}
+                  >
+                    {teamB}
+                  </Text>
                 </View>
                 {periodScoresB.map((score, index) => {
-                  const isWinner = teamMode === "BOTH" && score > periodScoresA[index];
+                  const isWinner =
+                    teamMode === "BOTH" && score > periodScoresA[index];
                   return (
                     <View
                       key={index}
                       style={[
                         styles.periodTableCell,
                         { borderLeftColor: colors.border },
-                        isWinner && { backgroundColor: isDark ? "#1b4d1f" : "#e8f5e9" },
+                        isWinner && {
+                          backgroundColor: isDark ? "#1b4d1f" : "#e8f5e9",
+                        },
                       ]}
                     >
                       <Text
@@ -1024,8 +1325,18 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
                     </View>
                   );
                 })}
-                <View style={[styles.periodTableCell, { borderLeftColor: colors.border }]}>
-                  <Text style={[styles.periodTableTotalText, { color: colors.text.primary }]}>
+                <View
+                  style={[
+                    styles.periodTableCell,
+                    { borderLeftColor: colors.border },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.periodTableTotalText,
+                      { color: colors.text.primary },
+                    ]}
+                  >
                     {adjustedScoreB}
                   </Text>
                 </View>
@@ -1036,7 +1347,9 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
 
         {/* Score Evolution Chart */}
         <View style={styles.chartSection}>
-          <Text style={[styles.sectionTitle, { color: colors.text.primary }]}>Évolution du score</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text.primary }]}>
+            Évolution du score
+          </Text>
           <LineChart
             data={{
               labels: [
@@ -1077,8 +1390,14 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
               backgroundGradientFrom: colors.surface,
               backgroundGradientTo: colors.surface,
               decimalPlaces: 0,
-              color: (opacity = 1) => isDark ? `rgba(255, 255, 255, ${opacity})` : `rgba(0, 0, 0, ${opacity})`,
-              labelColor: (opacity = 1) => isDark ? `rgba(255, 255, 255, ${opacity})` : `rgba(0, 0, 0, ${opacity})`,
+              color: (opacity = 1) =>
+                isDark
+                  ? `rgba(255, 255, 255, ${opacity})`
+                  : `rgba(0, 0, 0, ${opacity})`,
+              labelColor: (opacity = 1) =>
+                isDark
+                  ? `rgba(255, 255, 255, ${opacity})`
+                  : `rgba(0, 0, 0, ${opacity})`,
               style: {
                 borderRadius: 16,
               },
@@ -1094,35 +1413,73 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
 
         {/* Shooting Statistics */}
         <View style={styles.statsSection}>
-          <Text style={[styles.sectionTitle, { color: colors.text.primary }]}>Statistiques de tir</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text.primary }]}>
+            Statistiques de tir
+          </Text>
 
           {/* Team A Stats - Show if managing Team A or both */}
           {(teamMode === "A" || teamMode === "BOTH") && (
-            <View style={[styles.teamStatsContainer, { backgroundColor: colors.surfaceVariant, borderLeftColor: TEAM_CHART_COLORS.teamA }]}>
-              <Text style={[styles.teamStatsName, { color: colors.text.primary }]}>{teamA}</Text>
+            <View
+              style={[
+                styles.teamStatsContainer,
+                {
+                  backgroundColor: colors.surfaceVariant,
+                  borderLeftColor: TEAM_CHART_COLORS.teamA,
+                },
+              ]}
+            >
+              <Text
+                style={[styles.teamStatsName, { color: colors.text.primary }]}
+              >
+                {teamA}
+              </Text>
               <View style={styles.statRow}>
-                <Text style={[styles.statLabel, { color: colors.text.secondary }]}>Total</Text>
-                <Text style={[styles.statValue, { color: colors.text.primary }]}>
+                <Text
+                  style={[styles.statLabel, { color: colors.text.secondary }]}
+                >
+                  Total
+                </Text>
+                <Text
+                  style={[styles.statValue, { color: colors.text.primary }]}
+                >
                   {statsA.made}/{statsA.total} ({statsA.percentage}%)
                 </Text>
               </View>
               <View style={styles.statRow}>
-                <Text style={[styles.statLabel, { color: colors.text.secondary }]}>1 point</Text>
-                <Text style={[styles.statValue, { color: colors.text.primary }]}>
+                <Text
+                  style={[styles.statLabel, { color: colors.text.secondary }]}
+                >
+                  1 point
+                </Text>
+                <Text
+                  style={[styles.statValue, { color: colors.text.primary }]}
+                >
                   {statsA.onePointersMade}/{statsA.onePtTotal} (
                   {statsA.onePtPercentage}%)
                 </Text>
               </View>
               <View style={styles.statRow}>
-                <Text style={[styles.statLabel, { color: colors.text.secondary }]}>2 points</Text>
-                <Text style={[styles.statValue, { color: colors.text.primary }]}>
+                <Text
+                  style={[styles.statLabel, { color: colors.text.secondary }]}
+                >
+                  2 points
+                </Text>
+                <Text
+                  style={[styles.statValue, { color: colors.text.primary }]}
+                >
                   {statsA.twoPointersMade}/{statsA.twoPtTotal} (
                   {statsA.twoPtPercentage}%)
                 </Text>
               </View>
               <View style={styles.statRow}>
-                <Text style={[styles.statLabel, { color: colors.text.secondary }]}>3 points</Text>
-                <Text style={[styles.statValue, { color: colors.text.primary }]}>
+                <Text
+                  style={[styles.statLabel, { color: colors.text.secondary }]}
+                >
+                  3 points
+                </Text>
+                <Text
+                  style={[styles.statValue, { color: colors.text.primary }]}
+                >
                   {statsA.threePointersMade}/{statsA.threePtTotal} (
                   {statsA.threePtPercentage}%)
                 </Text>
@@ -1133,32 +1490,67 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
           {/* Team B Stats - Show if managing Team B or both */}
           {(teamMode === "B" || teamMode === "BOTH") && (
             <View
-              style={[styles.teamStatsContainer, { backgroundColor: colors.surfaceVariant, borderLeftColor: TEAM_CHART_COLORS.teamB }, teamMode === "BOTH" && styles.teamStatsMargin]}
+              style={[
+                styles.teamStatsContainer,
+                {
+                  backgroundColor: colors.surfaceVariant,
+                  borderLeftColor: TEAM_CHART_COLORS.teamB,
+                },
+                teamMode === "BOTH" && styles.teamStatsMargin,
+              ]}
             >
-              <Text style={[styles.teamStatsName, { color: colors.text.primary }]}>{teamB}</Text>
+              <Text
+                style={[styles.teamStatsName, { color: colors.text.primary }]}
+              >
+                {teamB}
+              </Text>
               <View style={styles.statRow}>
-                <Text style={[styles.statLabel, { color: colors.text.secondary }]}>Total</Text>
-                <Text style={[styles.statValue, { color: colors.text.primary }]}>
+                <Text
+                  style={[styles.statLabel, { color: colors.text.secondary }]}
+                >
+                  Total
+                </Text>
+                <Text
+                  style={[styles.statValue, { color: colors.text.primary }]}
+                >
                   {statsB.made}/{statsB.total} ({statsB.percentage}%)
                 </Text>
               </View>
               <View style={styles.statRow}>
-                <Text style={[styles.statLabel, { color: colors.text.secondary }]}>1 point</Text>
-                <Text style={[styles.statValue, { color: colors.text.primary }]}>
+                <Text
+                  style={[styles.statLabel, { color: colors.text.secondary }]}
+                >
+                  1 point
+                </Text>
+                <Text
+                  style={[styles.statValue, { color: colors.text.primary }]}
+                >
                   {statsB.onePointersMade}/{statsB.onePtTotal} (
                   {statsB.onePtPercentage}%)
                 </Text>
               </View>
               <View style={styles.statRow}>
-                <Text style={[styles.statLabel, { color: colors.text.secondary }]}>2 points</Text>
-                <Text style={[styles.statValue, { color: colors.text.primary }]}>
+                <Text
+                  style={[styles.statLabel, { color: colors.text.secondary }]}
+                >
+                  2 points
+                </Text>
+                <Text
+                  style={[styles.statValue, { color: colors.text.primary }]}
+                >
                   {statsB.twoPointersMade}/{statsB.twoPtTotal} (
                   {statsB.twoPtPercentage}%)
                 </Text>
               </View>
               <View style={styles.statRow}>
-                <Text style={[styles.statLabel, { color: colors.text.secondary }]}>3 points</Text>
-                <Text style={[styles.statValue, { color: colors.text.primary }]}>
+                <Text
+                  style={[styles.statLabel, { color: colors.text.secondary }]}
+                >
+                  3 points
+                </Text>
+                <Text
+                  style={[styles.statValue, { color: colors.text.primary }]}
+                >
                   {statsB.threePointersMade}/{statsB.threePtTotal} (
                   {statsB.threePtPercentage}%)
                 </Text>
@@ -1169,48 +1561,154 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
 
         {/* Other Statistics */}
         <View style={styles.statsSection}>
-          <Text style={[styles.sectionTitle, { color: colors.text.primary }]}>Autres statistiques</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text.primary }]}>
+            Autres statistiques
+          </Text>
 
-          <View style={[styles.compactStatsContainer, { backgroundColor: colors.surfaceVariant }]}>
+          <View
+            style={[
+              styles.compactStatsContainer,
+              { backgroundColor: colors.surfaceVariant },
+            ]}
+          >
             {/* Team A - Show if managing Team A or both */}
             {(teamMode === "A" || teamMode === "BOTH") && (
               <View style={styles.compactTeamStats}>
-                <Text style={[styles.compactTeamName, { color: colors.text.primary }]}>{teamA}</Text>
+                <Text
+                  style={[
+                    styles.compactTeamName,
+                    { color: colors.text.primary },
+                  ]}
+                >
+                  {teamA}
+                </Text>
 
                 <View style={styles.compactStatItem}>
-                  <Text style={[styles.compactStatLabel, { color: colors.text.secondary }]}>Rebonds</Text>
-                  <Text style={[styles.compactStatValue, { color: colors.text.primary }]}>
+                  <Text
+                    style={[
+                      styles.compactStatLabel,
+                      { color: colors.text.secondary },
+                    ]}
+                  >
+                    Rebonds
+                  </Text>
+                  <Text
+                    style={[
+                      styles.compactStatValue,
+                      { color: colors.text.primary },
+                    ]}
+                  >
                     {reboundsA.total}
                   </Text>
-                  <Text style={[styles.compactStatDetail, { color: colors.text.tertiary }]}>
+                  <Text
+                    style={[
+                      styles.compactStatDetail,
+                      { color: colors.text.tertiary },
+                    ]}
+                  >
                     (Off: {reboundsA.offensive} | Def: {reboundsA.defensive})
                   </Text>
                 </View>
 
                 <View style={styles.compactStatItem}>
-                  <Text style={[styles.compactStatLabel, { color: colors.text.secondary }]}>Passes décisives</Text>
-                  <Text style={[styles.compactStatValue, { color: colors.text.primary }]}>{otherStatsA.assists}</Text>
+                  <Text
+                    style={[
+                      styles.compactStatLabel,
+                      { color: colors.text.secondary },
+                    ]}
+                  >
+                    Passes décisives
+                  </Text>
+                  <Text
+                    style={[
+                      styles.compactStatValue,
+                      { color: colors.text.primary },
+                    ]}
+                  >
+                    {otherStatsA.assists}
+                  </Text>
                 </View>
 
                 <View style={styles.compactStatItem}>
-                  <Text style={[styles.compactStatLabel, { color: colors.text.secondary }]}>Interceptions</Text>
-                  <Text style={[styles.compactStatValue, { color: colors.text.primary }]}>{otherStatsA.steals}</Text>
+                  <Text
+                    style={[
+                      styles.compactStatLabel,
+                      { color: colors.text.secondary },
+                    ]}
+                  >
+                    Interceptions
+                  </Text>
+                  <Text
+                    style={[
+                      styles.compactStatValue,
+                      { color: colors.text.primary },
+                    ]}
+                  >
+                    {otherStatsA.steals}
+                  </Text>
                 </View>
 
                 <View style={styles.compactStatItem}>
-                  <Text style={[styles.compactStatLabel, { color: colors.text.secondary }]}>Contres</Text>
-                  <Text style={[styles.compactStatValue, { color: colors.text.primary }]}>{otherStatsA.blocks}</Text>
+                  <Text
+                    style={[
+                      styles.compactStatLabel,
+                      { color: colors.text.secondary },
+                    ]}
+                  >
+                    Contres
+                  </Text>
+                  <Text
+                    style={[
+                      styles.compactStatValue,
+                      { color: colors.text.primary },
+                    ]}
+                  >
+                    {otherStatsA.blocks}
+                  </Text>
                 </View>
 
                 <View style={styles.compactStatItem}>
-                  <Text style={[styles.compactStatLabel, { color: colors.text.secondary }]}>Balles perdues</Text>
-                  <Text style={[styles.compactStatValue, { color: colors.text.primary }]}>{otherStatsA.turnovers}</Text>
+                  <Text
+                    style={[
+                      styles.compactStatLabel,
+                      { color: colors.text.secondary },
+                    ]}
+                  >
+                    Balles perdues
+                  </Text>
+                  <Text
+                    style={[
+                      styles.compactStatValue,
+                      { color: colors.text.primary },
+                    ]}
+                  >
+                    {otherStatsA.turnovers}
+                  </Text>
                 </View>
 
                 <View style={styles.compactStatItem}>
-                  <Text style={[styles.compactStatLabel, { color: colors.text.secondary }]}>Fautes</Text>
-                  <Text style={[styles.compactStatValue, { color: colors.text.primary }]}>{foulsA.total}</Text>
-                  <Text style={[styles.compactStatDetail, { color: colors.text.tertiary }]}>
+                  <Text
+                    style={[
+                      styles.compactStatLabel,
+                      { color: colors.text.secondary },
+                    ]}
+                  >
+                    Fautes
+                  </Text>
+                  <Text
+                    style={[
+                      styles.compactStatValue,
+                      { color: colors.text.primary },
+                    ]}
+                  >
+                    {foulsA.total}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.compactStatDetail,
+                      { color: colors.text.tertiary },
+                    ]}
+                  >
                     (Pers: {foulsA.personal} | Tech: {foulsA.technical})
                   </Text>
                 </View>
@@ -1219,51 +1717,152 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
 
             {/* Separator - Only show if managing both teams */}
             {teamMode === "BOTH" && (
-              <View style={[styles.compactSeparator, { backgroundColor: colors.border }]} />
+              <View
+                style={[
+                  styles.compactSeparator,
+                  { backgroundColor: colors.border },
+                ]}
+              />
             )}
 
             {/* Team B - Show if managing Team B or both */}
             {(teamMode === "B" || teamMode === "BOTH") && (
               <View style={styles.compactTeamStats}>
-                <Text style={[styles.compactTeamName, { color: colors.text.primary }]}>{teamB}</Text>
+                <Text
+                  style={[
+                    styles.compactTeamName,
+                    { color: colors.text.primary },
+                  ]}
+                >
+                  {teamB}
+                </Text>
 
                 <View style={styles.compactStatItem}>
-                  <Text style={[styles.compactStatLabel, { color: colors.text.secondary }]}>Rebonds</Text>
-                  <Text style={[styles.compactStatValue, { color: colors.text.primary }]}>
+                  <Text
+                    style={[
+                      styles.compactStatLabel,
+                      { color: colors.text.secondary },
+                    ]}
+                  >
+                    Rebonds
+                  </Text>
+                  <Text
+                    style={[
+                      styles.compactStatValue,
+                      { color: colors.text.primary },
+                    ]}
+                  >
                     {reboundsB.total}
                   </Text>
-                  <Text style={[styles.compactStatDetail, { color: colors.text.tertiary }]}>
-                    (Off: {reboundsB.offensive} | Def: {reboundsB.defensive}
-                    )
+                  <Text
+                    style={[
+                      styles.compactStatDetail,
+                      { color: colors.text.tertiary },
+                    ]}
+                  >
+                    (Off: {reboundsB.offensive} | Def: {reboundsB.defensive})
                   </Text>
                 </View>
 
                 <View style={styles.compactStatItem}>
-                  <Text style={[styles.compactStatLabel, { color: colors.text.secondary }]}>Passes décisives</Text>
-                  <Text style={[styles.compactStatValue, { color: colors.text.primary }]}>{otherStatsB.assists}</Text>
+                  <Text
+                    style={[
+                      styles.compactStatLabel,
+                      { color: colors.text.secondary },
+                    ]}
+                  >
+                    Passes décisives
+                  </Text>
+                  <Text
+                    style={[
+                      styles.compactStatValue,
+                      { color: colors.text.primary },
+                    ]}
+                  >
+                    {otherStatsB.assists}
+                  </Text>
                 </View>
 
                 <View style={styles.compactStatItem}>
-                  <Text style={[styles.compactStatLabel, { color: colors.text.secondary }]}>Interceptions</Text>
-                  <Text style={[styles.compactStatValue, { color: colors.text.primary }]}>{otherStatsB.steals}</Text>
+                  <Text
+                    style={[
+                      styles.compactStatLabel,
+                      { color: colors.text.secondary },
+                    ]}
+                  >
+                    Interceptions
+                  </Text>
+                  <Text
+                    style={[
+                      styles.compactStatValue,
+                      { color: colors.text.primary },
+                    ]}
+                  >
+                    {otherStatsB.steals}
+                  </Text>
                 </View>
 
                 <View style={styles.compactStatItem}>
-                  <Text style={[styles.compactStatLabel, { color: colors.text.secondary }]}>Contres</Text>
-                  <Text style={[styles.compactStatValue, { color: colors.text.primary }]}>{otherStatsB.blocks}</Text>
+                  <Text
+                    style={[
+                      styles.compactStatLabel,
+                      { color: colors.text.secondary },
+                    ]}
+                  >
+                    Contres
+                  </Text>
+                  <Text
+                    style={[
+                      styles.compactStatValue,
+                      { color: colors.text.primary },
+                    ]}
+                  >
+                    {otherStatsB.blocks}
+                  </Text>
                 </View>
 
                 <View style={styles.compactStatItem}>
-                  <Text style={[styles.compactStatLabel, { color: colors.text.secondary }]}>Balles perdues</Text>
-                  <Text style={[styles.compactStatValue, { color: colors.text.primary }]}>{otherStatsB.turnovers}</Text>
+                  <Text
+                    style={[
+                      styles.compactStatLabel,
+                      { color: colors.text.secondary },
+                    ]}
+                  >
+                    Balles perdues
+                  </Text>
+                  <Text
+                    style={[
+                      styles.compactStatValue,
+                      { color: colors.text.primary },
+                    ]}
+                  >
+                    {otherStatsB.turnovers}
+                  </Text>
                 </View>
 
                 <View style={styles.compactStatItem}>
-                  <Text style={[styles.compactStatLabel, { color: colors.text.secondary }]}>Fautes</Text>
-                  <Text style={[styles.compactStatValue, { color: colors.text.primary }]}>
+                  <Text
+                    style={[
+                      styles.compactStatLabel,
+                      { color: colors.text.secondary },
+                    ]}
+                  >
+                    Fautes
+                  </Text>
+                  <Text
+                    style={[
+                      styles.compactStatValue,
+                      { color: colors.text.primary },
+                    ]}
+                  >
                     {foulsB.total}
                   </Text>
-                  <Text style={[styles.compactStatDetail, { color: colors.text.tertiary }]}>
+                  <Text
+                    style={[
+                      styles.compactStatDetail,
+                      { color: colors.text.tertiary },
+                    ]}
+                  >
                     (Pers: {foulsB.personal} | Tech: {foulsB.technical})
                   </Text>
                 </View>
@@ -1271,16 +1870,24 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
             )}
           </View>
         </View>
-
       </ScrollView>
 
       {/* Action buttons */}
-      <View style={[styles.buttonContainer, { borderTopColor: colors.border, backgroundColor: colors.surface }]}>
+      <View
+        style={[
+          styles.buttonContainer,
+          { borderTopColor: colors.border, backgroundColor: colors.surface },
+        ]}
+      >
         <TouchableOpacity
           style={[styles.button, { backgroundColor: STATUS_COLORS.info }]}
           onPress={handlePreviewPDF}
         >
-          <Text style={[styles.previewButtonText, { color: COMMON_COLORS.white }]}>👁️ Aperçu PDF</Text>
+          <Text
+            style={[styles.previewButtonText, { color: COMMON_COLORS.white }]}
+          >
+            👁️ Aperçu PDF
+          </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -1291,30 +1898,53 @@ export default function MatchSummaryScreen({}: MatchSummaryScreenProps) {
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.button, { backgroundColor: colors.surfaceVariant, borderWidth: 1, borderColor: colors.border }]}
+          style={[
+            styles.button,
+            {
+              backgroundColor: colors.surfaceVariant,
+              borderWidth: 1,
+              borderColor: colors.border,
+            },
+          ]}
           onPress={handleViewDetails}
         >
-          <Text style={[styles.secondaryButtonText, { color: colors.text.primary }]}>📊 Détails</Text>
+          <Text
+            style={[styles.secondaryButtonText, { color: colors.text.primary }]}
+          >
+            📊 Détails
+          </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           style={[styles.button, { backgroundColor: STATUS_COLORS.success }]}
           onPress={handleBackToMenu}
         >
-          <Text style={[styles.primaryButtonText, { color: COMMON_COLORS.white }]}>🏠 Menu</Text>
+          <Text
+            style={[styles.primaryButtonText, { color: COMMON_COLORS.white }]}
+          >
+            🏠 Menu
+          </Text>
         </TouchableOpacity>
       </View>
 
       {/* Sync Loading Modal */}
-      <Modal
-        visible={syncModalVisible}
-        transparent={true}
-        animationType="fade"
-      >
+      <Modal visible={syncModalVisible} transparent={true} animationType="fade">
         <View style={styles.syncModalOverlay}>
-          <View style={[styles.syncModalContent, { backgroundColor: colors.surface }]}>
-            <ActivityIndicator size="large" color={SUBSCRIPTION_COLORS.premium} />
-            <Text style={[styles.syncModalText, { color: colors.text.primary }]}>Synchronisation avec le serveur...</Text>
+          <View
+            style={[
+              styles.syncModalContent,
+              { backgroundColor: colors.surface },
+            ]}
+          >
+            <ActivityIndicator
+              size="large"
+              color={SUBSCRIPTION_COLORS.premium}
+            />
+            <Text
+              style={[styles.syncModalText, { color: colors.text.primary }]}
+            >
+              Synchronisation avec le serveur...
+            </Text>
           </View>
         </View>
       </Modal>

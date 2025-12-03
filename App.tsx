@@ -10,20 +10,20 @@ import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { AppState, AppStateStatus } from "react-native";
 import AuthScreen from "./screens/AuthScreen";
-import MainMenuScreen from "./screens/MainMenuScreen";
-import BoardScreen from "./screens/BoardScreen";
-import MatchDetailsScreen from "./screens/MatchDetailsScreen";
-import MatchSummaryScreen from "./screens/MatchSummaryScreen";
-import MatchHistoryScreen from "./screens/MatchHistoryScreen";
+import MainMenuScreen from "./screens/old/MainMenuScreen";
+import BoardScreen from "./screens/old/BoardScreen";
+import MatchDetailsScreen from "./screens/old/MatchDetailsScreen";
+import MatchSummaryScreen from "./screens/old/MatchSummaryScreen";
+import MatchHistoryScreen from "./screens/old/MatchHistoryScreen";
 import SplashScreen from "./screens/SplashScreen";
 import LoginScreen from "./screens/LoginScreen";
-import SignUpScreen from "./screens/SignUpScreen";
-import ClubFormScreen from "./screens/ClubFormScreen";
-import TeamFormScreen from "./screens/TeamFormScreen";
+import SignUpScreen from "./screens/old/SignUpScreen";
+import ClubFormScreen from "./screens/old/ClubFormScreen";
+import TeamFormScreen from "./screens/old/TeamFormScreen";
 import TeamInfoScreen from "./screens/TeamInfoScreen";
 import TeamRosterScreen from "./screens/TeamRosterScreen";
 import TeamStartersScreen from "./screens/TeamStartersScreen";
-import JoinClubScreen from "./screens/JoinClubScreen";
+import JoinClubScreen from "./screens/old/JoinClubScreen";
 import NewMatchScreen from "./screens/NewMatchScreen";
 import LiveMatchScreen from "./screens/LiveMatchScreen";
 import MainTabNavigator from "./navigation/MainTabNavigator";
@@ -66,7 +66,7 @@ function Navigation() {
     hasUser: !!user,
     userId: user?.id,
     email: user?.email,
-    initialRoute
+    initialRoute,
   });
 
   return (
@@ -100,7 +100,10 @@ function Navigation() {
         <Stack.Screen name={ROUTES.TEAM_FORM} component={TeamFormScreen} />
         <Stack.Screen name={ROUTES.TEAM_INFO} component={TeamInfoScreen} />
         <Stack.Screen name={ROUTES.TEAM_ROSTER} component={TeamRosterScreen} />
-        <Stack.Screen name={ROUTES.TEAM_STARTERS} component={TeamStartersScreen} />
+        <Stack.Screen
+          name={ROUTES.TEAM_STARTERS}
+          component={TeamStartersScreen}
+        />
         <Stack.Screen name={ROUTES.JOIN_CLUB} component={JoinClubScreen} />
         <Stack.Screen name={ROUTES.NEW_MATCH} component={NewMatchScreen} />
         <Stack.Screen name={ROUTES.LIVE_MATCH} component={LiveMatchScreen} />
@@ -120,7 +123,7 @@ export default function App() {
   useEffect(() => {
     // Log initial app state
     logInfo("App", "📱 App initial state", {
-      currentState: appState.current
+      currentState: appState.current,
     });
 
     /**
@@ -130,60 +133,57 @@ export default function App() {
      * - "background": App is in background (user switched to another app)
      * - "inactive": App is transitioning between states (iOS only, brief state)
      */
-    const subscription = AppState.addEventListener("change", (nextAppState: AppStateStatus) => {
-      const previousState = appState.current;
+    const subscription = AppState.addEventListener(
+      "change",
+      (nextAppState: AppStateStatus) => {
+        const previousState = appState.current;
 
-      // App coming back to foreground (from background or inactive)
-      if (
-        previousState.match(/inactive|background/) &&
-        nextAppState === "active"
-      ) {
-        logInfo("App", "🟢 App came to foreground", {
-          previousState,
-          currentState: nextAppState,
-          timestamp: new Date().toISOString()
+        // App coming back to foreground (from background or inactive)
+        if (
+          previousState.match(/inactive|background/) &&
+          nextAppState === "active"
+        ) {
+          logInfo("App", "🟢 App came to foreground", {
+            previousState,
+            currentState: nextAppState,
+            timestamp: new Date().toISOString(),
+          });
+        }
+
+        // App going to background
+        if (previousState === "active" && nextAppState === "background") {
+          logInfo("App", "⚫ App went to background", {
+            previousState,
+            currentState: nextAppState,
+            timestamp: new Date().toISOString(),
+          });
+        }
+
+        // App going inactive (iOS transition state)
+        if (previousState === "active" && nextAppState === "inactive") {
+          logWarn("App", "🟡 App became inactive (transitioning)", {
+            previousState,
+            currentState: nextAppState,
+            timestamp: new Date().toISOString(),
+          });
+        }
+
+        appState.current = nextAppState;
+
+        // Log all state changes for debugging
+        logInfo("App", "🔄 App state changed", {
+          from: previousState,
+          to: nextAppState,
+          timestamp: new Date().toISOString(),
         });
       }
-
-      // App going to background
-      if (
-        previousState === "active" &&
-        nextAppState === "background"
-      ) {
-        logInfo("App", "⚫ App went to background", {
-          previousState,
-          currentState: nextAppState,
-          timestamp: new Date().toISOString()
-        });
-      }
-
-      // App going inactive (iOS transition state)
-      if (
-        previousState === "active" &&
-        nextAppState === "inactive"
-      ) {
-        logWarn("App", "🟡 App became inactive (transitioning)", {
-          previousState,
-          currentState: nextAppState,
-          timestamp: new Date().toISOString()
-        });
-      }
-
-      appState.current = nextAppState;
-
-      // Log all state changes for debugging
-      logInfo("App", "🔄 App state changed", {
-        from: previousState,
-        to: nextAppState,
-        timestamp: new Date().toISOString()
-      });
-    });
+    );
 
     // Cleanup listener on unmount (app closing)
     return () => {
       logInfo("App", "🔴 App component unmounting (app closing)", {
         lastState: appState.current,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
       subscription.remove();
     };

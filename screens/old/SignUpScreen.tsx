@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -9,30 +9,33 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
-} from 'react-native';
-import { useAuth } from '../src/contexts/AuthContext';
-import { ROUTES } from '../constants/routes';
+} from "react-native";
+import { useAuth } from "../../src/contexts/AuthContext";
+import { ROUTES } from "../../constants/routes";
 
 export default function SignUpScreen({ navigation }: any) {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const { signUp } = useAuth();
 
   const handleSignUp = async () => {
     if (!email || !password || !confirmPassword) {
-      Alert.alert('Erreur', 'Veuillez remplir tous les champs');
+      Alert.alert("Erreur", "Veuillez remplir tous les champs");
       return;
     }
 
     if (password !== confirmPassword) {
-      Alert.alert('Erreur', 'Les mots de passe ne correspondent pas');
+      Alert.alert("Erreur", "Les mots de passe ne correspondent pas");
       return;
     }
 
     if (password.length < 6) {
-      Alert.alert('Erreur', 'Le mot de passe doit contenir au moins 6 caractères');
+      Alert.alert(
+        "Erreur",
+        "Le mot de passe doit contenir au moins 6 caractères"
+      );
       return;
     }
 
@@ -41,12 +44,12 @@ export default function SignUpScreen({ navigation }: any) {
     setLoading(false);
 
     if (error) {
-      Alert.alert('Erreur d\'inscription', error.message);
+      Alert.alert("Erreur d'inscription", error.message);
     } else {
       Alert.alert(
-        'Succès',
-        'Compte créé avec succès ! Vérifiez votre email pour confirmer votre compte.',
-        [{ text: 'OK', onPress: () => navigation.navigate(ROUTES.LOGIN) }]
+        "Succès",
+        "Compte créé avec succès ! Vérifiez votre email pour confirmer votre compte.",
+        [{ text: "OK", onPress: () => navigation.navigate(ROUTES.LOGIN) }]
       );
     }
   };
@@ -54,7 +57,7 @@ export default function SignUpScreen({ navigation }: any) {
   return (
     <KeyboardAvoidingView
       style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       <View style={styles.content}>
         <Text style={styles.title}>Inscription</Text>
@@ -107,9 +110,7 @@ export default function SignUpScreen({ navigation }: any) {
           onPress={() => navigation.navigate(ROUTES.LOGIN)}
           disabled={loading}
         >
-          <Text style={styles.linkText}>
-            Déjà un compte ? Se connecter
-          </Text>
+          <Text style={styles.linkText}>Déjà un compte ? Se connecter</Text>
         </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>
@@ -119,47 +120,47 @@ export default function SignUpScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
   },
   content: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: "center",
     padding: 20,
   },
   title: {
     fontSize: 32,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginBottom: 40,
-    textAlign: 'center',
+    textAlign: "center",
   },
   input: {
-    backgroundColor: '#f5f5f5',
+    backgroundColor: "#f5f5f5",
     borderRadius: 10,
     padding: 15,
     marginBottom: 15,
     fontSize: 16,
   },
   button: {
-    backgroundColor: '#007AFF',
+    backgroundColor: "#007AFF",
     borderRadius: 10,
     padding: 15,
-    alignItems: 'center',
+    alignItems: "center",
     marginTop: 10,
   },
   buttonDisabled: {
     opacity: 0.6,
   },
   buttonText: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   linkButton: {
     marginTop: 20,
-    alignItems: 'center',
+    alignItems: "center",
   },
   linkText: {
-    color: '#007AFF',
+    color: "#007AFF",
     fontSize: 14,
   },
 });

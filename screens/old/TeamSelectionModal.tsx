@@ -21,19 +21,23 @@ import {
   BackHandler,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { supabase } from "../src/config/supabase";
-import { ServiceFactory } from "../services/ServiceFactory";
-import { useAuth } from "../src/contexts/AuthContext";
-import { useTheme } from "../src/contexts/ThemeContext";
-import { STATUS_COLORS, COMMON_COLORS } from "../src/theme";
-import type { Team } from "../models/Team";
-import type { Player } from "../models/Player";
-import { logInfo, logError, logWarn } from "../utils/logger";
+import { supabase } from "../../src/config/supabase";
+import { ServiceFactory } from "../../services/ServiceFactory";
+import { useAuth } from "../../src/contexts/AuthContext";
+import { useTheme } from "../../src/contexts/ThemeContext";
+import { STATUS_COLORS, COMMON_COLORS } from "../../src/theme";
+import type { Team } from "../../models/Team";
+import type { Player } from "../../models/Player";
+import { logInfo, logError, logWarn } from "../../utils/logger";
 
 interface TeamSelectionModalProps {
   visible: boolean;
   clubId?: string | null;
-  onTeamSelected: (team: Team | null, players?: Player[], wasAutoSelected?: boolean) => void;
+  onTeamSelected: (
+    team: Team | null,
+    players?: Player[],
+    wasAutoSelected?: boolean
+  ) => void;
   onSkip: () => void;
   onBack: () => void;
 }
@@ -56,15 +60,18 @@ export default function TeamSelectionModal({
    */
   useEffect(() => {
     if (visible) {
-      logInfo('TeamSelectionModal', '👁️ Modal opened', {
+      logInfo("TeamSelectionModal", "👁️ Modal opened", {
         hasUser: !!user,
         userId: user?.id,
-        clubId
+        clubId,
       });
 
       if (!user) {
         // If not logged in, skip directly (auto-selected, so back goes to menu)
-        logInfo('TeamSelectionModal', '🚫 No user logged in, skipping team selection (anonymous mode)');
+        logInfo(
+          "TeamSelectionModal",
+          "🚫 No user logged in, skipping team selection (anonymous mode)"
+        );
         onTeamSelected(null, [], true);
         return;
       }
@@ -83,7 +90,10 @@ export default function TeamSelectionModal({
       backHandlerSubscription = BackHandler.addEventListener(
         "hardwareBackPress",
         () => {
-          logInfo('TeamSelectionModal', '🔙 User pressed hardware back button, returning to menu');
+          logInfo(
+            "TeamSelectionModal",
+            "🔙 User pressed hardware back button, returning to menu"
+          );
           onBack(); // Return to menu
           return true; // Prevent default behavior
         }
@@ -106,9 +116,9 @@ export default function TeamSelectionModal({
   const loadUserTeams = async () => {
     if (!user) return;
 
-    logInfo('TeamSelectionModal', '📡 Loading user teams from Supabase', {
+    logInfo("TeamSelectionModal", "📡 Loading user teams from Supabase", {
       userId: user.id,
-      clubId
+      clubId,
     });
 
     try {
@@ -116,10 +126,10 @@ export default function TeamSelectionModal({
       const teamService = ServiceFactory.getTeamService(supabase);
       const userTeams = await teamService.getUserTeams(user.id);
 
-      logInfo('TeamSelectionModal', '✅ User teams fetched from Supabase', {
+      logInfo("TeamSelectionModal", "✅ User teams fetched from Supabase", {
         totalTeams: userTeams.length,
-        teamIds: userTeams.map(t => t.id),
-        teamNames: userTeams.map(t => t.name)
+        teamIds: userTeams.map((t) => t.id),
+        teamNames: userTeams.map((t) => t.name),
       });
 
       // Filter only approved and active teams
@@ -127,16 +137,20 @@ export default function TeamSelectionModal({
         (t) => t.status === "approved" && t.isActive
       );
 
-      logInfo('TeamSelectionModal', '🔍 Filtered to approved and active teams', {
-        activeTeamsCount: activeTeams.length
-      });
+      logInfo(
+        "TeamSelectionModal",
+        "🔍 Filtered to approved and active teams",
+        {
+          activeTeamsCount: activeTeams.length,
+        }
+      );
 
       // Filter by club if clubId is provided
       if (clubId) {
         activeTeams = activeTeams.filter((t) => t.clubId === clubId);
-        logInfo('TeamSelectionModal', '🔍 Filtered by club', {
+        logInfo("TeamSelectionModal", "🔍 Filtered by club", {
           clubId,
-          teamsInClub: activeTeams.length
+          teamsInClub: activeTeams.length,
         });
       }
 
@@ -144,26 +158,34 @@ export default function TeamSelectionModal({
 
       // Auto-select if only one team
       if (activeTeams.length === 1) {
-        logInfo('TeamSelectionModal', '🎯 Only one team available, auto-selecting', {
-          teamId: activeTeams[0].id,
-          teamName: activeTeams[0].name
-        });
+        logInfo(
+          "TeamSelectionModal",
+          "🎯 Only one team available, auto-selecting",
+          {
+            teamId: activeTeams[0].id,
+            teamName: activeTeams[0].name,
+          }
+        );
         await loadTeamPlayers(activeTeams[0], true); // true = wasAutoSelected
       } else if (activeTeams.length === 0) {
-        logWarn('TeamSelectionModal', '⚠️ No active teams found for user', {
+        logWarn("TeamSelectionModal", "⚠️ No active teams found for user", {
           userId: user.id,
-          clubId
+          clubId,
         });
       } else {
-        logInfo('TeamSelectionModal', '📋 Multiple teams available for selection', {
-          teamsCount: activeTeams.length
-        });
+        logInfo(
+          "TeamSelectionModal",
+          "📋 Multiple teams available for selection",
+          {
+            teamsCount: activeTeams.length,
+          }
+        );
       }
     } catch (error) {
-      logError('TeamSelectionModal', '❌ Error loading teams from Supabase', {
+      logError("TeamSelectionModal", "❌ Error loading teams from Supabase", {
         userId: user.id,
         clubId,
-        error: error instanceof Error ? error.message : error
+        error: error instanceof Error ? error.message : error,
       });
     } finally {
       setLoading(false);
@@ -174,31 +196,42 @@ export default function TeamSelectionModal({
    * Load players for selected team from Supabase
    * Then calls onTeamSelected callback to proceed to next step
    */
-  const loadTeamPlayers = async (team: Team, wasAutoSelected: boolean = false) => {
-    logInfo('TeamSelectionModal', '👥 User selected team, loading players from Supabase', {
-      teamId: team.id,
-      teamName: team.name,
-      wasAutoSelected
-    });
+  const loadTeamPlayers = async (
+    team: Team,
+    wasAutoSelected: boolean = false
+  ) => {
+    logInfo(
+      "TeamSelectionModal",
+      "👥 User selected team, loading players from Supabase",
+      {
+        teamId: team.id,
+        teamName: team.name,
+        wasAutoSelected,
+      }
+    );
 
     try {
       const playerService = ServiceFactory.getPlayerService(supabase);
       const players = await playerService.getTeamPlayers(team.id);
 
-      logInfo('TeamSelectionModal', '✅ Team players loaded from Supabase', {
+      logInfo("TeamSelectionModal", "✅ Team players loaded from Supabase", {
         teamId: team.id,
         teamName: team.name,
         playersCount: players.length,
-        playerNames: players.map(p => p.name)
+        playerNames: players.map((p) => p.name),
       });
 
       onTeamSelected(team, players, wasAutoSelected);
     } catch (error) {
-      logError('TeamSelectionModal', '❌ Error loading team players from Supabase', {
-        teamId: team.id,
-        teamName: team.name,
-        error: error instanceof Error ? error.message : error
-      });
+      logError(
+        "TeamSelectionModal",
+        "❌ Error loading team players from Supabase",
+        {
+          teamId: team.id,
+          teamName: team.name,
+          error: error instanceof Error ? error.message : error,
+        }
+      );
       // Proceed with empty players array on error
       onTeamSelected(team, [], wasAutoSelected);
     }
@@ -209,7 +242,10 @@ export default function TeamSelectionModal({
    * User chooses to continue without selecting a pre-configured team
    */
   const handleSkip = () => {
-    logInfo('TeamSelectionModal', '⏭️ User clicked skip, continuing without team (manual setup)');
+    logInfo(
+      "TeamSelectionModal",
+      "⏭️ User clicked skip, continuing without team (manual setup)"
+    );
     onSkip();
   };
 
@@ -218,17 +254,25 @@ export default function TeamSelectionModal({
    * User returns to main menu
    */
   const handleBack = () => {
-    logInfo('TeamSelectionModal', '◀️ User clicked back button, returning to menu');
+    logInfo(
+      "TeamSelectionModal",
+      "◀️ User clicked back button, returning to menu"
+    );
     onBack();
   };
 
   const renderTeam = ({ item }: { item: Team }) => (
     <TouchableOpacity
-      style={[styles.teamCard, { backgroundColor: colors.surfaceVariant, borderColor: colors.border }]}
+      style={[
+        styles.teamCard,
+        { backgroundColor: colors.surfaceVariant, borderColor: colors.border },
+      ]}
       onPress={() => loadTeamPlayers(item)}
     >
       <View style={styles.teamInfo}>
-        <Text style={[styles.teamName, { color: colors.text.primary }]}>{item.name}</Text>
+        <Text style={[styles.teamName, { color: colors.text.primary }]}>
+          {item.name}
+        </Text>
         {item.gender && (
           <Text style={[styles.teamGender, { color: colors.text.secondary }]}>
             {item.gender === "male"
@@ -249,34 +293,79 @@ export default function TeamSelectionModal({
       animationType="fade"
       transparent
       onRequestClose={() => {
-        logInfo('TeamSelectionModal', '🔙 Modal onRequestClose triggered (hardware back or gesture)');
+        logInfo(
+          "TeamSelectionModal",
+          "🔙 Modal onRequestClose triggered (hardware back or gesture)"
+        );
         onBack();
       }}
     >
       <View style={styles.overlay}>
         <View style={[styles.container, { backgroundColor: colors.surface }]}>
           <View style={[styles.header, { borderBottomColor: colors.border }]}>
-            <Text style={[styles.title, { color: colors.text.primary }]}>Sélectionner une équipe</Text>
+            <Text style={[styles.title, { color: colors.text.primary }]}>
+              Sélectionner une équipe
+            </Text>
           </View>
 
           {loading ? (
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="large" color={STATUS_COLORS.info} />
-              <Text style={[styles.loadingText, { color: colors.text.secondary }]}>Chargement des équipes...</Text>
+              <Text
+                style={[styles.loadingText, { color: colors.text.secondary }]}
+              >
+                Chargement des équipes...
+              </Text>
             </View>
           ) : teams.length === 0 ? (
             <View style={styles.emptyContainer}>
-              <Ionicons name="basketball-outline" size={80} color={colors.text.disabled} />
-              <Text style={[styles.emptyTitle, { color: colors.text.secondary }]}>Aucune équipe disponible</Text>
+              <Ionicons
+                name="basketball-outline"
+                size={80}
+                color={colors.text.disabled}
+              />
+              <Text
+                style={[styles.emptyTitle, { color: colors.text.secondary }]}
+              >
+                Aucune équipe disponible
+              </Text>
               <Text style={[styles.emptyText, { color: colors.text.tertiary }]}>
                 Créez une équipe dans votre club pour l'utiliser ici
               </Text>
               <View style={styles.buttonContainer}>
-                <TouchableOpacity style={[styles.backButtonSmall, { backgroundColor: colors.surfaceVariant, borderColor: colors.border }]} onPress={handleBack}>
-                  <Text style={[styles.backButtonText, { color: colors.text.secondary }]}>Retour</Text>
+                <TouchableOpacity
+                  style={[
+                    styles.backButtonSmall,
+                    {
+                      backgroundColor: colors.surfaceVariant,
+                      borderColor: colors.border,
+                    },
+                  ]}
+                  onPress={handleBack}
+                >
+                  <Text
+                    style={[
+                      styles.backButtonText,
+                      { color: colors.text.secondary },
+                    ]}
+                  >
+                    Retour
+                  </Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={[styles.skipButton, { backgroundColor: STATUS_COLORS.info }]} onPress={handleSkip}>
-                  <Text style={[styles.skipButtonText, { color: COMMON_COLORS.white }]} numberOfLines={1}>
+                <TouchableOpacity
+                  style={[
+                    styles.skipButton,
+                    { backgroundColor: STATUS_COLORS.info },
+                  ]}
+                  onPress={handleSkip}
+                >
+                  <Text
+                    style={[
+                      styles.skipButtonText,
+                      { color: COMMON_COLORS.white },
+                    ]}
+                    numberOfLines={1}
+                  >
                     Continuer sans équipe
                   </Text>
                 </TouchableOpacity>
@@ -294,11 +383,40 @@ export default function TeamSelectionModal({
                 />
               </View>
               <View style={styles.buttonContainer}>
-                <TouchableOpacity style={[styles.backButton, { backgroundColor: colors.surfaceVariant, borderColor: colors.border }]} onPress={handleBack}>
-                  <Text style={[styles.backButtonText, { color: colors.text.secondary }]}>Retour</Text>
+                <TouchableOpacity
+                  style={[
+                    styles.backButton,
+                    {
+                      backgroundColor: colors.surfaceVariant,
+                      borderColor: colors.border,
+                    },
+                  ]}
+                  onPress={handleBack}
+                >
+                  <Text
+                    style={[
+                      styles.backButtonText,
+                      { color: colors.text.secondary },
+                    ]}
+                  >
+                    Retour
+                  </Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={[styles.skipButton, { backgroundColor: STATUS_COLORS.info }]} onPress={handleSkip}>
-                  <Text style={[styles.skipButtonText, { color: COMMON_COLORS.white }]}>Continuer sans équipe</Text>
+                <TouchableOpacity
+                  style={[
+                    styles.skipButton,
+                    { backgroundColor: STATUS_COLORS.info },
+                  ]}
+                  onPress={handleSkip}
+                >
+                  <Text
+                    style={[
+                      styles.skipButtonText,
+                      { color: COMMON_COLORS.white },
+                    ]}
+                  >
+                    Continuer sans équipe
+                  </Text>
                 </TouchableOpacity>
               </View>
             </>

@@ -17,12 +17,12 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
-import { supabase } from "../src/config/supabase";
-import { ServiceFactory } from "../services/ServiceFactory";
-import { useAuth } from "../src/contexts/AuthContext";
-import { logInfo, logError, logWarn } from "../utils/logger";
-import { useTheme } from "../src/contexts/ThemeContext";
-import { CommonStyles } from "../src/theme";
+import { supabase } from "../../src/config/supabase";
+import { ServiceFactory } from "../../services/ServiceFactory";
+import { useAuth } from "../../src/contexts/AuthContext";
+import { logInfo, logError, logWarn } from "../../utils/logger";
+import { useTheme } from "../../src/contexts/ThemeContext";
+import { CommonStyles } from "../../src/theme";
 
 export default function JoinClubScreen() {
   const navigation = useNavigation();
@@ -184,17 +184,22 @@ export default function JoinClubScreen() {
           <Ionicons name="enter" size={80} color={colors.button.secondary} />
         </View>
 
-        <Text style={[styles.title, { color: colors.text.primary }]}>Entrez le code du club</Text>
+        <Text style={[styles.title, { color: colors.text.primary }]}>
+          Entrez le code du club
+        </Text>
         <Text style={[styles.subtitle, { color: colors.text.secondary }]}>
           Demandez le code à 6 chiffres à l'administrateur du club
         </Text>
 
         <TextInput
-          style={[styles.codeInput, {
-            borderColor: colors.button.secondary,
-            color: colors.text.primary,
-            backgroundColor: colors.surface
-          }]}
+          style={[
+            styles.codeInput,
+            {
+              borderColor: colors.button.secondary,
+              color: colors.text.primary,
+              backgroundColor: colors.surface,
+            },
+          ]}
           placeholder="000000"
           placeholderTextColor={colors.text.tertiary}
           value={clubCode}
@@ -208,7 +213,10 @@ export default function JoinClubScreen() {
           style={[
             styles.joinButton,
             { backgroundColor: colors.button.secondary },
-            loading && [styles.joinButtonDisabled, { backgroundColor: colors.text.disabled }]
+            loading && [
+              styles.joinButtonDisabled,
+              { backgroundColor: colors.text.disabled },
+            ],
           ]}
           onPress={handleJoinClub}
           disabled={loading}
@@ -273,8 +281,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: "center",
   },
-  joinButtonDisabled: {
-  },
+  joinButtonDisabled: {},
   joinButtonText: {
     color: "#fff",
     fontSize: 18,

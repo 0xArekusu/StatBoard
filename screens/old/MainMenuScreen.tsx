@@ -20,25 +20,25 @@ import {
 import { StatusBar } from "expo-status-bar";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { useAuth } from "../src/contexts/AuthContext";
+import { useAuth } from "../../src/contexts/AuthContext";
 import { Ionicons } from "@expo/vector-icons";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import React, { useState, useCallback, useRef } from "react";
 import { Picker } from "@react-native-picker/picker";
-import ClubChoiceModal from "../components/ClubChoiceModal";
-import MatchLimitModal from "../components/MatchLimitModal";
-import { supabase } from "../src/config/supabase";
-import { ServiceFactory } from "../services/ServiceFactory";
-import type { Club } from "../models/Club";
-import { ROUTES } from "../constants/routes";
-import { canUseMultiClub } from "../src/config/devConfig";
-import { MatchRepository } from "../src/services/database/MatchRepository";
-import { MatchSyncPolicy } from "../src/services/match/MatchSyncPolicy";
-import type { SubscriptionTier } from "../models/Subscription";
-import { shareLogs, logInfo, logError, logWarn } from "../utils/logger";
-import Logo from "../components/icons/Logo";
-import { useTheme } from "../src/contexts/ThemeContext";
-import ThemeToggleButton from "../components/ThemeToggleButton";
+import ClubChoiceModal from "../../components/ClubChoiceModal";
+import MatchLimitModal from "../../components/MatchLimitModal";
+import { supabase } from "../../src/config/supabase";
+import { ServiceFactory } from "../../services/ServiceFactory";
+import type { Club } from "../../models/Club";
+import { ROUTES } from "../../constants/routes";
+import { canUseMultiClub } from "../../src/config/devConfig";
+import { MatchRepository } from "../../src/services/database/MatchRepository";
+import { MatchSyncPolicy } from "../../src/services/match/MatchSyncPolicy";
+import type { SubscriptionTier } from "../../models/Subscription";
+import { shareLogs, logInfo, logError, logWarn } from "../../utils/logger";
+import Logo from "../../components/icons/Logo";
+import { useTheme } from "../../src/contexts/ThemeContext";
+import ThemeToggleButton from "../../components/ThemeToggleButton";
 
 type RootStackParamList = {
   [ROUTES.MAIN_MENU]: undefined;
@@ -289,18 +289,28 @@ export default function MainMenuScreen() {
       <View style={styles.header}>
         {user ? (
           <>
-            <Text style={[styles.userEmail, { color: colors.text.secondary }]}>{user.email}</Text>
+            <Text style={[styles.userEmail, { color: colors.text.secondary }]}>
+              {user.email}
+            </Text>
             <TouchableOpacity
               onPress={handleSignOut}
-              style={[styles.logoutButton, { backgroundColor: colors.surfaceVariant }]}
+              style={[
+                styles.logoutButton,
+                { backgroundColor: colors.surfaceVariant },
+              ]}
             >
-              <Text style={[styles.logoutText, { color: colors.primary }]}>Déconnexion</Text>
+              <Text style={[styles.logoutText, { color: colors.primary }]}>
+                Déconnexion
+              </Text>
             </TouchableOpacity>
           </>
         ) : (
           <TouchableOpacity
             onPress={() => navigation.navigate(ROUTES.LOGIN as never)}
-            style={[styles.loginButton, { backgroundColor: colors.button.login }]}
+            style={[
+              styles.loginButton,
+              { backgroundColor: colors.button.login },
+            ]}
           >
             <Text style={styles.loginText}>Se connecter</Text>
           </TouchableOpacity>
@@ -308,13 +318,19 @@ export default function MainMenuScreen() {
       </View>
 
       <View style={styles.logoContainer}>
-        <Logo width={300} primaryColor={colors.text.primary} secondaryColor={colors.background} />
+        <Logo
+          width={300}
+          primaryColor={colors.text.primary}
+          secondaryColor={colors.background}
+        />
       </View>
 
       <TouchableOpacity
         style={[
           styles.button,
-          { backgroundColor: !user ? colors.button.free : colors.button.primary }
+          {
+            backgroundColor: !user ? colors.button.free : colors.button.primary,
+          },
         ]}
         onPress={handleNewMatch}
       >
@@ -349,13 +365,23 @@ export default function MainMenuScreen() {
           {/* Club selector for admin user with multi-club enabled */}
           {canUseMultiClub(user.id) && userClubs.length > 1 && (
             <View style={styles.clubSelectorContainer}>
-              <Text style={[styles.clubSelectorLabel, { color: colors.text.secondary }]}>
+              <Text
+                style={[
+                  styles.clubSelectorLabel,
+                  { color: colors.text.secondary },
+                ]}
+              >
                 Sélectionner un club:
               </Text>
-              <View style={[styles.pickerContainer, {
-                borderColor: colors.button.club,
-                backgroundColor: colors.surface
-              }]}>
+              <View
+                style={[
+                  styles.pickerContainer,
+                  {
+                    borderColor: colors.button.club,
+                    backgroundColor: colors.surface,
+                  },
+                ]}
+              >
                 <Picker
                   selectedValue={userClub?.id}
                   onValueChange={(clubId) => {
@@ -409,14 +435,21 @@ export default function MainMenuScreen() {
           {/* Add club button for admin user */}
           {canUseMultiClub(user.id) && (
             <TouchableOpacity
-              style={[styles.button, {
-                backgroundColor: colors.background,
-                borderWidth: 2,
-                borderColor: colors.button.club
-              }]}
+              style={[
+                styles.button,
+                {
+                  backgroundColor: colors.background,
+                  borderWidth: 2,
+                  borderColor: colors.button.club,
+                },
+              ]}
               onPress={() => setClubModalVisible(true)}
             >
-              <Ionicons name="add-circle-outline" size={24} color={colors.button.club} />
+              <Ionicons
+                name="add-circle-outline"
+                size={24}
+                color={colors.button.club}
+              />
               <Text style={[styles.buttonText, { color: colors.button.club }]}>
                 Créer/Rejoindre un autre club
               </Text>

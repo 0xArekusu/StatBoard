@@ -46,7 +46,7 @@ import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import {
   MATCH_FORMATS,
   MATCH_FORMAT_LABELS,
-} from "../constants/matchConstants";
+} from "../../constants/matchConstants";
 import TeamSelectionModal from "./TeamSelectionModal";
 import InitTeamModal from "./InitTeamModal";
 import MatchConfigModal from "./MatchConfigModal";
@@ -54,39 +54,46 @@ import PlayerEditModal from "./PlayerEditModal";
 import ActionSystemModal, {
   ActionData,
   getActionIcon,
-} from "../components/ActionSystemModal";
-import FilterBottomSheet from "../components/FilterBottomSheet";
-import HistoryBottomSheet from "../components/HistoryBottomSheet";
-import { ROUTES } from "../constants/routes";
-import BasketballCourtSVG from "../components/BasketballCourtSVG";
-import SubstitutesManager from "../components/SubstitutesManager";
-import CoachEditModal from "../components/CoachEditModal";
-import ResumeMatchModal from "../components/ResumeMatchModal";
-import JerseyIcon from "../components/icons/JerseyIcon";
-import MatchStatusBar from "../components/MatchStatusBar";
-import MatchConfirmationModal from "../components/MatchConfirmationModal";
-import { MatchManager } from "../src/services/match/MatchManager";
-import { ActionQueue, ActionObserver } from "../src/services/match/ActionQueue";
-import { ActionRepository } from "../src/services/database/ActionRepository";
-import { MatchPlayerRepository } from "../src/services/database/MatchPlayerRepository";
-import { MatchRepository } from "../src/services/database/MatchRepository";
-import { Match } from "../src/models/types";
-import type { Player } from "../models/Player";
-import type { Club } from "../models/Club";
-import { supabase } from "../src/config/supabase";
-import { ServiceFactory } from "../services/ServiceFactory";
-import { useAuth } from "../src/contexts/AuthContext";
-import { useTheme } from "../src/contexts/ThemeContext";
-import { STATUS_COLORS, COMMON_COLORS, TEAM_CHART_COLORS } from "../src/theme";
-import { determineClubTeam } from "../src/utils/clubTeamDetection";
-import { logInfo, logError, logWarn } from "../utils/logger";
+} from "../../components/ActionSystemModal";
+import FilterBottomSheet from "../../components/FilterBottomSheet";
+import HistoryBottomSheet from "../../components/HistoryBottomSheet";
+import { ROUTES } from "../../constants/routes";
+import BasketballCourtSVG from "../../components/BasketballCourtSVG";
+import SubstitutesManager from "../../components/SubstitutesManager";
+import CoachEditModal from "../../components/CoachEditModal";
+import ResumeMatchModal from "../../components/ResumeMatchModal";
+import JerseyIcon from "../../components/icons/JerseyIcon";
+import MatchStatusBar from "../../components/MatchStatusBar";
+import MatchConfirmationModal from "../../components/MatchConfirmationModal";
+import { MatchManager } from "../../src/services/match/MatchManager";
+import {
+  ActionQueue,
+  ActionObserver,
+} from "../../src/services/match/ActionQueue";
+import { ActionRepository } from "../../src/services/database/ActionRepository";
+import { MatchPlayerRepository } from "../../src/services/database/MatchPlayerRepository";
+import { MatchRepository } from "../../src/services/database/MatchRepository";
+import { Match } from "../../src/models/types";
+import type { Player } from "../../models/Player";
+import type { Club } from "../../models/Club";
+import { supabase } from "../../src/config/supabase";
+import { ServiceFactory } from "../../services/ServiceFactory";
+import { useAuth } from "../../src/contexts/AuthContext";
+import { useTheme } from "../../src/contexts/ThemeContext";
+import {
+  STATUS_COLORS,
+  COMMON_COLORS,
+  TEAM_CHART_COLORS,
+} from "../../src/theme";
+import { determineClubTeam } from "../../src/utils/clubTeamDetection";
+import { logInfo, logError, logWarn } from "../../utils/logger";
 import {
   generateMockActions,
   getMockActionsSummary,
-} from "../utils/mockActions";
-import { DEBUG } from "../src/config/debug";
-import { ActionType, ShotSpecification } from "../src/models/ActionTypes";
-import { getActionColor } from "../src/config/actionConfig";
+} from "../../utils/mockActions";
+import { DEBUG } from "../../src/config/debug";
+import { ActionType, ShotSpecification } from "../../src/models/ActionTypes";
+import { getActionColor } from "../../src/config/actionConfig";
 
 // Modal layout constants (for the new ActionModal)
 const MODAL_WIDTH = 240;
@@ -556,7 +563,10 @@ export default function BasketballCourt() {
       // Players are now stored as "team-number" format (e.g., "A-5", "B-7")
       if (appliedFilters.players.length > 0) {
         const playerIdentifier = `${action.team}-${action.player}`;
-        if (!action.player || !appliedFilters.players.includes(playerIdentifier)) {
+        if (
+          !action.player ||
+          !appliedFilters.players.includes(playerIdentifier)
+        ) {
           return false;
         }
       }
@@ -570,7 +580,10 @@ export default function BasketballCourt() {
 
       // Filter by periods (if any periods selected)
       if (appliedFilters.periods.length > 0) {
-        if (!action.period_number || !appliedFilters.periods.includes(action.period_number)) {
+        if (
+          !action.period_number ||
+          !appliedFilters.periods.includes(action.period_number)
+        ) {
           return false;
         }
       }
@@ -1921,7 +1934,11 @@ export default function BasketballCourt() {
       const allPlayers = [...teamAPlayers, ...teamBPlayersEnd];
 
       // Détection de l'équipe du club (utilise UUID pour mode BOTH)
-      const clubTeamOverride = determineClubTeam(teamMode, teamAId ?? undefined, teamBId ?? undefined);
+      const clubTeamOverride = determineClubTeam(
+        teamMode,
+        teamAId ?? undefined,
+        teamBId ?? undefined
+      );
       logInfo("BoardScreen", "🧭 Navigating to Match Summary screen", {
         matchId: currentMatch?.id,
         teamA,
@@ -3345,15 +3362,36 @@ export default function BasketballCourt() {
         onRequestClose={cancelUndoAction}
       >
         <View style={styles.undoModalOverlay}>
-          <View style={[styles.undoModalContainer, { backgroundColor: colors.surface }]}>
-            <Text style={[styles.undoModalTitle, { color: colors.text.primary }]}>Confirmer l'annulation</Text>
-            <Text style={[styles.undoModalMessage, { color: colors.text.secondary }]}>
+          <View
+            style={[
+              styles.undoModalContainer,
+              { backgroundColor: colors.surface },
+            ]}
+          >
+            <Text
+              style={[styles.undoModalTitle, { color: colors.text.primary }]}
+            >
+              Confirmer l'annulation
+            </Text>
+            <Text
+              style={[
+                styles.undoModalMessage,
+                { color: colors.text.secondary },
+              ]}
+            >
               Êtes-vous sûr de vouloir annuler la dernière action ?
             </Text>
 
             {completedActions.length > 0 && (
               <View style={styles.undoActionDetails}>
-                <Text style={[styles.undoActionTitle, { color: colors.text.secondary }]}>Action à annuler :</Text>
+                <Text
+                  style={[
+                    styles.undoActionTitle,
+                    { color: colors.text.secondary },
+                  ]}
+                >
+                  Action à annuler :
+                </Text>
                 <View
                   style={[
                     styles.undoActionInfo,
@@ -3388,7 +3426,12 @@ export default function BasketballCourt() {
                     </Text>
                   </View>
                   <View style={styles.undoActionText}>
-                    <Text style={[styles.undoActionType, { color: colors.text.primary }]}>
+                    <Text
+                      style={[
+                        styles.undoActionType,
+                        { color: colors.text.primary },
+                      ]}
+                    >
                       {getTeamName(
                         completedActions[completedActions.length - 1].team
                       )}{" "}
@@ -3405,11 +3448,21 @@ export default function BasketballCourt() {
                           .specification
                       }
                     </Text>
-                    <Text style={[styles.undoActionPlayer, { color: colors.text.secondary }]}>
+                    <Text
+                      style={[
+                        styles.undoActionPlayer,
+                        { color: colors.text.secondary },
+                      ]}
+                    >
                       Joueur #
                       {completedActions[completedActions.length - 1].player}
                     </Text>
-                    <Text style={[styles.undoActionTime, { color: colors.text.tertiary }]}>
+                    <Text
+                      style={[
+                        styles.undoActionTime,
+                        { color: colors.text.tertiary },
+                      ]}
+                    >
                       {new Date(
                         completedActions[completedActions.length - 1].timestamp
                       ).toLocaleTimeString("fr-FR")}
@@ -3421,17 +3474,39 @@ export default function BasketballCourt() {
 
             <View style={styles.undoModalButtons}>
               <TouchableOpacity
-                style={[styles.undoModalButton, styles.undoModalButtonCancel, { backgroundColor: colors.surfaceVariant }]}
+                style={[
+                  styles.undoModalButton,
+                  styles.undoModalButtonCancel,
+                  { backgroundColor: colors.surfaceVariant },
+                ]}
                 onPress={cancelUndoAction}
               >
-                <Text style={[styles.undoModalButtonTextCancel, { color: colors.text.secondary }]}>Annuler</Text>
+                <Text
+                  style={[
+                    styles.undoModalButtonTextCancel,
+                    { color: colors.text.secondary },
+                  ]}
+                >
+                  Annuler
+                </Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={[styles.undoModalButton, styles.undoModalButtonConfirm, { backgroundColor: STATUS_COLORS.error }]}
+                style={[
+                  styles.undoModalButton,
+                  styles.undoModalButtonConfirm,
+                  { backgroundColor: STATUS_COLORS.error },
+                ]}
                 onPress={confirmUndoAction}
               >
-                <Text style={[styles.undoModalButtonTextConfirm, { color: COMMON_COLORS.white }]}>Confirmer</Text>
+                <Text
+                  style={[
+                    styles.undoModalButtonTextConfirm,
+                    { color: COMMON_COLORS.white },
+                  ]}
+                >
+                  Confirmer
+                </Text>
               </TouchableOpacity>
             </View>
           </View>

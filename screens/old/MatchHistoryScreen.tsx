@@ -29,24 +29,21 @@ import {
 } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
-import { MatchRepository } from "../src/services/database/MatchRepository";
-import { ActionRepository } from "../src/services/database/ActionRepository";
-import { MatchPlayerRepository } from "../src/services/database/MatchPlayerRepository";
-import { Match } from "../src/models/types";
-import { ActionData } from "../components/ActionSystem";
-import { useMatchSync } from "../src/hooks/useMatchSync";
-import SyncErrorModal from "../components/SyncErrorModal";
-import { useAuth } from "../src/contexts/AuthContext";
-import { supabase } from "../src/config/supabase";
-import { resolveTeamNames } from "../src/utils/teamNameResolver";
-import { determineClubTeam, isUUID } from "../src/utils/clubTeamDetection";
-import { logInfo, logError } from "../utils/logger";
-import {
-  ActionType,
-  ShotSpecification,
-} from "../src/models/ActionTypes";
-import { useTheme } from "../src/contexts/ThemeContext";
-import { CommonStyles } from "../src/theme";
+import { MatchRepository } from "../../src/services/database/MatchRepository";
+import { ActionRepository } from "../../src/services/database/ActionRepository";
+import { MatchPlayerRepository } from "../../src/services/database/MatchPlayerRepository";
+import { Match } from "../../src/models/types";
+import { ActionData } from "../../components/ActionSystem";
+import { useMatchSync } from "../../src/hooks/useMatchSync";
+import SyncErrorModal from "../../components/SyncErrorModal";
+import { useAuth } from "../../src/contexts/AuthContext";
+import { supabase } from "../../src/config/supabase";
+import { resolveTeamNames } from "../../src/utils/teamNameResolver";
+import { determineClubTeam, isUUID } from "../../src/utils/clubTeamDetection";
+import { logInfo, logError } from "../../utils/logger";
+import { ActionType, ShotSpecification } from "../../src/models/ActionTypes";
+import { useTheme } from "../../src/contexts/ThemeContext";
+import { CommonStyles } from "../../src/theme";
 
 interface MatchWithDetails extends Match {
   scoreA: number;
@@ -77,13 +74,17 @@ export default function MatchHistoryScreen() {
    * Log screen mount when user arrives on the view
    */
   useEffect(() => {
-    logInfo('MatchHistoryScreen', '📱 Screen mounted - User arrived on match history view', {
-      userId: user?.id,
-      userEmail: user?.email,
-      isAuthenticated: !!user,
-      clubId: clubId,
-      hasClubFilter: !!clubId
-    });
+    logInfo(
+      "MatchHistoryScreen",
+      "📱 Screen mounted - User arrived on match history view",
+      {
+        userId: user?.id,
+        userEmail: user?.email,
+        isAuthenticated: !!user,
+        clubId: clubId,
+        hasClubFilter: !!clubId,
+      }
+    );
   }, []);
 
   /**
@@ -92,7 +93,7 @@ export default function MatchHistoryScreen() {
    */
   useFocusEffect(
     React.useCallback(() => {
-      logInfo('MatchHistoryScreen', '🔄 Screen focused, reloading matches');
+      logInfo("MatchHistoryScreen", "🔄 Screen focused, reloading matches");
       loadCompletedMatches();
     }, [])
   );
@@ -102,34 +103,44 @@ export default function MatchHistoryScreen() {
    * Combines local non-synced matches with server matches
    */
   const loadCompletedMatches = async () => {
-    logInfo('MatchHistoryScreen', '💾 Loading completed matches from databases');
+    logInfo(
+      "MatchHistoryScreen",
+      "💾 Loading completed matches from databases"
+    );
 
     try {
       const matchRepository = new MatchRepository();
       const actionRepository = new ActionRepository();
 
       // 1. Get LOCAL completed matches from SQLite (only non-synced ones)
-      logInfo('MatchHistoryScreen', '💾 Fetching all local matches from SQLite');
+      logInfo(
+        "MatchHistoryScreen",
+        "💾 Fetching all local matches from SQLite"
+      );
       const allLocalMatches = await matchRepository.getAllMatches();
-      logInfo('MatchHistoryScreen', '✅ Local matches fetched from SQLite', {
-        totalLocalMatches: allLocalMatches.length
+      logInfo("MatchHistoryScreen", "✅ Local matches fetched from SQLite", {
+        totalLocalMatches: allLocalMatches.length,
       });
 
       let completedLocalMatches = allLocalMatches.filter(
         (match) => match.status === "completed" && !match.synced_to_server
       );
-      logInfo('MatchHistoryScreen', '✅ Filtered completed local matches (not synced)', {
-        completedLocalCount: completedLocalMatches.length
-      });
+      logInfo(
+        "MatchHistoryScreen",
+        "✅ Filtered completed local matches (not synced)",
+        {
+          completedLocalCount: completedLocalMatches.length,
+        }
+      );
 
       // Filter by club if clubId is provided
       if (clubId) {
         completedLocalMatches = completedLocalMatches.filter(
           (match) => match.club_id === clubId
         );
-        logInfo('MatchHistoryScreen', '🔍 Applied club filter', {
+        logInfo("MatchHistoryScreen", "🔍 Applied club filter", {
           clubId,
-          matchesAfterFilter: completedLocalMatches.length
+          matchesAfterFilter: completedLocalMatches.length,
         });
       }
 
@@ -183,8 +194,10 @@ export default function MatchHistoryScreen() {
           }
 
           // Resolve team names (UUID -> name)
-          const teamAName = localTeamNamesMap.get(match.team_a_name) || match.team_a_name;
-          const teamBName = localTeamNamesMap.get(match.team_b_name) || match.team_b_name;
+          const teamAName =
+            localTeamNamesMap.get(match.team_a_name) || match.team_a_name;
+          const teamBName =
+            localTeamNamesMap.get(match.team_b_name) || match.team_b_name;
 
           return {
             ...match,
@@ -200,16 +213,20 @@ export default function MatchHistoryScreen() {
         })
       );
 
-      logInfo('MatchHistoryScreen', '✅ Local matches processed with details', {
-        localMatchesWithDetailsCount: localMatchesWithDetails.length
+      logInfo("MatchHistoryScreen", "✅ Local matches processed with details", {
+        localMatchesWithDetailsCount: localMatchesWithDetails.length,
       });
 
       // 2. Get SERVER matches from Supabase if user is authenticated
       let serverMatches: MatchWithDetails[] = [];
       if (user) {
-        logInfo('MatchHistoryScreen', '📡 User authenticated, fetching server matches from Supabase', {
-          userId: user.id
-        });
+        logInfo(
+          "MatchHistoryScreen",
+          "📡 User authenticated, fetching server matches from Supabase",
+          {
+            userId: user.id,
+          }
+        );
         try {
           let query = supabase
             .from("matches")
@@ -225,16 +242,24 @@ export default function MatchHistoryScreen() {
           const { data: serverMatchesData, error: serverError } = await query;
 
           if (serverError) {
-            logError('MatchHistoryScreen', '❌ Error fetching server matches from Supabase', {
-              userId: user.id,
-              clubId,
-              error: serverError.message
-            });
+            logError(
+              "MatchHistoryScreen",
+              "❌ Error fetching server matches from Supabase",
+              {
+                userId: user.id,
+                clubId,
+                error: serverError.message,
+              }
+            );
           } else if (serverMatchesData) {
-            logInfo('MatchHistoryScreen', '✅ Server matches fetched from Supabase', {
-              serverMatchesCount: serverMatchesData.length,
-              userId: user.id
-            });
+            logInfo(
+              "MatchHistoryScreen",
+              "✅ Server matches fetched from Supabase",
+              {
+                serverMatchesCount: serverMatchesData.length,
+                userId: user.id,
+              }
+            );
 
             // Collect all unique team UUIDs to fetch team names
             const teamUUIDs = new Set<string>();
@@ -297,19 +322,19 @@ export default function MatchHistoryScreen() {
             });
           }
         } catch (error) {
-          logError('MatchHistoryScreen', '❌ Error loading server matches', {
+          logError("MatchHistoryScreen", "❌ Error loading server matches", {
             userId: user.id,
-            error: error instanceof Error ? error.message : error
+            error: error instanceof Error ? error.message : error,
           });
         }
       }
 
       // 3. Merge LOCAL and SERVER matches into combined list
       const allMatches = [...localMatchesWithDetails, ...serverMatches];
-      logInfo('MatchHistoryScreen', '🔀 Merged local and server matches', {
+      logInfo("MatchHistoryScreen", "🔀 Merged local and server matches", {
         localMatchesCount: localMatchesWithDetails.length,
         serverMatchesCount: serverMatches.length,
-        totalMatchesCount: allMatches.length
+        totalMatchesCount: allMatches.length,
       });
 
       // Sort by date (most recent first)
@@ -318,14 +343,14 @@ export default function MatchHistoryScreen() {
           new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       );
 
-      logInfo('MatchHistoryScreen', '✅ Matches loaded and ready to display', {
-        totalMatchesToDisplay: allMatches.length
+      logInfo("MatchHistoryScreen", "✅ Matches loaded and ready to display", {
+        totalMatchesToDisplay: allMatches.length,
       });
       setMatches(allMatches);
     } catch (error) {
-      logError('MatchHistoryScreen', '❌ Error loading completed matches', {
+      logError("MatchHistoryScreen", "❌ Error loading completed matches", {
         error: error instanceof Error ? error.message : error,
-        clubId
+        clubId,
       });
     } finally {
       setLoading(false);
@@ -337,12 +362,12 @@ export default function MatchHistoryScreen() {
    * Loads match data from SQLite or Supabase based on source
    */
   const handleMatchPress = async (match: MatchWithDetails) => {
-    logInfo('MatchHistoryScreen', '👆 User pressed on match', {
+    logInfo("MatchHistoryScreen", "👆 User pressed on match", {
       matchId: match.id,
       isFromServer: match.isFromServer,
       serverMatchId: match.serverMatchId,
       teamA: match.team_a_name,
-      teamB: match.team_b_name
+      teamB: match.team_b_name,
     });
 
     try {
@@ -352,8 +377,8 @@ export default function MatchHistoryScreen() {
 
       if (match.isFromServer && match.serverMatchId) {
         // Load match data from Supabase
-        logInfo('MatchHistoryScreen', '📡 Loading match data from Supabase', {
-          serverMatchId: match.serverMatchId
+        logInfo("MatchHistoryScreen", "📡 Loading match data from Supabase", {
+          serverMatchId: match.serverMatchId,
         });
 
         // First, load match details to get team_a and team_b UUIDs
@@ -364,18 +389,22 @@ export default function MatchHistoryScreen() {
           .single();
 
         if (matchError) {
-          logError('MatchHistoryScreen', '❌ Error loading match from Supabase', {
-            serverMatchId: match.serverMatchId,
-            error: matchError.message
-          });
+          logError(
+            "MatchHistoryScreen",
+            "❌ Error loading match from Supabase",
+            {
+              serverMatchId: match.serverMatchId,
+              error: matchError.message,
+            }
+          );
         } else if (matchData) {
           // Update match with team_a and team_b from server
           match.team_a = matchData.team_a;
           match.team_b = matchData.team_b;
-          logInfo('MatchHistoryScreen', '✅ Match team IDs loaded', {
+          logInfo("MatchHistoryScreen", "✅ Match team IDs loaded", {
             serverMatchId: match.serverMatchId,
             teamA: matchData.team_a,
-            teamB: matchData.team_b
+            teamB: matchData.team_b,
           });
         }
 
@@ -387,10 +416,14 @@ export default function MatchHistoryScreen() {
         matchPlayers = data;
 
         if (error) {
-          logError('MatchHistoryScreen', '❌ Error loading match players from Supabase', {
-            serverMatchId: match.serverMatchId,
-            error: error.message
-          });
+          logError(
+            "MatchHistoryScreen",
+            "❌ Error loading match players from Supabase",
+            {
+              serverMatchId: match.serverMatchId,
+              error: error.message,
+            }
+          );
           Alert.alert(
             "Erreur",
             "Impossible de charger les données du match depuis le serveur."
@@ -399,10 +432,14 @@ export default function MatchHistoryScreen() {
         }
 
         if (matchPlayers) {
-          logInfo('MatchHistoryScreen', '✅ Match players loaded from Supabase', {
-            serverMatchId: match.serverMatchId,
-            playersCount: matchPlayers.length
-          });
+          logInfo(
+            "MatchHistoryScreen",
+            "✅ Match players loaded from Supabase",
+            {
+              serverMatchId: match.serverMatchId,
+              playersCount: matchPlayers.length,
+            }
+          );
 
           // Convert server match players to expected format
           players = matchPlayers.map((mp) => ({
@@ -438,15 +475,19 @@ export default function MatchHistoryScreen() {
             }
           });
 
-          logInfo('MatchHistoryScreen', '✅ Actions extracted from server players', {
-            serverMatchId: match.serverMatchId,
-            actionsCount: actionDataList.length
-          });
+          logInfo(
+            "MatchHistoryScreen",
+            "✅ Actions extracted from server players",
+            {
+              serverMatchId: match.serverMatchId,
+              actionsCount: actionDataList.length,
+            }
+          );
         }
       } else {
         // Load match data from local SQLite database
-        logInfo('MatchHistoryScreen', '💾 Loading match data from SQLite', {
-          matchId: match.id
+        logInfo("MatchHistoryScreen", "💾 Loading match data from SQLite", {
+          matchId: match.id,
         });
 
         const actionRepository = new ActionRepository();
@@ -484,21 +525,25 @@ export default function MatchHistoryScreen() {
           photoUrl: mp.photo_url,
         }));
 
-        logInfo('MatchHistoryScreen', '✅ Match data loaded from SQLite', {
+        logInfo("MatchHistoryScreen", "✅ Match data loaded from SQLite", {
           matchId: match.id,
           actionsCount: actionDataList.length,
-          playersCount: players.length
+          playersCount: players.length,
         });
       }
 
       // Determine club team based on team_mode configuration and UUID detection
-      const clubTeamLetter = determineClubTeam(match.team_mode, match.team_a, match.team_b);
+      const clubTeamLetter = determineClubTeam(
+        match.team_mode,
+        match.team_a,
+        match.team_b
+      );
 
-      logInfo('MatchHistoryScreen', '✅ Navigating to match summary', {
+      logInfo("MatchHistoryScreen", "✅ Navigating to match summary", {
         matchId: match.id,
         clubTeamLetter,
         actionsCount: actionDataList.length,
-        playersCount: players.length
+        playersCount: players.length,
       });
 
       // Navigate to MatchSummary screen with match data
@@ -520,10 +565,10 @@ export default function MatchHistoryScreen() {
         teamBId: isUUID(match.team_b) ? match.team_b : null,
       });
     } catch (error) {
-      logError('MatchHistoryScreen', '❌ Error loading match details', {
+      logError("MatchHistoryScreen", "❌ Error loading match details", {
         matchId: match.id,
         isFromServer: match.isFromServer,
-        error: error instanceof Error ? error.message : error
+        error: error instanceof Error ? error.message : error,
       });
       Alert.alert("Erreur", "Impossible de charger les détails du match.");
     }
@@ -559,12 +604,12 @@ export default function MatchHistoryScreen() {
    * Deletes from Supabase or SQLite based on match source
    */
   const handleDeleteMatch = async (match: MatchWithDetails) => {
-    logInfo('MatchHistoryScreen', '🗑️ User requested to delete match', {
+    logInfo("MatchHistoryScreen", "🗑️ User requested to delete match", {
       matchId: match.id,
       isFromServer: match.isFromServer,
       serverMatchId: match.serverMatchId,
       teamA: match.team_a_name,
-      teamB: match.team_b_name
+      teamB: match.team_b_name,
     });
 
     Alert.alert(
@@ -575,8 +620,11 @@ export default function MatchHistoryScreen() {
           text: "Annuler",
           style: "cancel",
           onPress: () => {
-            logInfo('MatchHistoryScreen', 'ℹ️ Match deletion cancelled by user');
-          }
+            logInfo(
+              "MatchHistoryScreen",
+              "ℹ️ Match deletion cancelled by user"
+            );
+          },
         },
         {
           text: "Supprimer",
@@ -585,9 +633,13 @@ export default function MatchHistoryScreen() {
             try {
               // If match is from server, delete from Supabase
               if (match.isFromServer && match.serverMatchId) {
-                logInfo('MatchHistoryScreen', '📡 Deleting match from Supabase', {
-                  serverMatchId: match.serverMatchId
-                });
+                logInfo(
+                  "MatchHistoryScreen",
+                  "📡 Deleting match from Supabase",
+                  {
+                    serverMatchId: match.serverMatchId,
+                  }
+                );
 
                 const { error: deleteMatchError } = await supabase
                   .from("matches")
@@ -595,10 +647,14 @@ export default function MatchHistoryScreen() {
                   .eq("id", match.serverMatchId);
 
                 if (deleteMatchError) {
-                  logError('MatchHistoryScreen', '❌ Error deleting match from Supabase', {
-                    serverMatchId: match.serverMatchId,
-                    error: deleteMatchError.message
-                  });
+                  logError(
+                    "MatchHistoryScreen",
+                    "❌ Error deleting match from Supabase",
+                    {
+                      serverMatchId: match.serverMatchId,
+                      error: deleteMatchError.message,
+                    }
+                  );
                   Alert.alert(
                     "Erreur",
                     "Impossible de supprimer le match du serveur."
@@ -606,13 +662,17 @@ export default function MatchHistoryScreen() {
                   return;
                 }
 
-                logInfo('MatchHistoryScreen', '✅ Match deleted from Supabase successfully', {
-                  serverMatchId: match.serverMatchId
-                });
+                logInfo(
+                  "MatchHistoryScreen",
+                  "✅ Match deleted from Supabase successfully",
+                  {
+                    serverMatchId: match.serverMatchId,
+                  }
+                );
               } else {
                 // Delete from local SQLite database
-                logInfo('MatchHistoryScreen', '💾 Deleting match from SQLite', {
-                  matchId: match.id
+                logInfo("MatchHistoryScreen", "💾 Deleting match from SQLite", {
+                  matchId: match.id,
                 });
 
                 const matchRepository = new MatchRepository();
@@ -623,18 +683,22 @@ export default function MatchHistoryScreen() {
                 await matchPlayerRepository.deletePlayersForMatch(match.id);
                 await matchRepository.delete(match.id);
 
-                logInfo('MatchHistoryScreen', '✅ Match deleted from SQLite successfully', {
-                  matchId: match.id
-                });
+                logInfo(
+                  "MatchHistoryScreen",
+                  "✅ Match deleted from SQLite successfully",
+                  {
+                    matchId: match.id,
+                  }
+                );
               }
 
               // Reload matches list
               await loadCompletedMatches();
             } catch (error) {
-              logError('MatchHistoryScreen', '❌ Error deleting match', {
+              logError("MatchHistoryScreen", "❌ Error deleting match", {
                 matchId: match.id,
                 isFromServer: match.isFromServer,
-                error: error instanceof Error ? error.message : error
+                error: error instanceof Error ? error.message : error,
               });
               Alert.alert("Erreur", "Impossible de supprimer le match.");
             }
@@ -651,7 +715,8 @@ export default function MatchHistoryScreen() {
     if (!eligibility.canSync) {
       // Determine the type of error
       const isNotConnected = !user;
-      const isFreemium = !!user && (eligibility.reason?.includes("abonnement") || false);
+      const isFreemium =
+        !!user && (eligibility.reason?.includes("abonnement") || false);
 
       setSyncErrorReason(eligibility.reason || "Une erreur est survenue");
       setSyncErrorIsNotConnected(isNotConnected);
@@ -701,13 +766,17 @@ export default function MatchHistoryScreen() {
     const isDraw = !winner;
 
     // Determine which team is the club team
-    const clubTeam = determineClubTeam(item.team_mode, item.team_a, item.team_b);
+    const clubTeam = determineClubTeam(
+      item.team_mode,
+      item.team_a,
+      item.team_b
+    );
 
     const isClubMatch = clubTeam !== null;
     const clubLost = isClubMatch && winner !== null && winner !== clubTeam;
 
     // Log match render details for debugging win/loss detection and club team identification
-    logInfo('MatchHistoryScreen', '🏀 Rendering match item', {
+    logInfo("MatchHistoryScreen", "🏀 Rendering match item", {
       matchId: item.id,
       teamA: item.team_a_name,
       teamB: item.team_b_name,
@@ -720,26 +789,38 @@ export default function MatchHistoryScreen() {
       clubTeam,
       isClubMatch,
       clubLost,
-      isFromServer: item.isFromServer
+      isFromServer: item.isFromServer,
     });
 
     return (
       /* Match card - tap to view details */
       <TouchableOpacity
-        style={[styles.matchCard, {
-          backgroundColor: colors.surface,
-          borderColor: colors.border
-        }]}
+        style={[
+          styles.matchCard,
+          {
+            backgroundColor: colors.surface,
+            borderColor: colors.border,
+          },
+        ]}
         onPress={() => handleMatchPress(item)}
       >
         {/* Match header - date and duration */}
         <View style={styles.matchHeader}>
-          <Text style={[styles.matchDate, { color: colors.text.secondary }]}>{formatDate(item.created_at)}</Text>
-          <Text style={[styles.matchDuration, { color: colors.text.tertiary }]}>{formatDuration(item)}</Text>
+          <Text style={[styles.matchDate, { color: colors.text.secondary }]}>
+            {formatDate(item.created_at)}
+          </Text>
+          <Text style={[styles.matchDuration, { color: colors.text.tertiary }]}>
+            {formatDuration(item)}
+          </Text>
         </View>
 
         {/* Match score section - teams and scores */}
-        <View style={[styles.matchScore, { backgroundColor: colors.surfaceVariant }]}>
+        <View
+          style={[
+            styles.matchScore,
+            { backgroundColor: colors.surfaceVariant },
+          ]}
+        >
           {/* Team A */}
           <View style={styles.teamContainer}>
             <Text
@@ -764,7 +845,11 @@ export default function MatchHistoryScreen() {
             </Text>
           </View>
 
-          <Text style={[styles.scoreSeparator, { color: colors.text.disabled }]}>-</Text>
+          <Text
+            style={[styles.scoreSeparator, { color: colors.text.disabled }]}
+          >
+            -
+          </Text>
 
           {/* Team B */}
           <View style={styles.teamContainer}>
@@ -802,9 +887,7 @@ export default function MatchHistoryScreen() {
             <Text
               style={[
                 styles.winnerBadgeText,
-                clubLost
-                  ? styles.loserText
-                  : styles.winnerText, // Vert si le club gagne OU si match neutre
+                clubLost ? styles.loserText : styles.winnerText, // Vert si le club gagne OU si match neutre
               ]}
               numberOfLines={1}
               ellipsizeMode="tail"
@@ -889,44 +972,80 @@ export default function MatchHistoryScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-        <View style={[CommonStyles.header, {
-          backgroundColor: colors.surface,
-          borderBottomColor: colors.border
-        }]}>
+      <SafeAreaView
+        style={[styles.container, { backgroundColor: colors.background }]}
+      >
+        <View
+          style={[
+            CommonStyles.header,
+            {
+              backgroundColor: colors.surface,
+              borderBottomColor: colors.border,
+            },
+          ]}
+        >
           <TouchableOpacity
             style={styles.backButton}
             onPress={() => navigation.goBack()}
           >
-            <Ionicons name="arrow-back" size={24} color={colors.text.secondary} />
-            <Text style={[styles.backButtonText, { color: colors.text.secondary }]}>Retour</Text>
+            <Ionicons
+              name="arrow-back"
+              size={24}
+              color={colors.text.secondary}
+            />
+            <Text
+              style={[styles.backButtonText, { color: colors.text.secondary }]}
+            >
+              Retour
+            </Text>
           </TouchableOpacity>
-          <Text style={[CommonStyles.headerTitle, { color: colors.text.primary }]}>Historique des matchs</Text>
+          <Text
+            style={[CommonStyles.headerTitle, { color: colors.text.primary }]}
+          >
+            Historique des matchs
+          </Text>
           <View style={styles.backButton} />
         </View>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={[styles.loadingText, { color: colors.text.secondary }]}>Chargement...</Text>
+          <Text style={[styles.loadingText, { color: colors.text.secondary }]}>
+            Chargement...
+          </Text>
         </View>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: colors.background }]}
+    >
       {/* Header with back button and title */}
-      <View style={[CommonStyles.header, {
-        backgroundColor: colors.surface,
-        borderBottomColor: colors.border
-      }]}>
+      <View
+        style={[
+          CommonStyles.header,
+          {
+            backgroundColor: colors.surface,
+            borderBottomColor: colors.border,
+          },
+        ]}
+      >
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => navigation.goBack()}
         >
           <Ionicons name="arrow-back" size={24} color={colors.text.secondary} />
-          <Text style={[styles.backButtonText, { color: colors.text.secondary }]}>Retour</Text>
+          <Text
+            style={[styles.backButtonText, { color: colors.text.secondary }]}
+          >
+            Retour
+          </Text>
         </TouchableOpacity>
-        <Text style={[CommonStyles.headerTitle, { color: colors.text.primary }]}>Historique des matchs</Text>
+        <Text
+          style={[CommonStyles.headerTitle, { color: colors.text.primary }]}
+        >
+          Historique des matchs
+        </Text>
         <View style={styles.backButton} />
       </View>
 
@@ -962,7 +1081,10 @@ export default function MatchHistoryScreen() {
         onClose={() => setSyncErrorModalVisible(false)}
         onUpgrade={() => {
           // TODO: Navigate to subscription screen
-          logInfo('MatchHistoryScreen', 'ℹ️ User requested subscription upgrade from sync error modal');
+          logInfo(
+            "MatchHistoryScreen",
+            "ℹ️ User requested subscription upgrade from sync error modal"
+          );
         }}
       />
     </SafeAreaView>

@@ -11,11 +11,14 @@
 
 import React from "react";
 import { Modal, View, Text, TouchableOpacity } from "react-native";
-import { MatchFormat } from "../src/models/types";
-import { MATCH_FORMATS, MATCH_FORMAT_LABELS } from "../constants/matchConstants";
-import { useTheme } from "../src/contexts/ThemeContext";
-import { STATUS_COLORS, COMMON_COLORS } from "../src/theme";
-import { logInfo } from "../utils/logger";
+import { MatchFormat } from "../../src/models/types";
+import {
+  MATCH_FORMATS,
+  MATCH_FORMAT_LABELS,
+} from "../../constants/matchConstants";
+import { useTheme } from "../../src/contexts/ThemeContext";
+import { STATUS_COLORS, COMMON_COLORS } from "../../src/theme";
+import { logInfo } from "../../utils/logger";
 
 interface MatchConfigModalProps {
   visible: boolean;
@@ -29,7 +32,9 @@ export default function MatchConfigModal({
   onRequestClose,
 }: MatchConfigModalProps) {
   const { colors } = useTheme();
-  const [matchFormat, setMatchFormat] = React.useState<MatchFormat>(MATCH_FORMATS.FOUR_QUARTERS);
+  const [matchFormat, setMatchFormat] = React.useState<MatchFormat>(
+    MATCH_FORMATS.FOUR_QUARTERS
+  );
   const [periodDuration, setPeriodDuration] = React.useState<number>(600);
 
   // Update period duration when format changes
@@ -52,15 +57,16 @@ export default function MatchConfigModal({
    * Proceeds to start the match with selected configuration
    */
   const handleConfirm = () => {
-    const formatLabel = matchFormat === MATCH_FORMATS.TWO_HALVES ? '2 Mi-temps' : '4 Quart-temps';
+    const formatLabel =
+      matchFormat === MATCH_FORMATS.TWO_HALVES ? "2 Mi-temps" : "4 Quart-temps";
     const totalDuration = getTotalMatchDuration();
 
-    logInfo('MatchConfigModal', '✅ User confirmed match configuration', {
+    logInfo("MatchConfigModal", "✅ User confirmed match configuration", {
       matchFormat,
       formatLabel,
       periodDuration,
       periodDurationMinutes: Math.floor(periodDuration / 60),
-      totalMatchDuration: totalDuration
+      totalMatchDuration: totalDuration,
     });
 
     onConfirm(matchFormat, periodDuration);
@@ -71,7 +77,10 @@ export default function MatchConfigModal({
    * Returns to team initialization screen
    */
   const handleBack = () => {
-    logInfo('MatchConfigModal', '◀️ User clicked back button, returning to team initialization');
+    logInfo(
+      "MatchConfigModal",
+      "◀️ User clicked back button, returning to team initialization"
+    );
     onRequestClose();
   };
 
@@ -81,7 +90,10 @@ export default function MatchConfigModal({
       transparent
       animationType="fade"
       onRequestClose={() => {
-        logInfo('MatchConfigModal', '🔙 Hardware back button pressed, returning to team initialization');
+        logInfo(
+          "MatchConfigModal",
+          "🔙 Hardware back button pressed, returning to team initialization"
+        );
         onRequestClose();
       }}
     >
@@ -116,14 +128,34 @@ export default function MatchConfigModal({
 
           {/* Match format configuration */}
           <View style={{ width: 250 }}>
-            <Text style={{ fontSize: 16, fontWeight: "bold", marginBottom: 12, textAlign: "center", color: colors.text.primary }}>
+            <Text
+              style={{
+                fontSize: 16,
+                fontWeight: "bold",
+                marginBottom: 12,
+                textAlign: "center",
+                color: colors.text.primary,
+              }}
+            >
               Format du match
             </Text>
-            
+
             <View style={{ flexDirection: "row", marginBottom: 16 }}>
               {[
-                { key: MATCH_FORMATS.FOUR_QUARTERS, label: `4 ${MATCH_FORMAT_LABELS[MATCH_FORMATS.FOUR_QUARTERS].plural}`, icon: "🏀" },
-                { key: MATCH_FORMATS.TWO_HALVES, label: `2 ${MATCH_FORMAT_LABELS[MATCH_FORMATS.TWO_HALVES].plural}`, icon: "⏱️" },
+                {
+                  key: MATCH_FORMATS.FOUR_QUARTERS,
+                  label: `4 ${
+                    MATCH_FORMAT_LABELS[MATCH_FORMATS.FOUR_QUARTERS].plural
+                  }`,
+                  icon: "🏀",
+                },
+                {
+                  key: MATCH_FORMATS.TWO_HALVES,
+                  label: `2 ${
+                    MATCH_FORMAT_LABELS[MATCH_FORMATS.TWO_HALVES].plural
+                  }`,
+                  icon: "⏱️",
+                },
               ].map((format) => (
                 <TouchableOpacity
                   key={format.key}
@@ -136,26 +168,42 @@ export default function MatchConfigModal({
                     paddingVertical: 8,
                     paddingHorizontal: 12,
                     borderRadius: 8,
-                    backgroundColor: matchFormat === format.key ? STATUS_COLORS.info + "20" : colors.surfaceVariant,
+                    backgroundColor:
+                      matchFormat === format.key
+                        ? STATUS_COLORS.info + "20"
+                        : colors.surfaceVariant,
                     borderWidth: 1,
-                    borderColor: matchFormat === format.key ? STATUS_COLORS.info : colors.border,
+                    borderColor:
+                      matchFormat === format.key
+                        ? STATUS_COLORS.info
+                        : colors.border,
                   }}
                   onPress={() => {
                     const newFormat = format.key as MatchFormat;
-                    logInfo('MatchConfigModal', '🏀 User changed match format', {
-                      previousFormat: matchFormat,
-                      newFormat,
-                      formatLabel: format.label
-                    });
+                    logInfo(
+                      "MatchConfigModal",
+                      "🏀 User changed match format",
+                      {
+                        previousFormat: matchFormat,
+                        newFormat,
+                        formatLabel: format.label,
+                      }
+                    );
                     setMatchFormat(newFormat);
                   }}
                 >
-                  <Text style={{ fontSize: 16, marginRight: 4 }}>{format.icon}</Text>
+                  <Text style={{ fontSize: 16, marginRight: 4 }}>
+                    {format.icon}
+                  </Text>
                   <Text
                     style={{
                       fontSize: 12,
-                      color: matchFormat === format.key ? STATUS_COLORS.info : colors.text.primary,
-                      fontWeight: matchFormat === format.key ? "bold" : "normal",
+                      color:
+                        matchFormat === format.key
+                          ? STATUS_COLORS.info
+                          : colors.text.primary,
+                      fontWeight:
+                        matchFormat === format.key ? "bold" : "normal",
                       textAlign: "center",
                     }}
                   >
@@ -165,12 +213,26 @@ export default function MatchConfigModal({
               ))}
             </View>
 
-            <Text style={{ fontSize: 14, fontWeight: "600", marginBottom: 8, textAlign: "center", color: colors.text.primary }}>
+            <Text
+              style={{
+                fontSize: 14,
+                fontWeight: "600",
+                marginBottom: 8,
+                textAlign: "center",
+                color: colors.text.primary,
+              }}
+            >
               Durée par période
             </Text>
 
             <View style={{ alignItems: "center", marginBottom: 16 }}>
-              <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 8 }}>
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  marginBottom: 8,
+                }}
+              >
                 <TouchableOpacity
                   style={{
                     backgroundColor: colors.surfaceVariant,
@@ -183,18 +245,38 @@ export default function MatchConfigModal({
                   }}
                   onPress={() => {
                     const newDuration = Math.max(60, periodDuration - 60);
-                    logInfo('MatchConfigModal', '⏱️ User decreased period duration', {
-                      previousDuration: periodDuration,
-                      newDuration,
-                      change: -60
-                    });
+                    logInfo(
+                      "MatchConfigModal",
+                      "⏱️ User decreased period duration",
+                      {
+                        previousDuration: periodDuration,
+                        newDuration,
+                        change: -60,
+                      }
+                    );
                     setPeriodDuration(newDuration);
                   }}
                 >
-                  <Text style={{ fontSize: 18, fontWeight: "bold", color: colors.text.secondary }}>-</Text>
+                  <Text
+                    style={{
+                      fontSize: 18,
+                      fontWeight: "bold",
+                      color: colors.text.secondary,
+                    }}
+                  >
+                    -
+                  </Text>
                 </TouchableOpacity>
 
-                <Text style={{ fontSize: 18, fontWeight: "bold", minWidth: 60, textAlign: "center", color: colors.text.primary }}>
+                <Text
+                  style={{
+                    fontSize: 18,
+                    fontWeight: "bold",
+                    minWidth: 60,
+                    textAlign: "center",
+                    color: colors.text.primary,
+                  }}
+                >
                   {formatDurationDisplay(periodDuration)}
                 </Text>
 
@@ -210,19 +292,37 @@ export default function MatchConfigModal({
                   }}
                   onPress={() => {
                     const newDuration = Math.min(3600, periodDuration + 60);
-                    logInfo('MatchConfigModal', '⏱️ User increased period duration', {
-                      previousDuration: periodDuration,
-                      newDuration,
-                      change: +60
-                    });
+                    logInfo(
+                      "MatchConfigModal",
+                      "⏱️ User increased period duration",
+                      {
+                        previousDuration: periodDuration,
+                        newDuration,
+                        change: +60,
+                      }
+                    );
                     setPeriodDuration(newDuration);
                   }}
                 >
-                  <Text style={{ fontSize: 18, fontWeight: "bold", color: colors.text.secondary }}>+</Text>
+                  <Text
+                    style={{
+                      fontSize: 18,
+                      fontWeight: "bold",
+                      color: colors.text.secondary,
+                    }}
+                  >
+                    +
+                  </Text>
                 </TouchableOpacity>
               </View>
 
-              <Text style={{ fontSize: 12, color: colors.text.tertiary, textAlign: "center" }}>
+              <Text
+                style={{
+                  fontSize: 12,
+                  color: colors.text.tertiary,
+                  textAlign: "center",
+                }}
+              >
                 Durée totale : {getTotalMatchDuration()}
               </Text>
             </View>
@@ -240,7 +340,13 @@ export default function MatchConfigModal({
               }}
               onPress={handleBack}
             >
-              <Text style={{ color: colors.text.secondary, fontWeight: "bold", fontSize: 16 }}>
+              <Text
+                style={{
+                  color: colors.text.secondary,
+                  fontWeight: "bold",
+                  fontSize: 16,
+                }}
+              >
                 Retour
               </Text>
             </TouchableOpacity>
@@ -254,7 +360,13 @@ export default function MatchConfigModal({
               }}
               onPress={handleConfirm}
             >
-              <Text style={{ color: COMMON_COLORS.white, fontWeight: "bold", fontSize: 16 }}>
+              <Text
+                style={{
+                  color: COMMON_COLORS.white,
+                  fontWeight: "bold",
+                  fontSize: 16,
+                }}
+              >
                 Commencer
               </Text>
             </TouchableOpacity>

@@ -11,14 +11,14 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
-import { supabase } from "../src/config/supabase";
-import { ServiceFactory } from "../services/ServiceFactory";
-import { useAuth } from "../src/contexts/AuthContext";
-import type { TeamGender, Team } from "../models/Team";
-import TeamPlayersManager from "../components/TeamPlayersManager";
-import { PhotoUploadService } from "../services/PhotoUploadService";
-import { useTheme } from "../src/contexts/ThemeContext";
-import { CommonStyles } from "../src/theme";
+import { supabase } from "../../src/config/supabase";
+import { ServiceFactory } from "../../services/ServiceFactory";
+import { useAuth } from "../../src/contexts/AuthContext";
+import type { TeamGender, Team } from "../../models/Team";
+import TeamPlayersManager from "../../components/TeamPlayersManager";
+import { PhotoUploadService } from "../../services/PhotoUploadService";
+import { useTheme } from "../../src/contexts/ThemeContext";
+import { CommonStyles } from "../../src/theme";
 
 type RootStackParamList = {
   TeamForm: { clubId?: string; teamId?: string };
