@@ -246,8 +246,8 @@ export class ActionRepository implements IActionRepository {
             }
           }
 
-          // Sort by action_order
-          allActions.sort((a, b) => a.action_order - b.action_order);
+          // Sort by action_order DESC (most recent first)
+          allActions.sort((a, b) => b.action_order - a.action_order);
 
           logInfo('ActionRepository', '✅ Compacted actions loaded successfully', {
             matchId,
@@ -266,7 +266,7 @@ export class ActionRepository implements IActionRepository {
       const actions = await this.db.query(
         `SELECT * FROM match_actions
          WHERE match_id = ?
-         ORDER BY action_order ASC, timestamp ASC`,
+         ORDER BY action_order DESC, timestamp DESC`,
         [matchId]
       );
 

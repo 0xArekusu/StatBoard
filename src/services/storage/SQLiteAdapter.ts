@@ -13,8 +13,8 @@ export class SQLiteAdapter implements IStorageAdapter {
     this.db = SQLite.openDatabaseSync(databaseName);
 
     // 🔄 TEMPORARY RESET - Remove after testing!
-    this.resetDatabaseTables();
-    this.initializeTables();
+    //this.resetDatabaseTables();
+    //this.initializeTables();
   }
 
   // 🔄 TEMPORARY METHOD - Remove after testing! wip
@@ -42,6 +42,7 @@ export class SQLiteAdapter implements IStorageAdapter {
         team_id TEXT,
 
         -- Match Info
+        my_team_name TEXT,
         opponent_name TEXT NOT NULL,
         is_home INTEGER NOT NULL DEFAULT 1,
 
@@ -142,6 +143,33 @@ export class SQLiteAdapter implements IStorageAdapter {
     try {
       this.db.execSync(`
         ALTER TABLE match_players ADD COLUMN photo_url TEXT;
+      `);
+    } catch (error) {
+      // Column might already exist, ignore error
+    }
+
+    // Add my_team_name column if it doesn't exist (migration for existing databases)
+    try {
+      this.db.execSync(`
+        ALTER TABLE matches ADD COLUMN my_team_name TEXT;
+      `);
+    } catch (error) {
+      // Column might already exist, ignore error
+    }
+
+    // Add on_court column if it doesn't exist (track who is currently on court)
+    try {
+      this.db.execSync(`
+        ALTER TABLE match_players ADD COLUMN on_court INTEGER DEFAULT 0;
+      `);
+    } catch (error) {
+      // Column might already exist, ignore error
+    }
+
+    // Add playing_time_seconds column if it doesn't exist (track playing time)
+    try {
+      this.db.execSync(`
+        ALTER TABLE match_players ADD COLUMN playing_time_seconds INTEGER DEFAULT 0;
       `);
     } catch (error) {
       // Column might already exist, ignore error

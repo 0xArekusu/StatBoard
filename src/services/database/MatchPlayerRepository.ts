@@ -29,6 +29,8 @@ export interface MatchPlayer {
   player_name: string;
   team: "A" | "B";
   is_starter: boolean;
+  on_court?: number;
+  playing_time_seconds?: number;
   photo_url?: string | null;
   created_at: string;
 }
@@ -248,6 +250,123 @@ export class MatchPlayerRepository implements IMatchPlayerRepository {
       logError('MatchPlayerRepository', '❌ Error updating player photo URL', {
         playerId,
         photoUrl,
+        error: error instanceof Error ? error.message : error
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Update on_court status for players
+   * Used during substitutions to track who is currently on the court
+   */
+  async updateOnCourtStatus(
+    matchId: number,
+    playerIds: string[],
+    onCourt: boolean
+  ): Promise<void> {
+    try {
+      const onCourtValue = onCourt ? 1 : 0;
+      const placeholders = playerIds.map(() => '?').join(',');
+
+      await this.db.execute(
+        `UPDATE match_players
+         SET on_court = ?
+         WHERE match_id = ? AND player_id IN (${placeholders})`,
+        [onCourtValue, matchId, ...playerIds]
+      );
+
+      logInfo('MatchPlayerRepository', '✅ Updated on_court status', {
+        matchId,
+        playerCount: playerIds.length,
+        onCourt
+      });
+    } catch (error) {
+      logError('MatchPlayerRepository', '❌ Error updating on_court status', {
+        matchId,
+        playerIds,
+        onCourt,
+        error: error instanceof Error ? error.message : error
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Add playing time to players who are currently on court
+   * Called periodically (every 5 seconds) when the game clock is running
+   */
+  async addPlayingTime(matchId: number, secondsToAdd: number): Promise<void> {
+    try {
+      await this.db.execute(
+        `UPDATE match_players
+         SET playing_time_seconds = playing_time_seconds + ?
+         WHERE match_id = ? AND on_court = 1`,
+        [secondsToAdd, matchId]
+      );
+
+      logInfo('MatchPlayerRepository', '⏱️ Added playing time', {
+        matchId,
+        secondsAdded: secondsToAdd
+      });
+    } catch (error) {
+      logError('MatchPlayerRepository', '❌ Error adding playing time', {
+        matchId,
+        secondsToAdd,
+        error: error instanceof Error ? error.message : error
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Initialize on_court status for starters at match start
+   * Sets on_court = 1 for all starters
+   */
+  async initializeOnCourtForStarters(matchId: number): Promise<void> {
+    try {
+      await this.db.execute(
+        `UPDATE match_players
+         SET on_court = 1
+         WHERE match_id = ? AND is_starter = 1`,
+        [matchId]
+      );
+
+      logInfo('MatchPlayerRepository', '✅ Initialized on_court for starters', {
+        matchId
+      });
+    } catch (error) {
+      logError('MatchPlayerRepository', '❌ Error initializing on_court', {
+        matchId,
+        error: error instanceof Error ? error.message : error
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Get players currently on court for a match
+   */
+  async getPlayersOnCourt(matchId: number, team?: 'A' | 'B'): Promise<MatchPlayer[]> {
+    try {
+      const query = team
+        ? 'SELECT * FROM match_players WHERE match_id = ? AND on_court = 1 AND team = ? ORDER BY player_number'
+        : 'SELECT * FROM match_players WHERE match_id = ? AND on_court = 1 ORDER BY team, player_number';
+
+      const params = team ? [matchId, team] : [matchId];
+      const players = await this.db.query(query, params);
+
+      logInfo('MatchPlayerRepository', '✅ Retrieved players on court', {
+        matchId,
+        team,
+        playerCount: players.length
+      });
+
+      return players as MatchPlayer[];
+    } catch (error) {
+      logError('MatchPlayerRepository', '❌ Error getting players on court', {
+        matchId,
+        team,
         error: error instanceof Error ? error.message : error
       });
       throw error;

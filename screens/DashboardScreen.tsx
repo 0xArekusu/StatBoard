@@ -8,6 +8,8 @@ import {
   ActivityIndicator,
   Image,
   BackHandler,
+  Modal,
+  Alert,
 } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { Picker } from "@react-native-picker/picker";
@@ -40,6 +42,8 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
   const [teams, setTeams] = useState<Team[]>([]);
   const [activeTeamId, setActiveTeamId] = useState<string | null>(null);
   const [matches, setMatches] = useState<Match[]>([]);
+  const [liveMatchToResume, setLiveMatchToResume] = useState<Match | null>(null);
+  const [isNewMatchFlow, setIsNewMatchFlow] = useState(false); // true if opened from "Nouveau match" button
 
   const isGuest = !user;
   const userName =
@@ -83,12 +87,36 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
     }, [user?.id])
   );
 
+  // Check for active match when team changes
+  useEffect(() => {
+    const checkForActiveMatch = async () => {
+      if (activeTeamId) {
+        const matchRepo = new MatchRepository();
+        const activeMatch = await matchRepo.findActiveMatch();
+        if (activeMatch && activeMatch.team_id === activeTeamId) {
+          setLiveMatchToResume(activeMatch);
+        }
+      }
+    };
+    checkForActiveMatch();
+  }, [activeTeamId]);
+
   const loadDashboardData = async () => {
     try {
       setLoading(true);
       console.log("📊 DashboardScreen: Loading dashboard data...");
 
       const matchRepo = new MatchRepository();
+
+      // Check for active match to resume
+      const activeMatch = await matchRepo.findActiveMatch();
+      if (activeMatch) {
+        console.log("🎮 DashboardScreen: Active match found", {
+          matchId: activeMatch.id,
+          opponent: activeMatch.opponent_name,
+        });
+        setLiveMatchToResume(activeMatch);
+      }
 
       // 1. Load LOCAL matches from SQLite (non-synced ones)
       console.log("💾 DashboardScreen: Fetching local matches from SQLite");
@@ -242,6 +270,110 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
     navigation.navigate("Auth");
   };
 
+  const handleResumeMatch = () => {
+    if (liveMatchToResume) {
+      // Navigate to LiveMatch with the resume data
+      navigation.navigate("LiveMatch", { matchId: liveMatchToResume.id });
+      setLiveMatchToResume(null);
+      setIsNewMatchFlow(false);
+    }
+  };
+
+  const handleAbandonMatch = async () => {
+    if (!liveMatchToResume) return;
+
+    Alert.alert(
+      "Abandonner le match ?",
+      "Cette action est irréversible. Toutes les données du match seront supprimées définitivement.",
+      [
+        {
+          text: "Annuler",
+          style: "cancel",
+        },
+        {
+          text: "Abandonner",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              const matchRepo = new MatchRepository();
+
+              // Delete all match data (actions and players are cascade deleted via FOREIGN KEY)
+              await matchRepo.delete(liveMatchToResume.id);
+
+              // Remove from state
+              setLiveMatchToResume(null);
+              setIsNewMatchFlow(false);
+
+              // Refresh dashboard data
+              loadDashboardData();
+            } catch (error) {
+              console.error("Failed to abandon match:", error);
+              Alert.alert(
+                "Erreur",
+                "Impossible d'abandonner le match. Veuillez réessayer."
+              );
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleNewMatchClick = async () => {
+    // Check if there's an active match
+    const matchRepo = new MatchRepository();
+    const activeMatch = await matchRepo.findActiveMatch();
+
+    if (activeMatch) {
+      // Show popup with live match (from "Nouveau match" button)
+      setIsNewMatchFlow(true);
+      setLiveMatchToResume(activeMatch);
+    } else {
+      // No active match, proceed to new match screen
+      navigation.navigate("NewMatch", { teamId: activeTeamId });
+    }
+  };
+
+  const handleNewMatchConfirm = async () => {
+    if (!liveMatchToResume) return;
+
+    Alert.alert(
+      "Nouveau match",
+      "Un match est déjà en cours. Voulez-vous l'abandonner pour en créer un nouveau ?",
+      [
+        {
+          text: "Annuler",
+          style: "cancel",
+        },
+        {
+          text: "Abandonner et créer",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              const matchRepo = new MatchRepository();
+
+              // Delete the active match
+              await matchRepo.delete(liveMatchToResume.id);
+
+              // Close popup
+              setLiveMatchToResume(null);
+              setIsNewMatchFlow(false);
+
+              // Navigate to new match screen
+              navigation.navigate("NewMatch", { teamId: activeTeamId });
+            } catch (error) {
+              console.error("Failed to abandon match:", error);
+              Alert.alert(
+                "Erreur",
+                "Impossible d'abandonner le match. Veuillez réessayer."
+              );
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString("fr-FR", { day: "2-digit", month: "short" });
@@ -310,8 +442,161 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
   }
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: bgColor }]}>
-      <View style={styles.content}>
+    <>
+      {/* Resume Match Modal */}
+      <Modal
+        visible={!!liveMatchToResume}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setLiveMatchToResume(null)}
+      >
+        <View style={styles.modalOverlay}>
+          <View
+            style={[
+              styles.modalContent,
+              {
+                backgroundColor: isDark ? SLATE_COLORS[900] : COMMON_COLORS.white,
+              },
+            ]}
+          >
+            <View
+              style={[
+                styles.modalIcon,
+                {
+                  backgroundColor: isDark
+                    ? "rgba(239, 68, 68, 0.3)"
+                    : "rgba(239, 68, 68, 0.1)",
+                },
+              ]}
+            >
+              <MaterialCommunityIcons
+                name="basketball"
+                size={32}
+                color="#ef4444"
+              />
+            </View>
+
+            <Text style={[styles.modalTitle, { color: textPrimary }]}>
+              Match en cours détecté !
+            </Text>
+
+            <Text style={[styles.modalDescription, { color: textSecondary }]}>
+              Il semble que le match contre{" "}
+              <Text style={{ fontWeight: "bold" }}>
+                {liveMatchToResume?.opponent_name}
+              </Text>{" "}
+              ne soit pas terminé.
+            </Text>
+
+            <TouchableOpacity
+              style={[
+                styles.modalPrimaryButton,
+                { backgroundColor: BRAND_COLORS[600] },
+              ]}
+              onPress={handleResumeMatch}
+            >
+              <MaterialCommunityIcons
+                name="play-circle"
+                size={20}
+                color={COMMON_COLORS.white}
+              />
+              <Text
+                style={[
+                  styles.modalPrimaryButtonText,
+                  { color: COMMON_COLORS.white },
+                ]}
+              >
+                Reprendre le match
+              </Text>
+            </TouchableOpacity>
+
+            {/* Show "Nouveau match" button only when clicked from "Nouveau match" button */}
+            {isNewMatchFlow ? (
+              <TouchableOpacity
+                style={[
+                  styles.modalSecondaryButton,
+                  {
+                    backgroundColor: isDark
+                      ? SLATE_COLORS[800]
+                      : COMMON_COLORS.white,
+                    borderColor: isDark ? SLATE_COLORS[700] : SLATE_COLORS[200],
+                  },
+                ]}
+                onPress={handleNewMatchConfirm}
+              >
+                <MaterialCommunityIcons
+                  name="plus-circle"
+                  size={20}
+                  color={BRAND_COLORS[600]}
+                />
+                <Text
+                  style={[
+                    styles.modalSecondaryButtonText,
+                    { color: BRAND_COLORS[600] },
+                  ]}
+                >
+                  Nouveau match
+                </Text>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity
+                style={[
+                  styles.modalSecondaryButton,
+                  {
+                    backgroundColor: isDark
+                      ? SLATE_COLORS[800]
+                      : COMMON_COLORS.white,
+                    borderColor: isDark ? SLATE_COLORS[700] : SLATE_COLORS[200],
+                  },
+                ]}
+                onPress={handleAbandonMatch}
+              >
+                <MaterialCommunityIcons
+                  name="delete-forever"
+                  size={20}
+                  color="#ef4444"
+                />
+                <Text
+                  style={[
+                    styles.modalSecondaryButtonText,
+                    { color: "#ef4444" },
+                  ]}
+                >
+                  Abandonner le match
+                </Text>
+              </TouchableOpacity>
+            )}
+
+            <TouchableOpacity
+              style={[
+                styles.modalSecondaryButton,
+                {
+                  backgroundColor: isDark
+                    ? SLATE_COLORS[800]
+                    : COMMON_COLORS.white,
+                  borderColor: isDark ? SLATE_COLORS[700] : SLATE_COLORS[200],
+                },
+              ]}
+              onPress={() => {
+                setLiveMatchToResume(null);
+                setIsNewMatchFlow(false);
+              }}
+            >
+              <Text
+                style={[
+                  styles.modalSecondaryButtonText,
+                  { color: textSecondary },
+                ]}
+              >
+                Ignorer pour l'instant
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      <ScrollView style={[styles.container, { backgroundColor: bgColor }]}>
+        <View style={styles.content}>
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.headerLeft}>
@@ -593,9 +878,7 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
             {teams.length > 0 && (
               <TouchableOpacity
                 style={styles.newMatchButton}
-                onPress={() => {
-                  navigation.navigate("NewMatch", { teamId: activeTeamId });
-                }}
+                onPress={handleNewMatchClick}
               >
                 <View style={styles.newMatchButtonLeft}>
                   <Text style={styles.newMatchButtonTitle}>Nouveau Match</Text>
@@ -768,6 +1051,7 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
         )}
       </View>
     </ScrollView>
+    </>
   );
 }
 
@@ -1045,5 +1329,70 @@ const styles = StyleSheet.create({
   emptyStateText: {
     fontSize: 14,
     marginTop: 8,
+  },
+  // Modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.8)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 24,
+  },
+  modalContent: {
+    width: "100%",
+    maxWidth: 400,
+    borderRadius: 16,
+    padding: 24,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+  modalIcon: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    alignItems: "center",
+    justifyContent: "center",
+    alignSelf: "center",
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    textAlign: "center",
+    marginBottom: 8,
+  },
+  modalDescription: {
+    fontSize: 14,
+    textAlign: "center",
+    marginBottom: 32,
+    lineHeight: 20,
+  },
+  modalPrimaryButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 12,
+    borderRadius: 12,
+    marginBottom: 12,
+    gap: 8,
+  },
+  modalPrimaryButtonText: {
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  modalSecondaryButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  modalSecondaryButtonText: {
+    fontSize: 14,
+    fontWeight: "bold",
   },
 });

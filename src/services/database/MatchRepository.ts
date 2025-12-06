@@ -54,6 +54,7 @@ export class MatchRepository implements IMatchRepository {
   async create(data: CreateMatchData): Promise<Match> {
     const sql = `
       INSERT INTO matches (
+        my_team_name,
         opponent_name,
         is_home,
         total_periods,
@@ -67,11 +68,12 @@ export class MatchRepository implements IMatchRepository {
         team_id,
         played_at
       )
-      VALUES (?, ?, ?, ?, ?, 0, 0, 0, 'in_progress', ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, 0, 0, 0, 'in_progress', ?, ?, ?)
     `;
 
     try {
       logInfo('MatchRepository', '🏀 Creating new match in SQLite', {
+        myTeam: data.my_team_name,
         opponent: data.opponent_name,
         isHome: data.is_home,
         totalPeriods: data.total_periods,
@@ -82,6 +84,7 @@ export class MatchRepository implements IMatchRepository {
       });
 
       await this.db.execute(sql, [
+        data.my_team_name || null,
         data.opponent_name,
         data.is_home ? 1 : 0,
         data.total_periods,

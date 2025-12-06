@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -13,12 +13,19 @@ import {
   BRAND_COLORS,
   COMMON_COLORS,
 } from "../src/theme/clubDefaults";
-import { MatchStatus, Match, CreateMatchData, CreateActionData, Team } from "../src/models/types";
+import {
+  MatchStatus,
+  CreateMatchData,
+  CreateActionData,
+  Team,
+} from "../src/models/types";
 import { Player } from "../models/Player";
 import { useAuth } from "../src/contexts/AuthContext";
 import { MatchManager } from "../src/services/match/MatchManager";
 import { ActionQueue } from "../src/services/match/ActionQueue";
 import { MatchRepository } from "../src/services/database/MatchRepository";
+import { ActionRepository } from "../src/services/database/ActionRepository";
+import { MatchPlayerRepository } from "../src/services/database/MatchPlayerRepository";
 import { logInfo, logError } from "../utils/logger";
 import BasketballCourtSVG from "../components/BasketballCourtSVG";
 import { MatchActionGrid } from "../components/MatchActionGrid";
@@ -31,6 +38,7 @@ import {
   EndMatchModal,
   OvertimeModal,
   PeriodConfirmModal,
+  DeleteActionModal,
 } from "../components/LiveMatchModals";
 
 interface LiveMatchScreenProps {
@@ -64,6 +72,8 @@ interface MatchEvent {
   timestamp: number;
   description: string;
   coordinates?: { x: number; y: number };
+  period_number?: number;
+  time_in_period?: number;
 }
 
 type WorkflowStep =
@@ -167,6 +177,7 @@ export default function LiveMatchScreen({
   const { colors, isDark } = useTheme();
   const { user } = useAuth();
   const matchData = route.params?.matchData;
+  const resumeMatchId = route.params?.matchId;
 
   // Database services
   const [matchManager] = useState(() => new MatchManager());
@@ -174,6 +185,7 @@ export default function LiveMatchScreen({
   const [actionQueue] = useState(() => new ActionQueue());
   const [currentMatchId, setCurrentMatchId] = useState<number | null>(null);
   const [actionCounter, setActionCounter] = useState(0);
+  const [isLoadingMatch, setIsLoadingMatch] = useState(!!resumeMatchId);
 
   // Initialize match with data from NewMatchScreen or use mock data
   const [match, setMatch] = useState<any>(() => {
@@ -239,22 +251,56 @@ export default function LiveMatchScreen({
     return `OT${q - maxPeriods}`;
   };
 
-  // Game Clock
-  const [timer, setTimer] = useState(periodDurationMin * 60);
+  // Game Clock - Initialize with match data if resuming, otherwise use defaults
+  const [timer, setTimer] = useState(() => {
+    if (resumeMatchId) return 0; // Will be set when match loads
+    return periodDurationMin * 60;
+  });
   const [isRunning, setIsRunning] = useState(false);
-  const [quarter, setQuarter] = useState(1);
+  const [quarter, setQuarter] = useState(() => {
+    if (resumeMatchId) return 1; // Will be set when match loads
+    return 1;
+  });
+
+  // Refs to always have access to current values in intervals/callbacks
+  const timerRef = useRef(timer);
+  const quarterRef = useRef(quarter);
+  const currentMatchIdRef = useRef(currentMatchId);
+
+  // Keep refs in sync with state
+  useEffect(() => {
+    timerRef.current = timer;
+  }, [timer]);
+
+  useEffect(() => {
+    quarterRef.current = quarter;
+  }, [quarter]);
+
+  useEffect(() => {
+    currentMatchIdRef.current = currentMatchId;
+  }, [currentMatchId]);
 
   // Team State
   const [activePlayers, setActivePlayers] = useState<string[]>(() => {
-    if (match?.starters && match.starters.length > 0) {
-      return match.starters;
+    // Use starters if available
+    if (matchData?.starters && matchData.starters.length > 0) {
+      return matchData.starters;
     }
-    return homeRoster.slice(0, 5).map((p: Player) => p.id);
+    // Otherwise use first 5 players from roster
+    if (matchData?.homePlayers && matchData.homePlayers.length > 0) {
+      return matchData.homePlayers.slice(0, 5).map((p: Player) => p.id);
+    }
+    // Fallback to mock players
+    return ["p1", "p2", "p3", "p4", "p5"];
   });
 
   const [activeOpponentPlayers, setActiveOpponentPlayers] = useState<string[]>(
     () => {
-      return opponentRoster.slice(0, 5).map((p: Player) => p.id);
+      if (matchData?.awayPlayers && matchData.awayPlayers.length > 0) {
+        return matchData.awayPlayers.slice(0, 5).map((p: Player) => p.id);
+      }
+      // Fallback to mock opponent players
+      return ["adv1", "adv2", "adv3", "adv4", "adv5"];
     }
   );
 
@@ -277,6 +323,8 @@ export default function LiveMatchScreen({
   const [showOvertimeModal, setShowOvertimeModal] = useState(false);
   const [showPeriodConfirm, setShowPeriodConfirm] = useState(false);
   const [overtimeDuration, setOvertimeDuration] = useState(5);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [eventToDelete, setEventToDelete] = useState<MatchEvent | null>(null);
 
   // Toolbar State
   const [showMarkers, setShowMarkers] = useState(true);
@@ -295,32 +343,346 @@ export default function LiveMatchScreen({
   useEffect(() => {
     const initializeMatch = async () => {
       try {
-        const matchCreateData: CreateMatchData = {
-          opponent_name: match.opponent || "Adversaire",
-          is_home: match.location === "HOME",
-          total_periods: match.periodCount || 4,
-          period_duration: (match.periodDuration || 10) * 60, // Convert minutes to seconds
-          overtime_duration: overtimeDuration * 60, // Convert minutes to seconds
-          club_id: user?.clubId || null,
-          team_id: match.teamId || null,
-          played_at: new Date().toISOString(),
-        };
+        // Check if we're resuming an existing match
+        if (resumeMatchId) {
+          logInfo("LiveMatchScreen", "🔄 Resuming match from database", {
+            matchId: resumeMatchId,
+          });
 
-        logInfo("LiveMatchScreen", "💾 Creating match in SQLite database", matchCreateData);
-        const createdMatch = await matchManager.startMatch(matchCreateData);
-        setCurrentMatchId(createdMatch.id);
-        logInfo("LiveMatchScreen", "✅ Match created successfully in SQLite", {
-          matchId: createdMatch.id,
-          opponent: createdMatch.opponent_name,
-          isHome: createdMatch.is_home,
-        });
+          // Load match data from database
+          const existingMatch = await matchRepository.findById(resumeMatchId);
+          if (!existingMatch) {
+            logError("LiveMatchScreen", "❌ Match not found", {
+              matchId: resumeMatchId,
+            });
+            navigation.goBack();
+            return;
+          }
+
+          // Load actions
+          const actionRepo = new ActionRepository();
+          const actions = await actionRepo.getActionsForMatch(resumeMatchId);
+
+          // Load players
+          const playerRepo = new MatchPlayerRepository();
+          const players = await playerRepo.getPlayersForMatch(resumeMatchId);
+
+          // Calculate scores from actions (using the new action type system)
+          let scoreHome = 0;
+          let scoreAway = 0;
+          actions.forEach((action) => {
+            // Use the points field which is set when action is created
+            if (action.points && action.points > 0) {
+              if (action.team === "A") {
+                scoreHome += action.points;
+              } else {
+                scoreAway += action.points;
+              }
+            }
+          });
+
+          // Separate players by team
+          const homePlayersFromDB = players.filter((p) => p.team === "A");
+          const awayPlayersFromDB = players.filter((p) => p.team === "B");
+
+          // Convert to Player format
+          const homeRosterLoaded = homePlayersFromDB.map((p) => ({
+            id: p.player_id || `temp-${p.id}`,
+            name: p.player_name,
+            jerseyNumber: p.player_number,
+            teamId: existingMatch.team_id || "",
+            photoUrl: p.photo_url || null,
+            isStarter: p.is_starter,
+            createdAt: new Date(p.created_at),
+            updatedAt: new Date(p.created_at),
+          }));
+
+          const awayRosterLoaded = awayPlayersFromDB.map((p) => ({
+            id: p.player_id || `temp-${p.id}`,
+            name: p.player_name,
+            jerseyNumber: p.player_number,
+            teamId: "",
+            photoUrl: p.photo_url || null,
+            isStarter: p.is_starter,
+            createdAt: new Date(p.created_at),
+            updatedAt: new Date(p.created_at),
+          }));
+
+          // Get active players on court (use on_court status, fallback to starters if not set)
+          const homeOnCourt = homePlayersFromDB
+            .filter((p) => p.on_court === 1 || (p.on_court === undefined && p.is_starter))
+            .map((p) => p.player_id || `temp-${p.id}`);
+          const awayOnCourt = awayPlayersFromDB
+            .filter((p) => p.on_court === 1 || (p.on_court === undefined && p.is_starter))
+            .map((p) => p.player_id || `temp-${p.id}`);
+
+          // Helper function to get human-readable action description
+          const getActionDescription = (action: any, playerName: string) => {
+            if (action.action_type === "SHOT") {
+              if (action.specification === "THREE_POINT_MADE")
+                return `${playerName} (+3)`;
+              if (action.specification === "TWO_POINT_MADE")
+                return `${playerName} (+2)`;
+              if (action.specification === "FREE_THROW_MADE")
+                return `${playerName} (+1)`;
+              if (action.specification === "THREE_POINT_MISSED")
+                return `${playerName} Raté (3pts)`;
+              if (action.specification === "TWO_POINT_MISSED")
+                return `${playerName} Raté (2pts)`;
+              if (action.specification === "FREE_THROW_MISSED")
+                return `${playerName} Raté (LF)`;
+            } else if (action.action_type === "REBOUND") {
+              if (action.specification === "DEFENSIVE")
+                return `${playerName} Rebond Déf`;
+              if (action.specification === "OFFENSIVE")
+                return `${playerName} Rebond Off`;
+            } else if (action.action_type === "FOUL") {
+              return `Faute ${playerName}`;
+            } else if (action.action_type === "ASSIST") {
+              return `${playerName} Passe décisive`;
+            } else if (action.action_type === "STEAL") {
+              return `${playerName} Interception`;
+            } else if (action.action_type === "BLOCK") {
+              return `${playerName} Contre`;
+            } else if (action.action_type === "TURNOVER") {
+              return `${playerName} Perte de balle`;
+            }
+            return `${playerName} - ${action.action_type}`;
+          };
+
+          // Convert actions to MatchEvents for display on court
+          const matchEvents: MatchEvent[] = actions.map((action) => {
+            const player = players.find(
+              (p) =>
+                p.player_number === action.player_number &&
+                p.team === action.team
+            );
+
+            // Map action type and specification to event type
+            let eventType: EventType = "POINT";
+            let eventValue = action.points || 0;
+
+            // Map based on action_type and specification
+            if (action.action_type === "SHOT") {
+              if (action.specification === "THREE_POINT_MADE") {
+                eventType = "POINT_3";
+                eventValue = 3;
+              } else if (action.specification === "TWO_POINT_MADE") {
+                eventType = "POINT_2";
+                eventValue = 2;
+              } else if (action.specification === "FREE_THROW_MADE") {
+                eventType = "POINT_1";
+                eventValue = 1;
+              } else if (action.specification === "THREE_POINT_MISSED") {
+                eventType = "MISS_3";
+                eventValue = 0;
+              } else if (action.specification === "TWO_POINT_MISSED") {
+                eventType = "MISS_2";
+                eventValue = 0;
+              } else if (action.specification === "FREE_THROW_MISSED") {
+                eventType = "MISS_1";
+                eventValue = 0;
+              }
+            } else if (action.action_type === "FOUL") {
+              eventType = "FOUL";
+            } else if (action.action_type === "REBOUND") {
+              if (action.specification === "DEFENSIVE") {
+                eventType = "REBOUND_DEF";
+              } else if (action.specification === "OFFENSIVE") {
+                eventType = "REBOUND_OFF";
+              }
+            } else if (action.action_type === "ASSIST") {
+              eventType = "ASSIST";
+            } else if (action.action_type === "STEAL") {
+              eventType = "STEAL";
+            } else if (action.action_type === "BLOCK") {
+              eventType = "BLOCK";
+            } else if (action.action_type === "TURNOVER") {
+              eventType = "TURNOVER";
+            }
+
+            const playerName =
+              action.player_number === 9999
+                ? ""
+                : player?.player_name || `#${action.player_number}`;
+            const description = getActionDescription(action, playerName);
+
+            // Parse timestamp safely
+            let timestamp = Date.now();
+            if (action.timestamp) {
+              const parsedDate = new Date(action.timestamp);
+              if (!isNaN(parsedDate.getTime())) {
+                timestamp = parsedDate.getTime();
+              }
+            }
+
+            return {
+              id: `evt-${action.id}`,
+              type: eventType,
+              value: eventValue,
+              timestamp,
+              playerId: player?.player_id || `temp-${action.player_number}`,
+              playerName: action.player_number.toString(),
+              teamId: action.team === "A" ? "HOME" : "AWAY",
+              coordinates:
+                action.semantic_x !== null && action.semantic_y !== null
+                  ? { x: action.semantic_x, y: action.semantic_y }
+                  : undefined,
+              description,
+              period_number: action.period_number,
+              time_in_period: action.time_in_period,
+            };
+          });
+
+          // Update match state with loaded data
+          setMatch({
+            ...match,
+            myTeamName: existingMatch.my_team_name || "Mon Équipe",
+            opponent: existingMatch.opponent_name,
+            location: existingMatch.is_home ? "HOME" : "AWAY",
+            scoreHome,
+            scoreAway,
+            roster: homeRosterLoaded,
+            opponentRoster: awayRosterLoaded,
+            starters: homeOnCourt,
+            periodCount: existingMatch.total_periods,
+            periodDuration: existingMatch.period_duration / 60, // Convert seconds to minutes
+            events: matchEvents,
+          });
+
+          // Restore active players on court
+          if (homeOnCourt.length > 0) {
+            setActivePlayers(homeOnCourt);
+          }
+          if (awayOnCourt.length > 0) {
+            setActiveOpponentPlayers(awayOnCourt);
+          }
+
+          // Restore timer and period state
+          setQuarter(existingMatch.current_period || 1);
+          // Timer represents time REMAINING in period, not elapsed
+          const periodDurationSeconds = existingMatch.period_duration || 600;
+          const timeElapsed = existingMatch.time_elapsed || 0;
+          const timeRemaining = Math.max(
+            0,
+            periodDurationSeconds - timeElapsed
+          );
+          setTimer(timeRemaining);
+
+          // Restore action counter to continue from last action
+          const maxActionOrder =
+            actions.length > 0
+              ? Math.max(...actions.map((a) => a.action_order), 0)
+              : 0;
+          setActionCounter(maxActionOrder + 1);
+
+          setCurrentMatchId(resumeMatchId);
+          setIsLoadingMatch(false);
+
+          logInfo("LiveMatchScreen", "✅ Match resumed successfully", {
+            matchId: resumeMatchId,
+            scoreHome,
+            scoreAway,
+            actionsLoaded: actions.length,
+            playersLoaded: players.length,
+            homeRoster: homeRosterLoaded.length,
+            awayRoster: awayRosterLoaded.length,
+            homeOnCourt: homeOnCourt.length,
+            awayOnCourt: awayOnCourt.length,
+            activePlayers: homeOnCourt,
+            activeOpponentPlayers: awayOnCourt,
+            timeRemaining,
+            currentPeriod: existingMatch.current_period,
+          });
+        } else {
+          // Create new match
+          const matchCreateData: CreateMatchData = {
+            my_team_name: match.myTeamName || null,
+            opponent_name: match.opponent || "Adversaire",
+            is_home: match.location === "HOME",
+            total_periods: match.periodCount || 4,
+            period_duration: (match.periodDuration || 10) * 60, // Convert minutes to seconds
+            overtime_duration: overtimeDuration * 60, // Convert minutes to seconds
+            club_id: user?.clubId || null,
+            team_id: match.teamId || null,
+            played_at: new Date().toISOString(),
+          };
+
+          logInfo(
+            "LiveMatchScreen",
+            "💾 Creating match in SQLite database",
+            matchCreateData
+          );
+          const createdMatch = await matchManager.startMatch(matchCreateData);
+          setCurrentMatchId(createdMatch.id);
+          logInfo(
+            "LiveMatchScreen",
+            "✅ Match created successfully in SQLite",
+            {
+              matchId: createdMatch.id,
+              opponent: createdMatch.opponent_name,
+              isHome: createdMatch.is_home,
+            }
+          );
+
+          // Save players to database
+          const matchPlayerRepo = new MatchPlayerRepository();
+
+          // Prepare home team players
+          const homePlayersToSave = homeRoster.map((player: Player) => ({
+            match_id: createdMatch.id,
+            player_id: player.id,
+            player_number: player.jerseyNumber,
+            player_name: player.name,
+            team: "A" as const,
+            is_starter: match.starters?.includes(player.id) || false,
+            photo_url: player.photoUrl || null,
+          }));
+
+          // Prepare away team players (if tracking opponent stats)
+          const awayPlayersToSave = match.trackOpponentStats
+            ? opponentRoster.map((player: Player) => ({
+                match_id: createdMatch.id,
+                player_id: player.id,
+                player_number: player.jerseyNumber,
+                player_name: player.name,
+                team: "B" as const,
+                is_starter: player.isStarter || false,
+                photo_url: player.photoUrl || null,
+              }))
+            : [];
+
+          const allPlayersToSave = [...homePlayersToSave, ...awayPlayersToSave];
+
+          if (allPlayersToSave.length > 0) {
+            logInfo("LiveMatchScreen", "💾 Saving players to SQLite", {
+              matchId: createdMatch.id,
+              homePlayersCount: homePlayersToSave.length,
+              awayPlayersCount: awayPlayersToSave.length,
+              totalPlayers: allPlayersToSave.length,
+            });
+            await matchPlayerRepo.createBatch(allPlayersToSave);
+
+            // Initialize on_court status for starters
+            await matchPlayerRepo.initializeOnCourtForStarters(createdMatch.id);
+
+            logInfo(
+              "LiveMatchScreen",
+              "✅ Players saved to SQLite successfully",
+              {
+                matchId: createdMatch.id,
+                savedPlayersCount: allPlayersToSave.length,
+              }
+            );
+          }
+        }
       } catch (error) {
-        logError("LiveMatchScreen", "❌ Failed to create match in database", error);
+        logError("LiveMatchScreen", "❌ Failed to initialize match", error);
       }
     };
 
     initializeMatch();
-  }, []);
+  }, [resumeMatchId]);
 
   // Timer Effect
   useEffect(() => {
@@ -335,20 +697,70 @@ export default function LiveMatchScreen({
     return () => clearInterval(interval);
   }, [isRunning, timer]);
 
-  // Save match state periodically (every 10 seconds when running)
+  // Reusable function to save match state
+  const saveMatchState = async () => {
+    if (!currentMatchIdRef.current) return;
+
+    try {
+      const periodDurationSeconds = (match.periodDuration || 10) * 60;
+      const timeElapsed = periodDurationSeconds - timerRef.current;
+
+      await matchManager.updateMatchState(
+        currentMatchIdRef.current,
+        quarterRef.current,
+        timeElapsed
+      );
+
+      logInfo("LiveMatchScreen", "💾 Match state saved", {
+        matchId: currentMatchIdRef.current,
+        quarter: quarterRef.current,
+        timeElapsed,
+        timeRemaining: timerRef.current,
+      });
+    } catch (error) {
+      logError("LiveMatchScreen", "❌ Failed to save match state", error);
+    }
+  };
+
+  // Save match state and playing time periodically (every 5 seconds when running)
   useEffect(() => {
     if (!currentMatchId || !isRunning) return;
 
     const saveInterval = setInterval(async () => {
-      try {
-        await matchManager.updateMatchState(currentMatchId, quarter, timer);
-      } catch (error) {
-        logError("LiveMatchScreen", "❌ Failed to save match state", error);
-      }
-    }, 10000); // Save every 10 seconds
+      // Save match state (timer, period)
+      await saveMatchState();
+
+      // Add 5 seconds to playing time for all players on court
+      const playerRepo = new MatchPlayerRepository();
+      await playerRepo.addPlayingTime(currentMatchId, 5);
+    }, 5000); // Save every 5 seconds
 
     return () => clearInterval(saveInterval);
-  }, [currentMatchId, isRunning, quarter, timer]);
+  }, [currentMatchId, isRunning]); // Only depend on matchId and isRunning
+
+  // Save match state when component unmounts (app closes or navigates away)
+  useEffect(() => {
+    return () => {
+      // Save on unmount
+      if (currentMatchIdRef.current) {
+        const periodDurationSeconds = (match.periodDuration || 10) * 60;
+        const timeElapsed = periodDurationSeconds - timerRef.current;
+
+        matchManager
+          .updateMatchState(
+            currentMatchIdRef.current,
+            quarterRef.current,
+            timeElapsed
+          )
+          .then(() => {
+            logInfo("LiveMatchScreen", "💾 Match state saved on unmount");
+          })
+          .catch((error) => {
+            logError("LiveMatchScreen", "❌ Failed to save on unmount", error);
+          });
+      }
+    };
+  }, []); // Empty deps - only run on unmount
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -358,8 +770,20 @@ export default function LiveMatchScreen({
       .padStart(2, "0")}`;
   };
 
+  // Toggle timer play/pause with automatic save on pause
+  const toggleTimer = () => {
+    if (isRunning) {
+      // Pausing - save state immediately
+      saveMatchState();
+    }
+    setIsRunning(!isRunning);
+  };
+
   const handleNextQuarter = () => {
     setIsRunning(false);
+
+    // Save current state before changing period
+    saveMatchState();
 
     // If timer is not zero, ask for confirmation
     if (timer > 0) {
@@ -378,6 +802,10 @@ export default function LiveMatchScreen({
     } else {
       setQuarter((prev) => prev + 1);
       setTimer(periodDurationMin * 60);
+
+      // Save state after period change
+      // Use setTimeout to ensure state is updated
+      setTimeout(() => saveMatchState(), 100);
     }
   };
 
@@ -385,6 +813,9 @@ export default function LiveMatchScreen({
     setQuarter((prev) => prev + 1);
     setTimer(overtimeDuration * 60);
     setShowOvertimeModal(false);
+
+    // Save state after starting overtime
+    setTimeout(() => saveMatchState(), 100);
   };
 
   // --- TOOLBAR ACTIONS ---
@@ -392,42 +823,25 @@ export default function LiveMatchScreen({
   const undoLastAction = () => {
     if (!match.events || match.events.length === 0) return;
 
-    const [lastEvent, ...remainingEvents] = match.events;
-    const updatedMatch = { ...match, events: remainingEvents };
-
-    // Revert Score
-    if (
-      (lastEvent.type === "POINT_1" ||
-        lastEvent.type === "POINT_2" ||
-        lastEvent.type === "POINT_3" ||
-        lastEvent.type === "POINT") &&
-      lastEvent.value
-    ) {
-      if (lastEvent.teamId === "HOME") {
-        updatedMatch.scoreHome = Math.max(
-          0,
-          updatedMatch.scoreHome - lastEvent.value
-        );
-      } else {
-        updatedMatch.scoreAway = Math.max(
-          0,
-          updatedMatch.scoreAway - lastEvent.value
-        );
-      }
-    }
-
-    setMatch(updatedMatch);
+    const lastEvent = match.events[0];
+    setEventToDelete(lastEvent);
+    setShowDeleteConfirm(true);
   };
 
   const deleteEvent = (eventId: string) => {
     if (!match.events) return;
-    const eventToDelete = match.events.find(
-      (e: MatchEvent) => e.id === eventId
-    );
-    if (!eventToDelete) return;
+    const event = match.events.find((e: MatchEvent) => e.id === eventId);
+    if (!event) return;
+
+    setEventToDelete(event);
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDeleteEvent = async () => {
+    if (!eventToDelete || !match.events) return;
 
     const updatedEvents = match.events.filter(
-      (e: MatchEvent) => e.id !== eventId
+      (e: MatchEvent) => e.id !== eventToDelete.id
     );
     const updatedMatch = { ...match, events: updatedEvents };
 
@@ -451,6 +865,34 @@ export default function LiveMatchScreen({
     }
 
     setMatch(updatedMatch);
+
+    // Delete from database
+    if (currentMatchId) {
+      try {
+        // Extract database ID from event ID (format: "evt-{dbId}")
+        const dbId = parseInt(eventToDelete.id.replace("evt-", ""));
+
+        if (!isNaN(dbId)) {
+          const actionRepo = new ActionRepository();
+          await actionRepo.deleteAction(dbId);
+
+          logInfo("LiveMatchScreen", "✅ Action deleted from database", {
+            eventId: eventToDelete.id,
+            dbId,
+            description: eventToDelete.description,
+          });
+        }
+      } catch (error) {
+        logError(
+          "LiveMatchScreen",
+          "❌ Failed to delete action from database",
+          error
+        );
+      }
+    }
+
+    setShowDeleteConfirm(false);
+    setEventToDelete(null);
   };
 
   // --- WORKFLOW ACTIONS ---
@@ -515,7 +957,7 @@ export default function LiveMatchScreen({
     });
   };
 
-  const commitSubstitution = () => {
+  const commitSubstitution = async () => {
     const isHome = subTeamTab === "HOME";
     const currentActive = isHome ? activePlayers : activeOpponentPlayers;
 
@@ -534,6 +976,8 @@ export default function LiveMatchScreen({
       timestamp: Date.now(),
       description: subDescription,
       teamId: isHome ? "HOME" : "AWAY",
+      period_number: quarter,
+      time_in_period: periodDurationMin * 60 - timer,
     };
 
     const updatedMatch = { ...match };
@@ -546,6 +990,30 @@ export default function LiveMatchScreen({
     } else {
       setActiveOpponentPlayers(newActivePlayers);
     }
+
+    // Update on_court status in database
+    if (currentMatchId) {
+      const playerRepo = new MatchPlayerRepository();
+
+      // Set players OUT to on_court = 0
+      if (subSelection.out.length > 0) {
+        await playerRepo.updateOnCourtStatus(
+          currentMatchId,
+          subSelection.out,
+          false
+        );
+      }
+
+      // Set players IN to on_court = 1
+      if (subSelection.in.length > 0) {
+        await playerRepo.updateOnCourtStatus(
+          currentMatchId,
+          subSelection.in,
+          true
+        );
+      }
+    }
+
     setWorkflowStep("IDLE");
   };
 
@@ -564,33 +1032,55 @@ export default function LiveMatchScreen({
 
     const teamId = isHomePlayer ? "HOME" : "AWAY";
 
-    let desc = "";
     const pName = player?.name.split(" ").pop() || "Joueur";
+    const pNumber = player?.jerseyNumber || "";
+    let desc = `${pNumber} - ${pName} -`;
 
     switch (type) {
       case "POINT_1":
-        desc = `${pName} (+1)`;
+        desc += `Réussi (1 pts)`;
         break;
       case "POINT_2":
-        desc = `${pName} (+2)`;
+        desc += `Réussi (2 pts)`;
         break;
       case "POINT_3":
-        desc = `${pName} (+3)`;
+        desc += `Réussi (3 pts)`;
         break;
       case "MISS_1":
-        desc = `${pName} Raté (1pt)`;
+        desc += `Raté (1 pts))`;
         break;
       case "MISS_2":
-        desc = `${pName} Raté (2pts)`;
+        desc += `Raté (2 pts)`;
         break;
       case "MISS_3":
-        desc = `${pName} Raté (3pts)`;
+        desc += `Raté (3 pts)`;
         break;
       case "FOUL":
-        desc = `Faute ${pName}`;
+        desc += `Faute`;
+        break;
+      case "REBOUND_DEF":
+        desc += `Rebond Défensif`;
+        break;
+      case "REBOUND_OFF":
+        desc += `Rebond Offensif`;
+        break;
+      case "ASSIST":
+        desc += `Passe décisive`;
+        break;
+      case "STEAL":
+        desc += `Interception`;
+        break;
+      case "BLOCK":
+        desc += `Contre`;
+        break;
+      case "TURNOVER":
+        desc += `Perte de balle`;
+        break;
+      case "SUBSTITUTION":
+        desc += `Changement`;
         break;
       default:
-        desc = `${pName} ${type}`;
+        desc += `${type}`;
     }
 
     const newEvent: MatchEvent = {
@@ -602,6 +1092,8 @@ export default function LiveMatchScreen({
       timestamp: Date.now(),
       description: desc,
       coordinates: coords,
+      period_number: quarter,
+      time_in_period: periodDurationMin * 60 - timer,
     };
 
     const updatedMatch = { ...match };
@@ -624,7 +1116,13 @@ export default function LiveMatchScreen({
 
     // Save to database
     if (currentMatchId && player) {
-      saveActionToDatabase(type, value, player.jerseyNumber, teamId === "HOME" ? Team.MY_TEAM : Team.OPPONENT, coords);
+      saveActionToDatabase(
+        type,
+        value,
+        player.jerseyNumber,
+        teamId === "HOME" ? Team.MY_TEAM : Team.OPPONENT,
+        coords
+      );
     }
 
     closeWorkflow();
@@ -712,15 +1210,28 @@ export default function LiveMatchScreen({
       action_type: actionType,
       specification,
       points,
-      semantic_x: coords?.x || 50,
-      semantic_y: coords?.y || 50,
+      semantic_x: coords?.x || -999,
+      semantic_y: coords?.y || -999,
       action_order: actionCounter,
       period_number: quarter,
-      time_in_period: (periodDurationMin * 60) - timer,
+      time_in_period: periodDurationMin * 60 - timer,
     };
 
     actionQueue.enqueue(actionForDB);
     setActionCounter((prev) => prev + 1);
+
+    // Save match state immediately after action to persist timer/period
+    const periodDurationSeconds = (periodDurationMin || 10) * 60;
+    const timeElapsed = periodDurationSeconds - timer;
+    matchManager
+      .updateMatchState(currentMatchId, quarter, timeElapsed)
+      .catch((err) => {
+        logError(
+          "LiveMatchScreen",
+          "Failed to update match state after action",
+          err
+        );
+      });
 
     logInfo("LiveMatchScreen", "✅ Action enqueued for database save", {
       actionType,
@@ -746,7 +1257,9 @@ export default function LiveMatchScreen({
       value,
       teamId: "AWAY",
       timestamp: Date.now(),
-      description: `Adversaire +${value}`,
+      description: `${match.opponent || "Adversaire"} +${value}`,
+      period_number: quarter,
+      time_in_period: periodDurationMin * 60 - timer,
     };
     if (!updatedMatch.events) updatedMatch.events = [];
     updatedMatch.events = [newEvent, ...updatedMatch.events];
@@ -772,30 +1285,37 @@ export default function LiveMatchScreen({
       const actionForDB: CreateActionData = {
         match_id: currentMatchId,
         team: Team.OPPONENT,
-        player_number: 99, // Generic opponent number
+        player_number: 9999, // Generic opponent number
         action_type: actionType,
         specification,
         points: value,
-        semantic_x: 50,
-        semantic_y: 50,
+        semantic_x: -999, // indicates no court position (quick score button)
+        semantic_y: -999, // indicates no court position (quick score button)
         action_order: actionCounter,
         period_number: quarter,
-        time_in_period: (periodDurationMin * 60) - timer,
+        time_in_period: periodDurationMin * 60 - timer,
       };
 
       actionQueue.enqueue(actionForDB);
       setActionCounter((prev) => prev + 1);
 
-      logInfo("LiveMatchScreen", "✅ Opponent score enqueued for database save", {
-        points: value,
-        team: Team.OPPONENT,
-      });
+      logInfo(
+        "LiveMatchScreen",
+        "✅ Opponent score enqueued for database save",
+        {
+          points: value,
+          team: Team.OPPONENT,
+        }
+      );
     }
   };
 
   const confirmEndMatch = async () => {
     try {
       if (currentMatchId) {
+        // Save current match state before ending
+        await saveMatchState();
+
         // Calculate overtime periods played
         const overtimesPlayed = Math.max(0, quarter - maxPeriods);
 
@@ -819,7 +1339,10 @@ export default function LiveMatchScreen({
         );
 
         // Update overtime periods count
-        await matchRepository.updateOvertimePeriods(currentMatchId, overtimesPlayed);
+        await matchRepository.updateOvertimePeriods(
+          currentMatchId,
+          overtimesPlayed
+        );
 
         // Mark match as completed and compact actions
         await matchManager.endMatch(currentMatchId);
@@ -875,6 +1398,33 @@ export default function LiveMatchScreen({
   const textPrimary = isDark ? COMMON_COLORS.white : SLATE_COLORS[900];
   const textSecondary = isDark ? SLATE_COLORS[400] : SLATE_COLORS[500];
   const borderColor = isDark ? SLATE_COLORS[800] : SLATE_COLORS[200];
+
+  // Show loading indicator when resuming match
+  if (isLoadingMatch) {
+    return (
+      <View
+        style={[
+          styles.container,
+          {
+            backgroundColor: bgColor,
+            justifyContent: "center",
+            alignItems: "center",
+          },
+        ]}
+      >
+        <MaterialCommunityIcons
+          name="basketball"
+          size={64}
+          color={BRAND_COLORS[500]}
+        />
+        <Text
+          style={[styles.loadingText, { color: textPrimary, marginTop: 16 }]}
+        >
+          Chargement du match...
+        </Text>
+      </View>
+    );
+  }
 
   return (
     <View style={[styles.container, { backgroundColor: bgColor }]}>
@@ -1025,7 +1575,7 @@ export default function LiveMatchScreen({
               <Text style={styles.timerText}>{formatTime(timer)}</Text>
             </View>
             <TouchableOpacity
-              onPress={() => setIsRunning(!isRunning)}
+              onPress={toggleTimer}
               style={[
                 styles.playButton,
                 {
@@ -1426,6 +1976,21 @@ export default function LiveMatchScreen({
         textSecondary={textSecondary}
         borderColor={borderColor}
       />
+
+      <DeleteActionModal
+        visible={showDeleteConfirm}
+        onClose={() => {
+          setShowDeleteConfirm(false);
+          setEventToDelete(null);
+        }}
+        onConfirm={confirmDeleteEvent}
+        eventDescription={eventToDelete?.description || ""}
+        isDark={isDark}
+        surfaceColor={surfaceColor}
+        textPrimary={textPrimary}
+        textSecondary={textSecondary}
+        borderColor={borderColor}
+      />
     </View>
   );
 }
@@ -1525,6 +2090,10 @@ const CourtView: React.FC<CourtViewProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  loadingText: {
+    fontSize: 18,
+    fontWeight: "600",
   },
   header: {
     paddingTop: 20,

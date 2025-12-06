@@ -44,6 +44,8 @@ interface MatchEvent {
   timestamp: number;
   description: string;
   coordinates?: { x: number; y: number };
+  period_number?: number;
+  time_in_period?: number;
 }
 
 type FilterMode = "ALL" | "SCORING" | "DEFENSE";
@@ -73,133 +75,157 @@ export const HistoryModal: React.FC<HistoryModalProps> = ({
   textPrimary,
   textSecondary,
   borderColor,
-}) => (
-  <Modal visible={visible} transparent animationType="slide">
-    <View style={styles.modalOverlay}>
-      <View style={[styles.historyModal, { backgroundColor: surfaceColor }]}>
-        <View
-          style={[
-            styles.historyHeader,
-            {
-              backgroundColor: isDark ? SLATE_COLORS[950] : SLATE_COLORS[50],
-              borderBottomColor: borderColor,
-            },
-          ]}
-        >
-          <View style={styles.historyHeaderLeft}>
-            <MaterialCommunityIcons
-              name="format-list-bulleted"
-              size={20}
-              color={BRAND_COLORS[500]}
-            />
-            <Text style={[styles.historyTitle, { color: textPrimary }]}>
-              Historique du match
-            </Text>
-          </View>
-          <TouchableOpacity
-            onPress={onClose}
+}) => {
+  // Helper function to format game time
+  const formatGameTime = (periodNumber?: number, timeInPeriod?: number) => {
+    if (periodNumber === undefined || timeInPeriod === undefined) {
+      return "";
+    }
+
+    const minutes = Math.floor(timeInPeriod / 60);
+    const seconds = timeInPeriod % 60;
+    const timeStr = `${minutes}:${seconds.toString().padStart(2, "0")}`;
+
+    // Determine period label
+    const maxPeriods = match.periodCount || 4;
+    let periodLabel = "";
+    if (periodNumber <= maxPeriods) {
+      periodLabel = maxPeriods === 2 ? `MT${periodNumber}` : `Q${periodNumber}`;
+    } else {
+      periodLabel = `OT${periodNumber - maxPeriods}`;
+    }
+
+    return `${periodLabel} ${timeStr}`;
+  };
+
+  return (
+    <Modal visible={visible} transparent animationType="slide">
+      <View style={styles.modalOverlay}>
+        <View style={[styles.historyModal, { backgroundColor: surfaceColor }]}>
+          <View
             style={[
-              styles.historyCloseButton,
+              styles.historyHeader,
               {
-                backgroundColor: isDark ? SLATE_COLORS[800] : SLATE_COLORS[200],
+                backgroundColor: isDark ? SLATE_COLORS[950] : SLATE_COLORS[50],
+                borderBottomColor: borderColor,
               },
             ]}
           >
-            <MaterialCommunityIcons
-              name="close-circle"
-              size={20}
-              color={textSecondary}
-            />
-          </TouchableOpacity>
-        </View>
-
-        <ScrollView
-          style={styles.historyScroll}
-          contentContainerStyle={styles.historyContent}
-        >
-          {events && events.length > 0 ? (
-            events.map((evt) => (
-              <View
-                key={evt.id}
-                style={[
-                  styles.historyItem,
-                  {
-                    backgroundColor: isDark
-                      ? SLATE_COLORS[800]
-                      : COMMON_COLORS.white,
-                    borderColor: isDark ? SLATE_COLORS[700] : SLATE_COLORS[100],
-                  },
-                ]}
-              >
-                <View style={styles.historyItemLeft}>
-                  <Text
-                    style={[
-                      styles.historyItemDescription,
-                      { color: textPrimary },
-                    ]}
-                  >
-                    {evt.description}
-                  </Text>
-                  <Text
-                    style={[styles.historyItemMeta, { color: textSecondary }]}
-                  >
-                    {new Date(evt.timestamp).toLocaleTimeString()} •{" "}
-                    {evt.teamId === "HOME"
-                      ? match.myTeamName || "Nous"
-                      : "Adversaire"}
-                  </Text>
-                </View>
-                <TouchableOpacity
-                  onPress={() => onDeleteEvent(evt.id)}
-                  style={styles.historyDeleteButton}
-                >
-                  <MaterialCommunityIcons
-                    name="delete"
-                    size={18}
-                    color="#ef4444"
-                  />
-                </TouchableOpacity>
-              </View>
-            ))
-          ) : (
-            <View style={styles.historyEmpty}>
-              <Text style={[styles.historyEmptyText, { color: textSecondary }]}>
-                Aucun événement enregistré.
+            <View style={styles.historyHeaderLeft}>
+              <MaterialCommunityIcons
+                name="format-list-bulleted"
+                size={20}
+                color={BRAND_COLORS[500]}
+              />
+              <Text style={[styles.historyTitle, { color: textPrimary }]}>
+                Historique du match
               </Text>
             </View>
-          )}
-        </ScrollView>
-
-        <View
-          style={[
-            styles.historyFooter,
-            {
-              backgroundColor: isDark ? SLATE_COLORS[950] : SLATE_COLORS[50],
-              borderTopColor: borderColor,
-            },
-          ]}
-        >
-          <TouchableOpacity
-            onPress={onClose}
-            style={[
-              styles.historyFooterButton,
-              { backgroundColor: BRAND_COLORS[600] },
-            ]}
-          >
-            <Text
+            <TouchableOpacity
+              onPress={onClose}
               style={[
-                styles.historyFooterButtonText,
-                { color: COMMON_COLORS.white },
+                styles.historyCloseButton,
+                {
+                  backgroundColor: isDark ? SLATE_COLORS[800] : SLATE_COLORS[200],
+                },
               ]}
             >
-              Fermer
-            </Text>
-          </TouchableOpacity>
+              <MaterialCommunityIcons
+                name="close-circle"
+                size={20}
+                color={textSecondary}
+              />
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView
+            style={styles.historyScroll}
+            contentContainerStyle={styles.historyContent}
+          >
+            {events && events.length > 0 ? (
+              events.map((evt) => (
+                <View
+                  key={evt.id}
+                  style={[
+                    styles.historyItem,
+                    {
+                      backgroundColor: isDark
+                        ? SLATE_COLORS[800]
+                        : COMMON_COLORS.white,
+                      borderColor: isDark ? SLATE_COLORS[700] : SLATE_COLORS[100],
+                    },
+                  ]}
+                >
+                  <View style={styles.historyItemLeft}>
+                    <Text
+                      style={[
+                        styles.historyItemDescription,
+                        { color: textPrimary },
+                      ]}
+                    >
+                      {evt.description}
+                    </Text>
+                    <Text
+                      style={[styles.historyItemMeta, { color: textSecondary }]}
+                    >
+                      {formatGameTime(evt.period_number, evt.time_in_period)} •{" "}
+                      {evt.teamId === "HOME"
+                        ? match.myTeamName || "Nous"
+                        : match.opponent || "Adversaire"}
+                    </Text>
+                  </View>
+                  <TouchableOpacity
+                    onPress={() => onDeleteEvent(evt.id)}
+                    style={styles.historyDeleteButton}
+                  >
+                    <MaterialCommunityIcons
+                      name="delete"
+                      size={18}
+                      color="#ef4444"
+                    />
+                  </TouchableOpacity>
+                </View>
+              ))
+            ) : (
+              <View style={styles.historyEmpty}>
+                <Text style={[styles.historyEmptyText, { color: textSecondary }]}>
+                  Aucun événement enregistré.
+                </Text>
+              </View>
+            )}
+          </ScrollView>
+
+          <View
+            style={[
+              styles.historyFooter,
+              {
+                backgroundColor: isDark ? SLATE_COLORS[950] : SLATE_COLORS[50],
+                borderTopColor: borderColor,
+              },
+            ]}
+          >
+            <TouchableOpacity
+              onPress={onClose}
+              style={[
+                styles.historyFooterButton,
+                { backgroundColor: BRAND_COLORS[600] },
+              ]}
+            >
+              <Text
+                style={[
+                  styles.historyFooterButtonText,
+                  { color: COMMON_COLORS.white },
+                ]}
+              >
+                Fermer
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
-    </View>
-  </Modal>
-);
+    </Modal>
+  );
+};
 
 // Filter Modal
 interface FilterModalProps {
@@ -1418,6 +1444,99 @@ export const PeriodConfirmModal: React.FC<PeriodConfirmModalProps> = ({
   </Modal>
 );
 
+// Delete Action Confirm Modal
+interface DeleteActionModalProps {
+  visible: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+  eventDescription: string;
+  isDark: boolean;
+  surfaceColor: string;
+  textPrimary: string;
+  textSecondary: string;
+  borderColor: string;
+}
+
+export const DeleteActionModal: React.FC<DeleteActionModalProps> = ({
+  visible,
+  onClose,
+  onConfirm,
+  eventDescription,
+  isDark,
+  surfaceColor,
+  textPrimary,
+  textSecondary,
+  borderColor,
+}) => (
+  <Modal visible={visible} transparent animationType="fade">
+    <View style={styles.modalOverlay}>
+      <View
+        style={[
+          styles.deleteActionModal,
+          { backgroundColor: surfaceColor, borderColor },
+        ]}
+      >
+        <View style={[styles.deleteActionIcon, { backgroundColor: "#fee2e2" }]}>
+          <MaterialCommunityIcons
+            name="trash-can-outline"
+            size={32}
+            color="#ef4444"
+          />
+        </View>
+
+        <Text style={[styles.deleteActionTitle, { color: textPrimary }]}>
+          Supprimer cette action ?
+        </Text>
+
+        <View style={[styles.deleteActionDetail, { backgroundColor: isDark ? SLATE_COLORS[800] : SLATE_COLORS[50], borderColor }]}>
+          <Text style={[styles.deleteActionDescription, { color: textPrimary, fontWeight: "600" }]}>
+            {eventDescription}
+          </Text>
+        </View>
+
+        <Text style={[styles.deleteActionWarning, { color: textSecondary }]}>
+          Cette action sera définitivement supprimée de la base de données.
+        </Text>
+
+        <View style={styles.deleteActionActions}>
+          <TouchableOpacity
+            onPress={onClose}
+            style={[
+              styles.deleteActionCancelButton,
+              {
+                backgroundColor: isDark ? SLATE_COLORS[800] : SLATE_COLORS[100],
+              },
+            ]}
+          >
+            <Text
+              style={[styles.deleteActionCancelButtonText, { color: textPrimary }]}
+            >
+              Annuler
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={onConfirm}
+            style={[
+              styles.deleteActionConfirmButton,
+              { backgroundColor: "#ef4444" },
+            ]}
+          >
+            <Text
+              style={[
+                styles.deleteActionConfirmButtonText,
+                { color: COMMON_COLORS.white },
+              ]}
+            >
+              Supprimer
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </View>
+  </Modal>
+);
+
 const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
@@ -1993,6 +2112,68 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   periodConfirmCancelButtonText: {
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  // Delete Action Modal
+  deleteActionModal: {
+    width: "90%",
+    maxWidth: 400,
+    borderRadius: 16,
+    padding: 24,
+    borderWidth: 1,
+  },
+  deleteActionIcon: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    alignItems: "center",
+    justifyContent: "center",
+    alignSelf: "center",
+    marginBottom: 16,
+  },
+  deleteActionTitle: {
+    fontSize: 20,
+    fontWeight: "900",
+    textAlign: "center",
+    marginBottom: 16,
+  },
+  deleteActionDetail: {
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 12,
+    borderWidth: 1,
+  },
+  deleteActionDescription: {
+    fontSize: 14,
+    textAlign: "center",
+  },
+  deleteActionWarning: {
+    fontSize: 13,
+    textAlign: "center",
+    marginBottom: 20,
+  },
+  deleteActionActions: {
+    flexDirection: "row",
+    gap: 12,
+  },
+  deleteActionCancelButton: {
+    flex: 1,
+    padding: 14,
+    borderRadius: 12,
+    alignItems: "center",
+  },
+  deleteActionCancelButtonText: {
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  deleteActionConfirmButton: {
+    flex: 1,
+    padding: 14,
+    borderRadius: 12,
+    alignItems: "center",
+  },
+  deleteActionConfirmButtonText: {
     fontSize: 16,
     fontWeight: "bold",
   },
