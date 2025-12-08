@@ -158,24 +158,26 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
 
             // Transform server matches to Match format
             serverMatches = serverMatchesData.map((sm, index) => ({
-              id: sm.local_match_id || -(index + 1), // Use negative IDs for server matches without local_match_id
-              team_a_name: sm.team_a,
-              team_b_name: sm.team_b,
-              team_mode: sm.team_mode,
-              status: "completed" as const,
-              match_format: sm.match_format,
+              id: -(index + 1), // Use negative IDs for server matches
+              my_team_name: sm.my_team_name,
+              opponent_name: sm.opponent_name,
+              is_home: sm.is_home ? 1 : 0,
+              status: sm.status || "completed" as const,
+              total_periods: sm.total_periods,
               period_duration: sm.period_duration,
+              overtime_duration: sm.overtime_duration || 300,
+              overtime_periods: sm.overtime_periods || 0,
               club_id: sm.club_id,
               team_id: sm.team_id,
               current_period: 0,
               time_elapsed: 0,
-              final_score_a: sm.final_score_a,
-              final_score_b: sm.final_score_b,
-              score_manually_adjusted: sm.score_manually_adjusted ? 1 : 0,
-              synced_to_server: true,
-              created_at: sm.played_at,
-              started_at: sm.played_at,
-              ended_at: sm.played_at,
+              my_team_score: sm.my_team_score,
+              opponent_score: sm.opponent_score,
+              synced_to_server: 1,
+              created_at: sm.created_at,
+              started_at: sm.started_at,
+              ended_at: sm.ended_at,
+              played_at: sm.played_at,
               last_updated: sm.created_at,
             }));
           }
@@ -376,7 +378,7 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString("fr-FR", { day: "2-digit", month: "short" });
+    return date.toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" });
   };
 
   // Filter matches based on selected team
@@ -400,15 +402,15 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
   );
   const wins = completedMatches.filter(
     (m) =>
-      m.final_score_a !== undefined &&
-      m.final_score_b !== undefined &&
-      m.final_score_a > m.final_score_b
+      m.my_team_score !== undefined &&
+      m.opponent_score !== undefined &&
+      m.my_team_score > m.opponent_score
   ).length;
   const losses = completedMatches.filter(
     (m) =>
-      m.final_score_a !== undefined &&
-      m.final_score_b !== undefined &&
-      m.final_score_a < m.final_score_b
+      m.my_team_score !== undefined &&
+      m.opponent_score !== undefined &&
+      m.my_team_score < m.opponent_score
   ).length;
 
   const activeTeamName = teams.find((t) => t.id === activeTeamId)?.name;
@@ -916,8 +918,8 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
               <View style={styles.matchesList}>
                 {recentMatches.length > 0 ? (
                   recentMatches.map((match, index) => {
-                    const scoreA = match.final_score_a || 0;
-                    const scoreB = match.final_score_b || 0;
+                    const scoreA = match.my_team_score || 0;
+                    const scoreB = match.opponent_score || 0;
                     const isWin = scoreA > scoreB;
 
                     return (
@@ -968,7 +970,7 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
                                     { color: textSecondary },
                                   ]}
                                 >
-                                  {match.team_a_name || "Nous"}
+                                  {match.my_team_name || "Nous"}
                                 </Text>
                               </View>
                             </View>
@@ -979,7 +981,7 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
                               ]}
                               numberOfLines={1}
                             >
-                              vs {match.team_b_name}
+                              vs {match.opponent_name}
                             </Text>
                           </View>
                         </View>

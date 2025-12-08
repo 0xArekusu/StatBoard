@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   ActivityIndicator,
 } from "react-native";
-import { Picker } from "@react-native-picker/picker";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useTheme } from "../src/contexts/ThemeContext";
 import { useAuth } from "../src/contexts/AuthContext";
@@ -34,15 +33,12 @@ export default function HistoryScreen({ navigation }: HistoryScreenProps) {
 
   const [loading, setLoading] = useState(true);
   const [matches, setMatches] = useState<Match[]>([]);
-  const [club, setClub] = useState<Club | null>(null);
-  const [teams, setTeams] = useState<Team[]>([]);
-  const [activeTeamId, setActiveTeamId] = useState<string | null>(null);
 
   const isGuest = !user;
 
   useEffect(() => {
     loadHistoryData();
-  }, [user?.id, activeTeamId]);
+  }, [user?.id]);
 
   const loadHistoryData = async () => {
     try {
@@ -66,24 +62,26 @@ export default function HistoryScreen({ navigation }: HistoryScreenProps) {
 
           if (!error && serverMatchesData) {
             serverMatches = serverMatchesData.map((sm, index) => ({
-              id: sm.local_match_id || -(index + 1),
-              team_a_name: sm.team_a,
-              team_b_name: sm.team_b,
-              team_mode: sm.team_mode,
-              status: "completed" as const,
-              match_format: sm.match_format,
+              id: -(index + 1), // Use negative IDs for server matches
+              my_team_name: sm.my_team_name,
+              opponent_name: sm.opponent_name,
+              is_home: sm.is_home ? 1 : 0,
+              status: sm.status || "completed" as const,
+              total_periods: sm.total_periods,
               period_duration: sm.period_duration,
+              overtime_duration: sm.overtime_duration || 300,
+              overtime_periods: sm.overtime_periods || 0,
               club_id: sm.club_id,
               team_id: sm.team_id,
               current_period: 0,
               time_elapsed: 0,
-              final_score_a: sm.final_score_a,
-              final_score_b: sm.final_score_b,
-              score_manually_adjusted: sm.score_manually_adjusted ? 1 : 0,
-              synced_to_server: true,
-              created_at: sm.played_at,
-              started_at: sm.played_at,
-              ended_at: sm.played_at,
+              my_team_score: sm.my_team_score,
+              opponent_score: sm.opponent_score,
+              synced_to_server: 1,
+              created_at: sm.created_at,
+              started_at: sm.started_at,
+              ended_at: sm.ended_at,
+              played_at: sm.played_at,
               last_updated: sm.created_at,
             }));
           }
@@ -92,13 +90,8 @@ export default function HistoryScreen({ navigation }: HistoryScreenProps) {
         }
       }
 
-      // 3. Merge and filter
+      // 3. Merge and sort
       let allMatches = [...localMatches, ...serverMatches];
-
-      // Filter by team if selected
-      if (activeTeamId) {
-        allMatches = allMatches.filter((m) => m.team_id === activeTeamId);
-      }
 
       // Sort by date (most recent first)
       allMatches.sort(
@@ -108,24 +101,6 @@ export default function HistoryScreen({ navigation }: HistoryScreenProps) {
       );
 
       setMatches(allMatches);
-
-      // Load club and teams if authenticated
-      if (user) {
-        try {
-          const clubService = ServiceFactory.getClubService(supabase);
-          const clubs = await clubService.getUserMemberClubs(user.id);
-          const firstClub = clubs.length > 0 ? clubs[0] : null;
-          setClub(firstClub);
-
-          if (firstClub) {
-            const teamService = ServiceFactory.getTeamService(supabase);
-            const userTeams = await teamService.getUserTeams(user.id);
-            setTeams(userTeams);
-          }
-        } catch (error) {
-          console.error("Error loading clubs/teams:", error);
-        }
-      }
     } catch (error) {
       console.error("Error loading history data:", error);
     } finally {
@@ -164,34 +139,6 @@ export default function HistoryScreen({ navigation }: HistoryScreenProps) {
           Historique des matchs
         </Text>
 
-        {/* Team Selector */}
-        {club && teams.length > 0 && (
-          <View
-            style={[
-              styles.teamSelector,
-              { backgroundColor: surfaceColor, borderColor },
-            ]}
-          >
-            <View style={styles.teamSelectorIcon}>
-              <JerseyIconSimple width={30} height={30} />
-            </View>
-            <Picker
-              selectedValue={activeTeamId || ""}
-              onValueChange={(value) => setActiveTeamId(value || null)}
-              style={[styles.picker, { color: textPrimary }]}
-              dropdownIconColor={textSecondary}
-            >
-              {teams.map((team) => (
-                <Picker.Item
-                  key={team.id}
-                  label={`${team.name}`}
-                  value={team.id}
-                />
-              ))}
-            </Picker>
-          </View>
-        )}
-
         {/* Matches List */}
         {matches.length === 0 ? (
           <View
@@ -214,13 +161,6 @@ export default function HistoryScreen({ navigation }: HistoryScreenProps) {
             <Text style={[styles.emptyStateText, { color: textSecondary }]}>
               Aucun match enregistré.
             </Text>
-            {activeTeamId && (
-              <Text
-                style={[styles.emptyStateSubtext, { color: textSecondary }]}
-              >
-                Pour l'équipe sélectionnée
-              </Text>
-            )}
           </View>
         ) : (
           <View style={styles.matchesList}>
@@ -265,8 +205,8 @@ function MatchCard({
   borderColor,
   onPress,
 }: MatchCardProps) {
-  const scoreA = match.final_score_a || 0;
-  const scoreB = match.final_score_b || 0;
+  const scoreA = match.my_team_score || 0;
+  const scoreB = match.opponent_score || 0;
   const isWin = scoreA > scoreB;
 
   const formatDate = (dateString: string) => {
@@ -275,6 +215,7 @@ function MatchCard({
       weekday: "short",
       day: "numeric",
       month: "long",
+      year: "numeric",
     });
   };
 
@@ -299,20 +240,30 @@ function MatchCard({
             {formatDate(match.ended_at || match.created_at)}
           </Text>
         </View>
+        <View style={styles.matchCardInfo}>
+          <MaterialCommunityIcons
+            name="map-marker"
+            size={12}
+            color={textSecondary}
+          />
+          <Text style={[styles.matchCardInfoText, { color: textSecondary }]}>
+            {match.is_home ? 'Domicile' : 'Extérieur'}
+          </Text>
+        </View>
       </View>
 
       {/* Scores */}
       <View style={styles.matchScores}>
         {/* Team A (Us) */}
         <View style={styles.matchTeamContainer}>
-          <Text style={[styles.matchScoreValue, { color: textPrimary }]}>
+          <Text style={[styles.matchScoreValue, { color: isWin ? textPrimary : isDark ? SLATE_COLORS[500] : SLATE_COLORS[400] }]}>
             {scoreA}
           </Text>
           <Text
             style={[styles.matchTeamLabel, { color: textSecondary }]}
             numberOfLines={1}
           >
-            {match.team_a_name || "NOUS"}
+            {match.my_team_name || "NOUS"}
           </Text>
         </View>
 
@@ -333,7 +284,7 @@ function MatchCard({
           <Text
             style={[
               styles.matchScoreValue,
-              { color: isWin ? textSecondary : textPrimary },
+              { color: isWin ? (isDark ? SLATE_COLORS[500] : SLATE_COLORS[400]) : textPrimary },
             ]}
           >
             {scoreB}
@@ -342,7 +293,7 @@ function MatchCard({
             style={[styles.matchTeamLabel, { color: textSecondary }]}
             numberOfLines={1}
           >
-            {match.team_b_name}
+            {match.opponent_name}
           </Text>
         </View>
       </View>
