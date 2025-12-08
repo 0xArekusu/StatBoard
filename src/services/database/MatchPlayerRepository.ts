@@ -27,7 +27,7 @@ export interface MatchPlayer {
   player_id?: string | null;
   player_number: number;
   player_name: string;
-  team: "A" | "B";
+  team: "MyTeam" | "Opponent";
   is_starter: boolean;
   on_court?: number;
   playing_time_seconds?: number;
@@ -40,7 +40,7 @@ export interface CreateMatchPlayerData {
   player_id?: string | null;
   player_number: number;
   player_name: string;
-  team: "A" | "B";
+  team: "MyTeam" | "Opponent";
   is_starter: boolean;
   photo_url?: string | null;
 }

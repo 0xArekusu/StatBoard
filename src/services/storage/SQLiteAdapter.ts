@@ -13,8 +13,8 @@ export class SQLiteAdapter implements IStorageAdapter {
     this.db = SQLite.openDatabaseSync(databaseName);
 
     // 🔄 TEMPORARY RESET - Remove after testing!
-    //this.resetDatabaseTables();
-    //this.initializeTables();
+    this.resetDatabaseTables();
+    this.initializeTables();
   }
 
   // 🔄 TEMPORARY METHOD - Remove after testing! wip
@@ -82,7 +82,7 @@ export class SQLiteAdapter implements IStorageAdapter {
       CREATE TABLE IF NOT EXISTS match_actions (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         match_id INTEGER NOT NULL,
-        team TEXT NOT NULL CHECK(team IN ('A', 'B')),
+        team TEXT NOT NULL CHECK(team IN ('MyTeam', 'Opponent')),
         player_number INTEGER NOT NULL,
         action_type TEXT NOT NULL,
         specification TEXT NOT NULL,
@@ -113,7 +113,7 @@ export class SQLiteAdapter implements IStorageAdapter {
         match_id INTEGER NOT NULL,
         player_number INTEGER NOT NULL,
         player_name TEXT NOT NULL,
-        team TEXT NOT NULL CHECK(team IN ('A', 'B')),
+        team TEXT NOT NULL CHECK(team IN ('MyTeam', 'Opponent')),
         is_starter INTEGER NOT NULL DEFAULT 1,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (match_id) REFERENCES matches (id) ON DELETE CASCADE,

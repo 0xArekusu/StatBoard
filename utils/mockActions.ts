@@ -75,11 +75,11 @@ export function generateMockActions(
 
   // Action distributions (realistic basketball game)
   const distributions = {
-    shot: 0.50,      // 50% shots
-    rebound: 0.20,   // 20% rebounds
-    foul: 0.12,      // 12% fouls
-    assist: 0.10,    // 10% assists
-    steal: 0.04,     // 4% steals
+    shot: 0.7,       // 70% shots
+    rebound: 0.12,   // 12% rebounds
+    foul: 0.06,      // 6% fouls
+    assist: 0.05,    // 5% assists
+    steal: 0.03,     // 3% steals
     block: 0.02,     // 2% blocks
     turnover: 0.02   // 2% turnovers
   };
@@ -117,15 +117,13 @@ export function generateMockActions(
       // Random player from the selected team
       const playerNumber = jerseyNumbers[Math.floor(Math.random() * jerseyNumbers.length)];
 
-      // Random position on court (normalized 0-1)
-      const semantic_x = Math.random();
-      const semantic_y = Math.random();
-
       // Determine action type based on distribution
       const rand = Math.random();
       let actionType: string;
       let specification: string;
       let points: number | undefined;
+      let semantic_x: number;
+      let semantic_y: number;
 
     if (rand < distributions.shot) {
       // SHOT ACTION
@@ -136,10 +134,24 @@ export function generateMockActions(
 
       if (shotRand < shotDistributions.freeThrow) {
         points = 1; // Free throw
+        // Lancers francs : près du panier, centrés
+        semantic_x = 0.45 + Math.random() * 0.1; // 0.45-0.55 (centré)
+        semantic_y = 0.15 + Math.random() * 0.1; // 0.15-0.25 (près du panier)
       } else if (shotRand < shotDistributions.freeThrow + shotDistributions.twoPoint) {
         points = 2; // 2-pointer
+        // 2-points : zone intérieure (raquette + mid-range)
+        semantic_x = 0.2 + Math.random() * 0.6; // 0.2-0.8 (largeur)
+        semantic_y = 0.1 + Math.random() * 0.4; // 0.1-0.5 (proche-moyen)
       } else {
         points = 3; // 3-pointer
+        // 3-points : arc périphérique
+        const angle = Math.random() * Math.PI; // 0 à π (demi-cercle)
+        const radius = 0.35 + Math.random() * 0.15; // Distance variable
+        semantic_x = 0.5 + radius * Math.cos(angle);
+        semantic_y = 0.2 + radius * Math.sin(angle);
+        // Clamp pour rester dans le terrain
+        semantic_x = Math.max(0.05, Math.min(0.95, semantic_x));
+        semantic_y = Math.max(0.05, Math.min(0.95, semantic_y));
       }
 
       // Determine if made or missed based on success rate
@@ -160,6 +172,10 @@ export function generateMockActions(
         ? ReboundSpecification.DEFENSIVE
         : ReboundSpecification.OFFENSIVE;
 
+      // Rebonds : près du panier
+      semantic_x = 0.3 + Math.random() * 0.4; // 0.3-0.7 (autour du panier)
+      semantic_y = 0.05 + Math.random() * 0.25; // 0.05-0.3 (zone du panier)
+
     } else if (rand < distributions.shot + distributions.rebound + distributions.foul) {
       // FOUL ACTION
       actionType = ActionType.FOUL;
@@ -175,25 +191,45 @@ export function generateMockActions(
         specification = FoulSpecification.DISQUALIFICATION;
       }
 
+      // Fautes : partout sur le terrain
+      semantic_x = 0.1 + Math.random() * 0.8;
+      semantic_y = 0.1 + Math.random() * 0.8;
+
     } else if (rand < distributions.shot + distributions.rebound + distributions.foul + distributions.assist) {
       // ASSIST ACTION
       actionType = ActionType.ASSIST;
       specification = NO_SPECIFICATION;
+
+      // Passes : principalement zone médiane et offensive
+      semantic_x = 0.2 + Math.random() * 0.6;
+      semantic_y = 0.2 + Math.random() * 0.6;
 
     } else if (rand < distributions.shot + distributions.rebound + distributions.foul + distributions.assist + distributions.steal) {
       // STEAL ACTION
       actionType = ActionType.STEAL;
       specification = NO_SPECIFICATION;
 
+      // Interceptions : milieu de terrain
+      semantic_x = 0.2 + Math.random() * 0.6;
+      semantic_y = 0.3 + Math.random() * 0.4;
+
     } else if (rand < distributions.shot + distributions.rebound + distributions.foul + distributions.assist + distributions.steal + distributions.block) {
       // BLOCK ACTION
       actionType = ActionType.BLOCK;
       specification = NO_SPECIFICATION;
 
+      // Contres : près du panier défensif
+      semantic_x = 0.3 + Math.random() * 0.4;
+      semantic_y = 0.05 + Math.random() * 0.2;
+
     } else {
       // TURNOVER ACTION
       actionType = ActionType.TURNOVER;
       specification = NO_SPECIFICATION;
+
+      // Pertes : partout
+      semantic_x = 0.15 + Math.random() * 0.7;
+      semantic_y = 0.2 + Math.random() * 0.6;
     }
 
       actions.push({

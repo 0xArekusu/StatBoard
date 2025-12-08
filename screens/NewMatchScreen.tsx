@@ -297,7 +297,9 @@ export default function NewMatchScreen({
 
   const removeOpponentPlayer = (id: string) => {
     setOpponentRoster(opponentRoster.filter((p) => p.id !== id));
-    setOpponentStarters(opponentStarters.filter((starterId) => starterId !== id));
+    setOpponentStarters(
+      opponentStarters.filter((starterId) => starterId !== id)
+    );
   };
 
   // --- START MATCH ---
@@ -338,28 +340,59 @@ export default function NewMatchScreen({
     const team = teams.find((t) => t.id === selectedTeamId);
     if (!team) return;
 
+    // Validate club exists
+    if (!club || !club.id) {
+      Alert.alert(
+        "Erreur",
+        "Impossible de démarrer le match : aucun club sélectionné."
+      );
+      return;
+    }
+
+    console.log("📋 [NewMatchScreen] Starting match with club:", {
+      clubId: club.id,
+      clubName: club.name,
+      teamId: team.id,
+      teamName: team.name,
+    });
+
+    // Serialize players (convert Date objects to strings for React Navigation)
+    const serializePlayers = (players: Player[]) =>
+      players.map((p) => ({
+        ...p,
+        createdAt: typeof p.createdAt === 'string' ? p.createdAt : p.createdAt?.toISOString?.() || new Date().toISOString(),
+        updatedAt: typeof p.updatedAt === 'string' ? p.updatedAt : p.updatedAt?.toISOString?.() || new Date().toISOString(),
+      }));
+
     // Create match object
     const matchData = {
       id: Date.now().toString(),
-      clubId: club?.id || "",
+      clubId: club.id,
       teamId: team.id,
       opponent,
       location,
       trackOpponentStats,
       periodCount,
       periodDuration,
-      homePlayers: selectedHomePlayers,
+      homePlayers: serializePlayers(selectedHomePlayers),
       starters,
-      awayPlayers: trackOpponentStats ? opponentRoster : [],
+      awayPlayers: trackOpponentStats ? serializePlayers(opponentRoster) : [],
       teamName: team.name,
       teamLogo: team.logo,
       clubLogoUrl: club?.logoUrl || null,
       courtBackgroundColor: club?.courtBackgroundColor || "#1a472a",
       courtLineColor: club?.courtLineColor || "#FFFFFF",
-      createdAt: new Date(),
+      createdAt: new Date().toISOString(),
     };
 
     // Navigate to LiveMatch screen
+    console.log("🚀 [NewMatchScreen] Navigating with matchData:", JSON.stringify({
+      clubId: matchData.clubId,
+      teamId: matchData.teamId,
+      opponent: matchData.opponent,
+      location: matchData.location,
+      periodCount: matchData.periodCount,
+    }));
     navigation.navigate("LiveMatch", { matchData });
   };
 
@@ -599,7 +632,7 @@ export default function NewMatchScreen({
                     ]}
                   >
                     <MaterialCommunityIcons
-                      name="timeline"
+                      name="timeline-clock"
                       size={16}
                       color={textSecondary}
                     />
@@ -1302,7 +1335,9 @@ export default function NewMatchScreen({
                     <View style={styles.opponentList}>
                       {opponentRoster.length > 0 ? (
                         opponentRoster.map((p) => {
-                          const isOpponentStarter = opponentStarters.includes(p.id);
+                          const isOpponentStarter = opponentStarters.includes(
+                            p.id
+                          );
                           return (
                             <View
                               key={p.id}
@@ -1359,7 +1394,11 @@ export default function NewMatchScreen({
                                   ]}
                                 >
                                   <MaterialCommunityIcons
-                                    name={isOpponentStarter ? "star" : "star-outline"}
+                                    name={
+                                      isOpponentStarter
+                                        ? "star"
+                                        : "star-outline"
+                                    }
                                     size={20}
                                     color={
                                       isOpponentStarter

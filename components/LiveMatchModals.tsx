@@ -1256,16 +1256,52 @@ export const OvertimeModal: React.FC<OvertimeModalProps> = ({
               DURÉE DE LA PROLONGATION
             </Text>
             <View style={styles.overtimeDurationInput}>
-              <MaterialCommunityIcons
-                name="timer"
-                size={20}
-                color={textSecondary}
-              />
-              <Text
-                style={[styles.overtimeDurationValue, { color: textPrimary }]}
+              <TouchableOpacity
+                onPress={() => {
+                  const newValue = Math.max(1, parseInt(duration) - 1);
+                  setDuration(newValue.toString());
+                  setOvertimeDuration(newValue);
+                }}
+                style={[
+                  styles.overtimeDurationButton,
+                  { backgroundColor: isDark ? SLATE_COLORS[700] : SLATE_COLORS[200] }
+                ]}
               >
-                {duration} min
-              </Text>
+                <MaterialCommunityIcons
+                  name="minus"
+                  size={20}
+                  color={textPrimary}
+                />
+              </TouchableOpacity>
+              <View style={styles.overtimeDurationDisplay}>
+                <MaterialCommunityIcons
+                  name="timer"
+                  size={20}
+                  color={textSecondary}
+                />
+                <Text
+                  style={[styles.overtimeDurationValue, { color: textPrimary }]}
+                >
+                  {duration} min
+                </Text>
+              </View>
+              <TouchableOpacity
+                onPress={() => {
+                  const newValue = Math.min(20, parseInt(duration) + 1);
+                  setDuration(newValue.toString());
+                  setOvertimeDuration(newValue);
+                }}
+                style={[
+                  styles.overtimeDurationButton,
+                  { backgroundColor: isDark ? SLATE_COLORS[700] : SLATE_COLORS[200] }
+                ]}
+              >
+                <MaterialCommunityIcons
+                  name="plus"
+                  size={20}
+                  color={textPrimary}
+                />
+              </TouchableOpacity>
             </View>
           </View>
 
@@ -2020,7 +2056,22 @@ const styles = StyleSheet.create({
   overtimeDurationInput: {
     flexDirection: "row",
     alignItems: "center",
+    gap: 12,
+    justifyContent: "center",
+  },
+  overtimeDurationButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  overtimeDurationDisplay: {
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
+    minWidth: 80,
+    justifyContent: "center",
   },
   overtimeDurationValue: {
     fontSize: 16,

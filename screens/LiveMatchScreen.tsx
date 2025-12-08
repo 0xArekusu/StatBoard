@@ -26,7 +26,9 @@ import { ActionQueue } from "../src/services/match/ActionQueue";
 import { MatchRepository } from "../src/services/database/MatchRepository";
 import { ActionRepository } from "../src/services/database/ActionRepository";
 import { MatchPlayerRepository } from "../src/services/database/MatchPlayerRepository";
-import { logInfo, logError } from "../utils/logger";
+import { logInfo, logError, logWarn } from "../utils/logger";
+import { generateMockActions } from "../utils/mockActions";
+import { supabase } from "../src/config/supabase";
 import BasketballCourtSVG from "../components/BasketballCourtSVG";
 import { MatchActionGrid } from "../components/MatchActionGrid";
 import {
@@ -192,6 +194,8 @@ export default function LiveMatchScreen({
     if (matchData) {
       return {
         id: matchData.id,
+        clubId: matchData.clubId,
+        teamId: matchData.teamId,
         myTeamName: matchData.teamName || "Mon Équipe",
         opponent: matchData.opponent || "Adversaire",
         location: matchData.location || "HOME",
@@ -329,6 +333,7 @@ export default function LiveMatchScreen({
   // Toolbar State
   const [showMarkers, setShowMarkers] = useState(true);
   const [filterMode, setFilterMode] = useState<FilterMode>("ALL");
+  const [isGeneratingMockData, setIsGeneratingMockData] = useState(false);
 
   // Workflow State
   const [workflowStep, setWorkflowStep] = useState<WorkflowStep>("IDLE");
@@ -373,7 +378,7 @@ export default function LiveMatchScreen({
           actions.forEach((action) => {
             // Use the points field which is set when action is created
             if (action.points && action.points > 0) {
-              if (action.team === "A") {
+              if (action.team === Team.MY_TEAM) {
                 scoreHome += action.points;
               } else {
                 scoreAway += action.points;
@@ -382,8 +387,8 @@ export default function LiveMatchScreen({
           });
 
           // Separate players by team
-          const homePlayersFromDB = players.filter((p) => p.team === "A");
-          const awayPlayersFromDB = players.filter((p) => p.team === "B");
+          const homePlayersFromDB = players.filter((p) => p.team === "MyTeam");
+          const awayPlayersFromDB = players.filter((p) => p.team === "Opponent");
 
           // Convert to Player format
           const homeRosterLoaded = homePlayersFromDB.map((p) => ({
@@ -419,6 +424,20 @@ export default function LiveMatchScreen({
           // Helper function to get human-readable action description
           const getActionDescription = (action: any, playerName: string) => {
             if (action.action_type === "SHOT") {
+              const isMade = action.specification === "MADE" || action.specification === "made";
+              const points = action.points || 0;
+
+              if (isMade) {
+                if (points === 3) return `${playerName} (+3)`;
+                if (points === 2) return `${playerName} (+2)`;
+                if (points === 1) return `${playerName} (+1)`;
+              } else {
+                if (points === 3) return `${playerName} Raté (3pts)`;
+                if (points === 2) return `${playerName} Raté (2pts)`;
+                if (points === 1) return `${playerName} Raté (LF)`;
+              }
+
+              // Support ancien format
               if (action.specification === "THREE_POINT_MADE")
                 return `${playerName} (+3)`;
               if (action.specification === "TWO_POINT_MADE")
@@ -464,6 +483,36 @@ export default function LiveMatchScreen({
 
             // Map based on action_type and specification
             if (action.action_type === "SHOT") {
+              const isMade = action.specification === "MADE" || action.specification === "made";
+              const points = action.points || 0;
+
+              if (isMade) {
+                // Tirs réussis
+                if (points === 3) {
+                  eventType = "POINT_3";
+                  eventValue = 3;
+                } else if (points === 2) {
+                  eventType = "POINT_2";
+                  eventValue = 2;
+                } else if (points === 1) {
+                  eventType = "POINT_1";
+                  eventValue = 1;
+                }
+              } else {
+                // Tirs ratés
+                if (points === 3) {
+                  eventType = "MISS_3";
+                  eventValue = 0;
+                } else if (points === 2) {
+                  eventType = "MISS_2";
+                  eventValue = 0;
+                } else if (points === 1) {
+                  eventType = "MISS_1";
+                  eventValue = 0;
+                }
+              }
+
+              // Support aussi l'ancien format pour compatibilité
               if (action.specification === "THREE_POINT_MADE") {
                 eventType = "POINT_3";
                 eventValue = 3;
@@ -523,7 +572,7 @@ export default function LiveMatchScreen({
               timestamp,
               playerId: player?.player_id || `temp-${action.player_number}`,
               playerName: action.player_number.toString(),
-              teamId: action.team === "A" ? "HOME" : "AWAY",
+              teamId: action.team === Team.MY_TEAM ? "HOME" : "AWAY",
               coordinates:
                 action.semantic_x !== null && action.semantic_y !== null
                   ? { x: action.semantic_x, y: action.semantic_y }
@@ -596,6 +645,13 @@ export default function LiveMatchScreen({
           });
         } else {
           // Create new match
+          logInfo("LiveMatchScreen", "📋 Match data received from navigation", {
+            clubId: match.clubId,
+            teamId: match.teamId,
+            opponent: match.opponent,
+            location: match.location,
+          });
+
           const matchCreateData: CreateMatchData = {
             my_team_name: match.myTeamName || null,
             opponent_name: match.opponent || "Adversaire",
@@ -603,7 +659,7 @@ export default function LiveMatchScreen({
             total_periods: match.periodCount || 4,
             period_duration: (match.periodDuration || 10) * 60, // Convert minutes to seconds
             overtime_duration: overtimeDuration * 60, // Convert minutes to seconds
-            club_id: user?.clubId || null,
+            club_id: match.clubId || null,
             team_id: match.teamId || null,
             played_at: new Date().toISOString(),
           };
@@ -634,7 +690,7 @@ export default function LiveMatchScreen({
             player_id: player.id,
             player_number: player.jerseyNumber,
             player_name: player.name,
-            team: "A" as const,
+            team: "MyTeam" as const,
             is_starter: match.starters?.includes(player.id) || false,
             photo_url: player.photoUrl || null,
           }));
@@ -646,7 +702,7 @@ export default function LiveMatchScreen({
                 player_id: player.id,
                 player_number: player.jerseyNumber,
                 player_name: player.name,
-                team: "B" as const,
+                team: "Opponent" as const,
                 is_starter: player.isStarter || false,
                 photo_url: player.photoUrl || null,
               }))
@@ -785,28 +841,31 @@ export default function LiveMatchScreen({
     // Save current state before changing period
     saveMatchState();
 
-    // If timer is not zero, ask for confirmation
+    // Si c'est le dernier quart-temps, afficher directement le modal de fin/overtime
+    if (quarter >= maxPeriods) {
+      setShowOvertimeModal(true);
+      return;
+    }
+
+    // Si le timer n'est pas à 0, demander confirmation avant de passer à la période suivante
     if (timer > 0) {
       setShowPeriodConfirm(true);
       return;
     }
 
+    // Sinon, passer directement à la période suivante
     proceedToNextPeriod();
   };
 
   const proceedToNextPeriod = () => {
     setShowPeriodConfirm(false);
 
-    if (quarter >= maxPeriods) {
-      setShowOvertimeModal(true);
-    } else {
-      setQuarter((prev) => prev + 1);
-      setTimer(periodDurationMin * 60);
+    setQuarter((prev) => prev + 1);
+    setTimer(periodDurationMin * 60);
 
-      // Save state after period change
-      // Use setTimeout to ensure state is updated
-      setTimeout(() => saveMatchState(), 100);
-    }
+    // Save state after period change
+    // Use setTimeout to ensure state is updated
+    setTimeout(() => saveMatchState(), 100);
   };
 
   const startOvertime = () => {
@@ -826,6 +885,188 @@ export default function LiveMatchScreen({
     const lastEvent = match.events[0];
     setEventToDelete(lastEvent);
     setShowDeleteConfirm(true);
+  };
+
+  const handleGenerateMockActions = async () => {
+    if (!currentMatchId || isGeneratingMockData) return;
+
+    setIsGeneratingMockData(true);
+
+    try {
+      // Créer des joueurs fictifs basés sur le roster
+      const playersMyTeam = homeRoster.length > 0
+        ? homeRoster.map(p => ({
+            jersey_number: p.jerseyNumber,
+            name: p.name,
+          }))
+        : Array.from({ length: 5 }, (_, i) => ({
+            jersey_number: i + 1,
+            name: `Joueur ${i + 1}`,
+          }));
+
+      const playersOpponent = opponentRoster.length > 0
+        ? opponentRoster.map(p => ({
+            jersey_number: p.jerseyNumber,
+            name: p.name,
+          }))
+        : Array.from({ length: 5 }, (_, i) => ({
+            jersey_number: i + 10,
+            name: `Adversaire ${i + 1}`,
+          }));
+
+      // Générer actions fictives (25 par période)
+      // Générer ~50 actions par période pour atteindre 80-90 points par équipe
+      // Avec 45% de tirs et ~45% de réussite, cela donne environ 20-22 paniers réussis par période
+      // Soit ~80-88 points sur 4 périodes
+      const mockActions = generateMockActions(
+        currentMatchId,
+        playersMyTeam,
+        playersOpponent,
+        maxPeriods === 2 ? '2_halves' : '4_quarters',
+        periodDurationMin * 60,
+        50  // Augmenté de 25 à 50 actions par période
+      );
+
+      // Convertir et enregistrer les actions
+      const actionRepo = new ActionRepository();
+      for (const mockAction of mockActions) {
+        await actionRepo.create({
+          match_id: currentMatchId,
+          team: mockAction.team === 'A' ? Team.MY_TEAM : Team.OPPONENT,
+          player_number: mockAction.player_number,
+          action_type: mockAction.action_type,
+          specification: mockAction.specification,
+          points: mockAction.points,
+          semantic_x: mockAction.semantic_x,
+          semantic_y: mockAction.semantic_y,
+          action_order: mockAction.action_order,
+          period_number: mockAction.period_number,
+          time_in_period: mockAction.time_in_period,
+        });
+      }
+
+      // Recharger les actions pour mettre à jour l'affichage
+      const loadedActions = await actionRepo.getActionsForMatch(currentMatchId);
+
+      // Convertir les actions en événements pour l'affichage
+      const convertedEvents: MatchEvent[] = loadedActions.map(action => {
+        const player = action.team === Team.MY_TEAM
+          ? homeRoster.find(p => p.jerseyNumber === action.player_number)
+          : opponentRoster.find(p => p.jerseyNumber === action.player_number);
+
+        const playerName = player?.name || `Joueur ${action.player_number}`;
+        const teamId = action.team === Team.MY_TEAM ? 'HOME' : 'AWAY';
+
+        let type: EventType = 'POINT';
+        let value = 0;
+        let description = '';
+
+        // DEBUG
+        if (action.action_type !== 'shot') {
+          logInfo('LiveMatchScreen', '🔍 Converting non-shot action', {
+            actionType: action.action_type,
+            specification: action.specification,
+            coords: { x: action.semantic_x, y: action.semantic_y }
+          });
+        }
+
+        // Mapper le type d'action vers EventType (action_type stocké en lowercase dans DB)
+        if (action.action_type === 'shot' && action.specification === 'made') {
+          value = action.points || 0;
+          type = value === 1 ? 'POINT_1' : value === 2 ? 'POINT_2' : 'POINT_3';
+          description = `${playerName} - ${value}pt`;
+        } else if (action.action_type === 'shot' && action.specification === 'missed') {
+          const missedPoints = action.points || 0;
+          value = 0; // Les tirs ratés ne comptent pas dans le score
+          type = missedPoints === 1 ? 'MISS_1' : missedPoints === 2 ? 'MISS_2' : 'MISS_3';
+          description = `${playerName} - Raté ${missedPoints}pt`;
+        } else if (action.action_type === 'rebound') {
+          type = action.specification === 'offensive' ? 'REBOUND_OFF' : 'REBOUND_DEF';
+          description = `${playerName} - Rebond`;
+        } else if (action.action_type === 'assist') {
+          type = 'ASSIST';
+          description = `${playerName} - Passe`;
+        } else if (action.action_type === 'steal') {
+          type = 'STEAL';
+          description = `${playerName} - Interception`;
+        } else if (action.action_type === 'block') {
+          type = 'BLOCK';
+          description = `${playerName} - Contre`;
+        } else if (action.action_type === 'turnover') {
+          type = 'TURNOVER';
+          description = `${playerName} - Perte`;
+        } else if (action.action_type === 'foul') {
+          type = 'FOUL';
+          description = `${playerName} - Faute`;
+        }
+
+        const event = {
+          id: `evt-${action.id}`,
+          type,
+          value,
+          playerId: player?.id,
+          teamId,
+          timestamp: Date.now(),
+          description,
+          coordinates: { x: action.semantic_x, y: action.semantic_y },
+          period_number: action.period_number,
+          time_in_period: action.time_in_period,
+        };
+
+        // DEBUG: Log all non-shot events
+        if (action.action_type !== 'shot') {
+          logInfo('LiveMatchScreen', '🎯 Created non-shot event', {
+            actionType: action.action_type,
+            eventType: type,
+            hasCoords: !!event.coordinates,
+            coords: event.coordinates
+          });
+        }
+
+        return event;
+      });
+
+      // DEBUG: Log summary
+      const eventTypes = convertedEvents.reduce((acc, e) => {
+        acc[e.type] = (acc[e.type] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
+      logInfo('LiveMatchScreen', '📊 Mock events summary', eventTypes);
+
+      // Calculer le nouveau score
+      let newScoreHome = 0;
+      let newScoreAway = 0;
+
+      convertedEvents.forEach(event => {
+        if ((event.type.includes('POINT') || event.type === 'POINT') && event.value) {
+          if (event.teamId === 'HOME') {
+            newScoreHome += event.value;
+          } else {
+            newScoreAway += event.value;
+          }
+        }
+      });
+
+      // Mettre à jour le match
+      setMatch({
+        ...match,
+        events: convertedEvents,
+        scoreHome: newScoreHome,
+        scoreAway: newScoreAway,
+      });
+
+      setActionCounter(actionCounter + mockActions.length);
+
+      logInfo('LiveMatchScreen', '✅ Mock actions generated successfully', {
+        count: mockActions.length,
+        scoreHome: newScoreHome,
+        scoreAway: newScoreAway,
+      });
+    } catch (error) {
+      logError('LiveMatchScreen', '❌ Error generating mock actions', { error });
+    } finally {
+      setIsGeneratingMockData(false);
+    }
   };
 
   const deleteEvent = (eventId: string) => {
@@ -1083,6 +1324,12 @@ export default function LiveMatchScreen({
         desc += `${type}`;
     }
 
+    // Normalize SVG coordinates (0-615.75 x 0-1146.75) to 0-1 for storage in state
+    const normalizedCoords = coords ? {
+      x: coords.x / 615.75,
+      y: coords.y / 1146.75
+    } : undefined;
+
     const newEvent: MatchEvent = {
       id: `evt-${Date.now()}`,
       type,
@@ -1091,7 +1338,7 @@ export default function LiveMatchScreen({
       teamId,
       timestamp: Date.now(),
       description: desc,
-      coordinates: coords,
+      coordinates: normalizedCoords,
       period_number: quarter,
       time_in_period: periodDurationMin * 60 - timer,
     };
@@ -1203,6 +1450,10 @@ export default function LiveMatchScreen({
         return;
     }
 
+    // Convert SVG portrait coordinates (0-615.75 x 0-1146.75) to normalized (0-1)
+    const normalizedX = coords ? coords.x / 615.75 : -999;
+    const normalizedY = coords ? coords.y / 1146.75 : -999;
+
     const actionForDB: CreateActionData = {
       match_id: currentMatchId,
       team,
@@ -1210,8 +1461,8 @@ export default function LiveMatchScreen({
       action_type: actionType,
       specification,
       points,
-      semantic_x: coords?.x || -999,
-      semantic_y: coords?.y || -999,
+      semantic_x: normalizedX,
+      semantic_y: normalizedY,
       action_order: actionCounter,
       period_number: quarter,
       time_in_period: periodDurationMin * 60 - timer,
@@ -1347,11 +1598,50 @@ export default function LiveMatchScreen({
         // Mark match as completed and compact actions
         await matchManager.endMatch(currentMatchId);
 
-        logInfo("LiveMatchScreen", "✅ Match ended successfully", {
+        logInfo("LiveMatchScreen", "✅ Match ended and compacted", {
           matchId: currentMatchId,
           finalScores: `${match.scoreHome} - ${match.scoreAway}`,
           overtimes: overtimesPlayed,
         });
+
+        // Sync to Supabase if eligible (auth + subscription)
+        try {
+          const { MatchSyncService } = await import('../src/services/api/MatchSyncService');
+          const syncService = new MatchSyncService(supabase);
+
+          logInfo("LiveMatchScreen", "🔄 Checking sync eligibility", { matchId: currentMatchId });
+
+          const eligibility = await syncService.checkSyncEligibility(currentMatchId);
+
+          if (eligibility.canSync) {
+            logInfo("LiveMatchScreen", "📤 Syncing match to Supabase", { matchId: currentMatchId });
+
+            const syncResult = await syncService.syncMatch(currentMatchId);
+
+            if (syncResult.success) {
+              logInfo("LiveMatchScreen", "✅ Match synced to Supabase successfully", {
+                localMatchId: currentMatchId,
+                supabaseMatchId: syncResult.matchId
+              });
+            } else {
+              logWarn("LiveMatchScreen", "⚠️ Match sync failed", {
+                matchId: currentMatchId,
+                error: syncResult.error
+              });
+            }
+          } else {
+            logInfo("LiveMatchScreen", "ℹ️ Match not synced", {
+              matchId: currentMatchId,
+              reason: eligibility.reason
+            });
+          }
+        } catch (syncError) {
+          // Don't fail match end if sync fails - log and continue
+          logError("LiveMatchScreen", "❌ Error during sync attempt", {
+            matchId: currentMatchId,
+            error: syncError instanceof Error ? syncError.message : syncError
+          });
+        }
       }
 
       setMatch({ ...match, status: MatchStatus.COMPLETED });
@@ -1847,6 +2137,29 @@ export default function LiveMatchScreen({
         </TouchableOpacity>
 
         <TouchableOpacity
+          onPress={handleGenerateMockActions}
+          disabled={isGeneratingMockData}
+          style={[
+            styles.toolbarButton,
+            isGeneratingMockData && { opacity: 0.5 },
+          ]}
+        >
+          <MaterialCommunityIcons
+            name="flask"
+            size={22}
+            color={isGeneratingMockData ? BRAND_COLORS[300] : BRAND_COLORS[500]}
+          />
+          <Text
+            style={[
+              styles.toolbarButtonText,
+              { color: isGeneratingMockData ? BRAND_COLORS[300] : BRAND_COLORS[500] },
+            ]}
+          >
+            {isGeneratingMockData ? '...' : 'Test'}
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
           onPress={() => setShowHistoryModal(true)}
           style={styles.toolbarButton}
         >
@@ -2029,13 +2342,6 @@ const CourtView: React.FC<CourtViewProps> = ({
     setCourtDimensions({ width, height });
   };
 
-  const handlePress = (event: any) => {
-    const { locationX, locationY } = event.nativeEvent;
-    const x = (locationX / courtDimensions.width) * 100;
-    const y = (locationY / courtDimensions.height) * 100;
-    onCourtClick(x, y);
-  };
-
   const filteredEvents = events?.filter((e: MatchEvent) => {
     if (!e.coordinates) return false;
     if (filterMode === "ALL") return true;
@@ -2051,15 +2357,47 @@ const CourtView: React.FC<CourtViewProps> = ({
   const markers = showMarkers
     ? filteredEvents?.map((evt: MatchEvent) => {
         let markerColor = SLATE_COLORS[500];
+
+        // Tirs réussis (vert pour nous, rouge pour adversaire)
         if (evt.type.includes("POINT"))
           markerColor = evt.teamId === "AWAY" ? "#ef4444" : "#22c55e";
-        if (evt.type.includes("MISS"))
-          markerColor = evt.teamId === "AWAY" ? "#ea580c" : "#b91c1c";
+
+        // Tirs ratés (orange pour nous, rouge foncé pour adversaire)
+        else if (evt.type.includes("MISS"))
+          markerColor = evt.teamId === "AWAY" ? "#ea580c" : "#f97316";
+
+        // Rebonds (bleu)
+        else if (evt.type === "REBOUND_DEF" || evt.type === "REBOUND_OFF")
+          markerColor = evt.teamId === "AWAY" ? "#3b82f6" : "#60a5fa";
+
+        // Fautes (jaune/orange)
+        else if (evt.type === "FOUL")
+          markerColor = evt.teamId === "AWAY" ? "#f59e0b" : "#fbbf24";
+
+        // Passes décisives (violet)
+        else if (evt.type === "ASSIST")
+          markerColor = evt.teamId === "AWAY" ? "#a855f7" : "#c084fc";
+
+        // Interceptions (cyan)
+        else if (evt.type === "STEAL")
+          markerColor = evt.teamId === "AWAY" ? "#06b6d4" : "#22d3ee";
+
+        // Contres (indigo)
+        else if (evt.type === "BLOCK")
+          markerColor = evt.teamId === "AWAY" ? "#6366f1" : "#818cf8";
+
+        // Pertes de balle (rose)
+        else if (evt.type === "TURNOVER")
+          markerColor = evt.teamId === "AWAY" ? "#ec4899" : "#f472b6";
+
+        // Convert normalized coordinates (0-1) to portrait SVG coordinates (0-615.75 x 0-1146.75)
+        const svgX = evt.coordinates!.x * 615.75;
+        const svgY = evt.coordinates!.y * 1146.75;
 
         return {
           id: evt.id,
-          svgX: evt.coordinates!.x,
-          svgY: evt.coordinates!.y,
+          svgX,
+          svgY,
           color: markerColor,
         };
       }) || []

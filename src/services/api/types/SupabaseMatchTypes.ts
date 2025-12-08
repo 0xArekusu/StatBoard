@@ -3,7 +3,7 @@
  * These types represent the server-side schema for matches and match_players
  */
 
-import { Team, MatchFormat } from '../../../models/types';
+import { Team } from '../../../models/types';
 
 /**
  * Match table on Supabase (completed matches only)
@@ -12,25 +12,28 @@ export interface SupabaseMatch {
   id: string;  // UUID
   club_id: string | null;
   team_id: string | null;
-  team_mode: 'A' | 'B' | 'BOTH';  // Which team(s) are managed
 
   // Match information
-  // team_a and team_b can contain either team UUID or team name
-  team_a: string;
-  team_b: string;
-  match_format: MatchFormat;
+  my_team_name: string | null;
+  opponent_name: string;
+  is_home: boolean;
+  total_periods: number;
   period_duration: number;
+  overtime_duration: number | null;
+  overtime_periods: number;
 
   // Final scores
-  final_score_a: number;
-  final_score_b: number;
-  score_manually_adjusted: boolean;
+  my_team_score: number;
+  opponent_score: number;
+  status: 'completed' | 'abandoned';
 
   // Metadata
   created_by: string | null;  // UUID of auth user
   created_at: string;
+  started_at: string | null;
+  ended_at: string | null;
   played_at: string;
-  synced_at: string;
+  synced_at: string | null;
 }
 
 /**
@@ -39,14 +42,16 @@ export interface SupabaseMatch {
 export interface SupabaseMatchInsert {
   club_id?: string | null;
   team_id?: string | null;
-  team_mode: 'A' | 'B' | 'BOTH';
-  team_a: string;  // Can be team UUID or name
-  team_b: string;  // Can be team UUID or name
-  match_format: MatchFormat;
+  my_team_name?: string | null;
+  opponent_name: string;
+  is_home: boolean;
+  total_periods: number;
   period_duration: number;
-  final_score_a: number;
-  final_score_b: number;
-  score_manually_adjusted?: boolean;
+  overtime_duration?: number | null;
+  overtime_periods: number;
+  my_team_score: number;
+  opponent_score: number;
+  status: 'completed' | 'abandoned';
   created_by?: string | null;
   played_at: string;
 }

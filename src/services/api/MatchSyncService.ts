@@ -337,7 +337,7 @@ export class MatchSyncService {
 
   /**
    * Transform local match data to Supabase format
-   * Handles team_id logic for club teams and groups actions by player
+   * Maps SQLite schema to Supabase schema and groups actions by player
    */
   private transformMatchForSync(
     match: Match,
@@ -345,35 +345,20 @@ export class MatchSyncService {
     actions: Action[],
     userId: string
   ): SupabaseMatchSyncData {
-    // Determine team_a_name and team_b_name values
-    // If team_id exists and matches the team_mode, send team_id as the name
-    let teamAValue = match.team_a_name;
-    let teamBValue = match.team_b_name;
-
-    if (match.team_id) {
-      // If we have a team_id, check which team (A or B) is the club team based on team_mode
-      if (match.team_mode === 'A') {
-        // Team A is the club team, use team_id as the value
-        teamAValue = match.team_id;
-      } else if (match.team_mode === 'B') {
-        // Team B is the club team, use team_id as the value
-        teamBValue = match.team_id;
-      }
-      // For 'BOTH' mode, we keep the original names since both teams are managed
-    }
-
     // Create match insert data
     const matchInsert: SupabaseMatchInsert = {
       club_id: match.club_id || null,
       team_id: match.team_id || null,
-      team_mode: match.team_mode,
-      team_a: teamAValue,
-      team_b: teamBValue,
-      match_format: match.match_format,
+      my_team_name: match.my_team_name || null,
+      opponent_name: match.opponent_name,
+      is_home: match.is_home === 1,
+      total_periods: match.total_periods || 4,
       period_duration: match.period_duration,
-      final_score_a: match.final_score_a || 0,
-      final_score_b: match.final_score_b || 0,
-      score_manually_adjusted: match.score_manually_adjusted === 1,
+      overtime_duration: match.overtime_duration || null,
+      overtime_periods: match.overtime_periods || 0,
+      my_team_score: match.my_team_score || 0,
+      opponent_score: match.opponent_score || 0,
+      status: (match.status as 'completed' | 'abandoned') || 'completed',
       created_by: userId,
       played_at: match.ended_at || match.started_at || match.created_at,
     };
@@ -570,7 +555,8 @@ export class MatchSyncService {
 
       logInfo('MatchSyncService', '📤 Inserting match players to Supabase', {
         supabaseMatchId: matchId,
-        playerCount: playersWithMatchId.length
+        playerCount: playersWithMatchId.length,
+        teamValues: playersWithMatchId.map(p => p.team)
       });
 
       const { error: playersError } = await this.supabase
