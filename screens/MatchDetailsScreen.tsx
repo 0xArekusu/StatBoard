@@ -33,6 +33,7 @@ import {
   SLATE_COLORS,
   COMMON_COLORS,
 } from "../src/theme/clubDefaults";
+import BasketballCourtSVG from "../components/BasketballCourtSVG";
 
 // Types
 interface PlayerStats {
@@ -104,10 +105,9 @@ export default function MatchDetailsScreen() {
           return true; // Prevent default back behavior
         };
 
-        BackHandler.addEventListener("hardwareBackPress", onBackPress);
+        const subscription = BackHandler.addEventListener("hardwareBackPress", onBackPress);
 
-        return () =>
-          BackHandler.removeEventListener("hardwareBackPress", onBackPress);
+        return () => subscription.remove();
       }
     }, [fromLiveMatch, navigation])
   );
@@ -844,7 +844,7 @@ export default function MatchDetailsScreen() {
               {/* Table Body */}
               {stats.map((player, index) => (
                 <TouchableOpacity
-                  key={`${player.team}-${player.playerNumber}`}
+                  key={`${player.team}-${player.playerNumber}-${index}`}
                   onPress={() => setViewPlayer(player)}
                   style={[
                     styles.tableRow,
@@ -1198,9 +1198,9 @@ export default function MatchDetailsScreen() {
         {/* CARDS VIEW */}
         {activeTab === "CARDS" && (
           <View style={styles.cardsContainer}>
-            {stats.map((player) => (
+            {stats.map((player, index) => (
               <TouchableOpacity
-                key={`${player.team}-${player.playerNumber}`}
+                key={`${player.team}-${player.playerNumber}-${index}`}
                 onPress={() => setViewPlayer(player)}
                 style={[
                   styles.playerCard,
@@ -1423,12 +1423,108 @@ export default function MatchDetailsScreen() {
 
         {/* COURT VIEW */}
         {activeTab === "COURT" && (
-          <View
-            style={[styles.courtContainer, { backgroundColor: surfaceColor }]}
-          >
-            <Text style={[styles.emptyStateText, { color: textTertiary }]}>
-              Carte des tirs - À venir
-            </Text>
+          <View style={styles.courtViewContainer}>
+            {/* Basketball Court with Shot Chart */}
+            <View
+              style={[styles.courtContainer, { backgroundColor: surfaceColor }]}
+            >
+              <BasketballCourtSVG
+                width={400}
+                height={600}
+                backgroundColor={isDark ? "#2d5a3d" : "#e8f5e9"}
+                lineColor={isDark ? "#f1f5f9" : "#1e293b"}
+                logoUri={null}
+                markers={
+                  actions
+                    ?.filter((action: any) => {
+                      // Filter shots only - check action_type or type field
+                      const actionType = (
+                        action.action_type ||
+                        action.type ||
+                        ""
+                      ).toUpperCase();
+                      if (actionType !== "SHOT") return false;
+
+                      // Filter by team using activeTeamFilter (already selected at top)
+                      return action.team === activeTeamFilter;
+                    })
+                    .filter((action: any) => action.semanticPosition) // Only actions with position
+                    .map((action: any, index: number) => {
+                      // Convert normalized coordinates to SVG coordinates
+                      const svgX = action.semanticPosition.xNormalized * 615.75;
+                      const svgY =
+                        action.semanticPosition.yNormalized * 1146.75;
+
+                      // Determine marker color based on specification (made/missed)
+                      const specification = (
+                        action.specification || ""
+                      ).toLowerCase();
+                      let markerColor = SLATE_COLORS[500];
+
+                      if (specification === "made") {
+                        // Made shots
+                        markerColor =
+                          action.team === Team.MY_TEAM ? "#22c55e" : "#ef4444";
+                      } else if (specification === "missed") {
+                        // Missed shots
+                        markerColor =
+                          action.team === Team.MY_TEAM ? "#f97316" : "#ea580c";
+                      }
+
+                      return {
+                        id: `${action.team}-${action.player || action.player_number}-${action.timestamp || index}-${index}`,
+                        svgX,
+                        svgY,
+                        color: markerColor,
+                      };
+                    }) || []
+                }
+              />
+
+              {/* Shot Stats Summary */}
+              <View
+                style={[styles.shotStatsSummary, { backgroundColor: bgColor }]}
+              >
+                <View style={styles.shotStatsRow}>
+                  <View style={styles.shotStatItem}>
+                    <View
+                      style={[
+                        styles.shotStatDot,
+                        {
+                          backgroundColor:
+                            activeTeamFilter === Team.MY_TEAM
+                              ? "#22c55e"
+                              : "#ef4444",
+                        },
+                      ]}
+                    />
+                    <Text
+                      style={[styles.shotStatLabel, { color: textSecondary }]}
+                    >
+                      Tirs réussis
+                    </Text>
+                  </View>
+                  <View style={styles.shotStatItem}>
+                    <View
+                      style={[
+                        styles.shotStatDot,
+                        {
+                          backgroundColor:
+                            activeTeamFilter === Team.MY_TEAM
+                              ? "#f97316"
+                              : "#ea580c",
+                        },
+                      ]}
+                    />
+                    <Text
+                      style={[styles.shotStatLabel, { color: textSecondary }]}
+                    >
+                      Tirs manqués
+                    </Text>
+                  </View>
+                </View>
+              </View>
+            </View>
           </View>
         )}
       </ScrollView>
@@ -1887,15 +1983,6 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
 
-  // Court View
-  courtContainer: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 40,
-    minHeight: 300,
-  },
-
   // Empty State
   emptyState: {
     paddingVertical: 32,
@@ -2055,5 +2142,44 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 12,
+  },
+
+  // Court View
+  courtViewContainer: {
+    marginBottom: 80,
+  },
+  courtContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 24,
+    borderRadius: 16,
+    minHeight: 600,
+  },
+  shotStatsSummary: {
+    marginTop: 24,
+    padding: 16,
+    borderRadius: 12,
+    width: "100%",
+    maxWidth: 400,
+  },
+  shotStatsRow: {
+    flexDirection: "row",
+    gap: 16,
+    marginBottom: 8,
+  },
+  shotStatItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    flex: 1,
+  },
+  shotStatDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+  },
+  shotStatLabel: {
+    fontSize: 11,
+    fontWeight: "600",
   },
 });
