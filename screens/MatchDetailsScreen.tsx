@@ -21,7 +21,8 @@ import {
 } from "react-native";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
-import { Match, Action, Team } from "../src/models/types";
+import { Match, Team } from "../src/models/types";
+import { BRAND_COLORS } from "../src/theme/clubDefaults";
 
 // Types
 interface PlayerStats {
@@ -66,8 +67,18 @@ export default function MatchDetailsScreen() {
   console.log("🔵 MatchDetailsScreen - route.params:", route.params);
   const { match, actions, fromLiveMatch, players } = route.params;
   console.log("🔵 MatchDetailsScreen - match:", match);
-  console.log("🔵 MatchDetailsScreen - actions:", actions, "length:", actions?.length);
-  console.log("🔵 MatchDetailsScreen - players:", players, "length:", players?.length);
+  console.log(
+    "🔵 MatchDetailsScreen - actions:",
+    actions,
+    "length:",
+    actions?.length
+  );
+  console.log(
+    "🔵 MatchDetailsScreen - players:",
+    players,
+    "length:",
+    players?.length
+  );
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
 
@@ -141,7 +152,11 @@ export default function MatchDetailsScreen() {
         const stats = playerStatsMap.get(key)!;
 
         // Normalize action types to uppercase for comparison
-        const actionType = (action.action_type || action.type || "").toUpperCase();
+        const actionType = (
+          action.action_type ||
+          action.type ||
+          ""
+        ).toUpperCase();
         const specification = (action.specification || "").toLowerCase();
 
         // Points et tirs
@@ -408,7 +423,7 @@ export default function MatchDetailsScreen() {
                     label="Lancers"
                     made={viewPlayer.ftm}
                     attempted={viewPlayer.fta}
-                    color="#f59e0b"
+                    color="#06b6d4"
                     colors={colors}
                   />
 
@@ -726,193 +741,524 @@ export default function MatchDetailsScreen() {
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* TABLE VIEW */}
         {activeTab === "STATS" && (
-          <View
-            style={[
-              styles.tableContainer,
-              { backgroundColor: colors.surface, borderColor: colors.border },
-            ]}
-          >
-            {/* Table Header */}
+          <ScrollView horizontal showsHorizontalScrollIndicator={true}>
             <View
               style={[
-                styles.tableHeader,
-                { backgroundColor: isDark ? "#1e293b33" : "#f1f5f9" },
+                styles.tableContainer,
+                { backgroundColor: colors.surface, borderColor: colors.border },
               ]}
             >
-              <Text
+              {/* Table Header */}
+              <View
                 style={[
-                  styles.tableHeaderCell,
-                  styles.playerCell,
-                  { color: colors.text.secondary },
+                  styles.tableHeader,
+                  { backgroundColor: isDark ? "#1e293b33" : "#f1f5f9" },
                 ]}
               >
-                JOUEUR
-              </Text>
-              <Text
-                style={[
-                  styles.tableHeaderCell,
-                  styles.minCell,
-                  { color: colors.text.tertiary },
-                ]}
-              >
-                MIN
-              </Text>
-              <Text
-                style={[
-                  styles.tableHeaderCell,
-                  styles.statCell,
-                  { color: colors.text.secondary },
-                ]}
-              >
-                PTS
-              </Text>
-              <Text
-                style={[
-                  styles.tableHeaderCell,
-                  styles.statCell,
-                  { color: colors.text.secondary },
-                ]}
-              >
-                REB
-              </Text>
-              <Text
-                style={[
-                  styles.tableHeaderCell,
-                  styles.statCell,
-                  { color: colors.text.secondary },
-                ]}
-              >
-                AST
-              </Text>
-              <Text
-                style={[
-                  styles.tableHeaderCell,
-                  styles.statCell,
-                  { color: colors.text.secondary },
-                ]}
-              >
-                PF
-              </Text>
-              <Text
-                style={[
-                  styles.tableHeaderCell,
-                  styles.statCell,
-                  { color: colors.text.secondary },
-                ]}
-              >
-                EFF
-              </Text>
-            </View>
-
-            {/* Table Body */}
-            {stats.map((player, index) => (
-              <TouchableOpacity
-                key={`${player.team}-${player.playerNumber}`}
-                onPress={() => setViewPlayer(player)}
-                style={[
-                  styles.tableRow,
-                  { borderBottomColor: colors.border },
-                  index === stats.length - 1 && { borderBottomWidth: 0 },
-                ]}
-              >
-                <View style={[styles.tableCell, styles.playerCell]}>
-                  <View
-                    style={[
-                      styles.playerNumberBadge,
-                      { backgroundColor: colors.background },
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.playerNumberBadgeText,
-                        { color: colors.text.secondary },
-                      ]}
-                    >
-                      {player.playerNumber}
-                    </Text>
-                  </View>
-                  <Text
-                    style={[
-                      styles.playerNameText,
-                      { color: colors.text.primary },
-                    ]}
-                    numberOfLines={1}
-                  >
-                    {player.name}
-                  </Text>
-                </View>
                 <Text
                   style={[
-                    styles.tableCell,
+                    styles.tableHeaderCell,
+                    styles.playerCell,
+                    { color: colors.text.secondary },
+                  ]}
+                >
+                  JOUEUR
+                </Text>
+                <Text
+                  style={[
+                    styles.tableHeaderCell,
                     styles.minCell,
                     { color: colors.text.tertiary },
                   ]}
                 >
-                  {player.min}'
+                  MIN
                 </Text>
                 <Text
                   style={[
-                    styles.tableCell,
+                    styles.tableHeaderCell,
                     styles.statCell,
-                    styles.statCellBold,
-                    { color: colors.text.primary },
+                    { color: colors.text.secondary },
                   ]}
                 >
-                  {player.pts}
+                  PTS
                 </Text>
                 <Text
                   style={[
-                    styles.tableCell,
+                    styles.tableHeaderCell,
+                    styles.statCellWide,
+                    { color: colors.text.secondary },
+                  ]}
+                >
+                  TIRS
+                </Text>
+                <Text
+                  style={[
+                    styles.tableHeaderCell,
+                    styles.statCellWide,
+                    { color: colors.text.secondary },
+                  ]}
+                >
+                  2PTS
+                </Text>
+                <Text
+                  style={[
+                    styles.tableHeaderCell,
+                    styles.statCellWide,
+                    { color: colors.text.secondary },
+                  ]}
+                >
+                  3PTS
+                </Text>
+                <Text
+                  style={[
+                    styles.tableHeaderCell,
+                    styles.statCellWide,
+                    { color: colors.text.secondary },
+                  ]}
+                >
+                  LF
+                </Text>
+                <Text
+                  style={[
+                    styles.tableHeaderCell,
                     styles.statCell,
-                    { color: colors.text.primary },
+                    { color: colors.text.secondary },
                   ]}
                 >
-                  {player.reb}
+                  REB
                 </Text>
                 <Text
                   style={[
-                    styles.tableCell,
+                    styles.tableHeaderCell,
                     styles.statCell,
-                    { color: colors.text.primary },
+                    { color: colors.text.secondary },
                   ]}
                 >
-                  {player.ast}
+                  RO
                 </Text>
                 <Text
                   style={[
-                    styles.tableCell,
+                    styles.tableHeaderCell,
                     styles.statCell,
-                    { color: colors.text.primary },
+                    { color: colors.text.secondary },
                   ]}
                 >
-                  {player.pf}
+                  RD
                 </Text>
                 <Text
                   style={[
-                    styles.tableCell,
+                    styles.tableHeaderCell,
                     styles.statCell,
-                    styles.statCellBold,
-                    { color: colors.brand },
+                    { color: colors.text.secondary },
                   ]}
                 >
-                  {player.eff}
+                  AST
                 </Text>
-              </TouchableOpacity>
-            ))}
-
-            {stats.length === 0 && (
-              <View style={styles.emptyState}>
                 <Text
                   style={[
-                    styles.emptyStateText,
-                    { color: colors.text.tertiary },
+                    styles.tableHeaderCell,
+                    styles.statCell,
+                    { color: colors.text.secondary },
                   ]}
                 >
-                  Aucune donnée disponible
+                  INT
+                </Text>
+                <Text
+                  style={[
+                    styles.tableHeaderCell,
+                    styles.statCell,
+                    { color: colors.text.secondary },
+                  ]}
+                >
+                  CTR
+                </Text>
+                <Text
+                  style={[
+                    styles.tableHeaderCell,
+                    styles.statCell,
+                    { color: colors.text.secondary },
+                  ]}
+                >
+                  BP
+                </Text>
+                <Text
+                  style={[
+                    styles.tableHeaderCell,
+                    styles.statCell,
+                    { color: colors.text.secondary },
+                  ]}
+                >
+                  FT
+                </Text>
+                <Text
+                  style={[
+                    styles.tableHeaderCell,
+                    styles.statCell,
+                    { color: colors.text.secondary },
+                  ]}
+                >
+                  EFF
                 </Text>
               </View>
-            )}
-          </View>
+
+              {/* Table Body */}
+              {stats.map((player, index) => (
+                <TouchableOpacity
+                  key={`${player.team}-${player.playerNumber}`}
+                  onPress={() => setViewPlayer(player)}
+                  style={[
+                    styles.tableRow,
+                    { borderBottomColor: colors.border },
+                    index === stats.length - 1 && { borderBottomWidth: 0 },
+                  ]}
+                >
+                  <View style={[styles.tableCell, styles.playerCell]}>
+                    <View
+                      style={[
+                        styles.playerNumberBadge,
+                        { backgroundColor: colors.background },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.playerNumberBadgeText,
+                          { color: colors.text.secondary },
+                        ]}
+                      >
+                        {player.playerNumber}
+                      </Text>
+                    </View>
+                    <Text
+                      style={[
+                        styles.playerNameText,
+                        { color: colors.text.primary },
+                      ]}
+                      numberOfLines={1}
+                    >
+                      {player.name}
+                    </Text>
+                  </View>
+                  <Text
+                    style={[
+                      styles.tableCell,
+                      styles.minCell,
+                      { color: colors.text.tertiary },
+                    ]}
+                  >
+                    {player.min}'
+                  </Text>
+                  <Text
+                    style={[
+                      styles.tableCell,
+                      styles.statCell,
+                      styles.statCellBold,
+                      { color: colors.text.primary },
+                    ]}
+                  >
+                    {player.pts}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.tableCell,
+                      styles.statCellWide,
+                      { color: colors.text.primary },
+                    ]}
+                  >
+                    {player.fgm}/{player.fga}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.tableCell,
+                      styles.statCellWide,
+                      { color: colors.text.primary },
+                    ]}
+                  >
+                    {player.fg2m}/{player.fg2a}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.tableCell,
+                      styles.statCellWide,
+                      { color: colors.text.primary },
+                    ]}
+                  >
+                    {player.fg3m}/{player.fg3a}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.tableCell,
+                      styles.statCellWide,
+                      { color: colors.text.primary },
+                    ]}
+                  >
+                    {player.ftm}/{player.fta}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.tableCell,
+                      styles.statCell,
+                      { color: colors.text.primary },
+                    ]}
+                  >
+                    {player.reb}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.tableCell,
+                      styles.statCell,
+                      { color: colors.text.primary },
+                    ]}
+                  >
+                    {player.reb_off}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.tableCell,
+                      styles.statCell,
+                      { color: colors.text.primary },
+                    ]}
+                  >
+                    {player.reb_def}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.tableCell,
+                      styles.statCell,
+                      { color: colors.text.primary },
+                    ]}
+                  >
+                    {player.ast}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.tableCell,
+                      styles.statCell,
+                      { color: colors.text.primary },
+                    ]}
+                  >
+                    {player.stl}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.tableCell,
+                      styles.statCell,
+                      { color: colors.text.primary },
+                    ]}
+                  >
+                    {player.blk}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.tableCell,
+                      styles.statCell,
+                      { color: colors.text.primary },
+                    ]}
+                  >
+                    {player.to}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.tableCell,
+                      styles.statCell,
+                      { color: colors.text.primary },
+                    ]}
+                  >
+                    {player.pf}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.tableCell,
+                      styles.statCell,
+                      styles.statCellBold,
+                      { color: BRAND_COLORS[500] },
+                    ]}
+                  >
+                    {player.eff}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+
+              {/* Total Row */}
+              {stats.length > 0 && (
+                <View
+                  style={[
+                    styles.tableRow,
+                    styles.totalRow,
+                    {
+                      backgroundColor: isDark ? "#1e293b33" : "#f1f5f9",
+                      borderBottomWidth: 0,
+                    },
+                  ]}
+                >
+                  <View style={[styles.tableCell, styles.playerCell]}>
+                    <Text
+                      style={[
+                        styles.playerNameText,
+                        styles.totalText,
+                        { color: colors.text.primary },
+                      ]}
+                    >
+                      TOTAL
+                    </Text>
+                  </View>
+                  <Text
+                    style={[
+                      styles.tableCell,
+                      styles.minCell,
+                      { color: colors.text.tertiary },
+                    ]}
+                  >
+                    -
+                  </Text>
+                  <Text
+                    style={[
+                      styles.tableCell,
+                      styles.statCell,
+                      styles.statCellBold,
+                      { color: colors.text.primary },
+                    ]}
+                  >
+                    {stats.reduce((sum, p) => sum + p.pts, 0)}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.tableCell,
+                      styles.statCellWide,
+                      { color: colors.text.primary },
+                    ]}
+                  >
+                    {stats.reduce((sum, p) => sum + p.fgm, 0)}/
+                    {stats.reduce((sum, p) => sum + p.fga, 0)}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.tableCell,
+                      styles.statCellWide,
+                      { color: colors.text.primary },
+                    ]}
+                  >
+                    {stats.reduce((sum, p) => sum + p.fg2m, 0)}/
+                    {stats.reduce((sum, p) => sum + p.fg2a, 0)}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.tableCell,
+                      styles.statCellWide,
+                      { color: colors.text.primary },
+                    ]}
+                  >
+                    {stats.reduce((sum, p) => sum + p.fg3m, 0)}/
+                    {stats.reduce((sum, p) => sum + p.fg3a, 0)}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.tableCell,
+                      styles.statCellWide,
+                      { color: colors.text.primary },
+                    ]}
+                  >
+                    {stats.reduce((sum, p) => sum + p.ftm, 0)}/
+                    {stats.reduce((sum, p) => sum + p.fta, 0)}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.tableCell,
+                      styles.statCell,
+                      { color: colors.text.primary },
+                    ]}
+                  >
+                    {stats.reduce((sum, p) => sum + p.reb, 0)}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.tableCell,
+                      styles.statCell,
+                      { color: colors.text.primary },
+                    ]}
+                  >
+                    {stats.reduce((sum, p) => sum + p.reb_off, 0)}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.tableCell,
+                      styles.statCell,
+                      { color: colors.text.primary },
+                    ]}
+                  >
+                    {stats.reduce((sum, p) => sum + p.reb_def, 0)}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.tableCell,
+                      styles.statCell,
+                      { color: colors.text.primary },
+                    ]}
+                  >
+                    {stats.reduce((sum, p) => sum + p.ast, 0)}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.tableCell,
+                      styles.statCell,
+                      { color: colors.text.primary },
+                    ]}
+                  >
+                    {stats.reduce((sum, p) => sum + p.stl, 0)}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.tableCell,
+                      styles.statCell,
+                      { color: colors.text.primary },
+                    ]}
+                  >
+                    {stats.reduce((sum, p) => sum + p.blk, 0)}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.tableCell,
+                      styles.statCell,
+                      { color: colors.text.primary },
+                    ]}
+                  >
+                    {stats.reduce((sum, p) => sum + p.to, 0)}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.tableCell,
+                      styles.statCell,
+                      { color: colors.text.primary },
+                    ]}
+                  >
+                    {stats.reduce((sum, p) => sum + p.pf, 0)}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.tableCell,
+                      styles.statCell,
+                      styles.statCellBold,
+                      { color: BRAND_COLORS[500] },
+                    ]}
+                  >
+                    {stats.reduce((sum, p) => sum + p.eff, 0)}
+                  </Text>
+                </View>
+              )}
+
+              {stats.length === 0 && (
+                <View style={styles.emptyState}>
+                  <Text
+                    style={[
+                      styles.emptyStateText,
+                      { color: colors.text.tertiary },
+                    ]}
+                  >
+                    Aucune donnée disponible
+                  </Text>
+                </View>
+              )}
+            </View>
+          </ScrollView>
         )}
 
         {/* CARDS VIEW */}
@@ -1014,7 +1360,7 @@ export default function MatchDetailsScreen() {
                     label="LANC"
                     made={player.ftm}
                     attempted={player.fta}
-                    color="#f59e0b"
+                    color="#06b6d4"
                     colors={colors}
                     compact
                   />
@@ -1171,10 +1517,7 @@ export default function MatchDetailsScreen() {
                       style={[
                         styles.cardStatValue,
                         {
-                          color:
-                            player.eff >= 15
-                              ? colors.brand
-                              : colors.text.primary,
+                          color: BRAND_COLORS[500],
                         },
                       ]}
                     >
@@ -1239,44 +1582,48 @@ const ShootingBar: React.FC<ShootingBarProps> = ({
 
   return (
     <View style={[styles.shootingBar, compact && styles.shootingBarCompact]}>
-      <Text
-        style={[
-          styles.shootingBarLabel,
-          { color: colors.text.secondary },
-          compact && styles.shootingBarLabelCompact,
-        ]}
-      >
-        {label}
-      </Text>
-      <View
-        style={[
-          styles.shootingBarTrack,
-          { backgroundColor: isDark ? "#334155" : "#e2e8f0" },
-          compact && styles.shootingBarTrackCompact,
-        ]}
-      >
+      <View style={styles.shootingBarRow}>
+        <Text
+          style={[
+            styles.shootingBarLabel,
+            { color: colors.text.secondary },
+            compact && styles.shootingBarLabelCompact,
+          ]}
+        >
+          {label}
+        </Text>
         <View
           style={[
-            styles.shootingBarFill,
-            { backgroundColor: color, width: `${pct}%` },
+            styles.shootingBarTrack,
+            { backgroundColor: isDark ? "#334155" : "#e2e8f0" },
+            compact && styles.shootingBarTrackCompact,
           ]}
-        />
+        >
+          <View
+            style={[
+              styles.shootingBarFill,
+              { backgroundColor: color, width: `${pct}%` },
+            ]}
+          />
+        </View>
+        <Text
+          style={[
+            styles.shootingBarValue,
+            { color: colors.text.primary },
+            compact && styles.shootingBarValueCompact,
+          ]}
+        >
+          <Text style={styles.shootingBarValueBold}>
+            {made}/{attempted}
+          </Text>
+          <Text
+            style={[styles.shootingBarPct, { color: colors.text.tertiary }]}
+          >
+            {" "}
+            ({pct}%)
+          </Text>
+        </Text>
       </View>
-      <Text
-        style={[
-          styles.shootingBarValue,
-          { color: colors.text.primary },
-          compact && styles.shootingBarValueCompact,
-        ]}
-      >
-        <Text style={styles.shootingBarValueBold}>
-          {made}/{attempted}
-        </Text>
-        <Text style={[styles.shootingBarPct, { color: colors.text.tertiary }]}>
-          {" "}
-          ({pct}%)
-        </Text>
-      </Text>
     </View>
   );
 };
@@ -1460,7 +1807,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   playerCell: {
-    flex: 1,
+    minWidth: 120,
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
@@ -1489,8 +1836,20 @@ const styles = StyleSheet.create({
     width: 40,
     textAlign: "center",
   },
+  statCellWide: {
+    width: 60,
+    textAlign: "center",
+    fontSize: 11,
+  },
   statCellBold: {
     fontWeight: "900",
+  },
+  totalRow: {},
+  totalText: {
+    fontSize: 10,
+    fontWeight: "700",
+    letterSpacing: 1,
+    textTransform: "uppercase",
   },
 
   // Cards View
@@ -1584,19 +1943,27 @@ const styles = StyleSheet.create({
 
   // Shooting Bar
   shootingBar: {
-    gap: 8,
+    marginBottom: 8,
   },
   shootingBarCompact: {
-    gap: 4,
+    marginBottom: 4,
+  },
+  shootingBarRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
   },
   shootingBarLabel: {
     fontSize: 12,
     fontWeight: "700",
+    width: 50,
   },
   shootingBarLabelCompact: {
     fontSize: 10,
+    width: 45,
   },
   shootingBarTrack: {
+    flex: 1,
     height: 12,
     borderRadius: 999,
     overflow: "hidden",
@@ -1609,9 +1976,12 @@ const styles = StyleSheet.create({
   },
   shootingBarValue: {
     fontSize: 12,
+    minWidth: 70,
+    textAlign: "right",
   },
   shootingBarValueCompact: {
     fontSize: 10,
+    minWidth: 65,
   },
   shootingBarValueBold: {
     fontWeight: "700",
@@ -1734,6 +2104,7 @@ const styles = StyleSheet.create({
     fontWeight: "900",
     textTransform: "uppercase",
     lineHeight: 24,
+    width: 1000,
   },
   modalPlayerTeam: {
     fontSize: 12,
