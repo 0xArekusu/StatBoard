@@ -1437,14 +1437,6 @@ export default function MatchDetailsScreen() {
                 markers={
                   actions
                     ?.filter((action: any) => {
-                      // Filter shots only - check action_type or type field
-                      const actionType = (
-                        action.action_type ||
-                        action.type ||
-                        ""
-                      ).toUpperCase();
-                      if (actionType !== "SHOT") return false;
-
                       // Filter by team using activeTeamFilter (already selected at top)
                       return action.team === activeTeamFilter;
                     })
@@ -1455,20 +1447,37 @@ export default function MatchDetailsScreen() {
                       const svgY =
                         action.semanticPosition.yNormalized * 1146.75;
 
-                      // Determine marker color based on specification (made/missed)
+                      // Determine marker color based on action type
+                      const actionType = (
+                        action.action_type ||
+                        action.type ||
+                        ""
+                      ).toUpperCase();
                       const specification = (
                         action.specification || ""
                       ).toLowerCase();
                       let markerColor = SLATE_COLORS[500];
 
-                      if (specification === "made") {
-                        // Made shots
-                        markerColor =
-                          action.team === Team.MY_TEAM ? "#22c55e" : "#ef4444";
-                      } else if (specification === "missed") {
-                        // Missed shots
-                        markerColor =
-                          action.team === Team.MY_TEAM ? "#f97316" : "#ea580c";
+                      if (actionType === "SHOT") {
+                        if (specification === "made") {
+                          markerColor =
+                            action.team === Team.MY_TEAM ? "#22c55e" : "#ef4444";
+                        } else if (specification === "missed") {
+                          markerColor =
+                            action.team === Team.MY_TEAM ? "#f97316" : "#ea580c";
+                        }
+                      } else if (actionType === "REBOUND") {
+                        markerColor = "#8b5cf6"; // Purple
+                      } else if (actionType === "ASSIST") {
+                        markerColor = "#06b6d4"; // Cyan
+                      } else if (actionType === "STEAL") {
+                        markerColor = "#eab308"; // Yellow
+                      } else if (actionType === "BLOCK") {
+                        markerColor = "#ec4899"; // Pink
+                      } else if (actionType === "TURNOVER") {
+                        markerColor = "#64748b"; // Slate
+                      } else if (actionType === "FOUL") {
+                        markerColor = "#dc2626"; // Red
                       }
 
                       return {
@@ -1481,7 +1490,7 @@ export default function MatchDetailsScreen() {
                 }
               />
 
-              {/* Shot Stats Summary */}
+              {/* Stats Legend */}
               <View
                 style={[styles.shotStatsSummary, { backgroundColor: bgColor }]}
               >
@@ -1520,6 +1529,90 @@ export default function MatchDetailsScreen() {
                       style={[styles.shotStatLabel, { color: textSecondary }]}
                     >
                       Tirs manqués
+                    </Text>
+                  </View>
+                </View>
+                <View style={styles.shotStatsRow}>
+                  <View style={styles.shotStatItem}>
+                    <View
+                      style={[
+                        styles.shotStatDot,
+                        { backgroundColor: "#8b5cf6" },
+                      ]}
+                    />
+                    <Text
+                      style={[styles.shotStatLabel, { color: textSecondary }]}
+                    >
+                      Rebonds
+                    </Text>
+                  </View>
+                  <View style={styles.shotStatItem}>
+                    <View
+                      style={[
+                        styles.shotStatDot,
+                        { backgroundColor: "#06b6d4" },
+                      ]}
+                    />
+                    <Text
+                      style={[styles.shotStatLabel, { color: textSecondary }]}
+                    >
+                      Passes
+                    </Text>
+                  </View>
+                </View>
+                <View style={styles.shotStatsRow}>
+                  <View style={styles.shotStatItem}>
+                    <View
+                      style={[
+                        styles.shotStatDot,
+                        { backgroundColor: "#eab308" },
+                      ]}
+                    />
+                    <Text
+                      style={[styles.shotStatLabel, { color: textSecondary }]}
+                    >
+                      Interceptions
+                    </Text>
+                  </View>
+                  <View style={styles.shotStatItem}>
+                    <View
+                      style={[
+                        styles.shotStatDot,
+                        { backgroundColor: "#ec4899" },
+                      ]}
+                    />
+                    <Text
+                      style={[styles.shotStatLabel, { color: textSecondary }]}
+                    >
+                      Contres
+                    </Text>
+                  </View>
+                </View>
+                <View style={styles.shotStatsRow}>
+                  <View style={styles.shotStatItem}>
+                    <View
+                      style={[
+                        styles.shotStatDot,
+                        { backgroundColor: "#64748b" },
+                      ]}
+                    />
+                    <Text
+                      style={[styles.shotStatLabel, { color: textSecondary }]}
+                    >
+                      Pertes
+                    </Text>
+                  </View>
+                  <View style={styles.shotStatItem}>
+                    <View
+                      style={[
+                        styles.shotStatDot,
+                        { backgroundColor: "#dc2626" },
+                      ]}
+                    />
+                    <Text
+                      style={[styles.shotStatLabel, { color: textSecondary }]}
+                    >
+                      Fautes
                     </Text>
                   </View>
                 </View>
