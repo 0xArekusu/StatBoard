@@ -64,15 +64,7 @@ interface PlayerStats {
 
 type Tab = "STATS" | "CARDS" | "COURT";
 type TeamFilter = "MyTeam" | "Opponent";
-type ActionFilter =
-  | "ALL"
-  | "SHOOTING"
-  | "REBOUNDS"
-  | "ASSISTS"
-  | "STEALS"
-  | "BLOCKS"
-  | "TURNOVERS"
-  | "FOULS";
+type ActionType = "ALL" | "SHOOTING" | "REBOUNDS" | "ASSISTS" | "STEALS" | "BLOCKS" | "TURNOVERS" | "FOULS";
 
 interface RouteParams {
   match: Match;
@@ -103,7 +95,7 @@ export default function MatchDetailsScreen() {
     Team.MY_TEAM
   );
   const [viewPlayer, setViewPlayer] = useState<PlayerStats | null>(null);
-  const [actionFilter, setActionFilter] = useState<ActionFilter>("ALL");
+  const [selectedActionTypes, setSelectedActionTypes] = useState<ActionType[]>([]);
   const [selectedPlayers, setSelectedPlayers] = useState<number[]>([]);
   const [showCourtFilters, setShowCourtFilters] = useState(false);
 
@@ -1453,18 +1445,18 @@ export default function MatchDetailsScreen() {
               >
                 <View style={styles.courtFilterButtonsRow}>
                   <TouchableOpacity
-                    onPress={() => setActionFilter("ALL")}
+                    onPress={() => setSelectedActionTypes([])}
                     style={[
                       styles.courtFilterChip,
                       {
                         backgroundColor:
-                          actionFilter === "ALL"
+                          selectedActionTypes.length === 0
                             ? BRAND_COLORS[600]
                             : isDark
                             ? SLATE_COLORS[800]
                             : SLATE_COLORS[100],
                         borderColor:
-                          actionFilter === "ALL"
+                          selectedActionTypes.length === 0
                             ? BRAND_COLORS[500]
                             : borderColor,
                       },
@@ -1475,7 +1467,7 @@ export default function MatchDetailsScreen() {
                         styles.courtFilterChipText,
                         {
                           color:
-                            actionFilter === "ALL"
+                            selectedActionTypes.length === 0
                               ? COMMON_COLORS.white
                               : textPrimary,
                         },
@@ -1486,18 +1478,24 @@ export default function MatchDetailsScreen() {
                   </TouchableOpacity>
 
                   <TouchableOpacity
-                    onPress={() => setActionFilter("SHOOTING")}
+                    onPress={() => {
+                      if (selectedActionTypes.includes("SHOOTING")) {
+                        setSelectedActionTypes(selectedActionTypes.filter(t => t !== "SHOOTING"));
+                      } else {
+                        setSelectedActionTypes([...selectedActionTypes, "SHOOTING"]);
+                      }
+                    }}
                     style={[
                       styles.courtFilterChip,
                       {
                         backgroundColor:
-                          actionFilter === "SHOOTING"
+                          selectedActionTypes.includes("SHOOTING")
                             ? BRAND_COLORS[600]
                             : isDark
                             ? SLATE_COLORS[800]
                             : SLATE_COLORS[100],
                         borderColor:
-                          actionFilter === "SHOOTING"
+                          selectedActionTypes.includes("SHOOTING")
                             ? BRAND_COLORS[500]
                             : borderColor,
                       },
@@ -1508,7 +1506,7 @@ export default function MatchDetailsScreen() {
                         styles.courtFilterChipText,
                         {
                           color:
-                            actionFilter === "SHOOTING"
+                            selectedActionTypes.includes("SHOOTING")
                               ? COMMON_COLORS.white
                               : textPrimary,
                         },
@@ -1519,18 +1517,24 @@ export default function MatchDetailsScreen() {
                   </TouchableOpacity>
 
                   <TouchableOpacity
-                    onPress={() => setActionFilter("REBOUNDS")}
+                    onPress={() => {
+                      if (selectedActionTypes.includes("REBOUNDS")) {
+                        setSelectedActionTypes(selectedActionTypes.filter(t => t !== "REBOUNDS"));
+                      } else {
+                        setSelectedActionTypes([...selectedActionTypes, "REBOUNDS"]);
+                      }
+                    }}
                     style={[
                       styles.courtFilterChip,
                       {
                         backgroundColor:
-                          actionFilter === "REBOUNDS"
+                          selectedActionTypes.includes("REBOUNDS")
                             ? BRAND_COLORS[600]
                             : isDark
                             ? SLATE_COLORS[800]
                             : SLATE_COLORS[100],
                         borderColor:
-                          actionFilter === "REBOUNDS"
+                          selectedActionTypes.includes("REBOUNDS")
                             ? BRAND_COLORS[500]
                             : borderColor,
                       },
@@ -1541,7 +1545,7 @@ export default function MatchDetailsScreen() {
                         styles.courtFilterChipText,
                         {
                           color:
-                            actionFilter === "REBOUNDS"
+                            selectedActionTypes.includes("REBOUNDS")
                               ? COMMON_COLORS.white
                               : textPrimary,
                         },
@@ -1552,18 +1556,24 @@ export default function MatchDetailsScreen() {
                   </TouchableOpacity>
 
                   <TouchableOpacity
-                    onPress={() => setActionFilter("ASSISTS")}
+                    onPress={() => {
+                      if (selectedActionTypes.includes("ASSISTS")) {
+                        setSelectedActionTypes(selectedActionTypes.filter(t => t !== "ASSISTS"));
+                      } else {
+                        setSelectedActionTypes([...selectedActionTypes, "ASSISTS"]);
+                      }
+                    }}
                     style={[
                       styles.courtFilterChip,
                       {
                         backgroundColor:
-                          actionFilter === "ASSISTS"
+                          selectedActionTypes.includes("ASSISTS")
                             ? BRAND_COLORS[600]
                             : isDark
                             ? SLATE_COLORS[800]
                             : SLATE_COLORS[100],
                         borderColor:
-                          actionFilter === "ASSISTS"
+                          selectedActionTypes.includes("ASSISTS")
                             ? BRAND_COLORS[500]
                             : borderColor,
                       },
@@ -1574,7 +1584,7 @@ export default function MatchDetailsScreen() {
                         styles.courtFilterChipText,
                         {
                           color:
-                            actionFilter === "ASSISTS"
+                            selectedActionTypes.includes("ASSISTS")
                               ? COMMON_COLORS.white
                               : textPrimary,
                         },
@@ -1585,18 +1595,24 @@ export default function MatchDetailsScreen() {
                   </TouchableOpacity>
 
                   <TouchableOpacity
-                    onPress={() => setActionFilter("STEALS")}
+                    onPress={() => {
+                      if (selectedActionTypes.includes("STEALS")) {
+                        setSelectedActionTypes(selectedActionTypes.filter(t => t !== "STEALS"));
+                      } else {
+                        setSelectedActionTypes([...selectedActionTypes, "STEALS"]);
+                      }
+                    }}
                     style={[
                       styles.courtFilterChip,
                       {
                         backgroundColor:
-                          actionFilter === "STEALS"
+                          selectedActionTypes.includes("STEALS")
                             ? BRAND_COLORS[600]
                             : isDark
                             ? SLATE_COLORS[800]
                             : SLATE_COLORS[100],
                         borderColor:
-                          actionFilter === "STEALS"
+                          selectedActionTypes.includes("STEALS")
                             ? BRAND_COLORS[500]
                             : borderColor,
                       },
@@ -1607,7 +1623,7 @@ export default function MatchDetailsScreen() {
                         styles.courtFilterChipText,
                         {
                           color:
-                            actionFilter === "STEALS"
+                            selectedActionTypes.includes("STEALS")
                               ? COMMON_COLORS.white
                               : textPrimary,
                         },
@@ -1618,18 +1634,24 @@ export default function MatchDetailsScreen() {
                   </TouchableOpacity>
 
                   <TouchableOpacity
-                    onPress={() => setActionFilter("BLOCKS")}
+                    onPress={() => {
+                      if (selectedActionTypes.includes("BLOCKS")) {
+                        setSelectedActionTypes(selectedActionTypes.filter(t => t !== "BLOCKS"));
+                      } else {
+                        setSelectedActionTypes([...selectedActionTypes, "BLOCKS"]);
+                      }
+                    }}
                     style={[
                       styles.courtFilterChip,
                       {
                         backgroundColor:
-                          actionFilter === "BLOCKS"
+                          selectedActionTypes.includes("BLOCKS")
                             ? BRAND_COLORS[600]
                             : isDark
                             ? SLATE_COLORS[800]
                             : SLATE_COLORS[100],
                         borderColor:
-                          actionFilter === "BLOCKS"
+                          selectedActionTypes.includes("BLOCKS")
                             ? BRAND_COLORS[500]
                             : borderColor,
                       },
@@ -1640,7 +1662,7 @@ export default function MatchDetailsScreen() {
                         styles.courtFilterChipText,
                         {
                           color:
-                            actionFilter === "BLOCKS"
+                            selectedActionTypes.includes("BLOCKS")
                               ? COMMON_COLORS.white
                               : textPrimary,
                         },
@@ -1651,18 +1673,24 @@ export default function MatchDetailsScreen() {
                   </TouchableOpacity>
 
                   <TouchableOpacity
-                    onPress={() => setActionFilter("TURNOVERS")}
+                    onPress={() => {
+                      if (selectedActionTypes.includes("TURNOVERS")) {
+                        setSelectedActionTypes(selectedActionTypes.filter(t => t !== "TURNOVERS"));
+                      } else {
+                        setSelectedActionTypes([...selectedActionTypes, "TURNOVERS"]);
+                      }
+                    }}
                     style={[
                       styles.courtFilterChip,
                       {
                         backgroundColor:
-                          actionFilter === "TURNOVERS"
+                          selectedActionTypes.includes("TURNOVERS")
                             ? BRAND_COLORS[600]
                             : isDark
                             ? SLATE_COLORS[800]
                             : SLATE_COLORS[100],
                         borderColor:
-                          actionFilter === "TURNOVERS"
+                          selectedActionTypes.includes("TURNOVERS")
                             ? BRAND_COLORS[500]
                             : borderColor,
                       },
@@ -1673,7 +1701,7 @@ export default function MatchDetailsScreen() {
                         styles.courtFilterChipText,
                         {
                           color:
-                            actionFilter === "TURNOVERS"
+                            selectedActionTypes.includes("TURNOVERS")
                               ? COMMON_COLORS.white
                               : textPrimary,
                         },
@@ -1684,18 +1712,24 @@ export default function MatchDetailsScreen() {
                   </TouchableOpacity>
 
                   <TouchableOpacity
-                    onPress={() => setActionFilter("FOULS")}
+                    onPress={() => {
+                      if (selectedActionTypes.includes("FOULS")) {
+                        setSelectedActionTypes(selectedActionTypes.filter(t => t !== "FOULS"));
+                      } else {
+                        setSelectedActionTypes([...selectedActionTypes, "FOULS"]);
+                      }
+                    }}
                     style={[
                       styles.courtFilterChip,
                       {
                         backgroundColor:
-                          actionFilter === "FOULS"
+                          selectedActionTypes.includes("FOULS")
                             ? BRAND_COLORS[600]
                             : isDark
                             ? SLATE_COLORS[800]
                             : SLATE_COLORS[100],
                         borderColor:
-                          actionFilter === "FOULS"
+                          selectedActionTypes.includes("FOULS")
                             ? BRAND_COLORS[500]
                             : borderColor,
                       },
@@ -1706,7 +1740,7 @@ export default function MatchDetailsScreen() {
                         styles.courtFilterChipText,
                         {
                           color:
-                            actionFilter === "FOULS"
+                            selectedActionTypes.includes("FOULS")
                               ? COMMON_COLORS.white
                               : textPrimary,
                         },
@@ -1838,48 +1872,23 @@ export default function MatchDetailsScreen() {
                           if (action.team !== activeTeamFilter) return false;
 
                           // Filter by action type
-                          const actionType = (
-                            action.action_type ||
-                            action.type ||
-                            ""
-                          ).toUpperCase();
+                          if (selectedActionTypes.length > 0) {
+                            const actionType = (
+                              action.action_type ||
+                              action.type ||
+                              ""
+                            ).toUpperCase();
 
-                          if (actionFilter !== "ALL") {
-                            if (
-                              actionFilter === "SHOOTING" &&
-                              actionType !== "SHOT"
-                            )
-                              return false;
-                            if (
-                              actionFilter === "REBOUNDS" &&
-                              actionType !== "REBOUND"
-                            )
-                              return false;
-                            if (
-                              actionFilter === "ASSISTS" &&
-                              actionType !== "ASSIST"
-                            )
-                              return false;
-                            if (
-                              actionFilter === "STEALS" &&
-                              actionType !== "STEAL"
-                            )
-                              return false;
-                            if (
-                              actionFilter === "BLOCKS" &&
-                              actionType !== "BLOCK"
-                            )
-                              return false;
-                            if (
-                              actionFilter === "TURNOVERS" &&
-                              actionType !== "TURNOVER"
-                            )
-                              return false;
-                            if (
-                              actionFilter === "FOULS" &&
-                              actionType !== "FOUL"
-                            )
-                              return false;
+                            let matchesFilter = false;
+                            if (selectedActionTypes.includes("SHOOTING") && actionType === "SHOT") matchesFilter = true;
+                            if (selectedActionTypes.includes("REBOUNDS") && actionType === "REBOUND") matchesFilter = true;
+                            if (selectedActionTypes.includes("ASSISTS") && actionType === "ASSIST") matchesFilter = true;
+                            if (selectedActionTypes.includes("STEALS") && actionType === "STEAL") matchesFilter = true;
+                            if (selectedActionTypes.includes("BLOCKS") && actionType === "BLOCK") matchesFilter = true;
+                            if (selectedActionTypes.includes("TURNOVERS") && actionType === "TURNOVER") matchesFilter = true;
+                            if (selectedActionTypes.includes("FOULS") && actionType === "FOUL") matchesFilter = true;
+
+                            if (!matchesFilter) return false;
                           }
 
                           // Filter by player
