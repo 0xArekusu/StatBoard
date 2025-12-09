@@ -5,6 +5,8 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  Modal,
+  ActivityIndicator,
 } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useTheme } from "../src/contexts/ThemeContext";
@@ -29,6 +31,7 @@ import { MatchPlayerRepository } from "../src/services/database/MatchPlayerRepos
 import { logInfo, logError, logWarn } from "../utils/logger";
 import { generateMockActions } from "../utils/mockActions";
 import { supabase } from "../src/config/supabase";
+import { ROUTES } from "../constants/routes";
 import BasketballCourtSVG from "../components/BasketballCourtSVG";
 import { MatchActionGrid } from "../components/MatchActionGrid";
 import {
@@ -188,6 +191,7 @@ export default function LiveMatchScreen({
   const [currentMatchId, setCurrentMatchId] = useState<number | null>(null);
   const [actionCounter, setActionCounter] = useState(0);
   const [isLoadingMatch, setIsLoadingMatch] = useState(!!resumeMatchId);
+  const [isSyncing, setIsSyncing] = useState(false);
 
   // Initialize match with data from NewMatchScreen or use mock data
   const [match, setMatch] = useState<any>(() => {
@@ -388,7 +392,9 @@ export default function LiveMatchScreen({
 
           // Separate players by team
           const homePlayersFromDB = players.filter((p) => p.team === "MyTeam");
-          const awayPlayersFromDB = players.filter((p) => p.team === "Opponent");
+          const awayPlayersFromDB = players.filter(
+            (p) => p.team === "Opponent"
+          );
 
           // Convert to Player format
           const homeRosterLoaded = homePlayersFromDB.map((p) => ({
@@ -415,16 +421,24 @@ export default function LiveMatchScreen({
 
           // Get active players on court (use on_court status, fallback to starters if not set)
           const homeOnCourt = homePlayersFromDB
-            .filter((p) => p.on_court === 1 || (p.on_court === undefined && p.is_starter))
+            .filter(
+              (p) =>
+                p.on_court === 1 || (p.on_court === undefined && p.is_starter)
+            )
             .map((p) => p.player_id || `temp-${p.id}`);
           const awayOnCourt = awayPlayersFromDB
-            .filter((p) => p.on_court === 1 || (p.on_court === undefined && p.is_starter))
+            .filter(
+              (p) =>
+                p.on_court === 1 || (p.on_court === undefined && p.is_starter)
+            )
             .map((p) => p.player_id || `temp-${p.id}`);
 
           // Helper function to get human-readable action description
           const getActionDescription = (action: any, playerName: string) => {
             if (action.action_type === "SHOT") {
-              const isMade = action.specification === "MADE" || action.specification === "made";
+              const isMade =
+                action.specification === "MADE" ||
+                action.specification === "made";
               const points = action.points || 0;
 
               if (isMade) {
@@ -483,7 +497,9 @@ export default function LiveMatchScreen({
 
             // Map based on action_type and specification
             if (action.action_type === "SHOT") {
-              const isMade = action.specification === "MADE" || action.specification === "made";
+              const isMade =
+                action.specification === "MADE" ||
+                action.specification === "made";
               const points = action.points || 0;
 
               if (isMade) {
@@ -894,25 +910,27 @@ export default function LiveMatchScreen({
 
     try {
       // Créer des joueurs fictifs basés sur le roster
-      const playersMyTeam = homeRoster.length > 0
-        ? homeRoster.map(p => ({
-            jersey_number: p.jerseyNumber,
-            name: p.name,
-          }))
-        : Array.from({ length: 5 }, (_, i) => ({
-            jersey_number: i + 1,
-            name: `Joueur ${i + 1}`,
-          }));
+      const playersMyTeam =
+        homeRoster.length > 0
+          ? homeRoster.map((p) => ({
+              jersey_number: p.jerseyNumber,
+              name: p.name,
+            }))
+          : Array.from({ length: 5 }, (_, i) => ({
+              jersey_number: i + 1,
+              name: `Joueur ${i + 1}`,
+            }));
 
-      const playersOpponent = opponentRoster.length > 0
-        ? opponentRoster.map(p => ({
-            jersey_number: p.jerseyNumber,
-            name: p.name,
-          }))
-        : Array.from({ length: 5 }, (_, i) => ({
-            jersey_number: i + 10,
-            name: `Adversaire ${i + 1}`,
-          }));
+      const playersOpponent =
+        opponentRoster.length > 0
+          ? opponentRoster.map((p) => ({
+              jersey_number: p.jerseyNumber,
+              name: p.name,
+            }))
+          : Array.from({ length: 5 }, (_, i) => ({
+              jersey_number: i + 10,
+              name: `Adversaire ${i + 1}`,
+            }));
 
       // Générer actions fictives (25 par période)
       // Générer ~50 actions par période pour atteindre 80-90 points par équipe
@@ -922,9 +940,9 @@ export default function LiveMatchScreen({
         currentMatchId,
         playersMyTeam,
         playersOpponent,
-        maxPeriods === 2 ? '2_halves' : '4_quarters',
+        maxPeriods === 2 ? "2_halves" : "4_quarters",
         periodDurationMin * 60,
-        50  // Augmenté de 25 à 50 actions par période
+        50 // Augmenté de 25 à 50 actions par période
       );
 
       // Convertir et enregistrer les actions
@@ -932,7 +950,7 @@ export default function LiveMatchScreen({
       for (const mockAction of mockActions) {
         await actionRepo.create({
           match_id: currentMatchId,
-          team: mockAction.team === 'A' ? Team.MY_TEAM : Team.OPPONENT,
+          team: mockAction.team === "A" ? Team.MY_TEAM : Team.OPPONENT,
           player_number: mockAction.player_number,
           action_type: mockAction.action_type,
           specification: mockAction.specification,
@@ -949,54 +967,68 @@ export default function LiveMatchScreen({
       const loadedActions = await actionRepo.getActionsForMatch(currentMatchId);
 
       // Convertir les actions en événements pour l'affichage
-      const convertedEvents: MatchEvent[] = loadedActions.map(action => {
-        const player = action.team === Team.MY_TEAM
-          ? homeRoster.find(p => p.jerseyNumber === action.player_number)
-          : opponentRoster.find(p => p.jerseyNumber === action.player_number);
+      const convertedEvents: MatchEvent[] = loadedActions.map((action) => {
+        const player =
+          action.team === Team.MY_TEAM
+            ? homeRoster.find((p) => p.jerseyNumber === action.player_number)
+            : opponentRoster.find(
+                (p) => p.jerseyNumber === action.player_number
+              );
 
         const playerName = player?.name || `Joueur ${action.player_number}`;
-        const teamId = action.team === Team.MY_TEAM ? 'HOME' : 'AWAY';
+        const teamId = action.team === Team.MY_TEAM ? "HOME" : "AWAY";
 
-        let type: EventType = 'POINT';
+        let type: EventType = "POINT";
         let value = 0;
-        let description = '';
+        let description = "";
 
         // DEBUG
-        if (action.action_type !== 'shot') {
-          logInfo('LiveMatchScreen', '🔍 Converting non-shot action', {
+        if (action.action_type !== "shot") {
+          logInfo("LiveMatchScreen", "🔍 Converting non-shot action", {
             actionType: action.action_type,
             specification: action.specification,
-            coords: { x: action.semantic_x, y: action.semantic_y }
+            coords: { x: action.semantic_x, y: action.semantic_y },
           });
         }
 
         // Mapper le type d'action vers EventType (action_type stocké en lowercase dans DB)
-        if (action.action_type === 'shot' && action.specification === 'made') {
+        if (action.action_type === "shot" && action.specification === "made") {
           value = action.points || 0;
-          type = value === 1 ? 'POINT_1' : value === 2 ? 'POINT_2' : 'POINT_3';
+          type = value === 1 ? "POINT_1" : value === 2 ? "POINT_2" : "POINT_3";
           description = `${playerName} - ${value}pt`;
-        } else if (action.action_type === 'shot' && action.specification === 'missed') {
+        } else if (
+          action.action_type === "shot" &&
+          action.specification === "missed"
+        ) {
           const missedPoints = action.points || 0;
           value = 0; // Les tirs ratés ne comptent pas dans le score
-          type = missedPoints === 1 ? 'MISS_1' : missedPoints === 2 ? 'MISS_2' : 'MISS_3';
+          type =
+            missedPoints === 1
+              ? "MISS_1"
+              : missedPoints === 2
+              ? "MISS_2"
+              : "MISS_3";
           description = `${playerName} - Raté ${missedPoints}pt`;
-        } else if (action.action_type === 'rebound') {
-          type = action.specification === 'offensive' ? 'REBOUND_OFF' : 'REBOUND_DEF';
+        } else if (action.action_type === "rebound") {
+          type =
+            action.specification === "offensive"
+              ? "REBOUND_OFF"
+              : "REBOUND_DEF";
           description = `${playerName} - Rebond`;
-        } else if (action.action_type === 'assist') {
-          type = 'ASSIST';
+        } else if (action.action_type === "assist") {
+          type = "ASSIST";
           description = `${playerName} - Passe`;
-        } else if (action.action_type === 'steal') {
-          type = 'STEAL';
+        } else if (action.action_type === "steal") {
+          type = "STEAL";
           description = `${playerName} - Interception`;
-        } else if (action.action_type === 'block') {
-          type = 'BLOCK';
+        } else if (action.action_type === "block") {
+          type = "BLOCK";
           description = `${playerName} - Contre`;
-        } else if (action.action_type === 'turnover') {
-          type = 'TURNOVER';
+        } else if (action.action_type === "turnover") {
+          type = "TURNOVER";
           description = `${playerName} - Perte`;
-        } else if (action.action_type === 'foul') {
-          type = 'FOUL';
+        } else if (action.action_type === "foul") {
+          type = "FOUL";
           description = `${playerName} - Faute`;
         }
 
@@ -1014,12 +1046,12 @@ export default function LiveMatchScreen({
         };
 
         // DEBUG: Log all non-shot events
-        if (action.action_type !== 'shot') {
-          logInfo('LiveMatchScreen', '🎯 Created non-shot event', {
+        if (action.action_type !== "shot") {
+          logInfo("LiveMatchScreen", "🎯 Created non-shot event", {
             actionType: action.action_type,
             eventType: type,
             hasCoords: !!event.coordinates,
-            coords: event.coordinates
+            coords: event.coordinates,
           });
         }
 
@@ -1031,15 +1063,18 @@ export default function LiveMatchScreen({
         acc[e.type] = (acc[e.type] || 0) + 1;
         return acc;
       }, {} as Record<string, number>);
-      logInfo('LiveMatchScreen', '📊 Mock events summary', eventTypes);
+      logInfo("LiveMatchScreen", "📊 Mock events summary", eventTypes);
 
       // Calculer le nouveau score
       let newScoreHome = 0;
       let newScoreAway = 0;
 
-      convertedEvents.forEach(event => {
-        if ((event.type.includes('POINT') || event.type === 'POINT') && event.value) {
-          if (event.teamId === 'HOME') {
+      convertedEvents.forEach((event) => {
+        if (
+          (event.type.includes("POINT") || event.type === "POINT") &&
+          event.value
+        ) {
+          if (event.teamId === "HOME") {
             newScoreHome += event.value;
           } else {
             newScoreAway += event.value;
@@ -1057,13 +1092,15 @@ export default function LiveMatchScreen({
 
       setActionCounter(actionCounter + mockActions.length);
 
-      logInfo('LiveMatchScreen', '✅ Mock actions generated successfully', {
+      logInfo("LiveMatchScreen", "✅ Mock actions generated successfully", {
         count: mockActions.length,
         scoreHome: newScoreHome,
         scoreAway: newScoreAway,
       });
     } catch (error) {
-      logError('LiveMatchScreen', '❌ Error generating mock actions', { error });
+      logError("LiveMatchScreen", "❌ Error generating mock actions", {
+        error,
+      });
     } finally {
       setIsGeneratingMockData(false);
     }
@@ -1325,10 +1362,12 @@ export default function LiveMatchScreen({
     }
 
     // Normalize SVG coordinates (0-615.75 x 0-1146.75) to 0-1 for storage in state
-    const normalizedCoords = coords ? {
-      x: coords.x / 615.75,
-      y: coords.y / 1146.75
-    } : undefined;
+    const normalizedCoords = coords
+      ? {
+          x: coords.x / 615.75,
+          y: coords.y / 1146.75,
+        }
+      : undefined;
 
     const newEvent: MatchEvent = {
       id: `evt-${Date.now()}`,
@@ -1606,40 +1645,70 @@ export default function LiveMatchScreen({
 
         // Sync to Supabase if eligible (auth + subscription)
         try {
-          const { MatchSyncService } = await import('../src/services/api/MatchSyncService');
+          const { MatchSyncService } = await import(
+            "../src/services/api/MatchSyncService"
+          );
           const syncService = new MatchSyncService(supabase);
 
-          logInfo("LiveMatchScreen", "🔄 Checking sync eligibility", { matchId: currentMatchId });
+          logInfo("LiveMatchScreen", "🔄 Checking sync eligibility", {
+            matchId: currentMatchId,
+          });
 
-          const eligibility = await syncService.checkSyncEligibility(currentMatchId);
+          const eligibility = await syncService.checkSyncEligibility(
+            currentMatchId
+          );
 
           if (eligibility.canSync) {
-            logInfo("LiveMatchScreen", "📤 Syncing match to Supabase", { matchId: currentMatchId });
+            logInfo("LiveMatchScreen", "📤 Syncing match to Supabase", {
+              matchId: currentMatchId,
+            });
+
+            // Show sync modal
+            setIsSyncing(true);
 
             const syncResult = await syncService.syncMatch(currentMatchId);
 
+            // Hide sync modal
+            setIsSyncing(false);
+
             if (syncResult.success) {
-              logInfo("LiveMatchScreen", "✅ Match synced to Supabase successfully", {
-                localMatchId: currentMatchId,
-                supabaseMatchId: syncResult.matchId
+              logInfo(
+                "LiveMatchScreen",
+                "✅ Match synced to Supabase successfully",
+                {
+                  localMatchId: currentMatchId,
+                  supabaseMatchId: syncResult.matchId,
+                }
+              );
+
+              // Navigate to match details screen
+              navigation.navigate(ROUTES.MATCH_DETAILS as never, {
+                matchId: syncResult.matchId,
+                fromSync: true,
               });
             } else {
               logWarn("LiveMatchScreen", "⚠️ Match sync failed", {
                 matchId: currentMatchId,
-                error: syncResult.error
+                error: syncResult.error,
               });
+
+              // Navigate to dashboard even if sync failed
+              navigation.navigate(ROUTES.MAIN_TABS as never);
             }
           } else {
             logInfo("LiveMatchScreen", "ℹ️ Match not synced", {
               matchId: currentMatchId,
-              reason: eligibility.reason
+              reason: eligibility.reason,
             });
+
+            // Navigate to dashboard if not syncing
+            navigation.navigate(ROUTES.MAIN_TABS as never);
           }
         } catch (syncError) {
           // Don't fail match end if sync fails - log and continue
           logError("LiveMatchScreen", "❌ Error during sync attempt", {
             matchId: currentMatchId,
-            error: syncError instanceof Error ? syncError.message : syncError
+            error: syncError instanceof Error ? syncError.message : syncError,
           });
         }
       }
@@ -2152,10 +2221,14 @@ export default function LiveMatchScreen({
           <Text
             style={[
               styles.toolbarButtonText,
-              { color: isGeneratingMockData ? BRAND_COLORS[300] : BRAND_COLORS[500] },
+              {
+                color: isGeneratingMockData
+                  ? BRAND_COLORS[300]
+                  : BRAND_COLORS[500],
+              },
             ]}
           >
-            {isGeneratingMockData ? '...' : 'Test'}
+            {isGeneratingMockData ? "..." : "Test"}
           </Text>
         </TouchableOpacity>
 
@@ -2219,6 +2292,35 @@ export default function LiveMatchScreen({
         textPrimary={textPrimary}
         borderColor={borderColor}
       />
+
+      {/* Sync Modal */}
+      <Modal visible={isSyncing} transparent={true} animationType="fade">
+        <View style={styles.syncModalOverlay}>
+          <View
+            style={[
+              styles.syncModalContent,
+              {
+                backgroundColor: surfaceColor,
+                borderColor: borderColor,
+              },
+            ]}
+          >
+            <MaterialCommunityIcons
+              name="cloud-upload"
+              size={48}
+              color={BRAND_COLORS[500]}
+              style={{ marginBottom: 16 }}
+            />
+            <ActivityIndicator size="large" color={BRAND_COLORS[500]} />
+            <Text style={[styles.syncModalText, { color: textPrimary }]}>
+              Synchronisation avec le serveur...
+            </Text>
+            <Text style={[styles.syncModalSubtext, { color: textSecondary }]}>
+              Veuillez patienter
+            </Text>
+          </View>
+        </View>
+      </Modal>
 
       <PlayerSelectionModal
         visible={workflowStep === "SELECT_PLAYER"}
@@ -2361,31 +2463,24 @@ const CourtView: React.FC<CourtViewProps> = ({
         // Tirs réussis (vert pour nous, rouge pour adversaire)
         if (evt.type.includes("POINT"))
           markerColor = evt.teamId === "AWAY" ? "#ef4444" : "#22c55e";
-
         // Tirs ratés (orange pour nous, rouge foncé pour adversaire)
         else if (evt.type.includes("MISS"))
           markerColor = evt.teamId === "AWAY" ? "#ea580c" : "#f97316";
-
         // Rebonds (bleu)
         else if (evt.type === "REBOUND_DEF" || evt.type === "REBOUND_OFF")
           markerColor = evt.teamId === "AWAY" ? "#3b82f6" : "#60a5fa";
-
         // Fautes (jaune/orange)
         else if (evt.type === "FOUL")
           markerColor = evt.teamId === "AWAY" ? "#f59e0b" : "#fbbf24";
-
         // Passes décisives (violet)
         else if (evt.type === "ASSIST")
           markerColor = evt.teamId === "AWAY" ? "#a855f7" : "#c084fc";
-
         // Interceptions (cyan)
         else if (evt.type === "STEAL")
           markerColor = evt.teamId === "AWAY" ? "#06b6d4" : "#22d3ee";
-
         // Contres (indigo)
         else if (evt.type === "BLOCK")
           markerColor = evt.teamId === "AWAY" ? "#6366f1" : "#818cf8";
-
         // Pertes de balle (rose)
         else if (evt.type === "TURNOVER")
           markerColor = evt.teamId === "AWAY" ? "#ec4899" : "#f472b6";
@@ -2755,5 +2850,35 @@ const styles = StyleSheet.create({
   modalSecondaryButtonText: {
     fontSize: 16,
     fontWeight: "bold",
+  },
+  syncModalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.7)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  syncModalContent: {
+    width: "80%",
+    maxWidth: 320,
+    padding: 32,
+    borderRadius: 20,
+    alignItems: "center",
+    borderWidth: 1,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  syncModalText: {
+    fontSize: 18,
+    fontWeight: "600",
+    marginTop: 16,
+    textAlign: "center",
+  },
+  syncModalSubtext: {
+    fontSize: 14,
+    marginTop: 8,
+    textAlign: "center",
   },
 });

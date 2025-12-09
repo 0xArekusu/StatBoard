@@ -1307,14 +1307,14 @@ export const OvertimeModal: React.FC<OvertimeModalProps> = ({
 
           <View style={styles.overtimeActions}>
             <TouchableOpacity
-              onPress={onStartOvertime}
+              onPress={onEndMatch}
               style={[
                 styles.overtimePrimaryButton,
                 { backgroundColor: BRAND_COLORS[600] },
               ]}
             >
               <MaterialCommunityIcons
-                name="play"
+                name="flag-checkered"
                 size={20}
                 color={COMMON_COLORS.white}
               />
@@ -1324,24 +1324,29 @@ export const OvertimeModal: React.FC<OvertimeModalProps> = ({
                   { color: COMMON_COLORS.white },
                 ]}
               >
-                Lancer la prolongation
+                Terminer le match
               </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              onPress={onEndMatch}
+              onPress={onStartOvertime}
               style={[
                 styles.overtimeSecondaryButton,
-                { backgroundColor: surfaceColor, borderColor },
+                { backgroundColor: surfaceColor, borderColor, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
               ]}
             >
+              <MaterialCommunityIcons
+                name="play"
+                size={18}
+                color={textPrimary}
+              />
               <Text
                 style={[
                   styles.overtimeSecondaryButtonText,
                   { color: textPrimary },
                 ]}
               >
-                Terminer le match
+                Lancer la prolongation
               </Text>
             </TouchableOpacity>
           </View>

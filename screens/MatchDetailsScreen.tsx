@@ -8,7 +8,7 @@
  * - Modal de détail joueur
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo } from "react";
 import {
   View,
   Text,
@@ -18,10 +18,10 @@ import {
   SafeAreaView,
   Modal,
   useColorScheme,
-} from 'react-native';
-import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
-import { Ionicons } from '@expo/vector-icons';
-import { Match, Action, Team } from '../src/models/types';
+} from "react-native";
+import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
+import { Ionicons } from "@expo/vector-icons";
+import { Match, Action, Team } from "../src/models/types";
 
 // Types
 interface PlayerStats {
@@ -50,39 +50,71 @@ interface PlayerStats {
   min: number;
 }
 
-type Tab = 'STATS' | 'CARDS' | 'COURT';
-type TeamFilter = 'MyTeam' | 'Opponent';
+type Tab = "STATS" | "CARDS" | "COURT";
+type TeamFilter = "MyTeam" | "Opponent";
 
 interface RouteParams {
   match: Match;
-  actions: Action[];
+  actions: any[]; // Accept any format for now
   fromLiveMatch?: boolean;
+  players?: any[]; // Optional players data
 }
 
 export default function MatchDetailsScreen() {
   const navigation = useNavigation();
-  const route = useRoute<RouteProp<{ params: RouteParams }, 'params'>>();
-  const { match, actions, fromLiveMatch } = route.params;
+  const route = useRoute<RouteProp<{ params: RouteParams }, "params">>();
+  console.log("🔵 MatchDetailsScreen - route.params:", route.params);
+  const { match, actions, fromLiveMatch, players } = route.params;
+  console.log("🔵 MatchDetailsScreen - match:", match);
+  console.log("🔵 MatchDetailsScreen - actions:", actions, "length:", actions?.length);
+  console.log("🔵 MatchDetailsScreen - players:", players, "length:", players?.length);
   const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
+  const isDark = colorScheme === "dark";
 
-  const [activeTab, setActiveTab] = useState<Tab>('STATS');
-  const [activeTeamFilter, setActiveTeamFilter] = useState<TeamFilter>(Team.MY_TEAM);
+  // Create a map of player numbers to names
+  const playerNamesMap = useMemo(() => {
+    if (!players) return new Map<string, string>();
+    const map = new Map<string, string>();
+    players.forEach((p: any) => {
+      const key = `${p.team}-${p.num}`;
+      map.set(key, p.name || `Joueur ${p.num}`);
+    });
+    return map;
+  }, [players]);
+
+  const [activeTab, setActiveTab] = useState<Tab>("STATS");
+  const [activeTeamFilter, setActiveTeamFilter] = useState<TeamFilter>(
+    Team.MY_TEAM
+  );
   const [viewPlayer, setViewPlayer] = useState<PlayerStats | null>(null);
 
   // Calculer les statistiques des joueurs
   const calculateStats = (teamFilter: TeamFilter): PlayerStats[] => {
+    if (!actions || actions.length === 0) {
+      console.log("⚠️ MatchDetailsScreen - No actions to calculate stats");
+      return [];
+    }
+
+    console.log("📊 MatchDetailsScreen - Calculating stats", {
+      totalActions: actions.length,
+      teamFilter,
+      sampleAction: actions[0],
+    });
+
     const playerStatsMap = new Map<string, PlayerStats>();
 
     actions
       .filter((action) => action.team === teamFilter)
       .forEach((action) => {
-        const key = `${action.team}-${action.player_number}`;
+        // Handle both player and player_number fields
+        const playerNum = action.player_number || action.player;
+        const key = `${action.team}-${playerNum}`;
 
         if (!playerStatsMap.has(key)) {
+          const playerName = playerNamesMap.get(key) || `Joueur ${playerNum}`;
           playerStatsMap.set(key, {
-            playerNumber: action.player_number,
-            name: `Joueur ${action.player_number}`,
+            playerNumber: playerNum,
+            name: playerName,
             team: action.team,
             pts: 0,
             reb: 0,
@@ -108,9 +140,13 @@ export default function MatchDetailsScreen() {
 
         const stats = playerStatsMap.get(key)!;
 
+        // Normalize action types to uppercase for comparison
+        const actionType = (action.action_type || action.type || "").toUpperCase();
+        const specification = (action.specification || "").toLowerCase();
+
         // Points et tirs
-        if (action.action_type === 'SHOT') {
-          if (action.specification === 'MADE') {
+        if (actionType === "SHOT") {
+          if (specification === "made") {
             stats.pts += action.points || 0;
             stats.fgm += 1;
 
@@ -126,54 +162,80 @@ export default function MatchDetailsScreen() {
         }
 
         // Rebonds
-        if (action.action_type === 'REBOUND') {
+        if (actionType === "REBOUND") {
           stats.reb += 1;
-          if (action.specification === 'OFFENSIVE') stats.reb_off += 1;
-          else if (action.specification === 'DEFENSIVE') stats.reb_def += 1;
+          if (specification === "offensive") stats.reb_off += 1;
+          else if (specification === "defensive") stats.reb_def += 1;
         }
 
         // Autres actions
-        if (action.action_type === 'ASSIST') stats.ast += 1;
-        if (action.action_type === 'STEAL') stats.stl += 1;
-        if (action.action_type === 'BLOCK') stats.blk += 1;
-        if (action.action_type === 'TURNOVER') stats.to += 1;
-        if (action.action_type === 'FOUL') stats.pf += 1;
+        if (actionType === "ASSIST") stats.ast += 1;
+        if (actionType === "STEAL") stats.stl += 1;
+        if (actionType === "BLOCK") stats.blk += 1;
+        if (actionType === "TURNOVER") stats.to += 1;
+        if (actionType === "FOUL") stats.pf += 1;
       });
 
     // Calculer l'évaluation et estimer les minutes
     playerStatsMap.forEach((stats) => {
-      stats.eff = stats.pts + stats.reb + stats.ast + stats.stl + stats.blk -
-        ((stats.fga - stats.fgm) + (stats.fta - stats.ftm) + stats.to);
+      stats.eff =
+        stats.pts +
+        stats.reb +
+        stats.ast +
+        stats.stl +
+        stats.blk -
+        (stats.fga - stats.fgm + (stats.fta - stats.ftm) + stats.to);
 
       // Estimation heuristique des minutes
       let estimatedMin = 10 + Math.floor(stats.eff / 1.5) + stats.pf * 2;
-      if (estimatedMin < 5 && (stats.pts > 0 || stats.reb > 0)) estimatedMin = 8;
+      if (estimatedMin < 5 && (stats.pts > 0 || stats.reb > 0))
+        estimatedMin = 8;
       if (estimatedMin > 38) estimatedMin = 36 + Math.floor(Math.random() * 4);
-      if (stats.eff === 0 && stats.pts === 0 && stats.reb === 0 && stats.ast === 0) estimatedMin = 0;
+      if (
+        stats.eff === 0 &&
+        stats.pts === 0 &&
+        stats.reb === 0 &&
+        stats.ast === 0
+      )
+        estimatedMin = 0;
       stats.min = estimatedMin;
     });
 
-    return Array.from(playerStatsMap.values()).sort((a, b) => b.pts - a.pts);
+    const playersList = Array.from(playerStatsMap.values()).sort(
+      (a, b) => b.pts - a.pts
+    );
+    console.log("✅ MatchDetailsScreen - Stats calculated", {
+      playersFound: playersList.length,
+      teamFilter,
+    });
+    return playersList;
   };
 
-  const stats = useMemo(() => calculateStats(activeTeamFilter), [actions, activeTeamFilter]);
-  const isWin = match.my_team_score > match.opponent_score;
+  // Calculer les stats seulement si actions est défini
+  const stats = useMemo(() => {
+    if (!actions) return [];
+    return calculateStats(activeTeamFilter);
+  }, [actions, activeTeamFilter, playerNamesMap]);
 
   const colors = {
-    background: isDark ? '#0a0a0a' : '#fafafa',
-    surface: isDark ? '#1a1a1a' : '#ffffff',
+    background: isDark ? "#0a0a0a" : "#fafafa",
+    surface: isDark ? "#1a1a1a" : "#ffffff",
     text: {
-      primary: isDark ? '#ffffff' : '#1e293b',
-      secondary: isDark ? '#94a3b8' : '#64748b',
-      tertiary: isDark ? '#64748b' : '#94a3b8',
+      primary: isDark ? "#ffffff" : "#1e293b",
+      secondary: isDark ? "#94a3b8" : "#64748b",
+      tertiary: isDark ? "#64748b" : "#94a3b8",
     },
-    border: isDark ? '#334155' : '#e2e8f0',
-    brand: '#ff6b35',
-    brandLight: isDark ? 'rgba(255, 107, 53, 0.1)' : 'rgba(255, 107, 53, 0.05)',
+    border: isDark ? "#334155" : "#e2e8f0",
+    brand: "#ff6b35",
+    brandLight: isDark ? "rgba(255, 107, 53, 0.1)" : "rgba(255, 107, 53, 0.05)",
   };
 
+  const isWin = match.my_team_score > match.opponent_score;
+
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: colors.background }]}
+    >
       {/* PLAYER DETAIL MODAL */}
       {viewPlayer && (
         <Modal
@@ -183,10 +245,17 @@ export default function MatchDetailsScreen() {
           onRequestClose={() => setViewPlayer(null)}
         >
           <View style={styles.modalOverlay}>
-            <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
+            <View
+              style={[styles.modalContent, { backgroundColor: colors.surface }]}
+            >
               {/* Modal Header */}
               <View style={styles.modalHeader}>
-                <View style={[styles.modalHeaderBg, { backgroundColor: colors.brand }]} />
+                <View
+                  style={[
+                    styles.modalHeaderBg,
+                    { backgroundColor: colors.brand },
+                  ]}
+                />
                 <TouchableOpacity
                   onPress={() => setViewPlayer(null)}
                   style={styles.modalCloseButton}
@@ -195,75 +264,196 @@ export default function MatchDetailsScreen() {
                 </TouchableOpacity>
 
                 <View style={styles.modalPlayerAvatar}>
-                  <View style={[styles.playerAvatarCircle, { borderColor: colors.surface }]}>
-                    <Text style={styles.playerAvatarNumber}>{viewPlayer.playerNumber}</Text>
+                  <View
+                    style={[
+                      styles.playerAvatarCircle,
+                      { borderColor: colors.surface },
+                    ]}
+                  >
+                    <Text style={styles.playerAvatarNumber}>
+                      {viewPlayer.playerNumber}
+                    </Text>
                   </View>
                 </View>
               </View>
 
-              <ScrollView style={styles.modalScroll} showsVerticalScrollIndicator={false}>
+              <ScrollView
+                style={styles.modalScroll}
+                showsVerticalScrollIndicator={false}
+              >
                 <View style={styles.modalPlayerInfo}>
-                  <Text style={[styles.modalPlayerName, { color: colors.text.primary }]}>
+                  <Text
+                    style={[
+                      styles.modalPlayerName,
+                      { color: colors.text.primary },
+                    ]}
+                  >
                     {viewPlayer.name}
                   </Text>
-                  <Text style={[styles.modalPlayerTeam, { color: colors.text.secondary }]}>
+                  <Text
+                    style={[
+                      styles.modalPlayerTeam,
+                      { color: colors.text.secondary },
+                    ]}
+                  >
                     {viewPlayer.team === Team.MY_TEAM
-                      ? match.my_team_name || 'Notre équipe'
+                      ? match.my_team_name || "Notre équipe"
                       : match.opponent_name}
                   </Text>
                 </View>
 
                 {/* Main Stats Grid */}
                 <View style={styles.mainStatsGrid}>
-                  <View style={[styles.statCard, { backgroundColor: colors.background }]}>
-                    <Text style={[styles.statCardValue, { color: colors.text.primary }]}>
+                  <View
+                    style={[
+                      styles.statCard,
+                      { backgroundColor: colors.background },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.statCardValue,
+                        { color: colors.text.primary },
+                      ]}
+                    >
                       {viewPlayer.min}'
                     </Text>
-                    <Text style={[styles.statCardLabel, { color: colors.text.tertiary }]}>
+                    <Text
+                      style={[
+                        styles.statCardLabel,
+                        { color: colors.text.tertiary },
+                      ]}
+                    >
                       Temps
                     </Text>
                   </View>
-                  <View style={[styles.statCard, { backgroundColor: colors.brandLight, borderColor: colors.brand }]}>
-                    <Text style={[styles.statCardValue, { color: colors.brand }]}>
+                  <View
+                    style={[
+                      styles.statCard,
+                      {
+                        backgroundColor: colors.brandLight,
+                        borderColor: colors.brand,
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[styles.statCardValue, { color: colors.brand }]}
+                    >
                       {viewPlayer.pts}
                     </Text>
-                    <Text style={[styles.statCardLabel, { color: colors.brand }]}>
+                    <Text
+                      style={[styles.statCardLabel, { color: colors.brand }]}
+                    >
                       Points
                     </Text>
                   </View>
-                  <View style={[styles.statCard, { backgroundColor: colors.background }]}>
-                    <Text style={[styles.statCardValue, { color: colors.text.primary }]}>
+                  <View
+                    style={[
+                      styles.statCard,
+                      { backgroundColor: colors.background },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.statCardValue,
+                        { color: colors.text.primary },
+                      ]}
+                    >
                       {viewPlayer.eff}
                     </Text>
-                    <Text style={[styles.statCardLabel, { color: colors.text.tertiary }]}>
+                    <Text
+                      style={[
+                        styles.statCardLabel,
+                        { color: colors.text.tertiary },
+                      ]}
+                    >
                       Éval
                     </Text>
                   </View>
                 </View>
 
                 {/* Shooting Stats */}
-                <View style={[styles.shootingSection, { backgroundColor: colors.background, borderColor: colors.border }]}>
-                  <Text style={[styles.sectionTitle, { color: colors.text.primary }]}>
+                <View
+                  style={[
+                    styles.shootingSection,
+                    {
+                      backgroundColor: colors.background,
+                      borderColor: colors.border,
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.sectionTitle,
+                      { color: colors.text.primary },
+                    ]}
+                  >
                     🎯 Performance aux tirs
                   </Text>
-                  <ShootingBar label="3 Points" made={viewPlayer.fg3m} attempted={viewPlayer.fg3a} color="#6366f1" colors={colors} />
-                  <ShootingBar label="2 Points" made={viewPlayer.fg2m} attempted={viewPlayer.fg2a} color="#3b82f6" colors={colors} />
-                  <ShootingBar label="Lancers" made={viewPlayer.ftm} attempted={viewPlayer.fta} color="#f59e0b" colors={colors} />
+                  <ShootingBar
+                    label="3 Points"
+                    made={viewPlayer.fg3m}
+                    attempted={viewPlayer.fg3a}
+                    color="#6366f1"
+                    colors={colors}
+                  />
+                  <ShootingBar
+                    label="2 Points"
+                    made={viewPlayer.fg2m}
+                    attempted={viewPlayer.fg2a}
+                    color="#3b82f6"
+                    colors={colors}
+                  />
+                  <ShootingBar
+                    label="Lancers"
+                    made={viewPlayer.ftm}
+                    attempted={viewPlayer.fta}
+                    color="#f59e0b"
+                    colors={colors}
+                  />
 
-                  <View style={[styles.shootingSummary, { borderTopColor: colors.border }]}>
+                  <View
+                    style={[
+                      styles.shootingSummary,
+                      { borderTopColor: colors.border },
+                    ]}
+                  >
                     <View style={styles.shootingSummaryItem}>
-                      <Text style={[styles.shootingSummaryValue, { color: colors.text.primary }]}>
+                      <Text
+                        style={[
+                          styles.shootingSummaryValue,
+                          { color: colors.text.primary },
+                        ]}
+                      >
                         {viewPlayer.fgm}/{viewPlayer.fga}
                       </Text>
-                      <Text style={[styles.shootingSummaryLabel, { color: colors.text.tertiary }]}>
+                      <Text
+                        style={[
+                          styles.shootingSummaryLabel,
+                          { color: colors.text.tertiary },
+                        ]}
+                      >
                         TOTAL TIRS
                       </Text>
                     </View>
                     <View style={styles.shootingSummaryItem}>
-                      <Text style={[styles.shootingSummaryValue, { color: colors.text.primary }]}>
-                        {viewPlayer.fga > 0 ? Math.round((viewPlayer.fgm / viewPlayer.fga) * 100) : 0}%
+                      <Text
+                        style={[
+                          styles.shootingSummaryValue,
+                          { color: colors.text.primary },
+                        ]}
+                      >
+                        {viewPlayer.fga > 0
+                          ? Math.round((viewPlayer.fgm / viewPlayer.fga) * 100)
+                          : 0}
+                        %
                       </Text>
-                      <Text style={[styles.shootingSummaryLabel, { color: colors.text.tertiary }]}>
+                      <Text
+                        style={[
+                          styles.shootingSummaryLabel,
+                          { color: colors.text.tertiary },
+                        ]}
+                      >
                         RÉUSSITE
                       </Text>
                     </View>
@@ -272,16 +462,63 @@ export default function MatchDetailsScreen() {
 
                 {/* Detailed Stats Grid */}
                 <View style={styles.detailedStatsSection}>
-                  <Text style={[styles.sectionTitle, { color: colors.text.primary }]}>Détails</Text>
+                  <Text
+                    style={[
+                      styles.sectionTitle,
+                      { color: colors.text.primary },
+                    ]}
+                  >
+                    Détails
+                  </Text>
                   <View style={styles.detailedStatsGrid}>
-                    <StatBox label="REB" value={viewPlayer.reb} sub="Total" colors={colors} />
-                    <StatBox label="AST" value={viewPlayer.ast} sub="Passes" colors={colors} />
-                    <StatBox label="INT" value={viewPlayer.stl} sub="Vols" colors={colors} />
-                    <StatBox label="CTR" value={viewPlayer.blk} sub="Contres" colors={colors} />
-                    <StatBox label="BP" value={viewPlayer.to} sub="Pertes" colors={colors} />
-                    <StatBox label="RO" value={viewPlayer.reb_off} sub="Reb Off" colors={colors} />
-                    <StatBox label="RD" value={viewPlayer.reb_def} sub="Reb Def" colors={colors} />
-                    <StatBox label="FTE" value={viewPlayer.pf} sub="Fautes" colors={colors} />
+                    <StatBox
+                      label="REB"
+                      value={viewPlayer.reb}
+                      sub="Total"
+                      colors={colors}
+                    />
+                    <StatBox
+                      label="AST"
+                      value={viewPlayer.ast}
+                      sub="Passes"
+                      colors={colors}
+                    />
+                    <StatBox
+                      label="INT"
+                      value={viewPlayer.stl}
+                      sub="Vols"
+                      colors={colors}
+                    />
+                    <StatBox
+                      label="CTR"
+                      value={viewPlayer.blk}
+                      sub="Contres"
+                      colors={colors}
+                    />
+                    <StatBox
+                      label="BP"
+                      value={viewPlayer.to}
+                      sub="Pertes"
+                      colors={colors}
+                    />
+                    <StatBox
+                      label="RO"
+                      value={viewPlayer.reb_off}
+                      sub="Reb Off"
+                      colors={colors}
+                    />
+                    <StatBox
+                      label="RD"
+                      value={viewPlayer.reb_def}
+                      sub="Reb Def"
+                      colors={colors}
+                    />
+                    <StatBox
+                      label="FTE"
+                      value={viewPlayer.pf}
+                      sub="Fautes"
+                      colors={colors}
+                    />
                   </View>
                 </View>
               </ScrollView>
@@ -291,30 +528,59 @@ export default function MatchDetailsScreen() {
       )}
 
       {/* HEADER */}
-      <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
-        <View style={[styles.headerAccent, { backgroundColor: colors.brand }]} />
+      <View
+        style={[
+          styles.header,
+          { backgroundColor: colors.surface, borderBottomColor: colors.border },
+        ]}
+      >
+        <View
+          style={[styles.headerAccent, { backgroundColor: colors.brand }]}
+        />
         <View style={styles.headerTop}>
           {!fromLiveMatch ? (
-            <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-              <Ionicons name="chevron-back" size={20} color={colors.text.secondary} />
-              <Text style={[styles.backButtonText, { color: colors.text.secondary }]}>RETOUR</Text>
+            <TouchableOpacity
+              onPress={() => navigation.goBack()}
+              style={styles.backButton}
+            >
+              <Ionicons
+                name="chevron-back"
+                size={20}
+                color={colors.text.secondary}
+              />
+              <Text
+                style={[
+                  styles.backButtonText,
+                  { color: colors.text.secondary },
+                ]}
+              >
+                RETOUR
+              </Text>
             </TouchableOpacity>
           ) : (
             <View />
           )}
           <TouchableOpacity
-            onPress={() => navigation.navigate('Dashboard' as never)}
+            onPress={() => navigation.navigate("Dashboard" as never)}
             style={[styles.menuButton, { backgroundColor: colors.background }]}
           >
-            <Ionicons name="grid-outline" size={12} color={colors.text.secondary} />
-            <Text style={[styles.menuButtonText, { color: colors.text.secondary }]}>Menu</Text>
+            <Ionicons
+              name="grid-outline"
+              size={12}
+              color={colors.text.secondary}
+            />
+            <Text
+              style={[styles.menuButtonText, { color: colors.text.secondary }]}
+            >
+              Menu
+            </Text>
           </TouchableOpacity>
         </View>
 
         <View style={styles.scoreContainer}>
           <View style={styles.teamScore}>
             <Text style={[styles.teamLabel, { color: colors.text.secondary }]}>
-              {match.my_team_name || 'Notre équipe'}
+              {match.my_team_name || "Notre équipe"}
             </Text>
             <Text style={[styles.scoreValue, { color: colors.text.primary }]}>
               {match.my_team_score}
@@ -322,7 +588,9 @@ export default function MatchDetailsScreen() {
             {isWin && <Ionicons name="trophy" size={16} color={colors.brand} />}
           </View>
 
-          <View style={[styles.scoreDivider, { backgroundColor: colors.border }]} />
+          <View
+            style={[styles.scoreDivider, { backgroundColor: colors.border }]}
+          />
 
           <View style={styles.teamScore}>
             <Text style={[styles.teamLabel, { color: colors.text.secondary }]}>
@@ -331,25 +599,44 @@ export default function MatchDetailsScreen() {
             <Text style={[styles.scoreValue, { color: colors.text.tertiary }]}>
               {match.opponent_score}
             </Text>
-            {!isWin && <Ionicons name="trophy" size={16} color={colors.text.tertiary} />}
+            {!isWin && (
+              <Ionicons name="trophy" size={16} color={colors.text.tertiary} />
+            )}
           </View>
         </View>
       </View>
 
       {/* FILTERS & TABS */}
-      <View style={[styles.filtersTabsContainer, { backgroundColor: colors.background }]}>
-        <View style={[styles.teamFilterContainer, { backgroundColor: isDark ? '#27272a' : '#e2e8f0' }]}>
+      <View
+        style={[
+          styles.filtersTabsContainer,
+          { backgroundColor: colors.background },
+        ]}
+      >
+        <View
+          style={[
+            styles.teamFilterContainer,
+            { backgroundColor: isDark ? "#27272a" : "#e2e8f0" },
+          ]}
+        >
           <TouchableOpacity
             onPress={() => setActiveTeamFilter(Team.MY_TEAM)}
             style={[
               styles.teamFilterButton,
-              activeTeamFilter === Team.MY_TEAM && { backgroundColor: colors.surface },
+              activeTeamFilter === Team.MY_TEAM && {
+                backgroundColor: colors.surface,
+              },
             ]}
           >
             <Text
               style={[
                 styles.teamFilterText,
-                { color: activeTeamFilter === Team.MY_TEAM ? colors.brand : colors.text.secondary },
+                {
+                  color:
+                    activeTeamFilter === Team.MY_TEAM
+                      ? colors.brand
+                      : colors.text.secondary,
+                },
               ]}
             >
               NOUS
@@ -359,13 +646,20 @@ export default function MatchDetailsScreen() {
             onPress={() => setActiveTeamFilter(Team.OPPONENT)}
             style={[
               styles.teamFilterButton,
-              activeTeamFilter === Team.OPPONENT && { backgroundColor: colors.surface },
+              activeTeamFilter === Team.OPPONENT && {
+                backgroundColor: colors.surface,
+              },
             ]}
           >
             <Text
               style={[
                 styles.teamFilterText,
-                { color: activeTeamFilter === Team.OPPONENT ? colors.text.primary : colors.text.secondary },
+                {
+                  color:
+                    activeTeamFilter === Team.OPPONENT
+                      ? colors.text.primary
+                      : colors.text.secondary,
+                },
               ]}
             >
               EUX
@@ -375,31 +669,55 @@ export default function MatchDetailsScreen() {
 
         <View style={styles.tabsContainer}>
           <TouchableOpacity
-            onPress={() => setActiveTab('STATS')}
+            onPress={() => setActiveTab("STATS")}
             style={[
               styles.tabButton,
-              { backgroundColor: activeTab === 'STATS' ? colors.brand : colors.surface, borderColor: colors.border },
+              {
+                backgroundColor:
+                  activeTab === "STATS" ? colors.brand : colors.surface,
+                borderColor: colors.border,
+              },
             ]}
           >
-            <Ionicons name="list" size={20} color={activeTab === 'STATS' ? '#fff' : colors.text.tertiary} />
+            <Ionicons
+              name="list"
+              size={20}
+              color={activeTab === "STATS" ? "#fff" : colors.text.tertiary}
+            />
           </TouchableOpacity>
           <TouchableOpacity
-            onPress={() => setActiveTab('CARDS')}
+            onPress={() => setActiveTab("CARDS")}
             style={[
               styles.tabButton,
-              { backgroundColor: activeTab === 'CARDS' ? colors.brand : colors.surface, borderColor: colors.border },
+              {
+                backgroundColor:
+                  activeTab === "CARDS" ? colors.brand : colors.surface,
+                borderColor: colors.border,
+              },
             ]}
           >
-            <Ionicons name="person-outline" size={20} color={activeTab === 'CARDS' ? '#fff' : colors.text.tertiary} />
+            <Ionicons
+              name="person-outline"
+              size={20}
+              color={activeTab === "CARDS" ? "#fff" : colors.text.tertiary}
+            />
           </TouchableOpacity>
           <TouchableOpacity
-            onPress={() => setActiveTab('COURT')}
+            onPress={() => setActiveTab("COURT")}
             style={[
               styles.tabButton,
-              { backgroundColor: activeTab === 'COURT' ? colors.brand : colors.surface, borderColor: colors.border },
+              {
+                backgroundColor:
+                  activeTab === "COURT" ? colors.brand : colors.surface,
+                borderColor: colors.border,
+              },
             ]}
           >
-            <Ionicons name="basketball-outline" size={20} color={activeTab === 'COURT' ? '#fff' : colors.text.tertiary} />
+            <Ionicons
+              name="basketball-outline"
+              size={20}
+              color={activeTab === "COURT" ? "#fff" : colors.text.tertiary}
+            />
           </TouchableOpacity>
         </View>
       </View>
@@ -407,17 +725,83 @@ export default function MatchDetailsScreen() {
       {/* CONTENT */}
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* TABLE VIEW */}
-        {activeTab === 'STATS' && (
-          <View style={[styles.tableContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+        {activeTab === "STATS" && (
+          <View
+            style={[
+              styles.tableContainer,
+              { backgroundColor: colors.surface, borderColor: colors.border },
+            ]}
+          >
             {/* Table Header */}
-            <View style={[styles.tableHeader, { backgroundColor: isDark ? '#1e293b33' : '#f1f5f9' }]}>
-              <Text style={[styles.tableHeaderCell, styles.playerCell, { color: colors.text.secondary }]}>JOUEUR</Text>
-              <Text style={[styles.tableHeaderCell, styles.minCell, { color: colors.text.tertiary }]}>MIN</Text>
-              <Text style={[styles.tableHeaderCell, styles.statCell, { color: colors.text.secondary }]}>PTS</Text>
-              <Text style={[styles.tableHeaderCell, styles.statCell, { color: colors.text.secondary }]}>REB</Text>
-              <Text style={[styles.tableHeaderCell, styles.statCell, { color: colors.text.secondary }]}>AST</Text>
-              <Text style={[styles.tableHeaderCell, styles.statCell, { color: colors.text.secondary }]}>PF</Text>
-              <Text style={[styles.tableHeaderCell, styles.statCell, { color: colors.text.secondary }]}>EFF</Text>
+            <View
+              style={[
+                styles.tableHeader,
+                { backgroundColor: isDark ? "#1e293b33" : "#f1f5f9" },
+              ]}
+            >
+              <Text
+                style={[
+                  styles.tableHeaderCell,
+                  styles.playerCell,
+                  { color: colors.text.secondary },
+                ]}
+              >
+                JOUEUR
+              </Text>
+              <Text
+                style={[
+                  styles.tableHeaderCell,
+                  styles.minCell,
+                  { color: colors.text.tertiary },
+                ]}
+              >
+                MIN
+              </Text>
+              <Text
+                style={[
+                  styles.tableHeaderCell,
+                  styles.statCell,
+                  { color: colors.text.secondary },
+                ]}
+              >
+                PTS
+              </Text>
+              <Text
+                style={[
+                  styles.tableHeaderCell,
+                  styles.statCell,
+                  { color: colors.text.secondary },
+                ]}
+              >
+                REB
+              </Text>
+              <Text
+                style={[
+                  styles.tableHeaderCell,
+                  styles.statCell,
+                  { color: colors.text.secondary },
+                ]}
+              >
+                AST
+              </Text>
+              <Text
+                style={[
+                  styles.tableHeaderCell,
+                  styles.statCell,
+                  { color: colors.text.secondary },
+                ]}
+              >
+                PF
+              </Text>
+              <Text
+                style={[
+                  styles.tableHeaderCell,
+                  styles.statCell,
+                  { color: colors.text.secondary },
+                ]}
+              >
+                EFF
+              </Text>
             </View>
 
             {/* Table Body */}
@@ -432,23 +816,85 @@ export default function MatchDetailsScreen() {
                 ]}
               >
                 <View style={[styles.tableCell, styles.playerCell]}>
-                  <View style={[styles.playerNumberBadge, { backgroundColor: colors.background }]}>
-                    <Text style={[styles.playerNumberBadgeText, { color: colors.text.secondary }]}>
+                  <View
+                    style={[
+                      styles.playerNumberBadge,
+                      { backgroundColor: colors.background },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.playerNumberBadgeText,
+                        { color: colors.text.secondary },
+                      ]}
+                    >
                       {player.playerNumber}
                     </Text>
                   </View>
-                  <Text style={[styles.playerNameText, { color: colors.text.primary }]} numberOfLines={1}>
+                  <Text
+                    style={[
+                      styles.playerNameText,
+                      { color: colors.text.primary },
+                    ]}
+                    numberOfLines={1}
+                  >
                     {player.name}
                   </Text>
                 </View>
-                <Text style={[styles.tableCell, styles.minCell, { color: colors.text.tertiary }]}>{player.min}'</Text>
-                <Text style={[styles.tableCell, styles.statCell, styles.statCellBold, { color: colors.text.primary }]}>
+                <Text
+                  style={[
+                    styles.tableCell,
+                    styles.minCell,
+                    { color: colors.text.tertiary },
+                  ]}
+                >
+                  {player.min}'
+                </Text>
+                <Text
+                  style={[
+                    styles.tableCell,
+                    styles.statCell,
+                    styles.statCellBold,
+                    { color: colors.text.primary },
+                  ]}
+                >
                   {player.pts}
                 </Text>
-                <Text style={[styles.tableCell, styles.statCell, { color: colors.text.primary }]}>{player.reb}</Text>
-                <Text style={[styles.tableCell, styles.statCell, { color: colors.text.primary }]}>{player.ast}</Text>
-                <Text style={[styles.tableCell, styles.statCell, { color: colors.text.primary }]}>{player.pf}</Text>
-                <Text style={[styles.tableCell, styles.statCell, styles.statCellBold, { color: colors.brand }]}>
+                <Text
+                  style={[
+                    styles.tableCell,
+                    styles.statCell,
+                    { color: colors.text.primary },
+                  ]}
+                >
+                  {player.reb}
+                </Text>
+                <Text
+                  style={[
+                    styles.tableCell,
+                    styles.statCell,
+                    { color: colors.text.primary },
+                  ]}
+                >
+                  {player.ast}
+                </Text>
+                <Text
+                  style={[
+                    styles.tableCell,
+                    styles.statCell,
+                    { color: colors.text.primary },
+                  ]}
+                >
+                  {player.pf}
+                </Text>
+                <Text
+                  style={[
+                    styles.tableCell,
+                    styles.statCell,
+                    styles.statCellBold,
+                    { color: colors.brand },
+                  ]}
+                >
                   {player.eff}
                 </Text>
               </TouchableOpacity>
@@ -456,7 +902,12 @@ export default function MatchDetailsScreen() {
 
             {stats.length === 0 && (
               <View style={styles.emptyState}>
-                <Text style={[styles.emptyStateText, { color: colors.text.tertiary }]}>
+                <Text
+                  style={[
+                    styles.emptyStateText,
+                    { color: colors.text.tertiary },
+                  ]}
+                >
                   Aucune donnée disponible
                 </Text>
               </View>
@@ -465,75 +916,268 @@ export default function MatchDetailsScreen() {
         )}
 
         {/* CARDS VIEW */}
-        {activeTab === 'CARDS' && (
+        {activeTab === "CARDS" && (
           <View style={styles.cardsContainer}>
             {stats.map((player) => (
               <TouchableOpacity
                 key={`${player.team}-${player.playerNumber}`}
                 onPress={() => setViewPlayer(player)}
-                style={[styles.playerCard, { backgroundColor: colors.surface, borderColor: colors.border }]}
+                style={[
+                  styles.playerCard,
+                  {
+                    backgroundColor: colors.surface,
+                    borderColor: colors.border,
+                  },
+                ]}
               >
                 {/* Card Header */}
                 <View style={styles.cardHeader}>
                   <View style={styles.cardPlayerInfo}>
-                    <View style={[styles.cardAvatar, { backgroundColor: colors.background, borderColor: colors.border }]}>
-                      <Text style={[styles.cardAvatarText, { color: colors.text.primary }]}>
+                    <View
+                      style={[
+                        styles.cardAvatar,
+                        {
+                          backgroundColor: colors.background,
+                          borderColor: colors.border,
+                        },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.cardAvatarText,
+                          { color: colors.text.primary },
+                        ]}
+                      >
                         {player.playerNumber}
                       </Text>
                     </View>
                     <View>
-                      <Text style={[styles.cardPlayerName, { color: colors.text.primary }]}>{player.name}</Text>
-                      <Text style={[styles.cardPlayerNumber, { color: colors.text.secondary }]}>
+                      <Text
+                        style={[
+                          styles.cardPlayerName,
+                          { color: colors.text.primary },
+                        ]}
+                      >
+                        {player.name}
+                      </Text>
+                      <Text
+                        style={[
+                          styles.cardPlayerNumber,
+                          { color: colors.text.secondary },
+                        ]}
+                      >
                         #{player.playerNumber}
                       </Text>
                     </View>
                   </View>
-                  <View style={[styles.cardPointsBadge, { backgroundColor: colors.brandLight, borderColor: colors.brand }]}>
-                    <Text style={[styles.cardPointsValue, { color: colors.brand }]}>{player.pts}</Text>
-                    <Text style={[styles.cardPointsLabel, { color: colors.brand }]}>Points</Text>
+                  <View
+                    style={[
+                      styles.cardPointsBadge,
+                      {
+                        backgroundColor: colors.brandLight,
+                        borderColor: colors.brand,
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[styles.cardPointsValue, { color: colors.brand }]}
+                    >
+                      {player.pts}
+                    </Text>
+                    <Text
+                      style={[styles.cardPointsLabel, { color: colors.brand }]}
+                    >
+                      Points
+                    </Text>
                   </View>
                 </View>
 
                 {/* Shooting Bars */}
                 <View style={styles.cardShootingBars}>
-                  <ShootingBar label="3 PTS" made={player.fg3m} attempted={player.fg3a} color="#6366f1" colors={colors} compact />
-                  <ShootingBar label="2 PTS" made={player.fg2m} attempted={player.fg2a} color="#3b82f6" colors={colors} compact />
-                  <ShootingBar label="LANC" made={player.ftm} attempted={player.fta} color="#f59e0b" colors={colors} compact />
+                  <ShootingBar
+                    label="3 PTS"
+                    made={player.fg3m}
+                    attempted={player.fg3a}
+                    color="#6366f1"
+                    colors={colors}
+                    compact
+                  />
+                  <ShootingBar
+                    label="2 PTS"
+                    made={player.fg2m}
+                    attempted={player.fg2a}
+                    color="#3b82f6"
+                    colors={colors}
+                    compact
+                  />
+                  <ShootingBar
+                    label="LANC"
+                    made={player.ftm}
+                    attempted={player.fta}
+                    color="#f59e0b"
+                    colors={colors}
+                    compact
+                  />
                 </View>
 
                 {/* Stats Grid */}
-                <View style={[styles.cardStatsGrid, { borderTopColor: colors.border }]}>
+                <View
+                  style={[
+                    styles.cardStatsGrid,
+                    { borderTopColor: colors.border },
+                  ]}
+                >
                   <View style={styles.cardStatItem}>
-                    <Text style={[styles.cardStatLabel, { color: colors.text.tertiary }]}>MIN</Text>
-                    <Text style={[styles.cardStatValue, { color: colors.text.primary }]}>{player.min}'</Text>
+                    <Text
+                      style={[
+                        styles.cardStatLabel,
+                        { color: colors.text.tertiary },
+                      ]}
+                    >
+                      MIN
+                    </Text>
+                    <Text
+                      style={[
+                        styles.cardStatValue,
+                        { color: colors.text.primary },
+                      ]}
+                    >
+                      {player.min}'
+                    </Text>
                   </View>
                   <View style={styles.cardStatItem}>
-                    <Text style={[styles.cardStatLabel, { color: colors.text.tertiary }]}>REB</Text>
-                    <Text style={[styles.cardStatValue, { color: colors.text.primary }]}>{player.reb}</Text>
+                    <Text
+                      style={[
+                        styles.cardStatLabel,
+                        { color: colors.text.tertiary },
+                      ]}
+                    >
+                      REB
+                    </Text>
+                    <Text
+                      style={[
+                        styles.cardStatValue,
+                        { color: colors.text.primary },
+                      ]}
+                    >
+                      {player.reb}
+                    </Text>
                   </View>
                   <View style={styles.cardStatItem}>
-                    <Text style={[styles.cardStatLabel, { color: colors.text.tertiary }]}>AST</Text>
-                    <Text style={[styles.cardStatValue, { color: colors.text.primary }]}>{player.ast}</Text>
+                    <Text
+                      style={[
+                        styles.cardStatLabel,
+                        { color: colors.text.tertiary },
+                      ]}
+                    >
+                      AST
+                    </Text>
+                    <Text
+                      style={[
+                        styles.cardStatValue,
+                        { color: colors.text.primary },
+                      ]}
+                    >
+                      {player.ast}
+                    </Text>
                   </View>
                   <View style={styles.cardStatItem}>
-                    <Text style={[styles.cardStatLabel, { color: colors.text.tertiary }]}>INT</Text>
-                    <Text style={[styles.cardStatValue, { color: colors.text.primary }]}>{player.stl}</Text>
+                    <Text
+                      style={[
+                        styles.cardStatLabel,
+                        { color: colors.text.tertiary },
+                      ]}
+                    >
+                      INT
+                    </Text>
+                    <Text
+                      style={[
+                        styles.cardStatValue,
+                        { color: colors.text.primary },
+                      ]}
+                    >
+                      {player.stl}
+                    </Text>
                   </View>
                   <View style={styles.cardStatItem}>
-                    <Text style={[styles.cardStatLabel, { color: colors.text.tertiary }]}>CTR</Text>
-                    <Text style={[styles.cardStatValue, { color: colors.text.primary }]}>{player.blk}</Text>
+                    <Text
+                      style={[
+                        styles.cardStatLabel,
+                        { color: colors.text.tertiary },
+                      ]}
+                    >
+                      CTR
+                    </Text>
+                    <Text
+                      style={[
+                        styles.cardStatValue,
+                        { color: colors.text.primary },
+                      ]}
+                    >
+                      {player.blk}
+                    </Text>
                   </View>
                   <View style={styles.cardStatItem}>
-                    <Text style={[styles.cardStatLabel, { color: colors.text.tertiary }]}>BP</Text>
-                    <Text style={[styles.cardStatValue, { color: colors.text.primary }]}>{player.to}</Text>
+                    <Text
+                      style={[
+                        styles.cardStatLabel,
+                        { color: colors.text.tertiary },
+                      ]}
+                    >
+                      BP
+                    </Text>
+                    <Text
+                      style={[
+                        styles.cardStatValue,
+                        { color: colors.text.primary },
+                      ]}
+                    >
+                      {player.to}
+                    </Text>
                   </View>
                   <View style={styles.cardStatItem}>
-                    <Text style={[styles.cardStatLabel, { color: colors.text.tertiary }]}>FT</Text>
-                    <Text style={[styles.cardStatValue, { color: colors.text.primary }]}>{player.pf}</Text>
+                    <Text
+                      style={[
+                        styles.cardStatLabel,
+                        { color: colors.text.tertiary },
+                      ]}
+                    >
+                      FT
+                    </Text>
+                    <Text
+                      style={[
+                        styles.cardStatValue,
+                        { color: colors.text.primary },
+                      ]}
+                    >
+                      {player.pf}
+                    </Text>
                   </View>
-                  <View style={[styles.cardStatItem, { backgroundColor: colors.background }]}>
-                    <Text style={[styles.cardStatLabel, { color: colors.text.tertiary }]}>ÉVAL</Text>
-                    <Text style={[styles.cardStatValue, { color: player.eff >= 15 ? colors.brand : colors.text.primary }]}>
+                  <View
+                    style={[
+                      styles.cardStatItem,
+                      { backgroundColor: colors.background },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.cardStatLabel,
+                        { color: colors.text.tertiary },
+                      ]}
+                    >
+                      ÉVAL
+                    </Text>
+                    <Text
+                      style={[
+                        styles.cardStatValue,
+                        {
+                          color:
+                            player.eff >= 15
+                              ? colors.brand
+                              : colors.text.primary,
+                        },
+                      ]}
+                    >
                       {player.eff}
                     </Text>
                   </View>
@@ -543,16 +1187,27 @@ export default function MatchDetailsScreen() {
 
             {stats.length === 0 && (
               <View style={styles.emptyState}>
-                <Text style={[styles.emptyStateText, { color: colors.text.tertiary }]}>Aucune statistique.</Text>
+                <Text
+                  style={[
+                    styles.emptyStateText,
+                    { color: colors.text.tertiary },
+                  ]}
+                >
+                  Aucune statistique.
+                </Text>
               </View>
             )}
           </View>
         )}
 
         {/* COURT VIEW */}
-        {activeTab === 'COURT' && (
-          <View style={[styles.courtContainer, { backgroundColor: colors.surface }]}>
-            <Text style={[styles.emptyStateText, { color: colors.text.tertiary }]}>
+        {activeTab === "COURT" && (
+          <View
+            style={[styles.courtContainer, { backgroundColor: colors.surface }]}
+          >
+            <Text
+              style={[styles.emptyStateText, { color: colors.text.tertiary }]}
+            >
               Carte des tirs - À venir
             </Text>
           </View>
@@ -572,20 +1227,55 @@ interface ShootingBarProps {
   compact?: boolean;
 }
 
-const ShootingBar: React.FC<ShootingBarProps> = ({ label, made, attempted, color, colors, compact }) => {
+const ShootingBar: React.FC<ShootingBarProps> = ({
+  label,
+  made,
+  attempted,
+  color,
+  colors,
+  compact,
+}) => {
   const pct = attempted > 0 ? Math.round((made / attempted) * 100) : 0;
 
   return (
     <View style={[styles.shootingBar, compact && styles.shootingBarCompact]}>
-      <Text style={[styles.shootingBarLabel, { color: colors.text.secondary }, compact && styles.shootingBarLabelCompact]}>
+      <Text
+        style={[
+          styles.shootingBarLabel,
+          { color: colors.text.secondary },
+          compact && styles.shootingBarLabelCompact,
+        ]}
+      >
         {label}
       </Text>
-      <View style={[styles.shootingBarTrack, { backgroundColor: isDark ? '#334155' : '#e2e8f0' }, compact && styles.shootingBarTrackCompact]}>
-        <View style={[styles.shootingBarFill, { backgroundColor: color, width: `${pct}%` }]} />
+      <View
+        style={[
+          styles.shootingBarTrack,
+          { backgroundColor: isDark ? "#334155" : "#e2e8f0" },
+          compact && styles.shootingBarTrackCompact,
+        ]}
+      >
+        <View
+          style={[
+            styles.shootingBarFill,
+            { backgroundColor: color, width: `${pct}%` },
+          ]}
+        />
       </View>
-      <Text style={[styles.shootingBarValue, { color: colors.text.primary }, compact && styles.shootingBarValueCompact]}>
-        <Text style={styles.shootingBarValueBold}>{made}/{attempted}</Text>
-        <Text style={[styles.shootingBarPct, { color: colors.text.tertiary }]}> ({pct}%)</Text>
+      <Text
+        style={[
+          styles.shootingBarValue,
+          { color: colors.text.primary },
+          compact && styles.shootingBarValueCompact,
+        ]}
+      >
+        <Text style={styles.shootingBarValueBold}>
+          {made}/{attempted}
+        </Text>
+        <Text style={[styles.shootingBarPct, { color: colors.text.tertiary }]}>
+          {" "}
+          ({pct}%)
+        </Text>
       </Text>
     </View>
   );
@@ -601,10 +1291,23 @@ interface StatBoxProps {
 }
 
 const StatBox: React.FC<StatBoxProps> = ({ label, value, sub, colors }) => (
-  <View style={[styles.statBox, { backgroundColor: colors.background, borderColor: colors.border }]}>
-    <Text style={[styles.statBoxLabel, { color: colors.text.tertiary }]}>{label}</Text>
-    <Text style={[styles.statBoxValue, { color: colors.text.primary }]}>{value}</Text>
-    {sub && <Text style={[styles.statBoxSub, { color: colors.text.tertiary }]}>{sub}</Text>}
+  <View
+    style={[
+      styles.statBox,
+      { backgroundColor: colors.background, borderColor: colors.border },
+    ]}
+  >
+    <Text style={[styles.statBoxLabel, { color: colors.text.tertiary }]}>
+      {label}
+    </Text>
+    <Text style={[styles.statBoxValue, { color: colors.text.primary }]}>
+      {value}
+    </Text>
+    {sub && (
+      <Text style={[styles.statBoxSub, { color: colors.text.tertiary }]}>
+        {sub}
+      </Text>
+    )}
   </View>
 );
 
@@ -619,34 +1322,34 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 32,
     borderBottomWidth: 1,
-    position: 'relative',
+    position: "relative",
   },
   headerAccent: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     left: 0,
     right: 0,
     height: 4,
   },
   headerTop: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 24,
   },
   backButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 4,
   },
   backButtonText: {
     fontSize: 10,
-    fontWeight: '700',
+    fontWeight: "700",
     letterSpacing: 1,
   },
   menuButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
     paddingHorizontal: 12,
     paddingVertical: 6,
@@ -654,27 +1357,27 @@ const styles = StyleSheet.create({
   },
   menuButtonText: {
     fontSize: 10,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   scoreContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
   teamScore: {
     flex: 1,
-    alignItems: 'center',
+    alignItems: "center",
   },
   teamLabel: {
     fontSize: 10,
-    fontWeight: '700',
+    fontWeight: "700",
     letterSpacing: 1,
-    textTransform: 'uppercase',
+    textTransform: "uppercase",
     marginBottom: 8,
   },
   scoreValue: {
     fontSize: 48,
-    fontWeight: '900',
+    fontWeight: "900",
     letterSpacing: -2,
   },
   scoreDivider: {
@@ -685,15 +1388,15 @@ const styles = StyleSheet.create({
 
   // Filters & Tabs
   filtersTabsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingHorizontal: 16,
     paddingVertical: 16,
     gap: 16,
   },
   teamFilterContainer: {
-    flexDirection: 'row',
+    flexDirection: "row",
     padding: 4,
     borderRadius: 12,
     flex: 1,
@@ -703,23 +1406,23 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 16,
     borderRadius: 8,
-    alignItems: 'center',
+    alignItems: "center",
   },
   teamFilterText: {
     fontSize: 10,
-    fontWeight: '700',
+    fontWeight: "700",
     letterSpacing: 0.5,
   },
   tabsContainer: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 8,
   },
   tabButton: {
     width: 40,
     height: 40,
     borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     borderWidth: 1,
   },
 
@@ -733,22 +1436,22 @@ const styles = StyleSheet.create({
   tableContainer: {
     borderRadius: 16,
     borderWidth: 1,
-    overflow: 'hidden',
+    overflow: "hidden",
     marginBottom: 80,
   },
   tableHeader: {
-    flexDirection: 'row',
+    flexDirection: "row",
     paddingVertical: 12,
     paddingHorizontal: 16,
   },
   tableHeaderCell: {
     fontSize: 10,
-    fontWeight: '700',
+    fontWeight: "700",
     letterSpacing: 0.5,
-    textTransform: 'uppercase',
+    textTransform: "uppercase",
   },
   tableRow: {
-    flexDirection: 'row',
+    flexDirection: "row",
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
@@ -758,36 +1461,36 @@ const styles = StyleSheet.create({
   },
   playerCell: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
   },
   playerNumberBadge: {
     width: 24,
     height: 24,
     borderRadius: 4,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   playerNumberBadgeText: {
     fontSize: 10,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   playerNameText: {
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: "700",
     flex: 1,
   },
   minCell: {
     width: 40,
-    textAlign: 'center',
+    textAlign: "center",
   },
   statCell: {
     width: 40,
-    textAlign: 'center',
+    textAlign: "center",
   },
   statCellBold: {
-    fontWeight: '900',
+    fontWeight: "900",
   },
 
   // Cards View
@@ -801,14 +1504,14 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
     marginBottom: 16,
   },
   cardPlayerInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 16,
     flex: 1,
   },
@@ -817,21 +1520,21 @@ const styles = StyleSheet.create({
     height: 56,
     borderRadius: 28,
     borderWidth: 2,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   cardAvatarText: {
     fontSize: 20,
-    fontWeight: '900',
+    fontWeight: "900",
   },
   cardPlayerName: {
     fontSize: 20,
-    fontWeight: '900',
+    fontWeight: "900",
     lineHeight: 24,
   },
   cardPlayerNumber: {
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: "700",
     marginTop: 4,
   },
   cardPointsBadge: {
@@ -839,44 +1542,44 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 12,
     borderWidth: 1,
-    alignItems: 'center',
+    alignItems: "center",
   },
   cardPointsValue: {
     fontSize: 28,
-    fontWeight: '900',
+    fontWeight: "900",
     lineHeight: 28,
   },
   cardPointsLabel: {
     fontSize: 8,
-    fontWeight: '700',
+    fontWeight: "700",
     letterSpacing: 1,
-    textTransform: 'uppercase',
+    textTransform: "uppercase",
   },
   cardShootingBars: {
     gap: 8,
     marginBottom: 20,
   },
   cardStatsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: 8,
     borderTopWidth: 1,
     paddingTop: 16,
   },
   cardStatItem: {
-    width: '23%',
-    alignItems: 'center',
+    width: "23%",
+    alignItems: "center",
     paddingVertical: 8,
     borderRadius: 4,
   },
   cardStatLabel: {
     fontSize: 8,
-    fontWeight: '700',
+    fontWeight: "700",
     marginBottom: 2,
   },
   cardStatValue: {
     fontSize: 14,
-    fontWeight: '900',
+    fontWeight: "900",
   },
 
   // Shooting Bar
@@ -888,7 +1591,7 @@ const styles = StyleSheet.create({
   },
   shootingBarLabel: {
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   shootingBarLabelCompact: {
     fontSize: 10,
@@ -896,13 +1599,13 @@ const styles = StyleSheet.create({
   shootingBarTrack: {
     height: 12,
     borderRadius: 999,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   shootingBarTrackCompact: {
     height: 8,
   },
   shootingBarFill: {
-    height: '100%',
+    height: "100%",
   },
   shootingBarValue: {
     fontSize: 12,
@@ -911,7 +1614,7 @@ const styles = StyleSheet.create({
     fontSize: 10,
   },
   shootingBarValueBold: {
-    fontWeight: '700',
+    fontWeight: "700",
   },
   shootingBarPct: {
     fontSize: 10,
@@ -920,21 +1623,21 @@ const styles = StyleSheet.create({
   // Stat Box
   statBox: {
     flex: 1,
-    alignItems: 'center',
+    alignItems: "center",
     padding: 8,
     borderRadius: 8,
     borderWidth: 1,
   },
   statBoxLabel: {
     fontSize: 8,
-    fontWeight: '700',
+    fontWeight: "700",
     letterSpacing: 0.5,
-    textTransform: 'uppercase',
+    textTransform: "uppercase",
     marginBottom: 2,
   },
   statBoxValue: {
     fontSize: 16,
-    fontWeight: '900',
+    fontWeight: "900",
     lineHeight: 16,
   },
   statBoxSub: {
@@ -945,8 +1648,8 @@ const styles = StyleSheet.create({
   // Court View
   courtContainer: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     padding: 40,
     minHeight: 300,
   },
@@ -954,7 +1657,7 @@ const styles = StyleSheet.create({
   // Empty State
   emptyState: {
     paddingVertical: 32,
-    alignItems: 'center',
+    alignItems: "center",
   },
   emptyStateText: {
     fontSize: 12,
@@ -963,59 +1666,59 @@ const styles = StyleSheet.create({
   // Modal
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
+    justifyContent: "center",
+    alignItems: "center",
     padding: 16,
   },
   modalContent: {
-    width: '100%',
+    width: "100%",
     maxWidth: 600,
-    maxHeight: '90%',
+    maxHeight: "90%",
     borderRadius: 24,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   modalHeader: {
     height: 128,
-    position: 'relative',
-    alignItems: 'center',
-    justifyContent: 'center',
+    position: "relative",
+    alignItems: "center",
+    justifyContent: "center",
   },
   modalHeaderBg: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
   },
   modalCloseButton: {
-    position: 'absolute',
+    position: "absolute",
     top: 16,
     right: 16,
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: 'rgba(0, 0, 0, 0.2)',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: "rgba(0, 0, 0, 0.2)",
+    alignItems: "center",
+    justifyContent: "center",
   },
   modalPlayerAvatar: {
-    position: 'absolute',
+    position: "absolute",
     bottom: -48,
   },
   playerAvatarCircle: {
     width: 96,
     height: 96,
     borderRadius: 48,
-    backgroundColor: '#cbd5e1',
+    backgroundColor: "#cbd5e1",
     borderWidth: 4,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   playerAvatarNumber: {
     fontSize: 36,
-    fontWeight: '900',
-    color: '#64748b',
+    fontWeight: "900",
+    color: "#64748b",
   },
   modalScroll: {
     flex: 1,
@@ -1024,23 +1727,23 @@ const styles = StyleSheet.create({
     paddingTop: 56,
     paddingBottom: 24,
     paddingHorizontal: 24,
-    alignItems: 'center',
+    alignItems: "center",
   },
   modalPlayerName: {
     fontSize: 24,
-    fontWeight: '900',
-    textTransform: 'uppercase',
+    fontWeight: "900",
+    textTransform: "uppercase",
     lineHeight: 24,
   },
   modalPlayerTeam: {
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: "700",
     letterSpacing: 2,
-    textTransform: 'uppercase',
+    textTransform: "uppercase",
     marginTop: 4,
   },
   mainStatsGrid: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 16,
     paddingHorizontal: 24,
     marginBottom: 32,
@@ -1049,20 +1752,20 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 16,
     borderRadius: 16,
-    alignItems: 'center',
+    alignItems: "center",
     borderWidth: 1,
-    borderColor: 'transparent',
+    borderColor: "transparent",
   },
   statCardValue: {
     fontSize: 28,
-    fontWeight: '900',
+    fontWeight: "900",
     lineHeight: 28,
   },
   statCardLabel: {
     fontSize: 8,
-    fontWeight: '700',
+    fontWeight: "700",
     letterSpacing: 1,
-    textTransform: 'uppercase',
+    textTransform: "uppercase",
     marginTop: 4,
   },
   shootingSection: {
@@ -1074,13 +1777,13 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: "700",
     letterSpacing: 1,
-    textTransform: 'uppercase',
+    textTransform: "uppercase",
     marginBottom: 16,
   },
   shootingSummary: {
-    flexDirection: 'row',
+    flexDirection: "row",
     marginTop: 16,
     paddingTop: 16,
     borderTopWidth: 1,
@@ -1088,17 +1791,17 @@ const styles = StyleSheet.create({
   },
   shootingSummaryItem: {
     flex: 1,
-    alignItems: 'center',
+    alignItems: "center",
   },
   shootingSummaryValue: {
     fontSize: 18,
-    fontWeight: '900',
+    fontWeight: "900",
   },
   shootingSummaryLabel: {
     fontSize: 8,
-    fontWeight: '700',
+    fontWeight: "700",
     letterSpacing: 0.5,
-    textTransform: 'uppercase',
+    textTransform: "uppercase",
     marginTop: 2,
   },
   detailedStatsSection: {
@@ -1106,8 +1809,8 @@ const styles = StyleSheet.create({
     marginBottom: 32,
   },
   detailedStatsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: 12,
   },
 });

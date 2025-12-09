@@ -12,7 +12,7 @@ import { AppState, AppStateStatus } from "react-native";
 import AuthScreen from "./screens/AuthScreen";
 import MainMenuScreen from "./screens/old/MainMenuScreen";
 import BoardScreen from "./screens/old/BoardScreen";
-import MatchDetailsScreen from "./screens/old/MatchDetailsScreen";
+import MatchDetailsScreen from "./screens/MatchDetailsScreen";
 import MatchSummaryScreen from "./screens/old/MatchSummaryScreen";
 import MatchHistoryScreen from "./screens/old/MatchHistoryScreen";
 import SplashScreen from "./screens/SplashScreen";

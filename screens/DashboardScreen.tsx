@@ -22,12 +22,14 @@ import {
   COMMON_COLORS,
 } from "../src/theme/clubDefaults";
 import { MatchRepository } from "../src/services/database/MatchRepository";
+import { ActionRepository } from "../src/services/database/ActionRepository";
 import { ServiceFactory } from "../services/ServiceFactory";
 import { Match } from "../src/models/types";
 import { Club } from "../models/Club";
 import { Team, TeamStatus } from "../models/Team";
 import { supabase } from "../src/config/supabase";
 import JerseyIconSimple from "../components/icons/JerseySimpleIcon";
+import { ROUTES } from "../constants/routes";
 
 interface DashboardScreenProps {
   navigation: any;
@@ -42,7 +44,9 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
   const [teams, setTeams] = useState<Team[]>([]);
   const [activeTeamId, setActiveTeamId] = useState<string | null>(null);
   const [matches, setMatches] = useState<Match[]>([]);
-  const [liveMatchToResume, setLiveMatchToResume] = useState<Match | null>(null);
+  const [liveMatchToResume, setLiveMatchToResume] = useState<Match | null>(
+    null
+  );
   const [isNewMatchFlow, setIsNewMatchFlow] = useState(false); // true if opened from "Nouveau match" button
 
   const isGuest = !user;
@@ -157,29 +161,33 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
             });
 
             // Transform server matches to Match format
-            serverMatches = serverMatchesData.map((sm, index) => ({
-              id: -(index + 1), // Use negative IDs for server matches
-              my_team_name: sm.my_team_name,
-              opponent_name: sm.opponent_name,
-              is_home: sm.is_home ? 1 : 0,
-              status: sm.status || "completed" as const,
-              total_periods: sm.total_periods,
-              period_duration: sm.period_duration,
-              overtime_duration: sm.overtime_duration || 300,
-              overtime_periods: sm.overtime_periods || 0,
-              club_id: sm.club_id,
-              team_id: sm.team_id,
-              current_period: 0,
-              time_elapsed: 0,
-              my_team_score: sm.my_team_score,
-              opponent_score: sm.opponent_score,
-              synced_to_server: 1,
-              created_at: sm.created_at,
-              started_at: sm.started_at,
-              ended_at: sm.ended_at,
-              played_at: sm.played_at,
-              last_updated: sm.created_at,
-            }));
+            serverMatches = serverMatchesData.map(
+              (sm, index) =>
+                ({
+                  id: -(index + 1), // Use negative IDs for server matches
+                  supabase_id: sm.id, // Keep Supabase UUID for navigation
+                  my_team_name: sm.my_team_name,
+                  opponent_name: sm.opponent_name,
+                  is_home: sm.is_home ? 1 : 0,
+                  status: sm.status || ("completed" as const),
+                  total_periods: sm.total_periods,
+                  period_duration: sm.period_duration,
+                  overtime_duration: sm.overtime_duration || 300,
+                  overtime_periods: sm.overtime_periods || 0,
+                  club_id: sm.club_id,
+                  team_id: sm.team_id,
+                  current_period: 0,
+                  time_elapsed: 0,
+                  my_team_score: sm.my_team_score,
+                  opponent_score: sm.opponent_score,
+                  synced_to_server: 1,
+                  created_at: sm.created_at,
+                  started_at: sm.started_at,
+                  ended_at: sm.ended_at,
+                  played_at: sm.played_at,
+                  last_updated: sm.created_at,
+                } as any)
+            );
           }
         } catch (error) {
           console.error(
@@ -378,7 +386,11 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" });
+    return date.toLocaleDateString("fr-FR", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
   };
 
   // Filter matches based on selected team
@@ -457,7 +469,9 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
             style={[
               styles.modalContent,
               {
-                backgroundColor: isDark ? SLATE_COLORS[900] : COMMON_COLORS.white,
+                backgroundColor: isDark
+                  ? SLATE_COLORS[900]
+                  : COMMON_COLORS.white,
               },
             ]}
           >
@@ -599,460 +613,557 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
 
       <ScrollView style={[styles.container, { backgroundColor: bgColor }]}>
         <View style={styles.content}>
-        {/* Header */}
-        <View style={styles.header}>
-          <View style={styles.headerLeft}>
-            <Text style={[styles.greeting, { color: textPrimary }]}>
-              Bonjour, {"\n"}
-              <Text style={{ color: BRAND_COLORS[500] }}>{userName}</Text>
-            </Text>
-            <Text style={[styles.subGreeting, { color: textSecondary }]}>
-              Prêt pour le match ?
-            </Text>
-          </View>
-
-          <View style={styles.headerRight}>
-            <TouchableOpacity
-              onPress={handleToggleTheme}
-              style={[
-                styles.iconButton,
-                {
-                  backgroundColor: surfaceColor,
-                  borderColor,
-                },
-              ]}
-            >
-              <MaterialCommunityIcons
-                name={isDark ? "white-balance-sunny" : "moon-waning-crescent"}
-                size={20}
-                color={textPrimary}
-              />
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={handleSignOut}
-              style={[
-                styles.iconButton,
-                {
-                  backgroundColor: isDark
-                    ? SLATE_COLORS[800]
-                    : SLATE_COLORS[100],
-                  borderColor,
-                },
-              ]}
-            >
-              <MaterialCommunityIcons name="logout" size={20} color="#ef4444" />
-            </TouchableOpacity>
-
-            <View
-              style={[
-                styles.clubLogo,
-                {
-                  backgroundColor: isDark
-                    ? SLATE_COLORS[800]
-                    : SLATE_COLORS[100],
-                  borderColor:
-                    club && club.logoUrl ? BRAND_COLORS[500] : borderColor,
-                },
-              ]}
-            >
-              {club && club.logoUrl ? (
-                <Image
-                  source={{ uri: club.logoUrl }}
-                  style={styles.clubLogoImage}
-                />
-              ) : (
-                <Image
-                  source={require("../components/icons/coachassistant-logo-margin.png")}
-                  style={styles.clubLogoImage}
-                />
-              )}
-            </View>
-          </View>
-        </View>
-
-        {/* No Club/Team CTA - Only for non-guests who haven't set up a club/team yet */}
-        {(!club || teams.length === 0) && !isGuest && (
-          <View
-            style={[
-              styles.ctaCard,
-              {
-                backgroundColor: isDark
-                  ? SLATE_COLORS[800]
-                  : COMMON_COLORS.white,
-                borderColor: isDark ? SLATE_COLORS[700] : SLATE_COLORS[200],
-              },
-            ]}
-          >
-            <View
-              style={[
-                styles.ctaIconContainer,
-                {
-                  backgroundColor: isDark
-                    ? `${BRAND_COLORS[500]}33`
-                    : `${BRAND_COLORS[500]}1A`,
-                },
-              ]}
-            >
-              <MaterialCommunityIcons
-                name={!club ? "shield-outline" : "account-group"}
-                size={24}
-                color={BRAND_COLORS[500]}
-              />
-            </View>
-            <Text style={[styles.ctaTitle, { color: textPrimary }]}>
-              {!club
-                ? "Rejoignez ou créez un club"
-                : "Créez votre première équipe"}
-            </Text>
-            <Text style={[styles.ctaDescription, { color: textSecondary }]}>
-              {!club
-                ? "Pour commencer à suivre les statistiques, vous devez associer votre compte à une équipe."
-                : "Vous faites partie d'un club, créez maintenant une équipe pour commencer à suivre vos matchs."}
-            </Text>
-            <TouchableOpacity
-              style={[
-                styles.ctaPrimaryButton,
-                {
-                  backgroundColor: isDark
-                    ? COMMON_COLORS.white
-                    : SLATE_COLORS[900],
-                },
-              ]}
-              onPress={() => navigation.navigate("Club")}
-            >
-              <Text
-                style={[
-                  styles.ctaPrimaryButtonText,
-                  {
-                    color: isDark ? SLATE_COLORS[900] : COMMON_COLORS.white,
-                  },
-                ]}
-              >
-                Commencer
+          {/* Header */}
+          <View style={styles.header}>
+            <View style={styles.headerLeft}>
+              <Text style={[styles.greeting, { color: textPrimary }]}>
+                Bonjour, {"\n"}
+                <Text style={{ color: BRAND_COLORS[500] }}>{userName}</Text>
               </Text>
-              <MaterialCommunityIcons
-                name="chevron-right"
-                size={16}
-                color={isDark ? SLATE_COLORS[900] : COMMON_COLORS.white}
-              />
-            </TouchableOpacity>
-          </View>
-        )}
+              <Text style={[styles.subGreeting, { color: textSecondary }]}>
+                Prêt pour le match ?
+              </Text>
+            </View>
 
-        {/* Quick Stats & Team Selector - Displayed for Club Users OR Guests */}
-        {(club || isGuest) && (
-          <>
-            {/* Team Selector (Only if club exists) */}
-            {club && teams.length > 0 && (
-              <View
+            <View style={styles.headerRight}>
+              <TouchableOpacity
+                onPress={handleToggleTheme}
                 style={[
-                  styles.teamSelector,
+                  styles.iconButton,
                   {
                     backgroundColor: surfaceColor,
                     borderColor,
                   },
                 ]}
               >
-                <View style={styles.teamSelectorIcon}>
-                  <JerseyIconSimple width={30} height={30} />
-                </View>
-                <Picker
-                  selectedValue={activeTeamId || ""}
-                  onValueChange={(value) => setActiveTeamId(value)}
-                  style={[styles.picker, { color: textPrimary }]}
-                  dropdownIconColor={textSecondary}
-                >
-                  {teams.map((team) => (
-                    <Picker.Item
-                      key={team.id}
-                      label={`${team.name}`}
-                      value={team.id}
-                    />
-                  ))}
-                </Picker>
-              </View>
-            )}
+                <MaterialCommunityIcons
+                  name={isDark ? "white-balance-sunny" : "moon-waning-crescent"}
+                  size={20}
+                  color={textPrimary}
+                />
+              </TouchableOpacity>
 
-            {/* Guest Label if no club */}
-            {isGuest && (
-              <View
+              <TouchableOpacity
+                onPress={handleSignOut}
                 style={[
-                  styles.guestBanner,
+                  styles.iconButton,
                   {
                     backgroundColor: isDark
-                      ? `${BRAND_COLORS[500]}1A`
-                      : `${BRAND_COLORS[500]}1A`,
-                    borderColor: isDark
-                      ? `${BRAND_COLORS[500]}33`
-                      : `${BRAND_COLORS[500]}33`,
+                      ? SLATE_COLORS[800]
+                      : SLATE_COLORS[100],
+                    borderColor,
                   },
                 ]}
               >
                 <MaterialCommunityIcons
-                  name="clock-outline"
-                  size={16}
-                  color={BRAND_COLORS[500]}
+                  name="logout"
+                  size={20}
+                  color="#ef4444"
                 />
-                <Text
-                  style={[
-                    styles.guestBannerText,
-                    {
-                      color: isDark ? BRAND_COLORS[100] : BRAND_COLORS[600],
-                    },
-                  ]}
-                >
-                  Mode Invité : Les matchs sont sauvegardés en local sur cet
-                  appareil.
-                </Text>
-              </View>
-            )}
-
-            {/* Stats Cards */}
-            <View style={styles.statsContainer}>
-              <View
-                style={[
-                  styles.statCard,
-                  {
-                    backgroundColor: isDark
-                      ? `${SLATE_COLORS[800]}80`
-                      : COMMON_COLORS.white,
-                    borderColor,
-                  },
-                ]}
-              >
-                <View style={styles.statHeader}>
-                  <MaterialCommunityIcons
-                    name="clock-outline"
-                    size={18}
-                    color={BRAND_COLORS[500]}
-                  />
-                  <Text
-                    style={[styles.statLabel, { color: BRAND_COLORS[500] }]}
-                  >
-                    MATCHS
-                  </Text>
-                </View>
-                <Text style={[styles.statValue, { color: textPrimary }]}>
-                  {filteredMatches.length}
-                </Text>
-                <Text style={[styles.statSubtext, { color: textSecondary }]}>
-                  Cette saison
-                </Text>
-              </View>
-
-              <View
-                style={[
-                  styles.statCard,
-                  {
-                    backgroundColor: isDark
-                      ? `${SLATE_COLORS[800]}80`
-                      : COMMON_COLORS.white,
-                    borderColor,
-                  },
-                ]}
-              >
-                <View style={styles.statHeader}>
-                  <MaterialCommunityIcons
-                    name="trending-up"
-                    size={18}
-                    color="#10b981"
-                  />
-                  <Text style={[styles.statLabel, { color: "#10b981" }]}>
-                    VICTOIRES
-                  </Text>
-                </View>
-                <Text style={[styles.statValue, { color: textPrimary }]}>
-                  {wins}{" "}
-                  <Text
-                    style={[styles.statValueSmall, { color: textSecondary }]}
-                  >
-                    / {losses}
-                  </Text>
-                </Text>
-                <Text style={[styles.statSubtext, { color: textSecondary }]}>
-                  Ratio V/D
-                </Text>
-              </View>
-            </View>
-
-            {/* Action Bar - New Match Button - Only show if user has teams */}
-            {teams.length > 0 && (
-              <TouchableOpacity
-                style={styles.newMatchButton}
-                onPress={handleNewMatchClick}
-              >
-                <View style={styles.newMatchButtonLeft}>
-                  <Text style={styles.newMatchButtonTitle}>Nouveau Match</Text>
-                  <Text style={styles.newMatchButtonSubtitle}>
-                    Pour {activeTeamName}
-                  </Text>
-                </View>
-                <View style={styles.newMatchButtonIcon}>
-                  <MaterialCommunityIcons
-                    name="plus"
-                    size={24}
-                    color={COMMON_COLORS.white}
-                  />
-                </View>
               </TouchableOpacity>
-            )}
 
-            {/* Recent History */}
-            <View style={styles.section}>
-              <View style={styles.sectionHeader}>
-                <Text style={[styles.sectionTitle, { color: textPrimary }]}>
-                  Derniers Matchs
-                </Text>
-                <TouchableOpacity
-                  onPress={() => navigation.navigate("History")}
-                >
-                  <Text
-                    style={[styles.sectionLink, { color: BRAND_COLORS[500] }]}
-                  >
-                    Voir tout
-                  </Text>
-                </TouchableOpacity>
-              </View>
-
-              <View style={styles.matchesList}>
-                {recentMatches.length > 0 ? (
-                  recentMatches.map((match, index) => {
-                    const scoreA = match.my_team_score || 0;
-                    const scoreB = match.opponent_score || 0;
-                    const isWin = scoreA > scoreB;
-
-                    return (
-                      <View
-                        key={`match-${match.id}-${index}`}
-                        style={[
-                          styles.matchCard,
-                          {
-                            backgroundColor: isDark
-                              ? SLATE_COLORS[900]
-                              : COMMON_COLORS.white,
-                            borderColor,
-                          },
-                        ]}
-                      >
-                        <View style={styles.matchCardLeft}>
-                          <View
-                            style={[
-                              styles.matchIndicator,
-                              {
-                                backgroundColor: isWin ? "#10b981" : "#ef4444",
-                              },
-                            ]}
-                          />
-                          <View style={styles.matchInfo}>
-                            <View style={styles.matchScoreLine}>
-                              <Text
-                                style={[
-                                  styles.matchScore,
-                                  { color: textPrimary },
-                                ]}
-                              >
-                                {scoreA} - {scoreB}
-                              </Text>
-                              <View
-                                style={[
-                                  styles.matchTeamBadge,
-                                  {
-                                    backgroundColor: isDark
-                                      ? SLATE_COLORS[800]
-                                      : SLATE_COLORS[100],
-                                  },
-                                ]}
-                              >
-                                <Text
-                                  style={[
-                                    styles.matchTeamBadgeText,
-                                    { color: textSecondary },
-                                  ]}
-                                >
-                                  {match.my_team_name || "Nous"}
-                                </Text>
-                              </View>
-                            </View>
-                            <Text
-                              style={[
-                                styles.matchOpponent,
-                                { color: textSecondary },
-                              ]}
-                              numberOfLines={1}
-                            >
-                              vs {match.opponent_name}
-                            </Text>
-                          </View>
-                        </View>
-
-                        <View style={styles.matchCardRight}>
-                          <Text
-                            style={[
-                              styles.matchDate,
-                              { color: SLATE_COLORS[400] },
-                            ]}
-                          >
-                            {formatDate(match.ended_at || match.created_at)}
-                          </Text>
-                          <View
-                            style={[
-                              styles.matchResultBadge,
-                              {
-                                backgroundColor: isWin
-                                  ? isDark
-                                    ? "#10b98133"
-                                    : "#10b9811A"
-                                  : isDark
-                                  ? "#ef444433"
-                                  : "#ef44441A",
-                              },
-                            ]}
-                          >
-                            <Text
-                              style={[
-                                styles.matchResultText,
-                                { color: isWin ? "#10b981" : "#ef4444" },
-                              ]}
-                            >
-                              {isWin ? "VICTOIRE" : "DÉFAITE"}
-                            </Text>
-                          </View>
-                        </View>
-                      </View>
-                    );
-                  })
+              <View
+                style={[
+                  styles.clubLogo,
+                  {
+                    backgroundColor: isDark
+                      ? SLATE_COLORS[800]
+                      : SLATE_COLORS[100],
+                    borderColor:
+                      club && club.logoUrl ? BRAND_COLORS[500] : borderColor,
+                  },
+                ]}
+              >
+                {club && club.logoUrl ? (
+                  <Image
+                    source={{ uri: club.logoUrl }}
+                    style={styles.clubLogoImage}
+                  />
                 ) : (
-                  <View
-                    style={[
-                      styles.emptyState,
-                      {
-                        backgroundColor: isDark
-                          ? `${SLATE_COLORS[900]}80`
-                          : SLATE_COLORS[100],
-                        borderColor,
-                      },
-                    ]}
-                  >
-                    <MaterialCommunityIcons
-                      name="calendar-blank"
-                      size={32}
-                      color={textSecondary}
-                      style={{ opacity: 0.5 }}
-                    />
-                    <Text
-                      style={[styles.emptyStateText, { color: textSecondary }]}
-                    >
-                      Aucun match récent
-                    </Text>
-                  </View>
+                  <Image
+                    source={require("../components/icons/coachassistant-logo-margin.png")}
+                    style={styles.clubLogoImage}
+                  />
                 )}
               </View>
             </View>
-          </>
-        )}
-      </View>
-    </ScrollView>
+          </View>
+
+          {/* No Club/Team CTA - Only for non-guests who haven't set up a club/team yet */}
+          {(!club || teams.length === 0) && !isGuest && (
+            <View
+              style={[
+                styles.ctaCard,
+                {
+                  backgroundColor: isDark
+                    ? SLATE_COLORS[800]
+                    : COMMON_COLORS.white,
+                  borderColor: isDark ? SLATE_COLORS[700] : SLATE_COLORS[200],
+                },
+              ]}
+            >
+              <View
+                style={[
+                  styles.ctaIconContainer,
+                  {
+                    backgroundColor: isDark
+                      ? `${BRAND_COLORS[500]}33`
+                      : `${BRAND_COLORS[500]}1A`,
+                  },
+                ]}
+              >
+                <MaterialCommunityIcons
+                  name={!club ? "shield-outline" : "account-group"}
+                  size={24}
+                  color={BRAND_COLORS[500]}
+                />
+              </View>
+              <Text style={[styles.ctaTitle, { color: textPrimary }]}>
+                {!club
+                  ? "Rejoignez ou créez un club"
+                  : "Créez votre première équipe"}
+              </Text>
+              <Text style={[styles.ctaDescription, { color: textSecondary }]}>
+                {!club
+                  ? "Pour commencer à suivre les statistiques, vous devez associer votre compte à une équipe."
+                  : "Vous faites partie d'un club, créez maintenant une équipe pour commencer à suivre vos matchs."}
+              </Text>
+              <TouchableOpacity
+                style={[
+                  styles.ctaPrimaryButton,
+                  {
+                    backgroundColor: isDark
+                      ? COMMON_COLORS.white
+                      : SLATE_COLORS[900],
+                  },
+                ]}
+                onPress={() => navigation.navigate("Club")}
+              >
+                <Text
+                  style={[
+                    styles.ctaPrimaryButtonText,
+                    {
+                      color: isDark ? SLATE_COLORS[900] : COMMON_COLORS.white,
+                    },
+                  ]}
+                >
+                  Commencer
+                </Text>
+                <MaterialCommunityIcons
+                  name="chevron-right"
+                  size={16}
+                  color={isDark ? SLATE_COLORS[900] : COMMON_COLORS.white}
+                />
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {/* Quick Stats & Team Selector - Displayed for Club Users OR Guests */}
+          {(club || isGuest) && (
+            <>
+              {/* Team Selector (Only if club exists) */}
+              {club && teams.length > 0 && (
+                <View
+                  style={[
+                    styles.teamSelector,
+                    {
+                      backgroundColor: surfaceColor,
+                      borderColor,
+                    },
+                  ]}
+                >
+                  <View style={styles.teamSelectorIcon}>
+                    <JerseyIconSimple width={30} height={30} />
+                  </View>
+                  <Picker
+                    selectedValue={activeTeamId || ""}
+                    onValueChange={(value) => setActiveTeamId(value)}
+                    style={[styles.picker, { color: textPrimary }]}
+                    dropdownIconColor={textSecondary}
+                  >
+                    {teams.map((team) => (
+                      <Picker.Item
+                        key={team.id}
+                        label={`${team.name}`}
+                        value={team.id}
+                      />
+                    ))}
+                  </Picker>
+                </View>
+              )}
+
+              {/* Guest Label if no club */}
+              {isGuest && (
+                <View
+                  style={[
+                    styles.guestBanner,
+                    {
+                      backgroundColor: isDark
+                        ? `${BRAND_COLORS[500]}1A`
+                        : `${BRAND_COLORS[500]}1A`,
+                      borderColor: isDark
+                        ? `${BRAND_COLORS[500]}33`
+                        : `${BRAND_COLORS[500]}33`,
+                    },
+                  ]}
+                >
+                  <MaterialCommunityIcons
+                    name="clock-outline"
+                    size={16}
+                    color={BRAND_COLORS[500]}
+                  />
+                  <Text
+                    style={[
+                      styles.guestBannerText,
+                      {
+                        color: isDark ? BRAND_COLORS[100] : BRAND_COLORS[600],
+                      },
+                    ]}
+                  >
+                    Mode Invité : Les matchs sont sauvegardés en local sur cet
+                    appareil.
+                  </Text>
+                </View>
+              )}
+
+              {/* Stats Cards */}
+              <View style={styles.statsContainer}>
+                <View
+                  style={[
+                    styles.statCard,
+                    {
+                      backgroundColor: isDark
+                        ? `${SLATE_COLORS[800]}80`
+                        : COMMON_COLORS.white,
+                      borderColor,
+                    },
+                  ]}
+                >
+                  <View style={styles.statHeader}>
+                    <MaterialCommunityIcons
+                      name="clock-outline"
+                      size={18}
+                      color={BRAND_COLORS[500]}
+                    />
+                    <Text
+                      style={[styles.statLabel, { color: BRAND_COLORS[500] }]}
+                    >
+                      MATCHS
+                    </Text>
+                  </View>
+                  <Text style={[styles.statValue, { color: textPrimary }]}>
+                    {filteredMatches.length}
+                  </Text>
+                  <Text style={[styles.statSubtext, { color: textSecondary }]}>
+                    Cette saison
+                  </Text>
+                </View>
+
+                <View
+                  style={[
+                    styles.statCard,
+                    {
+                      backgroundColor: isDark
+                        ? `${SLATE_COLORS[800]}80`
+                        : COMMON_COLORS.white,
+                      borderColor,
+                    },
+                  ]}
+                >
+                  <View style={styles.statHeader}>
+                    <MaterialCommunityIcons
+                      name="trending-up"
+                      size={18}
+                      color="#10b981"
+                    />
+                    <Text style={[styles.statLabel, { color: "#10b981" }]}>
+                      VICTOIRES
+                    </Text>
+                  </View>
+                  <Text style={[styles.statValue, { color: textPrimary }]}>
+                    {wins}{" "}
+                    <Text
+                      style={[styles.statValueSmall, { color: textSecondary }]}
+                    >
+                      / {losses}
+                    </Text>
+                  </Text>
+                  <Text style={[styles.statSubtext, { color: textSecondary }]}>
+                    Ratio V/D
+                  </Text>
+                </View>
+              </View>
+
+              {/* Action Bar - New Match Button - Only show if user has teams */}
+              {teams.length > 0 && (
+                <TouchableOpacity
+                  style={styles.newMatchButton}
+                  onPress={handleNewMatchClick}
+                >
+                  <View style={styles.newMatchButtonLeft}>
+                    <Text style={styles.newMatchButtonTitle}>
+                      Nouveau Match
+                    </Text>
+                    <Text style={styles.newMatchButtonSubtitle}>
+                      Pour {activeTeamName}
+                    </Text>
+                  </View>
+                  <View style={styles.newMatchButtonIcon}>
+                    <MaterialCommunityIcons
+                      name="plus"
+                      size={24}
+                      color={COMMON_COLORS.white}
+                    />
+                  </View>
+                </TouchableOpacity>
+              )}
+
+              {/* Recent History */}
+              <View style={styles.section}>
+                <View style={styles.sectionHeader}>
+                  <Text style={[styles.sectionTitle, { color: textPrimary }]}>
+                    Derniers Matchs
+                  </Text>
+                  <TouchableOpacity
+                    onPress={() => navigation.navigate("History")}
+                  >
+                    <Text
+                      style={[styles.sectionLink, { color: BRAND_COLORS[500] }]}
+                    >
+                      Voir tout
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+
+                <View style={styles.matchesList}>
+                  {recentMatches.length > 0 ? (
+                    recentMatches.map((match, index) => {
+                      const scoreA = match.my_team_score || 0;
+                      const scoreB = match.opponent_score || 0;
+                      const isWin = scoreA > scoreB;
+
+                      return (
+                        <TouchableOpacity
+                          key={`match-${match.id}-${index}`}
+                          style={[
+                            styles.matchCard,
+                            {
+                              backgroundColor: isDark
+                                ? SLATE_COLORS[900]
+                                : COMMON_COLORS.white,
+                              borderColor,
+                            },
+                          ]}
+                          onPress={async () => {
+                            try {
+                              const matchId = (match as any).supabase_id || match.id;
+                              const isUUID = typeof matchId === "string" && matchId.includes("-");
+
+                              let actionDataList: any[] = [];
+                              let players: any[] = [];
+
+                              if (isUUID) {
+                                // Load from Supabase - get match_players with actions embedded
+                                const { data: matchPlayers, error } = await supabase
+                                  .from("match_players")
+                                  .select("*")
+                                  .eq("match_id", matchId);
+
+                                if (error) {
+                                  console.error("Error loading match players:", error);
+                                  return;
+                                }
+
+                                if (matchPlayers) {
+                                  // Convert match players to expected format
+                                  players = matchPlayers.map((mp: any) => ({
+                                    id: mp.player_number,
+                                    num: mp.player_number,
+                                    name: mp.player_name,
+                                    team: mp.team,
+                                    isSubstitute: !mp.is_starter,
+                                    photoUrl: mp.photo_url,
+                                  }));
+
+                                  // Extract actions from match_players
+                                  matchPlayers.forEach((mp: any) => {
+                                    if (mp.actions && Array.isArray(mp.actions)) {
+                                      const playerActions = mp.actions.map((action: any) => ({
+                                        type: action.action_type,
+                                        specification: action.specification,
+                                        points: action.points,
+                                        player: mp.player_number,
+                                        team: mp.team,
+                                        timestamp: new Date(action.timestamp),
+                                        period_number: action.period_number,
+                                        time_in_period: action.time_in_period,
+                                        position: { x: 0, y: 0 },
+                                        semanticPosition: {
+                                          xNormalized: action.semantic_x,
+                                          yNormalized: action.semantic_y,
+                                        },
+                                      }));
+                                      actionDataList.push(...playerActions);
+                                    }
+                                  });
+                                }
+                              } else {
+                                // Load from local SQLite
+                                const actionRepo = new ActionRepository();
+                                const actions = await actionRepo.getActionsForMatch(Number(matchId));
+
+                                // Convert to ActionData format
+                                actionDataList = actions.map((action: any) => ({
+                                  type: action.action_type,
+                                  specification: action.specification,
+                                  points: action.points,
+                                  player: action.player_number,
+                                  team: action.team,
+                                  timestamp: new Date(action.timestamp),
+                                  period_number: action.period_number,
+                                  time_in_period: action.time_in_period,
+                                  position: { x: 0, y: 0 },
+                                  semanticPosition: {
+                                    xNormalized: action.semantic_x,
+                                    yNormalized: action.semantic_y,
+                                  },
+                                }));
+                              }
+
+                              navigation.navigate(ROUTES.MATCH_DETAILS as never, {
+                                match,
+                                actions: actionDataList,
+                                players,
+                              });
+                            } catch (error) {
+                              console.error("Error loading match details:", error);
+                            }
+                          }}
+                          activeOpacity={0.7}
+                        >
+                          <View style={styles.matchCardLeft}>
+                            <View
+                              style={[
+                                styles.matchIndicator,
+                                {
+                                  backgroundColor: isWin
+                                    ? "#10b981"
+                                    : "#ef4444",
+                                },
+                              ]}
+                            />
+                            <View style={styles.matchInfo}>
+                              <View style={styles.matchScoreLine}>
+                                <Text
+                                  style={[
+                                    styles.matchScore,
+                                    { color: textPrimary },
+                                  ]}
+                                >
+                                  {scoreA} - {scoreB}
+                                </Text>
+                                <View
+                                  style={[
+                                    styles.matchTeamBadge,
+                                    {
+                                      backgroundColor: isDark
+                                        ? SLATE_COLORS[800]
+                                        : SLATE_COLORS[100],
+                                    },
+                                  ]}
+                                >
+                                  <Text
+                                    style={[
+                                      styles.matchTeamBadgeText,
+                                      { color: textSecondary },
+                                    ]}
+                                  >
+                                    {match.my_team_name || "Nous"}
+                                  </Text>
+                                </View>
+                              </View>
+                              <Text
+                                style={[
+                                  styles.matchOpponent,
+                                  { color: textSecondary },
+                                ]}
+                                numberOfLines={1}
+                              >
+                                vs {match.opponent_name}
+                              </Text>
+                            </View>
+                          </View>
+
+                          <View style={styles.matchCardRight}>
+                            <Text
+                              style={[
+                                styles.matchDate,
+                                { color: SLATE_COLORS[400] },
+                              ]}
+                            >
+                              {formatDate(match.ended_at || match.created_at)}
+                            </Text>
+                            <View
+                              style={[
+                                styles.matchResultBadge,
+                                {
+                                  backgroundColor: isWin
+                                    ? isDark
+                                      ? "#10b98133"
+                                      : "#10b9811A"
+                                    : isDark
+                                    ? "#ef444433"
+                                    : "#ef44441A",
+                                },
+                              ]}
+                            >
+                              <Text
+                                style={[
+                                  styles.matchResultText,
+                                  { color: isWin ? "#10b981" : "#ef4444" },
+                                ]}
+                              >
+                                {isWin ? "VICTOIRE" : "DÉFAITE"}
+                              </Text>
+                            </View>
+                          </View>
+                        </TouchableOpacity>
+                      );
+                    })
+                  ) : (
+                    <View
+                      style={[
+                        styles.emptyState,
+                        {
+                          backgroundColor: isDark
+                            ? `${SLATE_COLORS[900]}80`
+                            : SLATE_COLORS[100],
+                          borderColor,
+                        },
+                      ]}
+                    >
+                      <MaterialCommunityIcons
+                        name="calendar-blank"
+                        size={32}
+                        color={textSecondary}
+                        style={{ opacity: 0.5 }}
+                      />
+                      <Text
+                        style={[
+                          styles.emptyStateText,
+                          { color: textSecondary },
+                        ]}
+                      >
+                        Aucun match récent
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              </View>
+            </>
+          )}
+        </View>
+      </ScrollView>
     </>
   );
 }
