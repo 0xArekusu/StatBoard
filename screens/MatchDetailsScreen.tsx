@@ -268,12 +268,12 @@ export default function MatchDetailsScreen() {
       const aValue = a[sortBy];
       const bValue = b[sortBy];
 
-      if (typeof aValue === 'number' && typeof bValue === 'number') {
+      if (typeof aValue === "number" && typeof bValue === "number") {
         return sortOrder === "desc" ? bValue - aValue : aValue - bValue;
       }
 
       // For string values (like name)
-      if (typeof aValue === 'string' && typeof bValue === 'string') {
+      if (typeof aValue === "string" && typeof bValue === "string") {
         return sortOrder === "desc"
           ? bValue.localeCompare(aValue)
           : aValue.localeCompare(bValue);
@@ -756,10 +756,14 @@ export default function MatchDetailsScreen() {
                     style={[
                       styles.tableHeaderCell,
                       styles.playerCell,
-                      { color: sortBy === "name" ? BRAND_COLORS[500] : textSecondary },
+                      {
+                        color:
+                          sortBy === "name" ? BRAND_COLORS[500] : textSecondary,
+                      },
                     ]}
                   >
-                    JOUEUR {sortBy === "name" && (sortOrder === "desc" ? "↓" : "↑")}
+                    JOUEUR{" "}
+                    {sortBy === "name" && (sortOrder === "desc" ? "↓" : "↑")}
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity onPress={() => handleSort("min")}>
@@ -767,7 +771,10 @@ export default function MatchDetailsScreen() {
                     style={[
                       styles.tableHeaderCell,
                       styles.minCell,
-                      { color: sortBy === "min" ? BRAND_COLORS[500] : textTertiary },
+                      {
+                        color:
+                          sortBy === "min" ? BRAND_COLORS[500] : textTertiary,
+                      },
                     ]}
                   >
                     MIN {sortBy === "min" && (sortOrder === "desc" ? "↓" : "↑")}
@@ -778,7 +785,10 @@ export default function MatchDetailsScreen() {
                     style={[
                       styles.tableHeaderCell,
                       styles.statCell,
-                      { color: sortBy === "pts" ? BRAND_COLORS[500] : textSecondary },
+                      {
+                        color:
+                          sortBy === "pts" ? BRAND_COLORS[500] : textSecondary,
+                      },
                     ]}
                   >
                     PTS {sortBy === "pts" && (sortOrder === "desc" ? "↓" : "↑")}
@@ -789,10 +799,14 @@ export default function MatchDetailsScreen() {
                     style={[
                       styles.tableHeaderCell,
                       styles.statCellWide,
-                      { color: sortBy === "fgm" ? BRAND_COLORS[500] : textSecondary },
+                      {
+                        color:
+                          sortBy === "fgm" ? BRAND_COLORS[500] : textSecondary,
+                      },
                     ]}
                   >
-                    TIRS {sortBy === "fgm" && (sortOrder === "desc" ? "↓" : "↑")}
+                    TIRS{" "}
+                    {sortBy === "fgm" && (sortOrder === "desc" ? "↓" : "↑")}
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity onPress={() => handleSort("fg2m")}>
@@ -800,10 +814,14 @@ export default function MatchDetailsScreen() {
                     style={[
                       styles.tableHeaderCell,
                       styles.statCellWide,
-                      { color: sortBy === "fg2m" ? BRAND_COLORS[500] : textSecondary },
+                      {
+                        color:
+                          sortBy === "fg2m" ? BRAND_COLORS[500] : textSecondary,
+                      },
                     ]}
                   >
-                    2PTS {sortBy === "fg2m" && (sortOrder === "desc" ? "↓" : "↑")}
+                    2PTS{" "}
+                    {sortBy === "fg2m" && (sortOrder === "desc" ? "↓" : "↑")}
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity onPress={() => handleSort("fg3m")}>
@@ -811,10 +829,14 @@ export default function MatchDetailsScreen() {
                     style={[
                       styles.tableHeaderCell,
                       styles.statCellWide,
-                      { color: sortBy === "fg3m" ? BRAND_COLORS[500] : textSecondary },
+                      {
+                        color:
+                          sortBy === "fg3m" ? BRAND_COLORS[500] : textSecondary,
+                      },
                     ]}
                   >
-                    3PTS {sortBy === "fg3m" && (sortOrder === "desc" ? "↓" : "↑")}
+                    3PTS{" "}
+                    {sortBy === "fg3m" && (sortOrder === "desc" ? "↓" : "↑")}
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity onPress={() => handleSort("ftm")}>
@@ -822,7 +844,10 @@ export default function MatchDetailsScreen() {
                     style={[
                       styles.tableHeaderCell,
                       styles.statCellWide,
-                      { color: sortBy === "ftm" ? BRAND_COLORS[500] : textSecondary },
+                      {
+                        color:
+                          sortBy === "ftm" ? BRAND_COLORS[500] : textSecondary,
+                      },
                     ]}
                   >
                     LF {sortBy === "ftm" && (sortOrder === "desc" ? "↓" : "↑")}
@@ -833,7 +858,10 @@ export default function MatchDetailsScreen() {
                     style={[
                       styles.tableHeaderCell,
                       styles.statCell,
-                      { color: sortBy === "reb" ? BRAND_COLORS[500] : textSecondary },
+                      {
+                        color:
+                          sortBy === "reb" ? BRAND_COLORS[500] : textSecondary,
+                      },
                     ]}
                   >
                     REB {sortBy === "reb" && (sortOrder === "desc" ? "↓" : "↑")}
@@ -844,10 +872,16 @@ export default function MatchDetailsScreen() {
                     style={[
                       styles.tableHeaderCell,
                       styles.statCell,
-                      { color: sortBy === "reb_off" ? BRAND_COLORS[500] : textSecondary },
+                      {
+                        color:
+                          sortBy === "reb_off"
+                            ? BRAND_COLORS[500]
+                            : textSecondary,
+                      },
                     ]}
                   >
-                    RO {sortBy === "reb_off" && (sortOrder === "desc" ? "↓" : "↑")}
+                    RO{" "}
+                    {sortBy === "reb_off" && (sortOrder === "desc" ? "↓" : "↑")}
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity onPress={() => handleSort("reb_def")}>
@@ -855,10 +889,16 @@ export default function MatchDetailsScreen() {
                     style={[
                       styles.tableHeaderCell,
                       styles.statCell,
-                      { color: sortBy === "reb_def" ? BRAND_COLORS[500] : textSecondary },
+                      {
+                        color:
+                          sortBy === "reb_def"
+                            ? BRAND_COLORS[500]
+                            : textSecondary,
+                      },
                     ]}
                   >
-                    RD {sortBy === "reb_def" && (sortOrder === "desc" ? "↓" : "↑")}
+                    RD{" "}
+                    {sortBy === "reb_def" && (sortOrder === "desc" ? "↓" : "↑")}
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity onPress={() => handleSort("ast")}>
@@ -866,7 +906,10 @@ export default function MatchDetailsScreen() {
                     style={[
                       styles.tableHeaderCell,
                       styles.statCell,
-                      { color: sortBy === "ast" ? BRAND_COLORS[500] : textSecondary },
+                      {
+                        color:
+                          sortBy === "ast" ? BRAND_COLORS[500] : textSecondary,
+                      },
                     ]}
                   >
                     AST {sortBy === "ast" && (sortOrder === "desc" ? "↓" : "↑")}
@@ -877,7 +920,10 @@ export default function MatchDetailsScreen() {
                     style={[
                       styles.tableHeaderCell,
                       styles.statCell,
-                      { color: sortBy === "stl" ? BRAND_COLORS[500] : textSecondary },
+                      {
+                        color:
+                          sortBy === "stl" ? BRAND_COLORS[500] : textSecondary,
+                      },
                     ]}
                   >
                     INT {sortBy === "stl" && (sortOrder === "desc" ? "↓" : "↑")}
@@ -888,7 +934,10 @@ export default function MatchDetailsScreen() {
                     style={[
                       styles.tableHeaderCell,
                       styles.statCell,
-                      { color: sortBy === "blk" ? BRAND_COLORS[500] : textSecondary },
+                      {
+                        color:
+                          sortBy === "blk" ? BRAND_COLORS[500] : textSecondary,
+                      },
                     ]}
                   >
                     CTR {sortBy === "blk" && (sortOrder === "desc" ? "↓" : "↑")}
@@ -899,7 +948,10 @@ export default function MatchDetailsScreen() {
                     style={[
                       styles.tableHeaderCell,
                       styles.statCell,
-                      { color: sortBy === "to" ? BRAND_COLORS[500] : textSecondary },
+                      {
+                        color:
+                          sortBy === "to" ? BRAND_COLORS[500] : textSecondary,
+                      },
                     ]}
                   >
                     BP {sortBy === "to" && (sortOrder === "desc" ? "↓" : "↑")}
@@ -910,7 +962,10 @@ export default function MatchDetailsScreen() {
                     style={[
                       styles.tableHeaderCell,
                       styles.statCell,
-                      { color: sortBy === "pf" ? BRAND_COLORS[500] : textSecondary },
+                      {
+                        color:
+                          sortBy === "pf" ? BRAND_COLORS[500] : textSecondary,
+                      },
                     ]}
                   >
                     FT {sortBy === "pf" && (sortOrder === "desc" ? "↓" : "↑")}
@@ -921,7 +976,10 @@ export default function MatchDetailsScreen() {
                     style={[
                       styles.tableHeaderCell,
                       styles.statCell,
-                      { color: sortBy === "eff" ? BRAND_COLORS[500] : textSecondary },
+                      {
+                        color:
+                          sortBy === "eff" ? BRAND_COLORS[500] : textSecondary,
+                      },
                     ]}
                   >
                     EFF {sortBy === "eff" && (sortOrder === "desc" ? "↓" : "↑")}
@@ -1286,6 +1344,372 @@ export default function MatchDetailsScreen() {
         {/* CARDS VIEW */}
         {activeTab === "CARDS" && (
           <View style={styles.cardsContainer}>
+            {/* Sort Chips */}
+            <View style={styles.cardsSortSection}>
+              <Text style={[styles.courtFilterLabel, { color: textTertiary }]}>
+                TRIER PAR
+              </Text>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                style={styles.courtFilterScroll}
+              >
+                <View style={styles.courtFilterButtonsRow}>
+                  <TouchableOpacity
+                    onPress={() => handleSort("name")}
+                    style={[
+                      styles.courtFilterChip,
+                      {
+                        backgroundColor:
+                          sortBy === "name"
+                            ? BRAND_COLORS[600]
+                            : isDark
+                            ? SLATE_COLORS[800]
+                            : SLATE_COLORS[100],
+                        borderColor:
+                          sortBy === "name" ? BRAND_COLORS[500] : borderColor,
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.courtFilterChipText,
+                        {
+                          color:
+                            sortBy === "name"
+                              ? COMMON_COLORS.white
+                              : textPrimary,
+                        },
+                      ]}
+                    >
+                      Nom{" "}
+                      {sortBy === "name" && (sortOrder === "desc" ? "↓" : "↑")}
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    onPress={() => handleSort("pts")}
+                    style={[
+                      styles.courtFilterChip,
+                      {
+                        backgroundColor:
+                          sortBy === "pts"
+                            ? BRAND_COLORS[600]
+                            : isDark
+                            ? SLATE_COLORS[800]
+                            : SLATE_COLORS[100],
+                        borderColor:
+                          sortBy === "pts" ? BRAND_COLORS[500] : borderColor,
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.courtFilterChipText,
+                        {
+                          color:
+                            sortBy === "pts"
+                              ? COMMON_COLORS.white
+                              : textPrimary,
+                        },
+                      ]}
+                    >
+                      Points{" "}
+                      {sortBy === "pts" && (sortOrder === "desc" ? "↓" : "↑")}
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    onPress={() => handleSort("reb")}
+                    style={[
+                      styles.courtFilterChip,
+                      {
+                        backgroundColor:
+                          sortBy === "reb"
+                            ? BRAND_COLORS[600]
+                            : isDark
+                            ? SLATE_COLORS[800]
+                            : SLATE_COLORS[100],
+                        borderColor:
+                          sortBy === "reb" ? BRAND_COLORS[500] : borderColor,
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.courtFilterChipText,
+                        {
+                          color:
+                            sortBy === "reb"
+                              ? COMMON_COLORS.white
+                              : textPrimary,
+                        },
+                      ]}
+                    >
+                      Rebonds{" "}
+                      {sortBy === "reb" && (sortOrder === "desc" ? "↓" : "↑")}
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    onPress={() => handleSort("ast")}
+                    style={[
+                      styles.courtFilterChip,
+                      {
+                        backgroundColor:
+                          sortBy === "ast"
+                            ? BRAND_COLORS[600]
+                            : isDark
+                            ? SLATE_COLORS[800]
+                            : SLATE_COLORS[100],
+                        borderColor:
+                          sortBy === "ast" ? BRAND_COLORS[500] : borderColor,
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.courtFilterChipText,
+                        {
+                          color:
+                            sortBy === "ast"
+                              ? COMMON_COLORS.white
+                              : textPrimary,
+                        },
+                      ]}
+                    >
+                      Passes{" "}
+                      {sortBy === "ast" && (sortOrder === "desc" ? "↓" : "↑")}
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    onPress={() => handleSort("stl")}
+                    style={[
+                      styles.courtFilterChip,
+                      {
+                        backgroundColor:
+                          sortBy === "stl"
+                            ? BRAND_COLORS[600]
+                            : isDark
+                            ? SLATE_COLORS[800]
+                            : SLATE_COLORS[100],
+                        borderColor:
+                          sortBy === "stl" ? BRAND_COLORS[500] : borderColor,
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.courtFilterChipText,
+                        {
+                          color:
+                            sortBy === "stl"
+                              ? COMMON_COLORS.white
+                              : textPrimary,
+                        },
+                      ]}
+                    >
+                      Interceptions{" "}
+                      {sortBy === "stl" && (sortOrder === "desc" ? "↓" : "↑")}
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    onPress={() => handleSort("blk")}
+                    style={[
+                      styles.courtFilterChip,
+                      {
+                        backgroundColor:
+                          sortBy === "blk"
+                            ? BRAND_COLORS[600]
+                            : isDark
+                            ? SLATE_COLORS[800]
+                            : SLATE_COLORS[100],
+                        borderColor:
+                          sortBy === "blk" ? BRAND_COLORS[500] : borderColor,
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.courtFilterChipText,
+                        {
+                          color:
+                            sortBy === "blk"
+                              ? COMMON_COLORS.white
+                              : textPrimary,
+                        },
+                      ]}
+                    >
+                      Contres{" "}
+                      {sortBy === "blk" && (sortOrder === "desc" ? "↓" : "↑")}
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    onPress={() => handleSort("eff")}
+                    style={[
+                      styles.courtFilterChip,
+                      {
+                        backgroundColor:
+                          sortBy === "eff"
+                            ? BRAND_COLORS[600]
+                            : isDark
+                            ? SLATE_COLORS[800]
+                            : SLATE_COLORS[100],
+                        borderColor:
+                          sortBy === "eff" ? BRAND_COLORS[500] : borderColor,
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.courtFilterChipText,
+                        {
+                          color:
+                            sortBy === "eff"
+                              ? COMMON_COLORS.white
+                              : textPrimary,
+                        },
+                      ]}
+                    >
+                      Évaluation{" "}
+                      {sortBy === "eff" && (sortOrder === "desc" ? "↓" : "↑")}
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    onPress={() => handleSort("fgm")}
+                    style={[
+                      styles.courtFilterChip,
+                      {
+                        backgroundColor:
+                          sortBy === "fgm"
+                            ? BRAND_COLORS[600]
+                            : isDark
+                            ? SLATE_COLORS[800]
+                            : SLATE_COLORS[100],
+                        borderColor:
+                          sortBy === "fgm" ? BRAND_COLORS[500] : borderColor,
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.courtFilterChipText,
+                        {
+                          color:
+                            sortBy === "fgm"
+                              ? COMMON_COLORS.white
+                              : textPrimary,
+                        },
+                      ]}
+                    >
+                      Tirs{" "}
+                      {sortBy === "fgm" && (sortOrder === "desc" ? "↓" : "↑")}
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    onPress={() => handleSort("fg2m")}
+                    style={[
+                      styles.courtFilterChip,
+                      {
+                        backgroundColor:
+                          sortBy === "fg2m"
+                            ? BRAND_COLORS[600]
+                            : isDark
+                            ? SLATE_COLORS[800]
+                            : SLATE_COLORS[100],
+                        borderColor:
+                          sortBy === "fg2m" ? BRAND_COLORS[500] : borderColor,
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.courtFilterChipText,
+                        {
+                          color:
+                            sortBy === "fg2m"
+                              ? COMMON_COLORS.white
+                              : textPrimary,
+                        },
+                      ]}
+                    >
+                      2 Points{" "}
+                      {sortBy === "fg2m" && (sortOrder === "desc" ? "↓" : "↑")}
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    onPress={() => handleSort("fg3m")}
+                    style={[
+                      styles.courtFilterChip,
+                      {
+                        backgroundColor:
+                          sortBy === "fg3m"
+                            ? BRAND_COLORS[600]
+                            : isDark
+                            ? SLATE_COLORS[800]
+                            : SLATE_COLORS[100],
+                        borderColor:
+                          sortBy === "fg3m" ? BRAND_COLORS[500] : borderColor,
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.courtFilterChipText,
+                        {
+                          color:
+                            sortBy === "fg3m"
+                              ? COMMON_COLORS.white
+                              : textPrimary,
+                        },
+                      ]}
+                    >
+                      3 Points{" "}
+                      {sortBy === "fg3m" && (sortOrder === "desc" ? "↓" : "↑")}
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    onPress={() => handleSort("ftm")}
+                    style={[
+                      styles.courtFilterChip,
+                      {
+                        backgroundColor:
+                          sortBy === "ftm"
+                            ? BRAND_COLORS[600]
+                            : isDark
+                            ? SLATE_COLORS[800]
+                            : SLATE_COLORS[100],
+                        borderColor:
+                          sortBy === "ftm" ? BRAND_COLORS[500] : borderColor,
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.courtFilterChipText,
+                        {
+                          color:
+                            sortBy === "ftm"
+                              ? COMMON_COLORS.white
+                              : textPrimary,
+                        },
+                      ]}
+                    >
+                      Lancers francs{" "}
+                      {sortBy === "ftm" && (sortOrder === "desc" ? "↓" : "↑")}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </ScrollView>
+            </View>
+
             {stats.map((player, index) => (
               <TouchableOpacity
                 key={`${player.team}-${player.playerNumber}-${index}`}
@@ -2388,6 +2812,10 @@ const styles = StyleSheet.create({
   cardsContainer: {
     gap: 16,
     marginBottom: 80,
+  },
+  cardsSortSection: {
+    marginBottom: 16,
+    paddingVertical: 8,
   },
   playerCard: {
     borderRadius: 16,
