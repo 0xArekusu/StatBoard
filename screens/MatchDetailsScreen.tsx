@@ -64,7 +64,15 @@ interface PlayerStats {
 
 type Tab = "STATS" | "CARDS" | "COURT";
 type TeamFilter = "MyTeam" | "Opponent";
-type ActionType = "ALL" | "SHOOTING" | "REBOUNDS" | "ASSISTS" | "STEALS" | "BLOCKS" | "TURNOVERS" | "FOULS";
+type ActionType =
+  | "ALL"
+  | "SHOOTING"
+  | "REBOUNDS"
+  | "ASSISTS"
+  | "STEALS"
+  | "BLOCKS"
+  | "TURNOVERS"
+  | "FOULS";
 
 interface RouteParams {
   match: Match;
@@ -95,9 +103,13 @@ export default function MatchDetailsScreen() {
     Team.MY_TEAM
   );
   const [viewPlayer, setViewPlayer] = useState<PlayerStats | null>(null);
-  const [selectedActionTypes, setSelectedActionTypes] = useState<ActionType[]>([]);
+  const [selectedActionTypes, setSelectedActionTypes] = useState<ActionType[]>(
+    []
+  );
   const [selectedPlayers, setSelectedPlayers] = useState<number[]>([]);
   const [showCourtFilters, setShowCourtFilters] = useState(false);
+  const [sortBy, setSortBy] = useState<keyof PlayerStats>("pts");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
   // Intercept hardware back button when coming from live match
   useFocusEffect(
@@ -249,8 +261,27 @@ export default function MatchDetailsScreen() {
   // Calculer les stats seulement si actions est défini
   const stats = useMemo(() => {
     if (!actions) return [];
-    return calculateStats(activeTeamFilter);
-  }, [actions, activeTeamFilter, playerNamesMap]);
+    const calculatedStats = calculateStats(activeTeamFilter);
+
+    // Apply sorting
+    return calculatedStats.sort((a, b) => {
+      const aValue = a[sortBy];
+      const bValue = b[sortBy];
+
+      if (typeof aValue === 'number' && typeof bValue === 'number') {
+        return sortOrder === "desc" ? bValue - aValue : aValue - bValue;
+      }
+
+      // For string values (like name)
+      if (typeof aValue === 'string' && typeof bValue === 'string') {
+        return sortOrder === "desc"
+          ? bValue.localeCompare(aValue)
+          : aValue.localeCompare(bValue);
+      }
+
+      return 0;
+    });
+  }, [actions, activeTeamFilter, playerNamesMap, sortBy, sortOrder]);
 
   // Theme colors
   const bgColor = isDark ? SLATE_COLORS[950] : SLATE_COLORS[50];
@@ -262,6 +293,24 @@ export default function MatchDetailsScreen() {
   const brandLight = isDark ? BRAND_COLORS[100] : BRAND_COLORS[50];
 
   const isWin = match.my_team_score > match.opponent_score;
+
+  // Handle column header click for sorting
+  const handleSort = (column: keyof PlayerStats) => {
+    if (sortBy === column) {
+      // Toggle order if clicking on same column
+      setSortOrder(sortOrder === "desc" ? "asc" : "desc");
+    } else {
+      // Set new column and default to descending
+      setSortBy(column);
+      setSortOrder("desc");
+    }
+  };
+
+  // Court colors and logo
+  const courtBackgroundColor = match.courtBackgroundColor || "#1a472a";
+  const courtLineColor = match.courtLineColor || "#FFFFFF";
+  const defaultLogoUri = require("../components/icons/coachassistant-logo-margin.png");
+  const logoUri = match.clubLogoUrl || defaultLogoUri;
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: bgColor }]}>
@@ -517,8 +566,8 @@ export default function MatchDetailsScreen() {
             onPress={() => navigation.navigate("Dashboard" as never)}
             style={[styles.menuButton, { backgroundColor: bgColor }]}
           >
-            <Ionicons name="grid-outline" size={12} color={textSecondary} />
-            <Text style={[styles.menuButtonText, { color: textSecondary }]}>
+            <Ionicons name="grid-outline" size={15} color={BRAND_COLORS[500]} />
+            <Text style={[styles.menuButtonText, { color: BRAND_COLORS[500] }]}>
               Menu
             </Text>
           </TouchableOpacity>
@@ -702,150 +751,182 @@ export default function MatchDetailsScreen() {
                   { backgroundColor: isDark ? "#1e293b33" : "#f1f5f9" },
                 ]}
               >
-                <Text
-                  style={[
-                    styles.tableHeaderCell,
-                    styles.playerCell,
-                    { color: textSecondary },
-                  ]}
-                >
-                  JOUEUR
-                </Text>
-                <Text
-                  style={[
-                    styles.tableHeaderCell,
-                    styles.minCell,
-                    { color: textTertiary },
-                  ]}
-                >
-                  MIN
-                </Text>
-                <Text
-                  style={[
-                    styles.tableHeaderCell,
-                    styles.statCell,
-                    { color: textSecondary },
-                  ]}
-                >
-                  PTS
-                </Text>
-                <Text
-                  style={[
-                    styles.tableHeaderCell,
-                    styles.statCellWide,
-                    { color: textSecondary },
-                  ]}
-                >
-                  TIRS
-                </Text>
-                <Text
-                  style={[
-                    styles.tableHeaderCell,
-                    styles.statCellWide,
-                    { color: textSecondary },
-                  ]}
-                >
-                  2PTS
-                </Text>
-                <Text
-                  style={[
-                    styles.tableHeaderCell,
-                    styles.statCellWide,
-                    { color: textSecondary },
-                  ]}
-                >
-                  3PTS
-                </Text>
-                <Text
-                  style={[
-                    styles.tableHeaderCell,
-                    styles.statCellWide,
-                    { color: textSecondary },
-                  ]}
-                >
-                  LF
-                </Text>
-                <Text
-                  style={[
-                    styles.tableHeaderCell,
-                    styles.statCell,
-                    { color: textSecondary },
-                  ]}
-                >
-                  REB
-                </Text>
-                <Text
-                  style={[
-                    styles.tableHeaderCell,
-                    styles.statCell,
-                    { color: textSecondary },
-                  ]}
-                >
-                  RO
-                </Text>
-                <Text
-                  style={[
-                    styles.tableHeaderCell,
-                    styles.statCell,
-                    { color: textSecondary },
-                  ]}
-                >
-                  RD
-                </Text>
-                <Text
-                  style={[
-                    styles.tableHeaderCell,
-                    styles.statCell,
-                    { color: textSecondary },
-                  ]}
-                >
-                  AST
-                </Text>
-                <Text
-                  style={[
-                    styles.tableHeaderCell,
-                    styles.statCell,
-                    { color: textSecondary },
-                  ]}
-                >
-                  INT
-                </Text>
-                <Text
-                  style={[
-                    styles.tableHeaderCell,
-                    styles.statCell,
-                    { color: textSecondary },
-                  ]}
-                >
-                  CTR
-                </Text>
-                <Text
-                  style={[
-                    styles.tableHeaderCell,
-                    styles.statCell,
-                    { color: textSecondary },
-                  ]}
-                >
-                  BP
-                </Text>
-                <Text
-                  style={[
-                    styles.tableHeaderCell,
-                    styles.statCell,
-                    { color: textSecondary },
-                  ]}
-                >
-                  FT
-                </Text>
-                <Text
-                  style={[
-                    styles.tableHeaderCell,
-                    styles.statCell,
-                    { color: textSecondary },
-                  ]}
-                >
-                  EFF
-                </Text>
+                <TouchableOpacity onPress={() => handleSort("name")}>
+                  <Text
+                    style={[
+                      styles.tableHeaderCell,
+                      styles.playerCell,
+                      { color: sortBy === "name" ? BRAND_COLORS[500] : textSecondary },
+                    ]}
+                  >
+                    JOUEUR {sortBy === "name" && (sortOrder === "desc" ? "↓" : "↑")}
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => handleSort("min")}>
+                  <Text
+                    style={[
+                      styles.tableHeaderCell,
+                      styles.minCell,
+                      { color: sortBy === "min" ? BRAND_COLORS[500] : textTertiary },
+                    ]}
+                  >
+                    MIN {sortBy === "min" && (sortOrder === "desc" ? "↓" : "↑")}
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => handleSort("pts")}>
+                  <Text
+                    style={[
+                      styles.tableHeaderCell,
+                      styles.statCell,
+                      { color: sortBy === "pts" ? BRAND_COLORS[500] : textSecondary },
+                    ]}
+                  >
+                    PTS {sortBy === "pts" && (sortOrder === "desc" ? "↓" : "↑")}
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => handleSort("fgm")}>
+                  <Text
+                    style={[
+                      styles.tableHeaderCell,
+                      styles.statCellWide,
+                      { color: sortBy === "fgm" ? BRAND_COLORS[500] : textSecondary },
+                    ]}
+                  >
+                    TIRS {sortBy === "fgm" && (sortOrder === "desc" ? "↓" : "↑")}
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => handleSort("fg2m")}>
+                  <Text
+                    style={[
+                      styles.tableHeaderCell,
+                      styles.statCellWide,
+                      { color: sortBy === "fg2m" ? BRAND_COLORS[500] : textSecondary },
+                    ]}
+                  >
+                    2PTS {sortBy === "fg2m" && (sortOrder === "desc" ? "↓" : "↑")}
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => handleSort("fg3m")}>
+                  <Text
+                    style={[
+                      styles.tableHeaderCell,
+                      styles.statCellWide,
+                      { color: sortBy === "fg3m" ? BRAND_COLORS[500] : textSecondary },
+                    ]}
+                  >
+                    3PTS {sortBy === "fg3m" && (sortOrder === "desc" ? "↓" : "↑")}
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => handleSort("ftm")}>
+                  <Text
+                    style={[
+                      styles.tableHeaderCell,
+                      styles.statCellWide,
+                      { color: sortBy === "ftm" ? BRAND_COLORS[500] : textSecondary },
+                    ]}
+                  >
+                    LF {sortBy === "ftm" && (sortOrder === "desc" ? "↓" : "↑")}
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => handleSort("reb")}>
+                  <Text
+                    style={[
+                      styles.tableHeaderCell,
+                      styles.statCell,
+                      { color: sortBy === "reb" ? BRAND_COLORS[500] : textSecondary },
+                    ]}
+                  >
+                    REB {sortBy === "reb" && (sortOrder === "desc" ? "↓" : "↑")}
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => handleSort("reb_off")}>
+                  <Text
+                    style={[
+                      styles.tableHeaderCell,
+                      styles.statCell,
+                      { color: sortBy === "reb_off" ? BRAND_COLORS[500] : textSecondary },
+                    ]}
+                  >
+                    RO {sortBy === "reb_off" && (sortOrder === "desc" ? "↓" : "↑")}
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => handleSort("reb_def")}>
+                  <Text
+                    style={[
+                      styles.tableHeaderCell,
+                      styles.statCell,
+                      { color: sortBy === "reb_def" ? BRAND_COLORS[500] : textSecondary },
+                    ]}
+                  >
+                    RD {sortBy === "reb_def" && (sortOrder === "desc" ? "↓" : "↑")}
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => handleSort("ast")}>
+                  <Text
+                    style={[
+                      styles.tableHeaderCell,
+                      styles.statCell,
+                      { color: sortBy === "ast" ? BRAND_COLORS[500] : textSecondary },
+                    ]}
+                  >
+                    AST {sortBy === "ast" && (sortOrder === "desc" ? "↓" : "↑")}
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => handleSort("stl")}>
+                  <Text
+                    style={[
+                      styles.tableHeaderCell,
+                      styles.statCell,
+                      { color: sortBy === "stl" ? BRAND_COLORS[500] : textSecondary },
+                    ]}
+                  >
+                    INT {sortBy === "stl" && (sortOrder === "desc" ? "↓" : "↑")}
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => handleSort("blk")}>
+                  <Text
+                    style={[
+                      styles.tableHeaderCell,
+                      styles.statCell,
+                      { color: sortBy === "blk" ? BRAND_COLORS[500] : textSecondary },
+                    ]}
+                  >
+                    CTR {sortBy === "blk" && (sortOrder === "desc" ? "↓" : "↑")}
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => handleSort("to")}>
+                  <Text
+                    style={[
+                      styles.tableHeaderCell,
+                      styles.statCell,
+                      { color: sortBy === "to" ? BRAND_COLORS[500] : textSecondary },
+                    ]}
+                  >
+                    BP {sortBy === "to" && (sortOrder === "desc" ? "↓" : "↑")}
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => handleSort("pf")}>
+                  <Text
+                    style={[
+                      styles.tableHeaderCell,
+                      styles.statCell,
+                      { color: sortBy === "pf" ? BRAND_COLORS[500] : textSecondary },
+                    ]}
+                  >
+                    FT {sortBy === "pf" && (sortOrder === "desc" ? "↓" : "↑")}
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => handleSort("eff")}>
+                  <Text
+                    style={[
+                      styles.tableHeaderCell,
+                      styles.statCell,
+                      { color: sortBy === "eff" ? BRAND_COLORS[500] : textSecondary },
+                    ]}
+                  >
+                    EFF {sortBy === "eff" && (sortOrder === "desc" ? "↓" : "↑")}
+                  </Text>
+                </TouchableOpacity>
               </View>
 
               {/* Table Body */}
@@ -1480,24 +1561,29 @@ export default function MatchDetailsScreen() {
                   <TouchableOpacity
                     onPress={() => {
                       if (selectedActionTypes.includes("SHOOTING")) {
-                        setSelectedActionTypes(selectedActionTypes.filter(t => t !== "SHOOTING"));
+                        setSelectedActionTypes(
+                          selectedActionTypes.filter((t) => t !== "SHOOTING")
+                        );
                       } else {
-                        setSelectedActionTypes([...selectedActionTypes, "SHOOTING"]);
+                        setSelectedActionTypes([
+                          ...selectedActionTypes,
+                          "SHOOTING",
+                        ]);
                       }
                     }}
                     style={[
                       styles.courtFilterChip,
                       {
-                        backgroundColor:
-                          selectedActionTypes.includes("SHOOTING")
-                            ? BRAND_COLORS[600]
-                            : isDark
-                            ? SLATE_COLORS[800]
-                            : SLATE_COLORS[100],
-                        borderColor:
-                          selectedActionTypes.includes("SHOOTING")
-                            ? BRAND_COLORS[500]
-                            : borderColor,
+                        backgroundColor: selectedActionTypes.includes(
+                          "SHOOTING"
+                        )
+                          ? BRAND_COLORS[600]
+                          : isDark
+                          ? SLATE_COLORS[800]
+                          : SLATE_COLORS[100],
+                        borderColor: selectedActionTypes.includes("SHOOTING")
+                          ? BRAND_COLORS[500]
+                          : borderColor,
                       },
                     ]}
                   >
@@ -1505,10 +1591,9 @@ export default function MatchDetailsScreen() {
                       style={[
                         styles.courtFilterChipText,
                         {
-                          color:
-                            selectedActionTypes.includes("SHOOTING")
-                              ? COMMON_COLORS.white
-                              : textPrimary,
+                          color: selectedActionTypes.includes("SHOOTING")
+                            ? COMMON_COLORS.white
+                            : textPrimary,
                         },
                       ]}
                     >
@@ -1519,24 +1604,29 @@ export default function MatchDetailsScreen() {
                   <TouchableOpacity
                     onPress={() => {
                       if (selectedActionTypes.includes("REBOUNDS")) {
-                        setSelectedActionTypes(selectedActionTypes.filter(t => t !== "REBOUNDS"));
+                        setSelectedActionTypes(
+                          selectedActionTypes.filter((t) => t !== "REBOUNDS")
+                        );
                       } else {
-                        setSelectedActionTypes([...selectedActionTypes, "REBOUNDS"]);
+                        setSelectedActionTypes([
+                          ...selectedActionTypes,
+                          "REBOUNDS",
+                        ]);
                       }
                     }}
                     style={[
                       styles.courtFilterChip,
                       {
-                        backgroundColor:
-                          selectedActionTypes.includes("REBOUNDS")
-                            ? BRAND_COLORS[600]
-                            : isDark
-                            ? SLATE_COLORS[800]
-                            : SLATE_COLORS[100],
-                        borderColor:
-                          selectedActionTypes.includes("REBOUNDS")
-                            ? BRAND_COLORS[500]
-                            : borderColor,
+                        backgroundColor: selectedActionTypes.includes(
+                          "REBOUNDS"
+                        )
+                          ? BRAND_COLORS[600]
+                          : isDark
+                          ? SLATE_COLORS[800]
+                          : SLATE_COLORS[100],
+                        borderColor: selectedActionTypes.includes("REBOUNDS")
+                          ? BRAND_COLORS[500]
+                          : borderColor,
                       },
                     ]}
                   >
@@ -1544,10 +1634,9 @@ export default function MatchDetailsScreen() {
                       style={[
                         styles.courtFilterChipText,
                         {
-                          color:
-                            selectedActionTypes.includes("REBOUNDS")
-                              ? COMMON_COLORS.white
-                              : textPrimary,
+                          color: selectedActionTypes.includes("REBOUNDS")
+                            ? COMMON_COLORS.white
+                            : textPrimary,
                         },
                       ]}
                     >
@@ -1558,24 +1647,27 @@ export default function MatchDetailsScreen() {
                   <TouchableOpacity
                     onPress={() => {
                       if (selectedActionTypes.includes("ASSISTS")) {
-                        setSelectedActionTypes(selectedActionTypes.filter(t => t !== "ASSISTS"));
+                        setSelectedActionTypes(
+                          selectedActionTypes.filter((t) => t !== "ASSISTS")
+                        );
                       } else {
-                        setSelectedActionTypes([...selectedActionTypes, "ASSISTS"]);
+                        setSelectedActionTypes([
+                          ...selectedActionTypes,
+                          "ASSISTS",
+                        ]);
                       }
                     }}
                     style={[
                       styles.courtFilterChip,
                       {
-                        backgroundColor:
-                          selectedActionTypes.includes("ASSISTS")
-                            ? BRAND_COLORS[600]
-                            : isDark
-                            ? SLATE_COLORS[800]
-                            : SLATE_COLORS[100],
-                        borderColor:
-                          selectedActionTypes.includes("ASSISTS")
-                            ? BRAND_COLORS[500]
-                            : borderColor,
+                        backgroundColor: selectedActionTypes.includes("ASSISTS")
+                          ? BRAND_COLORS[600]
+                          : isDark
+                          ? SLATE_COLORS[800]
+                          : SLATE_COLORS[100],
+                        borderColor: selectedActionTypes.includes("ASSISTS")
+                          ? BRAND_COLORS[500]
+                          : borderColor,
                       },
                     ]}
                   >
@@ -1583,10 +1675,9 @@ export default function MatchDetailsScreen() {
                       style={[
                         styles.courtFilterChipText,
                         {
-                          color:
-                            selectedActionTypes.includes("ASSISTS")
-                              ? COMMON_COLORS.white
-                              : textPrimary,
+                          color: selectedActionTypes.includes("ASSISTS")
+                            ? COMMON_COLORS.white
+                            : textPrimary,
                         },
                       ]}
                     >
@@ -1597,24 +1688,27 @@ export default function MatchDetailsScreen() {
                   <TouchableOpacity
                     onPress={() => {
                       if (selectedActionTypes.includes("STEALS")) {
-                        setSelectedActionTypes(selectedActionTypes.filter(t => t !== "STEALS"));
+                        setSelectedActionTypes(
+                          selectedActionTypes.filter((t) => t !== "STEALS")
+                        );
                       } else {
-                        setSelectedActionTypes([...selectedActionTypes, "STEALS"]);
+                        setSelectedActionTypes([
+                          ...selectedActionTypes,
+                          "STEALS",
+                        ]);
                       }
                     }}
                     style={[
                       styles.courtFilterChip,
                       {
-                        backgroundColor:
-                          selectedActionTypes.includes("STEALS")
-                            ? BRAND_COLORS[600]
-                            : isDark
-                            ? SLATE_COLORS[800]
-                            : SLATE_COLORS[100],
-                        borderColor:
-                          selectedActionTypes.includes("STEALS")
-                            ? BRAND_COLORS[500]
-                            : borderColor,
+                        backgroundColor: selectedActionTypes.includes("STEALS")
+                          ? BRAND_COLORS[600]
+                          : isDark
+                          ? SLATE_COLORS[800]
+                          : SLATE_COLORS[100],
+                        borderColor: selectedActionTypes.includes("STEALS")
+                          ? BRAND_COLORS[500]
+                          : borderColor,
                       },
                     ]}
                   >
@@ -1622,10 +1716,9 @@ export default function MatchDetailsScreen() {
                       style={[
                         styles.courtFilterChipText,
                         {
-                          color:
-                            selectedActionTypes.includes("STEALS")
-                              ? COMMON_COLORS.white
-                              : textPrimary,
+                          color: selectedActionTypes.includes("STEALS")
+                            ? COMMON_COLORS.white
+                            : textPrimary,
                         },
                       ]}
                     >
@@ -1636,24 +1729,27 @@ export default function MatchDetailsScreen() {
                   <TouchableOpacity
                     onPress={() => {
                       if (selectedActionTypes.includes("BLOCKS")) {
-                        setSelectedActionTypes(selectedActionTypes.filter(t => t !== "BLOCKS"));
+                        setSelectedActionTypes(
+                          selectedActionTypes.filter((t) => t !== "BLOCKS")
+                        );
                       } else {
-                        setSelectedActionTypes([...selectedActionTypes, "BLOCKS"]);
+                        setSelectedActionTypes([
+                          ...selectedActionTypes,
+                          "BLOCKS",
+                        ]);
                       }
                     }}
                     style={[
                       styles.courtFilterChip,
                       {
-                        backgroundColor:
-                          selectedActionTypes.includes("BLOCKS")
-                            ? BRAND_COLORS[600]
-                            : isDark
-                            ? SLATE_COLORS[800]
-                            : SLATE_COLORS[100],
-                        borderColor:
-                          selectedActionTypes.includes("BLOCKS")
-                            ? BRAND_COLORS[500]
-                            : borderColor,
+                        backgroundColor: selectedActionTypes.includes("BLOCKS")
+                          ? BRAND_COLORS[600]
+                          : isDark
+                          ? SLATE_COLORS[800]
+                          : SLATE_COLORS[100],
+                        borderColor: selectedActionTypes.includes("BLOCKS")
+                          ? BRAND_COLORS[500]
+                          : borderColor,
                       },
                     ]}
                   >
@@ -1661,10 +1757,9 @@ export default function MatchDetailsScreen() {
                       style={[
                         styles.courtFilterChipText,
                         {
-                          color:
-                            selectedActionTypes.includes("BLOCKS")
-                              ? COMMON_COLORS.white
-                              : textPrimary,
+                          color: selectedActionTypes.includes("BLOCKS")
+                            ? COMMON_COLORS.white
+                            : textPrimary,
                         },
                       ]}
                     >
@@ -1675,24 +1770,29 @@ export default function MatchDetailsScreen() {
                   <TouchableOpacity
                     onPress={() => {
                       if (selectedActionTypes.includes("TURNOVERS")) {
-                        setSelectedActionTypes(selectedActionTypes.filter(t => t !== "TURNOVERS"));
+                        setSelectedActionTypes(
+                          selectedActionTypes.filter((t) => t !== "TURNOVERS")
+                        );
                       } else {
-                        setSelectedActionTypes([...selectedActionTypes, "TURNOVERS"]);
+                        setSelectedActionTypes([
+                          ...selectedActionTypes,
+                          "TURNOVERS",
+                        ]);
                       }
                     }}
                     style={[
                       styles.courtFilterChip,
                       {
-                        backgroundColor:
-                          selectedActionTypes.includes("TURNOVERS")
-                            ? BRAND_COLORS[600]
-                            : isDark
-                            ? SLATE_COLORS[800]
-                            : SLATE_COLORS[100],
-                        borderColor:
-                          selectedActionTypes.includes("TURNOVERS")
-                            ? BRAND_COLORS[500]
-                            : borderColor,
+                        backgroundColor: selectedActionTypes.includes(
+                          "TURNOVERS"
+                        )
+                          ? BRAND_COLORS[600]
+                          : isDark
+                          ? SLATE_COLORS[800]
+                          : SLATE_COLORS[100],
+                        borderColor: selectedActionTypes.includes("TURNOVERS")
+                          ? BRAND_COLORS[500]
+                          : borderColor,
                       },
                     ]}
                   >
@@ -1700,10 +1800,9 @@ export default function MatchDetailsScreen() {
                       style={[
                         styles.courtFilterChipText,
                         {
-                          color:
-                            selectedActionTypes.includes("TURNOVERS")
-                              ? COMMON_COLORS.white
-                              : textPrimary,
+                          color: selectedActionTypes.includes("TURNOVERS")
+                            ? COMMON_COLORS.white
+                            : textPrimary,
                         },
                       ]}
                     >
@@ -1714,24 +1813,27 @@ export default function MatchDetailsScreen() {
                   <TouchableOpacity
                     onPress={() => {
                       if (selectedActionTypes.includes("FOULS")) {
-                        setSelectedActionTypes(selectedActionTypes.filter(t => t !== "FOULS"));
+                        setSelectedActionTypes(
+                          selectedActionTypes.filter((t) => t !== "FOULS")
+                        );
                       } else {
-                        setSelectedActionTypes([...selectedActionTypes, "FOULS"]);
+                        setSelectedActionTypes([
+                          ...selectedActionTypes,
+                          "FOULS",
+                        ]);
                       }
                     }}
                     style={[
                       styles.courtFilterChip,
                       {
-                        backgroundColor:
-                          selectedActionTypes.includes("FOULS")
-                            ? BRAND_COLORS[600]
-                            : isDark
-                            ? SLATE_COLORS[800]
-                            : SLATE_COLORS[100],
-                        borderColor:
-                          selectedActionTypes.includes("FOULS")
-                            ? BRAND_COLORS[500]
-                            : borderColor,
+                        backgroundColor: selectedActionTypes.includes("FOULS")
+                          ? BRAND_COLORS[600]
+                          : isDark
+                          ? SLATE_COLORS[800]
+                          : SLATE_COLORS[100],
+                        borderColor: selectedActionTypes.includes("FOULS")
+                          ? BRAND_COLORS[500]
+                          : borderColor,
                       },
                     ]}
                   >
@@ -1739,10 +1841,9 @@ export default function MatchDetailsScreen() {
                       style={[
                         styles.courtFilterChipText,
                         {
-                          color:
-                            selectedActionTypes.includes("FOULS")
-                              ? COMMON_COLORS.white
-                              : textPrimary,
+                          color: selectedActionTypes.includes("FOULS")
+                            ? COMMON_COLORS.white
+                            : textPrimary,
                         },
                       ]}
                     >
@@ -1862,9 +1963,9 @@ export default function MatchDetailsScreen() {
                   <BasketballCourtSVG
                     width={350}
                     height={520}
-                    backgroundColor={isDark ? "#2d5a3d" : "#e8f5e9"}
-                    lineColor={isDark ? "#f1f5f9" : "#1e293b"}
-                    logoUri={null}
+                    backgroundColor={courtBackgroundColor}
+                    lineColor={courtLineColor}
+                    logoUri={logoUri}
                     markers={
                       actions
                         ?.filter((action: any) => {
@@ -1880,13 +1981,41 @@ export default function MatchDetailsScreen() {
                             ).toUpperCase();
 
                             let matchesFilter = false;
-                            if (selectedActionTypes.includes("SHOOTING") && actionType === "SHOT") matchesFilter = true;
-                            if (selectedActionTypes.includes("REBOUNDS") && actionType === "REBOUND") matchesFilter = true;
-                            if (selectedActionTypes.includes("ASSISTS") && actionType === "ASSIST") matchesFilter = true;
-                            if (selectedActionTypes.includes("STEALS") && actionType === "STEAL") matchesFilter = true;
-                            if (selectedActionTypes.includes("BLOCKS") && actionType === "BLOCK") matchesFilter = true;
-                            if (selectedActionTypes.includes("TURNOVERS") && actionType === "TURNOVER") matchesFilter = true;
-                            if (selectedActionTypes.includes("FOULS") && actionType === "FOUL") matchesFilter = true;
+                            if (
+                              selectedActionTypes.includes("SHOOTING") &&
+                              actionType === "SHOT"
+                            )
+                              matchesFilter = true;
+                            if (
+                              selectedActionTypes.includes("REBOUNDS") &&
+                              actionType === "REBOUND"
+                            )
+                              matchesFilter = true;
+                            if (
+                              selectedActionTypes.includes("ASSISTS") &&
+                              actionType === "ASSIST"
+                            )
+                              matchesFilter = true;
+                            if (
+                              selectedActionTypes.includes("STEALS") &&
+                              actionType === "STEAL"
+                            )
+                              matchesFilter = true;
+                            if (
+                              selectedActionTypes.includes("BLOCKS") &&
+                              actionType === "BLOCK"
+                            )
+                              matchesFilter = true;
+                            if (
+                              selectedActionTypes.includes("TURNOVERS") &&
+                              actionType === "TURNOVER"
+                            )
+                              matchesFilter = true;
+                            if (
+                              selectedActionTypes.includes("FOULS") &&
+                              actionType === "FOUL"
+                            )
+                              matchesFilter = true;
 
                             if (!matchesFilter) return false;
                           }
@@ -2107,7 +2236,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
   },
   menuButtonText: {
-    fontSize: 10,
+    fontSize: 15,
     fontWeight: "700",
   },
   scoreContainer: {
