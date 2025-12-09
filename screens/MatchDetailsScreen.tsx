@@ -17,12 +17,16 @@ import {
   TouchableOpacity,
   SafeAreaView,
   Modal,
-  useColorScheme,
 } from "react-native";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { Match, Team } from "../src/models/types";
-import { BRAND_COLORS } from "../src/theme/clubDefaults";
+import { useTheme } from "../src/contexts/ThemeContext";
+import {
+  BRAND_COLORS,
+  SLATE_COLORS,
+  COMMON_COLORS,
+} from "../src/theme/clubDefaults";
 
 // Types
 interface PlayerStats {
@@ -64,23 +68,8 @@ interface RouteParams {
 export default function MatchDetailsScreen() {
   const navigation = useNavigation();
   const route = useRoute<RouteProp<{ params: RouteParams }, "params">>();
-  console.log("🔵 MatchDetailsScreen - route.params:", route.params);
   const { match, actions, fromLiveMatch, players } = route.params;
-  console.log("🔵 MatchDetailsScreen - match:", match);
-  console.log(
-    "🔵 MatchDetailsScreen - actions:",
-    actions,
-    "length:",
-    actions?.length
-  );
-  console.log(
-    "🔵 MatchDetailsScreen - players:",
-    players,
-    "length:",
-    players?.length
-  );
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === "dark";
+  const { colors, isDark } = useTheme();
 
   // Create a map of player numbers to names
   const playerNamesMap = useMemo(() => {
@@ -232,25 +221,19 @@ export default function MatchDetailsScreen() {
     return calculateStats(activeTeamFilter);
   }, [actions, activeTeamFilter, playerNamesMap]);
 
-  const colors = {
-    background: isDark ? "#0a0a0a" : "#fafafa",
-    surface: isDark ? "#1a1a1a" : "#ffffff",
-    text: {
-      primary: isDark ? "#ffffff" : "#1e293b",
-      secondary: isDark ? "#94a3b8" : "#64748b",
-      tertiary: isDark ? "#64748b" : "#94a3b8",
-    },
-    border: isDark ? "#334155" : "#e2e8f0",
-    brand: "#ff6b35",
-    brandLight: isDark ? "rgba(255, 107, 53, 0.1)" : "rgba(255, 107, 53, 0.05)",
-  };
+  // Theme colors
+  const bgColor = isDark ? SLATE_COLORS[950] : SLATE_COLORS[50];
+  const surfaceColor = isDark ? SLATE_COLORS[900] : COMMON_COLORS.white;
+  const borderColor = isDark ? SLATE_COLORS[800] : SLATE_COLORS[200];
+  const textPrimary = isDark ? COMMON_COLORS.white : SLATE_COLORS[900];
+  const textSecondary = isDark ? SLATE_COLORS[400] : SLATE_COLORS[600];
+  const textTertiary = isDark ? SLATE_COLORS[500] : SLATE_COLORS[400];
+  const brandLight = isDark ? BRAND_COLORS[100] : BRAND_COLORS[50];
 
   const isWin = match.my_team_score > match.opponent_score;
 
   return (
-    <SafeAreaView
-      style={[styles.container, { backgroundColor: colors.background }]}
-    >
+    <SafeAreaView style={[styles.container, { backgroundColor: bgColor }]}>
       {/* PLAYER DETAIL MODAL */}
       {viewPlayer && (
         <Modal
@@ -261,14 +244,14 @@ export default function MatchDetailsScreen() {
         >
           <View style={styles.modalOverlay}>
             <View
-              style={[styles.modalContent, { backgroundColor: colors.surface }]}
+              style={[styles.modalContent, { backgroundColor: surfaceColor }]}
             >
               {/* Modal Header */}
               <View style={styles.modalHeader}>
                 <View
                   style={[
                     styles.modalHeaderBg,
-                    { backgroundColor: colors.brand },
+                    { backgroundColor: BRAND_COLORS[500] },
                   ]}
                 />
                 <TouchableOpacity
@@ -282,7 +265,7 @@ export default function MatchDetailsScreen() {
                   <View
                     style={[
                       styles.playerAvatarCircle,
-                      { borderColor: colors.surface },
+                      { borderColor: surfaceColor },
                     ]}
                   >
                     <Text style={styles.playerAvatarNumber}>
@@ -298,18 +281,12 @@ export default function MatchDetailsScreen() {
               >
                 <View style={styles.modalPlayerInfo}>
                   <Text
-                    style={[
-                      styles.modalPlayerName,
-                      { color: colors.text.primary },
-                    ]}
+                    style={[styles.modalPlayerName, { color: textPrimary }]}
                   >
                     {viewPlayer.name}
                   </Text>
                   <Text
-                    style={[
-                      styles.modalPlayerTeam,
-                      { color: colors.text.secondary },
-                    ]}
+                    style={[styles.modalPlayerTeam, { color: textSecondary }]}
                   >
                     {viewPlayer.team === Team.MY_TEAM
                       ? match.my_team_name || "Notre équipe"
@@ -319,25 +296,14 @@ export default function MatchDetailsScreen() {
 
                 {/* Main Stats Grid */}
                 <View style={styles.mainStatsGrid}>
-                  <View
-                    style={[
-                      styles.statCard,
-                      { backgroundColor: colors.background },
-                    ]}
-                  >
+                  <View style={[styles.statCard, { backgroundColor: bgColor }]}>
                     <Text
-                      style={[
-                        styles.statCardValue,
-                        { color: colors.text.primary },
-                      ]}
+                      style={[styles.statCardValue, { color: textPrimary }]}
                     >
                       {viewPlayer.min}'
                     </Text>
                     <Text
-                      style={[
-                        styles.statCardLabel,
-                        { color: colors.text.tertiary },
-                      ]}
+                      style={[styles.statCardLabel, { color: textTertiary }]}
                     >
                       Temps
                     </Text>
@@ -346,41 +312,36 @@ export default function MatchDetailsScreen() {
                     style={[
                       styles.statCard,
                       {
-                        backgroundColor: colors.brandLight,
-                        borderColor: colors.brand,
+                        backgroundColor: brandLight,
+                        borderColor: BRAND_COLORS[500],
                       },
-                    ]}
-                  >
-                    <Text
-                      style={[styles.statCardValue, { color: colors.brand }]}
-                    >
-                      {viewPlayer.pts}
-                    </Text>
-                    <Text
-                      style={[styles.statCardLabel, { color: colors.brand }]}
-                    >
-                      Points
-                    </Text>
-                  </View>
-                  <View
-                    style={[
-                      styles.statCard,
-                      { backgroundColor: colors.background },
                     ]}
                   >
                     <Text
                       style={[
                         styles.statCardValue,
-                        { color: colors.text.primary },
+                        { color: BRAND_COLORS[500] },
                       ]}
                     >
-                      {viewPlayer.eff}
+                      {viewPlayer.pts}
                     </Text>
                     <Text
                       style={[
                         styles.statCardLabel,
-                        { color: colors.text.tertiary },
+                        { color: BRAND_COLORS[500] },
                       ]}
+                    >
+                      Points
+                    </Text>
+                  </View>
+                  <View style={[styles.statCard, { backgroundColor: bgColor }]}>
+                    <Text
+                      style={[styles.statCardValue, { color: textPrimary }]}
+                    >
+                      {viewPlayer.eff}
+                    </Text>
+                    <Text
+                      style={[styles.statCardLabel, { color: textTertiary }]}
                     >
                       Éval
                     </Text>
@@ -392,17 +353,12 @@ export default function MatchDetailsScreen() {
                   style={[
                     styles.shootingSection,
                     {
-                      backgroundColor: colors.background,
-                      borderColor: colors.border,
+                      backgroundColor: bgColor,
+                      borderColor: borderColor,
                     },
                   ]}
                 >
-                  <Text
-                    style={[
-                      styles.sectionTitle,
-                      { color: colors.text.primary },
-                    ]}
-                  >
+                  <Text style={[styles.sectionTitle, { color: textPrimary }]}>
                     🎯 Performance aux tirs
                   </Text>
                   <ShootingBar
@@ -410,34 +366,31 @@ export default function MatchDetailsScreen() {
                     made={viewPlayer.fg3m}
                     attempted={viewPlayer.fg3a}
                     color="#6366f1"
-                    colors={colors}
                   />
                   <ShootingBar
                     label="2 Points"
                     made={viewPlayer.fg2m}
                     attempted={viewPlayer.fg2a}
                     color="#3b82f6"
-                    colors={colors}
                   />
                   <ShootingBar
                     label="Lancers"
                     made={viewPlayer.ftm}
                     attempted={viewPlayer.fta}
                     color="#06b6d4"
-                    colors={colors}
                   />
 
                   <View
                     style={[
                       styles.shootingSummary,
-                      { borderTopColor: colors.border },
+                      { borderTopColor: borderColor },
                     ]}
                   >
                     <View style={styles.shootingSummaryItem}>
                       <Text
                         style={[
                           styles.shootingSummaryValue,
-                          { color: colors.text.primary },
+                          { color: textPrimary },
                         ]}
                       >
                         {viewPlayer.fgm}/{viewPlayer.fga}
@@ -445,7 +398,7 @@ export default function MatchDetailsScreen() {
                       <Text
                         style={[
                           styles.shootingSummaryLabel,
-                          { color: colors.text.tertiary },
+                          { color: textTertiary },
                         ]}
                       >
                         TOTAL TIRS
@@ -455,7 +408,7 @@ export default function MatchDetailsScreen() {
                       <Text
                         style={[
                           styles.shootingSummaryValue,
-                          { color: colors.text.primary },
+                          { color: textPrimary },
                         ]}
                       >
                         {viewPlayer.fga > 0
@@ -466,7 +419,7 @@ export default function MatchDetailsScreen() {
                       <Text
                         style={[
                           styles.shootingSummaryLabel,
-                          { color: colors.text.tertiary },
+                          { color: textTertiary },
                         ]}
                       >
                         RÉUSSITE
@@ -477,63 +430,26 @@ export default function MatchDetailsScreen() {
 
                 {/* Detailed Stats Grid */}
                 <View style={styles.detailedStatsSection}>
-                  <Text
-                    style={[
-                      styles.sectionTitle,
-                      { color: colors.text.primary },
-                    ]}
-                  >
+                  <Text style={[styles.sectionTitle, { color: textPrimary }]}>
                     Détails
                   </Text>
                   <View style={styles.detailedStatsGrid}>
-                    <StatBox
-                      label="REB"
-                      value={viewPlayer.reb}
-                      sub="Total"
-                      colors={colors}
-                    />
-                    <StatBox
-                      label="AST"
-                      value={viewPlayer.ast}
-                      sub="Passes"
-                      colors={colors}
-                    />
-                    <StatBox
-                      label="INT"
-                      value={viewPlayer.stl}
-                      sub="Vols"
-                      colors={colors}
-                    />
-                    <StatBox
-                      label="CTR"
-                      value={viewPlayer.blk}
-                      sub="Contres"
-                      colors={colors}
-                    />
-                    <StatBox
-                      label="BP"
-                      value={viewPlayer.to}
-                      sub="Pertes"
-                      colors={colors}
-                    />
+                    <StatBox label="REB" value={viewPlayer.reb} sub="Total" />
+                    <StatBox label="AST" value={viewPlayer.ast} sub="Passes" />
+                    <StatBox label="INT" value={viewPlayer.stl} sub="Vols" />
+                    <StatBox label="CTR" value={viewPlayer.blk} sub="Contres" />
+                    <StatBox label="BP" value={viewPlayer.to} sub="Pertes" />
                     <StatBox
                       label="RO"
                       value={viewPlayer.reb_off}
                       sub="Reb Off"
-                      colors={colors}
                     />
                     <StatBox
                       label="RD"
                       value={viewPlayer.reb_def}
                       sub="Reb Def"
-                      colors={colors}
                     />
-                    <StatBox
-                      label="FTE"
-                      value={viewPlayer.pf}
-                      sub="Fautes"
-                      colors={colors}
-                    />
+                    <StatBox label="FTE" value={viewPlayer.pf} sub="Fautes" />
                   </View>
                 </View>
               </ScrollView>
@@ -546,47 +462,32 @@ export default function MatchDetailsScreen() {
       <View
         style={[
           styles.header,
-          { backgroundColor: colors.surface, borderBottomColor: colors.border },
+          { backgroundColor: surfaceColor, borderBottomColor: borderColor },
         ]}
       >
-        <View
-          style={[styles.headerAccent, { backgroundColor: colors.brand }]}
-        />
         <View style={styles.headerTop}>
           {!fromLiveMatch ? (
             <TouchableOpacity
               onPress={() => navigation.goBack()}
               style={styles.backButton}
             >
-              <Ionicons
-                name="chevron-back"
-                size={20}
-                color={colors.text.secondary}
-              />
-              <Text
-                style={[
-                  styles.backButtonText,
-                  { color: colors.text.secondary },
-                ]}
-              >
-                RETOUR
-              </Text>
+              <View style={styles.backButtonContent}>
+                <Ionicons
+                  name="arrow-back"
+                  size={24}
+                  color={colors.text.secondary}
+                />
+              </View>
             </TouchableOpacity>
           ) : (
             <View />
           )}
           <TouchableOpacity
             onPress={() => navigation.navigate("Dashboard" as never)}
-            style={[styles.menuButton, { backgroundColor: colors.background }]}
+            style={[styles.menuButton, { backgroundColor: bgColor }]}
           >
-            <Ionicons
-              name="grid-outline"
-              size={12}
-              color={colors.text.secondary}
-            />
-            <Text
-              style={[styles.menuButtonText, { color: colors.text.secondary }]}
-            >
+            <Ionicons name="grid-outline" size={12} color={textSecondary} />
+            <Text style={[styles.menuButtonText, { color: textSecondary }]}>
               Menu
             </Text>
           </TouchableOpacity>
@@ -594,40 +495,51 @@ export default function MatchDetailsScreen() {
 
         <View style={styles.scoreContainer}>
           <View style={styles.teamScore}>
-            <Text style={[styles.teamLabel, { color: colors.text.secondary }]}>
+            <Text style={[styles.teamLabel, { color: textSecondary }]}>
               {match.my_team_name || "Notre équipe"}
             </Text>
-            <Text style={[styles.scoreValue, { color: colors.text.primary }]}>
+            <Text
+              style={[
+                styles.scoreValue,
+                { color: isWin ? textPrimary : textTertiary },
+              ]}
+            >
               {match.my_team_score}
             </Text>
-            {isWin && <Ionicons name="trophy" size={16} color={colors.brand} />}
+            {isWin && (
+              <Ionicons
+                name="trophy-outline"
+                size={25}
+                color={BRAND_COLORS[500]}
+              />
+            )}
           </View>
 
           <View
-            style={[styles.scoreDivider, { backgroundColor: colors.border }]}
+            style={[styles.scoreDivider, { backgroundColor: borderColor }]}
           />
 
           <View style={styles.teamScore}>
-            <Text style={[styles.teamLabel, { color: colors.text.secondary }]}>
+            <Text style={[styles.teamLabel, { color: textSecondary }]}>
               {match.opponent_name}
             </Text>
-            <Text style={[styles.scoreValue, { color: colors.text.tertiary }]}>
+            <Text
+              style={[
+                styles.scoreValue,
+                { color: !isWin ? textPrimary : textTertiary },
+              ]}
+            >
               {match.opponent_score}
             </Text>
             {!isWin && (
-              <Ionicons name="trophy" size={16} color={colors.text.tertiary} />
+              <Ionicons name="trophy" size={16} color={BRAND_COLORS[500]} />
             )}
           </View>
         </View>
       </View>
 
       {/* FILTERS & TABS */}
-      <View
-        style={[
-          styles.filtersTabsContainer,
-          { backgroundColor: colors.background },
-        ]}
-      >
+      <View style={[styles.filtersTabsContainer, { backgroundColor: bgColor }]}>
         <View
           style={[
             styles.teamFilterContainer,
@@ -639,7 +551,7 @@ export default function MatchDetailsScreen() {
             style={[
               styles.teamFilterButton,
               activeTeamFilter === Team.MY_TEAM && {
-                backgroundColor: colors.surface,
+                backgroundColor: surfaceColor,
               },
             ]}
           >
@@ -649,8 +561,8 @@ export default function MatchDetailsScreen() {
                 {
                   color:
                     activeTeamFilter === Team.MY_TEAM
-                      ? colors.brand
-                      : colors.text.secondary,
+                      ? BRAND_COLORS[500]
+                      : textSecondary,
                 },
               ]}
             >
@@ -662,7 +574,7 @@ export default function MatchDetailsScreen() {
             style={[
               styles.teamFilterButton,
               activeTeamFilter === Team.OPPONENT && {
-                backgroundColor: colors.surface,
+                backgroundColor: surfaceColor,
               },
             ]}
           >
@@ -672,8 +584,8 @@ export default function MatchDetailsScreen() {
                 {
                   color:
                     activeTeamFilter === Team.OPPONENT
-                      ? colors.text.primary
-                      : colors.text.secondary,
+                      ? BRAND_COLORS[500]
+                      : textSecondary,
                 },
               ]}
             >
@@ -689,15 +601,15 @@ export default function MatchDetailsScreen() {
               styles.tabButton,
               {
                 backgroundColor:
-                  activeTab === "STATS" ? colors.brand : colors.surface,
-                borderColor: colors.border,
+                  activeTab === "STATS" ? BRAND_COLORS[500] : surfaceColor,
+                borderColor: borderColor,
               },
             ]}
           >
             <Ionicons
               name="list"
               size={20}
-              color={activeTab === "STATS" ? "#fff" : colors.text.tertiary}
+              color={activeTab === "STATS" ? "#fff" : textTertiary}
             />
           </TouchableOpacity>
           <TouchableOpacity
@@ -706,15 +618,15 @@ export default function MatchDetailsScreen() {
               styles.tabButton,
               {
                 backgroundColor:
-                  activeTab === "CARDS" ? colors.brand : colors.surface,
-                borderColor: colors.border,
+                  activeTab === "CARDS" ? BRAND_COLORS[500] : surfaceColor,
+                borderColor: borderColor,
               },
             ]}
           >
             <Ionicons
               name="person-outline"
               size={20}
-              color={activeTab === "CARDS" ? "#fff" : colors.text.tertiary}
+              color={activeTab === "CARDS" ? "#fff" : textTertiary}
             />
           </TouchableOpacity>
           <TouchableOpacity
@@ -723,15 +635,15 @@ export default function MatchDetailsScreen() {
               styles.tabButton,
               {
                 backgroundColor:
-                  activeTab === "COURT" ? colors.brand : colors.surface,
-                borderColor: colors.border,
+                  activeTab === "COURT" ? BRAND_COLORS[500] : surfaceColor,
+                borderColor: borderColor,
               },
             ]}
           >
             <Ionicons
               name="basketball-outline"
               size={20}
-              color={activeTab === "COURT" ? "#fff" : colors.text.tertiary}
+              color={activeTab === "COURT" ? "#fff" : textTertiary}
             />
           </TouchableOpacity>
         </View>
@@ -745,7 +657,7 @@ export default function MatchDetailsScreen() {
             <View
               style={[
                 styles.tableContainer,
-                { backgroundColor: colors.surface, borderColor: colors.border },
+                { backgroundColor: surfaceColor, borderColor: borderColor },
               ]}
             >
               {/* Table Header */}
@@ -759,7 +671,7 @@ export default function MatchDetailsScreen() {
                   style={[
                     styles.tableHeaderCell,
                     styles.playerCell,
-                    { color: colors.text.secondary },
+                    { color: textSecondary },
                   ]}
                 >
                   JOUEUR
@@ -768,7 +680,7 @@ export default function MatchDetailsScreen() {
                   style={[
                     styles.tableHeaderCell,
                     styles.minCell,
-                    { color: colors.text.tertiary },
+                    { color: textTertiary },
                   ]}
                 >
                   MIN
@@ -777,7 +689,7 @@ export default function MatchDetailsScreen() {
                   style={[
                     styles.tableHeaderCell,
                     styles.statCell,
-                    { color: colors.text.secondary },
+                    { color: textSecondary },
                   ]}
                 >
                   PTS
@@ -786,7 +698,7 @@ export default function MatchDetailsScreen() {
                   style={[
                     styles.tableHeaderCell,
                     styles.statCellWide,
-                    { color: colors.text.secondary },
+                    { color: textSecondary },
                   ]}
                 >
                   TIRS
@@ -795,7 +707,7 @@ export default function MatchDetailsScreen() {
                   style={[
                     styles.tableHeaderCell,
                     styles.statCellWide,
-                    { color: colors.text.secondary },
+                    { color: textSecondary },
                   ]}
                 >
                   2PTS
@@ -804,7 +716,7 @@ export default function MatchDetailsScreen() {
                   style={[
                     styles.tableHeaderCell,
                     styles.statCellWide,
-                    { color: colors.text.secondary },
+                    { color: textSecondary },
                   ]}
                 >
                   3PTS
@@ -813,7 +725,7 @@ export default function MatchDetailsScreen() {
                   style={[
                     styles.tableHeaderCell,
                     styles.statCellWide,
-                    { color: colors.text.secondary },
+                    { color: textSecondary },
                   ]}
                 >
                   LF
@@ -822,7 +734,7 @@ export default function MatchDetailsScreen() {
                   style={[
                     styles.tableHeaderCell,
                     styles.statCell,
-                    { color: colors.text.secondary },
+                    { color: textSecondary },
                   ]}
                 >
                   REB
@@ -831,7 +743,7 @@ export default function MatchDetailsScreen() {
                   style={[
                     styles.tableHeaderCell,
                     styles.statCell,
-                    { color: colors.text.secondary },
+                    { color: textSecondary },
                   ]}
                 >
                   RO
@@ -840,7 +752,7 @@ export default function MatchDetailsScreen() {
                   style={[
                     styles.tableHeaderCell,
                     styles.statCell,
-                    { color: colors.text.secondary },
+                    { color: textSecondary },
                   ]}
                 >
                   RD
@@ -849,7 +761,7 @@ export default function MatchDetailsScreen() {
                   style={[
                     styles.tableHeaderCell,
                     styles.statCell,
-                    { color: colors.text.secondary },
+                    { color: textSecondary },
                   ]}
                 >
                   AST
@@ -858,7 +770,7 @@ export default function MatchDetailsScreen() {
                   style={[
                     styles.tableHeaderCell,
                     styles.statCell,
-                    { color: colors.text.secondary },
+                    { color: textSecondary },
                   ]}
                 >
                   INT
@@ -867,7 +779,7 @@ export default function MatchDetailsScreen() {
                   style={[
                     styles.tableHeaderCell,
                     styles.statCell,
-                    { color: colors.text.secondary },
+                    { color: textSecondary },
                   ]}
                 >
                   CTR
@@ -876,7 +788,7 @@ export default function MatchDetailsScreen() {
                   style={[
                     styles.tableHeaderCell,
                     styles.statCell,
-                    { color: colors.text.secondary },
+                    { color: textSecondary },
                   ]}
                 >
                   BP
@@ -885,7 +797,7 @@ export default function MatchDetailsScreen() {
                   style={[
                     styles.tableHeaderCell,
                     styles.statCell,
-                    { color: colors.text.secondary },
+                    { color: textSecondary },
                   ]}
                 >
                   FT
@@ -894,7 +806,7 @@ export default function MatchDetailsScreen() {
                   style={[
                     styles.tableHeaderCell,
                     styles.statCell,
-                    { color: colors.text.secondary },
+                    { color: textSecondary },
                   ]}
                 >
                   EFF
@@ -908,7 +820,7 @@ export default function MatchDetailsScreen() {
                   onPress={() => setViewPlayer(player)}
                   style={[
                     styles.tableRow,
-                    { borderBottomColor: colors.border },
+                    { borderBottomColor: borderColor },
                     index === stats.length - 1 && { borderBottomWidth: 0 },
                   ]}
                 >
@@ -916,23 +828,20 @@ export default function MatchDetailsScreen() {
                     <View
                       style={[
                         styles.playerNumberBadge,
-                        { backgroundColor: colors.background },
+                        { backgroundColor: bgColor },
                       ]}
                     >
                       <Text
                         style={[
                           styles.playerNumberBadgeText,
-                          { color: colors.text.secondary },
+                          { color: textSecondary },
                         ]}
                       >
                         {player.playerNumber}
                       </Text>
                     </View>
                     <Text
-                      style={[
-                        styles.playerNameText,
-                        { color: colors.text.primary },
-                      ]}
+                      style={[styles.playerNameText, { color: textPrimary }]}
                       numberOfLines={1}
                     >
                       {player.name}
@@ -942,7 +851,7 @@ export default function MatchDetailsScreen() {
                     style={[
                       styles.tableCell,
                       styles.minCell,
-                      { color: colors.text.tertiary },
+                      { color: textTertiary },
                     ]}
                   >
                     {player.min}'
@@ -952,7 +861,7 @@ export default function MatchDetailsScreen() {
                       styles.tableCell,
                       styles.statCell,
                       styles.statCellBold,
-                      { color: colors.text.primary },
+                      { color: textPrimary },
                     ]}
                   >
                     {player.pts}
@@ -961,7 +870,7 @@ export default function MatchDetailsScreen() {
                     style={[
                       styles.tableCell,
                       styles.statCellWide,
-                      { color: colors.text.primary },
+                      { color: textPrimary },
                     ]}
                   >
                     {player.fgm}/{player.fga}
@@ -970,7 +879,7 @@ export default function MatchDetailsScreen() {
                     style={[
                       styles.tableCell,
                       styles.statCellWide,
-                      { color: colors.text.primary },
+                      { color: textPrimary },
                     ]}
                   >
                     {player.fg2m}/{player.fg2a}
@@ -979,7 +888,7 @@ export default function MatchDetailsScreen() {
                     style={[
                       styles.tableCell,
                       styles.statCellWide,
-                      { color: colors.text.primary },
+                      { color: textPrimary },
                     ]}
                   >
                     {player.fg3m}/{player.fg3a}
@@ -988,7 +897,7 @@ export default function MatchDetailsScreen() {
                     style={[
                       styles.tableCell,
                       styles.statCellWide,
-                      { color: colors.text.primary },
+                      { color: textPrimary },
                     ]}
                   >
                     {player.ftm}/{player.fta}
@@ -997,7 +906,7 @@ export default function MatchDetailsScreen() {
                     style={[
                       styles.tableCell,
                       styles.statCell,
-                      { color: colors.text.primary },
+                      { color: textPrimary },
                     ]}
                   >
                     {player.reb}
@@ -1006,7 +915,7 @@ export default function MatchDetailsScreen() {
                     style={[
                       styles.tableCell,
                       styles.statCell,
-                      { color: colors.text.primary },
+                      { color: textPrimary },
                     ]}
                   >
                     {player.reb_off}
@@ -1015,7 +924,7 @@ export default function MatchDetailsScreen() {
                     style={[
                       styles.tableCell,
                       styles.statCell,
-                      { color: colors.text.primary },
+                      { color: textPrimary },
                     ]}
                   >
                     {player.reb_def}
@@ -1024,7 +933,7 @@ export default function MatchDetailsScreen() {
                     style={[
                       styles.tableCell,
                       styles.statCell,
-                      { color: colors.text.primary },
+                      { color: textPrimary },
                     ]}
                   >
                     {player.ast}
@@ -1033,7 +942,7 @@ export default function MatchDetailsScreen() {
                     style={[
                       styles.tableCell,
                       styles.statCell,
-                      { color: colors.text.primary },
+                      { color: textPrimary },
                     ]}
                   >
                     {player.stl}
@@ -1042,7 +951,7 @@ export default function MatchDetailsScreen() {
                     style={[
                       styles.tableCell,
                       styles.statCell,
-                      { color: colors.text.primary },
+                      { color: textPrimary },
                     ]}
                   >
                     {player.blk}
@@ -1051,7 +960,7 @@ export default function MatchDetailsScreen() {
                     style={[
                       styles.tableCell,
                       styles.statCell,
-                      { color: colors.text.primary },
+                      { color: textPrimary },
                     ]}
                   >
                     {player.to}
@@ -1060,7 +969,7 @@ export default function MatchDetailsScreen() {
                     style={[
                       styles.tableCell,
                       styles.statCell,
-                      { color: colors.text.primary },
+                      { color: textPrimary },
                     ]}
                   >
                     {player.pf}
@@ -1095,7 +1004,7 @@ export default function MatchDetailsScreen() {
                       style={[
                         styles.playerNameText,
                         styles.totalText,
-                        { color: colors.text.primary },
+                        { color: textPrimary },
                       ]}
                     >
                       TOTAL
@@ -1105,7 +1014,7 @@ export default function MatchDetailsScreen() {
                     style={[
                       styles.tableCell,
                       styles.minCell,
-                      { color: colors.text.tertiary },
+                      { color: textTertiary },
                     ]}
                   >
                     -
@@ -1115,7 +1024,7 @@ export default function MatchDetailsScreen() {
                       styles.tableCell,
                       styles.statCell,
                       styles.statCellBold,
-                      { color: colors.text.primary },
+                      { color: textPrimary },
                     ]}
                   >
                     {stats.reduce((sum, p) => sum + p.pts, 0)}
@@ -1124,7 +1033,7 @@ export default function MatchDetailsScreen() {
                     style={[
                       styles.tableCell,
                       styles.statCellWide,
-                      { color: colors.text.primary },
+                      { color: textPrimary },
                     ]}
                   >
                     {stats.reduce((sum, p) => sum + p.fgm, 0)}/
@@ -1134,7 +1043,7 @@ export default function MatchDetailsScreen() {
                     style={[
                       styles.tableCell,
                       styles.statCellWide,
-                      { color: colors.text.primary },
+                      { color: textPrimary },
                     ]}
                   >
                     {stats.reduce((sum, p) => sum + p.fg2m, 0)}/
@@ -1144,7 +1053,7 @@ export default function MatchDetailsScreen() {
                     style={[
                       styles.tableCell,
                       styles.statCellWide,
-                      { color: colors.text.primary },
+                      { color: textPrimary },
                     ]}
                   >
                     {stats.reduce((sum, p) => sum + p.fg3m, 0)}/
@@ -1154,7 +1063,7 @@ export default function MatchDetailsScreen() {
                     style={[
                       styles.tableCell,
                       styles.statCellWide,
-                      { color: colors.text.primary },
+                      { color: textPrimary },
                     ]}
                   >
                     {stats.reduce((sum, p) => sum + p.ftm, 0)}/
@@ -1164,7 +1073,7 @@ export default function MatchDetailsScreen() {
                     style={[
                       styles.tableCell,
                       styles.statCell,
-                      { color: colors.text.primary },
+                      { color: textPrimary },
                     ]}
                   >
                     {stats.reduce((sum, p) => sum + p.reb, 0)}
@@ -1173,7 +1082,7 @@ export default function MatchDetailsScreen() {
                     style={[
                       styles.tableCell,
                       styles.statCell,
-                      { color: colors.text.primary },
+                      { color: textPrimary },
                     ]}
                   >
                     {stats.reduce((sum, p) => sum + p.reb_off, 0)}
@@ -1182,7 +1091,7 @@ export default function MatchDetailsScreen() {
                     style={[
                       styles.tableCell,
                       styles.statCell,
-                      { color: colors.text.primary },
+                      { color: textPrimary },
                     ]}
                   >
                     {stats.reduce((sum, p) => sum + p.reb_def, 0)}
@@ -1191,7 +1100,7 @@ export default function MatchDetailsScreen() {
                     style={[
                       styles.tableCell,
                       styles.statCell,
-                      { color: colors.text.primary },
+                      { color: textPrimary },
                     ]}
                   >
                     {stats.reduce((sum, p) => sum + p.ast, 0)}
@@ -1200,7 +1109,7 @@ export default function MatchDetailsScreen() {
                     style={[
                       styles.tableCell,
                       styles.statCell,
-                      { color: colors.text.primary },
+                      { color: textPrimary },
                     ]}
                   >
                     {stats.reduce((sum, p) => sum + p.stl, 0)}
@@ -1209,7 +1118,7 @@ export default function MatchDetailsScreen() {
                     style={[
                       styles.tableCell,
                       styles.statCell,
-                      { color: colors.text.primary },
+                      { color: textPrimary },
                     ]}
                   >
                     {stats.reduce((sum, p) => sum + p.blk, 0)}
@@ -1218,7 +1127,7 @@ export default function MatchDetailsScreen() {
                     style={[
                       styles.tableCell,
                       styles.statCell,
-                      { color: colors.text.primary },
+                      { color: textPrimary },
                     ]}
                   >
                     {stats.reduce((sum, p) => sum + p.to, 0)}
@@ -1227,7 +1136,7 @@ export default function MatchDetailsScreen() {
                     style={[
                       styles.tableCell,
                       styles.statCell,
-                      { color: colors.text.primary },
+                      { color: textPrimary },
                     ]}
                   >
                     {stats.reduce((sum, p) => sum + p.pf, 0)}
@@ -1248,10 +1157,7 @@ export default function MatchDetailsScreen() {
               {stats.length === 0 && (
                 <View style={styles.emptyState}>
                   <Text
-                    style={[
-                      styles.emptyStateText,
-                      { color: colors.text.tertiary },
-                    ]}
+                    style={[styles.emptyStateText, { color: textTertiary }]}
                   >
                     Aucune donnée disponible
                   </Text>
@@ -1271,8 +1177,8 @@ export default function MatchDetailsScreen() {
                 style={[
                   styles.playerCard,
                   {
-                    backgroundColor: colors.surface,
-                    borderColor: colors.border,
+                    backgroundColor: surfaceColor,
+                    borderColor: borderColor,
                   },
                 ]}
               >
@@ -1283,33 +1189,27 @@ export default function MatchDetailsScreen() {
                       style={[
                         styles.cardAvatar,
                         {
-                          backgroundColor: colors.background,
-                          borderColor: colors.border,
+                          backgroundColor: bgColor,
+                          borderColor: borderColor,
                         },
                       ]}
                     >
                       <Text
-                        style={[
-                          styles.cardAvatarText,
-                          { color: colors.text.primary },
-                        ]}
+                        style={[styles.cardAvatarText, { color: textPrimary }]}
                       >
                         {player.playerNumber}
                       </Text>
                     </View>
                     <View>
                       <Text
-                        style={[
-                          styles.cardPlayerName,
-                          { color: colors.text.primary },
-                        ]}
+                        style={[styles.cardPlayerName, { color: textPrimary }]}
                       >
                         {player.name}
                       </Text>
                       <Text
                         style={[
                           styles.cardPlayerNumber,
-                          { color: colors.text.secondary },
+                          { color: textSecondary },
                         ]}
                       >
                         #{player.playerNumber}
@@ -1320,18 +1220,24 @@ export default function MatchDetailsScreen() {
                     style={[
                       styles.cardPointsBadge,
                       {
-                        backgroundColor: colors.brandLight,
-                        borderColor: colors.brand,
+                        backgroundColor: brandLight,
+                        borderColor: BRAND_COLORS[500],
                       },
                     ]}
                   >
                     <Text
-                      style={[styles.cardPointsValue, { color: colors.brand }]}
+                      style={[
+                        styles.cardPointsValue,
+                        { color: BRAND_COLORS[500] },
+                      ]}
                     >
                       {player.pts}
                     </Text>
                     <Text
-                      style={[styles.cardPointsLabel, { color: colors.brand }]}
+                      style={[
+                        styles.cardPointsLabel,
+                        { color: BRAND_COLORS[500] },
+                      ]}
                     >
                       Points
                     </Text>
@@ -1345,7 +1251,6 @@ export default function MatchDetailsScreen() {
                     made={player.fg3m}
                     attempted={player.fg3a}
                     color="#6366f1"
-                    colors={colors}
                     compact
                   />
                   <ShootingBar
@@ -1353,7 +1258,6 @@ export default function MatchDetailsScreen() {
                     made={player.fg2m}
                     attempted={player.fg2a}
                     color="#3b82f6"
-                    colors={colors}
                     compact
                   />
                   <ShootingBar
@@ -1361,7 +1265,6 @@ export default function MatchDetailsScreen() {
                     made={player.ftm}
                     attempted={player.fta}
                     color="#06b6d4"
-                    colors={colors}
                     compact
                   />
                 </View>
@@ -1370,146 +1273,98 @@ export default function MatchDetailsScreen() {
                 <View
                   style={[
                     styles.cardStatsGrid,
-                    { borderTopColor: colors.border },
+                    { borderTopColor: borderColor },
                   ]}
                 >
                   <View style={styles.cardStatItem}>
                     <Text
-                      style={[
-                        styles.cardStatLabel,
-                        { color: colors.text.tertiary },
-                      ]}
+                      style={[styles.cardStatLabel, { color: textTertiary }]}
                     >
                       MIN
                     </Text>
                     <Text
-                      style={[
-                        styles.cardStatValue,
-                        { color: colors.text.primary },
-                      ]}
+                      style={[styles.cardStatValue, { color: textPrimary }]}
                     >
                       {player.min}'
                     </Text>
                   </View>
                   <View style={styles.cardStatItem}>
                     <Text
-                      style={[
-                        styles.cardStatLabel,
-                        { color: colors.text.tertiary },
-                      ]}
+                      style={[styles.cardStatLabel, { color: textTertiary }]}
                     >
                       REB
                     </Text>
                     <Text
-                      style={[
-                        styles.cardStatValue,
-                        { color: colors.text.primary },
-                      ]}
+                      style={[styles.cardStatValue, { color: textPrimary }]}
                     >
                       {player.reb}
                     </Text>
                   </View>
                   <View style={styles.cardStatItem}>
                     <Text
-                      style={[
-                        styles.cardStatLabel,
-                        { color: colors.text.tertiary },
-                      ]}
+                      style={[styles.cardStatLabel, { color: textTertiary }]}
                     >
                       AST
                     </Text>
                     <Text
-                      style={[
-                        styles.cardStatValue,
-                        { color: colors.text.primary },
-                      ]}
+                      style={[styles.cardStatValue, { color: textPrimary }]}
                     >
                       {player.ast}
                     </Text>
                   </View>
                   <View style={styles.cardStatItem}>
                     <Text
-                      style={[
-                        styles.cardStatLabel,
-                        { color: colors.text.tertiary },
-                      ]}
+                      style={[styles.cardStatLabel, { color: textTertiary }]}
                     >
                       INT
                     </Text>
                     <Text
-                      style={[
-                        styles.cardStatValue,
-                        { color: colors.text.primary },
-                      ]}
+                      style={[styles.cardStatValue, { color: textPrimary }]}
                     >
                       {player.stl}
                     </Text>
                   </View>
                   <View style={styles.cardStatItem}>
                     <Text
-                      style={[
-                        styles.cardStatLabel,
-                        { color: colors.text.tertiary },
-                      ]}
+                      style={[styles.cardStatLabel, { color: textTertiary }]}
                     >
                       CTR
                     </Text>
                     <Text
-                      style={[
-                        styles.cardStatValue,
-                        { color: colors.text.primary },
-                      ]}
+                      style={[styles.cardStatValue, { color: textPrimary }]}
                     >
                       {player.blk}
                     </Text>
                   </View>
                   <View style={styles.cardStatItem}>
                     <Text
-                      style={[
-                        styles.cardStatLabel,
-                        { color: colors.text.tertiary },
-                      ]}
+                      style={[styles.cardStatLabel, { color: textTertiary }]}
                     >
                       BP
                     </Text>
                     <Text
-                      style={[
-                        styles.cardStatValue,
-                        { color: colors.text.primary },
-                      ]}
+                      style={[styles.cardStatValue, { color: textPrimary }]}
                     >
                       {player.to}
                     </Text>
                   </View>
                   <View style={styles.cardStatItem}>
                     <Text
-                      style={[
-                        styles.cardStatLabel,
-                        { color: colors.text.tertiary },
-                      ]}
+                      style={[styles.cardStatLabel, { color: textTertiary }]}
                     >
                       FT
                     </Text>
                     <Text
-                      style={[
-                        styles.cardStatValue,
-                        { color: colors.text.primary },
-                      ]}
+                      style={[styles.cardStatValue, { color: textPrimary }]}
                     >
                       {player.pf}
                     </Text>
                   </View>
                   <View
-                    style={[
-                      styles.cardStatItem,
-                      { backgroundColor: colors.background },
-                    ]}
+                    style={[styles.cardStatItem, { backgroundColor: bgColor }]}
                   >
                     <Text
-                      style={[
-                        styles.cardStatLabel,
-                        { color: colors.text.tertiary },
-                      ]}
+                      style={[styles.cardStatLabel, { color: textTertiary }]}
                     >
                       ÉVAL
                     </Text>
@@ -1530,12 +1385,7 @@ export default function MatchDetailsScreen() {
 
             {stats.length === 0 && (
               <View style={styles.emptyState}>
-                <Text
-                  style={[
-                    styles.emptyStateText,
-                    { color: colors.text.tertiary },
-                  ]}
-                >
+                <Text style={[styles.emptyStateText, { color: textTertiary }]}>
                   Aucune statistique.
                 </Text>
               </View>
@@ -1546,11 +1396,9 @@ export default function MatchDetailsScreen() {
         {/* COURT VIEW */}
         {activeTab === "COURT" && (
           <View
-            style={[styles.courtContainer, { backgroundColor: colors.surface }]}
+            style={[styles.courtContainer, { backgroundColor: surfaceColor }]}
           >
-            <Text
-              style={[styles.emptyStateText, { color: colors.text.tertiary }]}
-            >
+            <Text style={[styles.emptyStateText, { color: textTertiary }]}>
               Carte des tirs - À venir
             </Text>
           </View>
@@ -1566,7 +1414,6 @@ interface ShootingBarProps {
   made: number;
   attempted: number;
   color: string;
-  colors: any;
   compact?: boolean;
 }
 
@@ -1575,9 +1422,12 @@ const ShootingBar: React.FC<ShootingBarProps> = ({
   made,
   attempted,
   color,
-  colors,
   compact,
 }) => {
+  const { isDark } = useTheme();
+  const textPrimary = isDark ? COMMON_COLORS.white : SLATE_COLORS[900];
+  const textSecondary = isDark ? SLATE_COLORS[400] : SLATE_COLORS[600];
+  const textTertiary = isDark ? SLATE_COLORS[500] : SLATE_COLORS[400];
   const pct = attempted > 0 ? Math.round((made / attempted) * 100) : 0;
 
   return (
@@ -1586,7 +1436,7 @@ const ShootingBar: React.FC<ShootingBarProps> = ({
         <Text
           style={[
             styles.shootingBarLabel,
-            { color: colors.text.secondary },
+            { color: textSecondary },
             compact && styles.shootingBarLabelCompact,
           ]}
         >
@@ -1595,7 +1445,7 @@ const ShootingBar: React.FC<ShootingBarProps> = ({
         <View
           style={[
             styles.shootingBarTrack,
-            { backgroundColor: isDark ? "#334155" : "#e2e8f0" },
+            { backgroundColor: isDark ? SLATE_COLORS[700] : SLATE_COLORS[200] },
             compact && styles.shootingBarTrackCompact,
           ]}
         >
@@ -1609,16 +1459,14 @@ const ShootingBar: React.FC<ShootingBarProps> = ({
         <Text
           style={[
             styles.shootingBarValue,
-            { color: colors.text.primary },
+            { color: textPrimary },
             compact && styles.shootingBarValueCompact,
           ]}
         >
           <Text style={styles.shootingBarValueBold}>
             {made}/{attempted}
           </Text>
-          <Text
-            style={[styles.shootingBarPct, { color: colors.text.tertiary }]}
-          >
+          <Text style={[styles.shootingBarPct, { color: textTertiary }]}>
             {" "}
             ({pct}%)
           </Text>
@@ -1628,35 +1476,36 @@ const ShootingBar: React.FC<ShootingBarProps> = ({
   );
 };
 
-const isDark = false; // Placeholder - will be replaced by useColorScheme in component
-
 interface StatBoxProps {
   label: string;
   value: number | string;
   sub?: string;
-  colors: any;
 }
 
-const StatBox: React.FC<StatBoxProps> = ({ label, value, sub, colors }) => (
-  <View
-    style={[
-      styles.statBox,
-      { backgroundColor: colors.background, borderColor: colors.border },
-    ]}
-  >
-    <Text style={[styles.statBoxLabel, { color: colors.text.tertiary }]}>
-      {label}
-    </Text>
-    <Text style={[styles.statBoxValue, { color: colors.text.primary }]}>
-      {value}
-    </Text>
-    {sub && (
-      <Text style={[styles.statBoxSub, { color: colors.text.tertiary }]}>
-        {sub}
+const StatBox: React.FC<StatBoxProps> = ({ label, value, sub }) => {
+  const { isDark } = useTheme();
+  const bgColor = isDark ? SLATE_COLORS[950] : SLATE_COLORS[50];
+  const borderColor = isDark ? SLATE_COLORS[800] : SLATE_COLORS[200];
+  const textPrimary = isDark ? COMMON_COLORS.white : SLATE_COLORS[900];
+  const textTertiary = isDark ? SLATE_COLORS[500] : SLATE_COLORS[400];
+
+  return (
+    <View
+      style={[
+        styles.statBox,
+        { backgroundColor: bgColor, borderColor: borderColor },
+      ]}
+    >
+      <Text style={[styles.statBoxLabel, { color: textTertiary }]}>
+        {label}
       </Text>
-    )}
-  </View>
-);
+      <Text style={[styles.statBoxValue, { color: textPrimary }]}>{value}</Text>
+      {sub && (
+        <Text style={[styles.statBoxSub, { color: textTertiary }]}>{sub}</Text>
+      )}
+    </View>
+  );
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -1667,32 +1516,28 @@ const styles = StyleSheet.create({
   header: {
     paddingHorizontal: 24,
     paddingTop: 16,
-    paddingBottom: 32,
+    paddingBottom: 10,
     borderBottomWidth: 1,
     position: "relative",
-  },
-  headerAccent: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 4,
   },
   headerTop: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 24,
+    marginBottom: 5,
   },
   backButton: {
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
   },
+  backButtonContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
   backButtonText: {
-    fontSize: 10,
-    fontWeight: "700",
-    letterSpacing: 1,
+    fontSize: 16,
   },
   menuButton: {
     flexDirection: "row",
@@ -1720,7 +1565,6 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     letterSpacing: 1,
     textTransform: "uppercase",
-    marginBottom: 8,
   },
   scoreValue: {
     fontSize: 48,

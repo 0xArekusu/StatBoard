@@ -225,11 +225,6 @@ export default function AuthScreen() {
                 size={20}
                 color={textSecondaryColor}
               />
-              <Text
-                style={[styles.backButtonText, { color: textSecondaryColor }]}
-              >
-                Retour
-              </Text>
             </View>
           </TouchableOpacity>
 
