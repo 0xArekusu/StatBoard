@@ -64,6 +64,15 @@ interface PlayerStats {
 
 type Tab = "STATS" | "CARDS" | "COURT";
 type TeamFilter = "MyTeam" | "Opponent";
+type ActionFilter =
+  | "ALL"
+  | "SHOOTING"
+  | "REBOUNDS"
+  | "ASSISTS"
+  | "STEALS"
+  | "BLOCKS"
+  | "TURNOVERS"
+  | "FOULS";
 
 interface RouteParams {
   match: Match;
@@ -94,6 +103,9 @@ export default function MatchDetailsScreen() {
     Team.MY_TEAM
   );
   const [viewPlayer, setViewPlayer] = useState<PlayerStats | null>(null);
+  const [actionFilter, setActionFilter] = useState<ActionFilter>("ALL");
+  const [selectedPlayers, setSelectedPlayers] = useState<number[]>([]);
+  const [showCourtFilters, setShowCourtFilters] = useState(false);
 
   // Intercept hardware back button when coming from live match
   useFocusEffect(
@@ -105,7 +117,10 @@ export default function MatchDetailsScreen() {
           return true; // Prevent default back behavior
         };
 
-        const subscription = BackHandler.addEventListener("hardwareBackPress", onBackPress);
+        const subscription = BackHandler.addEventListener(
+          "hardwareBackPress",
+          onBackPress
+        );
 
         return () => subscription.remove();
       }
@@ -1424,200 +1439,518 @@ export default function MatchDetailsScreen() {
         {/* COURT VIEW */}
         {activeTab === "COURT" && (
           <View style={styles.courtViewContainer}>
-            {/* Basketball Court with Shot Chart */}
+            {/* Action Type Filters */}
             <View
-              style={[styles.courtContainer, { backgroundColor: surfaceColor }]}
+              style={[styles.courtFiltersSection, { backgroundColor: bgColor }]}
             >
-              <BasketballCourtSVG
-                width={400}
-                height={600}
-                backgroundColor={isDark ? "#2d5a3d" : "#e8f5e9"}
-                lineColor={isDark ? "#f1f5f9" : "#1e293b"}
-                logoUri={null}
-                markers={
-                  actions
-                    ?.filter((action: any) => {
-                      // Filter by team using activeTeamFilter (already selected at top)
-                      return action.team === activeTeamFilter;
-                    })
-                    .filter((action: any) => action.semanticPosition) // Only actions with position
-                    .map((action: any, index: number) => {
-                      // Convert normalized coordinates to SVG coordinates
-                      const svgX = action.semanticPosition.xNormalized * 615.75;
-                      const svgY =
-                        action.semanticPosition.yNormalized * 1146.75;
-
-                      // Determine marker color based on action type
-                      const actionType = (
-                        action.action_type ||
-                        action.type ||
-                        ""
-                      ).toUpperCase();
-                      const specification = (
-                        action.specification || ""
-                      ).toLowerCase();
-                      let markerColor = SLATE_COLORS[500];
-
-                      if (actionType === "SHOT") {
-                        if (specification === "made") {
-                          markerColor =
-                            action.team === Team.MY_TEAM ? "#22c55e" : "#ef4444";
-                        } else if (specification === "missed") {
-                          markerColor =
-                            action.team === Team.MY_TEAM ? "#f97316" : "#ea580c";
-                        }
-                      } else if (actionType === "REBOUND") {
-                        markerColor = "#8b5cf6"; // Purple
-                      } else if (actionType === "ASSIST") {
-                        markerColor = "#06b6d4"; // Cyan
-                      } else if (actionType === "STEAL") {
-                        markerColor = "#eab308"; // Yellow
-                      } else if (actionType === "BLOCK") {
-                        markerColor = "#ec4899"; // Pink
-                      } else if (actionType === "TURNOVER") {
-                        markerColor = "#64748b"; // Slate
-                      } else if (actionType === "FOUL") {
-                        markerColor = "#dc2626"; // Red
-                      }
-
-                      return {
-                        id: `${action.team}-${action.player || action.player_number}-${action.timestamp || index}-${index}`,
-                        svgX,
-                        svgY,
-                        color: markerColor,
-                      };
-                    }) || []
-                }
-              />
-
-              {/* Stats Legend */}
-              <View
-                style={[styles.shotStatsSummary, { backgroundColor: bgColor }]}
+              <Text style={[styles.courtFilterLabel, { color: textTertiary }]}>
+                TYPE D'ACTION
+              </Text>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                style={styles.courtFilterScroll}
               >
-                <View style={styles.shotStatsRow}>
-                  <View style={styles.shotStatItem}>
-                    <View
+                <View style={styles.courtFilterButtonsRow}>
+                  <TouchableOpacity
+                    onPress={() => setActionFilter("ALL")}
+                    style={[
+                      styles.courtFilterChip,
+                      {
+                        backgroundColor:
+                          actionFilter === "ALL"
+                            ? BRAND_COLORS[600]
+                            : isDark
+                            ? SLATE_COLORS[800]
+                            : SLATE_COLORS[100],
+                        borderColor:
+                          actionFilter === "ALL"
+                            ? BRAND_COLORS[500]
+                            : borderColor,
+                      },
+                    ]}
+                  >
+                    <Text
                       style={[
-                        styles.shotStatDot,
+                        styles.courtFilterChipText,
                         {
-                          backgroundColor:
-                            activeTeamFilter === Team.MY_TEAM
-                              ? "#22c55e"
-                              : "#ef4444",
+                          color:
+                            actionFilter === "ALL"
+                              ? COMMON_COLORS.white
+                              : textPrimary,
                         },
                       ]}
-                    />
-                    <Text
-                      style={[styles.shotStatLabel, { color: textSecondary }]}
                     >
-                      Tirs réussis
+                      Tout
                     </Text>
-                  </View>
-                  <View style={styles.shotStatItem}>
-                    <View
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    onPress={() => setActionFilter("SHOOTING")}
+                    style={[
+                      styles.courtFilterChip,
+                      {
+                        backgroundColor:
+                          actionFilter === "SHOOTING"
+                            ? BRAND_COLORS[600]
+                            : isDark
+                            ? SLATE_COLORS[800]
+                            : SLATE_COLORS[100],
+                        borderColor:
+                          actionFilter === "SHOOTING"
+                            ? BRAND_COLORS[500]
+                            : borderColor,
+                      },
+                    ]}
+                  >
+                    <Text
                       style={[
-                        styles.shotStatDot,
+                        styles.courtFilterChipText,
                         {
-                          backgroundColor:
-                            activeTeamFilter === Team.MY_TEAM
-                              ? "#f97316"
-                              : "#ea580c",
+                          color:
+                            actionFilter === "SHOOTING"
+                              ? COMMON_COLORS.white
+                              : textPrimary,
                         },
                       ]}
-                    />
-                    <Text
-                      style={[styles.shotStatLabel, { color: textSecondary }]}
                     >
-                      Tirs manqués
+                      Tirs
                     </Text>
-                  </View>
-                </View>
-                <View style={styles.shotStatsRow}>
-                  <View style={styles.shotStatItem}>
-                    <View
-                      style={[
-                        styles.shotStatDot,
-                        { backgroundColor: "#8b5cf6" },
-                      ]}
-                    />
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    onPress={() => setActionFilter("REBOUNDS")}
+                    style={[
+                      styles.courtFilterChip,
+                      {
+                        backgroundColor:
+                          actionFilter === "REBOUNDS"
+                            ? BRAND_COLORS[600]
+                            : isDark
+                            ? SLATE_COLORS[800]
+                            : SLATE_COLORS[100],
+                        borderColor:
+                          actionFilter === "REBOUNDS"
+                            ? BRAND_COLORS[500]
+                            : borderColor,
+                      },
+                    ]}
+                  >
                     <Text
-                      style={[styles.shotStatLabel, { color: textSecondary }]}
+                      style={[
+                        styles.courtFilterChipText,
+                        {
+                          color:
+                            actionFilter === "REBOUNDS"
+                              ? COMMON_COLORS.white
+                              : textPrimary,
+                        },
+                      ]}
                     >
                       Rebonds
                     </Text>
-                  </View>
-                  <View style={styles.shotStatItem}>
-                    <View
-                      style={[
-                        styles.shotStatDot,
-                        { backgroundColor: "#06b6d4" },
-                      ]}
-                    />
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    onPress={() => setActionFilter("ASSISTS")}
+                    style={[
+                      styles.courtFilterChip,
+                      {
+                        backgroundColor:
+                          actionFilter === "ASSISTS"
+                            ? BRAND_COLORS[600]
+                            : isDark
+                            ? SLATE_COLORS[800]
+                            : SLATE_COLORS[100],
+                        borderColor:
+                          actionFilter === "ASSISTS"
+                            ? BRAND_COLORS[500]
+                            : borderColor,
+                      },
+                    ]}
+                  >
                     <Text
-                      style={[styles.shotStatLabel, { color: textSecondary }]}
+                      style={[
+                        styles.courtFilterChipText,
+                        {
+                          color:
+                            actionFilter === "ASSISTS"
+                              ? COMMON_COLORS.white
+                              : textPrimary,
+                        },
+                      ]}
                     >
                       Passes
                     </Text>
-                  </View>
-                </View>
-                <View style={styles.shotStatsRow}>
-                  <View style={styles.shotStatItem}>
-                    <View
-                      style={[
-                        styles.shotStatDot,
-                        { backgroundColor: "#eab308" },
-                      ]}
-                    />
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    onPress={() => setActionFilter("STEALS")}
+                    style={[
+                      styles.courtFilterChip,
+                      {
+                        backgroundColor:
+                          actionFilter === "STEALS"
+                            ? BRAND_COLORS[600]
+                            : isDark
+                            ? SLATE_COLORS[800]
+                            : SLATE_COLORS[100],
+                        borderColor:
+                          actionFilter === "STEALS"
+                            ? BRAND_COLORS[500]
+                            : borderColor,
+                      },
+                    ]}
+                  >
                     <Text
-                      style={[styles.shotStatLabel, { color: textSecondary }]}
+                      style={[
+                        styles.courtFilterChipText,
+                        {
+                          color:
+                            actionFilter === "STEALS"
+                              ? COMMON_COLORS.white
+                              : textPrimary,
+                        },
+                      ]}
                     >
                       Interceptions
                     </Text>
-                  </View>
-                  <View style={styles.shotStatItem}>
-                    <View
-                      style={[
-                        styles.shotStatDot,
-                        { backgroundColor: "#ec4899" },
-                      ]}
-                    />
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    onPress={() => setActionFilter("BLOCKS")}
+                    style={[
+                      styles.courtFilterChip,
+                      {
+                        backgroundColor:
+                          actionFilter === "BLOCKS"
+                            ? BRAND_COLORS[600]
+                            : isDark
+                            ? SLATE_COLORS[800]
+                            : SLATE_COLORS[100],
+                        borderColor:
+                          actionFilter === "BLOCKS"
+                            ? BRAND_COLORS[500]
+                            : borderColor,
+                      },
+                    ]}
+                  >
                     <Text
-                      style={[styles.shotStatLabel, { color: textSecondary }]}
+                      style={[
+                        styles.courtFilterChipText,
+                        {
+                          color:
+                            actionFilter === "BLOCKS"
+                              ? COMMON_COLORS.white
+                              : textPrimary,
+                        },
+                      ]}
                     >
                       Contres
                     </Text>
-                  </View>
-                </View>
-                <View style={styles.shotStatsRow}>
-                  <View style={styles.shotStatItem}>
-                    <View
-                      style={[
-                        styles.shotStatDot,
-                        { backgroundColor: "#64748b" },
-                      ]}
-                    />
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    onPress={() => setActionFilter("TURNOVERS")}
+                    style={[
+                      styles.courtFilterChip,
+                      {
+                        backgroundColor:
+                          actionFilter === "TURNOVERS"
+                            ? BRAND_COLORS[600]
+                            : isDark
+                            ? SLATE_COLORS[800]
+                            : SLATE_COLORS[100],
+                        borderColor:
+                          actionFilter === "TURNOVERS"
+                            ? BRAND_COLORS[500]
+                            : borderColor,
+                      },
+                    ]}
+                  >
                     <Text
-                      style={[styles.shotStatLabel, { color: textSecondary }]}
+                      style={[
+                        styles.courtFilterChipText,
+                        {
+                          color:
+                            actionFilter === "TURNOVERS"
+                              ? COMMON_COLORS.white
+                              : textPrimary,
+                        },
+                      ]}
                     >
                       Pertes
                     </Text>
-                  </View>
-                  <View style={styles.shotStatItem}>
-                    <View
-                      style={[
-                        styles.shotStatDot,
-                        { backgroundColor: "#dc2626" },
-                      ]}
-                    />
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    onPress={() => setActionFilter("FOULS")}
+                    style={[
+                      styles.courtFilterChip,
+                      {
+                        backgroundColor:
+                          actionFilter === "FOULS"
+                            ? BRAND_COLORS[600]
+                            : isDark
+                            ? SLATE_COLORS[800]
+                            : SLATE_COLORS[100],
+                        borderColor:
+                          actionFilter === "FOULS"
+                            ? BRAND_COLORS[500]
+                            : borderColor,
+                      },
+                    ]}
+                  >
                     <Text
-                      style={[styles.shotStatLabel, { color: textSecondary }]}
+                      style={[
+                        styles.courtFilterChipText,
+                        {
+                          color:
+                            actionFilter === "FOULS"
+                              ? COMMON_COLORS.white
+                              : textPrimary,
+                        },
+                      ]}
                     >
                       Fautes
                     </Text>
-                  </View>
+                  </TouchableOpacity>
                 </View>
-              </View>
+              </ScrollView>
             </View>
+
+            {/* Player Filters */}
+            <View
+              style={[styles.courtFiltersSection, { backgroundColor: bgColor }]}
+            >
+              <Text style={[styles.courtFilterLabel, { color: textTertiary }]}>
+                JOUEURS
+              </Text>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                style={styles.courtFilterScroll}
+              >
+                <View style={styles.courtPlayerButtonsRow}>
+                  {stats.map((player) => {
+                    const isSelected = selectedPlayers.includes(
+                      player.playerNumber
+                    );
+                    return (
+                      <TouchableOpacity
+                        key={player.playerNumber}
+                        onPress={() => {
+                          if (isSelected) {
+                            setSelectedPlayers(
+                              selectedPlayers.filter(
+                                (n) => n !== player.playerNumber
+                              )
+                            );
+                          } else {
+                            setSelectedPlayers([
+                              ...selectedPlayers,
+                              player.playerNumber,
+                            ]);
+                          }
+                        }}
+                        style={[
+                          styles.courtPlayerChip,
+                          {
+                            backgroundColor: isSelected
+                              ? BRAND_COLORS[600]
+                              : isDark
+                              ? SLATE_COLORS[800]
+                              : SLATE_COLORS[100],
+                            borderColor: isSelected
+                              ? BRAND_COLORS[500]
+                              : borderColor,
+                          },
+                        ]}
+                      >
+                        <View
+                          style={[
+                            styles.courtPlayerBadge,
+                            {
+                              backgroundColor: isSelected
+                                ? COMMON_COLORS.white
+                                : bgColor,
+                            },
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              styles.courtPlayerBadgeText,
+                              {
+                                color: isSelected
+                                  ? BRAND_COLORS[600]
+                                  : textSecondary,
+                              },
+                            ]}
+                          >
+                            {player.playerNumber}
+                          </Text>
+                        </View>
+                        <Text
+                          style={[
+                            styles.courtPlayerName,
+                            {
+                              color: isSelected
+                                ? COMMON_COLORS.white
+                                : textPrimary,
+                            },
+                          ]}
+                          numberOfLines={1}
+                        >
+                          {player.name}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </ScrollView>
+            </View>
+
+            {stats.length === 0 ? (
+              <View style={styles.emptyState}>
+                <Text style={[styles.emptyStateText, { color: textTertiary }]}>
+                  Aucune statistique disponible
+                </Text>
+              </View>
+            ) : (
+              <>
+                {/* Basketball Court with Shot Chart */}
+                <View
+                  style={[
+                    styles.courtContainer,
+                    { backgroundColor: surfaceColor },
+                  ]}
+                >
+                  <BasketballCourtSVG
+                    width={350}
+                    height={520}
+                    backgroundColor={isDark ? "#2d5a3d" : "#e8f5e9"}
+                    lineColor={isDark ? "#f1f5f9" : "#1e293b"}
+                    logoUri={null}
+                    markers={
+                      actions
+                        ?.filter((action: any) => {
+                          // Filter by team using activeTeamFilter (already selected at top)
+                          if (action.team !== activeTeamFilter) return false;
+
+                          // Filter by action type
+                          const actionType = (
+                            action.action_type ||
+                            action.type ||
+                            ""
+                          ).toUpperCase();
+
+                          if (actionFilter !== "ALL") {
+                            if (
+                              actionFilter === "SHOOTING" &&
+                              actionType !== "SHOT"
+                            )
+                              return false;
+                            if (
+                              actionFilter === "REBOUNDS" &&
+                              actionType !== "REBOUND"
+                            )
+                              return false;
+                            if (
+                              actionFilter === "ASSISTS" &&
+                              actionType !== "ASSIST"
+                            )
+                              return false;
+                            if (
+                              actionFilter === "STEALS" &&
+                              actionType !== "STEAL"
+                            )
+                              return false;
+                            if (
+                              actionFilter === "BLOCKS" &&
+                              actionType !== "BLOCK"
+                            )
+                              return false;
+                            if (
+                              actionFilter === "TURNOVERS" &&
+                              actionType !== "TURNOVER"
+                            )
+                              return false;
+                            if (
+                              actionFilter === "FOULS" &&
+                              actionType !== "FOUL"
+                            )
+                              return false;
+                          }
+
+                          // Filter by player
+                          if (selectedPlayers.length > 0) {
+                            const playerNum =
+                              action.player_number || action.player;
+                            if (!selectedPlayers.includes(playerNum))
+                              return false;
+                          }
+
+                          return true;
+                        })
+                        .filter((action: any) => action.semanticPosition) // Only actions with position
+                        .map((action: any, index: number) => {
+                          // Convert normalized coordinates to SVG coordinates
+                          const svgX =
+                            action.semanticPosition.xNormalized * 615.75;
+                          const svgY =
+                            action.semanticPosition.yNormalized * 1146.75;
+
+                          // Determine marker color based on action type
+                          const actionType = (
+                            action.action_type ||
+                            action.type ||
+                            ""
+                          ).toUpperCase();
+                          const specification = (
+                            action.specification || ""
+                          ).toLowerCase();
+                          let markerColor = SLATE_COLORS[500];
+
+                          if (actionType === "SHOT") {
+                            if (specification === "made") {
+                              markerColor =
+                                action.team === Team.MY_TEAM
+                                  ? "#22c55e"
+                                  : "#ef4444";
+                            } else if (specification === "missed") {
+                              markerColor =
+                                action.team === Team.MY_TEAM
+                                  ? "#f97316"
+                                  : "#ea580c";
+                            }
+                          } else if (actionType === "REBOUND") {
+                            markerColor = "#8b5cf6"; // Purple
+                          } else if (actionType === "ASSIST") {
+                            markerColor = "#06b6d4"; // Cyan
+                          } else if (actionType === "STEAL") {
+                            markerColor = "#eab308"; // Yellow
+                          } else if (actionType === "BLOCK") {
+                            markerColor = "#ec4899"; // Pink
+                          } else if (actionType === "TURNOVER") {
+                            markerColor = "#64748b"; // Slate
+                          } else if (actionType === "FOUL") {
+                            markerColor = "#dc2626"; // Red
+                          }
+
+                          return {
+                            id: `${action.team}-${
+                              action.player || action.player_number
+                            }-${action.timestamp || index}-${index}`,
+                            svgX,
+                            svgY,
+                            color: markerColor,
+                          };
+                        }) || []
+                    }
+                  />
+                </View>
+              </>
+            )}
           </View>
         )}
       </ScrollView>
@@ -2244,13 +2577,13 @@ const styles = StyleSheet.create({
   courtContainer: {
     alignItems: "center",
     justifyContent: "center",
-    padding: 24,
+    padding: 16,
     borderRadius: 16,
-    minHeight: 600,
+    height: 700,
   },
   shotStatsSummary: {
-    marginTop: 24,
-    padding: 16,
+    marginTop: 0,
+    padding: 0,
     borderRadius: 12,
     width: "100%",
     maxWidth: 400,
@@ -2274,5 +2607,65 @@ const styles = StyleSheet.create({
   shotStatLabel: {
     fontSize: 11,
     fontWeight: "600",
+  },
+
+  // Court Filters
+  courtFiltersSection: {
+    marginBottom: 16,
+    paddingVertical: 8,
+  },
+  courtFilterLabel: {
+    fontSize: 10,
+    fontWeight: "700",
+    letterSpacing: 1,
+    textTransform: "uppercase",
+    marginBottom: 8,
+  },
+  courtFilterScroll: {
+    marginHorizontal: -16,
+    paddingHorizontal: 16,
+  },
+  courtFilterButtonsRow: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  courtFilterChip: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 2,
+  },
+  courtFilterChipText: {
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  courtPlayerButtonsRow: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  courtPlayerChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    borderWidth: 2,
+  },
+  courtPlayerBadge: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  courtPlayerBadgeText: {
+    fontSize: 10,
+    fontWeight: "700",
+  },
+  courtPlayerName: {
+    fontSize: 12,
+    fontWeight: "700",
+    maxWidth: 80,
   },
 });
