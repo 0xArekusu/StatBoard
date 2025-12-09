@@ -48,7 +48,14 @@ interface MatchEvent {
   time_in_period?: number;
 }
 
-type FilterMode = "ALL" | "SCORING" | "DEFENSE";
+type FilterMode =
+  | "ALL"
+  | "SHOOTING"
+  | "REBOUNDS"
+  | "FOULS"
+  | "TURNOVERS"
+  | "BLOCKS"
+  | "STEALS";
 
 // History Modal
 interface HistoryModalProps {
@@ -126,7 +133,9 @@ export const HistoryModal: React.FC<HistoryModalProps> = ({
               style={[
                 styles.historyCloseButton,
                 {
-                  backgroundColor: isDark ? SLATE_COLORS[800] : SLATE_COLORS[200],
+                  backgroundColor: isDark
+                    ? SLATE_COLORS[800]
+                    : SLATE_COLORS[200],
                 },
               ]}
             >
@@ -152,7 +161,9 @@ export const HistoryModal: React.FC<HistoryModalProps> = ({
                       backgroundColor: isDark
                         ? SLATE_COLORS[800]
                         : COMMON_COLORS.white,
-                      borderColor: isDark ? SLATE_COLORS[700] : SLATE_COLORS[100],
+                      borderColor: isDark
+                        ? SLATE_COLORS[700]
+                        : SLATE_COLORS[100],
                     },
                   ]}
                 >
@@ -188,7 +199,9 @@ export const HistoryModal: React.FC<HistoryModalProps> = ({
               ))
             ) : (
               <View style={styles.historyEmpty}>
-                <Text style={[styles.historyEmptyText, { color: textSecondary }]}>
+                <Text
+                  style={[styles.historyEmptyText, { color: textSecondary }]}
+                >
                   Aucun événement enregistré.
                 </Text>
               </View>
@@ -237,6 +250,12 @@ interface FilterModalProps {
   surfaceColor: string;
   textPrimary: string;
   borderColor: string;
+  // Optional props for player filtering
+  homeRoster?: Player[];
+  opponentRoster?: Player[];
+  trackOpponentStats?: boolean;
+  selectedPlayers?: string[];
+  onPlayerSelectionChange?: (playerIds: string[]) => void;
 }
 
 export const FilterModal: React.FC<FilterModalProps> = ({
@@ -248,155 +267,450 @@ export const FilterModal: React.FC<FilterModalProps> = ({
   surfaceColor,
   textPrimary,
   borderColor,
-}) => (
-  <Modal visible={visible} transparent animationType="fade">
-    <View style={styles.modalOverlay}>
-      <View
+  homeRoster = [],
+  opponentRoster = [],
+  trackOpponentStats = false,
+  selectedPlayers = [],
+  onPlayerSelectionChange,
+}) => {
+  const textSecondary = isDark ? SLATE_COLORS[400] : SLATE_COLORS[600];
+  const bgColor = isDark ? SLATE_COLORS[950] : SLATE_COLORS[50];
+
+  const togglePlayer = (playerId: string) => {
+    if (!onPlayerSelectionChange) return;
+
+    const newSelection = selectedPlayers.includes(playerId)
+      ? selectedPlayers.filter((id) => id !== playerId)
+      : [...selectedPlayers, playerId];
+
+    onPlayerSelectionChange(newSelection);
+  };
+
+  const clearPlayerSelection = () => {
+    if (onPlayerSelectionChange) {
+      onPlayerSelectionChange([]);
+    }
+  };
+
+  const renderPlayerButton = (player: Player) => {
+    const isSelected = selectedPlayers.includes(player.id);
+    return (
+      <TouchableOpacity
+        key={player.id}
+        onPress={() => togglePlayer(player.id)}
         style={[
-          styles.filterModal,
-          { backgroundColor: surfaceColor, borderColor },
+          styles.playerFilterButton,
+          {
+            backgroundColor: isSelected
+              ? BRAND_COLORS[600]
+              : isDark
+              ? SLATE_COLORS[800]
+              : SLATE_COLORS[100],
+            borderColor: isSelected ? BRAND_COLORS[500] : borderColor,
+          },
         ]}
       >
-        <View style={styles.filterHeader}>
-          <MaterialCommunityIcons name="filter" size={20} color={textPrimary} />
-          <Text style={[styles.filterTitle, { color: textPrimary }]}>
-            Filtres d'affichage
+        <View
+          style={[
+            styles.playerFilterBadge,
+            { backgroundColor: isSelected ? COMMON_COLORS.white : bgColor },
+          ]}
+        >
+          <Text
+            style={[
+              styles.playerFilterBadgeText,
+              { color: isSelected ? BRAND_COLORS[600] : textSecondary },
+            ]}
+          >
+            {player.jerseyNumber}
           </Text>
         </View>
+        <Text
+          style={[
+            styles.playerFilterName,
+            { color: isSelected ? COMMON_COLORS.white : textPrimary },
+          ]}
+          numberOfLines={1}
+        >
+          {player.name}
+        </Text>
+      </TouchableOpacity>
+    );
+  };
 
-        <View style={styles.filterOptions}>
-          <TouchableOpacity
-            onPress={() => {
-              setFilterMode("ALL");
-              onClose();
-            }}
+  return (
+    <Modal visible={visible} transparent animationType="slide">
+      <View style={styles.filterModalOverlay}>
+        {/* Backdrop transparent */}
+        <TouchableOpacity
+          style={styles.filterBackdrop}
+          activeOpacity={1}
+          onPress={onClose}
+        />
+
+        {/* Bottom Sheet */}
+        <View
+          style={[styles.filterBottomSheet, { backgroundColor: surfaceColor }]}
+        >
+          {/* Handle */}
+          <View
             style={[
-              styles.filterOption,
+              styles.sheetHandle,
               {
-                backgroundColor:
-                  filterMode === "ALL"
-                    ? isDark
-                      ? `${BRAND_COLORS[500]}20`
-                      : `${BRAND_COLORS[500]}10`
-                    : isDark
-                    ? SLATE_COLORS[800]
-                    : SLATE_COLORS[50],
-                borderColor:
-                  filterMode === "ALL" ? BRAND_COLORS[500] : borderColor,
+                backgroundColor: isDark ? SLATE_COLORS[700] : SLATE_COLORS[300],
               },
             ]}
-          >
-            <Text
-              style={[
-                styles.filterOptionText,
-                {
-                  color: filterMode === "ALL" ? BRAND_COLORS[600] : textPrimary,
-                },
-              ]}
-            >
-              Tout afficher
-            </Text>
-            {filterMode === "ALL" && (
-              <MaterialCommunityIcons
-                name="check-circle"
-                size={18}
-                color={BRAND_COLORS[600]}
-              />
-            )}
-          </TouchableOpacity>
+          />
 
-          <TouchableOpacity
-            onPress={() => {
-              setFilterMode("SCORING");
-              onClose();
-            }}
-            style={[
-              styles.filterOption,
-              {
-                backgroundColor:
-                  filterMode === "SCORING"
-                    ? isDark
-                      ? `${BRAND_COLORS[500]}20`
-                      : `${BRAND_COLORS[500]}10`
-                    : isDark
-                    ? SLATE_COLORS[800]
-                    : SLATE_COLORS[50],
-                borderColor:
-                  filterMode === "SCORING" ? BRAND_COLORS[500] : borderColor,
-              },
-            ]}
-          >
-            <Text
-              style={[
-                styles.filterOptionText,
-                {
-                  color:
-                    filterMode === "SCORING" ? BRAND_COLORS[600] : textPrimary,
-                },
-              ]}
-            >
-              Points & Tirs
-            </Text>
-            {filterMode === "SCORING" && (
+          {/* Header */}
+          <View style={styles.filterSheetHeader}>
+            <View style={styles.filterHeaderLeft}>
               <MaterialCommunityIcons
-                name="check-circle"
-                size={18}
-                color={BRAND_COLORS[600]}
+                name="filter"
+                size={24}
+                color={BRAND_COLORS[500]}
               />
-            )}
-          </TouchableOpacity>
+              <Text style={[styles.filterSheetTitle, { color: textPrimary }]}>
+                Filtres
+              </Text>
+            </View>
+            <View style={styles.filterHeaderRight}>
+              <TouchableOpacity
+                onPress={() => {
+                  setFilterMode("ALL");
+                  if (onPlayerSelectionChange) {
+                    onPlayerSelectionChange([]);
+                  }
+                }}
+                style={styles.resetButton}
+              >
+                <MaterialCommunityIcons
+                  name="refresh"
+                  size={14}
+                  color={BRAND_COLORS[500]}
+                />
+                <Text
+                  style={[styles.resetButtonText, { color: BRAND_COLORS[500] }]}
+                >
+                  Réinitialiser
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={onClose}
+                style={[
+                  styles.filterCloseButton,
+                  {
+                    backgroundColor: isDark
+                      ? SLATE_COLORS[800]
+                      : SLATE_COLORS[200],
+                  },
+                ]}
+              >
+                <MaterialCommunityIcons
+                  name="close"
+                  size={20}
+                  color={textSecondary}
+                />
+              </TouchableOpacity>
+            </View>
+          </View>
 
-          <TouchableOpacity
-            onPress={() => {
-              setFilterMode("DEFENSE");
-              onClose();
-            }}
-            style={[
-              styles.filterOption,
-              {
-                backgroundColor:
-                  filterMode === "DEFENSE"
-                    ? isDark
-                      ? `${BRAND_COLORS[500]}20`
-                      : `${BRAND_COLORS[500]}10`
-                    : isDark
-                    ? SLATE_COLORS[800]
-                    : SLATE_COLORS[50],
-                borderColor:
-                  filterMode === "DEFENSE" ? BRAND_COLORS[500] : borderColor,
-              },
-            ]}
+          {/* Filter Options */}
+          <ScrollView
+            style={styles.filterSheetContent}
+            showsVerticalScrollIndicator={false}
           >
-            <Text
-              style={[
-                styles.filterOptionText,
-                {
-                  color:
-                    filterMode === "DEFENSE" ? BRAND_COLORS[600] : textPrimary,
-                },
-              ]}
-            >
-              Défense (Reb, Int, Ctr)
-            </Text>
-            {filterMode === "DEFENSE" && (
-              <MaterialCommunityIcons
-                name="check-circle"
-                size={18}
-                color={BRAND_COLORS[600]}
-              />
+            {/* Type d'action */}
+            <View style={styles.filterSection}>
+              <View style={styles.filterSectionHeader}>
+                <Text
+                  style={[
+                    styles.filterSectionLabel,
+                    { color: SLATE_COLORS[400] },
+                  ]}
+                >
+                  TYPE D'ACTION
+                </Text>
+              </View>
+
+              <View style={styles.filterButtonsGrid}>
+                <TouchableOpacity
+                  onPress={() => setFilterMode("ALL")}
+                  style={[
+                    styles.filterPill,
+                    {
+                      backgroundColor:
+                        filterMode === "ALL"
+                          ? BRAND_COLORS[600]
+                          : isDark
+                          ? SLATE_COLORS[800]
+                          : SLATE_COLORS[50],
+                      borderColor:
+                        filterMode === "ALL" ? BRAND_COLORS[500] : borderColor,
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.filterPillText,
+                      {
+                        color:
+                          filterMode === "ALL"
+                            ? COMMON_COLORS.white
+                            : textPrimary,
+                      },
+                    ]}
+                  >
+                    Tout
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  onPress={() => setFilterMode("SHOOTING")}
+                  style={[
+                    styles.filterPill,
+                    {
+                      backgroundColor:
+                        filterMode === "SHOOTING"
+                          ? BRAND_COLORS[600]
+                          : isDark
+                          ? SLATE_COLORS[800]
+                          : SLATE_COLORS[50],
+                      borderColor:
+                        filterMode === "SHOOTING"
+                          ? BRAND_COLORS[500]
+                          : borderColor,
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.filterPillText,
+                      {
+                        color:
+                          filterMode === "SHOOTING"
+                            ? COMMON_COLORS.white
+                            : textPrimary,
+                      },
+                    ]}
+                  >
+                    Tirs
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  onPress={() => setFilterMode("REBOUNDS")}
+                  style={[
+                    styles.filterPill,
+                    {
+                      backgroundColor:
+                        filterMode === "REBOUNDS"
+                          ? BRAND_COLORS[600]
+                          : isDark
+                          ? SLATE_COLORS[800]
+                          : SLATE_COLORS[50],
+                      borderColor:
+                        filterMode === "REBOUNDS"
+                          ? BRAND_COLORS[500]
+                          : borderColor,
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.filterPillText,
+                      {
+                        color:
+                          filterMode === "REBOUNDS"
+                            ? COMMON_COLORS.white
+                            : textPrimary,
+                      },
+                    ]}
+                  >
+                    Rebonds
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  onPress={() => setFilterMode("FOULS")}
+                  style={[
+                    styles.filterPill,
+                    {
+                      backgroundColor:
+                        filterMode === "FOULS"
+                          ? BRAND_COLORS[600]
+                          : isDark
+                          ? SLATE_COLORS[800]
+                          : SLATE_COLORS[50],
+                      borderColor:
+                        filterMode === "FOULS"
+                          ? BRAND_COLORS[500]
+                          : borderColor,
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.filterPillText,
+                      {
+                        color:
+                          filterMode === "FOULS"
+                            ? COMMON_COLORS.white
+                            : textPrimary,
+                      },
+                    ]}
+                  >
+                    Fautes
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  onPress={() => setFilterMode("TURNOVERS")}
+                  style={[
+                    styles.filterPill,
+                    {
+                      backgroundColor:
+                        filterMode === "TURNOVERS"
+                          ? BRAND_COLORS[600]
+                          : isDark
+                          ? SLATE_COLORS[800]
+                          : SLATE_COLORS[50],
+                      borderColor:
+                        filterMode === "TURNOVERS"
+                          ? BRAND_COLORS[500]
+                          : borderColor,
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.filterPillText,
+                      {
+                        color:
+                          filterMode === "TURNOVERS"
+                            ? COMMON_COLORS.white
+                            : textPrimary,
+                      },
+                    ]}
+                  >
+                    Pertes de balle
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  onPress={() => setFilterMode("BLOCKS")}
+                  style={[
+                    styles.filterPill,
+                    {
+                      backgroundColor:
+                        filterMode === "BLOCKS"
+                          ? BRAND_COLORS[600]
+                          : isDark
+                          ? SLATE_COLORS[800]
+                          : SLATE_COLORS[50],
+                      borderColor:
+                        filterMode === "BLOCKS"
+                          ? BRAND_COLORS[500]
+                          : borderColor,
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.filterPillText,
+                      {
+                        color:
+                          filterMode === "BLOCKS"
+                            ? COMMON_COLORS.white
+                            : textPrimary,
+                      },
+                    ]}
+                  >
+                    Contres
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  onPress={() => setFilterMode("STEALS")}
+                  style={[
+                    styles.filterPill,
+                    {
+                      backgroundColor:
+                        filterMode === "STEALS"
+                          ? BRAND_COLORS[600]
+                          : isDark
+                          ? SLATE_COLORS[800]
+                          : SLATE_COLORS[50],
+                      borderColor:
+                        filterMode === "STEALS"
+                          ? BRAND_COLORS[500]
+                          : borderColor,
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.filterPillText,
+                      {
+                        color:
+                          filterMode === "STEALS"
+                            ? COMMON_COLORS.white
+                            : textPrimary,
+                      },
+                    ]}
+                  >
+                    Interceptions
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* Player filter section */}
+            {onPlayerSelectionChange && homeRoster.length > 0 && (
+              <>
+                {/* Home Team */}
+                <View style={styles.filterSection}>
+                  <View style={styles.filterSectionHeader}>
+                    <Text
+                      style={[
+                        styles.filterSectionLabel,
+                        { color: SLATE_COLORS[400] },
+                      ]}
+                    >
+                      JOUEURS
+                    </Text>
+                  </View>
+
+                  <View style={styles.playerFilterGrid}>
+                    {homeRoster.map(renderPlayerButton)}
+                  </View>
+                </View>
+
+                {/* Opponent Team */}
+                {trackOpponentStats && opponentRoster.length > 0 && (
+                  <View style={styles.filterSection}>
+                    <Text
+                      style={[
+                        styles.filterSectionLabel,
+                        { color: SLATE_COLORS[400] },
+                      ]}
+                    >
+                      ADVERSAIRE
+                    </Text>
+
+                    <View style={styles.playerFilterGrid}>
+                      {opponentRoster.map(renderPlayerButton)}
+                    </View>
+                  </View>
+                )}
+              </>
             )}
-          </TouchableOpacity>
+          </ScrollView>
         </View>
-
-        <TouchableOpacity onPress={onClose} style={styles.filterCancel}>
-          <Text style={[styles.filterCancelText, { color: textPrimary }]}>
-            Annuler
-          </Text>
-        </TouchableOpacity>
       </View>
-    </View>
-  </Modal>
-);
+    </Modal>
+  );
+};
 
 // Player Selection Modal
 interface PlayerSelectionModalProps {
@@ -1264,7 +1578,11 @@ export const OvertimeModal: React.FC<OvertimeModalProps> = ({
                 }}
                 style={[
                   styles.overtimeDurationButton,
-                  { backgroundColor: isDark ? SLATE_COLORS[700] : SLATE_COLORS[200] }
+                  {
+                    backgroundColor: isDark
+                      ? SLATE_COLORS[700]
+                      : SLATE_COLORS[200],
+                  },
                 ]}
               >
                 <MaterialCommunityIcons
@@ -1293,7 +1611,11 @@ export const OvertimeModal: React.FC<OvertimeModalProps> = ({
                 }}
                 style={[
                   styles.overtimeDurationButton,
-                  { backgroundColor: isDark ? SLATE_COLORS[700] : SLATE_COLORS[200] }
+                  {
+                    backgroundColor: isDark
+                      ? SLATE_COLORS[700]
+                      : SLATE_COLORS[200],
+                  },
                 ]}
               >
                 <MaterialCommunityIcons
@@ -1332,7 +1654,14 @@ export const OvertimeModal: React.FC<OvertimeModalProps> = ({
               onPress={onStartOvertime}
               style={[
                 styles.overtimeSecondaryButton,
-                { backgroundColor: surfaceColor, borderColor, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
+                {
+                  backgroundColor: surfaceColor,
+                  borderColor,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 8,
+                },
               ]}
             >
               <MaterialCommunityIcons
@@ -1529,8 +1858,21 @@ export const DeleteActionModal: React.FC<DeleteActionModalProps> = ({
           Supprimer cette action ?
         </Text>
 
-        <View style={[styles.deleteActionDetail, { backgroundColor: isDark ? SLATE_COLORS[800] : SLATE_COLORS[50], borderColor }]}>
-          <Text style={[styles.deleteActionDescription, { color: textPrimary, fontWeight: "600" }]}>
+        <View
+          style={[
+            styles.deleteActionDetail,
+            {
+              backgroundColor: isDark ? SLATE_COLORS[800] : SLATE_COLORS[50],
+              borderColor,
+            },
+          ]}
+        >
+          <Text
+            style={[
+              styles.deleteActionDescription,
+              { color: textPrimary, fontWeight: "600" },
+            ]}
+          >
             {eventDescription}
           </Text>
         </View>
@@ -1550,7 +1892,10 @@ export const DeleteActionModal: React.FC<DeleteActionModalProps> = ({
             ]}
           >
             <Text
-              style={[styles.deleteActionCancelButtonText, { color: textPrimary }]}
+              style={[
+                styles.deleteActionCancelButtonText,
+                { color: textPrimary },
+              ]}
             >
               Annuler
             </Text>
@@ -1663,47 +2008,147 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold",
   },
-  // Filter Modal
-  filterModal: {
-    width: "100%",
-    maxWidth: 320,
-    borderRadius: 16,
-    padding: 20,
-    borderWidth: 1,
-  },
-  filterHeader: {
-    flexDirection: "row",
+  // Filter Modal - Bottom Sheet
+  filterModalOverlay: {
+    flex: 1,
+    justifyContent: "flex-end",
     alignItems: "center",
-    gap: 8,
-    marginBottom: 16,
   },
-  filterTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
+  filterBackdrop: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0, 0, 0, 0)",
   },
-  filterOptions: {
-    gap: 8,
+  filterBottomSheet: {
+    width: "100%",
+    minHeight: "35%",
+    maxHeight: "85%",
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: 24,
+    paddingTop: 8,
+    paddingBottom: 32,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    elevation: 5,
   },
-  filterOption: {
+  sheetHandle: {
+    width: 48,
+    height: 6,
+    borderRadius: 3,
+    alignSelf: "center",
+    marginTop: 12,
+    marginBottom: 24,
+  },
+  filterSheetHeader: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    padding: 12,
-    borderRadius: 12,
-    borderWidth: 2,
+    marginBottom: 24,
   },
-  filterOptionText: {
-    fontSize: 14,
-    fontWeight: "500",
-  },
-  filterCancel: {
-    marginTop: 16,
-    padding: 12,
+  filterHeaderLeft: {
+    flexDirection: "row",
     alignItems: "center",
+    gap: 8,
   },
-  filterCancelText: {
-    fontSize: 16,
-    fontWeight: "500",
+  filterHeaderRight: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  filterSheetTitle: {
+    fontSize: 20,
+    fontWeight: "900",
+  },
+  resetButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+  },
+  resetButtonText: {
+    fontSize: 11,
+    fontWeight: "700",
+  },
+  filterCloseButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  filterSheetContent: {
+    flex: 1,
+    paddingBottom: 16,
+  },
+  filterSection: {
+    marginBottom: 24,
+  },
+  filterSectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 8,
+  },
+  filterSectionLabel: {
+    fontSize: 10,
+    fontWeight: "700",
+    letterSpacing: 1,
+    textTransform: "uppercase",
+  },
+  clearButtonText: {
+    fontSize: 10,
+    fontWeight: "700",
+  },
+  filterButtonsGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  filterPill: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 9999,
+    borderWidth: 1,
+  },
+  filterPillText: {
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  playerFilterGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  playerFilterButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 9999,
+    borderWidth: 1,
+  },
+  playerFilterBadge: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  playerFilterBadgeText: {
+    fontSize: 10,
+    fontWeight: "700",
+  },
+  playerFilterName: {
+    fontSize: 12,
+    fontWeight: "700",
   },
   // Player Selection Modal
   playerModal: {

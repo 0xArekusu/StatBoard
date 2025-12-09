@@ -17,8 +17,14 @@ import {
   TouchableOpacity,
   SafeAreaView,
   Modal,
+  BackHandler,
 } from "react-native";
-import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
+import {
+  useNavigation,
+  useRoute,
+  RouteProp,
+  useFocusEffect,
+} from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { Match, Team } from "../src/models/types";
 import { useTheme } from "../src/contexts/ThemeContext";
@@ -87,6 +93,24 @@ export default function MatchDetailsScreen() {
     Team.MY_TEAM
   );
   const [viewPlayer, setViewPlayer] = useState<PlayerStats | null>(null);
+
+  // Intercept hardware back button when coming from live match
+  useFocusEffect(
+    React.useCallback(() => {
+      if (fromLiveMatch) {
+        const onBackPress = () => {
+          // Navigate to Dashboard instead of going back
+          navigation.navigate("Dashboard" as never);
+          return true; // Prevent default back behavior
+        };
+
+        BackHandler.addEventListener("hardwareBackPress", onBackPress);
+
+        return () =>
+          BackHandler.removeEventListener("hardwareBackPress", onBackPress);
+      }
+    }, [fromLiveMatch, navigation])
+  );
 
   // Calculer les statistiques des joueurs
   const calculateStats = (teamFilter: TeamFilter): PlayerStats[] => {
@@ -532,7 +556,11 @@ export default function MatchDetailsScreen() {
               {match.opponent_score}
             </Text>
             {!isWin && (
-              <Ionicons name="trophy" size={16} color={BRAND_COLORS[500]} />
+              <Ionicons
+                name="trophy-outline"
+                size={25}
+                color={BRAND_COLORS[500]}
+              />
             )}
           </View>
         </View>

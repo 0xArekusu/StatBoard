@@ -19,116 +19,186 @@ type EventType =
   | "SUBSTITUTION"
   | "POINT";
 
+type FilterMode = "ALL" | "SHOOTING" | "REBOUNDS" | "FOULS" | "TURNOVERS" | "BLOCKS" | "STEALS";
+
 interface MatchActionGridProps {
   onAction: (type: EventType, value?: number) => void;
   isDark: boolean;
+  filterMode?: FilterMode;
 }
 
-export const MatchActionGrid: React.FC<MatchActionGridProps> = ({ onAction, isDark }) => (
+export const MatchActionGrid: React.FC<MatchActionGridProps> = ({ onAction, isDark, filterMode = "ALL" }) => {
+  const shouldShowAction = (actionType: string): boolean => {
+    if (filterMode === "ALL") return true;
+
+    if (filterMode === "SHOOTING") {
+      return ["POINT_1", "POINT_2", "POINT_3", "MISS_1", "MISS_2", "MISS_3"].includes(actionType);
+    }
+
+    if (filterMode === "REBOUNDS") {
+      return ["REBOUND_DEF", "REBOUND_OFF"].includes(actionType);
+    }
+
+    if (filterMode === "FOULS") {
+      return actionType === "FOUL";
+    }
+
+    if (filterMode === "TURNOVERS") {
+      return actionType === "TURNOVER";
+    }
+
+    if (filterMode === "BLOCKS") {
+      return actionType === "BLOCK";
+    }
+
+    if (filterMode === "STEALS") {
+      return actionType === "STEAL";
+    }
+
+    return true;
+  };
+
+  return (
   <View style={styles.actionGrid}>
     {/* Row 1: Scoring Positive */}
-    <View style={styles.actionRow}>
-      <ActionButton
-        onPress={() => onAction("POINT_1", 1)}
-        label="+1"
-        sub="Lancer"
-        color={STATUS_COLORS.success}
-      />
-      <ActionButton
-        onPress={() => onAction("POINT_2", 2)}
-        label="+2"
-        sub="Points"
-        color="#4ade80"
-      />
-      <ActionButton
-        onPress={() => onAction("POINT_3", 3)}
-        label="+3"
-        sub="Points"
-        color="#86efac"
-      />
-    </View>
+    {(shouldShowAction("POINT_1") || shouldShowAction("POINT_2") || shouldShowAction("POINT_3")) && (
+      <View style={styles.actionRow}>
+        {shouldShowAction("POINT_1") && (
+          <ActionButton
+            onPress={() => onAction("POINT_1", 1)}
+            label="+1"
+            sub="Lancer"
+            color={STATUS_COLORS.success}
+          />
+        )}
+        {shouldShowAction("POINT_2") && (
+          <ActionButton
+            onPress={() => onAction("POINT_2", 2)}
+            label="+2"
+            sub="Points"
+            color="#4ade80"
+          />
+        )}
+        {shouldShowAction("POINT_3") && (
+          <ActionButton
+            onPress={() => onAction("POINT_3", 3)}
+            label="+3"
+            sub="Points"
+            color="#86efac"
+          />
+        )}
+      </View>
+    )}
 
     {/* Row 2: Scoring Negative (Misses) */}
-    <View style={[styles.actionRow, { height: 64 }]}>
-      <ActionButton
-        onPress={() => onAction("MISS_1", 0)}
-        label="Raté"
-        sub="Lancer"
-        color={isDark ? SLATE_COLORS[800] : SLATE_COLORS[200]}
-        textColor="#ef4444"
-      />
-      <ActionButton
-        onPress={() => onAction("MISS_2", 0)}
-        label="Raté"
-        sub="2 Pts"
-        color={isDark ? SLATE_COLORS[800] : SLATE_COLORS[200]}
-        textColor="#ef4444"
-      />
-      <ActionButton
-        onPress={() => onAction("MISS_3", 0)}
-        label="Raté"
-        sub="3 Pts"
-        color={isDark ? SLATE_COLORS[800] : SLATE_COLORS[200]}
-        textColor="#ef4444"
-      />
-    </View>
+    {(shouldShowAction("MISS_1") || shouldShowAction("MISS_2") || shouldShowAction("MISS_3")) && (
+      <View style={[styles.actionRow, { height: 64 }]}>
+        {shouldShowAction("MISS_1") && (
+          <ActionButton
+            onPress={() => onAction("MISS_1", 0)}
+            label="Raté"
+            sub="Lancer"
+            color={isDark ? SLATE_COLORS[800] : SLATE_COLORS[200]}
+            textColor="#ef4444"
+          />
+        )}
+        {shouldShowAction("MISS_2") && (
+          <ActionButton
+            onPress={() => onAction("MISS_2", 0)}
+            label="Raté"
+            sub="2 Pts"
+            color={isDark ? SLATE_COLORS[800] : SLATE_COLORS[200]}
+            textColor="#ef4444"
+          />
+        )}
+        {shouldShowAction("MISS_3") && (
+          <ActionButton
+            onPress={() => onAction("MISS_3", 0)}
+            label="Raté"
+            sub="3 Pts"
+            color={isDark ? SLATE_COLORS[800] : SLATE_COLORS[200]}
+            textColor="#ef4444"
+          />
+        )}
+      </View>
+    )}
 
     {/* Row 3: Rebounds */}
-    <View style={[styles.actionRow, { height: 80 }]}>
-      <ActionButton
-        onPress={() => onAction("REBOUND_DEF")}
-        label="REB DEF"
-        sub="Défensif"
-        color="#2563eb"
-      />
-      <ActionButton
-        onPress={() => onAction("REBOUND_OFF")}
-        label="REB OFF"
-        sub="Offensif"
-        color="#06b6d4"
-      />
-    </View>
+    {(shouldShowAction("REBOUND_DEF") || shouldShowAction("REBOUND_OFF")) && (
+      <View style={[styles.actionRow, { height: 80 }]}>
+        {shouldShowAction("REBOUND_DEF") && (
+          <ActionButton
+            onPress={() => onAction("REBOUND_DEF")}
+            label="REB DEF"
+            sub="Défensif"
+            color="#2563eb"
+          />
+        )}
+        {shouldShowAction("REBOUND_OFF") && (
+          <ActionButton
+            onPress={() => onAction("REBOUND_OFF")}
+            label="REB OFF"
+            sub="Offensif"
+            color="#06b6d4"
+          />
+        )}
+      </View>
+    )}
 
     {/* Row 4: Other Stats */}
-    <View style={styles.actionRow}>
-      <ActionButton
-        onPress={() => onAction("ASSIST")}
-        label="PASSE D"
-        sub="Assist"
-        color="#6366f1"
-      />
-      <ActionButton
-        onPress={() => onAction("STEAL")}
-        label="INTERC"
-        sub="Vol"
-        color="#8b5cf6"
-      />
-      <View style={styles.miniColumn}>
-        <ActionButton
-          onPress={() => onAction("BLOCK")}
-          label="CONTRE"
-          color={SLATE_COLORS[600]}
-          textSize={14}
-        />
-        <ActionButton
-          onPress={() => onAction("FOUL")}
-          label="FAUTE"
-          color="#b91c1c"
-          textSize={14}
-        />
+    {(shouldShowAction("ASSIST") || shouldShowAction("STEAL") || shouldShowAction("BLOCK") || shouldShowAction("FOUL")) && (
+      <View style={styles.actionRow}>
+        {shouldShowAction("ASSIST") && (
+          <ActionButton
+            onPress={() => onAction("ASSIST")}
+            label="PASSE D"
+            sub="Assist"
+            color="#6366f1"
+          />
+        )}
+        {shouldShowAction("STEAL") && (
+          <ActionButton
+            onPress={() => onAction("STEAL")}
+            label="INTERC"
+            sub="Vol"
+            color="#8b5cf6"
+          />
+        )}
+        {(shouldShowAction("BLOCK") || shouldShowAction("FOUL")) && (
+          <View style={styles.miniColumn}>
+            {shouldShowAction("BLOCK") && (
+              <ActionButton
+                onPress={() => onAction("BLOCK")}
+                label="CONTRE"
+                color={SLATE_COLORS[600]}
+                textSize={14}
+              />
+            )}
+            {shouldShowAction("FOUL") && (
+              <ActionButton
+                onPress={() => onAction("FOUL")}
+                label="FAUTE"
+                color="#b91c1c"
+                textSize={14}
+              />
+            )}
+          </View>
+        )}
       </View>
-    </View>
+    )}
 
     {/* Row 5: Turnover */}
-    <View style={[styles.actionRow, { height: 56 }]}>
-      <ActionButton
-        onPress={() => onAction("TURNOVER")}
-        label="BALLE PERDUE"
-        color="#ea580c"
-      />
-    </View>
+    {shouldShowAction("TURNOVER") && (
+      <View style={[styles.actionRow, { height: 56 }]}>
+        <ActionButton
+          onPress={() => onAction("TURNOVER")}
+          label="BALLE PERDUE"
+          color="#ea580c"
+        />
+      </View>
+    )}
   </View>
-);
+);};
 
 interface ActionButtonProps {
   onPress: () => void;

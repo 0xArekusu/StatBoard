@@ -86,7 +86,7 @@ type WorkflowStep =
   | "SELECT_PLAYER"
   | "SELECT_ACTION_FROM_COURT"
   | "SUBSTITUTION";
-type FilterMode = "ALL" | "SCORING" | "DEFENSE";
+type FilterMode = "ALL" | "SHOOTING" | "REBOUNDS" | "FOULS" | "TURNOVERS" | "BLOCKS" | "STEALS";
 
 // Mock players for fallback
 const MOCK_ROSTER: Player[] = [
@@ -337,6 +337,7 @@ export default function LiveMatchScreen({
   // Toolbar State
   const [showMarkers, setShowMarkers] = useState(true);
   const [filterMode, setFilterMode] = useState<FilterMode>("ALL");
+  const [selectedPlayerIds, setSelectedPlayerIds] = useState<string[]>([]);
   const [isGeneratingMockData, setIsGeneratingMockData] = useState(false);
 
   // Workflow State
@@ -1645,6 +1646,10 @@ export default function LiveMatchScreen({
 
         // Sync to Supabase if eligible (auth + subscription)
         try {
+          // Hide end confirm modal and show sync modal
+          setShowEndConfirm(false);
+          setIsSyncing(true);
+
           const { MatchSyncService } = await import(
             "../src/services/api/MatchSyncService"
           );
@@ -1663,9 +1668,6 @@ export default function LiveMatchScreen({
               matchId: currentMatchId,
             });
 
-            // Show sync modal
-            setIsSyncing(true);
-
             const syncResult = await syncService.syncMatch(currentMatchId);
 
             // Hide sync modal
@@ -1681,11 +1683,83 @@ export default function LiveMatchScreen({
                 }
               );
 
-              // Navigate to match details screen
-              navigation.navigate(ROUTES.MATCH_DETAILS as never, {
-                matchId: syncResult.matchId,
-                fromSync: true,
-              });
+              // Fetch the synced match data from Supabase (same way as HistoryScreen)
+              try {
+                // Fetch match
+                const { data: supabaseMatch, error: matchError } = await supabase
+                  .from("matches")
+                  .select("*")
+                  .eq("id", syncResult.matchId)
+                  .single();
+
+                if (matchError) throw matchError;
+
+                // Fetch players for this match
+                const { data: matchPlayers, error: playersError } = await supabase
+                  .from("match_players")
+                  .select("*")
+                  .eq("match_id", syncResult.matchId);
+
+                if (playersError) throw playersError;
+
+                // Convert match players to expected format
+                const players = matchPlayers?.map((mp: any) => ({
+                  id: mp.player_number,
+                  num: mp.player_number,
+                  name: mp.player_name,
+                  team: mp.team,
+                  isSubstitute: !mp.is_starter,
+                  photoUrl: mp.photo_url,
+                })) || [];
+
+                // Extract actions from match_players
+                const actionDataList: any[] = [];
+                matchPlayers?.forEach((mp: any) => {
+                  if (mp.actions && Array.isArray(mp.actions)) {
+                    const playerActions = mp.actions.map((action: any) => ({
+                      type: action.action_type,
+                      specification: action.specification,
+                      points: action.points,
+                      player: mp.player_number,
+                      team: mp.team,
+                      timestamp: new Date(action.timestamp),
+                      period_number: action.period_number,
+                      time_in_period: action.time_in_period,
+                      position: { x: 0, y: 0 },
+                      semanticPosition: {
+                        xNormalized: action.semantic_x,
+                        yNormalized: action.semantic_y,
+                      },
+                    }));
+                    actionDataList.push(...playerActions);
+                  }
+                });
+
+                logInfo("LiveMatchScreen", "✅ Synced match data fetched", {
+                  matchId: syncResult.matchId,
+                  playersCount: players.length,
+                  actionsCount: actionDataList.length,
+                });
+
+                // Navigate to match details screen with full data (same format as HistoryScreen)
+                setTimeout(() => {
+                  navigation.navigate(ROUTES.MATCH_DETAILS as never, {
+                    match: supabaseMatch,
+                    actions: actionDataList,
+                    players: players,
+                    fromLiveMatch: true, // Flag to hide back button
+                  } as never);
+                }, 300);
+              } catch (fetchError) {
+                logError("LiveMatchScreen", "❌ Failed to fetch synced match", {
+                  matchId: syncResult.matchId,
+                  error: fetchError,
+                });
+                // Navigate to dashboard if fetch fails
+                setTimeout(() => {
+                  navigation.navigate(ROUTES.MAIN_TABS as never);
+                }, 100);
+              }
             } else {
               logWarn("LiveMatchScreen", "⚠️ Match sync failed", {
                 matchId: currentMatchId,
@@ -1693,7 +1767,9 @@ export default function LiveMatchScreen({
               });
 
               // Navigate to dashboard even if sync failed
-              navigation.navigate(ROUTES.MAIN_TABS as never);
+              setTimeout(() => {
+                navigation.navigate(ROUTES.MAIN_TABS as never);
+              }, 100);
             }
           } else {
             logInfo("LiveMatchScreen", "ℹ️ Match not synced", {
@@ -1701,8 +1777,13 @@ export default function LiveMatchScreen({
               reason: eligibility.reason,
             });
 
+            // Hide sync modal
+            setIsSyncing(false);
+
             // Navigate to dashboard if not syncing
-            navigation.navigate(ROUTES.MAIN_TABS as never);
+            setTimeout(() => {
+              navigation.navigate(ROUTES.MAIN_TABS as never);
+            }, 100);
           }
         } catch (syncError) {
           // Don't fail match end if sync fails - log and continue
@@ -1710,15 +1791,27 @@ export default function LiveMatchScreen({
             matchId: currentMatchId,
             error: syncError instanceof Error ? syncError.message : syncError,
           });
+
+          // Hide sync modal in case of error
+          setIsSyncing(false);
+
+          // Navigate to dashboard on error
+          setTimeout(() => {
+            navigation.navigate(ROUTES.MAIN_TABS as never);
+          }, 100);
         }
       }
 
       setMatch({ ...match, status: MatchStatus.COMPLETED });
-      navigation.goBack();
+      // Don't navigate here - navigation is handled in sync logic above
     } catch (error) {
       logError("LiveMatchScreen", "❌ Failed to end match", error);
-      // Still navigate back even if save fails
-      navigation.goBack();
+      // Hide sync modal in case of error
+      setIsSyncing(false);
+      // Navigate back if save fails
+      setTimeout(() => {
+        navigation.goBack();
+      }, 100);
     }
   };
 
@@ -2145,7 +2238,7 @@ export default function LiveMatchScreen({
             style={styles.gridScroll}
             contentContainerStyle={styles.gridContent}
           >
-            <MatchActionGrid onAction={handleActionClick} isDark={isDark} />
+            <MatchActionGrid onAction={handleActionClick} isDark={isDark} filterMode={filterMode} />
           </ScrollView>
         )}
 
@@ -2155,6 +2248,7 @@ export default function LiveMatchScreen({
             events={match.events}
             showMarkers={showMarkers}
             filterMode={filterMode}
+            selectedPlayerIds={selectedPlayerIds}
             isDark={isDark}
             clubLogoUrl={match.clubLogoUrl}
             courtBackgroundColor={match.courtBackgroundColor}
@@ -2291,6 +2385,11 @@ export default function LiveMatchScreen({
         surfaceColor={surfaceColor}
         textPrimary={textPrimary}
         borderColor={borderColor}
+        homeRoster={homeRoster}
+        opponentRoster={opponentRoster}
+        trackOpponentStats={match.trackOpponentStats}
+        selectedPlayers={selectedPlayerIds}
+        onPlayerSelectionChange={setSelectedPlayerIds}
       />
 
       {/* Sync Modal */}
@@ -2418,6 +2517,7 @@ interface CourtViewProps {
   events: MatchEvent[];
   showMarkers: boolean;
   filterMode: FilterMode;
+  selectedPlayerIds: string[];
   isDark: boolean;
   clubLogoUrl: string | null;
   courtBackgroundColor: string;
@@ -2429,6 +2529,7 @@ const CourtView: React.FC<CourtViewProps> = ({
   events,
   showMarkers,
   filterMode,
+  selectedPlayerIds,
   isDark,
   clubLogoUrl,
   courtBackgroundColor,
@@ -2446,13 +2547,26 @@ const CourtView: React.FC<CourtViewProps> = ({
 
   const filteredEvents = events?.filter((e: MatchEvent) => {
     if (!e.coordinates) return false;
+
+    // Filter by player if selection exists
+    if (selectedPlayerIds.length > 0 && e.playerId) {
+      if (!selectedPlayerIds.includes(e.playerId)) return false;
+    }
+
+    // Filter by action type
     if (filterMode === "ALL") return true;
-    if (filterMode === "SCORING")
+    if (filterMode === "SHOOTING")
       return e.type.includes("POINT") || e.type.includes("MISS");
-    if (filterMode === "DEFENSE")
-      return ["REBOUND_OFF", "REBOUND_DEF", "STEAL", "BLOCK", "FOUL"].includes(
-        e.type
-      );
+    if (filterMode === "REBOUNDS")
+      return ["REBOUND_OFF", "REBOUND_DEF"].includes(e.type);
+    if (filterMode === "FOULS")
+      return e.type === "FOUL";
+    if (filterMode === "TURNOVERS")
+      return e.type === "TURNOVER";
+    if (filterMode === "BLOCKS")
+      return e.type === "BLOCK";
+    if (filterMode === "STEALS")
+      return e.type === "STEAL";
     return true;
   });
 
