@@ -8,7 +8,6 @@ import {
   ActivityIndicator,
   Image,
   BackHandler,
-  Modal,
   Alert,
 } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
@@ -16,13 +15,7 @@ import { Picker } from "@react-native-picker/picker";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useTheme } from "../src/contexts/ThemeContext";
 import { useAuth } from "../src/contexts/AuthContext";
-import {
-  SLATE_COLORS,
-  BRAND_COLORS,
-  COMMON_COLORS,
-  SHADOW_COLOR,
-  OPACITY,
-} from "../src/theme";
+import { SLATE_COLORS, BRAND_COLORS, COMMON_COLORS } from "../src/theme";
 import { MatchRepository } from "../src/services/database/MatchRepository";
 import { ActionRepository } from "../src/services/database/ActionRepository";
 import { ServiceFactory } from "../services/ServiceFactory";
@@ -31,6 +24,9 @@ import { Club } from "../models/Club";
 import { Team, TeamStatus } from "../models/Team";
 import { supabase } from "../src/config/supabase";
 import JerseyIconSimple from "../components/icons/JerseySimpleIcon";
+import DashboardStatsCards from "../components/dashboard/DashboardStatsCards";
+import DashboardResumeMatchModal from "../components/dashboard/DashboardResumeMatchModal";
+import DashboardRecentMatches from "../components/dashboard/DashboardRecentMatches";
 import { ROUTES } from "../constants/routes";
 
 /**
@@ -91,29 +87,30 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
     return () => backHandler.remove();
   }, []);
 
-  // Reload dashboard data when user changes (login/logout/switch account)
-  useEffect(() => {
-    console.log("🔄 DashboardScreen: User changed, reloading dashboard", {
-      userId: user?.id,
-      isGuest,
-    });
-
-    // Reset state when user changes
-    setClub(null);
-    setTeams([]);
-    setActiveTeamId(null);
-    setMatches([]);
-
-    // Load fresh data
-    loadDashboardData();
-  }, [user?.id]); // Re-run when user ID changes
-
-  // Reload dashboard data when screen comes into focus
+  /**
+   * Reload dashboard data when:
+   * - Screen comes into focus (navigation)
+   * - User changes (login/logout/switch account)
+   *
+   * Using useFocusEffect instead of useEffect to avoid double loading
+   * when both screen focus and user ID change simultaneously
+   */
   useFocusEffect(
     useCallback(() => {
-      console.log("🔄 DashboardScreen: Screen focused, reloading data");
+      console.log("🔄 DashboardScreen: Screen focused or user changed", {
+        userId: user?.id,
+        isGuest,
+      });
+
+      // Reset state when user changes
+      setClub(null);
+      setTeams([]);
+      setActiveTeamId(null);
+      setMatches([]);
+
+      // Load fresh data
       loadDashboardData();
-    }, [user?.id])
+    }, [user?.id, isGuest])
   );
 
   // Check for active match when team changes
@@ -604,160 +601,23 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
   return (
     <>
       {/* Resume Match Modal */}
-      <Modal
+      <DashboardResumeMatchModal
         visible={!!liveMatchToResume}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={() => setLiveMatchToResume(null)}
+        match={liveMatchToResume}
+        colors={colors}
+        isNewMatchFlow={isNewMatchFlow}
+        onResume={handleResumeMatch}
+        onAbandon={handleAbandonMatch}
+        onNewMatch={handleNewMatchConfirm}
+        onClose={() => {
+          setLiveMatchToResume(null);
+          setIsNewMatchFlow(false);
+        }}
+      />
+
+      <ScrollView
+        style={[styles.container, { backgroundColor: colors.background }]}
       >
-        <View style={styles.modalOverlay}>
-          <View
-            style={[
-              styles.modalContent,
-              {
-                backgroundColor: isDark
-                  ? SLATE_COLORS[900]
-                  : COMMON_COLORS.white,
-              },
-            ]}
-          >
-            <View
-              style={[
-                styles.modalIcon,
-                {
-                  backgroundColor: isDark
-                    ? `${colors.error}4D`
-                    : `${colors.error}1A`,
-                },
-              ]}
-            >
-              <MaterialCommunityIcons
-                name="basketball"
-                size={32}
-                color={colors.error}
-              />
-            </View>
-
-            <Text style={[styles.modalTitle, { color: colors.text.primary }]}>
-              Match en cours détecté !
-            </Text>
-
-            <Text style={[styles.modalDescription, { color: colors.text.secondary }]}>
-              Il semble que le match contre{" "}
-              <Text style={{ fontWeight: "bold" }}>
-                {liveMatchToResume?.opponent_name}
-              </Text>{" "}
-              ne soit pas terminé.
-            </Text>
-
-            <TouchableOpacity
-              style={[
-                styles.modalPrimaryButton,
-                { backgroundColor: BRAND_COLORS[600] },
-              ]}
-              onPress={handleResumeMatch}
-            >
-              <MaterialCommunityIcons
-                name="play-circle"
-                size={20}
-                color={COMMON_COLORS.white}
-              />
-              <Text
-                style={[
-                  styles.modalPrimaryButtonText,
-                  { color: COMMON_COLORS.white },
-                ]}
-              >
-                Reprendre le match
-              </Text>
-            </TouchableOpacity>
-
-            {/* Show "Nouveau match" button only when clicked from "Nouveau match" button */}
-            {isNewMatchFlow ? (
-              <TouchableOpacity
-                style={[
-                  styles.modalSecondaryButton,
-                  {
-                    backgroundColor: isDark
-                      ? SLATE_COLORS[800]
-                      : COMMON_COLORS.white,
-                    borderColor: colors.border,
-                  },
-                ]}
-                onPress={handleNewMatchConfirm}
-              >
-                <MaterialCommunityIcons
-                  name="plus-circle"
-                  size={20}
-                  color={BRAND_COLORS[600]}
-                />
-                <Text
-                  style={[
-                    styles.modalSecondaryButtonText,
-                    { color: BRAND_COLORS[600] },
-                  ]}
-                >
-                  Nouveau match
-                </Text>
-              </TouchableOpacity>
-            ) : (
-              <TouchableOpacity
-                style={[
-                  styles.modalSecondaryButton,
-                  {
-                    backgroundColor: isDark
-                      ? SLATE_COLORS[800]
-                      : COMMON_COLORS.white,
-                    borderColor: colors.border,
-                  },
-                ]}
-                onPress={handleAbandonMatch}
-              >
-                <MaterialCommunityIcons
-                  name="delete-forever"
-                  size={20}
-                  color={colors.error}
-                />
-                <Text
-                  style={[
-                    styles.modalSecondaryButtonText,
-                    { color: colors.error },
-                  ]}
-                >
-                  Abandonner le match
-                </Text>
-              </TouchableOpacity>
-            )}
-
-            <TouchableOpacity
-              style={[
-                styles.modalSecondaryButton,
-                {
-                  backgroundColor: isDark
-                    ? SLATE_COLORS[800]
-                    : COMMON_COLORS.white,
-                  borderColor: colors.border,
-                },
-              ]}
-              onPress={() => {
-                setLiveMatchToResume(null);
-                setIsNewMatchFlow(false);
-              }}
-            >
-              <Text
-                style={[
-                  styles.modalSecondaryButtonText,
-                  { color: colors.text.secondary },
-                ]}
-              >
-                Ignorer pour l'instant
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
-
-      <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
         <View style={styles.content}>
           {/* Header */}
           <View style={styles.header}>
@@ -766,7 +626,9 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
                 Bonjour, {"\n"}
                 <Text style={{ color: BRAND_COLORS[500] }}>{userName}</Text>
               </Text>
-              <Text style={[styles.subGreeting, { color: colors.text.secondary }]}>
+              <Text
+                style={[styles.subGreeting, { color: colors.text.secondary }]}
+              >
                 Prêt pour le match ?
               </Text>
             </View>
@@ -815,7 +677,8 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
                     backgroundColor: isDark
                       ? SLATE_COLORS[800]
                       : SLATE_COLORS[100],
-                    borderColor: club && club.logoUrl ? BRAND_COLORS[500] : colors.border,
+                    borderColor:
+                      club && club.logoUrl ? BRAND_COLORS[500] : colors.border,
                   },
                 ]}
               >
@@ -868,7 +731,12 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
                   ? "Rejoignez ou créez un club"
                   : "Créez votre première équipe"}
               </Text>
-              <Text style={[styles.ctaDescription, { color: colors.text.secondary }]}>
+              <Text
+                style={[
+                  styles.ctaDescription,
+                  { color: colors.text.secondary },
+                ]}
+              >
                 {!club
                   ? "Pour commencer à suivre les statistiques, vous devez associer votre compte à une équipe."
                   : "Vous faites partie d'un club, créez maintenant une équipe pour commencer à suivre vos matchs."}
@@ -972,72 +840,12 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
               )}
 
               {/* Stats Cards */}
-              <View style={styles.statsContainer}>
-                <View
-                  style={[
-                    styles.statCard,
-                    {
-                      backgroundColor: isDark
-                        ? `${SLATE_COLORS[800]}80`
-                        : COMMON_COLORS.white,
-                      borderColor: colors.border,
-                    },
-                  ]}
-                >
-                  <View style={styles.statHeader}>
-                    <MaterialCommunityIcons
-                      name="clock-outline"
-                      size={18}
-                      color={BRAND_COLORS[500]}
-                    />
-                    <Text
-                      style={[styles.statLabel, { color: BRAND_COLORS[500] }]}
-                    >
-                      MATCHS
-                    </Text>
-                  </View>
-                  <Text style={[styles.statValue, { color: colors.text.primary }]}>
-                    {filteredMatches.length}
-                  </Text>
-                  <Text style={[styles.statSubtext, { color: colors.text.secondary }]}>
-                    Cette saison
-                  </Text>
-                </View>
-
-                <View
-                  style={[
-                    styles.statCard,
-                    {
-                      backgroundColor: isDark
-                        ? `${SLATE_COLORS[800]}80`
-                        : COMMON_COLORS.white,
-                      borderColor: colors.border,
-                    },
-                  ]}
-                >
-                  <View style={styles.statHeader}>
-                    <MaterialCommunityIcons
-                      name="trending-up"
-                      size={18}
-                      color={colors.success}
-                    />
-                    <Text style={[styles.statLabel, { color: colors.success }]}>
-                      VICTOIRES
-                    </Text>
-                  </View>
-                  <Text style={[styles.statValue, { color: colors.text.primary }]}>
-                    {wins}{" "}
-                    <Text
-                      style={[styles.statValueSmall, { color: colors.text.secondary }]}
-                    >
-                      / {losses}
-                    </Text>
-                  </Text>
-                  <Text style={[styles.statSubtext, { color: colors.text.secondary }]}>
-                    Ratio V/D
-                  </Text>
-                </View>
-              </View>
+              <DashboardStatsCards
+                totalMatches={filteredMatches.length}
+                wins={wins}
+                losses={losses}
+                colors={colors}
+              />
 
               {/* Action Bar - New Match Button - Only show if user has teams */}
               {teams.length > 0 && (
@@ -1064,163 +872,13 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
               )}
 
               {/* Recent History */}
-              <View style={styles.section}>
-                <View style={styles.sectionHeader}>
-                  <Text style={[styles.sectionTitle, { color: colors.text.primary }]}>
-                    Derniers Matchs
-                  </Text>
-                  <TouchableOpacity
-                    onPress={() => navigation.navigate("History")}
-                  >
-                    <Text
-                      style={[styles.sectionLink, { color: BRAND_COLORS[500] }]}
-                    >
-                      Voir tout
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-
-                <View style={styles.matchesList}>
-                  {recentMatches.length > 0 ? (
-                    recentMatches.map((match, index) => {
-                      const scoreA = match.my_team_score || 0;
-                      const scoreB = match.opponent_score || 0;
-                      const isWin = scoreA > scoreB;
-
-                      return (
-                        <TouchableOpacity
-                          key={`match-${match.id}-${index}`}
-                          style={[
-                            styles.matchCard,
-                            {
-                              backgroundColor: isDark
-                                ? SLATE_COLORS[900]
-                                : COMMON_COLORS.white,
-                              borderColor: colors.border,
-                            },
-                          ]}
-                          onPress={() => loadMatchDetails(match)}
-                          activeOpacity={OPACITY.interaction.low}
-                        >
-                          <View style={styles.matchCardLeft}>
-                            <View
-                              style={[
-                                styles.matchIndicator,
-                                {
-                                  backgroundColor: isWin
-                                    ? colors.success
-                                    : colors.error,
-                                },
-                              ]}
-                            />
-                            <View style={styles.matchInfo}>
-                              <View style={styles.matchScoreLine}>
-                                <Text
-                                  style={[
-                                    styles.matchScore,
-                                    { color: colors.text.primary },
-                                  ]}
-                                >
-                                  {scoreA} - {scoreB}
-                                </Text>
-                                <View
-                                  style={[
-                                    styles.matchTeamBadge,
-                                    {
-                                      backgroundColor: isDark
-                                        ? SLATE_COLORS[800]
-                                        : SLATE_COLORS[100],
-                                    },
-                                  ]}
-                                >
-                                  <Text
-                                    style={[
-                                      styles.matchTeamBadgeText,
-                                      { color: colors.text.secondary },
-                                    ]}
-                                  >
-                                    {match.my_team_name || "Nous"}
-                                  </Text>
-                                </View>
-                              </View>
-                              <Text
-                                style={[
-                                  styles.matchOpponent,
-                                  { color: colors.text.secondary },
-                                ]}
-                                numberOfLines={1}
-                              >
-                                vs {match.opponent_name}
-                              </Text>
-                            </View>
-                          </View>
-
-                          <View style={styles.matchCardRight}>
-                            <Text
-                              style={[
-                                styles.matchDate,
-                                { color: SLATE_COLORS[400] },
-                              ]}
-                            >
-                              {formatDate(match.ended_at || match.created_at)}
-                            </Text>
-                            <View
-                              style={[
-                                styles.matchResultBadge,
-                                {
-                                  backgroundColor: isWin
-                                    ? isDark
-                                      ? "#10b98133"
-                                      : "#10b9811A"
-                                    : isDark
-                                    ? "#ef444433"
-                                    : "#ef44441A",
-                                },
-                              ]}
-                            >
-                              <Text
-                                style={[
-                                  styles.matchResultText,
-                                  { color: isWin ? colors.success : colors.error },
-                                ]}
-                              >
-                                {isWin ? "VICTOIRE" : "DÉFAITE"}
-                              </Text>
-                            </View>
-                          </View>
-                        </TouchableOpacity>
-                      );
-                    })
-                  ) : (
-                    <View
-                      style={[
-                        styles.emptyState,
-                        {
-                          backgroundColor: isDark
-                            ? `${SLATE_COLORS[900]}80`
-                            : SLATE_COLORS[100],
-                          borderColor: colors.border,
-                        },
-                      ]}
-                    >
-                      <MaterialCommunityIcons
-                        name="calendar-blank"
-                        size={32}
-                        color={colors.text.secondary}
-                        style={{ opacity: OPACITY.disabled - 0.1 }}
-                      />
-                      <Text
-                        style={[
-                          styles.emptyStateText,
-                          { color: colors.text.secondary },
-                        ]}
-                      >
-                        Aucun match récent
-                      </Text>
-                    </View>
-                  )}
-                </View>
-              </View>
+              <DashboardRecentMatches
+                matches={recentMatches}
+                colors={colors}
+                onMatchPress={loadMatchDetails}
+                onViewAllPress={() => navigation.navigate("History")}
+                formatDate={formatDate}
+              />
             </>
           )}
         </View>
@@ -1346,40 +1004,6 @@ const styles = StyleSheet.create({
     fontWeight: "500",
     flex: 1,
   },
-  statsContainer: {
-    flexDirection: "row",
-    gap: 16,
-    marginBottom: 16,
-  },
-  statCard: {
-    flex: 1,
-    padding: 16,
-    borderRadius: 16,
-    borderWidth: 1,
-  },
-  statHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    marginBottom: 8,
-  },
-  statLabel: {
-    fontSize: 10,
-    fontWeight: "bold",
-    letterSpacing: 1,
-  },
-  statValue: {
-    fontSize: 24,
-    fontWeight: "900",
-  },
-  statValueSmall: {
-    fontSize: 14,
-    fontWeight: "normal",
-  },
-  statSubtext: {
-    fontSize: 10,
-    marginTop: 2,
-  },
   newMatchButton: {
     flexDirection: "row",
     alignItems: "center",
@@ -1409,164 +1033,5 @@ const styles = StyleSheet.create({
     backgroundColor: `${COMMON_COLORS.white}33`,
     alignItems: "center",
     justifyContent: "center",
-  },
-  section: {
-    marginBottom: 24,
-  },
-  sectionHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 16,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-  },
-  sectionLink: {
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  matchesList: {
-    gap: 12,
-  },
-  matchCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-  },
-  matchCardLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    flex: 1,
-    gap: 16,
-  },
-  matchIndicator: {
-    width: 6,
-    height: 40,
-    borderRadius: 3,
-  },
-  matchInfo: {
-    flex: 1,
-  },
-  matchScoreLine: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    marginBottom: 4,
-  },
-  matchScore: {
-    fontSize: 16,
-    fontWeight: "bold",
-  },
-  matchTeamBadge: {
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
-  matchTeamBadgeText: {
-    fontSize: 10,
-  },
-  matchOpponent: {
-    fontSize: 12,
-  },
-  matchCardRight: {
-    alignItems: "flex-end",
-  },
-  matchDate: {
-    fontSize: 10,
-    fontWeight: "bold",
-    textTransform: "uppercase",
-    letterSpacing: 1,
-    marginBottom: 4,
-  },
-  matchResultBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-  matchResultText: {
-    fontSize: 12,
-    fontWeight: "bold",
-  },
-  emptyState: {
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 32,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderStyle: "dashed",
-  },
-  emptyStateText: {
-    fontSize: 14,
-    marginTop: 8,
-  },
-  // Modal styles
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: `${SHADOW_COLOR}CC`,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 24,
-  },
-  modalContent: {
-    width: "100%",
-    maxWidth: 400,
-    borderRadius: 16,
-    padding: 24,
-    shadowColor: SHADOW_COLOR,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 16,
-    elevation: 8,
-  },
-  modalIcon: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    alignItems: "center",
-    justifyContent: "center",
-    alignSelf: "center",
-    marginBottom: 16,
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    textAlign: "center",
-    marginBottom: 8,
-  },
-  modalDescription: {
-    fontSize: 14,
-    textAlign: "center",
-    marginBottom: 32,
-    lineHeight: 20,
-  },
-  modalPrimaryButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 12,
-    borderRadius: 12,
-    marginBottom: 12,
-    gap: 8,
-  },
-  modalPrimaryButtonText: {
-    fontSize: 16,
-    fontWeight: "bold",
-  },
-  modalSecondaryButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 12,
-    borderRadius: 12,
-    borderWidth: 1,
-  },
-  modalSecondaryButtonText: {
-    fontSize: 14,
-    fontWeight: "bold",
   },
 });
