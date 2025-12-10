@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   StyleSheet,
   ImageBackground,
-  Dimensions,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -23,8 +22,6 @@ import { ROUTES } from "../constants/routes";
 import Logo from "../components/icons/Logo";
 import GoogleLogo from "../components/icons/GoogleLogo";
 import FacebookLogo from "../components/icons/FacebookLogo";
-
-const { width, height } = Dimensions.get("window");
 
 type ViewType = "landing" | "login" | "register";
 
