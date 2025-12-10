@@ -33,10 +33,33 @@ import { supabase } from "../src/config/supabase";
 import JerseyIconSimple from "../components/icons/JerseySimpleIcon";
 import { ROUTES } from "../constants/routes";
 
+/**
+ * DashboardScreen navigation prop type
+ * Uses generic navigation type until we define full navigation params
+ */
 interface DashboardScreenProps {
-  navigation: any;
+  navigation: {
+    navigate: (route: string, params?: any) => void;
+    goBack: () => void;
+    replace: (route: string, params?: any) => void;
+  };
 }
 
+/**
+ * DashboardScreen - Main dashboard view displaying:
+ * - User greeting and header with theme toggle, logout, and club logo
+ * - CTA card for club/team setup (if not configured)
+ * - Team selector (for users with multiple teams)
+ * - Quick stats (total matches, wins/losses ratio)
+ * - "New Match" button
+ * - Recent matches list (last 3 completed matches)
+ *
+ * Features:
+ * - Displays matches from both local SQLite and Supabase (for authenticated users)
+ * - Detects and prompts to resume unfinished matches
+ * - Supports guest mode with local-only data
+ * - Auto-reloads on screen focus and user changes
+ */
 export default function DashboardScreen({ navigation }: DashboardScreenProps) {
   const { colors, isDark, setThemeMode } = useTheme();
   const { user, signOut } = useAuth();
@@ -107,6 +130,15 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
     checkForActiveMatch();
   }, [activeTeamId]);
 
+  /**
+   * Loads all dashboard data including:
+   * - Active/unfinished matches
+   * - Local matches from SQLite (non-synced)
+   * - Server matches from Supabase (for authenticated users)
+   * - User's clubs and teams
+   *
+   * Merges local and server data for comprehensive view
+   */
   const loadDashboardData = async () => {
     try {
       setLoading(true);
@@ -277,11 +309,18 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
     }
   };
 
+  /**
+   * Signs out the current user and navigates to Auth screen
+   */
   const handleSignOut = async () => {
     await signOut();
     navigation.navigate("Auth");
   };
 
+  /**
+   * Resumes an active/unfinished match
+   * Navigates to LiveMatch screen with the match ID
+   */
   const handleResumeMatch = () => {
     if (liveMatchToResume) {
       // Navigate to LiveMatch with the resume data
@@ -291,6 +330,10 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
     }
   };
 
+  /**
+   * Abandons an active match after confirmation
+   * Deletes the match and all associated data from the database
+   */
   const handleAbandonMatch = async () => {
     if (!liveMatchToResume) return;
 
@@ -331,6 +374,11 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
     );
   };
 
+  /**
+   * Handles "New Match" button click
+   * Checks for active matches and shows modal if one exists
+   * Otherwise navigates to NewMatch screen
+   */
   const handleNewMatchClick = async () => {
     // Check if there's an active match
     const matchRepo = new MatchRepository();
@@ -346,6 +394,10 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
     }
   };
 
+  /**
+   * Confirms abandoning active match to create a new one
+   * Shows confirmation dialog and navigates to NewMatch screen if confirmed
+   */
   const handleNewMatchConfirm = async () => {
     if (!liveMatchToResume) return;
 
@@ -386,6 +438,11 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
     );
   };
 
+  /**
+   * Formats a date string to French locale (e.g., "15 janv. 2025")
+   * @param dateString - ISO date string
+   * @returns Formatted date string
+   */
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString("fr-FR", {
@@ -429,9 +486,102 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
 
   const activeTeamName = teams.find((t) => t.id === activeTeamId)?.name;
 
+  /**
+   * Toggles between light and dark theme
+   */
   const handleToggleTheme = () => {
     const nextMode = isDark ? "light" : "dark";
     setThemeMode(nextMode);
+  };
+
+  /**
+   * Loads match details (actions and players) from either Supabase or local SQLite
+   * @param match - The match to load details for
+   */
+  const loadMatchDetails = async (match: Match) => {
+    try {
+      const matchId = (match as any).supabase_id || match.id;
+      const isUUID = typeof matchId === "string" && matchId.includes("-");
+
+      let actionDataList: any[] = [];
+      let players: any[] = [];
+
+      if (isUUID) {
+        // Load from Supabase - get match_players with actions embedded
+        const { data: matchPlayers, error } = await supabase
+          .from("match_players")
+          .select("*")
+          .eq("match_id", matchId);
+
+        if (error) {
+          console.error("Error loading match players:", error);
+          return;
+        }
+
+        if (matchPlayers) {
+          // Convert match players to expected format
+          players = matchPlayers.map((mp: any) => ({
+            id: mp.player_number,
+            num: mp.player_number,
+            name: mp.player_name,
+            team: mp.team,
+            isSubstitute: !mp.is_starter,
+            photoUrl: mp.photo_url,
+          }));
+
+          // Extract actions from match_players
+          matchPlayers.forEach((mp: any) => {
+            if (mp.actions && Array.isArray(mp.actions)) {
+              const playerActions = mp.actions.map((action: any) => ({
+                type: action.action_type,
+                specification: action.specification,
+                points: action.points,
+                player: mp.player_number,
+                team: mp.team,
+                timestamp: new Date(action.timestamp),
+                period_number: action.period_number,
+                time_in_period: action.time_in_period,
+                position: { x: 0, y: 0 },
+                semanticPosition: {
+                  xNormalized: action.semantic_x,
+                  yNormalized: action.semantic_y,
+                },
+              }));
+              actionDataList.push(...playerActions);
+            }
+          });
+        }
+      } else {
+        // Load from local SQLite
+        const actionRepo = new ActionRepository();
+        const actions = await actionRepo.getActionsForMatch(Number(matchId));
+
+        // Convert to ActionData format
+        actionDataList = actions.map((action: any) => ({
+          type: action.action_type,
+          specification: action.specification,
+          points: action.points,
+          player: action.player_number,
+          team: action.team,
+          timestamp: new Date(action.timestamp),
+          period_number: action.period_number,
+          time_in_period: action.time_in_period,
+          position: { x: 0, y: 0 },
+          semanticPosition: {
+            xNormalized: action.semantic_x,
+            yNormalized: action.semantic_y,
+          },
+        }));
+      }
+
+      navigation.navigate(ROUTES.MATCH_DETAILS as never, {
+        match,
+        actions: actionDataList,
+        players,
+      });
+    } catch (error) {
+      console.error("Error loading match details:", error);
+    }
   };
 
   if (loading) {
@@ -949,91 +1099,7 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
                               borderColor: colors.border,
                             },
                           ]}
-                          onPress={async () => {
-                            try {
-                              const matchId = (match as any).supabase_id || match.id;
-                              const isUUID = typeof matchId === "string" && matchId.includes("-");
-
-                              let actionDataList: any[] = [];
-                              let players: any[] = [];
-
-                              if (isUUID) {
-                                // Load from Supabase - get match_players with actions embedded
-                                const { data: matchPlayers, error } = await supabase
-                                  .from("match_players")
-                                  .select("*")
-                                  .eq("match_id", matchId);
-
-                                if (error) {
-                                  console.error("Error loading match players:", error);
-                                  return;
-                                }
-
-                                if (matchPlayers) {
-                                  // Convert match players to expected format
-                                  players = matchPlayers.map((mp: any) => ({
-                                    id: mp.player_number,
-                                    num: mp.player_number,
-                                    name: mp.player_name,
-                                    team: mp.team,
-                                    isSubstitute: !mp.is_starter,
-                                    photoUrl: mp.photo_url,
-                                  }));
-
-                                  // Extract actions from match_players
-                                  matchPlayers.forEach((mp: any) => {
-                                    if (mp.actions && Array.isArray(mp.actions)) {
-                                      const playerActions = mp.actions.map((action: any) => ({
-                                        type: action.action_type,
-                                        specification: action.specification,
-                                        points: action.points,
-                                        player: mp.player_number,
-                                        team: mp.team,
-                                        timestamp: new Date(action.timestamp),
-                                        period_number: action.period_number,
-                                        time_in_period: action.time_in_period,
-                                        position: { x: 0, y: 0 },
-                                        semanticPosition: {
-                                          xNormalized: action.semantic_x,
-                                          yNormalized: action.semantic_y,
-                                        },
-                                      }));
-                                      actionDataList.push(...playerActions);
-                                    }
-                                  });
-                                }
-                              } else {
-                                // Load from local SQLite
-                                const actionRepo = new ActionRepository();
-                                const actions = await actionRepo.getActionsForMatch(Number(matchId));
-
-                                // Convert to ActionData format
-                                actionDataList = actions.map((action: any) => ({
-                                  type: action.action_type,
-                                  specification: action.specification,
-                                  points: action.points,
-                                  player: action.player_number,
-                                  team: action.team,
-                                  timestamp: new Date(action.timestamp),
-                                  period_number: action.period_number,
-                                  time_in_period: action.time_in_period,
-                                  position: { x: 0, y: 0 },
-                                  semanticPosition: {
-                                    xNormalized: action.semantic_x,
-                                    yNormalized: action.semantic_y,
-                                  },
-                                }));
-                              }
-
-                              navigation.navigate(ROUTES.MATCH_DETAILS as never, {
-                                match,
-                                actions: actionDataList,
-                                players,
-                              });
-                            } catch (error) {
-                              console.error("Error loading match details:", error);
-                            }
-                          }}
+                          onPress={() => loadMatchDetails(match)}
                           activeOpacity={OPACITY.interaction.low}
                         >
                           <View style={styles.matchCardLeft}>
