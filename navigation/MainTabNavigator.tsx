@@ -9,7 +9,7 @@ import {
   SLATE_COLORS,
   BRAND_COLORS,
   COMMON_COLORS,
-} from "../src/theme/clubDefaults";
+} from "../src/theme";
 import { ROUTES } from "../constants/routes";
 
 import DashboardScreen from "../screens/DashboardScreen";

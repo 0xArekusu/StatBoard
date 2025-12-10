@@ -1,6 +1,6 @@
 import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
-import { SLATE_COLORS, STATUS_COLORS } from "../src/theme/clubDefaults";
+import { SLATE_COLORS, STATUS_COLORS } from "../src/theme";
 
 type EventType =
   | "POINT_1"

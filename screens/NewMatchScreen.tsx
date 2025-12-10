@@ -19,7 +19,7 @@ import {
   COMMON_COLORS,
   UI_COLORS,
   STATUS_COLORS,
-} from "../src/theme/clubDefaults";
+} from "../src/theme";
 import { ServiceFactory } from "../services/ServiceFactory";
 import { supabase } from "../src/config/supabase";
 import { Club } from "../models/Club";

@@ -20,7 +20,7 @@ import {
   SLATE_COLORS,
   BRAND_COLORS,
   COMMON_COLORS,
-} from "../src/theme/clubDefaults";
+} from "../src/theme";
 import { MatchRepository } from "../src/services/database/MatchRepository";
 import { ActionRepository } from "../src/services/database/ActionRepository";
 import { ServiceFactory } from "../services/ServiceFactory";

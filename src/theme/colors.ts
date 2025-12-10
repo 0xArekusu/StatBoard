@@ -1,109 +1,210 @@
 /**
  * Color palette for light and dark themes
  * Organized by semantic meaning for easy theming
+ * Uses SLATE colors for UI elements and BRAND colors for primary actions
  */
+
+// ===========================
+// BASE COLOR PALETTES
+// ===========================
+
+/**
+ * Brand colors (Orange palette)
+ * Used for primary actions, branding, and emphasis
+ */
+export const BRAND_COLORS = {
+  50: "#fff7ed",
+  100: "#ffedd5",
+  500: "#f97316",  // Main brand color
+  600: "#ea580c",
+  900: "#7c2d12",
+} as const;
+
+/**
+ * Slate colors (Gray palette)
+ * Used for backgrounds, borders, text, and neutral UI elements
+ */
+export const SLATE_COLORS = {
+  50: "#f8fafc",
+  100: "#f1f5f9",
+  200: "#e2e8f0",
+  300: "#cbd5e1",
+  400: "#94a3b8",
+  500: "#64748b",
+  600: "#475569",
+  700: "#334155",
+  800: "#1e293b",
+  900: "#0f172a",
+  950: "#020617",
+} as const;
+
+/**
+ * Common utility colors
+ */
+export const COMMON_COLORS = {
+  white: "#FFFFFF",
+  black: "#000000",
+  transparent: "transparent",
+} as const;
+
+// ===========================
+// THEME COLORS
+// ===========================
 
 export const Colors = {
   light: {
     // Primary brand color
-    primary: '#FF6B35',
+    primary: BRAND_COLORS[500],
 
     // Backgrounds
-    background: '#FFFFFF',
-    surface: '#F5F5F5',
-    surfaceVariant: '#F0F0F0',
+    background: COMMON_COLORS.white,
+    surface: SLATE_COLORS[50],
+    surfaceVariant: SLATE_COLORS[100],
 
     // Text colors
     text: {
-      primary: '#000000',
-      secondary: '#666666',
-      tertiary: '#999999',
-      disabled: '#CCCCCC',
+      primary: SLATE_COLORS[900],
+      secondary: SLATE_COLORS[500],
+      tertiary: SLATE_COLORS[400],
+      disabled: SLATE_COLORS[400],
+    },
+
+    // Input colors
+    input: {
+      background: COMMON_COLORS.white,
+      border: SLATE_COLORS[200],
     },
 
     // Button colors
     button: {
-      primary: '#FF6B35',
-      secondary: '#4CAF50',
-      club: '#9C27B0',
-      login: '#007AFF',
-      free: '#FFD700',
+      primary: BRAND_COLORS[500],
+      secondary: SLATE_COLORS[800],
+      club: "#9C27B0",
     },
 
     // Status colors
-    success: '#4CAF50',
-    warning: '#FFC107',
-    error: '#F44336',
-    required: '#ef4444',
-    info: '#2196F3',
+    success: "#4CAF50",
+    warning: "#F57C00",
+    error: "#F44336",
+    required: "#ef4444",
+    info: "#2196F3",
 
     // Court colors (basketball)
     court: {
-      background: '#1a472a',
-      line: '#FFFFFF',
+      background: "#1a472a",
+      line: COMMON_COLORS.white,
     },
 
     // Borders
-    border: '#E0E0E0',
-    borderFocus: '#9C27B0',
+    border: SLATE_COLORS[200],
+    borderFocus: BRAND_COLORS[500],
 
     // Overlays
-    overlay: 'rgba(0, 0, 0, 0.5)',
+    overlay: `rgba(0, 0, 0, 0.5)`,
 
     // Shadow (for elevation)
-    shadow: '#000000',
+    shadow: COMMON_COLORS.black,
   },
 
   dark: {
-    // Primary brand color (slightly lighter for dark mode)
-    primary: '#FF8C42',
+    // Primary brand color
+    primary: BRAND_COLORS[500],
 
     // Backgrounds
-    background: '#121212',
-    surface: '#1E1E1E',
-    surfaceVariant: '#2C2C2C',
+    background: SLATE_COLORS[950],
+    surface: SLATE_COLORS[900],
+    surfaceVariant: SLATE_COLORS[800],
 
     // Text colors
     text: {
-      primary: '#FFFFFF',
-      secondary: '#AAAAAA',
-      tertiary: '#777777',
-      disabled: '#555555',
+      primary: COMMON_COLORS.white,
+      secondary: SLATE_COLORS[400],
+      tertiary: SLATE_COLORS[500],
+      disabled: SLATE_COLORS[600],
     },
 
-    // Button colors (adjusted for dark mode)
+    // Input colors
+    input: {
+      background: SLATE_COLORS[900],
+      border: SLATE_COLORS[800],
+    },
+
+    // Button colors
     button: {
-      primary: '#FF8C42',
-      secondary: '#66BB6A',
-      club: '#BA68C8',
-      login: '#3A9BFF',
-      free: '#FFE55C',
+      primary: BRAND_COLORS[500],
+      secondary: SLATE_COLORS[700],
+      club: "#BA68C8",
     },
 
-    // Status colors (adjusted for dark mode)
-    success: '#66BB6A',
-    warning: '#FFD54F',
-    error: '#EF5350',
-    required: '#ef4444',
-    info: '#42A5F5',
+    // Status colors
+    success: "#66BB6A",
+    warning: "#FFD54F",
+    error: "#EF5350",
+    required: "#ef4444",
+    info: "#42A5F5",
 
     // Court colors (basketball)
     court: {
-      background: '#0d2e1a',
-      line: '#FFFFFF',
+      background: "#0d2e1a",
+      line: COMMON_COLORS.white,
     },
 
     // Borders
-    border: '#333333',
-    borderFocus: '#BA68C8',
+    border: SLATE_COLORS[800],
+    borderFocus: BRAND_COLORS[500],
 
     // Overlays
-    overlay: 'rgba(0, 0, 0, 0.7)',
+    overlay: `rgba(0, 0, 0, 0.7)`,
 
     // Shadow (for elevation)
-    shadow: '#000000',
+    shadow: COMMON_COLORS.black,
   },
-};
+} as const;
+
+// ===========================
+// UI CONSTANTS
+// ===========================
+
+/**
+ * Shadow color used throughout the app
+ */
+export const SHADOW_COLOR = COMMON_COLORS.black;
+
+/**
+ * Opacity constants for UI interactions and overlays
+ */
+export const OPACITY = {
+  gradient: {
+    low: "66",      // 40% opacity - for gradient overlays
+    medium: "CC",   // 80% opacity - for backgrounds and overlays
+    full: "",       // 100% opacity
+  },
+  interaction: {
+    low: 0.7,       // Light touch feedback
+    high: 0.8,      // Standard touch feedback
+  },
+  disabled: 0.6,    // Disabled state
+} as const;
+
+/**
+ * Logo dimensions for different contexts
+ */
+export const LOGO_SIZE = {
+  auth: {
+    width: 240,
+  },
+} as const;
+
+/**
+ * Password validation constants
+ */
+export const PASSWORD_VALIDATION = {
+  minLength: 6,
+} as const;
+
+// ===========================
+// TYPES
+// ===========================
 
 export type ColorScheme = keyof typeof Colors;
 export type ThemeColors = typeof Colors.light;

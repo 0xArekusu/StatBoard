@@ -32,7 +32,7 @@ import {
   BRAND_COLORS,
   SLATE_COLORS,
   COMMON_COLORS,
-} from "../src/theme/clubDefaults";
+} from "../src/theme";
 import BasketballCourtSVG from "../components/BasketballCourtSVG";
 import { PDFExportService } from "../src/services/export/PDFExportService";
 import { Alert } from "react-native";

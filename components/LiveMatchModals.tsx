@@ -13,7 +13,7 @@ import {
   BRAND_COLORS,
   COMMON_COLORS,
   STATUS_COLORS,
-} from "../src/theme/clubDefaults";
+} from "../src/theme";
 import { Player } from "../models/Player";
 import { MatchActionGrid } from "./MatchActionGrid";
 

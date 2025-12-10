@@ -17,7 +17,15 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { useTheme } from "../src/contexts/ThemeContext";
 import { useAuth } from "../src/contexts/AuthContext";
-import { BRAND_COLORS, COMMON_COLORS, SLATE_COLORS } from "../src/theme";
+import {
+  BRAND_COLORS,
+  COMMON_COLORS,
+  SLATE_COLORS,
+  SHADOW_COLOR,
+  OPACITY,
+  LOGO_SIZE,
+  PASSWORD_VALIDATION,
+} from "../src/theme";
 import { ROUTES } from "../constants/routes";
 import Logo from "../components/icons/Logo";
 import GoogleLogo from "../components/icons/GoogleLogo";
@@ -25,6 +33,18 @@ import FacebookLogo from "../components/icons/FacebookLogo";
 
 type ViewType = "landing" | "login" | "register";
 
+/**
+ * AuthScreen - Main authentication screen with three views:
+ * - landing: Initial screen with branding and action buttons
+ * - login: Email/password login form
+ * - register: Registration form with email/password
+ *
+ * Supports multiple authentication methods:
+ * - Guest mode (no authentication)
+ * - Email/Password
+ * - Google OAuth
+ * - Facebook OAuth (placeholder)
+ */
 export default function AuthScreen() {
   const [view, setView] = useState<ViewType>("landing");
   const { colors, isDark } = useTheme();
@@ -49,12 +69,30 @@ export default function AuthScreen() {
     }, [])
   );
 
-  // Guest login
+  // Login / Register View - Dynamic theme colors based on dark mode
+  // IMPORTANT: This useMemo must be called BEFORE any conditional returns to respect React Hooks rules
+  const themeColors = React.useMemo(
+    () => ({
+      formBg: isDark ? SLATE_COLORS[950] : SLATE_COLORS[50],
+      inputBg: isDark ? SLATE_COLORS[900] : COMMON_COLORS.white,
+      inputBorder: isDark ? SLATE_COLORS[800] : SLATE_COLORS[200],
+      textPrimary: isDark ? COMMON_COLORS.white : SLATE_COLORS[900],
+      textSecondary: isDark ? SLATE_COLORS[400] : SLATE_COLORS[500],
+      textDisabled: isDark ? SLATE_COLORS[600] : SLATE_COLORS[400],
+    }),
+    [isDark]
+  );
+
+  /**
+   * Handles guest login - navigates directly to main app without authentication
+   */
   const handleGuestLogin = () => {
     navigation.navigate(ROUTES.MAIN_TABS as never);
   };
 
-  // Email/Password login
+  /**
+   * Handles email/password login with validation
+   */
   const handleLogin = async () => {
     if (!email || !password) {
       Alert.alert("Erreur", "Veuillez remplir tous les champs");
@@ -72,7 +110,10 @@ export default function AuthScreen() {
     }
   };
 
-  // Email/Password registration
+  /**
+   * Handles user registration with email/password
+   * Validates password length and confirmation match
+   */
   const handleRegister = async () => {
     if (!fullName || !email || !password || !confirmPassword) {
       Alert.alert("Erreur", "Veuillez remplir tous les champs");
@@ -84,10 +125,10 @@ export default function AuthScreen() {
       return;
     }
 
-    if (password.length < 6) {
+    if (password.length < PASSWORD_VALIDATION.minLength) {
       Alert.alert(
         "Erreur",
-        "Le mot de passe doit contenir au moins 6 caractères"
+        `Le mot de passe doit contenir au moins ${PASSWORD_VALIDATION.minLength} caractères`
       );
       return;
     }
@@ -103,7 +144,9 @@ export default function AuthScreen() {
     }
   };
 
-  // Google sign in
+  /**
+   * Handles Google OAuth sign-in
+   */
   const handleGoogleSignIn = async () => {
     setLoading(true);
     const { error } = await signInWithGoogle();
@@ -116,7 +159,9 @@ export default function AuthScreen() {
     }
   };
 
-  // Facebook sign in (placeholder)
+  /**
+   * Handles Facebook OAuth sign-in (placeholder - not yet implemented)
+   */
   const handleFacebookSignIn = () => {
     Alert.alert(
       "Bientôt disponible",
@@ -124,6 +169,7 @@ export default function AuthScreen() {
     );
   };
 
+  // Landing view - Initial screen with branding and navigation options
   if (view === "landing") {
     return (
       <ImageBackground
@@ -133,9 +179,9 @@ export default function AuthScreen() {
       >
         <LinearGradient
           colors={[
-            `${SLATE_COLORS[900]}66`, // 40% opacity
-            `${SLATE_COLORS[900]}CC`, // 80% opacity
-            SLATE_COLORS[900], // 100% opacity
+            `${SLATE_COLORS[900]}${OPACITY.gradient.low}`,
+            `${SLATE_COLORS[900]}${OPACITY.gradient.medium}`,
+            `${SLATE_COLORS[900]}${OPACITY.gradient.full}`,
           ]}
           style={styles.overlay}
         >
@@ -143,7 +189,7 @@ export default function AuthScreen() {
             {/* Logo Section */}
             <View style={styles.logoSection}>
               <Logo
-                width={240}
+                width={LOGO_SIZE.auth.width}
                 primaryColor={COMMON_COLORS.black}
                 secondaryColor={COMMON_COLORS.white}
                 ballColor={BRAND_COLORS[500]}
@@ -162,7 +208,7 @@ export default function AuthScreen() {
                   { backgroundColor: BRAND_COLORS[500] },
                 ]}
                 onPress={() => setView("register")}
-                activeOpacity={0.8}
+                activeOpacity={OPACITY.interaction.high}
               >
                 <Text style={styles.primaryButtonText}>Créer un compte</Text>
                 <MaterialCommunityIcons
@@ -175,12 +221,15 @@ export default function AuthScreen() {
               <TouchableOpacity
                 style={styles.secondaryButton}
                 onPress={() => setView("login")}
-                activeOpacity={0.8}
+                activeOpacity={OPACITY.interaction.high}
               >
                 <Text style={styles.secondaryButtonText}>Se connecter</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity onPress={handleGuestLogin} activeOpacity={0.7}>
+              <TouchableOpacity
+                onPress={handleGuestLogin}
+                activeOpacity={OPACITY.interaction.low}
+              >
                 <Text style={styles.guestButtonText}>
                   Essayer gratuitement (Invité)
                 </Text>
@@ -193,17 +242,10 @@ export default function AuthScreen() {
   }
 
   // Login / Register View
-  const formBgColor = isDark ? SLATE_COLORS[950] : SLATE_COLORS[50];
-  const inputBgColor = isDark ? SLATE_COLORS[900] : COMMON_COLORS.white;
-  const inputBorderColor = isDark ? SLATE_COLORS[800] : SLATE_COLORS[200];
-  const textPrimaryColor = isDark ? COMMON_COLORS.white : SLATE_COLORS[900];
-  const textSecondaryColor = isDark ? SLATE_COLORS[400] : SLATE_COLORS[500];
-  const textDisabledColor = isDark ? SLATE_COLORS[600] : SLATE_COLORS[400];
-
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
-      style={[styles.container, { backgroundColor: formBgColor }]}
+      style={[styles.container, { backgroundColor: themeColors.formBg }]}
     >
       <ScrollView
         contentContainerStyle={styles.scrollContent}
@@ -214,23 +256,30 @@ export default function AuthScreen() {
           <TouchableOpacity
             onPress={() => setView("landing")}
             style={styles.backButton}
-            activeOpacity={0.7}
+            activeOpacity={OPACITY.interaction.low}
           >
             <View style={styles.backButtonContent}>
               <MaterialCommunityIcons
                 name="arrow-left"
                 size={20}
-                color={textSecondaryColor}
+                color={themeColors.textSecondary}
               />
             </View>
           </TouchableOpacity>
 
           {/* Header */}
           <View style={styles.formHeader}>
-            <Text style={[styles.formTitle, { color: textPrimaryColor }]}>
+            <Text
+              style={[styles.formTitle, { color: themeColors.textPrimary }]}
+            >
               {view === "login" ? "Bon retour !" : "Créer un compte"}
             </Text>
-            <Text style={[styles.formSubtitle, { color: textSecondaryColor }]}>
+            <Text
+              style={[
+                styles.formSubtitle,
+                { color: themeColors.textSecondary },
+              ]}
+            >
               {view === "login"
                 ? "Entrez vos identifiants pour continuer."
                 : "Rejoignez la communauté des coachs."}
@@ -241,28 +290,30 @@ export default function AuthScreen() {
           <View style={styles.formFields}>
             {view === "register" && (
               <View style={styles.inputGroup}>
-                <Text style={[styles.label, { color: textSecondaryColor }]}>
+                <Text
+                  style={[styles.label, { color: themeColors.textSecondary }]}
+                >
                   Nom complet
                 </Text>
                 <View
                   style={[
                     styles.inputContainer,
                     {
-                      backgroundColor: inputBgColor,
-                      borderColor: inputBorderColor,
+                      backgroundColor: themeColors.inputBg,
+                      borderColor: themeColors.inputBorder,
                     },
                   ]}
                 >
                   <MaterialCommunityIcons
                     name="account"
                     size={20}
-                    color={textDisabledColor}
+                    color={themeColors.textDisabled}
                     style={styles.inputIcon}
                   />
                   <TextInput
                     placeholder="Coach Carter"
-                    placeholderTextColor={textDisabledColor}
-                    style={[styles.input, { color: textPrimaryColor }]}
+                    placeholderTextColor={themeColors.textDisabled}
+                    style={[styles.input, { color: themeColors.textPrimary }]}
                     value={fullName}
                     onChangeText={setFullName}
                     editable={!loading}
@@ -272,28 +323,30 @@ export default function AuthScreen() {
             )}
 
             <View style={styles.inputGroup}>
-              <Text style={[styles.label, { color: textSecondaryColor }]}>
+              <Text
+                style={[styles.label, { color: themeColors.textSecondary }]}
+              >
                 Email
               </Text>
               <View
                 style={[
                   styles.inputContainer,
                   {
-                    backgroundColor: inputBgColor,
-                    borderColor: inputBorderColor,
+                    backgroundColor: themeColors.inputBg,
+                    borderColor: themeColors.inputBorder,
                   },
                 ]}
               >
                 <MaterialCommunityIcons
                   name="email"
                   size={20}
-                  color={textDisabledColor}
+                  color={themeColors.textDisabled}
                   style={styles.inputIcon}
                 />
                 <TextInput
                   placeholder="coach@exemple.com"
-                  placeholderTextColor={textDisabledColor}
-                  style={[styles.input, { color: textPrimaryColor }]}
+                  placeholderTextColor={themeColors.textDisabled}
+                  style={[styles.input, { color: themeColors.textPrimary }]}
                   keyboardType="email-address"
                   autoCapitalize="none"
                   value={email}
@@ -304,28 +357,30 @@ export default function AuthScreen() {
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={[styles.label, { color: textSecondaryColor }]}>
+              <Text
+                style={[styles.label, { color: themeColors.textSecondary }]}
+              >
                 Mot de passe
               </Text>
               <View
                 style={[
                   styles.inputContainer,
                   {
-                    backgroundColor: inputBgColor,
-                    borderColor: inputBorderColor,
+                    backgroundColor: themeColors.inputBg,
+                    borderColor: themeColors.inputBorder,
                   },
                 ]}
               >
                 <MaterialCommunityIcons
                   name="lock"
                   size={20}
-                  color={textDisabledColor}
+                  color={themeColors.textDisabled}
                   style={styles.inputIcon}
                 />
                 <TextInput
                   placeholder="••••••••"
-                  placeholderTextColor={textDisabledColor}
-                  style={[styles.input, { color: textPrimaryColor }]}
+                  placeholderTextColor={themeColors.textDisabled}
+                  style={[styles.input, { color: themeColors.textPrimary }]}
                   secureTextEntry
                   value={password}
                   onChangeText={setPassword}
@@ -337,28 +392,30 @@ export default function AuthScreen() {
             {/* Confirm Password (only for register) */}
             {view === "register" && (
               <View style={styles.inputGroup}>
-                <Text style={[styles.label, { color: textSecondaryColor }]}>
+                <Text
+                  style={[styles.label, { color: themeColors.textSecondary }]}
+                >
                   Confirmer le mot de passe
                 </Text>
                 <View
                   style={[
                     styles.inputContainer,
                     {
-                      backgroundColor: inputBgColor,
-                      borderColor: inputBorderColor,
+                      backgroundColor: themeColors.inputBg,
+                      borderColor: themeColors.inputBorder,
                     },
                   ]}
                 >
                   <MaterialCommunityIcons
                     name="lock-check"
                     size={20}
-                    color={textDisabledColor}
+                    color={themeColors.textDisabled}
                     style={styles.inputIcon}
                   />
                   <TextInput
                     placeholder="••••••••"
-                    placeholderTextColor={textDisabledColor}
-                    style={[styles.input, { color: textPrimaryColor }]}
+                    placeholderTextColor={themeColors.textDisabled}
+                    style={[styles.input, { color: themeColors.textPrimary }]}
                     secureTextEntry
                     value={confirmPassword}
                     onChangeText={setConfirmPassword}
@@ -377,7 +434,7 @@ export default function AuthScreen() {
               loading && styles.submitButtonDisabled,
             ]}
             onPress={view === "login" ? handleLogin : handleRegister}
-            activeOpacity={0.8}
+            activeOpacity={OPACITY.interaction.high}
             disabled={loading}
           >
             {loading ? (
@@ -394,13 +451,16 @@ export default function AuthScreen() {
             <View
               style={[
                 styles.dividerLine,
-                { backgroundColor: inputBorderColor },
+                { backgroundColor: themeColors.inputBorder },
               ]}
             />
             <Text
               style={[
                 styles.dividerText,
-                { color: textSecondaryColor, backgroundColor: formBgColor },
+                {
+                  color: themeColors.textSecondary,
+                  backgroundColor: themeColors.formBg,
+                },
               ]}
             >
               Ou continuer avec
@@ -408,7 +468,7 @@ export default function AuthScreen() {
             <View
               style={[
                 styles.dividerLine,
-                { backgroundColor: inputBorderColor },
+                { backgroundColor: themeColors.inputBorder },
               ]}
             />
           </View>
@@ -419,24 +479,27 @@ export default function AuthScreen() {
               style={[
                 styles.socialButton,
                 {
-                  backgroundColor: inputBgColor,
-                  borderColor: inputBorderColor,
+                  backgroundColor: themeColors.inputBg,
+                  borderColor: themeColors.inputBorder,
                 },
                 loading && styles.submitButtonDisabled,
               ]}
               onPress={handleGoogleSignIn}
-              activeOpacity={0.8}
+              activeOpacity={OPACITY.interaction.high}
               disabled={loading}
             >
               {loading ? (
-                <ActivityIndicator size="small" color={textPrimaryColor} />
+                <ActivityIndicator
+                  size="small"
+                  color={themeColors.textPrimary}
+                />
               ) : (
                 <>
                   <GoogleLogo />
                   <Text
                     style={[
                       styles.socialButtonText,
-                      { color: textPrimaryColor },
+                      { color: themeColors.textPrimary },
                     ]}
                   >
                     Google
@@ -449,18 +512,21 @@ export default function AuthScreen() {
               style={[
                 styles.socialButton,
                 {
-                  backgroundColor: inputBgColor,
-                  borderColor: inputBorderColor,
+                  backgroundColor: themeColors.inputBg,
+                  borderColor: themeColors.inputBorder,
                 },
                 loading && styles.submitButtonDisabled,
               ]}
               onPress={handleFacebookSignIn}
-              activeOpacity={0.8}
+              activeOpacity={OPACITY.interaction.high}
               disabled={loading}
             >
               <FacebookLogo />
               <Text
-                style={[styles.socialButtonText, { color: textPrimaryColor }]}
+                style={[
+                  styles.socialButtonText,
+                  { color: themeColors.textPrimary },
+                ]}
               >
                 Facebook
               </Text>
@@ -472,7 +538,12 @@ export default function AuthScreen() {
   );
 }
 
+// ===========================
+// STYLES
+// ===========================
+
 const styles = StyleSheet.create({
+  // Landing view styles
   backgroundImage: {
     flex: 1,
     width: "100%",
@@ -513,7 +584,7 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     borderRadius: 12,
     gap: 8,
-    shadowColor: "#000",
+    shadowColor: SHADOW_COLOR,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
@@ -525,7 +596,7 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   secondaryButton: {
-    backgroundColor: `${SLATE_COLORS[800]}CC`, // 80% opacity
+    backgroundColor: `${SLATE_COLORS[800]}${OPACITY.gradient.medium}`,
     paddingVertical: 16,
     borderRadius: 12,
     borderWidth: 1,
@@ -538,19 +609,22 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   guestButtonText: {
-    color: "#94a3b8",
+    color: SLATE_COLORS[400],
     fontSize: 14,
     fontWeight: "500",
     textAlign: "center",
     paddingVertical: 8,
   },
+
+  // Form view styles
   container: {
     flex: 1,
+    paddingBottom: 60,
   },
   scrollContent: {
     flexGrow: 1,
     paddingHorizontal: 24,
-    paddingTop: 48,
+    paddingTop: 20,
   },
   formContainer: {
     flex: 1,
@@ -595,7 +669,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 4,
-    shadowColor: "#000",
+    shadowColor: SHADOW_COLOR,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 2,
@@ -621,7 +695,7 @@ const styles = StyleSheet.create({
     marginTop: "auto",
   },
   submitButtonDisabled: {
-    opacity: 0.6,
+    opacity: OPACITY.disabled,
   },
   submitButtonText: {
     color: COMMON_COLORS.white,
@@ -657,7 +731,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     gap: 12,
-    shadowColor: "#000",
+    shadowColor: SHADOW_COLOR,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 2,

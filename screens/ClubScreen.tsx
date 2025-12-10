@@ -25,7 +25,7 @@ import {
   SLATE_COLORS,
   BRAND_COLORS,
   COMMON_COLORS,
-} from "../src/theme/clubDefaults";
+} from "../src/theme";
 import { Colors } from "../src/theme/colors";
 import { ServiceFactory } from "../services/ServiceFactory";
 import { supabase } from "../src/config/supabase";
