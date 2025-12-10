@@ -20,6 +20,8 @@ import {
   SLATE_COLORS,
   BRAND_COLORS,
   COMMON_COLORS,
+  SHADOW_COLOR,
+  OPACITY,
 } from "../src/theme";
 import { MatchRepository } from "../src/services/database/MatchRepository";
 import { ActionRepository } from "../src/services/database/ActionRepository";
@@ -432,19 +434,13 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
     setThemeMode(nextMode);
   };
 
-  const bgColor = isDark ? SLATE_COLORS[950] : SLATE_COLORS[50];
-  const surfaceColor = isDark ? SLATE_COLORS[900] : COMMON_COLORS.white;
-  const textPrimary = isDark ? COMMON_COLORS.white : SLATE_COLORS[900];
-  const textSecondary = isDark ? SLATE_COLORS[400] : SLATE_COLORS[500];
-  const borderColor = isDark ? SLATE_COLORS[800] : SLATE_COLORS[200];
-
   if (loading) {
     return (
       <View
         style={[
           styles.container,
           {
-            backgroundColor: bgColor,
+            backgroundColor: colors.background,
             justifyContent: "center",
             alignItems: "center",
           },
@@ -480,23 +476,23 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
                 styles.modalIcon,
                 {
                   backgroundColor: isDark
-                    ? "rgba(239, 68, 68, 0.3)"
-                    : "rgba(239, 68, 68, 0.1)",
+                    ? `${colors.error}4D`
+                    : `${colors.error}1A`,
                 },
               ]}
             >
               <MaterialCommunityIcons
                 name="basketball"
                 size={32}
-                color="#ef4444"
+                color={colors.error}
               />
             </View>
 
-            <Text style={[styles.modalTitle, { color: textPrimary }]}>
+            <Text style={[styles.modalTitle, { color: colors.text.primary }]}>
               Match en cours détecté !
             </Text>
 
-            <Text style={[styles.modalDescription, { color: textSecondary }]}>
+            <Text style={[styles.modalDescription, { color: colors.text.secondary }]}>
               Il semble que le match contre{" "}
               <Text style={{ fontWeight: "bold" }}>
                 {liveMatchToResume?.opponent_name}
@@ -535,7 +531,7 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
                     backgroundColor: isDark
                       ? SLATE_COLORS[800]
                       : COMMON_COLORS.white,
-                    borderColor: isDark ? SLATE_COLORS[700] : SLATE_COLORS[200],
+                    borderColor: colors.border,
                   },
                 ]}
                 onPress={handleNewMatchConfirm}
@@ -562,7 +558,7 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
                     backgroundColor: isDark
                       ? SLATE_COLORS[800]
                       : COMMON_COLORS.white,
-                    borderColor: isDark ? SLATE_COLORS[700] : SLATE_COLORS[200],
+                    borderColor: colors.border,
                   },
                 ]}
                 onPress={handleAbandonMatch}
@@ -570,12 +566,12 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
                 <MaterialCommunityIcons
                   name="delete-forever"
                   size={20}
-                  color="#ef4444"
+                  color={colors.error}
                 />
                 <Text
                   style={[
                     styles.modalSecondaryButtonText,
-                    { color: "#ef4444" },
+                    { color: colors.error },
                   ]}
                 >
                   Abandonner le match
@@ -590,7 +586,7 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
                   backgroundColor: isDark
                     ? SLATE_COLORS[800]
                     : COMMON_COLORS.white,
-                  borderColor: isDark ? SLATE_COLORS[700] : SLATE_COLORS[200],
+                  borderColor: colors.border,
                 },
               ]}
               onPress={() => {
@@ -601,7 +597,7 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
               <Text
                 style={[
                   styles.modalSecondaryButtonText,
-                  { color: textSecondary },
+                  { color: colors.text.secondary },
                 ]}
               >
                 Ignorer pour l'instant
@@ -611,16 +607,16 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
         </View>
       </Modal>
 
-      <ScrollView style={[styles.container, { backgroundColor: bgColor }]}>
+      <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
         <View style={styles.content}>
           {/* Header */}
           <View style={styles.header}>
             <View style={styles.headerLeft}>
-              <Text style={[styles.greeting, { color: textPrimary }]}>
+              <Text style={[styles.greeting, { color: colors.text.primary }]}>
                 Bonjour, {"\n"}
                 <Text style={{ color: BRAND_COLORS[500] }}>{userName}</Text>
               </Text>
-              <Text style={[styles.subGreeting, { color: textSecondary }]}>
+              <Text style={[styles.subGreeting, { color: colors.text.secondary }]}>
                 Prêt pour le match ?
               </Text>
             </View>
@@ -631,15 +627,15 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
                 style={[
                   styles.iconButton,
                   {
-                    backgroundColor: surfaceColor,
-                    borderColor,
+                    backgroundColor: colors.surface,
+                    borderColor: colors.border,
                   },
                 ]}
               >
                 <MaterialCommunityIcons
                   name={isDark ? "white-balance-sunny" : "moon-waning-crescent"}
                   size={20}
-                  color={textPrimary}
+                  color={colors.text.primary}
                 />
               </TouchableOpacity>
 
@@ -651,14 +647,14 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
                     backgroundColor: isDark
                       ? SLATE_COLORS[800]
                       : SLATE_COLORS[100],
-                    borderColor,
+                    borderColor: colors.border,
                   },
                 ]}
               >
                 <MaterialCommunityIcons
                   name="logout"
                   size={20}
-                  color="#ef4444"
+                  color={colors.error}
                 />
               </TouchableOpacity>
 
@@ -669,8 +665,7 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
                     backgroundColor: isDark
                       ? SLATE_COLORS[800]
                       : SLATE_COLORS[100],
-                    borderColor:
-                      club && club.logoUrl ? BRAND_COLORS[500] : borderColor,
+                    borderColor: club && club.logoUrl ? BRAND_COLORS[500] : colors.border,
                   },
                 ]}
               >
@@ -698,7 +693,7 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
                   backgroundColor: isDark
                     ? SLATE_COLORS[800]
                     : COMMON_COLORS.white,
-                  borderColor: isDark ? SLATE_COLORS[700] : SLATE_COLORS[200],
+                  borderColor: colors.border,
                 },
               ]}
             >
@@ -718,12 +713,12 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
                   color={BRAND_COLORS[500]}
                 />
               </View>
-              <Text style={[styles.ctaTitle, { color: textPrimary }]}>
+              <Text style={[styles.ctaTitle, { color: colors.text.primary }]}>
                 {!club
                   ? "Rejoignez ou créez un club"
                   : "Créez votre première équipe"}
               </Text>
-              <Text style={[styles.ctaDescription, { color: textSecondary }]}>
+              <Text style={[styles.ctaDescription, { color: colors.text.secondary }]}>
                 {!club
                   ? "Pour commencer à suivre les statistiques, vous devez associer votre compte à une équipe."
                   : "Vous faites partie d'un club, créez maintenant une équipe pour commencer à suivre vos matchs."}
@@ -767,8 +762,8 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
                   style={[
                     styles.teamSelector,
                     {
-                      backgroundColor: surfaceColor,
-                      borderColor,
+                      backgroundColor: colors.surface,
+                      borderColor: colors.border,
                     },
                   ]}
                 >
@@ -778,8 +773,8 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
                   <Picker
                     selectedValue={activeTeamId || ""}
                     onValueChange={(value) => setActiveTeamId(value)}
-                    style={[styles.picker, { color: textPrimary }]}
-                    dropdownIconColor={textSecondary}
+                    style={[styles.picker, { color: colors.text.primary }]}
+                    dropdownIconColor={colors.text.secondary}
                   >
                     {teams.map((team) => (
                       <Picker.Item
@@ -835,7 +830,7 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
                       backgroundColor: isDark
                         ? `${SLATE_COLORS[800]}80`
                         : COMMON_COLORS.white,
-                      borderColor,
+                      borderColor: colors.border,
                     },
                   ]}
                 >
@@ -851,10 +846,10 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
                       MATCHS
                     </Text>
                   </View>
-                  <Text style={[styles.statValue, { color: textPrimary }]}>
+                  <Text style={[styles.statValue, { color: colors.text.primary }]}>
                     {filteredMatches.length}
                   </Text>
-                  <Text style={[styles.statSubtext, { color: textSecondary }]}>
+                  <Text style={[styles.statSubtext, { color: colors.text.secondary }]}>
                     Cette saison
                   </Text>
                 </View>
@@ -866,7 +861,7 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
                       backgroundColor: isDark
                         ? `${SLATE_COLORS[800]}80`
                         : COMMON_COLORS.white,
-                      borderColor,
+                      borderColor: colors.border,
                     },
                   ]}
                 >
@@ -874,21 +869,21 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
                     <MaterialCommunityIcons
                       name="trending-up"
                       size={18}
-                      color="#10b981"
+                      color={colors.success}
                     />
-                    <Text style={[styles.statLabel, { color: "#10b981" }]}>
+                    <Text style={[styles.statLabel, { color: colors.success }]}>
                       VICTOIRES
                     </Text>
                   </View>
-                  <Text style={[styles.statValue, { color: textPrimary }]}>
+                  <Text style={[styles.statValue, { color: colors.text.primary }]}>
                     {wins}{" "}
                     <Text
-                      style={[styles.statValueSmall, { color: textSecondary }]}
+                      style={[styles.statValueSmall, { color: colors.text.secondary }]}
                     >
                       / {losses}
                     </Text>
                   </Text>
-                  <Text style={[styles.statSubtext, { color: textSecondary }]}>
+                  <Text style={[styles.statSubtext, { color: colors.text.secondary }]}>
                     Ratio V/D
                   </Text>
                 </View>
@@ -921,7 +916,7 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
               {/* Recent History */}
               <View style={styles.section}>
                 <View style={styles.sectionHeader}>
-                  <Text style={[styles.sectionTitle, { color: textPrimary }]}>
+                  <Text style={[styles.sectionTitle, { color: colors.text.primary }]}>
                     Derniers Matchs
                   </Text>
                   <TouchableOpacity
@@ -951,7 +946,7 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
                               backgroundColor: isDark
                                 ? SLATE_COLORS[900]
                                 : COMMON_COLORS.white,
-                              borderColor,
+                              borderColor: colors.border,
                             },
                           ]}
                           onPress={async () => {
@@ -1039,7 +1034,7 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
                               console.error("Error loading match details:", error);
                             }
                           }}
-                          activeOpacity={0.7}
+                          activeOpacity={OPACITY.interaction.low}
                         >
                           <View style={styles.matchCardLeft}>
                             <View
@@ -1047,8 +1042,8 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
                                 styles.matchIndicator,
                                 {
                                   backgroundColor: isWin
-                                    ? "#10b981"
-                                    : "#ef4444",
+                                    ? colors.success
+                                    : colors.error,
                                 },
                               ]}
                             />
@@ -1057,7 +1052,7 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
                                 <Text
                                   style={[
                                     styles.matchScore,
-                                    { color: textPrimary },
+                                    { color: colors.text.primary },
                                   ]}
                                 >
                                   {scoreA} - {scoreB}
@@ -1075,7 +1070,7 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
                                   <Text
                                     style={[
                                       styles.matchTeamBadgeText,
-                                      { color: textSecondary },
+                                      { color: colors.text.secondary },
                                     ]}
                                   >
                                     {match.my_team_name || "Nous"}
@@ -1085,7 +1080,7 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
                               <Text
                                 style={[
                                   styles.matchOpponent,
-                                  { color: textSecondary },
+                                  { color: colors.text.secondary },
                                 ]}
                                 numberOfLines={1}
                               >
@@ -1120,7 +1115,7 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
                               <Text
                                 style={[
                                   styles.matchResultText,
-                                  { color: isWin ? "#10b981" : "#ef4444" },
+                                  { color: isWin ? colors.success : colors.error },
                                 ]}
                               >
                                 {isWin ? "VICTOIRE" : "DÉFAITE"}
@@ -1138,20 +1133,20 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
                           backgroundColor: isDark
                             ? `${SLATE_COLORS[900]}80`
                             : SLATE_COLORS[100],
-                          borderColor,
+                          borderColor: colors.border,
                         },
                       ]}
                     >
                       <MaterialCommunityIcons
                         name="calendar-blank"
                         size={32}
-                        color={textSecondary}
-                        style={{ opacity: 0.5 }}
+                        color={colors.text.secondary}
+                        style={{ opacity: OPACITY.disabled - 0.1 }}
                       />
                       <Text
                         style={[
                           styles.emptyStateText,
-                          { color: textSecondary },
+                          { color: colors.text.secondary },
                         ]}
                       >
                         Aucun match récent
@@ -1339,13 +1334,13 @@ const styles = StyleSheet.create({
   },
   newMatchButtonSubtitle: {
     fontSize: 14,
-    color: "rgba(255, 255, 255, 0.8)",
+    color: `${COMMON_COLORS.white}CC`,
   },
   newMatchButtonIcon: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    backgroundColor: `${COMMON_COLORS.white}33`,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -1446,7 +1441,7 @@ const styles = StyleSheet.create({
   // Modal styles
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.8)",
+    backgroundColor: `${SHADOW_COLOR}CC`,
     justifyContent: "center",
     alignItems: "center",
     padding: 24,
@@ -1456,7 +1451,7 @@ const styles = StyleSheet.create({
     maxWidth: 400,
     borderRadius: 16,
     padding: 24,
-    shadowColor: "#000",
+    shadowColor: SHADOW_COLOR,
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.3,
     shadowRadius: 16,
