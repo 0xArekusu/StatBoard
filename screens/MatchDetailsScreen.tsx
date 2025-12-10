@@ -34,6 +34,8 @@ import {
   COMMON_COLORS,
 } from "../src/theme/clubDefaults";
 import BasketballCourtSVG from "../components/BasketballCourtSVG";
+import { PDFExportService } from "../src/services/export/PDFExportService";
+import { Alert } from "react-native";
 
 // Types
 interface PlayerStats {
@@ -110,6 +112,30 @@ export default function MatchDetailsScreen() {
   const [showCourtFilters, setShowCourtFilters] = useState(false);
   const [sortBy, setSortBy] = useState<keyof PlayerStats>("pts");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+
+  // Export PDF handler
+  const handleExportPDF = async () => {
+    try {
+      const pdfOptions = {
+        teamA: match.my_team_name || "Notre équipe",
+        teamB: match.opponent_name || "Adversaire",
+        scoreA: match.my_team_score || 0,
+        scoreB: match.opponent_score || 0,
+        actions: actions || [],
+        matchFormat: match.match_format || "4_quarters",
+        periodDuration: match.period_duration || 10,
+        teamMode: "BOTH" as const,
+        players: players || [],
+        matchDate: match.date ? new Date(match.date) : new Date(),
+      };
+
+      await PDFExportService.generateMatchPDF(pdfOptions);
+      Alert.alert("Succès", "Le PDF a été généré et partagé avec succès");
+    } catch (error) {
+      console.error("Error exporting PDF:", error);
+      Alert.alert("Erreur", "Impossible de générer le PDF");
+    }
+  };
 
   // Intercept hardware back button when coming from live match
   useFocusEffect(
@@ -562,15 +588,26 @@ export default function MatchDetailsScreen() {
           ) : (
             <View />
           )}
-          <TouchableOpacity
-            onPress={() => navigation.navigate("Dashboard" as never)}
-            style={[styles.menuButton, { backgroundColor: bgColor }]}
-          >
-            <Ionicons name="grid-outline" size={15} color={BRAND_COLORS[500]} />
-            <Text style={[styles.menuButtonText, { color: BRAND_COLORS[500] }]}>
-              Menu
-            </Text>
-          </TouchableOpacity>
+          <View style={styles.headerButtons}>
+            <TouchableOpacity
+              onPress={handleExportPDF}
+              style={[styles.menuButton, { backgroundColor: bgColor, marginRight: 8 }]}
+            >
+              <Ionicons name="document-text-outline" size={15} color={BRAND_COLORS[500]} />
+              <Text style={[styles.menuButtonText, { color: BRAND_COLORS[500] }]}>
+                PDF
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => navigation.navigate("Dashboard" as never)}
+              style={[styles.menuButton, { backgroundColor: bgColor }]}
+            >
+              <Ionicons name="grid-outline" size={15} color={BRAND_COLORS[500]} />
+              <Text style={[styles.menuButtonText, { color: BRAND_COLORS[500] }]}>
+                Menu
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         <View style={styles.scoreContainer}>
@@ -2650,6 +2687,10 @@ const styles = StyleSheet.create({
   },
   backButtonText: {
     fontSize: 16,
+  },
+  headerButtons: {
+    flexDirection: "row",
+    alignItems: "center",
   },
   menuButton: {
     flexDirection: "row",
