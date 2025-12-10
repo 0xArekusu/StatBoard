@@ -247,6 +247,8 @@ export class PDFExportService {
       courtLineColor,
       actions,
       players: playersWithBase64Photos,
+      matchFormat,
+      periodDuration: options.periodDuration,
     });
 
     // Generate PDF using expo-print
@@ -993,6 +995,8 @@ export class PDFExportService {
     courtLineColor?: string;
     actions: ActionData[];
     players: Player[];
+    matchFormat: "2_halves" | "4_quarters";
+    periodDuration: number;
   }): string {
     const {
       teamA,
@@ -1016,6 +1020,8 @@ export class PDFExportService {
       courtLineColor = "#FFFFFF",
       actions,
       players,
+      matchFormat,
+      periodDuration,
     } = data;
 
     // Generate the score chart SVG
@@ -1250,49 +1256,159 @@ export class PDFExportService {
       height: auto;
     }
     .player-card {
-      border: 1px solid #ddd;
+      border: 1px solid #e2e8f0;
       padding: 20px;
       margin-top: 20px;
-      border-radius: 8px;
+      border-radius: 12px;
       max-width: 800px;
       width: 100%;
       page-break-inside: avoid;
+      background: #ffffff;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
     }
     .player-header {
       display: flex;
       align-items: center;
-      margin-bottom: 15px;
-      padding-bottom: 10px;
+      justify-content: space-between;
+      margin-bottom: 20px;
+      padding-bottom: 15px;
+      border-bottom: 1px solid #e2e8f0;
     }
-    .player-photo {
-      width: 60px;
-      height: 60px;
-      border-radius: 50%;
-      object-fit: cover;
-      margin-right: 15px;
-      border: 2px solid #333;
+    .player-info-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
     }
-    .player-icon {
-      width: 60px;
-      height: 60px;
-      border-radius: 50%;
-      background-color: #e0e0e0;
+    .player-avatar {
+      width: 48px;
+      height: 48px;
+      border-radius: 8px;
+      background-color: #f8fafc;
+      border: 1px solid #e2e8f0;
       display: flex;
       align-items: center;
       justify-content: center;
-      margin-right: 15px;
-      font-size: 30px;
+      font-size: 18px;
+      font-weight: 700;
+      color: #1e293b;
     }
     .player-info {
-      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
     }
     .player-name {
-      font-size: 16px;
-      font-weight: bold;
+      font-size: 18px;
+      font-weight: 700;
+      color: #1e293b;
+      line-height: 1.2;
     }
     .player-number {
       font-size: 14px;
-      color: #666;
+      color: #64748b;
+      line-height: 1.2;
+    }
+    .player-points-badge {
+      background: #fef3f2;
+      border: 1px solid #FF8C42;
+      border-radius: 999px;
+      padding: 8px 16px;
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+    }
+    .player-points-value {
+      font-size: 24px;
+      font-weight: 700;
+      color: #FF8C42;
+      line-height: 1;
+    }
+    .player-points-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: #FF8C42;
+      text-transform: uppercase;
+      line-height: 1;
+    }
+    .shooting-bars {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 20px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .shooting-bar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .shooting-bar-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: #64748b;
+      min-width: 50px;
+      text-transform: uppercase;
+    }
+    .shooting-bar-track {
+      flex: 1;
+      height: 8px;
+      background-color: #f1f5f9;
+      border-radius: 999px;
+      overflow: hidden;
+      position: relative;
+    }
+    .shooting-bar-fill {
+      height: 100%;
+      border-radius: 999px;
+      transition: width 0.3s ease;
+    }
+    .shooting-bar-value {
+      font-size: 13px;
+      color: #1e293b;
+      min-width: 90px;
+      text-align: right;
+    }
+    .shooting-bar-value-bold {
+      font-weight: 700;
+    }
+    .shooting-bar-pct {
+      color: #94a3b8;
+      font-weight: 400;
+    }
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+    }
+    .stat-box {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      padding: 12px;
+      background: #f8fafc;
+      border-radius: 8px;
+    }
+    .stat-box.highlight {
+      background: #fef3f2;
+    }
+    .stat-box-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: #94a3b8;
+      text-transform: uppercase;
+      line-height: 1;
+    }
+    .stat-box-value {
+      font-size: 20px;
+      font-weight: 700;
+      color: #1e293b;
+      line-height: 1;
+    }
+    .stat-box-value.highlight {
+      color: #FF8C42;
     }
     .courts-container {
       display: flex;
@@ -1481,6 +1597,10 @@ export class PDFExportService {
           actions.filter((a) => a.player === player.id).length > 0;
         const teamName = player.team === "A" ? teamA : teamB;
         const totalFouls = this.calculateTotalFouls(playerStats);
+        const playerActions = actions.filter(a => a.player === player.id).length;
+        const totalActions = actions.length;
+        const totalMinutes = matchFormat === '2_halves' ? periodDuration * 2 : periodDuration * 4;
+        const estimatedMinutes = totalActions > 0 ? Math.round((playerActions / totalActions) * totalMinutes) : 0;
 
         return `
     <div class="player-card-page">
@@ -1491,114 +1611,101 @@ export class PDFExportService {
       </div>
       <div class="player-card">
         <div class="player-header">
-          ${
-            player.photoUrl
-              ? `<img src="${player.photoUrl}" alt="${player.name}" class="player-photo" />`
-              : `<div class="player-icon">👤</div>`
-          }
-          <div class="player-info">
-            <div class="player-name">
-              #${player.num} - ${player.name}
-              <span class="player-points-badge">${playerStats.points} pts</span>
+          <div class="player-info-left">
+            <div class="player-avatar">${player.num}</div>
+            <div class="player-info">
+              <div class="player-name">${player.name}</div>
+              <div class="player-number">#${player.num}</div>
             </div>
-            <div class="player-number">${teamName}</div>
+          </div>
+          <div class="player-points-badge">
+            <div class="player-points-value">${playerStats.points}</div>
+            <div class="player-points-label">Points</div>
+          </div>
+        </div>
+
+        <!-- Shooting Bars -->
+        <div class="shooting-bars">
+          <div class="shooting-bar">
+            <div class="shooting-bar-label">3 PTS</div>
+            <div class="shooting-bar-track">
+              <div class="shooting-bar-fill" style="width: ${threePtPct}%; background-color: #6366f1;"></div>
+            </div>
+            <div class="shooting-bar-value">
+              <span class="shooting-bar-value-bold">${playerStats.threepm}/${playerStats.threepa}</span>
+              <span class="shooting-bar-pct"> (${threePtPct}%)</span>
+            </div>
+          </div>
+          <div class="shooting-bar">
+            <div class="shooting-bar-label">2 PTS</div>
+            <div class="shooting-bar-track">
+              <div class="shooting-bar-fill" style="width: ${twoPtPct}%; background-color: #3b82f6;"></div>
+            </div>
+            <div class="shooting-bar-value">
+              <span class="shooting-bar-value-bold">${playerStats.twopm}/${playerStats.twopa}</span>
+              <span class="shooting-bar-pct"> (${twoPtPct}%)</span>
+            </div>
+          </div>
+          <div class="shooting-bar">
+            <div class="shooting-bar-label">LANC</div>
+            <div class="shooting-bar-track">
+              <div class="shooting-bar-fill" style="width: ${ftPct}%; background-color: #06b6d4;"></div>
+            </div>
+            <div class="shooting-bar-value">
+              <span class="shooting-bar-value-bold">${playerStats.ftm}/${playerStats.fta}</span>
+              <span class="shooting-bar-pct"> (${ftPct}%)</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Stats Grid -->
+        <div class="stats-grid">
+          <div class="stat-box">
+            <div class="stat-box-label">MIN</div>
+            <div class="stat-box-value">${estimatedMinutes}'</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-box-label">REB</div>
+            <div class="stat-box-value">${playerStats.orb + playerStats.drb}</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-box-label">AST</div>
+            <div class="stat-box-value">${playerStats.ast}</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-box-label">INT</div>
+            <div class="stat-box-value">${playerStats.stl}</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-box-label">CTR</div>
+            <div class="stat-box-value">${playerStats.blk}</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-box-label">BP</div>
+            <div class="stat-box-value">${playerStats.to}</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-box-label">FT</div>
+            <div class="stat-box-value">${totalFouls}</div>
+          </div>
+          <div class="stat-box highlight">
+            <div class="stat-box-label">ÉVAL</div>
+            <div class="stat-box-value highlight">${playerStats.points + (playerStats.orb + playerStats.drb) + playerStats.ast + playerStats.stl + playerStats.blk - playerStats.to - totalFouls}</div>
           </div>
         </div>
 
       ${
         hasStats
           ? `
-      <div class="courts-container">
-        <div class="court-wrapper">
-          <div class="court-title">TIRS</div>
-          ${shotCourtSVG}
-        </div>
-        <div class="court-wrapper">
-          <div class="court-title">AUTRES ACTIONS</div>
-          ${actionCourtSVG}
-        </div>
-      </div>
-
-      <div class="player-stats">
-        <div class="stats-column">
-          <div class="stat-row">
-            <span class="stat-label">Total</span>
-            <span class="stat-value">${
-              playerStats.twopm + playerStats.threepm
-            }/${playerStats.twopa + playerStats.threepa} (${this.calculateShootingPercentage(
-              playerStats.twopm + playerStats.threepm,
-              playerStats.twopa + playerStats.threepa
-            )}%)</span>
+      <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #e2e8f0;">
+        <div class="courts-container">
+          <div class="court-wrapper">
+            <div class="court-title">TIRS</div>
+            ${shotCourtSVG}
           </div>
-          <div class="stat-row">
-            <span class="stat-label">Lancers francs</span>
-            <span class="stat-value">${playerStats.ftm}/${playerStats.fta}${
-              playerStats.fta > 0 ? ` (${ftPct}%)` : ""
-            }</span>
-          </div>
-          <div class="stat-row">
-            <span class="stat-label">2 points</span>
-            <span class="stat-value">${playerStats.twopm}/${playerStats.twopa}${
-              playerStats.twopa > 0 ? ` (${twoPtPct}%)` : ""
-            }</span>
-          </div>
-          <div class="stat-row">
-            <span class="stat-label">3 points</span>
-            <span class="stat-value">${playerStats.threepm}/${
-              playerStats.threepa
-            }${playerStats.threepa > 0 ? ` (${threePtPct}%)` : ""}</span>
-          </div>
-        </div>
-
-        <div class="stats-column">
-          <div class="stat-row">
-            <span class="stat-label"><span class="stat-color-badge" style="background-color: ${
-              ACTION_CONFIG[ActionType.REBOUND].color
-            };"></span>Rebonds</span>
-            <span class="stat-value">${
-              playerStats.orb + playerStats.drb
-            } (Off: ${playerStats.orb} / Def: ${playerStats.drb})</span>
-          </div>
-          <div class="stat-row">
-            <span class="stat-label"><span class="stat-color-badge" style="background-color: ${
-              ACTION_CONFIG[ActionType.ASSIST].color
-            };"></span>Passes décisives</span>
-            <span class="stat-value">${playerStats.ast}</span>
-          </div>
-          <div class="stat-row">
-            <span class="stat-label"><span class="stat-color-badge" style="background-color: ${
-              ACTION_CONFIG[ActionType.STEAL].color
-            };"></span>Interceptions</span>
-            <span class="stat-value">${playerStats.stl}</span>
-          </div>
-          <div class="stat-row">
-            <span class="stat-label"><span class="stat-color-badge" style="background-color: ${
-              ACTION_CONFIG[ActionType.BLOCK].color
-            };"></span>Contres</span>
-            <span class="stat-value">${playerStats.blk}</span>
-          </div>
-          <div class="stat-row">
-            <span class="stat-label"><span class="stat-color-badge" style="background-color: ${
-              ACTION_CONFIG[ActionType.TURNOVER].color
-            };"></span>Balles perdues</span>
-            <span class="stat-value">${playerStats.tov}</span>
-          </div>
-          <div class="stat-row">
-            <span class="stat-label"><span class="stat-color-badge" style="background-color: ${
-              ACTION_CONFIG[ActionType.FOUL].color
-            };"></span>Fautes</span>
-            <span class="stat-value">${totalFouls}${
-              totalFouls > 0
-                ? ` (${[
-                    playerStats.pf > 0 ? `P: ${playerStats.pf}` : null,
-                    playerStats.tf > 0 ? `T: ${playerStats.tf}` : null,
-                    playerStats.uf > 0 ? `AS: ${playerStats.uf}` : null,
-                    playerStats.df > 0 ? `DQ: ${playerStats.df}` : null,
-                  ]
-                    .filter((f) => f !== null)
-                    .join(" / ")})`
-                : ""
-            }</span>
+          <div class="court-wrapper">
+            <div class="court-title">AUTRES ACTIONS</div>
+            ${actionCourtSVG}
           </div>
         </div>
       </div>
