@@ -16,9 +16,7 @@ import { Picker } from "@react-native-picker/picker";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useTheme } from "../src/contexts/ThemeContext";
 import { useAuth } from "../src/contexts/AuthContext";
-import { SLATE_COLORS, BRAND_COLORS, COMMON_COLORS } from "../src/theme";
 import { MatchRepository } from "../src/services/database/MatchRepository";
-import { ActionRepository } from "../src/services/database/ActionRepository";
 import { ServiceFactory } from "../services/ServiceFactory";
 import { Match } from "../src/models/types";
 import { Club } from "../models/Club";
@@ -493,93 +491,14 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
   };
 
   /**
-   * Loads match details (actions and players) from either Supabase or local SQLite
-   * @param match - The match to load details for
+   * Navigates to match details screen
+   * Data loading is handled by MatchDetailsScreen itself
+   * @param match - The match to view details for
    */
-  const loadMatchDetails = async (match: Match) => {
-    try {
-      const matchId = (match as any).supabase_id || match.id;
-      const isUUID = typeof matchId === "string" && matchId.includes("-");
-
-      let actionDataList: any[] = [];
-      let players: any[] = [];
-
-      if (isUUID) {
-        // Load from Supabase - get match_players with actions embedded
-        const { data: matchPlayers, error } = await supabase
-          .from("match_players")
-          .select("*")
-          .eq("match_id", matchId);
-
-        if (error) {
-          console.error("Error loading match players:", error);
-          return;
-        }
-
-        if (matchPlayers) {
-          // Convert match players to expected format
-          players = matchPlayers.map((mp: any) => ({
-            id: mp.player_number,
-            num: mp.player_number,
-            name: mp.player_name,
-            team: mp.team,
-            isSubstitute: !mp.is_starter,
-            photoUrl: mp.photo_url,
-          }));
-
-          // Extract actions from match_players
-          matchPlayers.forEach((mp: any) => {
-            if (mp.actions && Array.isArray(mp.actions)) {
-              const playerActions = mp.actions.map((action: any) => ({
-                type: action.action_type,
-                specification: action.specification,
-                points: action.points,
-                player: mp.player_number,
-                team: mp.team,
-                timestamp: new Date(action.timestamp),
-                period_number: action.period_number,
-                time_in_period: action.time_in_period,
-                position: { x: 0, y: 0 },
-                semanticPosition: {
-                  xNormalized: action.semantic_x,
-                  yNormalized: action.semantic_y,
-                },
-              }));
-              actionDataList.push(...playerActions);
-            }
-          });
-        }
-      } else {
-        // Load from local SQLite
-        const actionRepo = new ActionRepository();
-        const actions = await actionRepo.getActionsForMatch(Number(matchId));
-
-        // Convert to ActionData format
-        actionDataList = actions.map((action: any) => ({
-          type: action.action_type,
-          specification: action.specification,
-          points: action.points,
-          player: action.player_number,
-          team: action.team,
-          timestamp: new Date(action.timestamp),
-          period_number: action.period_number,
-          time_in_period: action.time_in_period,
-          position: { x: 0, y: 0 },
-          semanticPosition: {
-            xNormalized: action.semantic_x,
-            yNormalized: action.semantic_y,
-          },
-        }));
-      }
-
-      navigation.navigate(ROUTES.MATCH_DETAILS as never, {
-        match,
-        actions: actionDataList,
-        players,
-      });
-    } catch (error) {
-      console.error("Error loading match details:", error);
-    }
+  const navigateToMatchDetails = (match: Match) => {
+    navigation.navigate(ROUTES.MATCH_DETAILS as never, {
+      match,
+    } as never);
   };
 
   if (loading) {
@@ -594,7 +513,7 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
           },
         ]}
       >
-        <ActivityIndicator size="large" color={BRAND_COLORS[500]} />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
@@ -625,7 +544,7 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
             <View style={styles.headerLeft}>
               <Text style={[styles.greeting, { color: colors.text.primary }]}>
                 Bonjour, {"\n"}
-                <Text style={{ color: BRAND_COLORS[500] }}>{userName}</Text>
+                <Text style={{ color: colors.primary }}>{userName}</Text>
               </Text>
               <Text
                 style={[styles.subGreeting, { color: colors.text.secondary }]}
@@ -657,9 +576,7 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
                 style={[
                   styles.iconButton,
                   {
-                    backgroundColor: isDark
-                      ? SLATE_COLORS[800]
-                      : SLATE_COLORS[100],
+                    backgroundColor: colors.surfaceVariant,
                     borderColor: colors.border,
                   },
                 ]}
@@ -675,11 +592,9 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
                 style={[
                   styles.clubLogo,
                   {
-                    backgroundColor: isDark
-                      ? SLATE_COLORS[800]
-                      : SLATE_COLORS[100],
+                    backgroundColor: colors.surfaceVariant,
                     borderColor:
-                      club && club.logoUrl ? BRAND_COLORS[500] : colors.border,
+                      club && club.logoUrl ? colors.primary : colors.border,
                   },
                 ]}
               >
@@ -704,9 +619,7 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
               style={[
                 styles.ctaCard,
                 {
-                  backgroundColor: isDark
-                    ? SLATE_COLORS[800]
-                    : COMMON_COLORS.white,
+                  backgroundColor: colors.surface,
                   borderColor: colors.border,
                 },
               ]}
@@ -716,15 +629,15 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
                   styles.ctaIconContainer,
                   {
                     backgroundColor: isDark
-                      ? `${BRAND_COLORS[500]}33`
-                      : `${BRAND_COLORS[500]}1A`,
+                      ? `${colors.primary}33`
+                      : `${colors.primary}1A`,
                   },
                 ]}
               >
                 <MaterialCommunityIcons
                   name={!club ? "shield-outline" : "account-group"}
                   size={24}
-                  color={BRAND_COLORS[500]}
+                  color={colors.primary}
                 />
               </View>
               <Text style={[styles.ctaTitle, { color: colors.text.primary }]}>
@@ -746,9 +659,7 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
                 style={[
                   styles.ctaPrimaryButton,
                   {
-                    backgroundColor: isDark
-                      ? COMMON_COLORS.white
-                      : SLATE_COLORS[900],
+                    backgroundColor: colors.button.secondary,
                   },
                 ]}
                 onPress={() => navigation.navigate("Club")}
@@ -757,7 +668,7 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
                   style={[
                     styles.ctaPrimaryButtonText,
                     {
-                      color: isDark ? SLATE_COLORS[900] : COMMON_COLORS.white,
+                      color: colors.text.primary,
                     },
                   ]}
                 >
@@ -766,7 +677,7 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
                 <MaterialCommunityIcons
                   name="chevron-right"
                   size={16}
-                  color={isDark ? SLATE_COLORS[900] : COMMON_COLORS.white}
+                  color={colors.text.primary}
                 />
               </TouchableOpacity>
             </View>
@@ -818,24 +729,24 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
                     styles.guestBanner,
                     {
                       backgroundColor: isDark
-                        ? `${BRAND_COLORS[500]}1A`
-                        : `${BRAND_COLORS[500]}1A`,
+                        ? `${colors.primary}1A`
+                        : `${colors.primary}1A`,
                       borderColor: isDark
-                        ? `${BRAND_COLORS[500]}33`
-                        : `${BRAND_COLORS[500]}33`,
+                        ? `${colors.primary}33`
+                        : `${colors.primary}33`,
                     },
                   ]}
                 >
                   <MaterialCommunityIcons
                     name="clock-outline"
                     size={16}
-                    color={BRAND_COLORS[500]}
+                    color={colors.primary}
                   />
                   <Text
                     style={[
                       styles.guestBannerText,
                       {
-                        color: isDark ? BRAND_COLORS[100] : BRAND_COLORS[600],
+                        color: colors.warning,
                       },
                     ]}
                   >
@@ -856,7 +767,7 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
               {/* Action Bar - New Match Button - Only show if user has teams */}
               {teams.length > 0 && (
                 <TouchableOpacity
-                  style={styles.newMatchButton}
+                  style={[styles.newMatchButton, { backgroundColor: colors.primary }]}
                   onPress={handleNewMatchClick}
                 >
                   <View style={styles.newMatchButtonLeft}>
@@ -871,7 +782,7 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
                     <MaterialCommunityIcons
                       name="plus"
                       size={24}
-                      color={COMMON_COLORS.white}
+                      color="#FFFFFF"
                     />
                   </View>
                 </TouchableOpacity>
@@ -881,7 +792,7 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
               <DashboardRecentMatches
                 matches={recentMatches}
                 colors={colors}
-                onMatchPress={loadMatchDetails}
+                onMatchPress={navigateToMatchDetails}
                 onViewAllPress={() => navigation.navigate("History")}
                 formatDate={formatDate}
               />
@@ -1030,7 +941,6 @@ const styles = StyleSheet.create({
     padding: 20,
     borderRadius: 16,
     marginBottom: 32,
-    backgroundColor: BRAND_COLORS[500],
   },
   newMatchButtonLeft: {
     flex: 1,
@@ -1038,18 +948,18 @@ const styles = StyleSheet.create({
   newMatchButtonTitle: {
     fontSize: 18,
     fontWeight: "bold",
-    color: COMMON_COLORS.white,
+    color: "#FFFFFF",
     marginBottom: 4,
   },
   newMatchButtonSubtitle: {
     fontSize: 14,
-    color: `${COMMON_COLORS.white}CC`,
+    color: "#FFFFFFCC",
   },
   newMatchButtonIcon: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: `${COMMON_COLORS.white}33`,
+    backgroundColor: "#FFFFFF33",
     alignItems: "center",
     justifyContent: "center",
   },

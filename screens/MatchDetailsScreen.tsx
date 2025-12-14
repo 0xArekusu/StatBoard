@@ -8,7 +8,7 @@
  * - Modal de détail joueur
  */
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   View,
   Text,
@@ -18,6 +18,7 @@ import {
   SafeAreaView,
   Modal,
   BackHandler,
+  ActivityIndicator,
 } from "react-native";
 import {
   useNavigation,
@@ -36,6 +37,8 @@ import {
 import BasketballCourtSVG from "../components/BasketballCourtSVG";
 import { PDFExportService } from "../src/services/export/PDFExportService";
 import { Alert } from "react-native";
+import { ActionRepository } from "../src/services/database/ActionRepository";
+import { supabase } from "../src/config/supabase";
 
 // Types
 interface PlayerStats {
@@ -78,16 +81,117 @@ type ActionType =
 
 interface RouteParams {
   match: Match;
-  actions: any[]; // Accept any format for now
+  actions?: any[]; // Optional - will be loaded if not provided
   fromLiveMatch?: boolean;
-  players?: any[]; // Optional players data
+  players?: any[]; // Optional - will be loaded if not provided
 }
 
 export default function MatchDetailsScreen() {
   const navigation = useNavigation();
   const route = useRoute<RouteProp<{ params: RouteParams }, "params">>();
-  const { match, actions, fromLiveMatch, players } = route.params;
+  const { match, fromLiveMatch } = route.params;
   const { colors, isDark } = useTheme();
+
+  // State for loaded data
+  const [actions, setActions] = useState<any[]>(route.params.actions || []);
+  const [players, setPlayers] = useState<any[]>(route.params.players || []);
+  const [loading, setLoading] = useState<boolean>(!route.params.actions);
+
+  // Load match data if not provided
+  useEffect(() => {
+    const loadMatchData = async () => {
+      // If data was already provided, skip loading
+      if (route.params.actions && route.params.players) {
+        return;
+      }
+
+      try {
+        setLoading(true);
+        const matchId = (match as any).supabase_id || match.id;
+        const isUUID = typeof matchId === "string" && matchId.includes("-");
+
+        let actionDataList: any[] = [];
+        let playersData: any[] = [];
+
+        if (isUUID) {
+          // Load from Supabase - get match_players with actions embedded
+          const { data: matchPlayers, error } = await supabase
+            .from("match_players")
+            .select("*")
+            .eq("match_id", matchId);
+
+          if (error) {
+            console.error("Error loading match players:", error);
+            return;
+          }
+
+          if (matchPlayers) {
+            // Convert match players to expected format
+            playersData = matchPlayers.map((mp: any) => ({
+              id: mp.player_number,
+              num: mp.player_number,
+              name: mp.player_name,
+              team: mp.team,
+              isSubstitute: !mp.is_starter,
+              photoUrl: mp.photo_url,
+            }));
+
+            // Extract actions from match_players
+            matchPlayers.forEach((mp: any) => {
+              if (mp.actions && Array.isArray(mp.actions)) {
+                const playerActions = mp.actions.map((action: any) => ({
+                  type: action.action_type,
+                  specification: action.specification,
+                  points: action.points,
+                  player: mp.player_number,
+                  team: mp.team,
+                  timestamp: new Date(action.timestamp),
+                  period_number: action.period_number,
+                  time_in_period: action.time_in_period,
+                  position: { x: 0, y: 0 },
+                  semanticPosition: {
+                    xNormalized: action.semantic_x,
+                    yNormalized: action.semantic_y,
+                  },
+                }));
+                actionDataList.push(...playerActions);
+              }
+            });
+          }
+        } else {
+          // Load from local SQLite
+          const actionRepo = new ActionRepository();
+          const actionsFromDB = await actionRepo.getActionsForMatch(Number(matchId));
+
+          // Convert to ActionData format
+          actionDataList = actionsFromDB.map((action: any) => ({
+            type: action.action_type,
+            specification: action.specification,
+            points: action.points,
+            player: action.player_number,
+            team: action.team,
+            timestamp: new Date(action.timestamp),
+            period_number: action.period_number,
+            time_in_period: action.time_in_period,
+            position: { x: 0, y: 0 },
+            semanticPosition: {
+              xNormalized: action.semantic_x,
+              yNormalized: action.semantic_y,
+            },
+          }));
+        }
+
+        setActions(actionDataList);
+        setPlayers(playersData);
+      } catch (error) {
+        console.error("Error loading match data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadMatchData();
+  }, [match, route.params.actions, route.params.players]);
 
   // Create a map of player numbers to names
   const playerNamesMap = useMemo(() => {
@@ -337,6 +441,18 @@ export default function MatchDetailsScreen() {
   const courtLineColor = match.courtLineColor || "#FFFFFF";
   const defaultLogoUri = require("../components/icons/coachassistant-logo-margin.png");
   const logoUri = match.clubLogoUrl || defaultLogoUri;
+
+  // Show loading indicator while data is being loaded
+  if (loading) {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: bgColor, justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={{ color: colors.text.secondary, marginTop: 16 }}>
+          Chargement des données du match...
+        </Text>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: bgColor }]}>
