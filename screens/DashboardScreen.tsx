@@ -10,14 +10,15 @@ import {
   BackHandler,
   Alert,
   Platform,
+  Modal,
 } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { Picker } from "@react-native-picker/picker";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useTheme } from "../src/contexts/ThemeContext";
 import { useAuth } from "../src/contexts/AuthContext";
-import { MatchRepository } from "../src/services/database/MatchRepository";
 import { ServiceFactory } from "../services/ServiceFactory";
+import { shareLogs } from "../utils/logger";
 import { Match } from "../src/models/types";
 import { Club } from "../models/Club";
 import { Team, TeamStatus } from "../models/Team";
@@ -68,6 +69,7 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
     null
   );
   const [isNewMatchFlow, setIsNewMatchFlow] = useState(false); // true if opened from "Nouveau match" button
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
 
   const isGuest = !user;
   const userName =
@@ -116,8 +118,8 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
   useEffect(() => {
     const checkForActiveMatch = async () => {
       if (activeTeamId) {
-        const matchRepo = new MatchRepository();
-        const activeMatch = await matchRepo.findActiveMatch();
+        const matchListService = ServiceFactory.getMatchListService(supabase);
+        const activeMatch = await matchListService.findActiveMatch();
         if (activeMatch && activeMatch.team_id === activeTeamId) {
           setLiveMatchToResume(activeMatch);
         }
@@ -140,10 +142,11 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
       setLoading(true);
       console.log("📊 DashboardScreen: Loading dashboard data...");
 
-      const matchRepo = new MatchRepository();
+      // Use MatchListService to load matches
+      const matchListService = ServiceFactory.getMatchListService(supabase);
 
       // Check for active match to resume
-      const activeMatch = await matchRepo.findActiveMatch();
+      const activeMatch = await matchListService.findActiveMatch();
       if (activeMatch) {
         console.log("🎮 DashboardScreen: Active match found", {
           matchId: activeMatch.id,
@@ -152,90 +155,11 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
         setLiveMatchToResume(activeMatch);
       }
 
-      // 1. Load LOCAL matches from SQLite (non-synced ones)
-      console.log("💾 DashboardScreen: Fetching local matches from SQLite");
-      const allLocalMatches = await matchRepo.getAllMatches();
-      console.log("✅ DashboardScreen: Local matches fetched", {
-        totalLocalMatches: allLocalMatches.length,
-      });
+      // Load all matches from both sources
+      console.log("📡 DashboardScreen: Loading matches...");
+      const allMatches = await matchListService.loadAllMatches(user?.id || null);
 
-      let localMatches = allLocalMatches.filter(
-        (match) => !match.synced_to_server
-      );
-
-      // 2. Load SERVER matches from Supabase if user is authenticated
-      let serverMatches: Match[] = [];
-      if (user) {
-        console.log(
-          "📡 DashboardScreen: User authenticated, fetching server matches",
-          {
-            userId: user.id,
-          }
-        );
-
-        try {
-          const { data: serverMatchesData, error } = await supabase
-            .from("matches")
-            .select("*")
-            .eq("created_by", user.id)
-            .order("played_at", { ascending: false });
-
-          if (error) {
-            console.error(
-              "❌ DashboardScreen: Error fetching server matches",
-              error.message
-            );
-          } else if (serverMatchesData) {
-            console.log("✅ DashboardScreen: Server matches fetched", {
-              serverMatchesCount: serverMatchesData.length,
-            });
-
-            // Transform server matches to Match format
-            serverMatches = serverMatchesData.map(
-              (sm, index) =>
-                ({
-                  id: -(index + 1), // Use negative IDs for server matches
-                  supabase_id: sm.id, // Keep Supabase UUID for navigation
-                  my_team_name: sm.my_team_name,
-                  opponent_name: sm.opponent_name,
-                  is_home: sm.is_home ? 1 : 0,
-                  status: sm.status || ("completed" as const),
-                  total_periods: sm.total_periods,
-                  period_duration: sm.period_duration,
-                  overtime_duration: sm.overtime_duration || 300,
-                  overtime_periods: sm.overtime_periods || 0,
-                  club_id: sm.club_id,
-                  team_id: sm.team_id,
-                  current_period: 0,
-                  time_elapsed: 0,
-                  my_team_score: sm.my_team_score,
-                  opponent_score: sm.opponent_score,
-                  synced_to_server: 1,
-                  created_at: sm.created_at,
-                  started_at: sm.started_at,
-                  ended_at: sm.ended_at,
-                  played_at: sm.played_at,
-                  last_updated: sm.created_at,
-                } as any)
-            );
-          }
-        } catch (error) {
-          console.error(
-            "❌ DashboardScreen: Error loading server matches",
-            error
-          );
-        }
-      } else {
-        console.log(
-          "👤 DashboardScreen: Guest mode - showing only local matches"
-        );
-      }
-
-      // 3. Merge local and server matches
-      const allMatches = [...localMatches, ...serverMatches];
-      console.log("🔀 DashboardScreen: Merged matches", {
-        localCount: localMatches.length,
-        serverCount: serverMatches.length,
+      console.log("✅ DashboardScreen: Matches loaded", {
         totalCount: allMatches.length,
       });
 
@@ -346,10 +270,10 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
           style: "destructive",
           onPress: async () => {
             try {
-              const matchRepo = new MatchRepository();
+              const matchListService = ServiceFactory.getMatchListService(supabase);
 
               // Delete all match data (actions and players are cascade deleted via FOREIGN KEY)
-              await matchRepo.delete(liveMatchToResume.id);
+              await matchListService.deleteMatch(liveMatchToResume.id);
 
               // Remove from state
               setLiveMatchToResume(null);
@@ -377,8 +301,8 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
    */
   const handleNewMatchClick = async () => {
     // Check if there's an active match
-    const matchRepo = new MatchRepository();
-    const activeMatch = await matchRepo.findActiveMatch();
+    const matchListService = ServiceFactory.getMatchListService(supabase);
+    const activeMatch = await matchListService.findActiveMatch();
 
     if (activeMatch) {
       // Show popup with live match (from "Nouveau match" button)
@@ -410,10 +334,10 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
           style: "destructive",
           onPress: async () => {
             try {
-              const matchRepo = new MatchRepository();
+              const matchListService = ServiceFactory.getMatchListService(supabase);
 
               // Delete the active match
-              await matchRepo.delete(liveMatchToResume.id);
+              await matchListService.deleteMatch(liveMatchToResume.id);
 
               // Close popup
               setLiveMatchToResume(null);
@@ -491,6 +415,55 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
   };
 
   /**
+   * Export logs for debugging
+   */
+  const handleExportLogs = async () => {
+    try {
+      setShowProfileMenu(false);
+
+      const message = Platform.OS === "ios"
+        ? "Les logs de l'application vont être partagés via la feuille de partage iOS."
+        : "Les logs de l'application vont être sauvegardés. Choisissez un emplacement.";
+
+      Alert.alert(
+        "Exporter les logs",
+        message,
+        [
+          {
+            text: "Annuler",
+            style: "cancel",
+          },
+          {
+            text: "Exporter",
+            onPress: async () => {
+              try {
+                const result = await shareLogs();
+
+                if (result && result.success) {
+                  Alert.alert("Succès", result.message);
+                } else {
+                  Alert.alert(
+                    "Erreur",
+                    result?.message || "Impossible d'exporter les logs. Veuillez réessayer."
+                  );
+                }
+              } catch (error) {
+                console.error("Error exporting logs:", error);
+                Alert.alert(
+                  "Erreur",
+                  "Impossible d'exporter les logs. Veuillez réessayer."
+                );
+              }
+            },
+          },
+        ]
+      );
+    } catch (error) {
+      console.error("Error in handleExportLogs:", error);
+    }
+  };
+
+  /**
    * Navigates to match details screen
    * Data loading is handled by MatchDetailsScreen itself
    * @param match - The match to view details for
@@ -534,6 +507,46 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
           setIsNewMatchFlow(false);
         }}
       />
+
+      {/* Profile Menu Modal */}
+      <Modal
+        visible={showProfileMenu}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowProfileMenu(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowProfileMenu(false)}
+        >
+          <View style={styles.profileMenuContainer}>
+            <View
+              style={[
+                styles.profileMenu,
+                {
+                  backgroundColor: colors.surface,
+                  borderColor: colors.border,
+                },
+              ]}
+            >
+              <TouchableOpacity
+                style={styles.profileMenuItem}
+                onPress={handleExportLogs}
+              >
+                <MaterialCommunityIcons
+                  name="file-download-outline"
+                  size={20}
+                  color={colors.text.primary}
+                />
+                <Text style={[styles.profileMenuItemText, { color: colors.text.primary }]}>
+                  Exporter les logs
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </TouchableOpacity>
+      </Modal>
 
       <ScrollView
         style={[styles.container, { backgroundColor: colors.background }]}
@@ -588,7 +601,8 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
                 />
               </TouchableOpacity>
 
-              <View
+              <TouchableOpacity
+                onPress={() => setShowProfileMenu(true)}
                 style={[
                   styles.clubLogo,
                   {
@@ -609,7 +623,7 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
                     style={styles.clubLogoImage}
                   />
                 )}
-              </View>
+              </TouchableOpacity>
             </View>
           </View>
 
@@ -962,5 +976,37 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF33",
     alignItems: "center",
     justifyContent: "center",
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "flex-start",
+    alignItems: "flex-end",
+    paddingTop: 70,
+    paddingRight: 24,
+  },
+  profileMenuContainer: {
+    minWidth: 200,
+  },
+  profileMenu: {
+    borderRadius: 12,
+    borderWidth: 1,
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  profileMenuItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    gap: 12,
+  },
+  profileMenuItemText: {
+    fontSize: 16,
+    fontWeight: "500",
   },
 });

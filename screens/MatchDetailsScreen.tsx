@@ -37,7 +37,7 @@ import {
 import BasketballCourtSVG from "../components/BasketballCourtSVG";
 import { PDFExportService } from "../src/services/export/PDFExportService";
 import { Alert } from "react-native";
-import { ActionRepository } from "../src/services/database/ActionRepository";
+import { ServiceFactory } from "../services/ServiceFactory";
 import { supabase } from "../src/config/supabase";
 
 // Types
@@ -107,84 +107,19 @@ export default function MatchDetailsScreen() {
 
       try {
         setLoading(true);
-        const matchId = (match as any).supabase_id || match.id;
-        const isUUID = typeof matchId === "string" && matchId.includes("-");
 
-        let actionDataList: any[] = [];
-        let playersData: any[] = [];
+        // Use MatchDataService to load data from appropriate source
+        const matchDataService = ServiceFactory.getMatchDataService(supabase);
+        const matchDetails = await matchDataService.loadMatchDetails(match);
 
-        if (isUUID) {
-          // Load from Supabase - get match_players with actions embedded
-          const { data: matchPlayers, error } = await supabase
-            .from("match_players")
-            .select("*")
-            .eq("match_id", matchId);
-
-          if (error) {
-            console.error("Error loading match players:", error);
-            return;
-          }
-
-          if (matchPlayers) {
-            // Convert match players to expected format
-            playersData = matchPlayers.map((mp: any) => ({
-              id: mp.player_number,
-              num: mp.player_number,
-              name: mp.player_name,
-              team: mp.team,
-              isSubstitute: !mp.is_starter,
-              photoUrl: mp.photo_url,
-            }));
-
-            // Extract actions from match_players
-            matchPlayers.forEach((mp: any) => {
-              if (mp.actions && Array.isArray(mp.actions)) {
-                const playerActions = mp.actions.map((action: any) => ({
-                  type: action.action_type,
-                  specification: action.specification,
-                  points: action.points,
-                  player: mp.player_number,
-                  team: mp.team,
-                  timestamp: new Date(action.timestamp),
-                  period_number: action.period_number,
-                  time_in_period: action.time_in_period,
-                  position: { x: 0, y: 0 },
-                  semanticPosition: {
-                    xNormalized: action.semantic_x,
-                    yNormalized: action.semantic_y,
-                  },
-                }));
-                actionDataList.push(...playerActions);
-              }
-            });
-          }
-        } else {
-          // Load from local SQLite
-          const actionRepo = new ActionRepository();
-          const actionsFromDB = await actionRepo.getActionsForMatch(Number(matchId));
-
-          // Convert to ActionData format
-          actionDataList = actionsFromDB.map((action: any) => ({
-            type: action.action_type,
-            specification: action.specification,
-            points: action.points,
-            player: action.player_number,
-            team: action.team,
-            timestamp: new Date(action.timestamp),
-            period_number: action.period_number,
-            time_in_period: action.time_in_period,
-            position: { x: 0, y: 0 },
-            semanticPosition: {
-              xNormalized: action.semantic_x,
-              yNormalized: action.semantic_y,
-            },
-          }));
-        }
-
-        setActions(actionDataList);
-        setPlayers(playersData);
+        setActions(matchDetails.actions);
+        setPlayers(matchDetails.players);
       } catch (error) {
         console.error("Error loading match data:", error);
+        Alert.alert(
+          "Erreur",
+          "Impossible de charger les données du match. Veuillez réessayer."
+        );
       } finally {
         setLoading(false);
       }

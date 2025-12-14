@@ -10,10 +10,10 @@ import {
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useTheme } from "../src/contexts/ThemeContext";
 import { useAuth } from "../src/contexts/AuthContext";
-import { MatchRepository } from "../src/services/database/MatchRepository";
 import { Match } from "../src/models/types";
 import { supabase } from "../src/config/supabase";
 import { ROUTES } from "../constants/routes";
+import { ServiceFactory } from "../services/ServiceFactory";
 
 interface HistoryScreenProps {
   navigation: any;
@@ -36,62 +36,9 @@ export default function HistoryScreen({ navigation }: HistoryScreenProps) {
     try {
       setLoading(true);
 
-      const matchRepo = new MatchRepository();
-
-      // 1. Load LOCAL matches
-      const allLocalMatches = await matchRepo.getAllMatches();
-      let localMatches = allLocalMatches.filter((m) => !m.synced_to_server);
-
-      // 2. Load SERVER matches if user authenticated
-      let serverMatches: Match[] = [];
-      if (user) {
-        try {
-          const { data: serverMatchesData, error } = await supabase
-            .from("matches")
-            .select("*")
-            .eq("created_by", user.id)
-            .order("played_at", { ascending: false });
-
-          if (!error && serverMatchesData) {
-            serverMatches = serverMatchesData.map((sm, index) => ({
-              id: -(index + 1), // Use negative IDs for server matches
-              supabase_id: sm.id, // Keep Supabase UUID for navigation
-              my_team_name: sm.my_team_name,
-              opponent_name: sm.opponent_name,
-              is_home: sm.is_home ? 1 : 0,
-              status: sm.status || "completed" as const,
-              total_periods: sm.total_periods,
-              period_duration: sm.period_duration,
-              overtime_duration: sm.overtime_duration || 300,
-              overtime_periods: sm.overtime_periods || 0,
-              club_id: sm.club_id,
-              team_id: sm.team_id,
-              current_period: 0,
-              time_elapsed: 0,
-              my_team_score: sm.my_team_score,
-              opponent_score: sm.opponent_score,
-              synced_to_server: 1,
-              created_at: sm.created_at,
-              started_at: sm.started_at,
-              ended_at: sm.ended_at,
-              played_at: sm.played_at,
-              last_updated: sm.created_at,
-            } as any));
-          }
-        } catch (error) {
-          console.error("Error loading server matches:", error);
-        }
-      }
-
-      // 3. Merge and sort
-      let allMatches = [...localMatches, ...serverMatches];
-
-      // Sort by date (most recent first)
-      allMatches.sort(
-        (a, b) =>
-          new Date(b.ended_at || b.created_at).getTime() -
-          new Date(a.ended_at || a.created_at).getTime()
-      );
+      // Use MatchListService to load all matches from both sources
+      const matchListService = ServiceFactory.getMatchListService(supabase);
+      const allMatches = await matchListService.loadAllMatchesSorted(user?.id || null);
 
       setMatches(allMatches);
     } catch (error) {

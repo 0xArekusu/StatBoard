@@ -8,6 +8,10 @@ import { ClubMemberService } from "./ClubMemberService";
 import { TeamService } from "./TeamService";
 import { PlayerService } from "./PlayerService";
 import { SubscriptionService } from "./SubscriptionService";
+import { MatchDataService } from "./MatchDataService";
+import { MatchListService } from "./MatchListService";
+import { ActionRepository } from "../src/services/database/ActionRepository";
+import { MatchRepository } from "../src/services/database/MatchRepository";
 
 /**
  * Factory Pattern + Singleton Pattern
@@ -19,6 +23,8 @@ export class ServiceFactory {
   private static teamServiceInstance: TeamService | null = null;
   private static playerServiceInstance: PlayerService | null = null;
   private static subscriptionServiceInstance: SubscriptionService | null = null;
+  private static matchDataServiceInstance: MatchDataService | null = null;
+  private static matchListServiceInstance: MatchListService | null = null;
 
   /**
    * Get ClubService singleton instance
@@ -86,6 +92,30 @@ export class ServiceFactory {
   }
 
   /**
+   * Get MatchDataService singleton instance
+   * @param supabase Supabase client instance
+   */
+  static getMatchDataService(supabase: SupabaseClient): MatchDataService {
+    if (!this.matchDataServiceInstance) {
+      const actionRepository = new ActionRepository();
+      this.matchDataServiceInstance = new MatchDataService(supabase, actionRepository);
+    }
+    return this.matchDataServiceInstance;
+  }
+
+  /**
+   * Get MatchListService singleton instance
+   * @param supabase Supabase client instance
+   */
+  static getMatchListService(supabase: SupabaseClient): MatchListService {
+    if (!this.matchListServiceInstance) {
+      const matchRepository = new MatchRepository();
+      this.matchListServiceInstance = new MatchListService(supabase, matchRepository);
+    }
+    return this.matchListServiceInstance;
+  }
+
+  /**
    * Reset singleton instances (useful for testing)
    */
   static reset(): void {
@@ -94,5 +124,7 @@ export class ServiceFactory {
     this.teamServiceInstance = null;
     this.playerServiceInstance = null;
     this.subscriptionServiceInstance = null;
+    this.matchDataServiceInstance = null;
+    this.matchListServiceInstance = null;
   }
 }

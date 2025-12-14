@@ -9,6 +9,8 @@
  */
 
 import * as FileSystem from "expo-file-system/legacy";
+import * as Sharing from "expo-sharing";
+import { Platform } from "react-native";
 
 class LoggerService {
   private static instance: LoggerService;
@@ -189,7 +191,8 @@ class LoggerService {
 
   /**
    * Share logs file (for debugging)
-   * Collects all log files and saves them to Downloads folder
+   * On iOS: Uses native share sheet
+   * On Android: Saves to user-selected directory (usually Downloads)
    */
   async shareLogs() {
     try {
@@ -201,11 +204,12 @@ class LoggerService {
 
       if (logFiles.length === 0) {
         console.warn("[LoggerService] ⚠️  No log files to share");
-        return;
+        return { success: false, message: "Aucun fichier de log trouvé" };
       }
 
       // Read all log files and combine them
       let combinedLogs = `=== Coach Assistant Logs Export ===\n`;
+      combinedLogs += `=== Platform: ${Platform.OS} ===\n`;
       combinedLogs += `=== Exported at ${new Date().toISOString()} ===\n`;
       combinedLogs += `=== Total files: ${logFiles.length} ===\n\n`;
 
@@ -228,27 +232,57 @@ class LoggerService {
         .replace(/[:.]/g, "-")
         .slice(0, -5);
       const filename = `coach-assistant-logs-${timestamp}.txt`;
+      const tempFilePath = `${FileSystem.cacheDirectory}${filename}`;
 
-      // Request permission to save in user-selected directory (usually Downloads)
-      const permissions =
-        await FileSystem.StorageAccessFramework.requestDirectoryPermissionsAsync();
+      // Write combined logs to temporary file
+      await FileSystem.writeAsStringAsync(tempFilePath, combinedLogs, {
+        encoding: FileSystem.EncodingType.UTF8,
+      });
 
-      if (permissions.granted) {
-        // Save to user-selected directory
-        const fileUri = await FileSystem.StorageAccessFramework.createFileAsync(
-          permissions.directoryUri,
-          filename,
-          "text/plain"
-        );
-        await FileSystem.writeAsStringAsync(fileUri, combinedLogs, {
-          encoding: FileSystem.EncodingType.UTF8,
+      if (Platform.OS === "ios") {
+        // iOS: Use native share sheet
+        const isAvailable = await Sharing.isAvailableAsync();
+        if (!isAvailable) {
+          console.error("[LoggerService] ❌ Sharing is not available on this device");
+          return { success: false, message: "Le partage n'est pas disponible sur cet appareil" };
+        }
+
+        await Sharing.shareAsync(tempFilePath, {
+          mimeType: "text/plain",
+          dialogTitle: "Exporter les logs",
+          UTI: "public.plain-text",
         });
-        console.log("[LoggerService] ✅ Logs saved to:", fileUri);
+
+        console.log("[LoggerService] ✅ Logs shared via share sheet");
+        return { success: true, message: "Logs partagés avec succès" };
       } else {
-        console.warn("[LoggerService] ⚠️  Permission denied to save file");
+        // Android: Use Storage Access Framework to save to Downloads
+        const permissions =
+          await FileSystem.StorageAccessFramework.requestDirectoryPermissionsAsync();
+
+        if (permissions.granted) {
+          // Save to user-selected directory
+          const fileUri = await FileSystem.StorageAccessFramework.createFileAsync(
+            permissions.directoryUri,
+            filename,
+            "text/plain"
+          );
+          await FileSystem.writeAsStringAsync(fileUri, combinedLogs, {
+            encoding: FileSystem.EncodingType.UTF8,
+          });
+          console.log("[LoggerService] ✅ Logs saved to:", fileUri);
+          return { success: true, message: "Logs sauvegardés avec succès" };
+        } else {
+          console.warn("[LoggerService] ⚠️  Permission denied to save file");
+          return { success: false, message: "Permission refusée pour sauvegarder le fichier" };
+        }
       }
     } catch (error) {
       console.error("[LoggerService] ❌ Error sharing logs:", error);
+      return {
+        success: false,
+        message: `Erreur lors de l'export: ${error instanceof Error ? error.message : 'Erreur inconnue'}`
+      };
     }
   }
 
