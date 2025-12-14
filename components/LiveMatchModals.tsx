@@ -107,31 +107,44 @@ export const HistoryModal: React.FC<HistoryModalProps> = ({
 
   return (
     <Modal visible={visible} transparent animationType="slide">
-      <View style={styles.modalOverlay}>
-        <View style={[styles.historyModal, { backgroundColor: surfaceColor }]}>
+      <View style={styles.filterModalOverlay}>
+        {/* Backdrop transparent */}
+        <TouchableOpacity
+          style={styles.filterBackdrop}
+          activeOpacity={1}
+          onPress={onClose}
+        />
+
+        {/* Bottom Sheet */}
+        <View
+          style={[styles.filterBottomSheet, { backgroundColor: surfaceColor }]}
+        >
+          {/* Handle */}
           <View
             style={[
-              styles.historyHeader,
+              styles.sheetHandle,
               {
-                backgroundColor: isDark ? SLATE_COLORS[950] : SLATE_COLORS[50],
-                borderBottomColor: borderColor,
+                backgroundColor: isDark ? SLATE_COLORS[700] : SLATE_COLORS[300],
               },
             ]}
-          >
-            <View style={styles.historyHeaderLeft}>
+          />
+
+          {/* Header */}
+          <View style={styles.filterSheetHeader}>
+            <View style={styles.filterHeaderLeft}>
               <MaterialCommunityIcons
                 name="format-list-bulleted"
-                size={20}
+                size={24}
                 color={BRAND_COLORS[500]}
               />
-              <Text style={[styles.historyTitle, { color: textPrimary }]}>
+              <Text style={[styles.filterSheetTitle, { color: textPrimary }]}>
                 Historique du match
               </Text>
             </View>
             <TouchableOpacity
               onPress={onClose}
               style={[
-                styles.historyCloseButton,
+                styles.filterCloseButton,
                 {
                   backgroundColor: isDark
                     ? SLATE_COLORS[800]
@@ -140,7 +153,7 @@ export const HistoryModal: React.FC<HistoryModalProps> = ({
               ]}
             >
               <MaterialCommunityIcons
-                name="close-circle"
+                name="close"
                 size={20}
                 color={textSecondary}
               />
@@ -207,33 +220,6 @@ export const HistoryModal: React.FC<HistoryModalProps> = ({
               </View>
             )}
           </ScrollView>
-
-          <View
-            style={[
-              styles.historyFooter,
-              {
-                backgroundColor: isDark ? SLATE_COLORS[950] : SLATE_COLORS[50],
-                borderTopColor: borderColor,
-              },
-            ]}
-          >
-            <TouchableOpacity
-              onPress={onClose}
-              style={[
-                styles.historyFooterButton,
-                { backgroundColor: BRAND_COLORS[600] },
-              ]}
-            >
-              <Text
-                style={[
-                  styles.historyFooterButtonText,
-                  { color: COMMON_COLORS.white },
-                ]}
-              >
-                Fermer
-              </Text>
-            </TouchableOpacity>
-          </View>
         </View>
       </View>
     </Modal>
