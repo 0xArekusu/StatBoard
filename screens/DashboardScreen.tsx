@@ -9,6 +9,7 @@ import {
   Image,
   BackHandler,
   Alert,
+  Platform,
 } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { Picker } from "@react-native-picker/picker";
@@ -788,6 +789,11 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
                   <View style={styles.teamSelectorIcon}>
                     <JerseyIconSimple width={30} height={30} />
                   </View>
+                  {Platform.OS === 'ios' && (
+                    <Text style={[styles.teamSelectorLabel, { color: colors.text.primary }]}>
+                      {teams.find(t => t.id === activeTeamId)?.name || 'Sélectionner une équipe'}
+                    </Text>
+                  )}
                   <Picker
                     selectedValue={activeTeamId || ""}
                     onValueChange={(value) => setActiveTeamId(value)}
@@ -985,9 +991,22 @@ const styles = StyleSheet.create({
   teamSelectorIcon: {
     marginRight: 8,
   },
+  teamSelectorLabel: {
+    fontSize: 16,
+    fontWeight: "600",
+    marginRight: 8,
+  },
   picker: {
-    flex: 1,
-    height: 58,
+    ...Platform.select({
+      ios: {
+        height: 58,
+        width: '100%',
+      },
+      android: {
+        flex: 1,
+        height: 58,
+      },
+    }),
   },
   guestBanner: {
     flexDirection: "row",
