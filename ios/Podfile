@@ -56,16 +56,5 @@ target 'CoachAssistant' do
       :mac_catalyst_enabled => false,
       :ccache_enabled => ccache_enabled?(podfile_properties),
     )
-
-    # Fix for folly coroutines issue in React Native 0.81.4
-    installer.pods_project.targets.each do |target|
-      target.build_configurations.each do |config|
-        config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] ||= ['$(inherited)']
-        config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] << 'FOLLY_HAVE_COROUTINES=0'
-      end
-    end
-
-    # Apply folly patch
-    system('bash', "#{Pod::Config.instance.installation_root}/fix-folly.sh")
   end
 end
