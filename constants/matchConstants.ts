@@ -1,4 +1,17 @@
-// Match format constants
+/**
+ * Match Constants
+ *
+ * Centralized constants for match-related data.
+ * NOTE: Use MatchStatus and Team enums from '../src/models/types' instead of duplicating here.
+ */
+
+// ===========================
+// MATCH FORMATS
+// ===========================
+
+/**
+ * Match format constants
+ */
 export const MATCH_FORMATS = {
   TWO_HALVES: '2_halves' as const,
   FOUR_QUARTERS: '4_quarters' as const,
@@ -6,7 +19,9 @@ export const MATCH_FORMATS = {
 
 export type MatchFormat = typeof MATCH_FORMATS[keyof typeof MATCH_FORMATS];
 
-// Match format labels in French
+/**
+ * Match format labels in French
+ */
 export const MATCH_FORMAT_LABELS = {
   [MATCH_FORMATS.TWO_HALVES]: {
     singular: 'mi-temps',
@@ -20,36 +35,13 @@ export const MATCH_FORMAT_LABELS = {
   },
 } as const;
 
-// Period labels
+/**
+ * Get period label in French
+ * @param format - Match format
+ * @param periodNumber - Period number (1-based)
+ * @returns Localized period label (e.g., "1ère mi-temps", "2e quart-temps")
+ */
 export const getPeriodLabel = (format: MatchFormat, periodNumber: number): string => {
   const labels = MATCH_FORMAT_LABELS[format];
   return `${periodNumber}${labels.short === 'MT' ? 'ère' : 'e'} ${labels.singular}`;
 };
-
-// Duration labels (in seconds)
-export const DURATION_LABELS = {
-  300: '5 min',
-  600: '10 min',
-  720: '12 min',
-  900: '15 min',
-  1200: '20 min',
-} as const;
-
-// Team modes
-export const TEAM_MODES = {
-  A: 'A' as const,
-  B: 'B' as const,
-  BOTH: 'BOTH' as const,
-} as const;
-
-export type TeamMode = typeof TEAM_MODES[keyof typeof TEAM_MODES];
-
-// Match status
-export const MATCH_STATUS = {
-  IN_PROGRESS: 'in_progress' as const,
-  COMPLETED: 'completed' as const,
-  PAUSED: 'paused' as const,
-  ABANDONED: 'abandoned' as const,
-} as const;
-
-export type MatchStatus = typeof MATCH_STATUS[keyof typeof MATCH_STATUS];
