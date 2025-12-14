@@ -12,8 +12,9 @@ export class SQLiteAdapter implements IStorageAdapter {
   constructor(databaseName: string = "statboard.db") {
     this.db = SQLite.openDatabaseSync(databaseName);
 
-    // 🔄 TEMPORARY RESET - Remove after testing!
-    //this.resetDatabaseTables();
+    // 🔄 TEMPORARY RESET - R
+    // emove after testing!
+    this.resetDatabaseTables();
     this.initializeTables();
   }
 

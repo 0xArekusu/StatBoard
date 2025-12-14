@@ -10,20 +10,12 @@ import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { AppState, AppStateStatus } from "react-native";
 import AuthScreen from "./screens/AuthScreen";
-import MainMenuScreen from "./screens/old/MainMenuScreen";
-import BoardScreen from "./screens/old/BoardScreen";
 import MatchDetailsScreen from "./screens/MatchDetailsScreen";
-import MatchSummaryScreen from "./screens/old/MatchSummaryScreen";
-import MatchHistoryScreen from "./screens/old/MatchHistoryScreen";
 import SplashScreen from "./screens/SplashScreen";
 import LoginScreen from "./screens/LoginScreen";
-import SignUpScreen from "./screens/old/SignUpScreen";
-import ClubFormScreen from "./screens/old/ClubFormScreen";
-import TeamFormScreen from "./screens/old/TeamFormScreen";
 import TeamInfoScreen from "./screens/TeamInfoScreen";
 import TeamRosterScreen from "./screens/TeamRosterScreen";
 import TeamStartersScreen from "./screens/TeamStartersScreen";
-import JoinClubScreen from "./screens/old/JoinClubScreen";
 import NewMatchScreen from "./screens/NewMatchScreen";
 import LiveMatchScreen from "./screens/LiveMatchScreen";
 import MainTabNavigator from "./navigation/MainTabNavigator";
@@ -80,31 +72,17 @@ function Navigation() {
         <Stack.Screen name={ROUTES.AUTH} component={AuthScreen} />
         <Stack.Screen name={ROUTES.MAIN_TABS} component={MainTabNavigator} />
         <Stack.Screen name={ROUTES.DEBUG_COURT} component={DebugCourtClick} />
-        <Stack.Screen name={ROUTES.MAIN_MENU} component={MainMenuScreen} />
-        <Stack.Screen name={ROUTES.BOARD} component={BoardScreen} />
-        <Stack.Screen
-          name={ROUTES.MATCH_HISTORY}
-          component={MatchHistoryScreen}
-        />
-        <Stack.Screen
-          name={ROUTES.MATCH_SUMMARY}
-          component={MatchSummaryScreen}
-        />
         <Stack.Screen
           name={ROUTES.MATCH_DETAILS}
           component={MatchDetailsScreen}
         />
         <Stack.Screen name={ROUTES.LOGIN} component={LoginScreen} />
-        <Stack.Screen name={ROUTES.SIGN_UP} component={SignUpScreen} />
-        <Stack.Screen name={ROUTES.CLUB_FORM} component={ClubFormScreen} />
-        <Stack.Screen name={ROUTES.TEAM_FORM} component={TeamFormScreen} />
         <Stack.Screen name={ROUTES.TEAM_INFO} component={TeamInfoScreen} />
         <Stack.Screen name={ROUTES.TEAM_ROSTER} component={TeamRosterScreen} />
         <Stack.Screen
           name={ROUTES.TEAM_STARTERS}
           component={TeamStartersScreen}
         />
-        <Stack.Screen name={ROUTES.JOIN_CLUB} component={JoinClubScreen} />
         <Stack.Screen name={ROUTES.NEW_MATCH} component={NewMatchScreen} />
         <Stack.Screen name={ROUTES.LIVE_MATCH} component={LiveMatchScreen} />
       </Stack.Navigator>
