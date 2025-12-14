@@ -10,11 +10,6 @@ import {
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useTheme } from "../src/contexts/ThemeContext";
 import { useAuth } from "../src/contexts/AuthContext";
-import {
-  SLATE_COLORS,
-  BRAND_COLORS,
-  COMMON_COLORS,
-} from "../src/theme";
 import { MatchRepository } from "../src/services/database/MatchRepository";
 import { ActionRepository } from "../src/services/database/ActionRepository";
 import { ServiceFactory } from "../services/ServiceFactory";
@@ -30,7 +25,7 @@ interface HistoryScreenProps {
 }
 
 export default function HistoryScreen({ navigation }: HistoryScreenProps) {
-  const { isDark } = useTheme();
+  const { colors } = useTheme();
   const { user } = useAuth();
 
   const [loading, setLoading] = useState(true);
@@ -111,11 +106,11 @@ export default function HistoryScreen({ navigation }: HistoryScreenProps) {
     }
   };
 
-  const bgColor = isDark ? SLATE_COLORS[950] : SLATE_COLORS[50];
-  const surfaceColor = isDark ? SLATE_COLORS[900] : COMMON_COLORS.white;
-  const textPrimary = isDark ? COMMON_COLORS.white : SLATE_COLORS[900];
-  const textSecondary = isDark ? SLATE_COLORS[400] : SLATE_COLORS[500];
-  const borderColor = isDark ? SLATE_COLORS[800] : SLATE_COLORS[200];
+  const bgColor = colors.surface;
+  const surfaceColor = colors.background;
+  const textPrimary = colors.text.primary;
+  const textSecondary = colors.text.secondary;
+  const borderColor = colors.border;
 
   if (loading) {
     return (
@@ -129,7 +124,7 @@ export default function HistoryScreen({ navigation }: HistoryScreenProps) {
           },
         ]}
       >
-        <ActivityIndicator size="large" color={BRAND_COLORS[500]} />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
@@ -148,9 +143,7 @@ export default function HistoryScreen({ navigation }: HistoryScreenProps) {
             style={[
               styles.emptyState,
               {
-                backgroundColor: isDark
-                  ? `${SLATE_COLORS[900]}80`
-                  : SLATE_COLORS[100],
+                backgroundColor: colors.surfaceVariant,
                 borderColor,
               },
             ]}
@@ -171,11 +164,6 @@ export default function HistoryScreen({ navigation }: HistoryScreenProps) {
               <MatchCard
                 key={`match-${match.id}-${index}`}
                 match={match}
-                isDark={isDark}
-                surfaceColor={surfaceColor}
-                textPrimary={textPrimary}
-                textSecondary={textSecondary}
-                borderColor={borderColor}
                 onPress={async () => {
                   try {
                     const matchId = (match as any).supabase_id || match.id;
@@ -272,23 +260,14 @@ export default function HistoryScreen({ navigation }: HistoryScreenProps) {
 
 interface MatchCardProps {
   match: Match;
-  isDark: boolean;
-  surfaceColor: string;
-  textPrimary: string;
-  textSecondary: string;
-  borderColor: string;
   onPress: () => void;
 }
 
 function MatchCard({
   match,
-  isDark,
-  surfaceColor,
-  textPrimary,
-  textSecondary,
-  borderColor,
   onPress,
 }: MatchCardProps) {
+  const { isDark, colors } = useTheme();
   const scoreA = match.my_team_score || 0;
   const scoreB = match.opponent_score || 0;
   const isWin = scoreA > scoreB;
@@ -308,7 +287,7 @@ function MatchCard({
 
   return (
     <TouchableOpacity
-      style={[styles.matchCard, { backgroundColor: surfaceColor, borderColor }]}
+      style={[styles.matchCard, { backgroundColor: colors.background, borderColor: colors.border }]}
       onPress={onPress}
       activeOpacity={0.7}
     >
@@ -318,9 +297,9 @@ function MatchCard({
           <MaterialCommunityIcons
             name="calendar"
             size={12}
-            color={textSecondary}
+            color={colors.text.secondary}
           />
-          <Text style={[styles.matchCardInfoText, { color: textSecondary }]}>
+          <Text style={[styles.matchCardInfoText, { color: colors.text.secondary }]}>
             {formatDate(match.ended_at || match.created_at)}
           </Text>
         </View>
@@ -328,9 +307,9 @@ function MatchCard({
           <MaterialCommunityIcons
             name="map-marker"
             size={12}
-            color={textSecondary}
+            color={colors.text.secondary}
           />
-          <Text style={[styles.matchCardInfoText, { color: textSecondary }]}>
+          <Text style={[styles.matchCardInfoText, { color: colors.text.secondary }]}>
             {match.is_home ? 'Domicile' : 'Extérieur'}
           </Text>
         </View>
@@ -340,11 +319,11 @@ function MatchCard({
       <View style={styles.matchScores}>
         {/* Team A (Us) */}
         <View style={styles.matchTeamContainer}>
-          <Text style={[styles.matchScoreValue, { color: isWin ? textPrimary : isDark ? SLATE_COLORS[500] : SLATE_COLORS[400] }]}>
+          <Text style={[styles.matchScoreValue, { color: isWin ? colors.text.primary : colors.text.tertiary }]}>
             {scoreA}
           </Text>
           <Text
-            style={[styles.matchTeamLabel, { color: textSecondary }]}
+            style={[styles.matchTeamLabel, { color: colors.text.secondary }]}
             numberOfLines={1}
           >
             {match.my_team_name || "NOUS"}
@@ -356,11 +335,11 @@ function MatchCard({
           style={[
             styles.matchVs,
             {
-              backgroundColor: isDark ? SLATE_COLORS[950] : SLATE_COLORS[100],
+              backgroundColor: colors.surfaceVariant,
             },
           ]}
         >
-          <Text style={[styles.matchVsText, { color: textSecondary }]}>VS</Text>
+          <Text style={[styles.matchVsText, { color: colors.text.secondary }]}>VS</Text>
         </View>
 
         {/* Team B (Opponent) */}
@@ -368,13 +347,13 @@ function MatchCard({
           <Text
             style={[
               styles.matchScoreValue,
-              { color: isWin ? (isDark ? SLATE_COLORS[500] : SLATE_COLORS[400]) : textPrimary },
+              { color: isWin ? colors.text.tertiary : colors.text.primary },
             ]}
           >
             {scoreB}
           </Text>
           <Text
-            style={[styles.matchTeamLabel, { color: textSecondary }]}
+            style={[styles.matchTeamLabel, { color: colors.text.secondary }]}
             numberOfLines={1}
           >
             {match.opponent_name}
@@ -386,7 +365,7 @@ function MatchCard({
       <View
         style={[
           styles.matchCardFooter,
-          { borderTopColor: isDark ? SLATE_COLORS[800] : SLATE_COLORS[100] },
+          { borderTopColor: colors.border },
         ]}
       >
         <View
@@ -395,18 +374,18 @@ function MatchCard({
             {
               backgroundColor: isWin
                 ? isDark
-                  ? "#10b98133"
-                  : "#10b9811A"
+                  ? `${colors.success}33`
+                  : `${colors.success}1A`
                 : isDark
-                ? "#ef444433"
-                : "#ef44441A",
+                ? `${colors.error}33`
+                : `${colors.error}1A`,
             },
           ]}
         >
           <Text
             style={[
               styles.matchResultText,
-              { color: isWin ? "#10b981" : "#ef4444" },
+              { color: isWin ? colors.success : colors.error },
             ]}
           >
             {isWin ? "VICTOIRE" : "DÉFAITE"}
@@ -417,9 +396,9 @@ function MatchCard({
           <MaterialCommunityIcons
             name="chart-bar"
             size={14}
-            color={BRAND_COLORS[500]}
+            color={colors.primary}
           />
-          <Text style={[styles.matchAnalyzeText, { color: BRAND_COLORS[500] }]}>
+          <Text style={[styles.matchAnalyzeText, { color: colors.primary }]}>
             ANALYSER
           </Text>
         </TouchableOpacity>
