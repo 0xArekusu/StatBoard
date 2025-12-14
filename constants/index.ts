@@ -29,3 +29,7 @@ export {
 
 // Routes
 export * from './routes';
+
+// Match Details Screen
+export * from './matchDetailsConstants';
+export { TAB, ACTION_FILTER } from './matchDetailsConstants';
