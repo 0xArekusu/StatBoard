@@ -62,7 +62,11 @@ export const DEFAULT_COURT_COLORS = {
  */
 export const STATUS_COLORS = {
   success: "#4CAF50",   // Green
+  successLight: "#16a34a", // Green for text on light background
+  successBackground: "#dcfce7", // Light green background
   error: "#F44336",     // Red
+  errorLight: "#dc2626", // Red for text
+  errorBackground: "#fee2e2", // Light red background
   warning: "#F57C00",   // Orange
   info: "#2196F3",      // Blue
   required: "#ef4444",  // Red for required fields

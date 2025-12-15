@@ -7,6 +7,7 @@
 
 // Match constants
 export * from './matchConstants';
+export type { MatchCreationStep } from './matchConstants';
 
 // Re-export enums from types for convenience
 export {
