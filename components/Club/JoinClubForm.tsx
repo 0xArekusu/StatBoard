@@ -1,0 +1,104 @@
+import React from "react";
+import { View, Text, TextInput, StyleSheet } from "react-native";
+import { useTheme } from "../../src/contexts/ThemeContext";
+import { SLATE_COLORS, COMMON_COLORS } from "../../src/theme";
+import { Colors } from "../../src/theme/colors";
+
+interface JoinClubFormProps {
+  clubCode: string;
+  setClubCode: (code: string) => void;
+  onSubmit: () => void;
+}
+
+export default function JoinClubForm({
+  clubCode,
+  setClubCode,
+  onSubmit,
+}: JoinClubFormProps) {
+  const { isDark } = useTheme();
+
+  const surfaceColor = isDark ? SLATE_COLORS[900] : COMMON_COLORS.white;
+  const textPrimary = isDark ? COMMON_COLORS.white : SLATE_COLORS[900];
+  const textSecondary = isDark ? SLATE_COLORS[400] : SLATE_COLORS[500];
+  const borderColor = isDark ? SLATE_COLORS[800] : SLATE_COLORS[200];
+  const requiredColor = isDark ? Colors.dark.required : Colors.light.required;
+
+  return (
+    <View style={styles.formContainer}>
+      <View style={styles.formSection}>
+        <Text style={[styles.formLabel, { color: textSecondary }]}>
+          CODE CLUB <Text style={{ color: requiredColor }}>*</Text>
+        </Text>
+        <TextInput
+          placeholder="Ex: LION69"
+          placeholderTextColor={textSecondary}
+          value={clubCode}
+          onChangeText={(value) => setClubCode(value.toUpperCase())}
+          style={[
+            styles.formInput,
+            styles.codeInput,
+            {
+              backgroundColor: surfaceColor,
+              borderColor,
+              color: textPrimary,
+            },
+          ]}
+        />
+      </View>
+      <View
+        style={[
+          styles.infoBox,
+          {
+            backgroundColor: isDark
+              ? `${SLATE_COLORS[800]}80`
+              : SLATE_COLORS[100],
+            borderColor,
+          },
+        ]}
+      >
+        <Text style={[styles.infoText, { color: textSecondary }]}>
+          En rejoignant un club existant, vous n'avez pas besoin de payer
+          d'abonnement. C'est le propriétaire du club qui gère les quotas
+          d'équipes.
+        </Text>
+      </View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  formContainer: {
+    gap: 24,
+  },
+  formSection: {
+    gap: 8,
+  },
+  formLabel: {
+    fontSize: 10,
+    fontWeight: "bold",
+    textTransform: "uppercase",
+    letterSpacing: 1,
+  },
+  formInput: {
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  codeInput: {
+    textAlign: "center",
+    textTransform: "uppercase",
+    letterSpacing: 4,
+    fontSize: 18,
+    fontFamily: "monospace",
+  },
+  infoBox: {
+    padding: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  infoText: {
+    fontSize: 12,
+  },
+});
