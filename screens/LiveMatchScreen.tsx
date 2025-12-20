@@ -382,8 +382,8 @@ export default function LiveMatchScreen({
           let scoreHome = 0;
           let scoreAway = 0;
           actions.forEach((action) => {
-            // Use the points field which is set when action is created
-            if (action.points && action.points > 0) {
+            // Only count points for MADE shots (not missed ones)
+            if (action.points && action.points > 0 && action.specification === ShotSpecification.MADE) {
               if (action.team === Team.MY_TEAM) {
                 scoreHome += action.points;
               } else {
