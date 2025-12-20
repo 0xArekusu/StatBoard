@@ -729,7 +729,19 @@ export default function LiveMatchScreen({
                 is_starter: player.isStarter || false,
                 photo_url: player.photoUrl || null,
               }))
-            : [];
+            : [
+                // If not tracking opponent stats, create a generic opponent player (9999)
+                // This is needed for compaction to work with +1/+2/+3 quick score actions
+                {
+                  match_id: createdMatch.id,
+                  player_id: null,
+                  player_number: 9999,
+                  player_name: match.opponent || "Adversaire",
+                  team: "Opponent" as const,
+                  is_starter: false,
+                  photo_url: null,
+                }
+              ];
 
           const allPlayersToSave = [...homePlayersToSave, ...awayPlayersToSave];
 
@@ -953,6 +965,16 @@ export default function LiveMatchScreen({
         periodDurationMin * 60,
         50 // Augmenté de 25 à 50 actions par période
       );
+
+      // Log mock actions breakdown
+      const myTeamActions = mockActions.filter(a => a.team === Team.MY_TEAM).length;
+      const opponentActions = mockActions.filter(a => a.team === Team.OPPONENT).length;
+      logInfo("LiveMatchScreen", "🎲 Mock actions generated", {
+        total: mockActions.length,
+        myTeam: myTeamActions,
+        opponent: opponentActions,
+        trackOpponentStats: match.trackOpponentStats
+      });
 
       // Convertir et enregistrer les actions
       const actionRepo = new ActionRepository();
@@ -1788,7 +1810,7 @@ export default function LiveMatchScreen({
                       specification: action.specification,
                       points: action.points,
                       player: mp.player_number,
-                      team: mp.team,
+                      team: action.team || mp.team, // Use team from action if available, fallback to player team
                       timestamp: new Date(action.timestamp),
                       period_number: action.period_number,
                       time_in_period: action.time_in_period,
@@ -1844,12 +1866,9 @@ export default function LiveMatchScreen({
               reason: eligibility.reason,
             });
 
-            // Hide sync modal
-            setIsSyncing(false);
-
             // For guest users, navigate to match details with local data
             if (!user) {
-              // Fetch local match data
+              // Fetch local match data first
               try {
                 const localMatch = await matchRepository.findById(currentMatchId);
                 const matchPlayerRepo = new MatchPlayerRepository();
@@ -1863,7 +1882,10 @@ export default function LiveMatchScreen({
                   actionsCount: localActions.length,
                 });
 
-                // Navigate to match details with local data and flag for guest mode
+                // Hide sync modal AFTER data is fetched
+                setIsSyncing(false);
+
+                // Wait for modal to fully close before navigating
                 setTimeout(() => {
                   navigation.navigate(ROUTES.MATCH_DETAILS as never, {
                     match: localMatch,
@@ -1872,22 +1894,26 @@ export default function LiveMatchScreen({
                     fromLiveMatch: true,
                     isLocalMatch: true, // Flag to show warning in MatchDetails
                   } as never);
-                }, 100);
+                }, 300);
               } catch (fetchError) {
                 logError("LiveMatchScreen", "❌ Failed to fetch local match data", {
                   matchId: currentMatchId,
                   error: fetchError,
                 });
+                // Hide sync modal
+                setIsSyncing(false);
                 // Navigate to dashboard if fetch fails
                 setTimeout(() => {
                   navigation.navigate(ROUTES.MAIN_TABS as never);
-                }, 100);
+                }, 300);
               }
             } else {
+              // Hide sync modal
+              setIsSyncing(false);
               // For authenticated users who can't sync, navigate to dashboard
               setTimeout(() => {
                 navigation.navigate(ROUTES.MAIN_TABS as never);
-              }, 100);
+              }, 300);
             }
           }
         } catch (syncError) {

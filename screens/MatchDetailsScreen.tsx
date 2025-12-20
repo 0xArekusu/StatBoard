@@ -41,7 +41,7 @@ import { PDFExportService } from "../src/services/export/PDFExportService";
 import { Alert } from "react-native";
 import { ServiceFactory } from "../services/ServiceFactory";
 import { supabase } from "../src/config/supabase";
-import { StatsTab, CardsTab, CourtTab, PlayerDetailModal } from "../components/MatchDetails";
+import { StatsTab, CardsTab, CourtTab, EvolutionTab, PlayerDetailModal } from "../components/MatchDetails";
 import type { PlayerStats, Tab, TeamFilter, ActionFilterType, SortBy, SortOrder } from "../constants/matchDetailsConstants";
 import { TAB, ACTION_FILTER } from "../constants";
 
@@ -98,20 +98,33 @@ export default function MatchDetailsScreen() {
   }, [match, route.params.actions, route.params.players]);
 
   // Show warning for local matches (guest mode)
-  useEffect(() => {
-    if (isLocalMatch) {
-      Alert.alert(
-        "Match enregistré localement",
-        "Vos données ont été sauvegardées sur cet appareil uniquement.\n\nPour synchroniser vos matchs sur le serveur et y accéder depuis d'autres appareils, créez un compte.",
-        [{ text: "OK" }]
-      );
-    }
-  }, [isLocalMatch]);
+  // TEMPORARILY DISABLED TO DEBUG UI BLOCKING ISSUE
+  // Use a ref to track if we've shown the alert
+  // const hasShownLocalMatchAlert = React.useRef(false);
+
+  // useFocusEffect(
+  //   React.useCallback(() => {
+  //     if (isLocalMatch && !hasShownLocalMatchAlert.current) {
+  //       hasShownLocalMatchAlert.current = true;
+  //       // Delay alert to ensure screen is fully rendered and focused
+  //       const timeoutId = setTimeout(() => {
+  //         Alert.alert(
+  //           "Match enregistré localement",
+  //           "Vos données ont été sauvegardées sur cet appareil uniquement.\n\nPour synchroniser vos matchs sur le serveur et y accéder depuis d'autres appareils, créez un compte.",
+  //           [{ text: "OK" }]
+  //         );
+  //       }, 800);
+
+  //       return () => clearTimeout(timeoutId);
+  //     }
+  //   }, [isLocalMatch])
+  // );
 
   // Load club data
   useEffect(() => {
     const loadClub = async () => {
-      if (!match.club_id) {
+      // Skip loading club for guest mode (local matches)
+      if (!match.club_id || match.club_id === "guest-club") {
         return;
       }
 
@@ -198,18 +211,14 @@ export default function MatchDetailsScreen() {
 
   // Calculer les statistiques des joueurs
   const calculateStats = (teamFilter: TeamFilter): PlayerStats[] => {
-    console.log("📊 MatchDetailsScreen - Calculating stats", {
-      totalActions: actions?.length || 0,
-      totalPlayers: players?.length || 0,
-      teamFilter,
-    });
-
     const playerStatsMap = new Map<string, PlayerStats>();
 
     // D'abord, initialiser tous les joueurs sélectionnés pour ce match avec des stats à zéro
     if (players && players.length > 0) {
       players
         .filter((player) => player.team === teamFilter)
+        // Filter out generic opponent player (9999) used when not tracking opponent stats
+        .filter((player) => player.num !== 9999)
         .forEach((player) => {
           const key = `${player.team}-${player.num}`;
           const playerName = player.name || `Joueur ${player.num}`;
@@ -247,6 +256,12 @@ export default function MatchDetailsScreen() {
         .forEach((action) => {
           // Handle both player and player_number fields
           const playerNum = action.player_number || action.player;
+
+          // Skip invalid player numbers (9999 = generic opponent when not tracking stats)
+          if (!playerNum || playerNum === 9999) {
+            return;
+          }
+
           const key = `${action.team}-${playerNum}`;
 
           // Si le joueur n'existe pas encore dans la map (cas où il y a une action mais pas de joueur enregistré)
@@ -349,10 +364,6 @@ export default function MatchDetailsScreen() {
     const playersList = Array.from(playerStatsMap.values()).sort(
       (a, b) => b.pts - a.pts
     );
-    console.log("✅ MatchDetailsScreen - Stats calculated", {
-      playersFound: playersList.length,
-      teamFilter,
-    });
     return playersList;
   };
 
@@ -633,6 +644,23 @@ export default function MatchDetailsScreen() {
               color={activeTab === TAB.COURT ? colors.text.primary : textTertiary}
             />
           </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => setActiveTab(TAB.EVOLUTION)}
+            style={[
+              styles.tabButton,
+              {
+                backgroundColor:
+                  activeTab === TAB.EVOLUTION ? colors.primary : surfaceColor,
+                borderColor: borderColor,
+              },
+            ]}
+          >
+            <Ionicons
+              name="trending-up"
+              size={20}
+              color={activeTab === TAB.EVOLUTION ? colors.text.primary : textTertiary}
+            />
+          </TouchableOpacity>
         </View>
       </View>
 
@@ -673,6 +701,16 @@ export default function MatchDetailsScreen() {
             courtLineColor={courtLineColor}
             logoUri={logoUri}
             activeTeamFilter={activeTeamFilter}
+          />
+        )}
+
+        {/* EVOLUTION VIEW */}
+        {activeTab === TAB.EVOLUTION && (
+          <EvolutionTab
+            match={match}
+            actions={actions}
+            colors={colors}
+            isDark={isDark}
           />
         )}
       </ScrollView>

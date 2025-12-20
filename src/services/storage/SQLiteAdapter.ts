@@ -9,11 +9,10 @@ export interface IStorageAdapter {
 export class SQLiteAdapter implements IStorageAdapter {
   private db: SQLite.SQLiteDatabase;
 
-  constructor(databaseName: string = "statboard.db") {
+  constructor(databaseName: string = "coachassistant.db") {
     this.db = SQLite.openDatabaseSync(databaseName);
 
-    // 🔄 TEMPORARY RESET - R
-    // emove after testing!
+    // 🔄 TEMPORARY RESET - Remove after testing!
     //this.resetDatabaseTables();
     this.initializeTables();
   }

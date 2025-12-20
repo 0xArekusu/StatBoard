@@ -222,7 +222,7 @@ export class ActionRepository implements IActionRepository {
                   allActions.push({
                     id: actionIdCounter++,
                     match_id: matchId,
-                    team: player.team,
+                    team: action.team || player.team, // Use team from action if available, fallback to player.team for backward compatibility
                     player_number: player.player_number,
                     action_type: action.action_type,
                     specification: action.specification,
@@ -424,6 +424,7 @@ export class ActionRepository implements IActionRepository {
 
         // Format action in the same way as Supabase
         actionsByPlayer.get(playerKey)!.push({
+          team: action.team, // Include team field to preserve it during compaction
           action_type: action.action_type,
           specification: action.specification,
           points: action.points || null,
