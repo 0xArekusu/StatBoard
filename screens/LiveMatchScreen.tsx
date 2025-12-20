@@ -1116,6 +1116,64 @@ export default function LiveMatchScreen({
     setShowDeleteConfirm(true);
   };
 
+  // Fonction de suppression directe pour le HistoryModal (qui gère sa propre confirmation)
+  const deleteEventDirectly = async (eventId: string) => {
+    if (!match.events) return;
+    const event = match.events.find((e: MatchEvent) => e.id === eventId);
+    if (!event) return;
+
+    const updatedEvents = match.events.filter(
+      (e: MatchEvent) => e.id !== eventId
+    );
+    const updatedMatch = { ...match, events: updatedEvents };
+
+    // Revert Score
+    if (
+      (event.type.includes("POINT") ||
+        event.type === "POINT") &&
+      event.value
+    ) {
+      if (event.teamId === "HOME") {
+        updatedMatch.scoreHome = Math.max(
+          0,
+          updatedMatch.scoreHome - event.value
+        );
+      } else {
+        updatedMatch.scoreAway = Math.max(
+          0,
+          updatedMatch.scoreAway - event.value
+        );
+      }
+    }
+
+    setMatch(updatedMatch);
+
+    // Delete from database
+    if (currentMatchId) {
+      try {
+        // Extract database ID from event ID (format: "evt-{dbId}")
+        const dbId = parseInt(event.id.replace("evt-", ""));
+
+        if (!isNaN(dbId)) {
+          const actionRepo = new ActionRepository();
+          await actionRepo.deleteAction(dbId);
+
+          logInfo("LiveMatchScreen", "✅ Action deleted from database", {
+            eventId: event.id,
+            dbId,
+            description: event.description,
+          });
+        }
+      } catch (error) {
+        logError(
+          "LiveMatchScreen",
+          "❌ Failed to delete action from database",
+          error
+        );
+      }
+    }
+  };
+
   const confirmDeleteEvent = async () => {
     if (!eventToDelete || !match.events) return;
 
@@ -2367,7 +2425,7 @@ export default function LiveMatchScreen({
         visible={showHistoryModal}
         onClose={() => setShowHistoryModal(false)}
         events={match.events}
-        onDeleteEvent={deleteEvent}
+        onDeleteEvent={deleteEventDirectly}
         match={match}
         isDark={isDark}
         surfaceColor={surfaceColor}
