@@ -21,7 +21,7 @@ import {
   CreateActionData,
   Team,
 } from "../src/models/types";
-import { ShotSpecification } from "../src/models/ActionTypes";
+import { ActionType, ShotSpecification, ReboundSpecification } from "../src/models/ActionTypes";
 import { Player } from "../models/Player";
 import { useAuth } from "../src/contexts/AuthContext";
 import { MatchManager } from "../src/services/match/MatchManager";
@@ -437,16 +437,19 @@ export default function LiveMatchScreen({
 
           // Helper function to get human-readable action description
           const getActionDescription = (action: any, playerName: string) => {
-            if (action.action_type === "SHOT") {
+            if (action.action_type === ActionType.SHOT) {
               const isMade =
+                action.specification === ShotSpecification.MADE ||
                 action.specification === "MADE" ||
                 action.specification === "made";
               const points = action.points || 0;
 
               if (isMade) {
-                if (points === 3) return `${playerName} (+3)`;
-                if (points === 2) return `${playerName} (+2)`;
-                if (points === 1) return `${playerName} (+1)`;
+                // Use "+X" format for generic opponent (9999), "(+X)" for specific players
+                const isGenericOpponent = action.player_number === 9999 && action.team === Team.OPPONENT;
+                if (points === 3) return isGenericOpponent ? `${playerName} +3` : `${playerName} (+3)`;
+                if (points === 2) return isGenericOpponent ? `${playerName} +2` : `${playerName} (+2)`;
+                if (points === 1) return isGenericOpponent ? `${playerName} +1` : `${playerName} (+1)`;
               } else {
                 if (points === 3) return `${playerName} Raté (3pts)`;
                 if (points === 2) return `${playerName} Raté (2pts)`;
@@ -466,20 +469,20 @@ export default function LiveMatchScreen({
                 return `${playerName} Raté (2pts)`;
               if (action.specification === "FREE_THROW_MISSED")
                 return `${playerName} Raté (LF)`;
-            } else if (action.action_type === "REBOUND") {
-              if (action.specification === "DEFENSIVE")
+            } else if (action.action_type === ActionType.REBOUND) {
+              if (action.specification === ReboundSpecification.DEFENSIVE || action.specification === "DEFENSIVE")
                 return `${playerName} Rebond Déf`;
-              if (action.specification === "OFFENSIVE")
+              if (action.specification === ReboundSpecification.OFFENSIVE || action.specification === "OFFENSIVE")
                 return `${playerName} Rebond Off`;
-            } else if (action.action_type === "FOUL") {
+            } else if (action.action_type === ActionType.FOUL) {
               return `Faute ${playerName}`;
-            } else if (action.action_type === "ASSIST") {
+            } else if (action.action_type === ActionType.ASSIST) {
               return `${playerName} Passe décisive`;
-            } else if (action.action_type === "STEAL") {
+            } else if (action.action_type === ActionType.STEAL) {
               return `${playerName} Interception`;
-            } else if (action.action_type === "BLOCK") {
+            } else if (action.action_type === ActionType.BLOCK) {
               return `${playerName} Contre`;
-            } else if (action.action_type === "TURNOVER") {
+            } else if (action.action_type === ActionType.TURNOVER) {
               return `${playerName} Perte de balle`;
             }
             return `${playerName} - ${action.action_type}`;
@@ -498,8 +501,9 @@ export default function LiveMatchScreen({
             let eventValue = action.points || 0;
 
             // Map based on action_type and specification
-            if (action.action_type === "SHOT") {
+            if (action.action_type === ActionType.SHOT) {
               const isMade =
+                action.specification === ShotSpecification.MADE ||
                 action.specification === "MADE" ||
                 action.specification === "made";
               const points = action.points || 0;
@@ -550,27 +554,27 @@ export default function LiveMatchScreen({
                 eventType = "MISS_1";
                 eventValue = 0;
               }
-            } else if (action.action_type === "FOUL") {
+            } else if (action.action_type === ActionType.FOUL) {
               eventType = "FOUL";
-            } else if (action.action_type === "REBOUND") {
-              if (action.specification === "DEFENSIVE") {
+            } else if (action.action_type === ActionType.REBOUND) {
+              if (action.specification === ReboundSpecification.DEFENSIVE || action.specification === "DEFENSIVE") {
                 eventType = "REBOUND_DEF";
-              } else if (action.specification === "OFFENSIVE") {
+              } else if (action.specification === ReboundSpecification.OFFENSIVE || action.specification === "OFFENSIVE") {
                 eventType = "REBOUND_OFF";
               }
-            } else if (action.action_type === "ASSIST") {
+            } else if (action.action_type === ActionType.ASSIST) {
               eventType = "ASSIST";
-            } else if (action.action_type === "STEAL") {
+            } else if (action.action_type === ActionType.STEAL) {
               eventType = "STEAL";
-            } else if (action.action_type === "BLOCK") {
+            } else if (action.action_type === ActionType.BLOCK) {
               eventType = "BLOCK";
-            } else if (action.action_type === "TURNOVER") {
+            } else if (action.action_type === ActionType.TURNOVER) {
               eventType = "TURNOVER";
             }
 
             const playerName =
-              action.player_number === 9999
-                ? ""
+              action.player_number === 9999 && action.team === Team.OPPONENT
+                ? (existingMatch.opponent_name || "Adversaire")
                 : player?.player_name || `#${action.player_number}`;
             const description = getActionDescription(action, playerName);
 
@@ -914,7 +918,7 @@ export default function LiveMatchScreen({
       // Créer des joueurs fictifs basés sur le roster
       const playersMyTeam =
         homeRoster.length > 0
-          ? homeRoster.map((p) => ({
+          ? homeRoster.map((p: Player) => ({
               jersey_number: p.jerseyNumber,
               name: p.name,
             }))
@@ -923,16 +927,18 @@ export default function LiveMatchScreen({
               name: `Joueur ${i + 1}`,
             }));
 
-      const playersOpponent =
-        opponentRoster.length > 0
-          ? opponentRoster.map((p) => ({
+      // Only create opponent players if we're tracking opponent stats
+      const playersOpponent = match.trackOpponentStats
+        ? opponentRoster.length > 0
+          ? opponentRoster.map((p: Player) => ({
               jersey_number: p.jerseyNumber,
               name: p.name,
             }))
           : Array.from({ length: 5 }, (_, i) => ({
               jersey_number: i + 10,
               name: `Adversaire ${i + 1}`,
-            }));
+            }))
+        : undefined;
 
       // Générer actions fictives (25 par période)
       // Générer ~50 actions par période pour atteindre 80-90 points par équipe
@@ -952,7 +958,7 @@ export default function LiveMatchScreen({
       for (const mockAction of mockActions) {
         await actionRepo.create({
           match_id: currentMatchId,
-          team: mockAction.team === "A" ? Team.MY_TEAM : Team.OPPONENT,
+          team: mockAction.team, // Already using Team.MY_TEAM or Team.OPPONENT
           player_number: mockAction.player_number,
           action_type: mockAction.action_type,
           specification: mockAction.specification,
@@ -972,12 +978,16 @@ export default function LiveMatchScreen({
       const convertedEvents: MatchEvent[] = loadedActions.map((action) => {
         const player =
           action.team === Team.MY_TEAM
-            ? homeRoster.find((p) => p.jerseyNumber === action.player_number)
+            ? homeRoster.find((p: Player) => p.jerseyNumber === action.player_number)
             : opponentRoster.find(
-                (p) => p.jerseyNumber === action.player_number
+                (p: Player) => p.jerseyNumber === action.player_number
               );
 
-        const playerName = player?.name || `Joueur ${action.player_number}`;
+        // If player number is 9999 (generic opponent), use team name instead
+        const playerName =
+          action.player_number === 9999 && action.team === Team.OPPONENT
+            ? (match.opponent || "Adversaire")
+            : player?.name || `Joueur ${action.player_number}`;
         const teamId = action.team === Team.MY_TEAM ? "HOME" : "AWAY";
 
         let type: EventType = "POINT";
@@ -997,7 +1007,11 @@ export default function LiveMatchScreen({
         if (action.action_type === "shot" && action.specification === "made") {
           value = action.points || 0;
           type = value === 1 ? "POINT_1" : value === 2 ? "POINT_2" : "POINT_3";
-          description = `${playerName} - ${value}pt`;
+          // Use "+" format for generic opponent (9999), "-" for specific players
+          description =
+            action.player_number === 9999 && action.team === Team.OPPONENT
+              ? `${playerName} +${value}`
+              : `${playerName} - ${value}pt`;
         } else if (
           action.action_type === "shot" &&
           action.specification === "missed"
@@ -2623,45 +2637,56 @@ const CourtView: React.FC<CourtViewProps> = ({
   });
 
   const markers = showMarkers
-    ? filteredEvents?.map((evt: MatchEvent) => {
-        let markerColor = SLATE_COLORS[500];
+    ? filteredEvents
+        ?.filter((evt: MatchEvent) => {
+          // Filter out events without valid court coordinates (e.g., quick score buttons with -999)
+          return (
+            evt.coordinates &&
+            evt.coordinates.x >= 0 &&
+            evt.coordinates.y >= 0 &&
+            evt.coordinates.x <= 1 &&
+            evt.coordinates.y <= 1
+          );
+        })
+        .map((evt: MatchEvent) => {
+          let markerColor = SLATE_COLORS[500];
 
-        // Tirs réussis (vert pour nous, rouge pour adversaire)
-        if (evt.type.includes("POINT"))
-          markerColor = evt.teamId === "AWAY" ? "#ef4444" : "#22c55e";
-        // Tirs ratés (orange pour nous, rouge foncé pour adversaire)
-        else if (evt.type.includes("MISS"))
-          markerColor = evt.teamId === "AWAY" ? "#ea580c" : "#f97316";
-        // Rebonds (bleu)
-        else if (evt.type === "REBOUND_DEF" || evt.type === "REBOUND_OFF")
-          markerColor = evt.teamId === "AWAY" ? "#3b82f6" : "#60a5fa";
-        // Fautes (jaune/orange)
-        else if (evt.type === "FOUL")
-          markerColor = evt.teamId === "AWAY" ? "#f59e0b" : "#fbbf24";
-        // Passes décisives (violet)
-        else if (evt.type === "ASSIST")
-          markerColor = evt.teamId === "AWAY" ? "#a855f7" : "#c084fc";
-        // Interceptions (cyan)
-        else if (evt.type === "STEAL")
-          markerColor = evt.teamId === "AWAY" ? "#06b6d4" : "#22d3ee";
-        // Contres (indigo)
-        else if (evt.type === "BLOCK")
-          markerColor = evt.teamId === "AWAY" ? "#6366f1" : "#818cf8";
-        // Pertes de balle (rose)
-        else if (evt.type === "TURNOVER")
-          markerColor = evt.teamId === "AWAY" ? "#ec4899" : "#f472b6";
+          // Tirs réussis (vert pour nous, rouge pour adversaire)
+          if (evt.type.includes("POINT"))
+            markerColor = evt.teamId === "AWAY" ? "#ef4444" : "#22c55e";
+          // Tirs ratés (orange pour nous, rouge foncé pour adversaire)
+          else if (evt.type.includes("MISS"))
+            markerColor = evt.teamId === "AWAY" ? "#ea580c" : "#f97316";
+          // Rebonds (bleu)
+          else if (evt.type === "REBOUND_DEF" || evt.type === "REBOUND_OFF")
+            markerColor = evt.teamId === "AWAY" ? "#3b82f6" : "#60a5fa";
+          // Fautes (jaune/orange)
+          else if (evt.type === "FOUL")
+            markerColor = evt.teamId === "AWAY" ? "#f59e0b" : "#fbbf24";
+          // Passes décisives (violet)
+          else if (evt.type === "ASSIST")
+            markerColor = evt.teamId === "AWAY" ? "#a855f7" : "#c084fc";
+          // Interceptions (cyan)
+          else if (evt.type === "STEAL")
+            markerColor = evt.teamId === "AWAY" ? "#06b6d4" : "#22d3ee";
+          // Contres (indigo)
+          else if (evt.type === "BLOCK")
+            markerColor = evt.teamId === "AWAY" ? "#6366f1" : "#818cf8";
+          // Pertes de balle (rose)
+          else if (evt.type === "TURNOVER")
+            markerColor = evt.teamId === "AWAY" ? "#ec4899" : "#f472b6";
 
-        // Convert normalized coordinates (0-1) to portrait SVG coordinates (0-615.75 x 0-1146.75)
-        const svgX = evt.coordinates!.x * 615.75;
-        const svgY = evt.coordinates!.y * 1146.75;
+          // Convert normalized coordinates (0-1) to portrait SVG coordinates (0-615.75 x 0-1146.75)
+          const svgX = evt.coordinates!.x * 615.75;
+          const svgY = evt.coordinates!.y * 1146.75;
 
-        return {
-          id: evt.id,
-          svgX,
-          svgY,
-          color: markerColor,
-        };
-      }) || []
+          return {
+            id: evt.id,
+            svgX,
+            svgY,
+            color: markerColor,
+          };
+        }) || []
     : [];
 
   const defaultLogoUri = require("../components/icons/coachassistant-logo-margin.png");

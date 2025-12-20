@@ -24,6 +24,7 @@ import {
   ReboundSpecification,
   FoulSpecification,
 } from "../src/models/ActionTypes";
+import { Team } from "../src/models/types";
 
 // Specifications for new action types (no specifications needed, just the action itself)
 const NO_SPECIFICATION = "none";
@@ -35,7 +36,7 @@ interface MockPlayer {
 
 interface MockAction {
   match_id: number;
-  team: "A" | "B";
+  team: Team;
   player_number: number;
   action_type: string;
   specification: string;
@@ -51,8 +52,8 @@ interface MockAction {
  * Generate mock actions for load testing
  *
  * @param matchId - ID of the current match
- * @param playersTeamA - Array of team A players with jersey numbers
- * @param playersTeamB - Array of team B players with jersey numbers (optional for single team mode)
+ * @param playersMyTeam - Array of my team players with jersey numbers
+ * @param playersOpponent - Array of opponent team players with jersey numbers (optional, enables detailed opponent stats)
  * @param matchFormat - "2_halves" or "4_quarters"
  * @param periodDuration - Duration of period in seconds
  * @param actionsPerPeriod - Number of actions to generate per period (default: 25)
@@ -60,18 +61,18 @@ interface MockAction {
  */
 export function generateMockActions(
   matchId: number,
-  playersTeamA: MockPlayer[],
-  playersTeamB?: MockPlayer[],
+  playersMyTeam: MockPlayer[],
+  playersOpponent?: MockPlayer[],
   matchFormat: "2_halves" | "4_quarters" = "4_quarters",
   periodDuration: number = 600,
   actionsPerPeriod: number = 25
 ): MockAction[] {
   const actions: MockAction[] = [];
   const totalPeriods = matchFormat === "2_halves" ? 2 : 4;
-  const isBothTeamsMode = !!playersTeamB;
+  const trackOpponentStats = !!playersOpponent;
 
-  const jerseyNumbersA = playersTeamA.map(p => p.jersey_number);
-  const jerseyNumbersB = (playersTeamB && Array.isArray(playersTeamB)) ? playersTeamB.map(p => p.jersey_number) : [];
+  const jerseyNumbersMyTeam = playersMyTeam.map(p => p.jersey_number);
+  const jerseyNumbersOpponent = (playersOpponent && Array.isArray(playersOpponent)) ? playersOpponent.map(p => p.jersey_number) : [];
 
   // Action distributions (realistic basketball game)
   const distributions = {
@@ -110,12 +111,26 @@ export function generateMockActions(
       const randomOffset = (Math.random() - 0.5) * (periodDuration / actionsPerPeriod);
       const timeInPeriod = Math.max(0, Math.min(periodDuration, baseTime + randomOffset));
 
-      // Alternate between teams if both teams mode, otherwise always team A
-      const team: "A" | "B" = isBothTeamsMode && Math.random() < 0.5 ? "B" : "A";
-      const jerseyNumbers = team === "A" ? jerseyNumbersA : jerseyNumbersB;
+      // Determine which team this action is for
+      // If tracking opponent stats, alternate between both teams (50/50)
+      // If not tracking, generate more MY_TEAM actions to balance scores (since opponent only gets made shots)
+      const opponentProbability = trackOpponentStats ? 0.5 : 0.3; // 30% for opponent when not tracking (vs 50% when tracking)
+      const team: Team = Math.random() < opponentProbability ? Team.OPPONENT : Team.MY_TEAM;
 
-      // Random player from the selected team
-      const playerNumber = jerseyNumbers[Math.floor(Math.random() * jerseyNumbers.length)];
+      let playerNumber: number;
+      if (team === Team.MY_TEAM) {
+        const jerseyNumbers = jerseyNumbersMyTeam;
+        playerNumber = jerseyNumbers[Math.floor(Math.random() * jerseyNumbers.length)];
+      } else {
+        // For opponent, use a dummy player number if we don't track opponent stats
+        if (trackOpponentStats) {
+          const jerseyNumbers = jerseyNumbersOpponent;
+          playerNumber = jerseyNumbers[Math.floor(Math.random() * jerseyNumbers.length)];
+        } else {
+          // Use generic player number 9999 for opponent when not tracking stats (same as +1/+2/+3 buttons)
+          playerNumber = 9999;
+        }
+      }
 
       // Determine action type based on distribution
       const rand = Math.random();
@@ -125,7 +140,26 @@ export function generateMockActions(
       let semantic_x: number;
       let semantic_y: number;
 
-    if (rand < distributions.shot) {
+      // If this is an opponent action and we don't track opponent stats, generate simple point actions only
+      if (team === Team.OPPONENT && !trackOpponentStats) {
+        // Generate only simple point actions for opponent (like +1, +2, +3 buttons)
+        actionType = ActionType.SHOT;
+        specification = ShotSpecification.MADE;
+
+        // Randomly choose 1, 2, or 3 points with realistic distribution
+        const pointRand = Math.random();
+        if (pointRand < 0.10) {
+          points = 1; // 10% free throws
+        } else if (pointRand < 0.70) {
+          points = 2; // 60% 2-pointers
+        } else {
+          points = 3; // 30% 3-pointers
+        }
+
+        // No court position (like quick score buttons)
+        semantic_x = -999;
+        semantic_y = -999;
+      } else if (rand < distributions.shot) {
       // SHOT ACTION
       actionType = ActionType.SHOT;
 
