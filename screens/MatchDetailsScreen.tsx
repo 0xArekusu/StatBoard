@@ -98,27 +98,7 @@ export default function MatchDetailsScreen() {
   }, [match, route.params.actions, route.params.players]);
 
   // Show warning for local matches (guest mode)
-  // TEMPORARILY DISABLED TO DEBUG UI BLOCKING ISSUE
-  // Use a ref to track if we've shown the alert
-  // const hasShownLocalMatchAlert = React.useRef(false);
 
-  // useFocusEffect(
-  //   React.useCallback(() => {
-  //     if (isLocalMatch && !hasShownLocalMatchAlert.current) {
-  //       hasShownLocalMatchAlert.current = true;
-  //       // Delay alert to ensure screen is fully rendered and focused
-  //       const timeoutId = setTimeout(() => {
-  //         Alert.alert(
-  //           "Match enregistré localement",
-  //           "Vos données ont été sauvegardées sur cet appareil uniquement.\n\nPour synchroniser vos matchs sur le serveur et y accéder depuis d'autres appareils, créez un compte.",
-  //           [{ text: "OK" }]
-  //         );
-  //       }, 800);
-
-  //       return () => clearTimeout(timeoutId);
-  //     }
-  //   }, [isLocalMatch])
-  // );
 
   // Load club data
   useEffect(() => {
