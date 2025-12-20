@@ -21,6 +21,7 @@ import {
   CreateActionData,
   Team,
 } from "../src/models/types";
+import { ShotSpecification } from "../src/models/ActionTypes";
 import { Player } from "../models/Player";
 import { useAuth } from "../src/contexts/AuthContext";
 import { MatchManager } from "../src/services/match/MatchManager";
@@ -1490,30 +1491,33 @@ export default function LiveMatchScreen({
     switch (eventType) {
       case "POINT_1":
         actionType = "SHOT";
-        specification = "FREE_THROW_MADE";
+        specification = ShotSpecification.MADE;
         points = 1;
         break;
       case "POINT_2":
         actionType = "SHOT";
-        specification = "TWO_POINT_MADE";
+        specification = ShotSpecification.MADE;
         points = 2;
         break;
       case "POINT_3":
         actionType = "SHOT";
-        specification = "THREE_POINT_MADE";
+        specification = ShotSpecification.MADE;
         points = 3;
         break;
       case "MISS_1":
         actionType = "SHOT";
-        specification = "FREE_THROW_MISSED";
+        specification = ShotSpecification.MISSED;
+        points = 1;
         break;
       case "MISS_2":
         actionType = "SHOT";
-        specification = "TWO_POINT_MISSED";
+        specification = ShotSpecification.MISSED;
+        points = 2;
         break;
       case "MISS_3":
         actionType = "SHOT";
-        specification = "THREE_POINT_MISSED";
+        specification = ShotSpecification.MISSED;
+        points = 3;
         break;
       case "FOUL":
         actionType = "FOUL";
@@ -1618,18 +1622,8 @@ export default function LiveMatchScreen({
     // Save to database - use a generic opponent player number (99)
     if (currentMatchId) {
       let actionType = "SHOT";
-      let specification = "";
-      switch (value) {
-        case 1:
-          specification = "FREE_THROW_MADE";
-          break;
-        case 2:
-          specification = "TWO_POINT_MADE";
-          break;
-        case 3:
-          specification = "THREE_POINT_MADE";
-          break;
-      }
+      let specification = ShotSpecification.MADE;
+      let points = value;
 
       const actionForDB: CreateActionData = {
         match_id: currentMatchId,
@@ -1637,7 +1631,7 @@ export default function LiveMatchScreen({
         player_number: 9999, // Generic opponent number
         action_type: actionType,
         specification,
-        points: value,
+        points: points,
         semantic_x: -999, // indicates no court position (quick score button)
         semantic_y: -999, // indicates no court position (quick score button)
         action_order: actionCounter,

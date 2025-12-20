@@ -186,32 +186,25 @@ export default function MatchDetailsScreen() {
 
   // Calculer les statistiques des joueurs
   const calculateStats = (teamFilter: TeamFilter): PlayerStats[] => {
-    if (!actions || actions.length === 0) {
-      console.log("⚠️ MatchDetailsScreen - No actions to calculate stats");
-      return [];
-    }
-
     console.log("📊 MatchDetailsScreen - Calculating stats", {
-      totalActions: actions.length,
+      totalActions: actions?.length || 0,
+      totalPlayers: players?.length || 0,
       teamFilter,
-      sampleAction: actions[0],
     });
 
     const playerStatsMap = new Map<string, PlayerStats>();
 
-    actions
-      .filter((action) => action.team === teamFilter)
-      .forEach((action) => {
-        // Handle both player and player_number fields
-        const playerNum = action.player_number || action.player;
-        const key = `${action.team}-${playerNum}`;
-
-        if (!playerStatsMap.has(key)) {
-          const playerName = playerNamesMap.get(key) || `Joueur ${playerNum}`;
+    // D'abord, initialiser tous les joueurs sélectionnés pour ce match avec des stats à zéro
+    if (players && players.length > 0) {
+      players
+        .filter((player) => player.team === teamFilter)
+        .forEach((player) => {
+          const key = `${player.team}-${player.num}`;
+          const playerName = player.name || `Joueur ${player.num}`;
           playerStatsMap.set(key, {
-            playerNumber: playerNum,
+            playerNumber: player.num,
             name: playerName,
-            team: action.team,
+            team: player.team,
             pts: 0,
             reb: 0,
             reb_off: 0,
@@ -232,9 +225,48 @@ export default function MatchDetailsScreen() {
             eff: 0,
             min: 0,
           });
-        }
+        });
+    }
 
-        const stats = playerStatsMap.get(key)!;
+    // Ensuite, ajouter les statistiques des actions
+    if (actions && actions.length > 0) {
+      actions
+        .filter((action) => action.team === teamFilter)
+        .forEach((action) => {
+          // Handle both player and player_number fields
+          const playerNum = action.player_number || action.player;
+          const key = `${action.team}-${playerNum}`;
+
+          // Si le joueur n'existe pas encore dans la map (cas où il y a une action mais pas de joueur enregistré)
+          if (!playerStatsMap.has(key)) {
+            const playerName = playerNamesMap.get(key) || `Joueur ${playerNum}`;
+            playerStatsMap.set(key, {
+              playerNumber: playerNum,
+              name: playerName,
+              team: action.team,
+              pts: 0,
+              reb: 0,
+              reb_off: 0,
+              reb_def: 0,
+              ast: 0,
+              stl: 0,
+              blk: 0,
+              to: 0,
+              pf: 0,
+              fgm: 0,
+              fga: 0,
+              ftm: 0,
+              fta: 0,
+              fg2m: 0,
+              fg2a: 0,
+              fg3m: 0,
+              fg3a: 0,
+              eff: 0,
+              min: 0,
+            });
+          }
+
+          const stats = playerStatsMap.get(key)!;
 
         // Normalize action types to uppercase for comparison
         const actionType = (
@@ -300,6 +332,7 @@ export default function MatchDetailsScreen() {
         estimatedMin = 0;
       stats.min = estimatedMin;
     });
+  }
 
     const playersList = Array.from(playerStatsMap.values()).sort(
       (a, b) => b.pts - a.pts
@@ -311,9 +344,8 @@ export default function MatchDetailsScreen() {
     return playersList;
   };
 
-  // Calculer les stats seulement si actions est défini
+  // Calculer les stats (affiche tous les joueurs sélectionnés, même sans actions)
   const stats = useMemo(() => {
-    if (!actions) return [];
     const calculatedStats = calculateStats(activeTeamFilter);
 
     // Apply sorting

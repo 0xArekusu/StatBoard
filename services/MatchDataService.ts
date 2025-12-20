@@ -1,5 +1,6 @@
 import { Match, Team } from "../src/models/types";
 import { ActionRepository } from "../src/services/database/ActionRepository";
+import { MatchPlayerRepository } from "../src/services/database/MatchPlayerRepository";
 import { SupabaseClient } from "@supabase/supabase-js";
 
 /**
@@ -51,7 +52,8 @@ export interface MatchDetailsData {
 export class MatchDataService {
   constructor(
     private readonly supabase: SupabaseClient,
-    private readonly actionRepository: ActionRepository
+    private readonly actionRepository: ActionRepository,
+    private readonly matchPlayerRepository: MatchPlayerRepository = new MatchPlayerRepository()
   ) {}
 
   /**
@@ -132,7 +134,7 @@ export class MatchDataService {
 
   /**
    * Load match details from local SQLite database
-   * Fetches actions from the ActionRepository
+   * Fetches actions and players from repositories
    *
    * @param matchId - Local database ID of the match
    * @returns Match details from local storage
@@ -157,8 +159,19 @@ export class MatchDataService {
       },
     }));
 
-    // For local matches, we don't have player data stored separately
-    // Players are derived from actions
-    return { actions, players: [] };
+    // Load match players from database
+    const matchPlayers = await this.matchPlayerRepository.getPlayersForMatch(matchId);
+
+    // Convert to PlayerData format
+    const players: PlayerData[] = matchPlayers.map((mp) => ({
+      id: mp.id,
+      num: mp.player_number,
+      name: mp.player_name,
+      team: mp.team as Team,
+      isSubstitute: !mp.is_starter,
+      photoUrl: mp.photo_url || undefined,
+    }));
+
+    return { actions, players };
   }
 }

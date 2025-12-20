@@ -136,8 +136,9 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
    * - User's clubs and teams
    *
    * Merges local and server data for comprehensive view
+   * @param skipActiveMatchCheck - If true, skip checking for active matches (used after abandoning)
    */
-  const loadDashboardData = async () => {
+  const loadDashboardData = async (skipActiveMatchCheck: boolean = false) => {
     try {
       setLoading(true);
       console.log("📊 DashboardScreen: Loading dashboard data...");
@@ -145,14 +146,16 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
       // Use MatchListService to load matches
       const matchListService = ServiceFactory.getMatchListService(supabase);
 
-      // Check for active match to resume
-      const activeMatch = await matchListService.findActiveMatch();
-      if (activeMatch) {
-        console.log("🎮 DashboardScreen: Active match found", {
-          matchId: activeMatch.id,
-          opponent: activeMatch.opponent_name,
-        });
-        setLiveMatchToResume(activeMatch);
+      // Check for active match to resume (skip if we just abandoned one)
+      if (!skipActiveMatchCheck) {
+        const activeMatch = await matchListService.findActiveMatch();
+        if (activeMatch) {
+          console.log("🎮 DashboardScreen: Active match found", {
+            matchId: activeMatch.id,
+            opponent: activeMatch.opponent_name,
+          });
+          setLiveMatchToResume(activeMatch);
+        }
       }
 
       // Load all matches from both sources
@@ -279,8 +282,8 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
               setLiveMatchToResume(null);
               setIsNewMatchFlow(false);
 
-              // Refresh dashboard data
-              loadDashboardData();
+              // Refresh dashboard data (skip active match check since we just deleted it)
+              loadDashboardData(true);
             } catch (error) {
               console.error("Failed to abandon match:", error);
               Alert.alert(
