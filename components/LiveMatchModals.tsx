@@ -129,6 +129,16 @@ export const HistoryModal: React.FC<HistoryModalProps> = ({
     setEventToDelete(null);
   };
 
+  // Get formatted event description for delete modal
+  const getEventDescription = () => {
+    if (!eventToDelete) return "";
+    const timeStr = formatGameTime(eventToDelete.period_number, eventToDelete.time_in_period);
+    const teamStr = eventToDelete.teamId === "HOME"
+      ? match.myTeamName || "Nous"
+      : match.opponent || "Adversaire";
+    return `${eventToDelete.description}\n${timeStr} • ${teamStr}`;
+  };
+
   return (
     <Modal visible={visible} transparent animationType="slide">
       <View style={styles.filterModalOverlay}>
@@ -247,85 +257,18 @@ export const HistoryModal: React.FC<HistoryModalProps> = ({
         </View>
       </View>
 
-      {/* Delete Confirmation Modal */}
-      <Modal
-        transparent
+      {/* Delete Confirmation Modal - Using DeleteActionModal for consistency */}
+      <DeleteActionModal
         visible={showDeleteConfirmation}
-        animationType="fade"
-        onRequestClose={cancelDeleteAction}
-      >
-        <View style={styles.deleteModalOverlay}>
-          <View style={[styles.deleteModalContainer, { backgroundColor: surfaceColor }]}>
-            <Text style={[styles.deleteModalTitle, { color: textPrimary }]}>
-              Confirmer la suppression
-            </Text>
-            <Text style={[styles.deleteModalMessage, { color: textSecondary }]}>
-              Êtes-vous sûr de vouloir supprimer cette action ?
-            </Text>
-
-            {eventToDelete && (
-              <View style={styles.deleteActionDetails}>
-                <Text style={[styles.deleteActionLabel, { color: textSecondary }]}>
-                  Action à supprimer :
-                </Text>
-                <View
-                  style={[
-                    styles.deleteActionInfo,
-                    {
-                      backgroundColor: isDark
-                        ? SLATE_COLORS[800]
-                        : SLATE_COLORS[50],
-                      borderColor: borderColor,
-                    },
-                  ]}
-                >
-                  <View style={styles.deleteActionContent}>
-                    <Text style={[styles.deleteActionDescription, { color: textPrimary }]}>
-                      {eventToDelete.description}
-                    </Text>
-                    <Text style={[styles.deleteActionMeta, { color: textSecondary }]}>
-                      {formatGameTime(eventToDelete.period_number, eventToDelete.time_in_period)} •{" "}
-                      {eventToDelete.teamId === "HOME"
-                        ? match.myTeamName || "Nous"
-                        : match.opponent || "Adversaire"}
-                    </Text>
-                  </View>
-                </View>
-              </View>
-            )}
-
-            <View style={styles.deleteModalButtons}>
-              <TouchableOpacity
-                style={[
-                  styles.deleteModalButton,
-                  {
-                    backgroundColor: isDark
-                      ? SLATE_COLORS[700]
-                      : SLATE_COLORS[200],
-                  }
-                ]}
-                onPress={cancelDeleteAction}
-              >
-                <Text style={[styles.deleteModalButtonText, { color: textPrimary }]}>
-                  Annuler
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[
-                  styles.deleteModalButton,
-                  { backgroundColor: STATUS_COLORS.error }
-                ]}
-                onPress={confirmDeleteAction}
-              >
-                <Text style={[styles.deleteModalButtonText, { color: COMMON_COLORS.white }]}>
-                  Supprimer
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
+        onClose={cancelDeleteAction}
+        onConfirm={confirmDeleteAction}
+        eventDescription={getEventDescription()}
+        isDark={isDark}
+        surfaceColor={surfaceColor}
+        textPrimary={textPrimary}
+        textSecondary={textSecondary}
+        borderColor={borderColor}
+      />
     </Modal>
   );
 };
@@ -2096,76 +2039,6 @@ const styles = StyleSheet.create({
   },
   historyFooterButtonText: {
     fontSize: 16,
-    fontWeight: "bold",
-  },
-  // Delete Confirmation Modal
-  deleteModalOverlay: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.6)",
-  },
-  deleteModalContainer: {
-    width: "85%",
-    maxWidth: 400,
-    borderRadius: 16,
-    padding: 24,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 10,
-  },
-  deleteModalTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    marginBottom: 12,
-    textAlign: "center",
-  },
-  deleteModalMessage: {
-    fontSize: 15,
-    textAlign: "center",
-    marginBottom: 20,
-    lineHeight: 22,
-  },
-  deleteActionDetails: {
-    width: "100%",
-    marginBottom: 24,
-  },
-  deleteActionLabel: {
-    fontSize: 13,
-    fontWeight: "600",
-    marginBottom: 8,
-  },
-  deleteActionInfo: {
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-  },
-  deleteActionContent: {
-    gap: 6,
-  },
-  deleteActionDescription: {
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  deleteActionMeta: {
-    fontSize: 12,
-  },
-  deleteModalButtons: {
-    flexDirection: "row",
-    gap: 12,
-    width: "100%",
-  },
-  deleteModalButton: {
-    flex: 1,
-    paddingVertical: 14,
-    borderRadius: 12,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  deleteModalButtonText: {
-    fontSize: 15,
     fontWeight: "bold",
   },
   // Filter Modal - Bottom Sheet
