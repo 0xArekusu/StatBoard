@@ -71,6 +71,7 @@ export default function NewMatchScreen({
   const [club, setClub] = useState<Club | null>(null);
   const [teams, setTeams] = useState<Team[]>([]);
   const [selectedTeamId, setSelectedTeamId] = useState<string>("");
+  const [myTeamName, setMyTeamName] = useState(""); // For guest users
   const [opponent, setOpponent] = useState("");
   const [isHome, setIsHome] = useState(true);
   const [trackOpponentStats, setTrackOpponentStats] = useState(false);
@@ -146,13 +147,18 @@ export default function NewMatchScreen({
    * Load roster when team changes
    */
   useEffect(() => {
+    // Skip loading roster for guest users (they create players manually)
+    if (!user) {
+      return;
+    }
+
     if (club && selectedTeamId && teams.length > 0) {
       const team = teams.find((t) => t.id === selectedTeamId);
       if (team) {
         loadTeamRoster(team.id);
       }
     }
-  }, [selectedTeamId, club, teams]);
+  }, [selectedTeamId, club, teams, user]);
 
   // ===========================
   // DATA LOADING
@@ -163,6 +169,49 @@ export default function NewMatchScreen({
    */
   const loadClubData = async () => {
     if (!user) {
+      // Guest mode: create temporary local club and team
+      const guestClub: Club = {
+        id: "guest-club",
+        name: "Club Local",
+        ownerId: "guest",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        logoUrl: null,
+        courtBackgroundColor: DEFAULT_COURT_COLORS.background,
+        courtLineColor: DEFAULT_COURT_COLORS.line,
+      };
+
+      const guestTeam: Team = {
+        id: "guest-team",
+        name: "Mon Équipe",
+        clubId: "guest-club",
+        ownerId: "guest",
+        status: TeamStatus.APPROVED,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      // Create 5 default players for guests
+      const now = new Date();
+      const defaultPlayers: Player[] = Array.from({ length: 5 }).map((_, i) => ({
+        id: `guest-player-${i + 1}`,
+        name: `Joueur ${i + 1}`,
+        jerseyNumber: i + 1,
+        teamId: "guest-team",
+        createdAt: now,
+        updatedAt: now,
+      }));
+
+      setClub(guestClub);
+      setTeams([guestTeam]);
+      setSelectedTeamId("guest-team");
+      setMyTeamName("Mon Équipe"); // Default team name for guests
+
+      // Set default players as available and selected
+      setAvailableHomePlayers(defaultPlayers);
+      setSelectedHomePlayers(defaultPlayers);
+      setStarters(defaultPlayers.map((p) => p.id)); // All 5 as starters
+
       setLoading(false);
       return;
     }
@@ -195,6 +244,11 @@ export default function NewMatchScreen({
    * Load roster for a specific team
    */
   const loadTeamRoster = async (teamId: string) => {
+    // Skip for guest users
+    if (!user || teamId === "guest-team") {
+      return;
+    }
+
     try {
       const playerService = ServiceFactory.getPlayerService(supabase);
       const roster = await playerService.getTeamPlayers(teamId);
@@ -219,10 +273,16 @@ export default function NewMatchScreen({
       Alert.alert("Erreur", MATCH_VALIDATION_MESSAGES.NO_OPPONENT);
       return;
     }
-    if (!selectedTeamId) {
+    // For guest users, validate team name instead of selectedTeamId
+    if (!user && !myTeamName) {
+      Alert.alert("Erreur", "Veuillez saisir le nom de votre équipe");
+      return;
+    }
+    if (user && !selectedTeamId) {
       Alert.alert("Erreur", MATCH_VALIDATION_MESSAGES.NO_TEAM);
       return;
     }
+
     setStep(2);
   };
 
@@ -410,11 +470,15 @@ export default function NewMatchScreen({
       return;
     }
 
+    // For guest users, update the team name with the user-provided value
+    const finalTeamName = !user ? myTeamName : team.name;
+
     console.log("📋 [NewMatchScreen] Starting match with club:", {
       clubId: club.id,
       clubName: club.name,
       teamId: team.id,
-      teamName: team.name,
+      teamName: finalTeamName,
+      isGuest: !user,
     });
 
     // Serialize players (convert Date objects to strings for React Navigation)
@@ -438,7 +502,7 @@ export default function NewMatchScreen({
       homePlayers: serializePlayers(selectedHomePlayers),
       starters,
       awayPlayers: trackOpponentStats ? serializePlayers(opponentRoster) : [],
-      teamName: team.name,
+      teamName: finalTeamName,
       clubLogoUrl: club?.logoUrl || null,
       courtBackgroundColor: club?.courtBackgroundColor || DEFAULT_COURT_COLORS.background,
       courtLineColor: club?.courtLineColor || DEFAULT_COURT_COLORS.line,
@@ -493,7 +557,8 @@ export default function NewMatchScreen({
   // ===========================
 
   const selectedTeam = teams.find((t) => t.id === selectedTeamId) || null;
-  const isStep1Valid = opponent && selectedTeamId;
+  // For guests, validate myTeamName; for authenticated users, validate selectedTeamId
+  const isStep1Valid = opponent && (user ? selectedTeamId : myTeamName);
   const isStep2Valid =
     selectedHomePlayers.length >= ROSTER_LIMITS.MIN_PLAYERS &&
     starters.length === Math.min(ROSTER_LIMITS.STARTERS, selectedHomePlayers.length);
@@ -512,6 +577,9 @@ export default function NewMatchScreen({
           <TeamSelector
             team={selectedTeam}
             teams={teams}
+            myTeamName={myTeamName}
+            onMyTeamNameChange={setMyTeamName}
+            isGuest={!user}
             colors={themeColors}
           />
 

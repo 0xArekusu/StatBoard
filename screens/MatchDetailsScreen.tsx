@@ -51,12 +51,13 @@ interface RouteParams {
   actions?: any[]; // Optional - will be loaded if not provided
   fromLiveMatch?: boolean;
   players?: any[]; // Optional - will be loaded if not provided
+  isLocalMatch?: boolean; // Flag to show local match warning
 }
 
 export default function MatchDetailsScreen() {
   const navigation = useNavigation();
   const route = useRoute<RouteProp<{ params: RouteParams }, "params">>();
-  const { match, fromLiveMatch } = route.params;
+  const { match, fromLiveMatch, isLocalMatch } = route.params;
   const { colors, isDark } = useTheme();
 
   // State for loaded data
@@ -95,6 +96,17 @@ export default function MatchDetailsScreen() {
 
     loadMatchData();
   }, [match, route.params.actions, route.params.players]);
+
+  // Show warning for local matches (guest mode)
+  useEffect(() => {
+    if (isLocalMatch) {
+      Alert.alert(
+        "Match enregistré localement",
+        "Vos données ont été sauvegardées sur cet appareil uniquement.\n\nPour synchroniser vos matchs sur le serveur et y accéder depuis d'autres appareils, créez un compte.",
+        [{ text: "OK" }]
+      );
+    }
+  }, [isLocalMatch]);
 
   // Load club data
   useEffect(() => {

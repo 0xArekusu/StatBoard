@@ -781,8 +781,8 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
                 colors={colors}
               />
 
-              {/* Action Bar - New Match Button - Only show if user has teams */}
-              {teams.length > 0 && (
+              {/* Action Bar - New Match Button - Show for authenticated users with teams OR guests */}
+              {(teams.length > 0 || isGuest) && (
                 <TouchableOpacity
                   style={[styles.newMatchButton, { backgroundColor: colors.primary }]}
                   onPress={handleNewMatchClick}
@@ -792,7 +792,7 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
                       Nouveau Match
                     </Text>
                     <Text style={styles.newMatchButtonSubtitle}>
-                      Pour {activeTeamName}
+                      {isGuest ? "Mode Invité" : `Pour ${activeTeamName}`}
                     </Text>
                   </View>
                   <View style={styles.newMatchButtonIcon}>

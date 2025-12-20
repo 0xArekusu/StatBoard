@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Modal,
   ActivityIndicator,
+  Alert,
 } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useTheme } from "../src/contexts/ThemeContext";
@@ -1846,10 +1847,48 @@ export default function LiveMatchScreen({
             // Hide sync modal
             setIsSyncing(false);
 
-            // Navigate to dashboard if not syncing
-            setTimeout(() => {
-              navigation.navigate(ROUTES.MAIN_TABS as never);
-            }, 100);
+            // For guest users, navigate to match details with local data
+            if (!user) {
+              // Fetch local match data
+              try {
+                const localMatch = await matchRepository.findById(currentMatchId);
+                const matchPlayerRepo = new MatchPlayerRepository();
+                const actionRepo = new ActionRepository();
+                const localPlayers = await matchPlayerRepo.getPlayersForMatch(currentMatchId);
+                const localActions = await actionRepo.getActionsForMatch(currentMatchId);
+
+                logInfo("LiveMatchScreen", "✅ Local match data fetched for guest", {
+                  matchId: currentMatchId,
+                  playersCount: localPlayers.length,
+                  actionsCount: localActions.length,
+                });
+
+                // Navigate to match details with local data and flag for guest mode
+                setTimeout(() => {
+                  navigation.navigate(ROUTES.MATCH_DETAILS as never, {
+                    match: localMatch,
+                    actions: localActions,
+                    players: localPlayers,
+                    fromLiveMatch: true,
+                    isLocalMatch: true, // Flag to show warning in MatchDetails
+                  } as never);
+                }, 100);
+              } catch (fetchError) {
+                logError("LiveMatchScreen", "❌ Failed to fetch local match data", {
+                  matchId: currentMatchId,
+                  error: fetchError,
+                });
+                // Navigate to dashboard if fetch fails
+                setTimeout(() => {
+                  navigation.navigate(ROUTES.MAIN_TABS as never);
+                }, 100);
+              }
+            } else {
+              // For authenticated users who can't sync, navigate to dashboard
+              setTimeout(() => {
+                navigation.navigate(ROUTES.MAIN_TABS as never);
+              }, 100);
+            }
           }
         } catch (syncError) {
           // Don't fail match end if sync fails - log and continue

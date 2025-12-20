@@ -2,10 +2,11 @@
  * Team Selector Component
  *
  * Displays the selected team for the match.
+ * For guest users, allows manual team name input.
  */
 
 import React from "react";
-import { View, Text, StyleSheet } from "react-native";
+import { View, Text, StyleSheet, TextInput } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { STATUS_COLORS } from "../../src/theme";
 import { MATCH_CREATION_FORM_LABELS, MATCH_CREATION_INFO_MESSAGES } from "../../constants";
@@ -16,6 +17,12 @@ interface TeamSelectorProps {
   team: Team | null;
   /** Available teams */
   teams: Team[];
+  /** Team name for guest users */
+  myTeamName?: string;
+  /** Callback when guest user changes team name */
+  onMyTeamNameChange?: (name: string) => void;
+  /** Is guest mode */
+  isGuest?: boolean;
   /** Theme colors */
   colors: {
     surfaceColor: string;
@@ -26,11 +33,14 @@ interface TeamSelectorProps {
 }
 
 /**
- * Displays the selected team (read-only, team is pre-selected from route params or defaults to first team)
+ * Displays the selected team (read-only for authenticated users, editable for guests)
  */
 export const TeamSelector: React.FC<TeamSelectorProps> = ({
   team,
   teams,
+  myTeamName,
+  onMyTeamNameChange,
+  isGuest = false,
   colors,
 }) => {
   return (
@@ -38,7 +48,25 @@ export const TeamSelector: React.FC<TeamSelectorProps> = ({
       <Text style={[styles.formLabel, { color: colors.textSecondary }]}>
         {MATCH_CREATION_FORM_LABELS.MY_TEAM}
       </Text>
-      {teams.length > 0 ? (
+      {isGuest ? (
+        // Guest mode: editable text input
+        <TextInput
+          style={[
+            styles.formInput,
+            styles.textInput,
+            {
+              backgroundColor: colors.surfaceColor,
+              borderColor: colors.borderColor,
+              color: colors.textPrimary,
+            },
+          ]}
+          value={myTeamName}
+          onChangeText={onMyTeamNameChange}
+          placeholder="Nom de votre équipe"
+          placeholderTextColor={colors.textSecondary}
+        />
+      ) : teams.length > 0 ? (
+        // Authenticated mode: display team name (read-only)
         <View
           style={[
             styles.formInput,
@@ -50,6 +78,7 @@ export const TeamSelector: React.FC<TeamSelectorProps> = ({
           </Text>
         </View>
       ) : (
+        // No teams available
         <View
           style={[
             styles.alertBox,
@@ -90,6 +119,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   formInputText: {
+    fontSize: 14,
+    fontWeight: "bold",
+  },
+  textInput: {
     fontSize: 14,
     fontWeight: "bold",
   },
