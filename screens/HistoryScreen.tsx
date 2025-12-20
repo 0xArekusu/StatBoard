@@ -6,6 +6,8 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
+  Modal,
+  Alert,
 } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useTheme } from "../src/contexts/ThemeContext";
@@ -14,17 +16,20 @@ import { Match } from "../src/models/types";
 import { supabase } from "../src/config/supabase";
 import { ROUTES } from "../constants/routes";
 import { ServiceFactory } from "../services/ServiceFactory";
+import { OPACITY } from "../src/theme";
 
 interface HistoryScreenProps {
   navigation: any;
 }
 
 export default function HistoryScreen({ navigation }: HistoryScreenProps) {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const { user } = useAuth();
 
   const [loading, setLoading] = useState(true);
   const [matches, setMatches] = useState<Match[]>([]);
+  const [showSyncModal, setShowSyncModal] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
 
   const isGuest = !user;
 
@@ -38,7 +43,9 @@ export default function HistoryScreen({ navigation }: HistoryScreenProps) {
 
       // Use MatchListService to load all matches from both sources
       const matchListService = ServiceFactory.getMatchListService(supabase);
-      const allMatches = await matchListService.loadAllMatchesSorted(user?.id || null);
+      const allMatches = await matchListService.loadAllMatchesSorted(
+        user?.id || null,
+      );
 
       setMatches(allMatches);
     } catch (error) {
@@ -48,11 +55,51 @@ export default function HistoryScreen({ navigation }: HistoryScreenProps) {
     }
   };
 
+  const handleSyncAll = async () => {
+    try {
+      setIsSyncing(true);
+
+      // Use MatchSyncService to sync all pending matches
+      const matchSyncService = ServiceFactory.getMatchSyncService(supabase);
+      const result = await matchSyncService.syncAllPendingMatches();
+
+      if (result.synced > 0) {
+        Alert.alert(
+          "Synchronisation réussie",
+          `${result.synced} match${result.synced > 1 ? "s" : ""} synchronisé${result.synced > 1 ? "s" : ""} avec succès.`,
+        );
+        // Reload data to reflect changes
+        await loadHistoryData();
+      }
+
+      if (result.failed > 0) {
+        Alert.alert(
+          "Erreur de synchronisation",
+          `${result.failed} match${result.failed > 1 ? "s" : ""} n'ont pas pu être synchronisé${result.failed > 1 ? "s" : ""}.\n\n${result.errors.join("\n")}`,
+        );
+      }
+
+      setShowSyncModal(false);
+    } catch (error) {
+      console.error("Error syncing matches:", error);
+      Alert.alert(
+        "Erreur",
+        "Une erreur est survenue lors de la synchronisation. Veuillez réessayer.",
+      );
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
   const bgColor = colors.surface;
   const surfaceColor = colors.background;
   const textPrimary = colors.text.primary;
   const textSecondary = colors.text.secondary;
   const borderColor = colors.border;
+
+  // Count unsynced matches
+  const unsyncedMatches = matches.filter((m) => !m.synced_to_server);
+  const unsyncedCount = unsyncedMatches.length;
 
   if (loading) {
     return (
@@ -72,51 +119,247 @@ export default function HistoryScreen({ navigation }: HistoryScreenProps) {
   }
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: bgColor }]}>
-      <View style={styles.content}>
-        {/* Title */}
-        <Text style={[styles.title, { color: textPrimary }]}>
-          Historique des matchs
-        </Text>
-
-        {/* Matches List */}
-        {matches.length === 0 ? (
+    <>
+      {/* Sync Confirmation Modal */}
+      <Modal
+        visible={showSyncModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => !isSyncing && setShowSyncModal(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => !isSyncing && setShowSyncModal(false)}
+        >
           <View
             style={[
-              styles.emptyState,
+              styles.modalContent,
               {
-                backgroundColor: colors.surfaceVariant,
-                borderColor,
+                backgroundColor: colors.surface,
               },
             ]}
+            onStartShouldSetResponder={() => true}
           >
-            <MaterialCommunityIcons
-              name="calendar-blank"
-              size={40}
-              color={textSecondary}
-              style={{ opacity: 0.5 }}
-            />
-            <Text style={[styles.emptyStateText, { color: textSecondary }]}>
-              Aucun match enregistré.
-            </Text>
-          </View>
-        ) : (
-          <View style={styles.matchesList}>
-            {matches.map((match, index) => (
-              <MatchCard
-                key={`match-${match.id}-${index}`}
-                match={match}
-                onPress={() => {
-                  navigation.navigate(ROUTES.MATCH_DETAILS as never, {
-                    match,
-                  } as never);
-                }}
+            <TouchableOpacity
+              onPress={() => !isSyncing && setShowSyncModal(false)}
+              style={styles.modalCloseButton}
+              disabled={isSyncing}
+            >
+              <MaterialCommunityIcons
+                name="close"
+                size={20}
+                color={colors.text.secondary}
               />
-            ))}
+            </TouchableOpacity>
+
+            <View style={styles.modalHeader}>
+              <View
+                style={[
+                  styles.modalIconContainer,
+                  {
+                    backgroundColor: isDark
+                      ? `${colors.primary}33`
+                      : `${colors.primary}1A`,
+                  },
+                ]}
+              >
+                <MaterialCommunityIcons
+                  name="cloud-upload"
+                  size={32}
+                  color={colors.primary}
+                />
+              </View>
+              <Text
+                style={[
+                  styles.modalTitle,
+                  {
+                    color: colors.text.primary,
+                  },
+                ]}
+              >
+                SYNCHRONISATION
+              </Text>
+              <Text
+                style={[
+                  styles.modalDescription,
+                  {
+                    color: colors.text.secondary,
+                  },
+                ]}
+              >
+                Voulez-vous envoyer les statistiques de{" "}
+                <Text style={{ fontWeight: "bold" }}>
+                  {unsyncedCount} match{unsyncedCount > 1 ? "s" : ""}
+                </Text>{" "}
+                sur le serveur du club ?
+              </Text>
+            </View>
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                onPress={handleSyncAll}
+                disabled={isSyncing}
+                style={[
+                  styles.modalPrimaryButton,
+                  {
+                    backgroundColor: colors.primary,
+                    opacity: isSyncing ? 0.5 : 1,
+                  },
+                ]}
+              >
+                {isSyncing ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <MaterialCommunityIcons
+                    name="refresh"
+                    size={20}
+                    color="#FFFFFF"
+                  />
+                )}
+                <Text style={styles.modalPrimaryButtonText}>
+                  {isSyncing ? "Envoi en cours..." : "Confirmer"}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => setShowSyncModal(false)}
+                disabled={isSyncing}
+                style={[
+                  styles.modalSecondaryButton,
+                  {
+                    backgroundColor: colors.surfaceVariant,
+                  },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.modalSecondaryButtonText,
+                    {
+                      color: colors.text.primary,
+                    },
+                  ]}
+                >
+                  Annuler
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
-        )}
-      </View>
-    </ScrollView>
+        </TouchableOpacity>
+      </Modal>
+
+      <ScrollView style={[styles.container, { backgroundColor: bgColor }]}>
+        <View style={styles.content}>
+          {/* Title */}
+          <Text style={[styles.title, { color: textPrimary }]}>
+            Historique des matchs
+          </Text>
+
+          {/* Sync Banner */}
+          {unsyncedCount > 0 && (
+            <TouchableOpacity
+              onPress={() => setShowSyncModal(true)}
+              style={[
+                styles.syncBanner,
+                {
+                  backgroundColor: isDark
+                    ? `${colors.primary}1A`
+                    : `${colors.primary}0D`,
+                  borderColor: isDark
+                    ? `${colors.primary}33`
+                    : `${colors.primary}33`,
+                },
+              ]}
+              activeOpacity={OPACITY.interaction.high}
+            >
+              <View style={styles.syncBannerLeft}>
+                <View
+                  style={[
+                    styles.syncBannerIcon,
+                    {
+                      backgroundColor: colors.primary,
+                    },
+                  ]}
+                >
+                  <MaterialCommunityIcons
+                    name="refresh"
+                    size={18}
+                    color="#FFFFFF"
+                  />
+                </View>
+                <View style={styles.syncBannerTextContainer}>
+                  <Text
+                    style={[
+                      styles.syncBannerTitle,
+                      {
+                        color: colors.text.primary,
+                      },
+                    ]}
+                  >
+                    {unsyncedCount} match{unsyncedCount > 1 ? "s" : ""} non
+                    synchronisé{unsyncedCount > 1 ? "s" : ""}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.syncBannerSubtitle,
+                      {
+                        color: colors.primary,
+                      },
+                    ]}
+                  >
+                    SYNCHRONISER MAINTENANT
+                  </Text>
+                </View>
+              </View>
+              <MaterialCommunityIcons
+                name="chevron-right"
+                size={16}
+                color={colors.primary}
+              />
+            </TouchableOpacity>
+          )}
+
+          {/* Matches List */}
+          {matches.length === 0 ? (
+            <View
+              style={[
+                styles.emptyState,
+                {
+                  backgroundColor: colors.surfaceVariant,
+                  borderColor,
+                },
+              ]}
+            >
+              <MaterialCommunityIcons
+                name="calendar-blank"
+                size={40}
+                color={textSecondary}
+                style={{ opacity: 0.5 }}
+              />
+              <Text style={[styles.emptyStateText, { color: textSecondary }]}>
+                Aucun match enregistré.
+              </Text>
+            </View>
+          ) : (
+            <View style={styles.matchesList}>
+              {matches.map((match, index) => (
+                <MatchCard
+                  key={`match-${match.id}-${index}`}
+                  match={match}
+                  onPress={() => {
+                    navigation.navigate(
+                      ROUTES.MATCH_DETAILS as never,
+                      {
+                        match,
+                      } as never,
+                    );
+                  }}
+                />
+              ))}
+            </View>
+          )}
+        </View>
+      </ScrollView>
+    </>
   );
 }
 
@@ -125,14 +368,12 @@ interface MatchCardProps {
   onPress: () => void;
 }
 
-function MatchCard({
-  match,
-  onPress,
-}: MatchCardProps) {
+function MatchCard({ match, onPress }: MatchCardProps) {
   const { isDark, colors } = useTheme();
   const scoreA = match.my_team_score || 0;
   const scoreB = match.opponent_score || 0;
   const isWin = scoreA > scoreB;
+  const isSynced = Boolean(match.synced_to_server);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -149,7 +390,10 @@ function MatchCard({
 
   return (
     <TouchableOpacity
-      style={[styles.matchCard, { backgroundColor: colors.background, borderColor: colors.border }]}
+      style={[
+        styles.matchCard,
+        { backgroundColor: colors.background, borderColor: colors.border },
+      ]}
       onPress={onPress}
       activeOpacity={0.7}
     >
@@ -161,7 +405,9 @@ function MatchCard({
             size={12}
             color={colors.text.secondary}
           />
-          <Text style={[styles.matchCardInfoText, { color: colors.text.secondary }]}>
+          <Text
+            style={[styles.matchCardInfoText, { color: colors.text.secondary }]}
+          >
             {formatDate(match.ended_at || match.created_at)}
           </Text>
         </View>
@@ -171,8 +417,10 @@ function MatchCard({
             size={12}
             color={colors.text.secondary}
           />
-          <Text style={[styles.matchCardInfoText, { color: colors.text.secondary }]}>
-            {match.is_home ? 'Domicile' : 'Extérieur'}
+          <Text
+            style={[styles.matchCardInfoText, { color: colors.text.secondary }]}
+          >
+            {match.is_home ? "Domicile" : "Extérieur"}
           </Text>
         </View>
       </View>
@@ -181,7 +429,12 @@ function MatchCard({
       <View style={styles.matchScores}>
         {/* Team A (Us) */}
         <View style={styles.matchTeamContainer}>
-          <Text style={[styles.matchScoreValue, { color: isWin ? colors.text.primary : colors.text.tertiary }]}>
+          <Text
+            style={[
+              styles.matchScoreValue,
+              { color: isWin ? colors.text.primary : colors.text.tertiary },
+            ]}
+          >
             {scoreA}
           </Text>
           <Text
@@ -201,7 +454,9 @@ function MatchCard({
             },
           ]}
         >
-          <Text style={[styles.matchVsText, { color: colors.text.secondary }]}>VS</Text>
+          <Text style={[styles.matchVsText, { color: colors.text.secondary }]}>
+            VS
+          </Text>
         </View>
 
         {/* Team B (Opponent) */}
@@ -224,46 +479,90 @@ function MatchCard({
       </View>
 
       {/* Result and Action */}
-      <View
-        style={[
-          styles.matchCardFooter,
-          { borderTopColor: colors.border },
-        ]}
-      >
-        <View
-          style={[
-            styles.matchResultBadge,
-            {
-              backgroundColor: isWin
-                ? isDark
-                  ? `${colors.success}33`
-                  : `${colors.success}1A`
-                : isDark
-                ? `${colors.error}33`
-                : `${colors.error}1A`,
-            },
-          ]}
-        >
-          <Text
+      <View style={[styles.matchCardFooter, { borderTopColor: colors.border }]}>
+        {/* Result Badge */}
+        <View style={styles.matchCardFooterLeft}>
+          <View
             style={[
-              styles.matchResultText,
-              { color: isWin ? colors.success : colors.error },
+              styles.matchResultBadge,
+              {
+                backgroundColor: isWin
+                  ? isDark
+                    ? `${colors.success}33`
+                    : `${colors.success}1A`
+                  : isDark
+                    ? `${colors.error}33`
+                    : `${colors.error}1A`,
+              },
             ]}
           >
-            {isWin ? "VICTOIRE" : "DÉFAITE"}
-          </Text>
+            <Text
+              style={[
+                styles.matchResultText,
+                { color: isWin ? colors.success : colors.error },
+              ]}
+            >
+              {isWin ? "VICTOIRE" : "DÉFAITE"}
+            </Text>
+          </View>
         </View>
 
-        <TouchableOpacity style={styles.matchAnalyzeButton} onPress={onPress}>
-          <MaterialCommunityIcons
-            name="chart-bar"
-            size={14}
-            color={colors.primary}
-          />
-          <Text style={[styles.matchAnalyzeText, { color: colors.primary }]}>
-            ANALYSER
-          </Text>
-        </TouchableOpacity>
+        {/* Sync Status Badge */}
+        <View style={styles.matchCardFooterCenter}>
+          {isSynced ? (
+            <View style={styles.syncStatusBadge}>
+              <MaterialCommunityIcons
+                name="cloud-check"
+                size={12}
+                color={colors.success}
+                style={{ opacity: 0.4 }}
+              />
+              <Text
+                style={[
+                  styles.syncStatusText,
+                  {
+                    color: colors.success,
+                    opacity: 0.4,
+                  },
+                ]}
+              >
+                SYNC
+              </Text>
+            </View>
+          ) : (
+            <View style={styles.syncStatusBadge}>
+              <MaterialCommunityIcons
+                name="cloud-off-outline"
+                size={12}
+                color={colors.warning}
+              />
+              <Text
+                style={[
+                  styles.syncStatusText,
+                  {
+                    color: colors.warning,
+                  },
+                ]}
+              >
+                LOCAL
+              </Text>
+            </View>
+          )}
+        </View>
+
+        {/* Analyze Button */}
+        <View style={styles.matchCardFooterRight}>
+          <TouchableOpacity style={styles.matchAnalyzeButton} onPress={onPress}>
+            <Text style={[styles.matchAnalyzeText, { color: colors.primary }]}>
+              Détails
+            </Text>
+            <MaterialCommunityIcons
+              name="chart-bar"
+              size={12}
+              color={colors.primary}
+            />
+          </TouchableOpacity>
+        </View>
       </View>
     </TouchableOpacity>
   );
@@ -377,6 +676,18 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     borderTopWidth: 1,
   },
+  matchCardFooterLeft: {
+    flex: 1,
+    alignItems: "flex-start",
+  },
+  matchCardFooterCenter: {
+    flex: 1,
+    alignItems: "center",
+  },
+  matchCardFooterRight: {
+    flex: 1,
+    alignItems: "flex-end",
+  },
   matchResultBadge: {
     paddingHorizontal: 8,
     paddingVertical: 4,
@@ -386,13 +697,133 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "bold",
   },
+  syncStatusBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  syncStatusText: {
+    fontSize: 9,
+    fontWeight: "bold",
+    letterSpacing: 0.5,
+  },
   matchAnalyzeButton: {
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
   },
   matchAnalyzeText: {
-    fontSize: 12,
+    fontSize: 10,
+    fontWeight: "bold",
+    letterSpacing: 1,
+    textTransform: "uppercase",
+  },
+  syncBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    marginBottom: 16,
+  },
+  syncBannerLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+  },
+  syncBannerIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 12,
+  },
+  syncBannerTextContainer: {
+    flex: 1,
+  },
+  syncBannerTitle: {
+    fontSize: 14,
+    fontWeight: "bold",
+    marginBottom: 2,
+  },
+  syncBannerSubtitle: {
+    fontSize: 10,
+    fontWeight: "bold",
+    letterSpacing: 1.5,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.8)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 24,
+  },
+  modalContent: {
+    width: "100%",
+    maxWidth: 400,
+    borderRadius: 24,
+    padding: 24,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
+    elevation: 10,
+  },
+  modalCloseButton: {
+    position: "absolute",
+    top: 16,
+    right: 16,
+    padding: 8,
+    zIndex: 1,
+  },
+  modalHeader: {
+    alignItems: "center",
+    marginBottom: 32,
+  },
+  modalIconContainer: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: "900",
+    marginBottom: 8,
+    letterSpacing: 1,
+  },
+  modalDescription: {
+    fontSize: 14,
+    textAlign: "center",
+    lineHeight: 20,
+  },
+  modalActions: {
+    gap: 12,
+  },
+  modalPrimaryButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 16,
+    borderRadius: 16,
+    gap: 8,
+  },
+  modalPrimaryButtonText: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#FFFFFF",
+  },
+  modalSecondaryButton: {
+    paddingVertical: 16,
+    borderRadius: 16,
+    alignItems: "center",
+  },
+  modalSecondaryButtonText: {
+    fontSize: 16,
     fontWeight: "bold",
   },
 });

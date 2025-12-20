@@ -12,6 +12,7 @@ import { MatchDataService } from "./MatchDataService";
 import { MatchListService } from "./MatchListService";
 import { ActionRepository } from "../src/services/database/ActionRepository";
 import { MatchRepository } from "../src/services/database/MatchRepository";
+import { MatchSyncService } from "../src/services/api/MatchSyncService";
 
 /**
  * Factory Pattern + Singleton Pattern
@@ -25,6 +26,7 @@ export class ServiceFactory {
   private static subscriptionServiceInstance: SubscriptionService | null = null;
   private static matchDataServiceInstance: MatchDataService | null = null;
   private static matchListServiceInstance: MatchListService | null = null;
+  private static matchSyncServiceInstance: MatchSyncService | null = null;
 
   /**
    * Get ClubService singleton instance
@@ -45,7 +47,9 @@ export class ServiceFactory {
   static getClubMemberService(supabase: SupabaseClient): ClubMemberService {
     if (!this.clubMemberServiceInstance) {
       const clubMemberRepository = new SupabaseClubMemberRepository(supabase);
-      this.clubMemberServiceInstance = new ClubMemberService(clubMemberRepository);
+      this.clubMemberServiceInstance = new ClubMemberService(
+        clubMemberRepository,
+      );
     }
     return this.clubMemberServiceInstance;
   }
@@ -62,7 +66,7 @@ export class ServiceFactory {
       this.teamServiceInstance = new TeamService(
         teamRepository,
         clubMemberRepository,
-        subscriptionService
+        subscriptionService,
       );
     }
     return this.teamServiceInstance;
@@ -98,7 +102,10 @@ export class ServiceFactory {
   static getMatchDataService(supabase: SupabaseClient): MatchDataService {
     if (!this.matchDataServiceInstance) {
       const actionRepository = new ActionRepository();
-      this.matchDataServiceInstance = new MatchDataService(supabase, actionRepository);
+      this.matchDataServiceInstance = new MatchDataService(
+        supabase,
+        actionRepository,
+      );
     }
     return this.matchDataServiceInstance;
   }
@@ -110,9 +117,23 @@ export class ServiceFactory {
   static getMatchListService(supabase: SupabaseClient): MatchListService {
     if (!this.matchListServiceInstance) {
       const matchRepository = new MatchRepository();
-      this.matchListServiceInstance = new MatchListService(supabase, matchRepository);
+      this.matchListServiceInstance = new MatchListService(
+        supabase,
+        matchRepository,
+      );
     }
     return this.matchListServiceInstance;
+  }
+
+  /**
+   * Get MatchSyncService singleton instance
+   * @param supabase Supabase client instance
+   */
+  static getMatchSyncService(supabase: SupabaseClient): MatchSyncService {
+    if (!this.matchSyncServiceInstance) {
+      this.matchSyncServiceInstance = new MatchSyncService(supabase);
+    }
+    return this.matchSyncServiceInstance;
   }
 
   /**
@@ -126,5 +147,6 @@ export class ServiceFactory {
     this.subscriptionServiceInstance = null;
     this.matchDataServiceInstance = null;
     this.matchListServiceInstance = null;
+    this.matchSyncServiceInstance = null;
   }
 }
