@@ -8,8 +8,9 @@
 
 import React, { useMemo } from "react";
 import { View, Text, StyleSheet, ScrollView } from "react-native";
-import Svg, { Path, Line, Defs, LinearGradient, Stop } from "react-native-svg";
+import Svg, { Path, Line } from "react-native-svg";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { ActionType, ShotSpecification } from "../../src/models/ActionTypes";
 
 interface PeriodScore {
   home: number;
@@ -45,9 +46,17 @@ export default function EvolutionTab({
     const allPeriods = totalPeriods + overtimePeriods;
 
     for (let period = 1; period <= allPeriods; period++) {
-      const periodActions = actions.filter(
-        (a) => a.period_number === period && a.points != null
-      );
+      // Only count MADE shots for the score
+      const periodActions = actions.filter((a) => {
+        const actionType = (a.type || a.action_type || '').toLowerCase();
+        const specification = (a.specification || '').toLowerCase();
+
+        return (
+          a.period_number === period &&
+          actionType === ActionType.SHOT &&
+          specification === ShotSpecification.MADE
+        );
+      });
 
       const homeScore = periodActions
         .filter((a) => a.team === "MyTeam")
@@ -70,8 +79,16 @@ export default function EvolutionTab({
     return { periods, graphPoints, totalPeriods, overtimePeriods };
   }, [actions, match.total_periods, match.overtime_periods]);
 
-  // Add padding to maxScore to prevent curves from touching the top
-  const maxScore = Math.max(match.my_team_score || 0, match.opponent_score || 0, 20) * 1.1;
+  // Calculate maxScore from actual graph data points for accurate scaling
+  const maxScore = useMemo(() => {
+    const maxFromGraph = Math.max(
+      ...evolution.graphPoints.map(p => Math.max(p.home, p.away)),
+      0
+    );
+    // Add 10% padding, with minimum of 20 for very low scores
+    const scoreWithPadding = Math.max(maxFromGraph * 1.1, 20);
+    return scoreWithPadding;
+  }, [evolution.graphPoints]);
 
   return (
     <ScrollView
@@ -263,75 +280,53 @@ export default function EvolutionTab({
               <Svg
                 width="100%"
                 height={200}
-                viewBox={`0 0 ${evolution.graphPoints.length - 1} ${maxScore}`}
+                viewBox={`0 0 ${Math.max(evolution.graphPoints.length - 1, 1)} ${maxScore}`}
                 preserveAspectRatio="none"
               >
-                <Defs>
-                  <LinearGradient id="homeGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-                    <Stop offset="0%" stopColor={colors.primary} stopOpacity="0.2" />
-                    <Stop offset="100%" stopColor={colors.primary} stopOpacity="0" />
-                  </LinearGradient>
-                  <LinearGradient id="awayGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-                    <Stop offset="0%" stopColor="#FF6B6B" stopOpacity="0.15" />
-                    <Stop offset="100%" stopColor="#FF6B6B" stopOpacity="0" />
-                  </LinearGradient>
-                </Defs>
-
                 {/* Grid lines */}
                 {[0, 0.25, 0.5, 0.75, 1].map((ratio) => (
                   <Line
                     key={ratio}
                     x1="0"
                     y1={maxScore * ratio}
-                    x2={evolution.graphPoints.length - 1}
+                    x2={Math.max(evolution.graphPoints.length - 1, 1)}
                     y2={maxScore * ratio}
                     stroke={colors.border}
-                    strokeWidth="0.05"
-                    strokeDasharray="0.2,0.2"
+                    strokeWidth="0.5"
                   />
                 ))}
 
-                {/* Home Team Area */}
-                <Path
-                  d={`M 0 ${maxScore} ${evolution.graphPoints
-                    .map((p, i) => `L ${i} ${maxScore - p.home}`)
-                    .join(" ")} L ${evolution.graphPoints.length - 1} ${maxScore} Z`}
-                  fill="url(#homeGrad)"
-                />
-
-                {/* Away Team Area */}
-                <Path
-                  d={`M 0 ${maxScore} ${evolution.graphPoints
-                    .map((p, i) => `L ${i} ${maxScore - p.away}`)
-                    .join(" ")} L ${evolution.graphPoints.length - 1} ${maxScore} Z`}
-                  fill="url(#awayGrad)"
-                />
-
                 {/* Home Team Line */}
-                <Path
-                  d={`M 0 ${maxScore} ${evolution.graphPoints
-                    .map((p, i) => `L ${i} ${maxScore - p.home}`)
-                    .join(" ")}`}
-                  fill="none"
-                  stroke={colors.primary}
-                  strokeWidth="0.1"
-                  strokeLinejoin="round"
-                  strokeLinecap="round"
-                  vectorEffect="non-scaling-stroke"
-                />
+                {evolution.graphPoints.length > 1 && (
+                  <Path
+                    d={`M 0 ${maxScore - evolution.graphPoints[0].home} ${evolution.graphPoints
+                      .slice(1)
+                      .map((p, i) => `L ${i + 1} ${maxScore - p.home}`)
+                      .join(" ")}`}
+                    fill="none"
+                    stroke={colors.primary}
+                    strokeWidth="2"
+                    strokeLinejoin="round"
+                    strokeLinecap="round"
+                    vectorEffect="non-scaling-stroke"
+                  />
+                )}
 
                 {/* Away Team Line */}
-                <Path
-                  d={`M 0 ${maxScore} ${evolution.graphPoints
-                    .map((p, i) => `L ${i} ${maxScore - p.away}`)
-                    .join(" ")}`}
-                  fill="none"
-                  stroke="#FF6B6B"
-                  strokeWidth="0.1"
-                  strokeLinejoin="round"
-                  strokeLinecap="round"
-                  vectorEffect="non-scaling-stroke"
-                />
+                {evolution.graphPoints.length > 1 && (
+                  <Path
+                    d={`M 0 ${maxScore - evolution.graphPoints[0].away} ${evolution.graphPoints
+                      .slice(1)
+                      .map((p, i) => `L ${i + 1} ${maxScore - p.away}`)
+                      .join(" ")}`}
+                    fill="none"
+                    stroke="#FF6B6B"
+                    strokeWidth="2"
+                    strokeLinejoin="round"
+                    strokeLinecap="round"
+                    vectorEffect="non-scaling-stroke"
+                  />
+                )}
               </Svg>
             </View>
 
@@ -469,7 +464,7 @@ const styles = StyleSheet.create({
   },
   yAxisLabels: {
     position: "absolute",
-    left: 0,
+    left: 16,
     top: 8,
     height: 200,
     justifyContent: "space-between",
@@ -480,11 +475,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-around",
     marginTop: 8,
-    paddingLeft: 30,
+    paddingLeft: 46,
   },
   graphSvgContainer: {
     height: 200,
-    marginLeft: 35,
+    marginLeft: 51,
     marginRight: 5,
   },
   axisLabel: {
