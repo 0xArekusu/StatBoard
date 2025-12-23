@@ -75,6 +75,13 @@ export const FOUL_SPECIFICATION_FR: Record<FoulSpecification, string> = {
 };
 
 /**
+ * Generic action specification for simple actions
+ */
+export enum GenericSpecification {
+  STANDARD = "standard",
+}
+
+/**
  * Check if a shot specification is a made shot
  */
 export function isShotMade(spec: ShotSpecification): boolean {

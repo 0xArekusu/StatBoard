@@ -36,12 +36,6 @@
           <string>exp+coach-assistant</string>
         </array>
       </dict>
-      <dict>
-        <key>CFBundleURLSchemes</key>
-        <array>
-          <string>com.googleusercontent.apps.14213378665-aj9oq4n27pv75khu703aaj7prtrorl39</string>
-        </array>
-      </dict>
     </array>
     <key>CFBundleVersion</key>
     <string>1</string>

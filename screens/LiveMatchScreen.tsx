@@ -5,24 +5,24 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Modal,
-  ActivityIndicator,
   Alert,
 } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useTheme } from "../src/contexts/ThemeContext";
-import {
-  SLATE_COLORS,
-  BRAND_COLORS,
-  COMMON_COLORS,
-} from "../src/theme";
+import { SLATE_COLORS } from "../src/theme/colors";
 import {
   MatchStatus,
   CreateMatchData,
   CreateActionData,
   Team,
 } from "../src/models/types";
-import { ActionType, ShotSpecification, ReboundSpecification } from "../src/models/ActionTypes";
+import {
+  ActionType,
+  ShotSpecification,
+  ReboundSpecification,
+  FoulSpecification,
+  GenericSpecification,
+} from "../src/models/ActionTypes";
 import { Player } from "../models/Player";
 import { useAuth } from "../src/contexts/AuthContext";
 import { MatchManager } from "../src/services/match/MatchManager";
@@ -31,11 +31,29 @@ import { MatchRepository } from "../src/services/database/MatchRepository";
 import { ActionRepository } from "../src/services/database/ActionRepository";
 import { MatchPlayerRepository } from "../src/services/database/MatchPlayerRepository";
 import { logInfo, logError, logWarn } from "../utils/logger";
-import { generateMockActions } from "../utils/mockActions";
+import {
+  generateMockActions,
+  MOCK_ROSTER,
+  MOCK_OPPONENT_ROSTER,
+} from "../utils/mockActions";
+import {
+  formatTime,
+  getActionDescription,
+  getPeriodLabel,
+  getEventTypeDescription,
+} from "../utils/liveMatchHelpers";
+import {
+  EventType,
+  WorkflowStep,
+  MatchEvent,
+  TeamId,
+  ViewMode,
+  FilterMode,
+} from "../constants/liveMatchConstants";
 import { supabase } from "../src/config/supabase";
 import { ROUTES } from "../constants/routes";
-import BasketballCourtSVG from "../components/BasketballCourtSVG";
 import { MatchActionGrid } from "../components/MatchActionGrid";
+import { CourtView } from "../components/LiveMatch";
 import {
   HistoryModal,
   FilterModal,
@@ -46,141 +64,10 @@ import {
   OvertimeModal,
   PeriodConfirmModal,
   DeleteActionModal,
+  SyncModal,
 } from "../components/LiveMatchModals";
 
-interface LiveMatchScreenProps {
-  navigation: any;
-  route: any;
-}
-
-type EventType =
-  | "POINT_1"
-  | "POINT_2"
-  | "POINT_3"
-  | "MISS_1"
-  | "MISS_2"
-  | "MISS_3"
-  | "FOUL"
-  | "REBOUND_DEF"
-  | "REBOUND_OFF"
-  | "ASSIST"
-  | "STEAL"
-  | "BLOCK"
-  | "TURNOVER"
-  | "SUBSTITUTION"
-  | "POINT";
-
-interface MatchEvent {
-  id: string;
-  type: EventType;
-  value?: number;
-  playerId?: string;
-  teamId: "HOME" | "AWAY";
-  timestamp: number;
-  description: string;
-  coordinates?: { x: number; y: number };
-  period_number?: number;
-  time_in_period?: number;
-}
-
-type WorkflowStep =
-  | "IDLE"
-  | "SELECT_PLAYER"
-  | "SELECT_ACTION_FROM_COURT"
-  | "SUBSTITUTION";
-type FilterMode = "ALL" | "SHOOTING" | "REBOUNDS" | "FOULS" | "TURNOVERS" | "BLOCKS" | "STEALS";
-
-// Mock players for fallback
-const MOCK_ROSTER: Player[] = [
-  {
-    id: "p1",
-    name: "T. Parker",
-    jerseyNumber: 9,
-    teamId: "",
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: "p2",
-    name: "B. Diaw",
-    jerseyNumber: 13,
-    teamId: "",
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: "p3",
-    name: "N. Batum",
-    jerseyNumber: 5,
-    teamId: "",
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: "p4",
-    name: "R. Gobert",
-    jerseyNumber: 27,
-    teamId: "",
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: "p5",
-    name: "E. Fournier",
-    jerseyNumber: 10,
-    teamId: "",
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-];
-
-const MOCK_OPPONENT_ROSTER: Player[] = [
-  {
-    id: "adv1",
-    name: "Joueur 1",
-    jerseyNumber: 4,
-    teamId: "",
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: "adv2",
-    name: "Joueur 2",
-    jerseyNumber: 7,
-    teamId: "",
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: "adv3",
-    name: "Joueur 3",
-    jerseyNumber: 11,
-    teamId: "",
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: "adv4",
-    name: "Joueur 4",
-    jerseyNumber: 15,
-    teamId: "",
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: "adv5",
-    name: "Joueur 5",
-    jerseyNumber: 23,
-    teamId: "",
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-];
-
-export default function LiveMatchScreen({
-  navigation,
-  route,
-}: LiveMatchScreenProps) {
+export default function LiveMatchScreen({ navigation, route }: any) {
   const { colors, isDark } = useTheme();
   const { user } = useAuth();
   const matchData = route.params?.matchData;
@@ -204,7 +91,7 @@ export default function LiveMatchScreen({
         teamId: matchData.teamId,
         myTeamName: matchData.teamName || "Mon Équipe",
         opponent: matchData.opponent || "Adversaire",
-        location: matchData.location || "HOME",
+        location: matchData.location || TeamId.HOME,
         scoreHome: 0,
         scoreAway: 0,
         status: "in_progress" as MatchStatus,
@@ -225,7 +112,7 @@ export default function LiveMatchScreen({
       id: Date.now().toString(),
       myTeamName: "Mon Équipe",
       opponent: "Adversaire",
-      location: "HOME",
+      location: TeamId.HOME,
       scoreHome: 0,
       scoreAway: 0,
       status: "in_progress" as MatchStatus,
@@ -253,13 +140,6 @@ export default function LiveMatchScreen({
   // Match Configuration
   const periodDurationMin = match?.periodDuration || 10;
   const maxPeriods = match?.periodCount || 4;
-
-  const getPeriodLabel = (q: number) => {
-    if (q <= maxPeriods) {
-      return maxPeriods === 2 ? `MT${q}` : `Q${q}`;
-    }
-    return `OT${q - maxPeriods}`;
-  };
 
   // Game Clock - Initialize with match data if resuming, otherwise use defaults
   const [timer, setTimer] = useState(() => {
@@ -311,19 +191,19 @@ export default function LiveMatchScreen({
       }
       // Fallback to mock opponent players
       return ["adv1", "adv2", "adv3", "adv4", "adv5"];
-    }
+    },
   );
 
   const [subSelection, setSubSelection] = useState<{
     out: string[];
     in: string[];
   }>({ out: [], in: [] });
-  const [subTeamTab, setSubTeamTab] = useState<"HOME" | "AWAY">("HOME");
+  const [subTeamTab, setSubTeamTab] = useState<TeamId>(TeamId.HOME);
 
   // UI State
-  const [viewMode, setViewMode] = useState<"GRID" | "COURT">("GRID");
-  const [playerSelectionTab, setPlayerSelectionTab] = useState<"HOME" | "AWAY">(
-    "HOME"
+  const [viewMode, setViewMode] = useState<ViewMode>(ViewMode.GRID);
+  const [playerSelectionTab, setPlayerSelectionTab] = useState<TeamId>(
+    TeamId.HOME,
   );
 
   // Modals State
@@ -338,12 +218,14 @@ export default function LiveMatchScreen({
 
   // Toolbar State
   const [showMarkers, setShowMarkers] = useState(true);
-  const [filterMode, setFilterMode] = useState<FilterMode>("ALL");
+  const [filterMode, setFilterMode] = useState<FilterMode>(FilterMode.ALL);
   const [selectedPlayerIds, setSelectedPlayerIds] = useState<string[]>([]);
   const [isGeneratingMockData, setIsGeneratingMockData] = useState(false);
 
   // Workflow State
-  const [workflowStep, setWorkflowStep] = useState<WorkflowStep>("IDLE");
+  const [workflowStep, setWorkflowStep] = useState<WorkflowStep>(
+    WorkflowStep.IDLE,
+  );
   const [pendingEvent, setPendingEvent] = useState<{
     type?: EventType;
     value?: number;
@@ -384,7 +266,11 @@ export default function LiveMatchScreen({
           let scoreAway = 0;
           actions.forEach((action) => {
             // Only count points for MADE shots (not missed ones)
-            if (action.points && action.points > 0 && action.specification === ShotSpecification.MADE) {
+            if (
+              action.points &&
+              action.points > 0 &&
+              action.specification === ShotSpecification.MADE
+            ) {
               if (action.team === Team.MY_TEAM) {
                 scoreHome += action.points;
               } else {
@@ -396,7 +282,7 @@ export default function LiveMatchScreen({
           // Separate players by team
           const homePlayersFromDB = players.filter((p) => p.team === "MyTeam");
           const awayPlayersFromDB = players.filter(
-            (p) => p.team === "Opponent"
+            (p) => p.team === "Opponent",
           );
 
           // Convert to Player format
@@ -426,156 +312,108 @@ export default function LiveMatchScreen({
           const homeOnCourt = homePlayersFromDB
             .filter(
               (p) =>
-                p.on_court === 1 || (p.on_court === undefined && p.is_starter)
+                p.on_court === 1 || (p.on_court === undefined && p.is_starter),
             )
             .map((p) => p.player_id || `temp-${p.id}`);
           const awayOnCourt = awayPlayersFromDB
             .filter(
               (p) =>
-                p.on_court === 1 || (p.on_court === undefined && p.is_starter)
+                p.on_court === 1 || (p.on_court === undefined && p.is_starter),
             )
             .map((p) => p.player_id || `temp-${p.id}`);
-
-          // Helper function to get human-readable action description
-          const getActionDescription = (action: any, playerName: string) => {
-            if (action.action_type === ActionType.SHOT) {
-              const isMade =
-                action.specification === ShotSpecification.MADE ||
-                action.specification === "MADE" ||
-                action.specification === "made";
-              const points = action.points || 0;
-
-              if (isMade) {
-                // Use "+X" format for generic opponent (9999), "(+X)" for specific players
-                const isGenericOpponent = action.player_number === 9999 && action.team === Team.OPPONENT;
-                if (points === 3) return isGenericOpponent ? `${playerName} +3` : `${playerName} (+3)`;
-                if (points === 2) return isGenericOpponent ? `${playerName} +2` : `${playerName} (+2)`;
-                if (points === 1) return isGenericOpponent ? `${playerName} +1` : `${playerName} (+1)`;
-              } else {
-                if (points === 3) return `${playerName} Raté (3pts)`;
-                if (points === 2) return `${playerName} Raté (2pts)`;
-                if (points === 1) return `${playerName} Raté (LF)`;
-              }
-
-              // Support ancien format
-              if (action.specification === "THREE_POINT_MADE")
-                return `${playerName} (+3)`;
-              if (action.specification === "TWO_POINT_MADE")
-                return `${playerName} (+2)`;
-              if (action.specification === "FREE_THROW_MADE")
-                return `${playerName} (+1)`;
-              if (action.specification === "THREE_POINT_MISSED")
-                return `${playerName} Raté (3pts)`;
-              if (action.specification === "TWO_POINT_MISSED")
-                return `${playerName} Raté (2pts)`;
-              if (action.specification === "FREE_THROW_MISSED")
-                return `${playerName} Raté (LF)`;
-            } else if (action.action_type === ActionType.REBOUND) {
-              if (action.specification === ReboundSpecification.DEFENSIVE || action.specification === "DEFENSIVE")
-                return `${playerName} Rebond Déf`;
-              if (action.specification === ReboundSpecification.OFFENSIVE || action.specification === "OFFENSIVE")
-                return `${playerName} Rebond Off`;
-            } else if (action.action_type === ActionType.FOUL) {
-              return `Faute ${playerName}`;
-            } else if (action.action_type === ActionType.ASSIST) {
-              return `${playerName} Passe décisive`;
-            } else if (action.action_type === ActionType.STEAL) {
-              return `${playerName} Interception`;
-            } else if (action.action_type === ActionType.BLOCK) {
-              return `${playerName} Contre`;
-            } else if (action.action_type === ActionType.TURNOVER) {
-              return `${playerName} Perte de balle`;
-            }
-            return `${playerName} - ${action.action_type}`;
-          };
 
           // Convert actions to MatchEvents for display on court
           const matchEvents: MatchEvent[] = actions.map((action) => {
             const player = players.find(
               (p) =>
                 p.player_number === action.player_number &&
-                p.team === action.team
+                p.team === action.team,
             );
 
             // Map action type and specification to event type
-            let eventType: EventType = "POINT";
+            let eventType: EventType = EventType.POINT;
             let eventValue = action.points || 0;
 
             // Map based on action_type and specification
             if (action.action_type === ActionType.SHOT) {
               const isMade =
                 action.specification === ShotSpecification.MADE ||
-                action.specification === "MADE" ||
-                action.specification === "made";
+                action.specification?.toLowerCase() === ShotSpecification.MADE.toLowerCase();
               const points = action.points || 0;
 
               if (isMade) {
                 // Tirs réussis
                 if (points === 3) {
-                  eventType = "POINT_3";
+                  eventType = EventType.POINT_3;
                   eventValue = 3;
                 } else if (points === 2) {
-                  eventType = "POINT_2";
+                  eventType = EventType.POINT_2;
                   eventValue = 2;
                 } else if (points === 1) {
-                  eventType = "POINT_1";
+                  eventType = EventType.POINT_1;
                   eventValue = 1;
                 }
               } else {
                 // Tirs ratés
                 if (points === 3) {
-                  eventType = "MISS_3";
+                  eventType = EventType.MISS_3;
                   eventValue = 0;
                 } else if (points === 2) {
-                  eventType = "MISS_2";
+                  eventType = EventType.MISS_2;
                   eventValue = 0;
                 } else if (points === 1) {
-                  eventType = "MISS_1";
+                  eventType = EventType.MISS_1;
                   eventValue = 0;
                 }
               }
 
-              // Support aussi l'ancien format pour compatibilité
-              if (action.specification === "THREE_POINT_MADE") {
-                eventType = "POINT_3";
+              // Support aussi l'ancien format pour compatibilité (legacy data)
+              const specUpper = action.specification?.toUpperCase();
+              if (specUpper === "THREE_POINT_MADE") {
+                eventType = EventType.POINT_3;
                 eventValue = 3;
-              } else if (action.specification === "TWO_POINT_MADE") {
-                eventType = "POINT_2";
+              } else if (specUpper === "TWO_POINT_MADE") {
+                eventType = EventType.POINT_2;
                 eventValue = 2;
-              } else if (action.specification === "FREE_THROW_MADE") {
-                eventType = "POINT_1";
+              } else if (specUpper === "FREE_THROW_MADE") {
+                eventType = EventType.POINT_1;
                 eventValue = 1;
-              } else if (action.specification === "THREE_POINT_MISSED") {
-                eventType = "MISS_3";
+              } else if (specUpper === "THREE_POINT_MISSED") {
+                eventType = EventType.MISS_3;
                 eventValue = 0;
-              } else if (action.specification === "TWO_POINT_MISSED") {
-                eventType = "MISS_2";
+              } else if (specUpper === "TWO_POINT_MISSED") {
+                eventType = EventType.MISS_2;
                 eventValue = 0;
-              } else if (action.specification === "FREE_THROW_MISSED") {
-                eventType = "MISS_1";
+              } else if (specUpper === "FREE_THROW_MISSED") {
+                eventType = EventType.MISS_1;
                 eventValue = 0;
               }
             } else if (action.action_type === ActionType.FOUL) {
-              eventType = "FOUL";
+              eventType = EventType.FOUL;
             } else if (action.action_type === ActionType.REBOUND) {
-              if (action.specification === ReboundSpecification.DEFENSIVE || action.specification === "DEFENSIVE") {
-                eventType = "REBOUND_DEF";
-              } else if (action.specification === ReboundSpecification.OFFENSIVE || action.specification === "OFFENSIVE") {
-                eventType = "REBOUND_OFF";
+              const reboundSpecUpper = action.specification?.toUpperCase();
+              if (
+                reboundSpecUpper === ReboundSpecification.DEFENSIVE.toUpperCase()
+              ) {
+                eventType = EventType.REBOUND_DEF;
+              } else if (
+                reboundSpecUpper === ReboundSpecification.OFFENSIVE.toUpperCase()
+              ) {
+                eventType = EventType.REBOUND_OFF;
               }
             } else if (action.action_type === ActionType.ASSIST) {
-              eventType = "ASSIST";
+              eventType = EventType.ASSIST;
             } else if (action.action_type === ActionType.STEAL) {
-              eventType = "STEAL";
+              eventType = EventType.STEAL;
             } else if (action.action_type === ActionType.BLOCK) {
-              eventType = "BLOCK";
+              eventType = EventType.BLOCK;
             } else if (action.action_type === ActionType.TURNOVER) {
-              eventType = "TURNOVER";
+              eventType = EventType.TURNOVER;
             }
 
             const playerName =
               action.player_number === 9999 && action.team === Team.OPPONENT
-                ? (existingMatch.opponent_name || "Adversaire")
+                ? existingMatch.opponent_name || "Adversaire"
                 : player?.player_name || `#${action.player_number}`;
             const description = getActionDescription(action, playerName);
 
@@ -595,7 +433,7 @@ export default function LiveMatchScreen({
               timestamp,
               playerId: player?.player_id || `temp-${action.player_number}`,
               playerName: action.player_number.toString(),
-              teamId: action.team === Team.MY_TEAM ? "HOME" : "AWAY",
+              teamId: action.team === Team.MY_TEAM ? TeamId.HOME : TeamId.AWAY,
               coordinates:
                 action.semantic_x !== null && action.semantic_y !== null
                   ? { x: action.semantic_x, y: action.semantic_y }
@@ -611,7 +449,7 @@ export default function LiveMatchScreen({
             ...match,
             myTeamName: existingMatch.my_team_name || "Mon Équipe",
             opponent: existingMatch.opponent_name,
-            location: existingMatch.is_home ? "HOME" : "AWAY",
+            location: existingMatch.is_home ? TeamId.HOME : TeamId.AWAY,
             scoreHome,
             scoreAway,
             roster: homeRosterLoaded,
@@ -637,7 +475,7 @@ export default function LiveMatchScreen({
           const timeElapsed = existingMatch.time_elapsed || 0;
           const timeRemaining = Math.max(
             0,
-            periodDurationSeconds - timeElapsed
+            periodDurationSeconds - timeElapsed,
           );
           setTimer(timeRemaining);
 
@@ -678,7 +516,7 @@ export default function LiveMatchScreen({
           const matchCreateData: CreateMatchData = {
             my_team_name: match.myTeamName || null,
             opponent_name: match.opponent || "Adversaire",
-            is_home: match.location === "HOME",
+            is_home: match.location === TeamId.HOME,
             total_periods: match.periodCount || 4,
             period_duration: (match.periodDuration || 10) * 60, // Convert minutes to seconds
             overtime_duration: overtimeDuration * 60, // Convert minutes to seconds
@@ -690,7 +528,7 @@ export default function LiveMatchScreen({
           logInfo(
             "LiveMatchScreen",
             "💾 Creating match in SQLite database",
-            matchCreateData
+            matchCreateData,
           );
           const createdMatch = await matchManager.startMatch(matchCreateData);
           setCurrentMatchId(createdMatch.id);
@@ -701,7 +539,7 @@ export default function LiveMatchScreen({
               matchId: createdMatch.id,
               opponent: createdMatch.opponent_name,
               isHome: createdMatch.is_home,
-            }
+            },
           );
 
           // Save players to database
@@ -740,7 +578,7 @@ export default function LiveMatchScreen({
                   team: "Opponent" as const,
                   is_starter: false,
                   photo_url: null,
-                }
+                },
               ];
 
           const allPlayersToSave = [...homePlayersToSave, ...awayPlayersToSave];
@@ -763,7 +601,7 @@ export default function LiveMatchScreen({
               {
                 matchId: createdMatch.id,
                 savedPlayersCount: allPlayersToSave.length,
-              }
+              },
             );
           }
         }
@@ -799,7 +637,7 @@ export default function LiveMatchScreen({
       await matchManager.updateMatchState(
         currentMatchIdRef.current,
         quarterRef.current,
-        timeElapsed
+        timeElapsed,
       );
 
       logInfo("LiveMatchScreen", "💾 Match state saved", {
@@ -841,7 +679,7 @@ export default function LiveMatchScreen({
           .updateMatchState(
             currentMatchIdRef.current,
             quarterRef.current,
-            timeElapsed
+            timeElapsed,
           )
           .then(() => {
             logInfo("LiveMatchScreen", "💾 Match state saved on unmount");
@@ -852,14 +690,6 @@ export default function LiveMatchScreen({
       }
     };
   }, []); // Empty deps - only run on unmount
-
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, "0")}:${secs
-      .toString()
-      .padStart(2, "0")}`;
-  };
 
   // Toggle timer play/pause with automatic save on pause
   const toggleTimer = () => {
@@ -963,17 +793,21 @@ export default function LiveMatchScreen({
         playersOpponent,
         maxPeriods === 2 ? "2_halves" : "4_quarters",
         periodDurationMin * 60,
-        50 // Augmenté de 25 à 50 actions par période
+        50, // Augmenté de 25 à 50 actions par période
       );
 
       // Log mock actions breakdown
-      const myTeamActions = mockActions.filter(a => a.team === Team.MY_TEAM).length;
-      const opponentActions = mockActions.filter(a => a.team === Team.OPPONENT).length;
+      const myTeamActions = mockActions.filter(
+        (a) => a.team === Team.MY_TEAM,
+      ).length;
+      const opponentActions = mockActions.filter(
+        (a) => a.team === Team.OPPONENT,
+      ).length;
       logInfo("LiveMatchScreen", "🎲 Mock actions generated", {
         total: mockActions.length,
         myTeam: myTeamActions,
         opponent: opponentActions,
-        trackOpponentStats: match.trackOpponentStats
+        trackOpponentStats: match.trackOpponentStats,
       });
 
       // Convertir et enregistrer les actions
@@ -1001,24 +835,26 @@ export default function LiveMatchScreen({
       const convertedEvents: MatchEvent[] = loadedActions.map((action) => {
         const player =
           action.team === Team.MY_TEAM
-            ? homeRoster.find((p: Player) => p.jerseyNumber === action.player_number)
+            ? homeRoster.find(
+                (p: Player) => p.jerseyNumber === action.player_number,
+              )
             : opponentRoster.find(
-                (p: Player) => p.jerseyNumber === action.player_number
+                (p: Player) => p.jerseyNumber === action.player_number,
               );
 
         // If player number is 9999 (generic opponent), use team name instead
         const playerName =
           action.player_number === 9999 && action.team === Team.OPPONENT
-            ? (match.opponent || "Adversaire")
+            ? match.opponent || "Adversaire"
             : player?.name || `Joueur ${action.player_number}`;
-        const teamId = action.team === Team.MY_TEAM ? "HOME" : "AWAY";
+        const teamId: TeamId = action.team === Team.MY_TEAM ? TeamId.HOME : TeamId.AWAY;
 
-        let type: EventType = "POINT";
+        let type: EventType = EventType.POINT;
         let value = 0;
         let description = "";
 
         // DEBUG
-        if (action.action_type !== "shot") {
+        if (action.action_type !== ActionType.SHOT) {
           logInfo("LiveMatchScreen", "🔍 Converting non-shot action", {
             actionType: action.action_type,
             specification: action.specification,
@@ -1027,47 +863,55 @@ export default function LiveMatchScreen({
         }
 
         // Mapper le type d'action vers EventType (action_type stocké en lowercase dans DB)
-        if (action.action_type === "shot" && action.specification === "made") {
+        if (
+          action.action_type === ActionType.SHOT &&
+          action.specification?.toLowerCase() === ShotSpecification.MADE.toLowerCase()
+        ) {
           value = action.points || 0;
-          type = value === 1 ? "POINT_1" : value === 2 ? "POINT_2" : "POINT_3";
+          type =
+            value === 1
+              ? EventType.POINT_1
+              : value === 2
+                ? EventType.POINT_2
+                : EventType.POINT_3;
           // Use "+" format for generic opponent (9999), "-" for specific players
           description =
             action.player_number === 9999 && action.team === Team.OPPONENT
               ? `${playerName} +${value}`
               : `${playerName} - ${value}pt`;
         } else if (
-          action.action_type === "shot" &&
-          action.specification === "missed"
+          action.action_type === ActionType.SHOT &&
+          action.specification?.toLowerCase() === ShotSpecification.MISSED.toLowerCase()
         ) {
           const missedPoints = action.points || 0;
           value = 0; // Les tirs ratés ne comptent pas dans le score
           type =
             missedPoints === 1
-              ? "MISS_1"
+              ? EventType.MISS_1
               : missedPoints === 2
-              ? "MISS_2"
-              : "MISS_3";
+                ? EventType.MISS_2
+                : EventType.MISS_3;
           description = `${playerName} - Raté ${missedPoints}pt`;
-        } else if (action.action_type === "rebound") {
+        } else if (action.action_type === ActionType.REBOUND) {
           type =
-            action.specification === "offensive"
-              ? "REBOUND_OFF"
-              : "REBOUND_DEF";
+            action.specification?.toLowerCase() === ReboundSpecification.OFFENSIVE.toLowerCase()
+              ? EventType.REBOUND_OFF
+              : EventType.REBOUND_DEF;
           description = `${playerName} - Rebond`;
-        } else if (action.action_type === "assist") {
-          type = "ASSIST";
+        } else if (action.action_type === ActionType.ASSIST) {
+          type = EventType.ASSIST;
           description = `${playerName} - Passe`;
-        } else if (action.action_type === "steal") {
-          type = "STEAL";
+        } else if (action.action_type === ActionType.STEAL) {
+          type = EventType.STEAL;
           description = `${playerName} - Interception`;
-        } else if (action.action_type === "block") {
-          type = "BLOCK";
+        } else if (action.action_type === ActionType.BLOCK) {
+          type = EventType.BLOCK;
           description = `${playerName} - Contre`;
-        } else if (action.action_type === "turnover") {
-          type = "TURNOVER";
+        } else if (action.action_type === ActionType.TURNOVER) {
+          type = EventType.TURNOVER;
           description = `${playerName} - Perte`;
-        } else if (action.action_type === "foul") {
-          type = "FOUL";
+        } else if (action.action_type === ActionType.FOUL) {
+          type = EventType.FOUL;
           description = `${playerName} - Faute`;
         }
 
@@ -1085,7 +929,7 @@ export default function LiveMatchScreen({
         };
 
         // DEBUG: Log all non-shot events
-        if (action.action_type !== "shot") {
+        if (action.action_type !== ActionType.SHOT) {
           logInfo("LiveMatchScreen", "🎯 Created non-shot event", {
             actionType: action.action_type,
             eventType: type,
@@ -1098,10 +942,13 @@ export default function LiveMatchScreen({
       });
 
       // DEBUG: Log summary
-      const eventTypes = convertedEvents.reduce((acc, e) => {
-        acc[e.type] = (acc[e.type] || 0) + 1;
-        return acc;
-      }, {} as Record<string, number>);
+      const eventTypes = convertedEvents.reduce(
+        (acc, e) => {
+          acc[e.type] = (acc[e.type] || 0) + 1;
+          return acc;
+        },
+        {} as Record<string, number>,
+      );
       logInfo("LiveMatchScreen", "📊 Mock events summary", eventTypes);
 
       // Calculer le nouveau score
@@ -1110,10 +957,10 @@ export default function LiveMatchScreen({
 
       convertedEvents.forEach((event) => {
         if (
-          (event.type.includes("POINT") || event.type === "POINT") &&
+          (event.type.includes("POINT") || event.type === EventType.POINT) &&
           event.value
         ) {
-          if (event.teamId === "HOME") {
+          if (event.teamId === TeamId.HOME) {
             newScoreHome += event.value;
           } else {
             newScoreAway += event.value;
@@ -1161,25 +1008,24 @@ export default function LiveMatchScreen({
     if (!event) return;
 
     const updatedEvents = match.events.filter(
-      (e: MatchEvent) => e.id !== eventId
+      (e: MatchEvent) => e.id !== eventId,
     );
     const updatedMatch = { ...match, events: updatedEvents };
 
     // Revert Score
     if (
-      (event.type.includes("POINT") ||
-        event.type === "POINT") &&
+      (event.type.includes("POINT") || event.type === EventType.POINT) &&
       event.value
     ) {
-      if (event.teamId === "HOME") {
+      if (event.teamId === TeamId.HOME) {
         updatedMatch.scoreHome = Math.max(
           0,
-          updatedMatch.scoreHome - event.value
+          updatedMatch.scoreHome - event.value,
         );
       } else {
         updatedMatch.scoreAway = Math.max(
           0,
-          updatedMatch.scoreAway - event.value
+          updatedMatch.scoreAway - event.value,
         );
       }
     }
@@ -1206,7 +1052,7 @@ export default function LiveMatchScreen({
         logError(
           "LiveMatchScreen",
           "❌ Failed to delete action from database",
-          error
+          error,
         );
       }
     }
@@ -1216,25 +1062,25 @@ export default function LiveMatchScreen({
     if (!eventToDelete || !match.events) return;
 
     const updatedEvents = match.events.filter(
-      (e: MatchEvent) => e.id !== eventToDelete.id
+      (e: MatchEvent) => e.id !== eventToDelete.id,
     );
     const updatedMatch = { ...match, events: updatedEvents };
 
     // Revert Score
     if (
       (eventToDelete.type.includes("POINT") ||
-        eventToDelete.type === "POINT") &&
+        eventToDelete.type === EventType.POINT) &&
       eventToDelete.value
     ) {
-      if (eventToDelete.teamId === "HOME") {
+      if (eventToDelete.teamId === TeamId.HOME) {
         updatedMatch.scoreHome = Math.max(
           0,
-          updatedMatch.scoreHome - eventToDelete.value
+          updatedMatch.scoreHome - eventToDelete.value,
         );
       } else {
         updatedMatch.scoreAway = Math.max(
           0,
-          updatedMatch.scoreAway - eventToDelete.value
+          updatedMatch.scoreAway - eventToDelete.value,
         );
       }
     }
@@ -1261,7 +1107,7 @@ export default function LiveMatchScreen({
         logError(
           "LiveMatchScreen",
           "❌ Failed to delete action from database",
-          error
+          error,
         );
       }
     }
@@ -1274,19 +1120,19 @@ export default function LiveMatchScreen({
 
   const handleActionClick = (type: EventType, value: number = 0) => {
     setPendingEvent({ type, value });
-    setPlayerSelectionTab("HOME");
-    setWorkflowStep("SELECT_PLAYER");
+    setPlayerSelectionTab(TeamId.HOME);
+    setWorkflowStep(WorkflowStep.SELECT_PLAYER);
   };
 
   const handleCourtClick = (svgX: number, svgY: number) => {
     // Store coordinates and show action selection modal
     setPendingEvent({ coords: { x: svgX, y: svgY } });
-    setWorkflowStep("SELECT_ACTION_FROM_COURT");
+    setWorkflowStep(WorkflowStep.SELECT_ACTION_FROM_COURT);
   };
 
   const handleCourtActionSelect = (type: EventType, value: number = 0) => {
     setPendingEvent((prev) => ({ ...prev, type, value }));
-    setWorkflowStep("SELECT_PLAYER");
+    setWorkflowStep(WorkflowStep.SELECT_PLAYER);
   };
 
   const handlePlayerSelect = (playerId: string) => {
@@ -1295,7 +1141,7 @@ export default function LiveMatchScreen({
         pendingEvent.type,
         pendingEvent.value || 0,
         playerId,
-        pendingEvent.coords
+        pendingEvent.coords,
       );
     }
   };
@@ -1304,8 +1150,8 @@ export default function LiveMatchScreen({
 
   const openSubstitution = () => {
     setSubSelection({ out: [], in: [] });
-    setSubTeamTab("HOME");
-    setWorkflowStep("SUBSTITUTION");
+    setSubTeamTab(TeamId.HOME);
+    setWorkflowStep(WorkflowStep.SUBSTITUTION);
   };
 
   const toggleSubOut = (playerId: string) => {
@@ -1333,11 +1179,11 @@ export default function LiveMatchScreen({
   };
 
   const commitSubstitution = async () => {
-    const isHome = subTeamTab === "HOME";
+    const isHome = subTeamTab === TeamId.HOME;
     const currentActive = isHome ? activePlayers : activeOpponentPlayers;
 
     const remainingPlayers = currentActive.filter(
-      (id) => !subSelection.out.includes(id)
+      (id) => !subSelection.out.includes(id),
     );
     const newActivePlayers = [...remainingPlayers, ...subSelection.in];
 
@@ -1347,10 +1193,10 @@ export default function LiveMatchScreen({
 
     const newEvent: MatchEvent = {
       id: `evt-${Date.now()}`,
-      type: "SUBSTITUTION",
+      type: EventType.SUBSTITUTION,
       timestamp: Date.now(),
       description: subDescription,
-      teamId: isHome ? "HOME" : "AWAY",
+      teamId: isHome ? TeamId.HOME : TeamId.AWAY,
       period_number: quarter,
       time_in_period: periodDurationMin * 60 - timer,
     };
@@ -1375,7 +1221,7 @@ export default function LiveMatchScreen({
         await playerRepo.updateOnCourtStatus(
           currentMatchId,
           subSelection.out,
-          false
+          false,
         );
       }
 
@@ -1384,12 +1230,12 @@ export default function LiveMatchScreen({
         await playerRepo.updateOnCourtStatus(
           currentMatchId,
           subSelection.in,
-          true
+          true,
         );
       }
     }
 
-    setWorkflowStep("IDLE");
+    setWorkflowStep(WorkflowStep.IDLE);
   };
 
   // --- FINALIZATION ---
@@ -1398,65 +1244,18 @@ export default function LiveMatchScreen({
     type: EventType,
     value: number,
     playerId: string,
-    coords?: { x: number; y: number }
+    coords?: { x: number; y: number },
   ) => {
     const isHomePlayer = homeRoster.some((p: Player) => p.id === playerId);
     const player = isHomePlayer
       ? homeRoster.find((p: Player) => p.id === playerId)
       : opponentRoster.find((p: Player) => p.id === playerId);
 
-    const teamId = isHomePlayer ? "HOME" : "AWAY";
+    const teamId = isHomePlayer ? TeamId.HOME : TeamId.AWAY;
 
     const pName = player?.name.split(" ").pop() || "Joueur";
     const pNumber = player?.jerseyNumber || "";
-    let desc = `${pNumber} - ${pName} -`;
-
-    switch (type) {
-      case "POINT_1":
-        desc += `Réussi (1 pts)`;
-        break;
-      case "POINT_2":
-        desc += `Réussi (2 pts)`;
-        break;
-      case "POINT_3":
-        desc += `Réussi (3 pts)`;
-        break;
-      case "MISS_1":
-        desc += `Raté (1 pts))`;
-        break;
-      case "MISS_2":
-        desc += `Raté (2 pts)`;
-        break;
-      case "MISS_3":
-        desc += `Raté (3 pts)`;
-        break;
-      case "FOUL":
-        desc += `Faute`;
-        break;
-      case "REBOUND_DEF":
-        desc += `Rebond Défensif`;
-        break;
-      case "REBOUND_OFF":
-        desc += `Rebond Offensif`;
-        break;
-      case "ASSIST":
-        desc += `Passe décisive`;
-        break;
-      case "STEAL":
-        desc += `Interception`;
-        break;
-      case "BLOCK":
-        desc += `Contre`;
-        break;
-      case "TURNOVER":
-        desc += `Perte de balle`;
-        break;
-      case "SUBSTITUTION":
-        desc += `Changement`;
-        break;
-      default:
-        desc += `${type}`;
-    }
+    const desc = `${pNumber} - ${pName} - ${getEventTypeDescription(type)}`;
 
     // Normalize SVG coordinates (0-615.75 x 0-1146.75) to 0-1 for storage in state
     const normalizedCoords = coords
@@ -1485,10 +1284,10 @@ export default function LiveMatchScreen({
 
     // Update Score
     if (
-      (type === "POINT_1" || type === "POINT_2" || type === "POINT_3") &&
+      (type === EventType.POINT_1 || type === EventType.POINT_2 || type === EventType.POINT_3) &&
       value > 0
     ) {
-      if (teamId === "HOME") {
+      if (teamId === TeamId.HOME) {
         updatedMatch.scoreHome += value;
       } else {
         updatedMatch.scoreAway += value;
@@ -1503,8 +1302,8 @@ export default function LiveMatchScreen({
         type,
         value,
         player.jerseyNumber,
-        teamId === "HOME" ? Team.MY_TEAM : Team.OPPONENT,
-        coords
+        teamId === TeamId.HOME ? Team.MY_TEAM : Team.OPPONENT,
+        coords,
       );
     }
 
@@ -1517,7 +1316,7 @@ export default function LiveMatchScreen({
     value: number,
     playerNumber: number,
     team: Team.MY_TEAM | Team.OPPONENT,
-    coords?: { x: number; y: number }
+    coords?: { x: number; y: number },
   ) => {
     if (!currentMatchId) return;
 
@@ -1526,63 +1325,63 @@ export default function LiveMatchScreen({
     let points: number | undefined = undefined;
 
     switch (eventType) {
-      case "POINT_1":
-        actionType = "SHOT";
+      case EventType.POINT_1:
+        actionType = ActionType.SHOT;
         specification = ShotSpecification.MADE;
         points = 1;
         break;
-      case "POINT_2":
-        actionType = "SHOT";
+      case EventType.POINT_2:
+        actionType = ActionType.SHOT;
         specification = ShotSpecification.MADE;
         points = 2;
         break;
-      case "POINT_3":
-        actionType = "SHOT";
+      case EventType.POINT_3:
+        actionType = ActionType.SHOT;
         specification = ShotSpecification.MADE;
         points = 3;
         break;
-      case "MISS_1":
-        actionType = "SHOT";
+      case EventType.MISS_1:
+        actionType = ActionType.SHOT;
         specification = ShotSpecification.MISSED;
         points = 1;
         break;
-      case "MISS_2":
-        actionType = "SHOT";
+      case EventType.MISS_2:
+        actionType = ActionType.SHOT;
         specification = ShotSpecification.MISSED;
         points = 2;
         break;
-      case "MISS_3":
-        actionType = "SHOT";
+      case EventType.MISS_3:
+        actionType = ActionType.SHOT;
         specification = ShotSpecification.MISSED;
         points = 3;
         break;
-      case "FOUL":
-        actionType = "FOUL";
-        specification = "PERSONAL";
+      case EventType.FOUL:
+        actionType = ActionType.FOUL;
+        specification = FoulSpecification.PERSONAL;
         break;
-      case "REBOUND_DEF":
-        actionType = "REBOUND";
-        specification = "DEFENSIVE";
+      case EventType.REBOUND_DEF:
+        actionType = ActionType.REBOUND;
+        specification = ReboundSpecification.DEFENSIVE;
         break;
-      case "REBOUND_OFF":
-        actionType = "REBOUND";
-        specification = "OFFENSIVE";
+      case EventType.REBOUND_OFF:
+        actionType = ActionType.REBOUND;
+        specification = ReboundSpecification.OFFENSIVE;
         break;
-      case "ASSIST":
-        actionType = "ASSIST";
-        specification = "STANDARD";
+      case EventType.ASSIST:
+        actionType = ActionType.ASSIST;
+        specification = GenericSpecification.STANDARD;
         break;
-      case "STEAL":
-        actionType = "STEAL";
-        specification = "STANDARD";
+      case EventType.STEAL:
+        actionType = ActionType.STEAL;
+        specification = GenericSpecification.STANDARD;
         break;
-      case "BLOCK":
-        actionType = "BLOCK";
-        specification = "STANDARD";
+      case EventType.BLOCK:
+        actionType = ActionType.BLOCK;
+        specification = GenericSpecification.STANDARD;
         break;
-      case "TURNOVER":
-        actionType = "TURNOVER";
-        specification = "STANDARD";
+      case EventType.TURNOVER:
+        actionType = ActionType.TURNOVER;
+        specification = GenericSpecification.STANDARD;
         break;
       default:
         logError("LiveMatchScreen", "Unknown event type", { eventType });
@@ -1619,7 +1418,7 @@ export default function LiveMatchScreen({
         logError(
           "LiveMatchScreen",
           "Failed to update match state after action",
-          err
+          err,
         );
       });
 
@@ -1633,7 +1432,7 @@ export default function LiveMatchScreen({
   };
 
   const closeWorkflow = () => {
-    setWorkflowStep("IDLE");
+    setWorkflowStep(WorkflowStep.IDLE);
     setPendingEvent({});
   };
 
@@ -1645,7 +1444,7 @@ export default function LiveMatchScreen({
       id: `evt-${Date.now()}`,
       type: "POINT" as any,
       value,
-      teamId: "AWAY",
+      teamId: TeamId.AWAY,
       timestamp: Date.now(),
       description: `${match.opponent || "Adversaire"} +${value}`,
       period_number: quarter,
@@ -1658,7 +1457,7 @@ export default function LiveMatchScreen({
 
     // Save to database - use a generic opponent player number (99)
     if (currentMatchId) {
-      let actionType = "SHOT";
+      let actionType = ActionType.SHOT;
       let specification = ShotSpecification.MADE;
       let points = value;
 
@@ -1685,7 +1484,7 @@ export default function LiveMatchScreen({
         {
           points: value,
           team: Team.OPPONENT,
-        }
+        },
       );
     }
   };
@@ -1715,13 +1514,13 @@ export default function LiveMatchScreen({
           currentMatchId,
           match.scoreHome || 0,
           match.scoreAway || 0,
-          false
+          false,
         );
 
         // Update overtime periods count
         await matchRepository.updateOvertimePeriods(
           currentMatchId,
-          overtimesPlayed
+          overtimesPlayed,
         );
 
         // Mark match as completed and compact actions
@@ -1739,18 +1538,16 @@ export default function LiveMatchScreen({
           setShowEndConfirm(false);
           setIsSyncing(true);
 
-          const { MatchSyncService } = await import(
-            "../src/services/api/MatchSyncService"
-          );
+          const { MatchSyncService } =
+            await import("../src/services/api/MatchSyncService");
           const syncService = new MatchSyncService(supabase);
 
           logInfo("LiveMatchScreen", "🔄 Checking sync eligibility", {
             matchId: currentMatchId,
           });
 
-          const eligibility = await syncService.checkSyncEligibility(
-            currentMatchId
-          );
+          const eligibility =
+            await syncService.checkSyncEligibility(currentMatchId);
 
           if (eligibility.canSync) {
             logInfo("LiveMatchScreen", "📤 Syncing match to Supabase", {
@@ -1769,37 +1566,40 @@ export default function LiveMatchScreen({
                 {
                   localMatchId: currentMatchId,
                   supabaseMatchId: syncResult.matchId,
-                }
+                },
               );
 
               // Fetch the synced match data from Supabase (same way as HistoryScreen)
               try {
                 // Fetch match
-                const { data: supabaseMatch, error: matchError } = await supabase
-                  .from("matches")
-                  .select("*")
-                  .eq("id", syncResult.matchId)
-                  .single();
+                const { data: supabaseMatch, error: matchError } =
+                  await supabase
+                    .from("matches")
+                    .select("*")
+                    .eq("id", syncResult.matchId)
+                    .single();
 
                 if (matchError) throw matchError;
 
                 // Fetch players for this match
-                const { data: matchPlayers, error: playersError } = await supabase
-                  .from("match_players")
-                  .select("*")
-                  .eq("match_id", syncResult.matchId);
+                const { data: matchPlayers, error: playersError } =
+                  await supabase
+                    .from("match_players")
+                    .select("*")
+                    .eq("match_id", syncResult.matchId);
 
                 if (playersError) throw playersError;
 
                 // Convert match players to expected format
-                const players = matchPlayers?.map((mp: any) => ({
-                  id: mp.player_number,
-                  num: mp.player_number,
-                  name: mp.player_name,
-                  team: mp.team,
-                  isSubstitute: !mp.is_starter,
-                  photoUrl: mp.photo_url,
-                })) || [];
+                const players =
+                  matchPlayers?.map((mp: any) => ({
+                    id: mp.player_number,
+                    num: mp.player_number,
+                    name: mp.player_name,
+                    team: mp.team,
+                    isSubstitute: !mp.is_starter,
+                    photoUrl: mp.photo_url,
+                  })) || [];
 
                 // Extract actions from match_players
                 const actionDataList: any[] = [];
@@ -1832,12 +1632,15 @@ export default function LiveMatchScreen({
 
                 // Navigate to match details screen with full data (same format as HistoryScreen)
                 setTimeout(() => {
-                  navigation.navigate(ROUTES.MATCH_DETAILS as never, {
-                    match: supabaseMatch,
-                    actions: actionDataList,
-                    players: players,
-                    fromLiveMatch: true, // Flag to hide back button
-                  } as never);
+                  navigation.navigate(
+                    ROUTES.MATCH_DETAILS as never,
+                    {
+                      match: supabaseMatch,
+                      actions: actionDataList,
+                      players: players,
+                      fromLiveMatch: true, // Flag to hide back button
+                    } as never,
+                  );
                 }, 300);
               } catch (fetchError) {
                 logError("LiveMatchScreen", "❌ Failed to fetch synced match", {
@@ -1870,36 +1673,50 @@ export default function LiveMatchScreen({
             if (!user) {
               // Fetch local match data first
               try {
-                const localMatch = await matchRepository.findById(currentMatchId);
+                const localMatch =
+                  await matchRepository.findById(currentMatchId);
                 const matchPlayerRepo = new MatchPlayerRepository();
                 const actionRepo = new ActionRepository();
-                const localPlayers = await matchPlayerRepo.getPlayersForMatch(currentMatchId);
-                const localActions = await actionRepo.getActionsForMatch(currentMatchId);
+                const localPlayers =
+                  await matchPlayerRepo.getPlayersForMatch(currentMatchId);
+                const localActions =
+                  await actionRepo.getActionsForMatch(currentMatchId);
 
-                logInfo("LiveMatchScreen", "✅ Local match data fetched for guest", {
-                  matchId: currentMatchId,
-                  playersCount: localPlayers.length,
-                  actionsCount: localActions.length,
-                });
+                logInfo(
+                  "LiveMatchScreen",
+                  "✅ Local match data fetched for guest",
+                  {
+                    matchId: currentMatchId,
+                    playersCount: localPlayers.length,
+                    actionsCount: localActions.length,
+                  },
+                );
 
                 // Hide sync modal AFTER data is fetched
                 setIsSyncing(false);
 
                 // Wait for modal to fully close before navigating
                 setTimeout(() => {
-                  navigation.navigate(ROUTES.MATCH_DETAILS as never, {
-                    match: localMatch,
-                    actions: localActions,
-                    players: localPlayers,
-                    fromLiveMatch: true,
-                    isLocalMatch: true, // Flag to show warning in MatchDetails
-                  } as never);
+                  navigation.navigate(
+                    ROUTES.MATCH_DETAILS as never,
+                    {
+                      match: localMatch,
+                      actions: localActions,
+                      players: localPlayers,
+                      fromLiveMatch: true,
+                      isLocalMatch: true, // Flag to show warning in MatchDetails
+                    } as never,
+                  );
                 }, 300);
               } catch (fetchError) {
-                logError("LiveMatchScreen", "❌ Failed to fetch local match data", {
-                  matchId: currentMatchId,
-                  error: fetchError,
-                });
+                logError(
+                  "LiveMatchScreen",
+                  "❌ Failed to fetch local match data",
+                  {
+                    matchId: currentMatchId,
+                    error: fetchError,
+                  },
+                );
                 // Hide sync modal
                 setIsSyncing(false);
                 // Navigate to dashboard if fetch fails
@@ -1948,39 +1765,39 @@ export default function LiveMatchScreen({
 
   // Helpers
   const getSubModalPlayers = () => {
-    if (subTeamTab === "HOME") {
+    if (subTeamTab === TeamId.HOME) {
       return {
         onCourt: homeRoster.filter((p: Player) => activePlayers.includes(p.id)),
         onBench: homeRoster.filter(
-          (p: Player) => !activePlayers.includes(p.id)
+          (p: Player) => !activePlayers.includes(p.id),
         ),
       };
     } else {
       return {
         onCourt: opponentRoster.filter((p: Player) =>
-          activeOpponentPlayers.includes(p.id)
+          activeOpponentPlayers.includes(p.id),
         ),
         onBench: opponentRoster.filter(
-          (p: Player) => !activeOpponentPlayers.includes(p.id)
+          (p: Player) => !activeOpponentPlayers.includes(p.id),
         ),
       };
     }
   };
 
   const playersOnCourt = homeRoster.filter((p: Player) =>
-    activePlayers.includes(p.id)
+    activePlayers.includes(p.id),
   );
   const opponentPlayersOnCourt = opponentRoster.filter((p: Player) =>
-    activeOpponentPlayers.includes(p.id)
+    activeOpponentPlayers.includes(p.id),
   );
 
-  const amIHome = match.location === "HOME";
+  const amIHome = match.location === TeamId.HOME;
 
-  const bgColor = isDark ? SLATE_COLORS[950] : SLATE_COLORS[50];
-  const surfaceColor = isDark ? SLATE_COLORS[900] : COMMON_COLORS.white;
-  const textPrimary = isDark ? COMMON_COLORS.white : SLATE_COLORS[900];
-  const textSecondary = isDark ? SLATE_COLORS[400] : SLATE_COLORS[500];
-  const borderColor = isDark ? SLATE_COLORS[800] : SLATE_COLORS[200];
+  const bgColor = colors.background;
+  const surfaceColor = colors.surface;
+  const textPrimary = colors.text.primary;
+  const textSecondary = colors.text.secondary;
+  const borderColor = colors.border;
 
   // Show loading indicator when resuming match
   if (isLoadingMatch) {
@@ -1998,7 +1815,7 @@ export default function LiveMatchScreen({
         <MaterialCommunityIcons
           name="basketball"
           size={64}
-          color={BRAND_COLORS[500]}
+          color={colors.primary}
         />
         <Text
           style={[styles.loadingText, { color: textPrimary, marginTop: 16 }]}
@@ -2025,7 +1842,7 @@ export default function LiveMatchScreen({
               <Text style={[styles.score, { color: textPrimary }]}>
                 {match.scoreHome}
               </Text>
-              <Text style={[styles.teamName, { color: BRAND_COLORS[600] }]}>
+              <Text style={[styles.teamName, { color: colors.primary }]}>
                 {match.myTeamName || "Nous"}
               </Text>
               <TouchableOpacity
@@ -2033,23 +1850,17 @@ export default function LiveMatchScreen({
                 style={[
                   styles.subButton,
                   {
-                    backgroundColor: isDark
-                      ? `${BRAND_COLORS[500]}20`
-                      : `${BRAND_COLORS[500]}10`,
-                    borderColor: isDark
-                      ? `${BRAND_COLORS[500]}30`
-                      : `${BRAND_COLORS[500]}30`,
+                    backgroundColor: colors.button.brandAlpha,
+                    borderColor: colors.button.brandAlphaBorder,
                   },
                 ]}
               >
                 <MaterialCommunityIcons
                   name="swap-horizontal"
                   size={12}
-                  color={BRAND_COLORS[600]}
+                  color={colors.primary}
                 />
-                <Text
-                  style={[styles.subButtonText, { color: BRAND_COLORS[600] }]}
-                >
+                <Text style={[styles.subButtonText, { color: colors.primary }]}>
                   CHANGT
                 </Text>
               </TouchableOpacity>
@@ -2069,9 +1880,7 @@ export default function LiveMatchScreen({
                     style={[
                       styles.quickScoreButton,
                       {
-                        backgroundColor: isDark
-                          ? SLATE_COLORS[800]
-                          : SLATE_COLORS[100],
+                        backgroundColor: colors.button.quickScoreBackground,
                       },
                     ]}
                   >
@@ -2089,9 +1898,7 @@ export default function LiveMatchScreen({
                     style={[
                       styles.quickScoreButton,
                       {
-                        backgroundColor: isDark
-                          ? SLATE_COLORS[800]
-                          : SLATE_COLORS[100],
+                        backgroundColor: colors.button.quickScoreBackground,
                       },
                     ]}
                   >
@@ -2109,9 +1916,7 @@ export default function LiveMatchScreen({
                     style={[
                       styles.quickScoreButton,
                       {
-                        backgroundColor: isDark
-                          ? SLATE_COLORS[800]
-                          : SLATE_COLORS[100],
+                        backgroundColor: colors.button.quickScoreBackground,
                       },
                     ]}
                   >
@@ -2133,16 +1938,14 @@ export default function LiveMatchScreen({
           <View style={styles.timerSection}>
             <View style={styles.periodRow}>
               <Text style={[styles.periodText, { color: textSecondary }]}>
-                {getPeriodLabel(quarter)}
+                {getPeriodLabel(quarter, maxPeriods)}
               </Text>
               <TouchableOpacity
                 onPress={handleNextQuarter}
                 style={[
                   styles.nextPeriodButton,
                   {
-                    backgroundColor: isDark
-                      ? SLATE_COLORS[900]
-                      : SLATE_COLORS[100],
+                    backgroundColor: colors.surfaceVariant,
                     borderColor,
                   },
                 ]}
@@ -2150,7 +1953,7 @@ export default function LiveMatchScreen({
                 <MaterialCommunityIcons
                   name="chevron-right"
                   size={10}
-                  color={BRAND_COLORS[600]}
+                  color={colors.primary}
                 />
               </TouchableOpacity>
             </View>
@@ -2163,10 +1966,8 @@ export default function LiveMatchScreen({
                 styles.playButton,
                 {
                   backgroundColor: isRunning
-                    ? isDark
-                      ? SLATE_COLORS[800]
-                      : SLATE_COLORS[200]
-                    : BRAND_COLORS[600],
+                    ? colors.button.playPaused
+                    : colors.primary,
                   borderColor: surfaceColor,
                 },
               ]}
@@ -2174,7 +1975,7 @@ export default function LiveMatchScreen({
               <MaterialCommunityIcons
                 name={isRunning ? "pause" : "play"}
                 size={14}
-                color={isRunning ? "#ef4444" : COMMON_COLORS.white}
+                color={isRunning ? colors.error : colors.onPrimary}
               />
             </TouchableOpacity>
           </View>
@@ -2195,9 +1996,7 @@ export default function LiveMatchScreen({
                     style={[
                       styles.quickScoreButton,
                       {
-                        backgroundColor: isDark
-                          ? SLATE_COLORS[800]
-                          : SLATE_COLORS[100],
+                        backgroundColor: colors.button.quickScoreBackground,
                       },
                     ]}
                   >
@@ -2215,9 +2014,7 @@ export default function LiveMatchScreen({
                     style={[
                       styles.quickScoreButton,
                       {
-                        backgroundColor: isDark
-                          ? SLATE_COLORS[800]
-                          : SLATE_COLORS[100],
+                        backgroundColor: colors.button.quickScoreBackground,
                       },
                     ]}
                   >
@@ -2235,9 +2032,7 @@ export default function LiveMatchScreen({
                     style={[
                       styles.quickScoreButton,
                       {
-                        backgroundColor: isDark
-                          ? SLATE_COLORS[800]
-                          : SLATE_COLORS[100],
+                        backgroundColor: colors.button.quickScoreBackground,
                       },
                     ]}
                   >
@@ -2258,7 +2053,7 @@ export default function LiveMatchScreen({
               <Text style={[styles.score, { color: textPrimary }]}>
                 {match.scoreHome}
               </Text>
-              <Text style={[styles.teamName, { color: BRAND_COLORS[600] }]}>
+              <Text style={[styles.teamName, { color: colors.primary }]}>
                 {match.myTeamName || "Nous"}
               </Text>
               <TouchableOpacity
@@ -2266,23 +2061,17 @@ export default function LiveMatchScreen({
                 style={[
                   styles.subButton,
                   {
-                    backgroundColor: isDark
-                      ? `${BRAND_COLORS[500]}20`
-                      : `${BRAND_COLORS[500]}10`,
-                    borderColor: isDark
-                      ? `${BRAND_COLORS[500]}30`
-                      : `${BRAND_COLORS[500]}30`,
+                    backgroundColor: colors.button.brandAlpha,
+                    borderColor: colors.button.brandAlphaBorder,
                   },
                 ]}
               >
                 <MaterialCommunityIcons
                   name="swap-horizontal"
                   size={12}
-                  color={BRAND_COLORS[600]}
+                  color={colors.primary}
                 />
-                <Text
-                  style={[styles.subButtonText, { color: BRAND_COLORS[600] }]}
-                >
+                <Text style={[styles.subButtonText, { color: colors.primary }]}>
                   CHANGT
                 </Text>
               </TouchableOpacity>
@@ -2299,30 +2088,25 @@ export default function LiveMatchScreen({
         ]}
       >
         <TouchableOpacity
-          onPress={() => setViewMode("GRID")}
+          onPress={() => setViewMode(ViewMode.GRID)}
           style={[
             styles.viewModeButton,
             {
               backgroundColor:
-                viewMode === "GRID"
-                  ? BRAND_COLORS[600]
-                  : isDark
-                  ? SLATE_COLORS[800]
-                  : SLATE_COLORS[100],
+                viewMode === ViewMode.GRID ? colors.primary : colors.surfaceVariant,
             },
           ]}
         >
           <MaterialCommunityIcons
             name="view-grid-outline"
             size={16}
-            color={viewMode === "GRID" ? COMMON_COLORS.white : textSecondary}
+            color={viewMode === ViewMode.GRID ? colors.onPrimary : textSecondary}
           />
           <Text
             style={[
               styles.viewModeButtonText,
               {
-                color:
-                  viewMode === "GRID" ? COMMON_COLORS.white : textSecondary,
+                color: viewMode === ViewMode.GRID ? colors.onPrimary : textSecondary,
               },
             ]}
           >
@@ -2330,30 +2114,25 @@ export default function LiveMatchScreen({
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
-          onPress={() => setViewMode("COURT")}
+          onPress={() => setViewMode(ViewMode.COURT)}
           style={[
             styles.viewModeButton,
             {
               backgroundColor:
-                viewMode === "COURT"
-                  ? BRAND_COLORS[600]
-                  : isDark
-                  ? SLATE_COLORS[800]
-                  : SLATE_COLORS[100],
+                viewMode === ViewMode.COURT ? colors.primary : colors.surfaceVariant,
             },
           ]}
         >
           <MaterialCommunityIcons
             name="map-outline"
             size={16}
-            color={viewMode === "COURT" ? COMMON_COLORS.white : textSecondary}
+            color={viewMode === ViewMode.COURT ? colors.onPrimary : textSecondary}
           />
           <Text
             style={[
               styles.viewModeButtonText,
               {
-                color:
-                  viewMode === "COURT" ? COMMON_COLORS.white : textSecondary,
+                color: viewMode === ViewMode.COURT ? colors.onPrimary : textSecondary,
               },
             ]}
           >
@@ -2364,23 +2143,26 @@ export default function LiveMatchScreen({
 
       {/* Main Content */}
       <View style={styles.mainContent}>
-        {viewMode === "GRID" && (
+        {viewMode === ViewMode.GRID && (
           <ScrollView
             style={styles.gridScroll}
             contentContainerStyle={styles.gridContent}
           >
-            <MatchActionGrid onAction={handleActionClick} isDark={isDark} filterMode={filterMode} />
+            <MatchActionGrid
+              onAction={handleActionClick}
+              isDark={isDark}
+              filterMode={filterMode}
+            />
           </ScrollView>
         )}
 
-        {viewMode === "COURT" && (
+        {viewMode === ViewMode.COURT && (
           <CourtView
             onCourtClick={handleCourtClick}
             events={match.events}
             showMarkers={showMarkers}
             filterMode={filterMode}
             selectedPlayerIds={selectedPlayerIds}
-            isDark={isDark}
             clubLogoUrl={match.clubLogoUrl}
             courtBackgroundColor={match.courtBackgroundColor}
             courtLineColor={match.courtLineColor}
@@ -2409,7 +2191,7 @@ export default function LiveMatchScreen({
           <MaterialCommunityIcons
             name="filter-outline"
             size={22}
-            color={filterMode !== "ALL" ? BRAND_COLORS[500] : textSecondary}
+            color={filterMode !== FilterMode.ALL ? colors.primary : textSecondary}
           />
           <Text style={[styles.toolbarButtonText, { color: textSecondary }]}>
             Filtres
@@ -2423,7 +2205,7 @@ export default function LiveMatchScreen({
           <MaterialCommunityIcons
             name={showMarkers ? "eye" : "eye-off"}
             size={22}
-            color={showMarkers ? BRAND_COLORS[500] : textSecondary}
+            color={showMarkers ? colors.primary : textSecondary}
           />
           <Text style={[styles.toolbarButtonText, { color: textSecondary }]}>
             Vue
@@ -2441,15 +2223,13 @@ export default function LiveMatchScreen({
           <MaterialCommunityIcons
             name="flask"
             size={22}
-            color={isGeneratingMockData ? BRAND_COLORS[300] : BRAND_COLORS[500]}
+            color={isGeneratingMockData ? colors.primary : colors.primary}
           />
           <Text
             style={[
               styles.toolbarButtonText,
               {
-                color: isGeneratingMockData
-                  ? BRAND_COLORS[300]
-                  : BRAND_COLORS[500],
+                color: isGeneratingMockData ? colors.primary : colors.primary,
               },
             ]}
           >
@@ -2473,7 +2253,6 @@ export default function LiveMatchScreen({
       </View>
 
       {/* Modals */}
-      {/* Will be implemented in next part */}
       <OvertimeModal
         visible={showOvertimeModal}
         onClose={() => setShowOvertimeModal(false)}
@@ -2487,11 +2266,6 @@ export default function LiveMatchScreen({
         maxPeriods={maxPeriods}
         overtimeDuration={overtimeDuration}
         setOvertimeDuration={setOvertimeDuration}
-        isDark={isDark}
-        surfaceColor={surfaceColor}
-        textPrimary={textPrimary}
-        textSecondary={textSecondary}
-        borderColor={borderColor}
       />
 
       <HistoryModal
@@ -2500,11 +2274,6 @@ export default function LiveMatchScreen({
         events={match.events}
         onDeleteEvent={deleteEventDirectly}
         match={match}
-        isDark={isDark}
-        surfaceColor={surfaceColor}
-        textPrimary={textPrimary}
-        textSecondary={textSecondary}
-        borderColor={borderColor}
       />
 
       <FilterModal
@@ -2512,10 +2281,6 @@ export default function LiveMatchScreen({
         onClose={() => setShowFilterModal(false)}
         filterMode={filterMode}
         setFilterMode={setFilterMode}
-        isDark={isDark}
-        surfaceColor={surfaceColor}
-        textPrimary={textPrimary}
-        borderColor={borderColor}
         homeRoster={homeRoster}
         opponentRoster={opponentRoster}
         trackOpponentStats={match.trackOpponentStats}
@@ -2524,36 +2289,10 @@ export default function LiveMatchScreen({
       />
 
       {/* Sync Modal */}
-      <Modal visible={isSyncing} transparent={true} animationType="fade">
-        <View style={styles.syncModalOverlay}>
-          <View
-            style={[
-              styles.syncModalContent,
-              {
-                backgroundColor: surfaceColor,
-                borderColor: borderColor,
-              },
-            ]}
-          >
-            <MaterialCommunityIcons
-              name="cloud-upload"
-              size={48}
-              color={BRAND_COLORS[500]}
-              style={{ marginBottom: 16 }}
-            />
-            <ActivityIndicator size="large" color={BRAND_COLORS[500]} />
-            <Text style={[styles.syncModalText, { color: textPrimary }]}>
-              Synchronisation avec le serveur...
-            </Text>
-            <Text style={[styles.syncModalSubtext, { color: textSecondary }]}>
-              Veuillez patienter
-            </Text>
-          </View>
-        </View>
-      </Modal>
+      <SyncModal visible={isSyncing} />
 
       <PlayerSelectionModal
-        visible={workflowStep === "SELECT_PLAYER"}
+        visible={workflowStep === WorkflowStep.SELECT_PLAYER}
         onClose={closeWorkflow}
         onPlayerSelect={handlePlayerSelect}
         pendingEvent={pendingEvent}
@@ -2562,26 +2301,16 @@ export default function LiveMatchScreen({
         opponentPlayersOnCourt={opponentPlayersOnCourt}
         playerSelectionTab={playerSelectionTab}
         setPlayerSelectionTab={setPlayerSelectionTab}
-        isDark={isDark}
-        surfaceColor={surfaceColor}
-        textPrimary={textPrimary}
-        textSecondary={textSecondary}
-        borderColor={borderColor}
       />
 
       <CourtActionModal
-        visible={workflowStep === "SELECT_ACTION_FROM_COURT"}
+        visible={workflowStep === WorkflowStep.SELECT_ACTION_FROM_COURT}
         onClose={closeWorkflow}
         onActionSelect={handleCourtActionSelect}
-        isDark={isDark}
-        surfaceColor={surfaceColor}
-        textPrimary={textPrimary}
-        textSecondary={textSecondary}
-        borderColor={borderColor}
       />
 
       <SubstitutionModal
-        visible={workflowStep === "SUBSTITUTION"}
+        visible={workflowStep === WorkflowStep.SUBSTITUTION}
         onClose={closeWorkflow}
         onCommit={commitSubstitution}
         subSelection={subSelection}
@@ -2591,22 +2320,12 @@ export default function LiveMatchScreen({
         match={match}
         subTeamTab={subTeamTab}
         setSubTeamTab={setSubTeamTab}
-        isDark={isDark}
-        surfaceColor={surfaceColor}
-        textPrimary={textPrimary}
-        textSecondary={textSecondary}
-        borderColor={borderColor}
       />
 
       <EndMatchModal
         visible={showEndConfirm}
         onClose={() => setShowEndConfirm(false)}
         onConfirm={confirmEndMatch}
-        isDark={isDark}
-        surfaceColor={surfaceColor}
-        textPrimary={textPrimary}
-        textSecondary={textSecondary}
-        borderColor={borderColor}
       />
 
       <PeriodConfirmModal
@@ -2615,11 +2334,6 @@ export default function LiveMatchScreen({
         onConfirm={proceedToNextPeriod}
         timer={timer}
         formatTime={formatTime}
-        isDark={isDark}
-        surfaceColor={surfaceColor}
-        textPrimary={textPrimary}
-        textSecondary={textSecondary}
-        borderColor={borderColor}
       />
 
       <DeleteActionModal
@@ -2630,11 +2344,6 @@ export default function LiveMatchScreen({
         }}
         onConfirm={confirmDeleteEvent}
         eventDescription={eventToDelete?.description || ""}
-        isDark={isDark}
-        surfaceColor={surfaceColor}
-        textPrimary={textPrimary}
-        textSecondary={textSecondary}
-        borderColor={borderColor}
       />
     </View>
   );
@@ -2643,139 +2352,6 @@ export default function LiveMatchScreen({
 // ==================== COMPONENTS ====================
 
 // Court View Component
-interface CourtViewProps {
-  onCourtClick: (x: number, y: number) => void;
-  events: MatchEvent[];
-  showMarkers: boolean;
-  filterMode: FilterMode;
-  selectedPlayerIds: string[];
-  isDark: boolean;
-  clubLogoUrl: string | null;
-  courtBackgroundColor: string;
-  courtLineColor: string;
-}
-
-const CourtView: React.FC<CourtViewProps> = ({
-  onCourtClick,
-  events,
-  showMarkers,
-  filterMode,
-  selectedPlayerIds,
-  isDark,
-  clubLogoUrl,
-  courtBackgroundColor,
-  courtLineColor,
-}) => {
-  const [courtDimensions, setCourtDimensions] = useState({
-    width: 0,
-    height: 0,
-  });
-
-  const handleLayout = (event: any) => {
-    const { width, height } = event.nativeEvent.layout;
-    setCourtDimensions({ width, height });
-  };
-
-  const filteredEvents = events?.filter((e: MatchEvent) => {
-    if (!e.coordinates) return false;
-
-    // Filter by player if selection exists
-    if (selectedPlayerIds.length > 0 && e.playerId) {
-      if (!selectedPlayerIds.includes(e.playerId)) return false;
-    }
-
-    // Filter by action type
-    if (filterMode === "ALL") return true;
-    if (filterMode === "SHOOTING")
-      return e.type.includes("POINT") || e.type.includes("MISS");
-    if (filterMode === "REBOUNDS")
-      return ["REBOUND_OFF", "REBOUND_DEF"].includes(e.type);
-    if (filterMode === "FOULS")
-      return e.type === "FOUL";
-    if (filterMode === "TURNOVERS")
-      return e.type === "TURNOVER";
-    if (filterMode === "BLOCKS")
-      return e.type === "BLOCK";
-    if (filterMode === "STEALS")
-      return e.type === "STEAL";
-    return true;
-  });
-
-  const markers = showMarkers
-    ? filteredEvents
-        ?.filter((evt: MatchEvent) => {
-          // Filter out events without valid court coordinates (e.g., quick score buttons with -999)
-          return (
-            evt.coordinates &&
-            evt.coordinates.x >= 0 &&
-            evt.coordinates.y >= 0 &&
-            evt.coordinates.x <= 1 &&
-            evt.coordinates.y <= 1
-          );
-        })
-        .map((evt: MatchEvent) => {
-          let markerColor = SLATE_COLORS[500];
-
-          // Tirs réussis (vert pour nous, rouge pour adversaire)
-          if (evt.type.includes("POINT"))
-            markerColor = evt.teamId === "AWAY" ? "#ef4444" : "#22c55e";
-          // Tirs ratés (orange pour nous, rouge foncé pour adversaire)
-          else if (evt.type.includes("MISS"))
-            markerColor = evt.teamId === "AWAY" ? "#ea580c" : "#f97316";
-          // Rebonds (bleu)
-          else if (evt.type === "REBOUND_DEF" || evt.type === "REBOUND_OFF")
-            markerColor = evt.teamId === "AWAY" ? "#3b82f6" : "#60a5fa";
-          // Fautes (jaune/orange)
-          else if (evt.type === "FOUL")
-            markerColor = evt.teamId === "AWAY" ? "#f59e0b" : "#fbbf24";
-          // Passes décisives (violet)
-          else if (evt.type === "ASSIST")
-            markerColor = evt.teamId === "AWAY" ? "#a855f7" : "#c084fc";
-          // Interceptions (cyan)
-          else if (evt.type === "STEAL")
-            markerColor = evt.teamId === "AWAY" ? "#06b6d4" : "#22d3ee";
-          // Contres (indigo)
-          else if (evt.type === "BLOCK")
-            markerColor = evt.teamId === "AWAY" ? "#6366f1" : "#818cf8";
-          // Pertes de balle (rose)
-          else if (evt.type === "TURNOVER")
-            markerColor = evt.teamId === "AWAY" ? "#ec4899" : "#f472b6";
-
-          // Convert normalized coordinates (0-1) to portrait SVG coordinates (0-615.75 x 0-1146.75)
-          const svgX = evt.coordinates!.x * 615.75;
-          const svgY = evt.coordinates!.y * 1146.75;
-
-          return {
-            id: evt.id,
-            svgX,
-            svgY,
-            color: markerColor,
-          };
-        }) || []
-    : [];
-
-  const defaultLogoUri = require("../components/icons/coachassistant-logo-margin.png");
-  const logoUri = clubLogoUrl || defaultLogoUri;
-
-  return (
-    <View style={styles.courtContainer} onLayout={handleLayout}>
-      <BasketballCourtSVG
-        width={courtDimensions.width || 400}
-        height={courtDimensions.height || 600}
-        onCourtPress={(svgX: number, svgY: number) => {
-          onCourtClick(svgX, svgY);
-        }}
-        backgroundColor={courtBackgroundColor}
-        lineColor={courtLineColor}
-        logoUri={logoUri}
-        markers={markers}
-      />
-    </View>
-  );
-};
-
-// Modals are imported from LiveMatchModals.tsx
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -3028,13 +2604,13 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: `${BRAND_COLORS[500]}20`,
+    backgroundColor: "#f9731620",
     alignItems: "center",
     justifyContent: "center",
     alignSelf: "center",
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: `${BRAND_COLORS[500]}30`,
+    borderColor: "#f9731630",
   },
   modalTitle: {
     fontSize: 20,
@@ -3106,35 +2682,5 @@ const styles = StyleSheet.create({
   modalSecondaryButtonText: {
     fontSize: 16,
     fontWeight: "bold",
-  },
-  syncModalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.7)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  syncModalContent: {
-    width: "80%",
-    maxWidth: 320,
-    padding: 32,
-    borderRadius: 20,
-    alignItems: "center",
-    borderWidth: 1,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  syncModalText: {
-    fontSize: 18,
-    fontWeight: "600",
-    marginTop: 16,
-    textAlign: "center",
-  },
-  syncModalSubtext: {
-    fontSize: 14,
-    marginTop: 8,
-    textAlign: "center",
   },
 });

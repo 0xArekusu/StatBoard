@@ -15,7 +15,7 @@
 export const BRAND_COLORS = {
   50: "#fff7ed",
   100: "#ffedd5",
-  500: "#f97316",  // Main brand color
+  500: "#f97316", // Main brand color
   600: "#ea580c",
   900: "#7c2d12",
 } as const;
@@ -55,6 +55,7 @@ export const Colors = {
   light: {
     // Primary brand color
     primary: BRAND_COLORS[500],
+    onPrimary: COMMON_COLORS.white, // Text/icon color on primary background
 
     // Backgrounds
     background: COMMON_COLORS.white,
@@ -80,6 +81,10 @@ export const Colors = {
       primary: BRAND_COLORS[500],
       secondary: SLATE_COLORS[800],
       club: "#9C27B0",
+      brandAlpha: `${BRAND_COLORS[500]}10`, // 10% opacity for light backgrounds
+      brandAlphaBorder: `${BRAND_COLORS[500]}30`, // 30% opacity for borders
+      quickScoreBackground: SLATE_COLORS[100],
+      playPaused: SLATE_COLORS[200],
     },
 
     // Status colors
@@ -109,6 +114,7 @@ export const Colors = {
   dark: {
     // Primary brand color
     primary: BRAND_COLORS[500],
+    onPrimary: COMMON_COLORS.white, // Text/icon color on primary background
 
     // Backgrounds
     background: SLATE_COLORS[950],
@@ -134,6 +140,10 @@ export const Colors = {
       primary: BRAND_COLORS[500],
       secondary: SLATE_COLORS[700],
       club: "#BA68C8",
+      brandAlpha: `${BRAND_COLORS[500]}20`, // 20% opacity for dark backgrounds
+      brandAlphaBorder: `${BRAND_COLORS[500]}30`, // 30% opacity for borders
+      quickScoreBackground: SLATE_COLORS[800],
+      playPaused: SLATE_COLORS[800],
     },
 
     // Status colors
@@ -175,15 +185,15 @@ export const SHADOW_COLOR = COMMON_COLORS.black;
  */
 export const OPACITY = {
   gradient: {
-    low: "66",      // 40% opacity - for gradient overlays
-    medium: "CC",   // 80% opacity - for backgrounds and overlays
-    full: "",       // 100% opacity
+    low: "66", // 40% opacity - for gradient overlays
+    medium: "CC", // 80% opacity - for backgrounds and overlays
+    full: "", // 100% opacity
   },
   interaction: {
-    low: 0.7,       // Light touch feedback
-    high: 0.8,      // Standard touch feedback
+    low: 0.7, // Light touch feedback
+    high: 0.8, // Standard touch feedback
   },
-  disabled: 0.6,    // Disabled state
+  disabled: 0.6, // Disabled state
 } as const;
 
 /**

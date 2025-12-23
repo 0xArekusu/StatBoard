@@ -6,6 +6,7 @@ import {
   Modal,
   ScrollView,
   TouchableOpacity,
+  ActivityIndicator,
 } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import {
@@ -16,46 +17,13 @@ import {
 } from "../src/theme";
 import { Player } from "../models/Player";
 import { MatchActionGrid } from "./MatchActionGrid";
-
-// Types
-type EventType =
-  | "POINT_1"
-  | "POINT_2"
-  | "POINT_3"
-  | "MISS_1"
-  | "MISS_2"
-  | "MISS_3"
-  | "FOUL"
-  | "REBOUND_DEF"
-  | "REBOUND_OFF"
-  | "ASSIST"
-  | "STEAL"
-  | "BLOCK"
-  | "TURNOVER"
-  | "SUBSTITUTION"
-  | "POINT";
-
-interface MatchEvent {
-  id: string;
-  type: EventType;
-  value?: number;
-  playerId?: string;
-  teamId: "HOME" | "AWAY";
-  timestamp: number;
-  description: string;
-  coordinates?: { x: number; y: number };
-  period_number?: number;
-  time_in_period?: number;
-}
-
-type FilterMode =
-  | "ALL"
-  | "SHOOTING"
-  | "REBOUNDS"
-  | "FOULS"
-  | "TURNOVERS"
-  | "BLOCKS"
-  | "STEALS";
+import {
+  EventType,
+  MatchEvent,
+  TeamId,
+  FilterMode,
+} from "../constants/liveMatchConstants";
+import { useTheme } from "../src/contexts/ThemeContext";
 
 // History Modal
 interface HistoryModalProps {
@@ -64,11 +32,6 @@ interface HistoryModalProps {
   events: MatchEvent[];
   onDeleteEvent: (id: string) => void;
   match: any;
-  isDark: boolean;
-  surfaceColor: string;
-  textPrimary: string;
-  textSecondary: string;
-  borderColor: string;
 }
 
 export const HistoryModal: React.FC<HistoryModalProps> = ({
@@ -77,12 +40,12 @@ export const HistoryModal: React.FC<HistoryModalProps> = ({
   events,
   onDeleteEvent,
   match,
-  isDark,
-  surfaceColor,
-  textPrimary,
-  textSecondary,
-  borderColor,
 }) => {
+  const { colors, isDark } = useTheme();
+  const surfaceColor = colors.surface;
+  const textPrimary = colors.text.primary;
+  const textSecondary = colors.text.secondary;
+  const borderColor = colors.border;
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [eventToDelete, setEventToDelete] = useState<any | null>(null);
 
@@ -133,7 +96,7 @@ export const HistoryModal: React.FC<HistoryModalProps> = ({
   const getEventDescription = () => {
     if (!eventToDelete) return "";
     const timeStr = formatGameTime(eventToDelete.period_number, eventToDelete.time_in_period);
-    const teamStr = eventToDelete.teamId === "HOME"
+    const teamStr = eventToDelete.teamId === TeamId.HOME
       ? match.myTeamName || "Nous"
       : match.opponent || "Adversaire";
     return `${eventToDelete.description}\n${timeStr} • ${teamStr}`;
@@ -227,7 +190,7 @@ export const HistoryModal: React.FC<HistoryModalProps> = ({
                       style={[styles.historyItemMeta, { color: textSecondary }]}
                     >
                       {formatGameTime(evt.period_number, evt.time_in_period)} •{" "}
-                      {evt.teamId === "HOME"
+                      {evt.teamId === TeamId.HOME
                         ? match.myTeamName || "Nous"
                         : match.opponent || "Adversaire"}
                     </Text>
@@ -263,11 +226,6 @@ export const HistoryModal: React.FC<HistoryModalProps> = ({
         onClose={cancelDeleteAction}
         onConfirm={confirmDeleteAction}
         eventDescription={getEventDescription()}
-        isDark={isDark}
-        surfaceColor={surfaceColor}
-        textPrimary={textPrimary}
-        textSecondary={textSecondary}
-        borderColor={borderColor}
       />
     </Modal>
   );
@@ -279,10 +237,6 @@ interface FilterModalProps {
   onClose: () => void;
   filterMode: FilterMode;
   setFilterMode: (mode: FilterMode) => void;
-  isDark: boolean;
-  surfaceColor: string;
-  textPrimary: string;
-  borderColor: string;
   // Optional props for player filtering
   homeRoster?: Player[];
   opponentRoster?: Player[];
@@ -296,16 +250,16 @@ export const FilterModal: React.FC<FilterModalProps> = ({
   onClose,
   filterMode,
   setFilterMode,
-  isDark,
-  surfaceColor,
-  textPrimary,
-  borderColor,
   homeRoster = [],
   opponentRoster = [],
   trackOpponentStats = false,
   selectedPlayers = [],
   onPlayerSelectionChange,
 }) => {
+  const { colors, isDark } = useTheme();
+  const surfaceColor = colors.surface;
+  const textPrimary = colors.text.primary;
+  const borderColor = colors.border;
   const textSecondary = isDark ? SLATE_COLORS[400] : SLATE_COLORS[600];
   const bgColor = isDark ? SLATE_COLORS[950] : SLATE_COLORS[50];
 
@@ -410,7 +364,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
             <View style={styles.filterHeaderRight}>
               <TouchableOpacity
                 onPress={() => {
-                  setFilterMode("ALL");
+                  setFilterMode(FilterMode.ALL);
                   if (onPlayerSelectionChange) {
                     onPlayerSelectionChange([]);
                   }
@@ -468,18 +422,18 @@ export const FilterModal: React.FC<FilterModalProps> = ({
 
               <View style={styles.filterButtonsGrid}>
                 <TouchableOpacity
-                  onPress={() => setFilterMode("ALL")}
+                  onPress={() => setFilterMode(FilterMode.ALL)}
                   style={[
                     styles.filterPill,
                     {
                       backgroundColor:
-                        filterMode === "ALL"
+                        filterMode === FilterMode.ALL
                           ? BRAND_COLORS[600]
                           : isDark
                           ? SLATE_COLORS[800]
                           : SLATE_COLORS[50],
                       borderColor:
-                        filterMode === "ALL" ? BRAND_COLORS[500] : borderColor,
+                        filterMode === FilterMode.ALL ? BRAND_COLORS[500] : borderColor,
                     },
                   ]}
                 >
@@ -488,7 +442,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                       styles.filterPillText,
                       {
                         color:
-                          filterMode === "ALL"
+                          filterMode === FilterMode.ALL
                             ? COMMON_COLORS.white
                             : textPrimary,
                       },
@@ -499,18 +453,18 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                  onPress={() => setFilterMode("SHOOTING")}
+                  onPress={() => setFilterMode(FilterMode.SHOOTING)}
                   style={[
                     styles.filterPill,
                     {
                       backgroundColor:
-                        filterMode === "SHOOTING"
+                        filterMode === FilterMode.SHOOTING
                           ? BRAND_COLORS[600]
                           : isDark
                           ? SLATE_COLORS[800]
                           : SLATE_COLORS[50],
                       borderColor:
-                        filterMode === "SHOOTING"
+                        filterMode === FilterMode.SHOOTING
                           ? BRAND_COLORS[500]
                           : borderColor,
                     },
@@ -521,7 +475,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                       styles.filterPillText,
                       {
                         color:
-                          filterMode === "SHOOTING"
+                          filterMode === FilterMode.SHOOTING
                             ? COMMON_COLORS.white
                             : textPrimary,
                       },
@@ -532,18 +486,18 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                  onPress={() => setFilterMode("REBOUNDS")}
+                  onPress={() => setFilterMode(FilterMode.REBOUNDS)}
                   style={[
                     styles.filterPill,
                     {
                       backgroundColor:
-                        filterMode === "REBOUNDS"
+                        filterMode === FilterMode.REBOUNDS
                           ? BRAND_COLORS[600]
                           : isDark
                           ? SLATE_COLORS[800]
                           : SLATE_COLORS[50],
                       borderColor:
-                        filterMode === "REBOUNDS"
+                        filterMode === FilterMode.REBOUNDS
                           ? BRAND_COLORS[500]
                           : borderColor,
                     },
@@ -554,7 +508,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                       styles.filterPillText,
                       {
                         color:
-                          filterMode === "REBOUNDS"
+                          filterMode === FilterMode.REBOUNDS
                             ? COMMON_COLORS.white
                             : textPrimary,
                       },
@@ -565,18 +519,18 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                  onPress={() => setFilterMode("FOULS")}
+                  onPress={() => setFilterMode(FilterMode.FOULS)}
                   style={[
                     styles.filterPill,
                     {
                       backgroundColor:
-                        filterMode === "FOULS"
+                        filterMode === FilterMode.FOULS
                           ? BRAND_COLORS[600]
                           : isDark
                           ? SLATE_COLORS[800]
                           : SLATE_COLORS[50],
                       borderColor:
-                        filterMode === "FOULS"
+                        filterMode === FilterMode.FOULS
                           ? BRAND_COLORS[500]
                           : borderColor,
                     },
@@ -587,7 +541,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                       styles.filterPillText,
                       {
                         color:
-                          filterMode === "FOULS"
+                          filterMode === FilterMode.FOULS
                             ? COMMON_COLORS.white
                             : textPrimary,
                       },
@@ -598,18 +552,18 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                  onPress={() => setFilterMode("TURNOVERS")}
+                  onPress={() => setFilterMode(FilterMode.TURNOVERS)}
                   style={[
                     styles.filterPill,
                     {
                       backgroundColor:
-                        filterMode === "TURNOVERS"
+                        filterMode === FilterMode.TURNOVERS
                           ? BRAND_COLORS[600]
                           : isDark
                           ? SLATE_COLORS[800]
                           : SLATE_COLORS[50],
                       borderColor:
-                        filterMode === "TURNOVERS"
+                        filterMode === FilterMode.TURNOVERS
                           ? BRAND_COLORS[500]
                           : borderColor,
                     },
@@ -620,7 +574,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                       styles.filterPillText,
                       {
                         color:
-                          filterMode === "TURNOVERS"
+                          filterMode === FilterMode.TURNOVERS
                             ? COMMON_COLORS.white
                             : textPrimary,
                       },
@@ -631,18 +585,18 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                  onPress={() => setFilterMode("BLOCKS")}
+                  onPress={() => setFilterMode(FilterMode.BLOCKS)}
                   style={[
                     styles.filterPill,
                     {
                       backgroundColor:
-                        filterMode === "BLOCKS"
+                        filterMode === FilterMode.BLOCKS
                           ? BRAND_COLORS[600]
                           : isDark
                           ? SLATE_COLORS[800]
                           : SLATE_COLORS[50],
                       borderColor:
-                        filterMode === "BLOCKS"
+                        filterMode === FilterMode.BLOCKS
                           ? BRAND_COLORS[500]
                           : borderColor,
                     },
@@ -653,7 +607,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                       styles.filterPillText,
                       {
                         color:
-                          filterMode === "BLOCKS"
+                          filterMode === FilterMode.BLOCKS
                             ? COMMON_COLORS.white
                             : textPrimary,
                       },
@@ -664,18 +618,18 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                  onPress={() => setFilterMode("STEALS")}
+                  onPress={() => setFilterMode(FilterMode.STEALS)}
                   style={[
                     styles.filterPill,
                     {
                       backgroundColor:
-                        filterMode === "STEALS"
+                        filterMode === FilterMode.STEALS
                           ? BRAND_COLORS[600]
                           : isDark
                           ? SLATE_COLORS[800]
                           : SLATE_COLORS[50],
                       borderColor:
-                        filterMode === "STEALS"
+                        filterMode === FilterMode.STEALS
                           ? BRAND_COLORS[500]
                           : borderColor,
                     },
@@ -686,7 +640,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                       styles.filterPillText,
                       {
                         color:
-                          filterMode === "STEALS"
+                          filterMode === FilterMode.STEALS
                             ? COMMON_COLORS.white
                             : textPrimary,
                       },
@@ -754,13 +708,8 @@ interface PlayerSelectionModalProps {
   match: any;
   playersOnCourt: Player[];
   opponentPlayersOnCourt: Player[];
-  playerSelectionTab: "HOME" | "AWAY";
-  setPlayerSelectionTab: (tab: "HOME" | "AWAY") => void;
-  isDark: boolean;
-  surfaceColor: string;
-  textPrimary: string;
-  textSecondary: string;
-  borderColor: string;
+  playerSelectionTab: TeamId;
+  setPlayerSelectionTab: (tab: TeamId) => void;
 }
 
 export const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
@@ -773,12 +722,14 @@ export const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
   opponentPlayersOnCourt,
   playerSelectionTab,
   setPlayerSelectionTab,
-  isDark,
-  surfaceColor,
-  textPrimary,
-  textSecondary,
-  borderColor,
-}) => (
+}) => {
+  const { colors, isDark } = useTheme();
+  const surfaceColor = colors.surface;
+  const textPrimary = colors.text.primary;
+  const textSecondary = colors.text.secondary;
+  const borderColor = colors.border;
+
+  return (
   <Modal visible={visible} transparent animationType="fade">
     <View style={styles.modalOverlay}>
       <View
@@ -827,12 +778,12 @@ export const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
             ]}
           >
             <TouchableOpacity
-              onPress={() => setPlayerSelectionTab("HOME")}
+              onPress={() => setPlayerSelectionTab(TeamId.HOME)}
               style={[
                 styles.playerTab,
                 {
                   backgroundColor:
-                    playerSelectionTab === "HOME"
+                    playerSelectionTab === TeamId.HOME
                       ? BRAND_COLORS[600]
                       : "transparent",
                 },
@@ -843,7 +794,7 @@ export const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
                   styles.playerTabText,
                   {
                     color:
-                      playerSelectionTab === "HOME"
+                      playerSelectionTab === TeamId.HOME
                         ? COMMON_COLORS.white
                         : textSecondary,
                   },
@@ -853,12 +804,12 @@ export const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
-              onPress={() => setPlayerSelectionTab("AWAY")}
+              onPress={() => setPlayerSelectionTab(TeamId.AWAY)}
               style={[
                 styles.playerTab,
                 {
                   backgroundColor:
-                    playerSelectionTab === "AWAY" ? "#ef4444" : "transparent",
+                    playerSelectionTab === TeamId.AWAY ? "#ef4444" : "transparent",
                 },
               ]}
             >
@@ -867,7 +818,7 @@ export const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
                   styles.playerTabText,
                   {
                     color:
-                      playerSelectionTab === "AWAY"
+                      playerSelectionTab === TeamId.AWAY
                         ? COMMON_COLORS.white
                         : textSecondary,
                   },
@@ -880,7 +831,7 @@ export const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
         )}
 
         <ScrollView contentContainerStyle={styles.playerGrid}>
-          {(match.trackOpponentStats && playerSelectionTab === "AWAY"
+          {(match.trackOpponentStats && playerSelectionTab === TeamId.AWAY
             ? opponentPlayersOnCourt
             : playersOnCourt
           ).map((player: Player) => (
@@ -891,7 +842,7 @@ export const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
                 styles.playerCard,
                 {
                   backgroundColor:
-                    match.trackOpponentStats && playerSelectionTab === "AWAY"
+                    match.trackOpponentStats && playerSelectionTab === TeamId.AWAY
                       ? isDark
                         ? SLATE_COLORS[800]
                         : SLATE_COLORS[50]
@@ -899,7 +850,7 @@ export const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
                       ? SLATE_COLORS[800]
                       : SLATE_COLORS[50],
                   borderColor:
-                    match.trackOpponentStats && playerSelectionTab === "AWAY"
+                    match.trackOpponentStats && playerSelectionTab === TeamId.AWAY
                       ? isDark
                         ? SLATE_COLORS[700]
                         : SLATE_COLORS[200]
@@ -914,7 +865,7 @@ export const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
                   styles.playerCardNumber,
                   {
                     backgroundColor:
-                      match.trackOpponentStats && playerSelectionTab === "AWAY"
+                      match.trackOpponentStats && playerSelectionTab === TeamId.AWAY
                         ? isDark
                           ? SLATE_COLORS[700]
                           : COMMON_COLORS.white
@@ -922,7 +873,7 @@ export const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
                         ? SLATE_COLORS[700]
                         : COMMON_COLORS.white,
                     borderColor:
-                      match.trackOpponentStats && playerSelectionTab === "AWAY"
+                      match.trackOpponentStats && playerSelectionTab === TeamId.AWAY
                         ? "#ef4444"
                         : SLATE_COLORS[200],
                   },
@@ -934,7 +885,7 @@ export const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
                     {
                       color:
                         match.trackOpponentStats &&
-                        playerSelectionTab === "AWAY"
+                        playerSelectionTab === TeamId.AWAY
                           ? "#ef4444"
                           : isDark
                           ? SLATE_COLORS[200]
@@ -962,30 +913,28 @@ export const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
       </View>
     </View>
   </Modal>
-);
+  );
+};
 
 // Court Action Modal
 interface CourtActionModalProps {
   visible: boolean;
   onClose: () => void;
   onActionSelect: (type: EventType, value?: number) => void;
-  isDark: boolean;
-  surfaceColor: string;
-  textPrimary: string;
-  textSecondary: string;
-  borderColor: string;
 }
 
 export const CourtActionModal: React.FC<CourtActionModalProps> = ({
   visible,
   onClose,
   onActionSelect,
-  isDark,
-  surfaceColor,
-  textPrimary,
-  textSecondary,
-  borderColor,
-}) => (
+}) => {
+  const { colors, isDark } = useTheme();
+  const surfaceColor = colors.surface;
+  const textPrimary = colors.text.primary;
+  const textSecondary = colors.text.secondary;
+  const borderColor = colors.border;
+
+  return (
   <Modal visible={visible} transparent animationType="fade">
     <View style={styles.modalOverlay}>
       <View
@@ -1028,7 +977,8 @@ export const CourtActionModal: React.FC<CourtActionModalProps> = ({
       </View>
     </View>
   </Modal>
-);
+  );
+};
 
 // Substitution Modal
 interface SubstitutionModalProps {
@@ -1040,13 +990,8 @@ interface SubstitutionModalProps {
   toggleSubIn: (id: string) => void;
   getSubModalPlayers: () => { onCourt: Player[]; onBench: Player[] };
   match: any;
-  subTeamTab: "HOME" | "AWAY";
-  setSubTeamTab: (tab: "HOME" | "AWAY") => void;
-  isDark: boolean;
-  surfaceColor: string;
-  textPrimary: string;
-  textSecondary: string;
-  borderColor: string;
+  subTeamTab: TeamId;
+  setSubTeamTab: (tab: TeamId) => void;
 }
 
 export const SubstitutionModal: React.FC<SubstitutionModalProps> = ({
@@ -1060,12 +1005,13 @@ export const SubstitutionModal: React.FC<SubstitutionModalProps> = ({
   match,
   subTeamTab,
   setSubTeamTab,
-  isDark,
-  surfaceColor,
-  textPrimary,
-  textSecondary,
-  borderColor,
 }) => {
+  const { colors, isDark } = useTheme();
+  const surfaceColor = colors.surface;
+  const textPrimary = colors.text.primary;
+  const textSecondary = colors.text.secondary;
+  const borderColor = colors.border;
+
   const { onCourt, onBench } = getSubModalPlayers();
 
   return (
@@ -1124,12 +1070,12 @@ export const SubstitutionModal: React.FC<SubstitutionModalProps> = ({
               ]}
             >
               <TouchableOpacity
-                onPress={() => setSubTeamTab("HOME")}
+                onPress={() => setSubTeamTab(TeamId.HOME)}
                 style={[
                   styles.subTab,
                   {
                     backgroundColor:
-                      subTeamTab === "HOME" ? BRAND_COLORS[600] : "transparent",
+                      subTeamTab === TeamId.HOME ? BRAND_COLORS[600] : "transparent",
                   },
                 ]}
               >
@@ -1138,7 +1084,7 @@ export const SubstitutionModal: React.FC<SubstitutionModalProps> = ({
                     styles.subTabText,
                     {
                       color:
-                        subTeamTab === "HOME"
+                        subTeamTab === TeamId.HOME
                           ? COMMON_COLORS.white
                           : textSecondary,
                     },
@@ -1148,12 +1094,12 @@ export const SubstitutionModal: React.FC<SubstitutionModalProps> = ({
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
-                onPress={() => setSubTeamTab("AWAY")}
+                onPress={() => setSubTeamTab(TeamId.AWAY)}
                 style={[
                   styles.subTab,
                   {
                     backgroundColor:
-                      subTeamTab === "AWAY" ? "#ef4444" : "transparent",
+                      subTeamTab === TeamId.AWAY ? "#ef4444" : "transparent",
                   },
                 ]}
               >
@@ -1162,7 +1108,7 @@ export const SubstitutionModal: React.FC<SubstitutionModalProps> = ({
                     styles.subTabText,
                     {
                       color:
-                        subTeamTab === "AWAY"
+                        subTeamTab === TeamId.AWAY
                           ? COMMON_COLORS.white
                           : textSecondary,
                     },
@@ -1429,23 +1375,20 @@ interface EndMatchModalProps {
   visible: boolean;
   onClose: () => void;
   onConfirm: () => void;
-  isDark: boolean;
-  surfaceColor: string;
-  textPrimary: string;
-  textSecondary: string;
-  borderColor: string;
 }
 
 export const EndMatchModal: React.FC<EndMatchModalProps> = ({
   visible,
   onClose,
   onConfirm,
-  isDark,
-  surfaceColor,
-  textPrimary,
-  textSecondary,
-  borderColor,
-}) => (
+}) => {
+  const { colors, isDark } = useTheme();
+  const surfaceColor = colors.surface;
+  const textPrimary = colors.text.primary;
+  const textSecondary = colors.text.secondary;
+  const borderColor = colors.border;
+
+  return (
   <Modal visible={visible} transparent animationType="fade">
     <View style={styles.modalOverlay}>
       <View
@@ -1508,7 +1451,8 @@ export const EndMatchModal: React.FC<EndMatchModalProps> = ({
       </View>
     </View>
   </Modal>
-);
+  );
+};
 
 // Overtime Modal
 interface OvertimeModalProps {
@@ -1521,11 +1465,6 @@ interface OvertimeModalProps {
   maxPeriods: number;
   overtimeDuration: number;
   setOvertimeDuration: (value: number) => void;
-  isDark: boolean;
-  surfaceColor: string;
-  textPrimary: string;
-  textSecondary: string;
-  borderColor: string;
 }
 
 export const OvertimeModal: React.FC<OvertimeModalProps> = ({
@@ -1538,12 +1477,13 @@ export const OvertimeModal: React.FC<OvertimeModalProps> = ({
   maxPeriods,
   overtimeDuration,
   setOvertimeDuration,
-  isDark,
-  surfaceColor,
-  textPrimary,
-  textSecondary,
-  borderColor,
 }) => {
+  const { colors, isDark } = useTheme();
+  const surfaceColor = colors.surface;
+  const textPrimary = colors.text.primary;
+  const textSecondary = colors.text.secondary;
+  const borderColor = colors.border;
+
   const [duration, setDuration] = React.useState(overtimeDuration.toString());
 
   return (
@@ -1725,11 +1665,6 @@ interface PeriodConfirmModalProps {
   onConfirm: () => void;
   timer: number;
   formatTime: (seconds: number) => string;
-  isDark: boolean;
-  surfaceColor: string;
-  textPrimary: string;
-  textSecondary: string;
-  borderColor: string;
 }
 
 export const PeriodConfirmModal: React.FC<PeriodConfirmModalProps> = ({
@@ -1738,12 +1673,14 @@ export const PeriodConfirmModal: React.FC<PeriodConfirmModalProps> = ({
   onConfirm,
   timer,
   formatTime,
-  isDark,
-  surfaceColor,
-  textPrimary,
-  textSecondary,
-  borderColor,
-}) => (
+}) => {
+  const { colors, isDark } = useTheme();
+  const surfaceColor = colors.surface;
+  const textPrimary = colors.text.primary;
+  const textSecondary = colors.text.secondary;
+  const borderColor = colors.border;
+
+  return (
   <Modal visible={visible} transparent animationType="fade">
     <View style={styles.modalOverlay}>
       <View
@@ -1845,7 +1782,8 @@ export const PeriodConfirmModal: React.FC<PeriodConfirmModalProps> = ({
       </View>
     </View>
   </Modal>
-);
+  );
+};
 
 // Delete Action Confirm Modal
 interface DeleteActionModalProps {
@@ -1853,11 +1791,6 @@ interface DeleteActionModalProps {
   onClose: () => void;
   onConfirm: () => void;
   eventDescription: string;
-  isDark: boolean;
-  surfaceColor: string;
-  textPrimary: string;
-  textSecondary: string;
-  borderColor: string;
 }
 
 export const DeleteActionModal: React.FC<DeleteActionModalProps> = ({
@@ -1865,12 +1798,14 @@ export const DeleteActionModal: React.FC<DeleteActionModalProps> = ({
   onClose,
   onConfirm,
   eventDescription,
-  isDark,
-  surfaceColor,
-  textPrimary,
-  textSecondary,
-  borderColor,
-}) => (
+}) => {
+  const { colors, isDark } = useTheme();
+  const surfaceColor = colors.surface;
+  const textPrimary = colors.text.primary;
+  const textSecondary = colors.text.secondary;
+  const borderColor = colors.border;
+
+  return (
   <Modal visible={visible} transparent animationType="fade">
     <View style={styles.modalOverlay}>
       <View
@@ -1901,10 +1836,11 @@ export const DeleteActionModal: React.FC<DeleteActionModalProps> = ({
           ]}
         >
           <Text
-            style={[
-              styles.deleteActionDescription,
-              { color: textPrimary, fontWeight: "600" },
-            ]}
+            style={{
+              color: textPrimary,
+              fontWeight: "600",
+              fontSize: 14,
+            }}
           >
             {eventDescription}
           </Text>
@@ -1954,7 +1890,51 @@ export const DeleteActionModal: React.FC<DeleteActionModalProps> = ({
       </View>
     </View>
   </Modal>
-);
+  );
+};
+
+// Sync Modal
+interface SyncModalProps {
+  visible: boolean;
+}
+
+export const SyncModal: React.FC<SyncModalProps> = ({ visible }) => {
+  const { colors } = useTheme();
+  const surfaceColor = colors.surface;
+  const textPrimary = colors.text.primary;
+  const textSecondary = colors.text.secondary;
+  const borderColor = colors.border;
+
+  return (
+    <Modal visible={visible} transparent={true} animationType="fade">
+      <View style={styles.syncModalOverlay}>
+        <View
+          style={[
+            styles.syncModalContent,
+            {
+              backgroundColor: surfaceColor,
+              borderColor: borderColor,
+            },
+          ]}
+        >
+          <MaterialCommunityIcons
+            name="cloud-upload"
+            size={48}
+            color={colors.primary}
+            style={{ marginBottom: 16 }}
+          />
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={[styles.syncModalText, { color: textPrimary }]}>
+            Synchronisation avec le serveur...
+          </Text>
+          <Text style={[styles.syncModalSubtext, { color: textSecondary }]}>
+            Veuillez patienter
+          </Text>
+        </View>
+      </View>
+    </Modal>
+  );
+};
 
 const styles = StyleSheet.create({
   modalOverlay: {
@@ -2706,5 +2686,35 @@ const styles = StyleSheet.create({
   deleteActionConfirmButtonText: {
     fontSize: 16,
     fontWeight: "bold",
+  },
+  syncModalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.7)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  syncModalContent: {
+    width: "80%",
+    maxWidth: 300,
+    padding: 32,
+    borderRadius: 16,
+    alignItems: "center",
+    borderWidth: 1,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  syncModalText: {
+    fontSize: 18,
+    fontWeight: "600",
+    marginTop: 16,
+    textAlign: "center",
+  },
+  syncModalSubtext: {
+    fontSize: 14,
+    marginTop: 8,
+    textAlign: "center",
   },
 });

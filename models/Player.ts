@@ -4,6 +4,7 @@ export interface Player {
   name: string;
   jerseyNumber: number;
   photoUrl?: string;
+  isStarter?: boolean;
   createdAt: Date;
   updatedAt: Date;
 }

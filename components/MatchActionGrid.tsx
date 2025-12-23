@@ -1,25 +1,7 @@
 import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { SLATE_COLORS, STATUS_COLORS } from "../src/theme";
-
-type EventType =
-  | "POINT_1"
-  | "POINT_2"
-  | "POINT_3"
-  | "MISS_1"
-  | "MISS_2"
-  | "MISS_3"
-  | "FOUL"
-  | "REBOUND_DEF"
-  | "REBOUND_OFF"
-  | "ASSIST"
-  | "STEAL"
-  | "BLOCK"
-  | "TURNOVER"
-  | "SUBSTITUTION"
-  | "POINT";
-
-type FilterMode = "ALL" | "SHOOTING" | "REBOUNDS" | "FOULS" | "TURNOVERS" | "BLOCKS" | "STEALS";
+import { EventType, FilterMode } from "../constants/liveMatchConstants";
 
 interface MatchActionGridProps {
   onAction: (type: EventType, value?: number) => void;
@@ -27,32 +9,32 @@ interface MatchActionGridProps {
   filterMode?: FilterMode;
 }
 
-export const MatchActionGrid: React.FC<MatchActionGridProps> = ({ onAction, isDark, filterMode = "ALL" }) => {
-  const shouldShowAction = (actionType: string): boolean => {
-    if (filterMode === "ALL") return true;
+export const MatchActionGrid: React.FC<MatchActionGridProps> = ({ onAction, isDark, filterMode = FilterMode.ALL }) => {
+  const shouldShowAction = (actionType: EventType): boolean => {
+    if (filterMode === FilterMode.ALL) return true;
 
-    if (filterMode === "SHOOTING") {
-      return ["POINT_1", "POINT_2", "POINT_3", "MISS_1", "MISS_2", "MISS_3"].includes(actionType);
+    if (filterMode === FilterMode.SHOOTING) {
+      return [EventType.POINT_1, EventType.POINT_2, EventType.POINT_3, EventType.MISS_1, EventType.MISS_2, EventType.MISS_3].includes(actionType);
     }
 
-    if (filterMode === "REBOUNDS") {
-      return ["REBOUND_DEF", "REBOUND_OFF"].includes(actionType);
+    if (filterMode === FilterMode.REBOUNDS) {
+      return [EventType.REBOUND_DEF, EventType.REBOUND_OFF].includes(actionType);
     }
 
-    if (filterMode === "FOULS") {
-      return actionType === "FOUL";
+    if (filterMode === FilterMode.FOULS) {
+      return actionType === EventType.FOUL;
     }
 
-    if (filterMode === "TURNOVERS") {
-      return actionType === "TURNOVER";
+    if (filterMode === FilterMode.TURNOVERS) {
+      return actionType === EventType.TURNOVER;
     }
 
-    if (filterMode === "BLOCKS") {
-      return actionType === "BLOCK";
+    if (filterMode === FilterMode.BLOCKS) {
+      return actionType === EventType.BLOCK;
     }
 
-    if (filterMode === "STEALS") {
-      return actionType === "STEAL";
+    if (filterMode === FilterMode.STEALS) {
+      return actionType === EventType.STEAL;
     }
 
     return true;
@@ -61,27 +43,27 @@ export const MatchActionGrid: React.FC<MatchActionGridProps> = ({ onAction, isDa
   return (
   <View style={styles.actionGrid}>
     {/* Row 1: Scoring Positive */}
-    {(shouldShowAction("POINT_1") || shouldShowAction("POINT_2") || shouldShowAction("POINT_3")) && (
+    {(shouldShowAction(EventType.POINT_1) || shouldShowAction(EventType.POINT_2) || shouldShowAction(EventType.POINT_3)) && (
       <View style={styles.actionRow}>
-        {shouldShowAction("POINT_1") && (
+        {shouldShowAction(EventType.POINT_1) && (
           <ActionButton
-            onPress={() => onAction("POINT_1", 1)}
+            onPress={() => onAction(EventType.POINT_1, 1)}
             label="+1"
             sub="Lancer"
             color={STATUS_COLORS.success}
           />
         )}
-        {shouldShowAction("POINT_2") && (
+        {shouldShowAction(EventType.POINT_2) && (
           <ActionButton
-            onPress={() => onAction("POINT_2", 2)}
+            onPress={() => onAction(EventType.POINT_2, 2)}
             label="+2"
             sub="Points"
             color="#4ade80"
           />
         )}
-        {shouldShowAction("POINT_3") && (
+        {shouldShowAction(EventType.POINT_3) && (
           <ActionButton
-            onPress={() => onAction("POINT_3", 3)}
+            onPress={() => onAction(EventType.POINT_3, 3)}
             label="+3"
             sub="Points"
             color="#86efac"
@@ -91,29 +73,29 @@ export const MatchActionGrid: React.FC<MatchActionGridProps> = ({ onAction, isDa
     )}
 
     {/* Row 2: Scoring Negative (Misses) */}
-    {(shouldShowAction("MISS_1") || shouldShowAction("MISS_2") || shouldShowAction("MISS_3")) && (
+    {(shouldShowAction(EventType.MISS_1) || shouldShowAction(EventType.MISS_2) || shouldShowAction(EventType.MISS_3)) && (
       <View style={[styles.actionRow, { height: 64 }]}>
-        {shouldShowAction("MISS_1") && (
+        {shouldShowAction(EventType.MISS_1) && (
           <ActionButton
-            onPress={() => onAction("MISS_1", 0)}
+            onPress={() => onAction(EventType.MISS_1, 0)}
             label="Raté"
             sub="Lancer"
             color={isDark ? SLATE_COLORS[800] : SLATE_COLORS[200]}
             textColor="#ef4444"
           />
         )}
-        {shouldShowAction("MISS_2") && (
+        {shouldShowAction(EventType.MISS_2) && (
           <ActionButton
-            onPress={() => onAction("MISS_2", 0)}
+            onPress={() => onAction(EventType.MISS_2, 0)}
             label="Raté"
             sub="2 Pts"
             color={isDark ? SLATE_COLORS[800] : SLATE_COLORS[200]}
             textColor="#ef4444"
           />
         )}
-        {shouldShowAction("MISS_3") && (
+        {shouldShowAction(EventType.MISS_3) && (
           <ActionButton
-            onPress={() => onAction("MISS_3", 0)}
+            onPress={() => onAction(EventType.MISS_3, 0)}
             label="Raté"
             sub="3 Pts"
             color={isDark ? SLATE_COLORS[800] : SLATE_COLORS[200]}
@@ -124,19 +106,19 @@ export const MatchActionGrid: React.FC<MatchActionGridProps> = ({ onAction, isDa
     )}
 
     {/* Row 3: Rebounds */}
-    {(shouldShowAction("REBOUND_DEF") || shouldShowAction("REBOUND_OFF")) && (
+    {(shouldShowAction(EventType.REBOUND_DEF) || shouldShowAction(EventType.REBOUND_OFF)) && (
       <View style={[styles.actionRow, { height: 80 }]}>
-        {shouldShowAction("REBOUND_DEF") && (
+        {shouldShowAction(EventType.REBOUND_DEF) && (
           <ActionButton
-            onPress={() => onAction("REBOUND_DEF")}
+            onPress={() => onAction(EventType.REBOUND_DEF)}
             label="REB DEF"
             sub="Défensif"
             color="#2563eb"
           />
         )}
-        {shouldShowAction("REBOUND_OFF") && (
+        {shouldShowAction(EventType.REBOUND_OFF) && (
           <ActionButton
-            onPress={() => onAction("REBOUND_OFF")}
+            onPress={() => onAction(EventType.REBOUND_OFF)}
             label="REB OFF"
             sub="Offensif"
             color="#06b6d4"
@@ -146,37 +128,37 @@ export const MatchActionGrid: React.FC<MatchActionGridProps> = ({ onAction, isDa
     )}
 
     {/* Row 4: Other Stats */}
-    {(shouldShowAction("ASSIST") || shouldShowAction("STEAL") || shouldShowAction("BLOCK") || shouldShowAction("FOUL")) && (
+    {(shouldShowAction(EventType.ASSIST) || shouldShowAction(EventType.STEAL) || shouldShowAction(EventType.BLOCK) || shouldShowAction(EventType.FOUL)) && (
       <View style={styles.actionRow}>
-        {shouldShowAction("ASSIST") && (
+        {shouldShowAction(EventType.ASSIST) && (
           <ActionButton
-            onPress={() => onAction("ASSIST")}
+            onPress={() => onAction(EventType.ASSIST)}
             label="PASSE D"
             sub="Assist"
             color="#6366f1"
           />
         )}
-        {shouldShowAction("STEAL") && (
+        {shouldShowAction(EventType.STEAL) && (
           <ActionButton
-            onPress={() => onAction("STEAL")}
+            onPress={() => onAction(EventType.STEAL)}
             label="INTERC"
             sub="Vol"
             color="#8b5cf6"
           />
         )}
-        {(shouldShowAction("BLOCK") || shouldShowAction("FOUL")) && (
+        {(shouldShowAction(EventType.BLOCK) || shouldShowAction(EventType.FOUL)) && (
           <View style={styles.miniColumn}>
-            {shouldShowAction("BLOCK") && (
+            {shouldShowAction(EventType.BLOCK) && (
               <ActionButton
-                onPress={() => onAction("BLOCK")}
+                onPress={() => onAction(EventType.BLOCK)}
                 label="CONTRE"
                 color={SLATE_COLORS[600]}
                 textSize={14}
               />
             )}
-            {shouldShowAction("FOUL") && (
+            {shouldShowAction(EventType.FOUL) && (
               <ActionButton
-                onPress={() => onAction("FOUL")}
+                onPress={() => onAction(EventType.FOUL)}
                 label="FAUTE"
                 color="#b91c1c"
                 textSize={14}
@@ -188,10 +170,10 @@ export const MatchActionGrid: React.FC<MatchActionGridProps> = ({ onAction, isDa
     )}
 
     {/* Row 5: Turnover */}
-    {shouldShowAction("TURNOVER") && (
+    {shouldShowAction(EventType.TURNOVER) && (
       <View style={[styles.actionRow, { height: 56 }]}>
         <ActionButton
-          onPress={() => onAction("TURNOVER")}
+          onPress={() => onAction(EventType.TURNOVER)}
           label="BALLE PERDUE"
           color="#ea580c"
         />

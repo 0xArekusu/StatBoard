@@ -132,7 +132,7 @@ export default function MatchDetailsScreen() {
     return map;
   }, [players]);
 
-  const [activeTab, setActiveTab] = useState<Tab>(TAB.STATS);
+  const [activeTab, setActiveTab] = useState<Tab>(TAB.EVOLUTION);
   const [activeTeamFilter, setActiveTeamFilter] = useState<TeamFilter>(
     Team.MY_TEAM
   );
@@ -518,61 +518,80 @@ export default function MatchDetailsScreen() {
 
       {/* FILTERS & TABS */}
       <View style={[styles.filtersTabsContainer, { backgroundColor: bgColor }]}>
-        <View
-          style={[
-            styles.teamFilterContainer,
-            { backgroundColor: colors.surfaceVariant },
-          ]}
-        >
-          <TouchableOpacity
-            onPress={() => setActiveTeamFilter(Team.MY_TEAM)}
+        {activeTab !== TAB.EVOLUTION && (
+          <View
             style={[
-              styles.teamFilterButton,
-              activeTeamFilter === Team.MY_TEAM && {
-                backgroundColor: surfaceColor,
-              },
+              styles.teamFilterContainer,
+              { backgroundColor: colors.surfaceVariant },
             ]}
           >
-            <Text
+            <TouchableOpacity
+              onPress={() => setActiveTeamFilter(Team.MY_TEAM)}
               style={[
-                styles.teamFilterText,
-                {
-                  color:
-                    activeTeamFilter === Team.MY_TEAM
-                      ? colors.primary
-                      : textSecondary,
+                styles.teamFilterButton,
+                activeTeamFilter === Team.MY_TEAM && {
+                  backgroundColor: surfaceColor,
                 },
               ]}
             >
-              NOUS
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => setActiveTeamFilter(Team.OPPONENT)}
-            style={[
-              styles.teamFilterButton,
-              activeTeamFilter === Team.OPPONENT && {
-                backgroundColor: surfaceColor,
-              },
-            ]}
-          >
-            <Text
+              <Text
+                style={[
+                  styles.teamFilterText,
+                  {
+                    color:
+                      activeTeamFilter === Team.MY_TEAM
+                        ? colors.primary
+                        : textSecondary,
+                  },
+                ]}
+              >
+                NOUS
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => setActiveTeamFilter(Team.OPPONENT)}
               style={[
-                styles.teamFilterText,
-                {
-                  color:
-                    activeTeamFilter === Team.OPPONENT
-                      ? colors.primary
-                      : textSecondary,
+                styles.teamFilterButton,
+                activeTeamFilter === Team.OPPONENT && {
+                  backgroundColor: surfaceColor,
                 },
               ]}
             >
-              EUX
-            </Text>
-          </TouchableOpacity>
-        </View>
+              <Text
+                style={[
+                  styles.teamFilterText,
+                  {
+                    color:
+                      activeTeamFilter === Team.OPPONENT
+                        ? colors.primary
+                        : textSecondary,
+                  },
+                ]}
+              >
+                EUX
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
         <View style={styles.tabsContainer}>
+        <TouchableOpacity
+            onPress={() => setActiveTab(TAB.EVOLUTION)}
+            style={[
+              styles.tabButton,
+              {
+                backgroundColor:
+                  activeTab === TAB.EVOLUTION ? colors.primary : surfaceColor,
+                borderColor: borderColor,
+              },
+            ]}
+          >
+            <Ionicons
+              name="trending-up"
+              size={20}
+              color={activeTab === TAB.EVOLUTION ? colors.text.primary : textTertiary}
+            />
+          </TouchableOpacity>
           <TouchableOpacity
             onPress={() => setActiveTab(TAB.STATS)}
             style={[
@@ -624,28 +643,21 @@ export default function MatchDetailsScreen() {
               color={activeTab === TAB.COURT ? colors.text.primary : textTertiary}
             />
           </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => setActiveTab(TAB.EVOLUTION)}
-            style={[
-              styles.tabButton,
-              {
-                backgroundColor:
-                  activeTab === TAB.EVOLUTION ? colors.primary : surfaceColor,
-                borderColor: borderColor,
-              },
-            ]}
-          >
-            <Ionicons
-              name="trending-up"
-              size={20}
-              color={activeTab === TAB.EVOLUTION ? colors.text.primary : textTertiary}
-            />
-          </TouchableOpacity>
         </View>
       </View>
 
       {/* CONTENT */}
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        
+          {/* EVOLUTION VIEW */}
+          {activeTab === TAB.EVOLUTION && (
+          <EvolutionTab
+            match={match}
+            actions={actions}
+            colors={colors}
+          />
+        )}
+
         {/* TABLE VIEW */}
         {activeTab === TAB.STATS && (
           <StatsTab
@@ -681,16 +693,6 @@ export default function MatchDetailsScreen() {
             courtLineColor={courtLineColor}
             logoUri={logoUri}
             activeTeamFilter={activeTeamFilter}
-          />
-        )}
-
-        {/* EVOLUTION VIEW */}
-        {activeTab === TAB.EVOLUTION && (
-          <EvolutionTab
-            match={match}
-            actions={actions}
-            colors={colors}
-            isDark={isDark}
           />
         )}
       </ScrollView>

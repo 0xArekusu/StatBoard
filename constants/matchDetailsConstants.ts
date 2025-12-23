@@ -9,10 +9,10 @@
 // ===========================
 
 export const TAB = {
+  EVOLUTION: "EVOLUTION",
   STATS: "STATS",
   CARDS: "CARDS",
   COURT: "COURT",
-  EVOLUTION: "EVOLUTION",
 } as const;
 
 export type Tab = typeof TAB[keyof typeof TAB];
