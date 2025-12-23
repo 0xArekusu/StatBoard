@@ -12,12 +12,14 @@ import {
 } from 'react-native';
 import { useAuth } from '../src/contexts/AuthContext';
 import { ROUTES } from '../constants/routes';
+import { useTheme } from '../src/contexts/ThemeContext';
 
 export default function LoginScreen({ navigation }: any) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const { signIn, signInWithGoogle } = useAuth();
+  const { colors } = useTheme();
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -48,6 +50,8 @@ export default function LoginScreen({ navigation }: any) {
     }
   };
 
+  const styles = createStyles(colors);
+
   return (
     <KeyboardAvoidingView
       style={styles.container}
@@ -59,7 +63,7 @@ export default function LoginScreen({ navigation }: any) {
         <TextInput
           style={styles.input}
           placeholder="Email"
-          placeholderTextColor="#999"
+          placeholderTextColor={colors.text.tertiary}
           value={email}
           onChangeText={setEmail}
           autoCapitalize="none"
@@ -70,7 +74,7 @@ export default function LoginScreen({ navigation }: any) {
         <TextInput
           style={styles.input}
           placeholder="Mot de passe"
-          placeholderTextColor="#999"
+          placeholderTextColor={colors.text.tertiary}
           value={password}
           onChangeText={setPassword}
           secureTextEntry
@@ -83,7 +87,7 @@ export default function LoginScreen({ navigation }: any) {
           disabled={loading}
         >
           {loading ? (
-            <ActivityIndicator color="#fff" />
+            <ActivityIndicator color={colors.onPrimary} />
           ) : (
             <Text style={styles.buttonText}>Se connecter</Text>
           )}
@@ -101,7 +105,7 @@ export default function LoginScreen({ navigation }: any) {
           disabled={loading}
         >
           {loading ? (
-            <ActivityIndicator color="#fff" />
+            <ActivityIndicator color={colors.onPrimary} />
           ) : (
             <Text style={styles.googleButtonText}>Continuer avec Google</Text>
           )}
@@ -121,10 +125,10 @@ export default function LoginScreen({ navigation }: any) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: colors.background,
   },
   content: {
     flex: 1,
@@ -136,16 +140,18 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 40,
     textAlign: 'center',
+    color: colors.text.primary,
   },
   input: {
-    backgroundColor: '#f5f5f5',
+    backgroundColor: colors.surfaceVariant,
     borderRadius: 10,
     padding: 15,
     marginBottom: 15,
     fontSize: 16,
+    color: colors.text.primary,
   },
   button: {
-    backgroundColor: '#007AFF',
+    backgroundColor: colors.info,
     borderRadius: 10,
     padding: 15,
     alignItems: 'center',
@@ -155,7 +161,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   buttonText: {
-    color: '#fff',
+    color: colors.onPrimary,
     fontSize: 16,
     fontWeight: 'bold',
   },
@@ -167,22 +173,22 @@ const styles = StyleSheet.create({
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: '#ddd',
+    backgroundColor: colors.border,
   },
   dividerText: {
     marginHorizontal: 10,
-    color: '#999',
+    color: colors.text.tertiary,
     fontSize: 14,
   },
   googleButton: {
-    backgroundColor: '#DB4437',
+    backgroundColor: colors.error,
     borderRadius: 10,
     padding: 15,
     alignItems: 'center',
     marginBottom: 10,
   },
   googleButtonText: {
-    color: '#fff',
+    color: colors.onPrimary,
     fontSize: 16,
     fontWeight: 'bold',
   },
@@ -191,7 +197,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   linkText: {
-    color: '#007AFF',
+    color: colors.info,
     fontSize: 14,
   },
 });
