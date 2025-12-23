@@ -11,7 +11,7 @@ import {
   Platform,
 } from 'react-native';
 import { useAuth } from '../src/contexts/AuthContext';
-import { ROUTES } from '../constants/routes';
+import { ROUTES, PlatformOS } from '../constants';
 import { useTheme } from '../src/contexts/ThemeContext';
 
 export default function LoginScreen({ navigation }: any) {
@@ -55,7 +55,7 @@ export default function LoginScreen({ navigation }: any) {
   return (
     <KeyboardAvoidingView
       style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      behavior={Platform.OS === PlatformOS.IOS ? 'padding' : 'height'}
     >
       <View style={styles.content}>
         <Text style={styles.title}>Connexion</Text>

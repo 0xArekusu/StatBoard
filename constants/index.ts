@@ -5,6 +5,15 @@
  * Import from here to ensure consistency across the codebase.
  */
 
+// Platform constants
+export enum PlatformOS {
+  IOS = 'ios',
+  ANDROID = 'android',
+  WEB = 'web',
+  WINDOWS = 'windows',
+  MACOS = 'macos',
+}
+
 // Match constants
 export * from "./matchConstants";
 export type { MatchCreationStep } from "./matchConstants";
@@ -59,3 +68,8 @@ export {
   getPeriodLabel,
   getEventTypeDescription,
 } from "../utils/liveMatchHelpers";
+
+// Auth Screen
+export * from "./authConstants";
+export { AUTH_VIEW } from "./authConstants";
+export type { AuthView } from "./authConstants";
