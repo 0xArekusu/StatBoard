@@ -36,6 +36,7 @@ import {
 import { ACTION_DEFINITIONS } from "../src/config/actionConfig";
 import { useTheme } from "../src/contexts/ThemeContext";
 import { STATUS_COLORS } from "../src/theme";
+import { Team } from "../src/models/types";
 
 // Debug: Check if ACTION_DEFINITIONS is loaded
 console.log(
@@ -47,7 +48,7 @@ console.log(
 interface ActionModalProps {
   visible: boolean;
   onClose: () => void;
-  onTeamSelect: (team: "A" | "B") => void;
+  onTeamSelect: (team: Team) => void;
   onActionSelect: (action: string) => void;
   onPointsSelect: (points: number) => void;
   onSpecificationSelect: (spec: string) => void;
@@ -60,7 +61,7 @@ interface ActionModalProps {
     showPointerOnTop: boolean;
   };
   currentStep: number;
-  selectedTeam: "A" | "B" | null;
+  selectedTeam: Team | null;
   selectedAction: string | null;
   selectedPoints: number | null;
   selectedSpec: string | null;
@@ -68,10 +69,10 @@ interface ActionModalProps {
     id: number;
     num: number;
     name: string;
-    team: "A" | "B";
+    team: Team;
     isSubstitute: boolean;
   }>;
-  teamMode: "A" | "B" | "BOTH";
+  teamMode: Team | "BOTH";
   teamA: string;
   teamB: string;
 }
@@ -130,14 +131,14 @@ export default function ActionModal({
 
   /**
    * Step 1: Team selection (only for BOTH mode)
-   * Displays two buttons for Team A and Team B
+   * Displays two buttons for MY_TEAM and OPPONENT
    */
   const renderTeamSelection = () => {
     return (
       <View style={styles.actionsContainer}>
         <TouchableOpacity
           style={[styles.actionButton, { backgroundColor: "#4CAF50" }]}
-          onPress={() => onTeamSelect("A")}
+          onPress={() => onTeamSelect(Team.MY_TEAM)}
           activeOpacity={0.8}
         >
           <Text style={styles.actionIcon}>🏀</Text>
@@ -145,7 +146,7 @@ export default function ActionModal({
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.actionButton, { backgroundColor: "#2196F3" }]}
-          onPress={() => onTeamSelect("B")}
+          onPress={() => onTeamSelect(Team.OPPONENT)}
           activeOpacity={0.8}
         >
           <Text style={styles.actionIcon}>🏀</Text>

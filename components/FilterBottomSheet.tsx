@@ -23,13 +23,13 @@ import {
 import { ActionData } from "./ActionSystemModal";
 import MatchFilters from "./MatchFilters";
 import { useTheme } from "../src/contexts/ThemeContext";
-import { STATUS_COLORS, COMMON_COLORS } from "../src/theme";
+import { Team } from "../src/models/types";
 
 interface Player {
   id: number;
   num: number;
   name: string;
-  team: "A" | "B";
+  team: Team;
   isSubstitute: boolean;
 }
 
@@ -39,7 +39,7 @@ interface FilterBottomSheetProps {
   players: Player[];
   teamA: string;
   teamB: string;
-  teamMode: "A" | "B" | "BOTH";
+  teamMode: Team | "BOTH";
   matchFormat: "2_halves" | "4_quarters";
   completedActions: ActionData[];
   onApplyFilters: (filters: FilterOptions) => void;
@@ -48,8 +48,8 @@ interface FilterBottomSheetProps {
 }
 
 interface FilterOptions {
-  teams: ("A" | "B")[];
-  players: string[]; // Format: "team-number" (e.g., "A-5", "B-7")
+  teams: Team[];
+  players: string[]; // Format: "team-number" (e.g., "MyTeam-5", "Opponent-7")
   actionTypes: string[];
   periods: number[];
 }
@@ -67,7 +67,7 @@ export default function FilterBottomSheet({
   isPortrait,
 }: FilterBottomSheetProps) {
   const { colors } = useTheme();
-  const [selectedTeams, setSelectedTeams] = useState<("A" | "B")[]>(["A", "B"]);
+  const [selectedTeams, setSelectedTeams] = useState<Team[]>([Team.MY_TEAM, Team.OPPONENT]);
   const [selectedPlayers, setSelectedPlayers] = useState<string[]>([]);
   const [selectedActionTypes, setSelectedActionTypes] = useState<string[]>([]);
   const [selectedPeriods, setSelectedPeriods] = useState<number[]>([]);
@@ -180,8 +180,8 @@ export default function FilterBottomSheet({
 
           {/* Boutons d'action */}
           <View style={styles.actionButtons}>
-            <TouchableOpacity style={[styles.resetButton, { backgroundColor: STATUS_COLORS.error + "20", borderColor: STATUS_COLORS.error }]} onPress={resetFilters}>
-              <Text style={[styles.resetButtonText, { color: STATUS_COLORS.error }]}>Reset</Text>
+            <TouchableOpacity style={[styles.resetButton, { backgroundColor: colors.error + "20", borderColor: colors.error }]} onPress={resetFilters}>
+              <Text style={[styles.resetButtonText, { color: colors.error }]}>Reset</Text>
             </TouchableOpacity>
             <TouchableOpacity style={[styles.closeButton, { backgroundColor: colors.surfaceVariant }]} onPress={onClose}>
               <Text style={[styles.closeButtonText, { color: colors.text.secondary }]}>Fermer</Text>

@@ -16,9 +16,8 @@ import {
   STATUS_COLORS,
 } from "../src/theme";
 import { Player } from "../models/Player";
-import { MatchActionGrid } from "./MatchActionGrid";
+import { MatchActionGrid, ActionData } from "./MatchActionGrid";
 import {
-  EventType,
   MatchEvent,
   TeamId,
   FilterMode,
@@ -920,7 +919,7 @@ export const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
 interface CourtActionModalProps {
   visible: boolean;
   onClose: () => void;
-  onActionSelect: (type: EventType, value?: number) => void;
+  onActionSelect: (actionData: ActionData) => void;
 }
 
 export const CourtActionModal: React.FC<CourtActionModalProps> = ({
@@ -972,7 +971,7 @@ export const CourtActionModal: React.FC<CourtActionModalProps> = ({
         </View>
 
         <ScrollView>
-          <MatchActionGrid onAction={onActionSelect} isDark={isDark} />
+          <MatchActionGrid onAction={onActionSelect} />
         </ScrollView>
       </View>
     </View>

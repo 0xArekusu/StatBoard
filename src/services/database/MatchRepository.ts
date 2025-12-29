@@ -139,8 +139,8 @@ export class MatchRepository implements IMatchRepository {
       if (match) {
         logInfo('MatchRepository', '✅ Match found', {
           matchId: id,
-          teamA: match.team_a_name,
-          teamB: match.team_b_name,
+          myTeam: match.my_team_name,
+          opponent: match.opponent_name,
           status: match.status
         });
       } else {
@@ -174,8 +174,8 @@ export class MatchRepository implements IMatchRepository {
       if (match) {
         logInfo('MatchRepository', '✅ Active match found', {
           matchId: match.id,
-          teamA: match.team_a_name,
-          teamB: match.team_b_name,
+          myTeam: match.my_team_name,
+          opponent: match.opponent_name,
           currentPeriod: match.current_period,
           timeElapsed: match.time_elapsed
         });

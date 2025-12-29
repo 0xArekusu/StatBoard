@@ -40,6 +40,7 @@ import {
 } from "../src/models/ActionTypes";
 import { useTheme } from "../src/contexts/ThemeContext";
 import { STATUS_COLORS, COMMON_COLORS, TEAM_CHART_COLORS } from "../src/theme";
+import { Team } from "../src/models/types";
 
 interface Player {
   id: number;
@@ -80,13 +81,13 @@ export default function HistoryBottomSheet({
   };
 
   // Get team name by team code
-  const getTeamName = (team: "A" | "B") => {
-    return team === "A" ? teamA : teamB;
+  const getTeamName = (team: Team) => {
+    return team === Team.MY_TEAM ? teamA : teamB;
   };
 
   // Get team color
-  const getTeamColor = (team: "A" | "B") => {
-    return team === "A" ? TEAM_CHART_COLORS.teamA : TEAM_CHART_COLORS.teamB;
+  const getTeamColor = (team: Team) => {
+    return team === Team.MY_TEAM ? TEAM_CHART_COLORS.teamA : TEAM_CHART_COLORS.teamB;
   };
 
   // Format action description

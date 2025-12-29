@@ -2,9 +2,30 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { IClubMemberRepository } from "./IClubMemberRepository";
 import type { ClubMember, CreateClubMemberData } from "../models/ClubMember";
 
+/**
+ * Supabase implementation of Club Member Repository
+ * Manages club membership relationships in Supabase database
+ *
+ * Features:
+ * - Membership creation with email tracking
+ * - Query members by club or user
+ * - Membership validation (find by club and user)
+ * - Membership deletion
+ * - Automatic timestamp tracking (joined_at)
+ *
+ * Architecture:
+ * - Uses Supabase client for database operations
+ * - Implements IClubMemberRepository interface
+ * - Maps database rows to ClubMember domain model
+ * - Handles errors gracefully with logging
+ */
 export class SupabaseClubMemberRepository implements IClubMemberRepository {
   constructor(private supabase: SupabaseClient) {}
 
+  /**
+   * Map Supabase row to ClubMember domain model
+   * Converts snake_case to camelCase
+   */
   private mapToClubMember(row: any): ClubMember {
     return {
       id: row.id,
@@ -15,6 +36,13 @@ export class SupabaseClubMemberRepository implements IClubMemberRepository {
     };
   }
 
+  /**
+   * Create a new club membership
+   * Associates a user with a club via email
+   *
+   * @param data - Membership data (clubId, userId, email)
+   * @returns Created membership or null on error
+   */
   async create(data: CreateClubMemberData): Promise<ClubMember | null> {
     const { data: member, error } = await this.supabase
       .from("club_members")
@@ -34,6 +62,13 @@ export class SupabaseClubMemberRepository implements IClubMemberRepository {
     return this.mapToClubMember(member);
   }
 
+  /**
+   * Get all members of a club
+   * Returns members ordered by join date (newest first)
+   *
+   * @param clubId - ID of the club
+   * @returns List of club members
+   */
   async findByClubId(clubId: string): Promise<ClubMember[]> {
     const { data, error } = await this.supabase
       .from("club_members")
@@ -49,6 +84,13 @@ export class SupabaseClubMemberRepository implements IClubMemberRepository {
     return data.map(this.mapToClubMember);
   }
 
+  /**
+   * Get all clubs where a user is a member
+   * Returns memberships ordered by join date (newest first)
+   *
+   * @param userId - ID of the user
+   * @returns List of user's club memberships
+   */
   async findByUserId(userId: string): Promise<ClubMember[]> {
     const { data, error } = await this.supabase
       .from("club_members")
@@ -64,6 +106,14 @@ export class SupabaseClubMemberRepository implements IClubMemberRepository {
     return data.map(this.mapToClubMember);
   }
 
+  /**
+   * Check if a user is a member of a specific club
+   * Returns the membership if it exists
+   *
+   * @param clubId - ID of the club
+   * @param userId - ID of the user
+   * @returns Membership or null if not found
+   */
   async findByClubAndUser(clubId: string, userId: string): Promise<ClubMember | null> {
     const { data, error } = await this.supabase
       .from("club_members")
@@ -79,6 +129,13 @@ export class SupabaseClubMemberRepository implements IClubMemberRepository {
     return this.mapToClubMember(data);
   }
 
+  /**
+   * Delete a club membership
+   * Removes the association between user and club
+   *
+   * @param id - ID of the membership to delete
+   * @returns true if deletion succeeded, false otherwise
+   */
   async delete(id: string): Promise<boolean> {
     const { error } = await this.supabase
       .from("club_members")

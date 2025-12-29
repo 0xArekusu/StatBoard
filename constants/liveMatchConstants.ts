@@ -5,30 +5,10 @@
  */
 
 // ===========================
-// EVENT TYPES
+// EVENT TYPES - DEPRECATED
 // ===========================
-
-/**
- * Event types for match actions displayed on court
- * These represent UI events that are shown to the user
- */
-export enum EventType {
-  POINT_1 = "POINT_1",
-  POINT_2 = "POINT_2",
-  POINT_3 = "POINT_3",
-  MISS_1 = "MISS_1",
-  MISS_2 = "MISS_2",
-  MISS_3 = "MISS_3",
-  FOUL = "FOUL",
-  REBOUND_DEF = "REBOUND_DEF",
-  REBOUND_OFF = "REBOUND_OFF",
-  ASSIST = "ASSIST",
-  STEAL = "STEAL",
-  BLOCK = "BLOCK",
-  TURNOVER = "TURNOVER",
-  SUBSTITUTION = "SUBSTITUTION",
-  POINT = "POINT",
-}
+// EventType has been removed. Use ActionType + specification + points instead.
+// See ActionTypes.ts and actionConfig.ts for the new system.
 
 // ===========================
 // WORKFLOW STATES
@@ -53,8 +33,9 @@ export enum WorkflowStep {
  */
 export interface MatchEvent {
   id: string;
-  type: EventType;
-  value?: number;
+  action_type: string; // ActionType enum value
+  specification?: string; // ShotSpecification, ReboundSpecification, etc.
+  points?: number; // For shots: 1, 2, or 3
   playerId?: string;
   teamId: "HOME" | "AWAY";
   timestamp: number;
@@ -76,8 +57,9 @@ export interface LiveMatchScreenProps {
  * Pending event data during workflow
  */
 export interface PendingEvent {
-  type?: EventType;
-  value?: number;
+  action_type?: string; // ActionType enum value
+  specification?: string;
+  points?: number;
   coords?: { x: number; y: number };
   playerId?: string;
 }

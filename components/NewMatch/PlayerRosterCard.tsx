@@ -7,8 +7,8 @@
 import React from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { BRAND_COLORS, SLATE_COLORS, COMMON_COLORS, UI_COLORS } from "../../src/theme";
 import type { Player } from "../../models/Player";
+import { useTheme } from "../../src/contexts/ThemeContext";
 
 interface PlayerRosterCardProps {
   /** Player data */
@@ -21,15 +21,6 @@ interface PlayerRosterCardProps {
   onToggleSelect: () => void;
   /** Callback when starter status toggles */
   onToggleStarter: () => void;
-  /** Whether dark mode is enabled */
-  isDark: boolean;
-  /** Theme colors */
-  colors: {
-    surfaceColor: string;
-    textPrimary: string;
-    textSecondary: string;
-    borderColor: string;
-  };
 }
 
 /**
@@ -41,9 +32,8 @@ export const PlayerRosterCard: React.FC<PlayerRosterCardProps> = ({
   isStarter,
   onToggleSelect,
   onToggleStarter,
-  isDark,
-  colors,
 }) => {
+  const { colors, isDark } = useTheme();
   return (
     <TouchableOpacity
       onPress={onToggleSelect}
@@ -51,15 +41,11 @@ export const PlayerRosterCard: React.FC<PlayerRosterCardProps> = ({
         styles.playerCard,
         {
           backgroundColor: isSelected
-            ? colors.surfaceColor
-            : isDark
-            ? `${SLATE_COLORS[900]}80`
-            : SLATE_COLORS[50],
+            ? colors.surface
+            : colors.surfaceVariant,
           borderColor: isSelected
-            ? isDark
-              ? `${BRAND_COLORS[500]}50`
-              : `${BRAND_COLORS[500]}30`
-            : colors.borderColor,
+            ? `${colors.primary}50`
+            : colors.border,
           opacity: isSelected ? 1 : 0.6,
         },
       ]}
@@ -70,8 +56,8 @@ export const PlayerRosterCard: React.FC<PlayerRosterCardProps> = ({
           style={[
             styles.playerCheckbox,
             {
-              borderColor: isSelected ? BRAND_COLORS[500] : colors.borderColor,
-              backgroundColor: isSelected ? BRAND_COLORS[500] : "transparent",
+              borderColor: isSelected ? colors.primary : colors.border,
+              backgroundColor: isSelected ? colors.primary : "transparent",
             },
           ]}
         >
@@ -79,7 +65,7 @@ export const PlayerRosterCard: React.FC<PlayerRosterCardProps> = ({
             <MaterialCommunityIcons
               name="check"
               size={16}
-              color={COMMON_COLORS.white}
+              color={colors.text.primary}
             />
           )}
         </View>
@@ -89,13 +75,7 @@ export const PlayerRosterCard: React.FC<PlayerRosterCardProps> = ({
           style={[
             styles.playerNumber,
             {
-              backgroundColor: isSelected
-                ? isDark
-                  ? SLATE_COLORS[800]
-                  : SLATE_COLORS[100]
-                : isDark
-                ? SLATE_COLORS[800]
-                : SLATE_COLORS[200],
+              backgroundColor: colors.surfaceVariant,
             },
           ]}
         >
@@ -103,7 +83,7 @@ export const PlayerRosterCard: React.FC<PlayerRosterCardProps> = ({
             style={[
               styles.playerNumberText,
               {
-                color: isSelected ? colors.textPrimary : colors.textSecondary,
+                color: isSelected ? colors.text.primary : colors.text.secondary,
               },
             ]}
           >
@@ -116,7 +96,7 @@ export const PlayerRosterCard: React.FC<PlayerRosterCardProps> = ({
           style={[
             styles.playerName,
             {
-              color: isSelected ? colors.textPrimary : colors.textSecondary,
+              color: isSelected ? colors.text.primary : colors.text.secondary,
             },
           ]}
         >
@@ -131,16 +111,16 @@ export const PlayerRosterCard: React.FC<PlayerRosterCardProps> = ({
           style={[
             styles.starButton,
             {
-              backgroundColor: isStarter ? UI_COLORS.starBackground : "transparent",
+              backgroundColor: isStarter ? `${colors.warning}20` : "transparent",
               borderWidth: isStarter ? 2 : 0,
-              borderColor: isStarter ? UI_COLORS.star : "transparent",
+              borderColor: isStarter ? colors.warning : "transparent",
             },
           ]}
         >
           <MaterialCommunityIcons
             name={isStarter ? "star" : "star-outline"}
             size={20}
-            color={isStarter ? UI_COLORS.star : colors.textSecondary}
+            color={isStarter ? colors.warning : colors.text.secondary}
           />
         </TouchableOpacity>
       )}

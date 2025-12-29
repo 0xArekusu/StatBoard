@@ -23,7 +23,6 @@ import {
  */
 export interface ActionConfig {
   id: string;
-  emoji: string;
   label: string;
   color: string;
   description: string;
@@ -31,13 +30,11 @@ export interface ActionConfig {
   pointsOptions?: {
     id: number;
     label: string;
-    emoji: string;
     color: string;
   }[];
   specifications?: {
     id: string;
     label: string;
-    emoji: string;
     color: string;
   }[];
 }
@@ -57,7 +54,6 @@ export interface ActionConfig {
 export const ACTION_CONFIG: Record<string, ActionConfig> = {
   [ActionType.SHOT]: {
     id: ActionType.SHOT,
-    emoji: "🏀",
     label: "Tir",
     color: "#FF6B35",
     description: "Enregistrer un tir",
@@ -66,19 +62,16 @@ export const ACTION_CONFIG: Record<string, ActionConfig> = {
       {
         id: 1,
         label: "1 point",
-        emoji: "1️⃣",
         color: "#9C27B0",
       },
       {
         id: 2,
         label: "2 points",
-        emoji: "2️⃣",
         color: "#2196F3",
       },
       {
         id: 3,
         label: "3 points",
-        emoji: "3️⃣",
         color: "#FF9800",
       },
     ],
@@ -86,20 +79,17 @@ export const ACTION_CONFIG: Record<string, ActionConfig> = {
       {
         id: ShotSpecification.MADE,
         label: "Réussi",
-        emoji: "✅",
         color: "#4CAF50",
       },
       {
         id: ShotSpecification.MISSED,
         label: "Raté",
-        emoji: "❌",
         color: "#F44336",
       },
     ],
   },
   [ActionType.REBOUND]: {
     id: ActionType.REBOUND,
-    emoji: "📥",
     label: "Rebond",
     color: "#4A90E2",
     description: "Action de rebond",
@@ -107,20 +97,17 @@ export const ACTION_CONFIG: Record<string, ActionConfig> = {
       {
         id: ReboundSpecification.OFFENSIVE,
         label: "Offensif",
-        emoji: "🔵",
         color: "#2E7D32", // Dark green - rebond offensif
       },
       {
         id: ReboundSpecification.DEFENSIVE,
         label: "Défensif",
-        emoji: "🛡️",
         color: "#1976D2", // Blue - rebond défensif
       },
     ],
   },
   [ActionType.FOUL]: {
     id: ActionType.FOUL,
-    emoji: "⚠️",
     label: "Faute",
     color: "#FFD700",
     description: "Faute commise",
@@ -128,32 +115,27 @@ export const ACTION_CONFIG: Record<string, ActionConfig> = {
       {
         id: FoulSpecification.PERSONAL,
         label: "Personnelle",
-        emoji: "👤",
         color: "#FFD700", // Gold/Yellow - faute personnelle
       },
       {
         id: FoulSpecification.TECHNICAL,
         label: "Technique",
-        emoji: "⚡",
         color: "#FF1744", // Pink/Red - faute technique
       },
       {
         id: FoulSpecification.PENALITY,
         label: "Antisportive",
-        emoji: "🚨",
         color: "#FF6F00", // Dark orange - faute antisportive
       },
       {
         id: FoulSpecification.DISQUALIFICATION,
         label: "Disqualifiante",
-        emoji: "🚫",
         color: "#000000", // Black - faute disqualifiante
       },
     ],
   },
   [ActionType.ASSIST]: {
     id: ActionType.ASSIST,
-    emoji: "🤝",
     label: "Passe décisive",
     color: "#00BCD4",
     description: "Passe décisive",
@@ -161,7 +143,6 @@ export const ACTION_CONFIG: Record<string, ActionConfig> = {
   },
   [ActionType.STEAL]: {
     id: ActionType.STEAL,
-    emoji: "🥷",
     label: "Interception",
     color: "#F39C12",
     description: "Interception de balle",
@@ -169,7 +150,6 @@ export const ACTION_CONFIG: Record<string, ActionConfig> = {
   },
   [ActionType.BLOCK]: {
     id: ActionType.BLOCK,
-    emoji: "🚧",
     label: "Contre",
     color: "#8E44AD",
     description: "Contre",
@@ -177,7 +157,6 @@ export const ACTION_CONFIG: Record<string, ActionConfig> = {
   },
   [ActionType.TURNOVER]: {
     id: ActionType.TURNOVER,
-    emoji: "💨",
     label: "Balle perdue",
     color: "#95A5A6",
     description: "Balle perdue",
@@ -194,21 +173,13 @@ export function getActionConfig(actionType: string): ActionConfig | undefined {
 
 /**
  * Get emoji for an action (with optional specification)
+ * @deprecated Emojis have been removed from the config
  */
 export function getActionEmoji(
-  actionType: string,
-  specification?: string
+  _actionType: string,
+  _specification?: string
 ): string {
-  const config = ACTION_CONFIG[actionType];
-  if (!config) return "❓";
-
-  // If specification provided, try to find spec emoji
-  if (specification && config.specifications) {
-    const spec = config.specifications.find((s) => s.id === specification);
-    if (spec) return spec.emoji;
-  }
-
-  return config.emoji;
+  return "";
 }
 
 /**
@@ -264,7 +235,7 @@ export function getAllActionTypes(): ActionConfig[] {
  */
 export const ACTION_DEFINITIONS = Object.values(ACTION_CONFIG).map((config) => ({
   id: config.id,
-  icon: config.emoji,
+  icon: "",
   label: config.label,
   backgroundColor: config.color,
   description: config.description,
@@ -272,13 +243,13 @@ export const ACTION_DEFINITIONS = Object.values(ACTION_CONFIG).map((config) => (
   pointsOptions: config.pointsOptions?.map((opt) => ({
     id: opt.id,
     label: opt.label,
-    icon: opt.emoji,
+    icon: "",
     color: opt.color,
   })) || [],
   specifications: (config.specifications || []).map((spec) => ({
     id: spec.id,
     label: spec.label,
-    icon: spec.emoji,
+    icon: "",
     color: spec.color,
   })),
 }));

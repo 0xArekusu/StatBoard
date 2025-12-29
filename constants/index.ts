@@ -54,7 +54,6 @@ export {
 // Live Match Screen
 export * from "./liveMatchConstants";
 export {
-  EventType,
   WorkflowStep,
   TeamId,
   ViewMode,
@@ -66,7 +65,6 @@ export {
   formatTime,
   getActionDescription,
   getPeriodLabel,
-  getEventTypeDescription,
 } from "../utils/liveMatchHelpers";
 
 // Auth Screen

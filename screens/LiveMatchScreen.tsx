@@ -39,9 +39,6 @@ import {
 import {
   ActionType,
   ShotSpecification,
-  ReboundSpecification,
-  FoulSpecification,
-  GenericSpecification,
 } from "../src/models/ActionTypes";
 import { Player } from "../models/Player";
 import { useAuth } from "../src/contexts/AuthContext";
@@ -59,15 +56,12 @@ import {
 import {
   formatTime,
   getActionDescription,
-  getEventTypeDescription,
 } from "../utils/liveMatchHelpers";
 import {
   convertActionsToMatchEvents,
   calculateScoresFromActions,
-  mapActionToEventType,
 } from "../utils/matchDataConverters";
 import {
-  EventType,
   WorkflowStep,
   MatchEvent,
   TeamId,
@@ -76,7 +70,7 @@ import {
 } from "../constants/liveMatchConstants";
 import { supabase } from "../src/config/supabase";
 import { ROUTES } from "../constants/routes";
-import { MatchActionGrid } from "../components/MatchActionGrid";
+import { MatchActionGrid, ActionData } from "../components/MatchActionGrid";
 import { CourtView, MatchHeader, MatchToolbar } from "../components/LiveMatch";
 import { useMatchSync } from "../hooks/useMatchSync";
 import {
@@ -276,8 +270,9 @@ export default function LiveMatchScreen() {
     WorkflowStep.IDLE,
   );
   const [pendingEvent, setPendingEvent] = useState<{
-    type?: EventType;
-    value?: number;
+    action_type?: string;
+    specification?: string;
+    points?: number;
     coords?: { x: number; y: number };
     playerId?: string;
   }>({});
@@ -786,124 +781,41 @@ export default function LiveMatchScreen() {
       // Recharger les actions pour mettre à jour l'affichage
       const loadedActions = await actionRepo.getActionsForMatch(currentMatchId);
 
-      // Convertir les actions en événements pour l'affichage
-      const convertedEvents: MatchEvent[] = loadedActions.map((action) => {
-        const player =
-          action.team === Team.MY_TEAM
-            ? homeRoster.find(
-                (p: Player) => p.jerseyNumber === action.player_number,
-              )
-            : opponentRoster.find(
-                (p: Player) => p.jerseyNumber === action.player_number,
-              );
+      // Préparer les joueurs pour la conversion
+      const allPlayers = [
+        ...homeRoster.map((p: Player) => ({
+          player_id: p.id,
+          player_number: p.jerseyNumber,
+          player_name: p.name,
+          team: "MyTeam" as const,
+        })),
+        ...opponentRoster.map((p: Player) => ({
+          player_id: p.id,
+          player_number: p.jerseyNumber,
+          player_name: p.name,
+          team: "Opponent" as const,
+        })),
+      ];
 
-        // If player number is 9999 (generic opponent), use team name instead
-        const playerName =
-          action.player_number === 9999 && action.team === Team.OPPONENT
-            ? match.opponent || "Adversaire"
-            : player?.name || `Joueur ${action.player_number}`;
-        const teamId: TeamId = action.team === Team.MY_TEAM ? TeamId.HOME : TeamId.AWAY;
-
-        let type: EventType = EventType.POINT;
-        let value = 0;
-        let description = "";
-
-        // DEBUG
-        if (action.action_type !== ActionType.SHOT) {
-          logInfo("LiveMatchScreen", "🔍 Converting non-shot action", {
-            actionType: action.action_type,
-            specification: action.specification,
-            coords: { x: action.semantic_x, y: action.semantic_y },
-          });
-        }
-
-        // Mapper le type d'action vers EventType
-        const mapped = mapActionToEventType(
-          action.action_type,
-          action.specification,
-          action.points
-        );
-        type = mapped.eventType;
-        value = mapped.eventValue;
-
-        // Generate description
-        if (action.action_type === ActionType.SHOT) {
-          const isMade = action.specification?.toLowerCase() === ShotSpecification.MADE.toLowerCase();
-          if (isMade) {
-            // Use "+" format for generic opponent (9999), "-" for specific players
-            description =
-              action.player_number === 9999 && action.team === Team.OPPONENT
-                ? `${playerName} +${value}`
-                : `${playerName} - ${value}pt`;
-          } else {
-            description = `${playerName} - Raté ${action.points || 0}pt`;
-          }
-        } else if (action.action_type === ActionType.REBOUND) {
-          description = `${playerName} - Rebond`;
-        } else if (action.action_type === ActionType.ASSIST) {
-          description = `${playerName} - Passe`;
-        } else if (action.action_type === ActionType.STEAL) {
-          description = `${playerName} - Interception`;
-        } else if (action.action_type === ActionType.BLOCK) {
-          description = `${playerName} - Contre`;
-        } else if (action.action_type === ActionType.TURNOVER) {
-          description = `${playerName} - Perte`;
-        } else if (action.action_type === ActionType.FOUL) {
-          description = `${playerName} - Faute`;
-        }
-
-        const event = {
-          id: `evt-${action.id}`,
-          type,
-          value,
-          playerId: player?.id,
-          teamId,
-          timestamp: Date.now(),
-          description,
-          coordinates: { x: action.semantic_x, y: action.semantic_y },
-          period_number: action.period_number,
-          time_in_period: action.time_in_period,
-        };
-
-        // DEBUG: Log all non-shot events
-        if (action.action_type !== ActionType.SHOT) {
-          logInfo("LiveMatchScreen", "🎯 Created non-shot event", {
-            actionType: action.action_type,
-            eventType: type,
-            hasCoords: !!event.coordinates,
-            coords: event.coordinates,
-          });
-        }
-
-        return event;
-      });
+      // Convertir les actions en événements en utilisant la fonction existante
+      const convertedEvents = convertActionsToMatchEvents(
+        loadedActions,
+        allPlayers,
+        match.opponent || "Adversaire"
+      );
 
       // DEBUG: Log summary
       const eventTypes = convertedEvents.reduce(
         (acc, e) => {
-          acc[e.type] = (acc[e.type] || 0) + 1;
+          acc[e.action_type] = (acc[e.action_type] || 0) + 1;
           return acc;
         },
         {} as Record<string, number>,
       );
       logInfo("LiveMatchScreen", "📊 Mock events summary", eventTypes);
 
-      // Calculer le nouveau score
-      let newScoreHome = 0;
-      let newScoreAway = 0;
-
-      convertedEvents.forEach((event) => {
-        if (
-          (event.type.includes("POINT") || event.type === EventType.POINT) &&
-          event.value
-        ) {
-          if (event.teamId === TeamId.HOME) {
-            newScoreHome += event.value;
-          } else {
-            newScoreAway += event.value;
-          }
-        }
-      });
+      // Calculer le nouveau score en utilisant la fonction existante
+      const { scoreHome: newScoreHome, scoreAway: newScoreAway } = calculateScoresFromActions(loadedActions);
 
       // Mettre à jour le match
       setMatch({
@@ -958,20 +870,21 @@ export default function LiveMatchScreen() {
     );
     const updatedMatch = { ...match, events: updatedEvents };
 
-    // Revert Score
+    // Revert Score - only for made shots
     if (
-      (event.type.includes("POINT") || event.type === EventType.POINT) &&
-      event.value
+      event.action_type === ActionType.SHOT &&
+      event.specification === ShotSpecification.MADE &&
+      event.points
     ) {
       if (event.teamId === TeamId.HOME) {
         updatedMatch.scoreHome = Math.max(
           0,
-          updatedMatch.scoreHome - event.value,
+          updatedMatch.scoreHome - event.points,
         );
       } else {
         updatedMatch.scoreAway = Math.max(
           0,
-          updatedMatch.scoreAway - event.value,
+          updatedMatch.scoreAway - event.points,
         );
       }
     }
@@ -1012,21 +925,21 @@ export default function LiveMatchScreen() {
     );
     const updatedMatch = { ...match, events: updatedEvents };
 
-    // Revert Score
+    // Revert Score - only for made shots
     if (
-      (eventToDelete.type.includes("POINT") ||
-        eventToDelete.type === EventType.POINT) &&
-      eventToDelete.value
+      eventToDelete.action_type === ActionType.SHOT &&
+      eventToDelete.specification === ShotSpecification.MADE &&
+      eventToDelete.points
     ) {
       if (eventToDelete.teamId === TeamId.HOME) {
         updatedMatch.scoreHome = Math.max(
           0,
-          updatedMatch.scoreHome - eventToDelete.value,
+          updatedMatch.scoreHome - eventToDelete.points,
         );
       } else {
         updatedMatch.scoreAway = Math.max(
           0,
-          updatedMatch.scoreAway - eventToDelete.value,
+          updatedMatch.scoreAway - eventToDelete.points,
         );
       }
     }
@@ -1064,8 +977,8 @@ export default function LiveMatchScreen() {
 
   // --- WORKFLOW ACTIONS ---
 
-  const handleActionClick = (type: EventType, value: number = 0) => {
-    setPendingEvent({ type, value });
+  const handleActionClick = (actionData: ActionData) => {
+    setPendingEvent(actionData);
     setPlayerSelectionTab(TeamId.HOME);
     setWorkflowStep(WorkflowStep.SELECT_PLAYER);
   };
@@ -1076,16 +989,17 @@ export default function LiveMatchScreen() {
     setWorkflowStep(WorkflowStep.SELECT_ACTION_FROM_COURT);
   };
 
-  const handleCourtActionSelect = (type: EventType, value: number = 0) => {
-    setPendingEvent((prev) => ({ ...prev, type, value }));
+  const handleCourtActionSelect = (actionData: ActionData) => {
+    setPendingEvent((prev) => ({ ...prev, ...actionData }));
     setWorkflowStep(WorkflowStep.SELECT_PLAYER);
   };
 
   const handlePlayerSelect = (playerId: string) => {
-    if (pendingEvent.type) {
+    if (pendingEvent.action_type) {
       finalizeEvent(
-        pendingEvent.type,
-        pendingEvent.value || 0,
+        pendingEvent.action_type,
+        pendingEvent.specification,
+        pendingEvent.points || 0,
         playerId,
         pendingEvent.coords,
       );
@@ -1139,7 +1053,7 @@ export default function LiveMatchScreen() {
 
     const newEvent: MatchEvent = {
       id: `evt-${Date.now()}`,
-      type: EventType.SUBSTITUTION,
+      action_type: "substitution",
       timestamp: Date.now(),
       description: subDescription,
       teamId: isHome ? TeamId.HOME : TeamId.AWAY,
@@ -1187,8 +1101,9 @@ export default function LiveMatchScreen() {
   // --- FINALIZATION ---
 
   const finalizeEvent = (
-    type: EventType,
-    value: number,
+    action_type: string,
+    specification: string | undefined,
+    points: number,
     playerId: string,
     coords?: { x: number; y: number },
   ) => {
@@ -1201,7 +1116,16 @@ export default function LiveMatchScreen() {
 
     const pName = player?.name.split(" ").pop() || "Joueur";
     const pNumber = player?.jerseyNumber || "";
-    const desc = `${pNumber} - ${pName} - ${getEventTypeDescription(type)}`;
+
+    // Create temporary action object for description
+    const tempAction = {
+      action_type,
+      specification,
+      points,
+      player_number: player?.jerseyNumber || 0,
+      team: teamId === TeamId.HOME ? Team.MY_TEAM : Team.OPPONENT,
+    };
+    const desc = `${pNumber} - ${pName} - ${getActionDescription(tempAction, pName)}`;
 
     // Normalize SVG coordinates (0-615.75 x 0-1146.75) to 0-1 for storage in state
     const normalizedCoords = coords
@@ -1213,8 +1137,9 @@ export default function LiveMatchScreen() {
 
     const newEvent: MatchEvent = {
       id: `evt-${Date.now()}`,
-      type,
-      value,
+      action_type,
+      specification,
+      points,
       playerId,
       teamId,
       timestamp: Date.now(),
@@ -1228,15 +1153,16 @@ export default function LiveMatchScreen() {
     if (!updatedMatch.events) updatedMatch.events = [];
     updatedMatch.events = [newEvent, ...updatedMatch.events];
 
-    // Update Score
+    // Update Score - only for made shots
     if (
-      (type === EventType.POINT_1 || type === EventType.POINT_2 || type === EventType.POINT_3) &&
-      value > 0
+      action_type === ActionType.SHOT &&
+      specification === ShotSpecification.MADE &&
+      points > 0
     ) {
       if (teamId === TeamId.HOME) {
-        updatedMatch.scoreHome += value;
+        updatedMatch.scoreHome += points;
       } else {
-        updatedMatch.scoreAway += value;
+        updatedMatch.scoreAway += points;
       }
     }
 
@@ -1245,8 +1171,9 @@ export default function LiveMatchScreen() {
     // Save to database
     if (currentMatchId && player) {
       saveActionToDatabase(
-        type,
-        value,
+        action_type,
+        specification,
+        points,
         player.jerseyNumber,
         teamId === TeamId.HOME ? Team.MY_TEAM : Team.OPPONENT,
         coords,
@@ -1256,83 +1183,16 @@ export default function LiveMatchScreen() {
     closeWorkflow();
   };
 
-  // Helper function to map EventType to database action format
+  // Helper function to save action to database
   const saveActionToDatabase = (
-    eventType: EventType,
-    value: number,
+    actionType: string,
+    specification: string | undefined,
+    points: number,
     playerNumber: number,
     team: Team.MY_TEAM | Team.OPPONENT,
     coords?: { x: number; y: number },
   ) => {
     if (!currentMatchId) return;
-
-    let actionType = "";
-    let specification = "";
-    let points: number | undefined = undefined;
-
-    switch (eventType) {
-      case EventType.POINT_1:
-        actionType = ActionType.SHOT;
-        specification = ShotSpecification.MADE;
-        points = 1;
-        break;
-      case EventType.POINT_2:
-        actionType = ActionType.SHOT;
-        specification = ShotSpecification.MADE;
-        points = 2;
-        break;
-      case EventType.POINT_3:
-        actionType = ActionType.SHOT;
-        specification = ShotSpecification.MADE;
-        points = 3;
-        break;
-      case EventType.MISS_1:
-        actionType = ActionType.SHOT;
-        specification = ShotSpecification.MISSED;
-        points = 1;
-        break;
-      case EventType.MISS_2:
-        actionType = ActionType.SHOT;
-        specification = ShotSpecification.MISSED;
-        points = 2;
-        break;
-      case EventType.MISS_3:
-        actionType = ActionType.SHOT;
-        specification = ShotSpecification.MISSED;
-        points = 3;
-        break;
-      case EventType.FOUL:
-        actionType = ActionType.FOUL;
-        specification = FoulSpecification.PERSONAL;
-        break;
-      case EventType.REBOUND_DEF:
-        actionType = ActionType.REBOUND;
-        specification = ReboundSpecification.DEFENSIVE;
-        break;
-      case EventType.REBOUND_OFF:
-        actionType = ActionType.REBOUND;
-        specification = ReboundSpecification.OFFENSIVE;
-        break;
-      case EventType.ASSIST:
-        actionType = ActionType.ASSIST;
-        specification = GenericSpecification.STANDARD;
-        break;
-      case EventType.STEAL:
-        actionType = ActionType.STEAL;
-        specification = GenericSpecification.STANDARD;
-        break;
-      case EventType.BLOCK:
-        actionType = ActionType.BLOCK;
-        specification = GenericSpecification.STANDARD;
-        break;
-      case EventType.TURNOVER:
-        actionType = ActionType.TURNOVER;
-        specification = GenericSpecification.STANDARD;
-        break;
-      default:
-        logError("LiveMatchScreen", "Unknown event type", { eventType });
-        return;
-    }
 
     // Convert SVG portrait coordinates (0-615.75 x 0-1146.75) to normalized (0-1)
     const normalizedX = coords ? coords.x / 615.75 : -999;
@@ -1343,7 +1203,7 @@ export default function LiveMatchScreen() {
       team,
       player_number: playerNumber,
       action_type: actionType,
-      specification,
+      specification: specification || "",
       points,
       semantic_x: normalizedX,
       semantic_y: normalizedY,
@@ -1588,7 +1448,6 @@ export default function LiveMatchScreen() {
           >
             <MatchActionGrid
               onAction={handleActionClick}
-              isDark={isDark}
               filterMode={filterMode}
             />
           </ScrollView>

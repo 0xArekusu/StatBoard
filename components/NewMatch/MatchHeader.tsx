@@ -7,20 +7,14 @@
 import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { BRAND_COLORS, SLATE_COLORS, COMMON_COLORS } from "../../src/theme";
 import { MATCH_CREATION_STEP_LABELS, type MatchCreationStep } from "../../constants";
+import { useTheme } from "../../src/contexts/ThemeContext";
 
 interface MatchHeaderProps {
   /** Current step in the match creation flow */
   step: MatchCreationStep;
   /** Callback when back/close button is pressed */
   onBack: () => void;
-  /** Theme colors */
-  colors: {
-    surfaceColor: string;
-    textPrimary: string;
-    borderColor: string;
-  };
 }
 
 /**
@@ -29,8 +23,8 @@ interface MatchHeaderProps {
 export const MatchHeader: React.FC<MatchHeaderProps> = ({
   step,
   onBack,
-  colors,
 }) => {
+  const { colors } = useTheme();
   return (
     <>
       {/* Header with title and navigation */}
@@ -38,8 +32,8 @@ export const MatchHeader: React.FC<MatchHeaderProps> = ({
         style={[
           styles.header,
           {
-            backgroundColor: colors.surfaceColor,
-            borderBottomColor: colors.borderColor,
+            backgroundColor: colors.surface,
+            borderBottomColor: colors.border,
           },
         ]}
       >
@@ -47,10 +41,10 @@ export const MatchHeader: React.FC<MatchHeaderProps> = ({
           <MaterialCommunityIcons
             name={step === 2 ? "arrow-left" : "close"}
             size={24}
-            color={colors.textPrimary}
+            color={colors.text.primary}
           />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>
+        <Text style={[styles.headerTitle, { color: colors.text.primary }]}>
           {MATCH_CREATION_STEP_LABELS[step]}
         </Text>
         <View style={{ width: 24 }} />
@@ -61,8 +55,8 @@ export const MatchHeader: React.FC<MatchHeaderProps> = ({
         style={[
           styles.progressContainer,
           {
-            backgroundColor: colors.surfaceColor,
-            borderBottomColor: colors.borderColor,
+            backgroundColor: colors.surface,
+            borderBottomColor: colors.border,
           },
         ]}
       >
@@ -72,7 +66,7 @@ export const MatchHeader: React.FC<MatchHeaderProps> = ({
               styles.progressStep,
               {
                 backgroundColor:
-                  step >= 1 ? BRAND_COLORS[500] : colors.borderColor,
+                  step >= 1 ? colors.primary : colors.border,
               },
             ]}
           />
@@ -81,7 +75,7 @@ export const MatchHeader: React.FC<MatchHeaderProps> = ({
               styles.progressStep,
               {
                 backgroundColor:
-                  step >= 2 ? BRAND_COLORS[500] : colors.borderColor,
+                  step >= 2 ? colors.primary : colors.border,
               },
             ]}
           />

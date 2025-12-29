@@ -52,14 +52,6 @@ export class SubscriptionService {
   }
 
   /**
-   * Get subscription limits for a given tier (synchronous, uses cache or fallback)
-   * @deprecated Use getLimitsForTier() instead for fresh data
-   */
-  getLimitsForTierSync(tier: SubscriptionTier): SubscriptionLimits {
-    return this.limitsCache.get(tier) || SUBSCRIPTION_LIMITS[tier];
-  }
-
-  /**
    * Check if a club can create more teams
    */
   async canCreateTeam(clubId: string): Promise<{

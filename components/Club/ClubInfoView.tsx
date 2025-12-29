@@ -10,7 +10,6 @@ import {
 } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useTheme } from "../../src/contexts/ThemeContext";
-import { SLATE_COLORS, BRAND_COLORS, COMMON_COLORS } from "../../src/theme";
 import { Club } from "../../models/Club";
 import { Team } from "../../models/Team";
 import { SubscriptionTier, SUBSCRIPTION_LIMITS } from "../../models/Subscription";
@@ -54,20 +53,14 @@ export default function ClubInfoView({
   isLimitReached,
   currentTier,
 }: ClubInfoViewProps) {
-  const { isDark } = useTheme();
-
-  const bgColor = isDark ? SLATE_COLORS[950] : SLATE_COLORS[50];
-  const surfaceColor = isDark ? SLATE_COLORS[900] : COMMON_COLORS.white;
-  const textPrimary = isDark ? COMMON_COLORS.white : SLATE_COLORS[900];
-  const textSecondary = isDark ? SLATE_COLORS[400] : SLATE_COLORS[500];
-  const borderColor = isDark ? SLATE_COLORS[800] : SLATE_COLORS[200];
+  const { colors } = useTheme();
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: bgColor }]}>
+    <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={styles.content}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={[styles.title, { color: textPrimary }]}>Mon Club</Text>
+          <Text style={[styles.title, { color: colors.text.primary }]}>Mon Club</Text>
           {isOwner && (
             <View style={styles.headerButtons}>
               <TouchableOpacity
@@ -75,15 +68,15 @@ export default function ClubInfoView({
                 style={[
                   styles.editButton,
                   {
-                    backgroundColor: surfaceColor,
-                    borderColor,
+                    backgroundColor: colors.surface,
+                    borderColor: colors.border,
                   },
                 ]}
               >
                 <MaterialCommunityIcons
                   name="palette"
                   size={16}
-                  color={BRAND_COLORS[500]}
+                  color={colors.primary}
                 />
               </TouchableOpacity>
               <TouchableOpacity
@@ -93,12 +86,12 @@ export default function ClubInfoView({
                   {
                     backgroundColor:
                       subTab === CLUB_SUB_TAB.SUBSCRIPTION
-                        ? BRAND_COLORS[600]
-                        : surfaceColor,
+                        ? colors.primary
+                        : colors.surface,
                     borderColor:
                       subTab === CLUB_SUB_TAB.SUBSCRIPTION
-                        ? BRAND_COLORS[500]
-                        : borderColor,
+                        ? colors.primary
+                        : colors.border,
                   },
                 ]}
               >
@@ -107,8 +100,8 @@ export default function ClubInfoView({
                   size={12}
                   color={
                     subTab === CLUB_SUB_TAB.SUBSCRIPTION
-                      ? COMMON_COLORS.white
-                      : BRAND_COLORS[500]
+                      ? colors.text.primary
+                      : colors.primary
                   }
                 />
                 <Text
@@ -117,8 +110,8 @@ export default function ClubInfoView({
                     {
                       color:
                         subTab === CLUB_SUB_TAB.SUBSCRIPTION
-                          ? COMMON_COLORS.white
-                          : textSecondary,
+                          ? colors.text.primary
+                          : colors.text.secondary,
                     },
                   ]}
                 >
@@ -136,16 +129,14 @@ export default function ClubInfoView({
             <View
               style={[
                 styles.clubCard,
-                { backgroundColor: surfaceColor, borderColor },
+                { backgroundColor: colors.surface, borderColor: colors.border },
               ]}
             >
               <View
                 style={[
                   styles.clubLogo,
                   {
-                    backgroundColor: isDark
-                      ? SLATE_COLORS[700]
-                      : SLATE_COLORS[100],
+                    backgroundColor: colors.surfaceVariant,
                   },
                 ]}
               >
@@ -162,7 +153,7 @@ export default function ClubInfoView({
                 )}
               </View>
 
-              <Text style={[styles.clubName, { color: textPrimary }]}>
+              <Text style={[styles.clubName, { color: colors.text.primary }]}>
                 {club.name}
               </Text>
 
@@ -171,23 +162,19 @@ export default function ClubInfoView({
                   style={[
                     styles.clubCodeCard,
                     {
-                      backgroundColor: isDark
-                        ? SLATE_COLORS[900]
-                        : SLATE_COLORS[50],
-                      borderColor: isDark
-                        ? SLATE_COLORS[700]
-                        : SLATE_COLORS[100],
+                      backgroundColor: colors.surfaceVariant,
+                      borderColor: colors.border,
                     },
                   ]}
                 >
                   <Text
-                    style={[styles.clubCodeLabel, { color: textSecondary }]}
+                    style={[styles.clubCodeLabel, { color: colors.text.secondary }]}
                   >
                     CODE CLUB
                   </Text>
                   <View style={styles.clubCodeRow}>
                     <Text
-                      style={[styles.clubCodeValue, { color: textPrimary }]}
+                      style={[styles.clubCodeValue, { color: colors.text.primary }]}
                     >
                       {club.code}
                     </Text>
@@ -197,7 +184,7 @@ export default function ClubInfoView({
                       <MaterialCommunityIcons
                         name="content-copy"
                         size={14}
-                        color={BRAND_COLORS[500]}
+                        color={colors.primary}
                       />
                     </TouchableOpacity>
                   </View>
@@ -208,7 +195,7 @@ export default function ClubInfoView({
               <View style={styles.usageBar}>
                 <View style={styles.usageBarHeader}>
                   <Text
-                    style={[styles.usageBarLabel, { color: textSecondary }]}
+                    style={[styles.usageBarLabel, { color: colors.text.secondary }]}
                   >
                     Abonnement {currentTier}
                   </Text>
@@ -216,7 +203,7 @@ export default function ClubInfoView({
                     style={[
                       styles.usageBarValue,
                       {
-                        color: isLimitReached ? "#ef4444" : BRAND_COLORS[600],
+                        color: isLimitReached ? colors.error : colors.primary,
                       },
                     ]}
                   >
@@ -228,9 +215,7 @@ export default function ClubInfoView({
                   style={[
                     styles.usageBarTrack,
                     {
-                      backgroundColor: isDark
-                        ? SLATE_COLORS[700]
-                        : SLATE_COLORS[100],
+                      backgroundColor: colors.surfaceVariant,
                     },
                   ]}
                 >
@@ -239,8 +224,8 @@ export default function ClubInfoView({
                       styles.usageBarFill,
                       {
                         backgroundColor: isLimitReached
-                          ? "#ef4444"
-                          : BRAND_COLORS[500],
+                          ? colors.error
+                          : colors.primary,
                         width: `${Math.min(
                           100,
                           (currentTeamCount /
@@ -256,7 +241,7 @@ export default function ClubInfoView({
                     <Text
                       style={[
                         styles.upgradeLink,
-                        { color: BRAND_COLORS[600] },
+                        { color: colors.primary },
                       ]}
                     >
                       Augmenter la limite
@@ -270,7 +255,7 @@ export default function ClubInfoView({
             <View style={styles.teamsSection}>
               <View style={styles.teamsSectionHeader}>
                 <Text
-                  style={[styles.teamsSectionTitle, { color: textPrimary }]}
+                  style={[styles.teamsSectionTitle, { color: colors.text.primary }]}
                 >
                   Nos Équipes
                 </Text>
@@ -280,8 +265,8 @@ export default function ClubInfoView({
                     styles.addTeamButton,
                     {
                       backgroundColor: isLimitReached
-                        ? SLATE_COLORS[400]
-                        : BRAND_COLORS[600],
+                        ? colors.text.secondary
+                        : colors.primary,
                     },
                   ]}
                   disabled={!isOwner && isLimitReached}
@@ -289,7 +274,7 @@ export default function ClubInfoView({
                   <MaterialCommunityIcons
                     name={isLimitReached ? "lock" : "plus"}
                     size={20}
-                    color={COMMON_COLORS.white}
+                    color={colors.text.primary}
                   />
                 </TouchableOpacity>
               </View>
@@ -312,21 +297,19 @@ export default function ClubInfoView({
                   style={[
                     styles.emptyTeams,
                     {
-                      backgroundColor: isDark
-                        ? `${SLATE_COLORS[900]}80`
-                        : SLATE_COLORS[100],
-                      borderColor,
+                      backgroundColor: colors.surfaceVariant,
+                      borderColor: colors.border,
                     },
                   ]}
                 >
                   <MaterialCommunityIcons
                     name="account-group"
                     size={24}
-                    color={textSecondary}
+                    color={colors.text.secondary}
                     style={{ opacity: 0.5 }}
                   />
                   <Text
-                    style={[styles.emptyTeamsText, { color: textSecondary }]}
+                    style={[styles.emptyTeamsText, { color: colors.text.secondary }]}
                   >
                     {isOwner
                       ? "Aucune équipe créée."

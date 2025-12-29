@@ -10,7 +10,6 @@ import {
   ReboundSpecification,
 } from "../src/models/ActionTypes";
 import { Team } from "../src/models/types";
-import { EventType } from "../constants/liveMatchConstants";
 
 /**
  * Format time in MM:SS format
@@ -94,43 +93,8 @@ export const getActionDescription = (
 
 /**
  * Get event type description suffix for UI display
- * @param eventType - EventType from UI
- * @returns Description suffix in French (e.g., "Réussi (1 pts)")
+ * @deprecated Use getActionDescription from this file instead
  */
-export const getEventTypeDescription = (eventType: EventType): string => {
-  switch (eventType) {
-    case EventType.POINT_1:
-      return "Réussi (1 pts)";
-    case EventType.POINT_2:
-      return "Réussi (2 pts)";
-    case EventType.POINT_3:
-      return "Réussi (3 pts)";
-    case EventType.MISS_1:
-      return "Raté (1 pts)";
-    case EventType.MISS_2:
-      return "Raté (2 pts)";
-    case EventType.MISS_3:
-      return "Raté (3 pts)";
-    case EventType.FOUL:
-      return "Faute";
-    case EventType.REBOUND_DEF:
-      return "Rebond Défensif";
-    case EventType.REBOUND_OFF:
-      return "Rebond Offensif";
-    case EventType.ASSIST:
-      return "Passe décisive";
-    case EventType.STEAL:
-      return "Interception";
-    case EventType.BLOCK:
-      return "Contre";
-    case EventType.TURNOVER:
-      return "Perte de balle";
-    case EventType.SUBSTITUTION:
-      return "Changement";
-    default:
-      return String(eventType);
-  }
-};
 
 /**
  * Get period label based on period number and max periods

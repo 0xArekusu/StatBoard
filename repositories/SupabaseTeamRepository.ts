@@ -2,9 +2,33 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { ITeamRepository } from "./ITeamRepository";
 import type { Team, CreateTeamData, UpdateTeamData, TeamStatus } from "../models/Team";
 
+/**
+ * Supabase implementation of Team Repository
+ * Manages team data within clubs in Supabase database
+ *
+ * Features:
+ * - Team creation with pending approval status
+ * - Team queries (by ID, club, status, owner)
+ * - Team updates (name, gender, coach, status, active flag)
+ * - Soft deletion (marks as deleted instead of removing)
+ * - Player count aggregation
+ * - Owner email resolution via club_members
+ * - Team counting for limit enforcement
+ *
+ * Architecture:
+ * - Uses Supabase client for database operations
+ * - Implements ITeamRepository interface
+ * - Maps database rows to Team domain model
+ * - Handles errors gracefully with logging
+ * - Uses soft deletes for data preservation
+ */
 export class SupabaseTeamRepository implements ITeamRepository {
   constructor(private supabase: SupabaseClient) {}
 
+  /**
+   * Map Supabase row to Team domain model
+   * Converts snake_case to camelCase and handles nested data
+   */
   private mapToTeam(row: any): Team {
     return {
       id: row.id,
@@ -24,6 +48,14 @@ export class SupabaseTeamRepository implements ITeamRepository {
     };
   }
 
+  /**
+   * Create a new team with pending status
+   * Teams require club owner approval before becoming active
+   *
+   * @param data - Team creation data (name, clubId, gender, etc.)
+   * @param ownerId - ID of the user creating the team
+   * @returns Created team or null on error
+   */
   async create(data: CreateTeamData, ownerId: string): Promise<Team | null> {
     const { data: team, error } = await this.supabase
       .from("teams")
@@ -47,6 +79,12 @@ export class SupabaseTeamRepository implements ITeamRepository {
     return this.mapToTeam(team);
   }
 
+  /**
+   * Find a team by ID
+   *
+   * @param id - ID of the team
+   * @returns Team or null if not found
+   */
   async findById(id: string): Promise<Team | null> {
     const { data, error } = await this.supabase
       .from("teams")
@@ -61,6 +99,14 @@ export class SupabaseTeamRepository implements ITeamRepository {
     return this.mapToTeam(data);
   }
 
+  /**
+   * Get all teams in a club (excluding soft-deleted)
+   * Includes player count for each team
+   * Returns teams ordered by creation date (newest first)
+   *
+   * @param clubId - ID of the club
+   * @returns List of teams with player counts
+   */
   async findByClubId(clubId: string): Promise<Team[]> {
     const { data, error } = await this.supabase
       .from("teams")
@@ -83,6 +129,15 @@ export class SupabaseTeamRepository implements ITeamRepository {
     }));
   }
 
+  /**
+   * Get teams filtered by club and status
+   * Resolves owner emails from club_members for display
+   * Returns teams ordered by creation date (newest first)
+   *
+   * @param clubId - ID of the club
+   * @param status - Status filter (pending/approved/rejected)
+   * @returns List of teams matching the status
+   */
   async findByClubIdAndStatus(clubId: string, status: TeamStatus): Promise<Team[]> {
     // First get teams
     const { data: teams, error: teamsError } = await this.supabase
@@ -127,13 +182,20 @@ export class SupabaseTeamRepository implements ITeamRepository {
     }));
   }
 
+  /**
+   * Get all teams owned by a user (excluding soft-deleted)
+   * Returns teams ordered by creation date (newest first)
+   *
+   * @param ownerId - ID of the user
+   * @returns List of teams owned by the user
+   */
   async findByOwnerId(ownerId: string): Promise<Team[]> {
     const { data, error } = await this.supabase
       .from("teams")
       .select("*")
       .eq("owner_id", ownerId)
       .eq("is_deleted", false)
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: false});
 
     if (error) {
       console.error("Error fetching user teams:", error);
@@ -143,6 +205,14 @@ export class SupabaseTeamRepository implements ITeamRepository {
     return data.map(this.mapToTeam);
   }
 
+  /**
+   * Update a team
+   * Only updates fields that are provided
+   *
+   * @param id - ID of the team to update
+   * @param data - Team update data (partial fields)
+   * @returns Updated team or null on error
+   */
   async update(id: string, data: UpdateTeamData): Promise<Team | null> {
     const updateData: any = {};
     if (data.name !== undefined) updateData.name = data.name;
@@ -167,6 +237,14 @@ export class SupabaseTeamRepository implements ITeamRepository {
     return this.mapToTeam(team);
   }
 
+  /**
+   * Soft delete a team
+   * Marks team as deleted instead of removing from database
+   * Preserves data for historical records
+   *
+   * @param id - ID of the team to delete
+   * @returns true if deletion succeeded, false otherwise
+   */
   async delete(id: string): Promise<boolean> {
     // Soft delete - mark as deleted instead of physical deletion
     const { error } = await this.supabase
@@ -180,6 +258,15 @@ export class SupabaseTeamRepository implements ITeamRepository {
     return !error;
   }
 
+  /**
+   * Count teams owned by a user in a specific club
+   * Used for enforcing per-user team limits
+   * Excludes soft-deleted teams
+   *
+   * @param ownerId - ID of the user
+   * @param clubId - ID of the club
+   * @returns Number of teams owned by the user in the club
+   */
   async countByOwnerAndClub(ownerId: string, clubId: string): Promise<number> {
     const { count, error } = await this.supabase
       .from("teams")

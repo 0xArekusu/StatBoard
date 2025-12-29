@@ -18,7 +18,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useTheme } from "../src/contexts/ThemeContext";
 import { useAuth } from "../src/contexts/AuthContext";
 import { ServiceFactory } from "../services/ServiceFactory";
-import { shareLogs } from "../utils/logger";
+import { shareLogs, logInfo, logError } from "../utils/logger";
 import { Match, MatchStatus } from "../src/models/types";
 import { Club } from "../models/Club";
 import { Team, TeamStatus } from "../models/Team";
@@ -98,7 +98,7 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
    */
   useFocusEffect(
     useCallback(() => {
-      console.log("🔄 DashboardScreen: Screen focused or user changed", {
+      logInfo("DashboardScreen", "🔄 Screen focused or user changed", {
         userId: user?.id,
         isGuest,
       });
@@ -141,7 +141,7 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
   const loadDashboardData = async (skipActiveMatchCheck: boolean = false) => {
     try {
       setLoading(true);
-      console.log("📊 DashboardScreen: Loading dashboard data...");
+      logInfo("DashboardScreen", "📊 Loading dashboard data");
 
       // Use MatchListService to load matches
       const matchListService = ServiceFactory.getMatchListService(supabase);
@@ -150,7 +150,7 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
       if (!skipActiveMatchCheck) {
         const activeMatch = await matchListService.findActiveMatch();
         if (activeMatch) {
-          console.log("🎮 DashboardScreen: Active match found", {
+          logInfo("DashboardScreen", "🎮 Active match found", {
             matchId: activeMatch.id,
             opponent: activeMatch.opponent_name,
           });
@@ -159,10 +159,10 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
       }
 
       // Load all matches from both sources
-      console.log("📡 DashboardScreen: Loading matches...");
+      logInfo("DashboardScreen", "📡 Loading matches");
       const allMatches = await matchListService.loadAllMatches(user?.id || null);
 
-      console.log("✅ DashboardScreen: Matches loaded", {
+      logInfo("DashboardScreen", "✅ Matches loaded", {
         totalCount: allMatches.length,
       });
 
@@ -170,7 +170,7 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
 
       // Load club and teams if user is authenticated
       if (user) {
-        console.log("📡 DashboardScreen: Fetching user clubs from Supabase", {
+        logInfo("DashboardScreen", "📡 Fetching user clubs from Supabase", {
           userId: user.id,
         });
 
@@ -178,7 +178,7 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
           const clubService = ServiceFactory.getClubService(supabase);
           const clubs = await clubService.getUserMemberClubs(user.id);
 
-          console.log("✅ DashboardScreen: User clubs fetched", {
+          logInfo("DashboardScreen", "✅ User clubs fetched", {
             userId: user.id,
             clubCount: clubs.length,
             clubIds: clubs.map((c) => c.id),
@@ -190,7 +190,7 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
           setClub(firstClub);
 
           if (firstClub) {
-            console.log("✅ DashboardScreen: Club selected", {
+            logInfo("DashboardScreen", "✅ Club selected", {
               clubId: firstClub.id,
               clubName: firstClub.name,
             });
@@ -205,7 +205,7 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
                 team.ownerId === user.id && team.status === TeamStatus.APPROVED
             );
 
-            console.log("✅ DashboardScreen: Teams fetched", {
+            logInfo("DashboardScreen", "✅ Teams fetched", {
               clubId: firstClub.id,
               totalTeams: clubTeams.length,
               myApprovedTeams: myApprovedTeams.length,
@@ -219,14 +219,14 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
               setActiveTeamId(myApprovedTeams[0].id);
             }
           } else {
-            console.log("ℹ️ DashboardScreen: No clubs found for user");
+            logInfo("DashboardScreen", "ℹ️ No clubs found for user");
           }
         } catch (error) {
-          console.error("❌ DashboardScreen: Error loading clubs/teams", error);
+          logError("DashboardScreen", "❌ Error loading clubs/teams", { error });
         }
       }
     } catch (error) {
-      console.error("❌ DashboardScreen: Error loading dashboard data:", error);
+      logError("DashboardScreen", "❌ Error loading dashboard data", { error });
     } finally {
       setLoading(false);
     }
@@ -285,7 +285,7 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
               // Refresh dashboard data (skip active match check since we just deleted it)
               loadDashboardData(true);
             } catch (error) {
-              console.error("Failed to abandon match:", error);
+              logError("DashboardScreen", "❌ Failed to abandon match", { error });
               Alert.alert(
                 "Erreur",
                 "Impossible d'abandonner le match. Veuillez réessayer."
@@ -349,7 +349,7 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
               // Navigate to new match screen
               navigation.navigate("NewMatch", { teamId: activeTeamId });
             } catch (error) {
-              console.error("Failed to abandon match:", error);
+              logError("DashboardScreen", "❌ Failed to abandon match", { error });
               Alert.alert(
                 "Erreur",
                 "Impossible d'abandonner le match. Veuillez réessayer."
@@ -451,7 +451,7 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
                   );
                 }
               } catch (error) {
-                console.error("Error exporting logs:", error);
+                logError("DashboardScreen", "❌ Error exporting logs", { error });
                 Alert.alert(
                   "Erreur",
                   "Impossible d'exporter les logs. Veuillez réessayer."
@@ -462,7 +462,7 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
         ]
       );
     } catch (error) {
-      console.error("Error in handleExportLogs:", error);
+      logError("DashboardScreen", "❌ Error in handleExportLogs", { error });
     }
   };
 

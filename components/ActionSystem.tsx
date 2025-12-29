@@ -25,6 +25,7 @@ import {
   FoulSpecification,
 } from "../src/models/ActionTypes";
 import { ACTION_DEFINITIONS } from "../src/config/actionConfig";
+import { Team } from "../src/models/types";
 
 // Types for the action system
 
@@ -46,7 +47,7 @@ export interface ActionData {
   specification?: string;
   points?: number; // Number of points for shots (1, 2, or 3)
   player?: number;
-  team: "A" | "B"; // Add team information
+  team: Team; // Add team information
   timestamp: Date;
   period_number: number; // Period number when the action occurred
   time_in_period?: number; // Time in seconds since the beginning of the period
@@ -98,7 +99,7 @@ export interface ActionSystemState {
   actionPoints: number | null; // Points for shots (1, 2, or 3)
   actionSpec: string | null;
   playerNumber: number | null;
-  selectedTeam: "A" | "B" | null; // Add selected team
+  selectedTeam: Team | null; // Add selected team
   position: {
     x: number;
     y: number;
@@ -134,10 +135,10 @@ export interface ActionSystemProps {
     num: number;
     name: string;
   }>;
-  teamMode: "A" | "B" | "BOTH"; // Add team mode
+  teamMode: Team | "BOTH"; // Add team mode
   teamA: string;
   teamB: string;
-  currentTeam: "A" | "B"; // Current team for single team mode
+  currentTeam: Team; // Current team for single team mode
   currentPeriod: number; // Current period number
   timeElapsed: number; // Time elapsed in current period
 }
@@ -194,8 +195,8 @@ export const useActionSystem = () => {
     (
       position: ActionSystemState["position"],
       clickPosition: ActionSystemState["clickPosition"],
-      teamMode: "A" | "B" | "BOTH",
-      currentTeam: "A" | "B"
+      teamMode: Team | "BOTH",
+      currentTeam: Team
     ) => {
       const selectedTeam = teamMode === "BOTH" ? null : currentTeam;
 
@@ -215,10 +216,10 @@ export const useActionSystem = () => {
   );
 
   /**
-   * selectTeam: User selected a team (A or B)
+   * selectTeam: User selected a team (MY_TEAM or OPPONENT)
    * Advances to step 2 (action type selection)
    */
-  const selectTeam = useCallback((team: "A" | "B") => {
+  const selectTeam = useCallback((team: Team) => {
     setState((prev) => ({
       ...prev,
       selectedTeam: team,

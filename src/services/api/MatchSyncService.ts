@@ -41,9 +41,6 @@ import { logInfo, logError, logWarn } from "../../../utils/logger";
 import {
   ActionType,
   ShotSpecification,
-  ReboundSpecification,
-  FoulSpecification,
-  isShotMade,
 } from "../../models/ActionTypes";
 
 export interface SyncResult {
@@ -522,8 +519,8 @@ export class MatchSyncService {
   ): Promise<string> {
     try {
       logInfo('MatchSyncService', '📤 Inserting match to Supabase', {
-        teamA: syncData.match.team_a,
-        teamB: syncData.match.team_b
+        myTeam: syncData.match.my_team_name,
+        opponent: syncData.match.opponent_name
       });
 
       // Insert match

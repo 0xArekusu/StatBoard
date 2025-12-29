@@ -7,13 +7,14 @@
 import React, { useState } from "react";
 import { View, StyleSheet } from "react-native";
 import {
-  EventType,
   MatchEvent,
   FilterMode,
   TeamId,
 } from "../../constants/liveMatchConstants";
-import { SLATE_COLORS } from "../../src/theme";
+import { ActionType } from "../../src/models/ActionTypes";
 import BasketballCourtSVG from "../BasketballCourtSVG";
+import { useTheme } from "../../src/contexts/ThemeContext";
+import { getActionColor } from "../../src/config/actionConfig";
 
 interface CourtViewProps {
   onCourtClick: (x: number, y: number) => void;
@@ -36,6 +37,7 @@ export const CourtView: React.FC<CourtViewProps> = ({
   courtBackgroundColor,
   courtLineColor,
 }) => {
+  const { colors } = useTheme();
   const [courtDimensions, setCourtDimensions] = useState({
     width: 0,
     height: 0,
@@ -56,14 +58,12 @@ export const CourtView: React.FC<CourtViewProps> = ({
 
     // Filter by action type
     if (filterMode === FilterMode.ALL) return true;
-    if (filterMode === FilterMode.SHOOTING)
-      return e.type.includes("POINT") || e.type.includes("MISS");
-    if (filterMode === FilterMode.REBOUNDS)
-      return ["REBOUND_OFF", "REBOUND_DEF"].includes(e.type);
-    if (filterMode === FilterMode.FOULS) return e.type === EventType.FOUL;
-    if (filterMode === FilterMode.TURNOVERS) return e.type === EventType.TURNOVER;
-    if (filterMode === FilterMode.BLOCKS) return e.type === EventType.BLOCK;
-    if (filterMode === FilterMode.STEALS) return e.type === EventType.STEAL;
+    if (filterMode === FilterMode.SHOOTING) return e.action_type === ActionType.SHOT;
+    if (filterMode === FilterMode.REBOUNDS) return e.action_type === ActionType.REBOUND;
+    if (filterMode === FilterMode.FOULS) return e.action_type === ActionType.FOUL;
+    if (filterMode === FilterMode.TURNOVERS) return e.action_type === ActionType.TURNOVER;
+    if (filterMode === FilterMode.BLOCKS) return e.action_type === ActionType.BLOCK;
+    if (filterMode === FilterMode.STEALS) return e.action_type === ActionType.STEAL;
     return true;
   });
 
@@ -80,35 +80,8 @@ export const CourtView: React.FC<CourtViewProps> = ({
           );
         })
         .map((evt: MatchEvent) => {
-          let markerColor = SLATE_COLORS[500];
-
-          // Tirs réussis (vert pour nous, rouge pour adversaire)
-          if (evt.type.includes("POINT"))
-            markerColor = evt.teamId === TeamId.AWAY ? "#ef4444" : "#22c55e";
-          // Tirs ratés (orange pour nous, rouge foncé pour adversaire)
-          else if (evt.type.includes("MISS"))
-            markerColor = evt.teamId === TeamId.AWAY ? "#ea580c" : "#f97316";
-          // Rebonds (bleu)
-          else if (
-            evt.type === EventType.REBOUND_DEF ||
-            evt.type === EventType.REBOUND_OFF
-          )
-            markerColor = evt.teamId === TeamId.AWAY ? "#3b82f6" : "#60a5fa";
-          // Fautes (jaune/orange)
-          else if (evt.type === EventType.FOUL)
-            markerColor = evt.teamId === TeamId.AWAY ? "#f59e0b" : "#fbbf24";
-          // Passes décisives (violet)
-          else if (evt.type === EventType.ASSIST)
-            markerColor = evt.teamId === TeamId.AWAY ? "#a855f7" : "#c084fc";
-          // Interceptions (cyan)
-          else if (evt.type === EventType.STEAL)
-            markerColor = evt.teamId === TeamId.AWAY ? "#06b6d4" : "#22d3ee";
-          // Contres (indigo)
-          else if (evt.type === EventType.BLOCK)
-            markerColor = evt.teamId === TeamId.AWAY ? "#6366f1" : "#818cf8";
-          // Pertes de balle (rose)
-          else if (evt.type === EventType.TURNOVER)
-            markerColor = evt.teamId === TeamId.AWAY ? "#ec4899" : "#f472b6";
+          // Get color from centralized ACTION_CONFIG
+          const markerColor = getActionColor(evt.action_type, evt.specification, evt.points);
 
           // Convert normalized coordinates (0-1) to portrait SVG coordinates (0-615.75 x 0-1146.75)
           const svgX = evt.coordinates!.x * 615.75;

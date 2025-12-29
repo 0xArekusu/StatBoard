@@ -1,181 +1,150 @@
 import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
-import { SLATE_COLORS, STATUS_COLORS } from "../src/theme";
-import { EventType, FilterMode } from "../constants/liveMatchConstants";
+import { FilterMode } from "../constants/liveMatchConstants";
+import { ActionType, ShotSpecification } from "../src/models/ActionTypes";
+import { useTheme } from "../src/contexts/ThemeContext";
+import { getActionColor } from "../src/config/actionConfig";
+
+export interface ActionData {
+  action_type: string;
+  specification?: string;
+  points?: number;
+}
 
 interface MatchActionGridProps {
-  onAction: (type: EventType, value?: number) => void;
-  isDark: boolean;
+  onAction: (actionData: ActionData) => void;
   filterMode?: FilterMode;
 }
 
-export const MatchActionGrid: React.FC<MatchActionGridProps> = ({ onAction, isDark, filterMode = FilterMode.ALL }) => {
-  const shouldShowAction = (actionType: EventType): boolean => {
+export const MatchActionGrid: React.FC<MatchActionGridProps> = ({ onAction, filterMode = FilterMode.ALL }) => {
+  const { colors, isDark } = useTheme();
+  const shouldShowAction = (actionType: string): boolean => {
     if (filterMode === FilterMode.ALL) return true;
-
-    if (filterMode === FilterMode.SHOOTING) {
-      return [EventType.POINT_1, EventType.POINT_2, EventType.POINT_3, EventType.MISS_1, EventType.MISS_2, EventType.MISS_3].includes(actionType);
-    }
-
-    if (filterMode === FilterMode.REBOUNDS) {
-      return [EventType.REBOUND_DEF, EventType.REBOUND_OFF].includes(actionType);
-    }
-
-    if (filterMode === FilterMode.FOULS) {
-      return actionType === EventType.FOUL;
-    }
-
-    if (filterMode === FilterMode.TURNOVERS) {
-      return actionType === EventType.TURNOVER;
-    }
-
-    if (filterMode === FilterMode.BLOCKS) {
-      return actionType === EventType.BLOCK;
-    }
-
-    if (filterMode === FilterMode.STEALS) {
-      return actionType === EventType.STEAL;
-    }
-
+    if (filterMode === FilterMode.SHOOTING) return actionType === ActionType.SHOT;
+    if (filterMode === FilterMode.REBOUNDS) return actionType === ActionType.REBOUND;
+    if (filterMode === FilterMode.FOULS) return actionType === ActionType.FOUL;
+    if (filterMode === FilterMode.TURNOVERS) return actionType === ActionType.TURNOVER;
+    if (filterMode === FilterMode.BLOCKS) return actionType === ActionType.BLOCK;
+    if (filterMode === FilterMode.STEALS) return actionType === ActionType.STEAL;
     return true;
   };
 
   return (
   <View style={styles.actionGrid}>
     {/* Row 1: Scoring Positive */}
-    {(shouldShowAction(EventType.POINT_1) || shouldShowAction(EventType.POINT_2) || shouldShowAction(EventType.POINT_3)) && (
+    {shouldShowAction(ActionType.SHOT) && (
       <View style={styles.actionRow}>
-        {shouldShowAction(EventType.POINT_1) && (
-          <ActionButton
-            onPress={() => onAction(EventType.POINT_1, 1)}
-            label="+1"
-            sub="Lancer"
-            color={STATUS_COLORS.success}
-          />
-        )}
-        {shouldShowAction(EventType.POINT_2) && (
-          <ActionButton
-            onPress={() => onAction(EventType.POINT_2, 2)}
-            label="+2"
-            sub="Points"
-            color="#4ade80"
-          />
-        )}
-        {shouldShowAction(EventType.POINT_3) && (
-          <ActionButton
-            onPress={() => onAction(EventType.POINT_3, 3)}
-            label="+3"
-            sub="Points"
-            color="#86efac"
-          />
-        )}
+        <ActionButton
+          onPress={() => onAction({ action_type: ActionType.SHOT, specification: ShotSpecification.MADE, points: 1 })}
+          label="+1"
+          sub="Lancer"
+          color={getActionColor(ActionType.SHOT, ShotSpecification.MADE, 1)}
+        />
+        <ActionButton
+          onPress={() => onAction({ action_type: ActionType.SHOT, specification: ShotSpecification.MADE, points: 2 })}
+          label="+2"
+          sub="Points"
+          color={getActionColor(ActionType.SHOT, ShotSpecification.MADE, 2)}
+        />
+        <ActionButton
+          onPress={() => onAction({ action_type: ActionType.SHOT, specification: ShotSpecification.MADE, points: 3 })}
+          label="+3"
+          sub="Points"
+          color={getActionColor(ActionType.SHOT, ShotSpecification.MADE, 3)}
+        />
       </View>
     )}
 
     {/* Row 2: Scoring Negative (Misses) */}
-    {(shouldShowAction(EventType.MISS_1) || shouldShowAction(EventType.MISS_2) || shouldShowAction(EventType.MISS_3)) && (
+    {shouldShowAction(ActionType.SHOT) && (
       <View style={[styles.actionRow, { height: 64 }]}>
-        {shouldShowAction(EventType.MISS_1) && (
-          <ActionButton
-            onPress={() => onAction(EventType.MISS_1, 0)}
-            label="Raté"
-            sub="Lancer"
-            color={isDark ? SLATE_COLORS[800] : SLATE_COLORS[200]}
-            textColor="#ef4444"
-          />
-        )}
-        {shouldShowAction(EventType.MISS_2) && (
-          <ActionButton
-            onPress={() => onAction(EventType.MISS_2, 0)}
-            label="Raté"
-            sub="2 Pts"
-            color={isDark ? SLATE_COLORS[800] : SLATE_COLORS[200]}
-            textColor="#ef4444"
-          />
-        )}
-        {shouldShowAction(EventType.MISS_3) && (
-          <ActionButton
-            onPress={() => onAction(EventType.MISS_3, 0)}
-            label="Raté"
-            sub="3 Pts"
-            color={isDark ? SLATE_COLORS[800] : SLATE_COLORS[200]}
-            textColor="#ef4444"
-          />
-        )}
+        <ActionButton
+          onPress={() => onAction({ action_type: ActionType.SHOT, specification: ShotSpecification.MISSED, points: 1 })}
+          label="Raté"
+          sub="Lancer"
+          color={colors.surfaceVariant}
+          textColor={getActionColor(ActionType.SHOT, ShotSpecification.MISSED, 1)}
+        />
+        <ActionButton
+          onPress={() => onAction({ action_type: ActionType.SHOT, specification: ShotSpecification.MISSED, points: 2 })}
+          label="Raté"
+          sub="2 Pts"
+          color={colors.surfaceVariant}
+          textColor={getActionColor(ActionType.SHOT, ShotSpecification.MISSED, 2)}
+        />
+        <ActionButton
+          onPress={() => onAction({ action_type: ActionType.SHOT, specification: ShotSpecification.MISSED, points: 3 })}
+          label="Raté"
+          sub="3 Pts"
+          color={colors.surfaceVariant}
+          textColor={getActionColor(ActionType.SHOT, ShotSpecification.MISSED, 3)}
+        />
       </View>
     )}
 
     {/* Row 3: Rebounds */}
-    {(shouldShowAction(EventType.REBOUND_DEF) || shouldShowAction(EventType.REBOUND_OFF)) && (
+    {shouldShowAction(ActionType.REBOUND) && (
       <View style={[styles.actionRow, { height: 80 }]}>
-        {shouldShowAction(EventType.REBOUND_DEF) && (
-          <ActionButton
-            onPress={() => onAction(EventType.REBOUND_DEF)}
-            label="REB DEF"
-            sub="Défensif"
-            color="#2563eb"
-          />
-        )}
-        {shouldShowAction(EventType.REBOUND_OFF) && (
-          <ActionButton
-            onPress={() => onAction(EventType.REBOUND_OFF)}
-            label="REB OFF"
-            sub="Offensif"
-            color="#06b6d4"
-          />
-        )}
+        <ActionButton
+          onPress={() => onAction({ action_type: ActionType.REBOUND, specification: "defensive" })}
+          label="REB DEF"
+          sub="Défensif"
+          color={getActionColor(ActionType.REBOUND, "defensive")}
+        />
+        <ActionButton
+          onPress={() => onAction({ action_type: ActionType.REBOUND, specification: "offensive" })}
+          label="REB OFF"
+          sub="Offensif"
+          color={getActionColor(ActionType.REBOUND, "offensive")}
+        />
       </View>
     )}
 
     {/* Row 4: Other Stats */}
-    {(shouldShowAction(EventType.ASSIST) || shouldShowAction(EventType.STEAL) || shouldShowAction(EventType.BLOCK) || shouldShowAction(EventType.FOUL)) && (
-      <View style={styles.actionRow}>
-        {shouldShowAction(EventType.ASSIST) && (
+    <View style={styles.actionRow}>
+      {shouldShowAction(ActionType.ASSIST) && (
+        <ActionButton
+          onPress={() => onAction({ action_type: ActionType.ASSIST })}
+          label="PASSE D"
+          sub="Assist"
+          color={getActionColor(ActionType.ASSIST)}
+        />
+      )}
+      {shouldShowAction(ActionType.STEAL) && (
+        <ActionButton
+          onPress={() => onAction({ action_type: ActionType.STEAL })}
+          label="INTERC"
+          sub="Vol"
+          color={getActionColor(ActionType.STEAL)}
+        />
+      )}
+      <View style={styles.miniColumn}>
+        {shouldShowAction(ActionType.BLOCK) && (
           <ActionButton
-            onPress={() => onAction(EventType.ASSIST)}
-            label="PASSE D"
-            sub="Assist"
-            color="#6366f1"
+            onPress={() => onAction({ action_type: ActionType.BLOCK })}
+            label="CONTRE"
+            color={getActionColor(ActionType.BLOCK)}
+            textSize={14}
           />
         )}
-        {shouldShowAction(EventType.STEAL) && (
+        {shouldShowAction(ActionType.FOUL) && (
           <ActionButton
-            onPress={() => onAction(EventType.STEAL)}
-            label="INTERC"
-            sub="Vol"
-            color="#8b5cf6"
+            onPress={() => onAction({ action_type: ActionType.FOUL })}
+            label="FAUTE"
+            color={getActionColor(ActionType.FOUL)}
+            textSize={14}
           />
-        )}
-        {(shouldShowAction(EventType.BLOCK) || shouldShowAction(EventType.FOUL)) && (
-          <View style={styles.miniColumn}>
-            {shouldShowAction(EventType.BLOCK) && (
-              <ActionButton
-                onPress={() => onAction(EventType.BLOCK)}
-                label="CONTRE"
-                color={SLATE_COLORS[600]}
-                textSize={14}
-              />
-            )}
-            {shouldShowAction(EventType.FOUL) && (
-              <ActionButton
-                onPress={() => onAction(EventType.FOUL)}
-                label="FAUTE"
-                color="#b91c1c"
-                textSize={14}
-              />
-            )}
-          </View>
         )}
       </View>
-    )}
+    </View>
 
     {/* Row 5: Turnover */}
-    {shouldShowAction(EventType.TURNOVER) && (
+    {shouldShowAction(ActionType.TURNOVER) && (
       <View style={[styles.actionRow, { height: 56 }]}>
         <ActionButton
-          onPress={() => onAction(EventType.TURNOVER)}
+          onPress={() => onAction({ action_type: ActionType.TURNOVER })}
           label="BALLE PERDUE"
-          color="#ea580c"
+          color={getActionColor(ActionType.TURNOVER)}
         />
       </View>
     )}

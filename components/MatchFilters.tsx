@@ -22,13 +22,13 @@ import {
 } from "react-native";
 import { ACTION_DEFINITIONS } from "../src/config/actionConfig";
 import { useTheme } from "../src/contexts/ThemeContext";
-import { STATUS_COLORS, COMMON_COLORS } from "../src/theme";
+import { Team } from "../src/models/types";
 
 interface Player {
   id: number;
   num: number;
   name: string;
-  team: "A" | "B";
+  team: Team;
   isSubstitute: boolean;
 }
 
@@ -36,7 +36,7 @@ interface MatchFiltersProps {
   // Team configuration
   teamA: string;
   teamB: string;
-  teamMode: "A" | "B" | "BOTH";
+  teamMode: Team | "BOTH";
 
   // Match configuration
   matchFormat: "2_halves" | "4_quarters";
@@ -45,13 +45,13 @@ interface MatchFiltersProps {
   players: Player[];
 
   // Current filter values
-  selectedTeams: ("A" | "B")[];
-  selectedPlayers: string[]; // Format: "team-number" (e.g., "A-5", "B-7")
+  selectedTeams: Team[];
+  selectedPlayers: string[]; // Format: "team-number" (e.g., "MyTeam-5", "Opponent-7")
   selectedActionTypes: string[];
   selectedPeriods: number[];
 
   // Callbacks for filter changes (applied immediately)
-  onTeamsChange: (teams: ("A" | "B")[]) => void;
+  onTeamsChange: (teams: Team[]) => void;
   onPlayersChange: (players: string[]) => void;
   onActionTypesChange: (actionTypes: string[]) => void;
   onPeriodsChange: (periods: number[]) => void;
@@ -75,7 +75,7 @@ export default function MatchFilters({
   const { colors } = useTheme();
   const totalPeriods = matchFormat === "2_halves" ? 2 : 4;
 
-  const toggleTeam = (team: "A" | "B") => {
+  const toggleTeam = (team: Team) => {
     const newTeams = selectedTeams.includes(team)
       ? selectedTeams.filter((t) => t !== team)
       : [...selectedTeams, team];
@@ -83,13 +83,13 @@ export default function MatchFilters({
   };
 
   const selectAllTeams = () => {
-    let newTeams: ("A" | "B")[];
+    let newTeams: Team[];
     if (teamMode === "BOTH") {
-      newTeams = ["A", "B"];
-    } else if (teamMode === "A") {
-      newTeams = ["A"];
+      newTeams = [Team.MY_TEAM, Team.OPPONENT];
+    } else if (teamMode === Team.MY_TEAM) {
+      newTeams = [Team.MY_TEAM];
     } else {
-      newTeams = ["B"];
+      newTeams = [Team.OPPONENT];
     }
     onTeamsChange(newTeams);
   };
@@ -103,16 +103,16 @@ export default function MatchFilters({
 
   const selectAllPlayersTeamA = () => {
     const teamAPlayers = players
-      .filter((p) => p.team === "A")
-      .map((p) => `A-${p.num}`);
+      .filter((p) => p.team === Team.MY_TEAM)
+      .map((p) => `${Team.MY_TEAM}-${p.num}`);
     const newPlayers = [...new Set([...selectedPlayers, ...teamAPlayers])];
     onPlayersChange(newPlayers);
   };
 
   const selectAllPlayersTeamB = () => {
     const teamBPlayers = players
-      .filter((p) => p.team === "B")
-      .map((p) => `B-${p.num}`);
+      .filter((p) => p.team === Team.OPPONENT)
+      .map((p) => `${Team.OPPONENT}-${p.num}`);
     const newPlayers = [...new Set([...selectedPlayers, ...teamBPlayers])];
     onPlayersChange(newPlayers);
   };
@@ -156,20 +156,20 @@ export default function MatchFilters({
         </View>
         <View style={styles.filterCards}>
           {/* Show Team A option if managing Team A or both */}
-          {(teamMode === "A" || teamMode === "BOTH") && (
+          {(teamMode === Team.MY_TEAM || teamMode === "BOTH") && (
             <TouchableOpacity
               style={[
                 styles.filterCard,
                 { backgroundColor: colors.surfaceVariant },
-                selectedTeams.includes("A") && { backgroundColor: STATUS_COLORS.success },
+                selectedTeams.includes(Team.MY_TEAM) && { backgroundColor: colors.success },
               ]}
-              onPress={() => toggleTeam("A")}
+              onPress={() => toggleTeam(Team.MY_TEAM)}
             >
               <Text
                 style={[
                   styles.filterCardText,
                   { color: colors.text.secondary },
-                  selectedTeams.includes("A") && { color: COMMON_COLORS.white },
+                  selectedTeams.includes(Team.MY_TEAM) && { color: colors.text.primary },
                 ]}
               >
                 {teamA}
@@ -178,20 +178,20 @@ export default function MatchFilters({
           )}
 
           {/* Show Team B option if managing Team B or both */}
-          {(teamMode === "B" || teamMode === "BOTH") && (
+          {(teamMode === Team.OPPONENT || teamMode === "BOTH") && (
             <TouchableOpacity
               style={[
                 styles.filterCard,
                 { backgroundColor: colors.surfaceVariant },
-                selectedTeams.includes("B") && { backgroundColor: STATUS_COLORS.success },
+                selectedTeams.includes(Team.OPPONENT) && { backgroundColor: colors.success },
               ]}
-              onPress={() => toggleTeam("B")}
+              onPress={() => toggleTeam(Team.OPPONENT)}
             >
               <Text
                 style={[
                   styles.filterCardText,
                   { color: colors.text.secondary },
-                  selectedTeams.includes("B") && { color: COMMON_COLORS.white },
+                  selectedTeams.includes(Team.OPPONENT) && { color: colors.text.primary },
                 ]}
               >
                 {teamB}
@@ -206,7 +206,7 @@ export default function MatchFilters({
         <Text style={[styles.filterCategoryLabel, { color: colors.text.primary }]}>Joueurs</Text>
 
         {/* Team A Players - Show if managing Team A or both */}
-        {(selectedTeams.includes("A") || teamMode === "A") && (
+        {(selectedTeams.includes(Team.MY_TEAM) || teamMode === Team.MY_TEAM) && (
           <>
             <View style={styles.filterSubHeader}>
               <Text style={[styles.filterSubLabel, { color: colors.text.secondary }]}>{teamA}</Text>
@@ -223,10 +223,10 @@ export default function MatchFilters({
               style={styles.filterCardsScroll}
             >
               {players
-                .filter((p) => p.team === "A")
+                .filter((p) => p.team === Team.MY_TEAM)
                 .sort((a, b) => a.num - b.num)
                 .map((player) => {
-                  const playerIdentifier = `A-${player.num}`;
+                  const playerIdentifier = `${Team.MY_TEAM}-${player.num}`;
                   return (
                     <TouchableOpacity
                       key={player.id}
@@ -234,7 +234,7 @@ export default function MatchFilters({
                         styles.filterCard,
                         { backgroundColor: colors.surfaceVariant },
                         selectedPlayers.includes(playerIdentifier) &&
-                          { backgroundColor: STATUS_COLORS.success },
+                          { backgroundColor: colors.success },
                       ]}
                       onPress={() => togglePlayer(playerIdentifier)}
                     >
@@ -243,7 +243,7 @@ export default function MatchFilters({
                           styles.filterCardText,
                           { color: colors.text.secondary },
                           selectedPlayers.includes(playerIdentifier) &&
-                            { color: COMMON_COLORS.white },
+                            { color: colors.text.primary },
                         ]}
                       >
                         #{player.num} {player.name}
@@ -256,12 +256,12 @@ export default function MatchFilters({
         )}
 
         {/* Team B Players - Show if managing Team B or both */}
-        {(selectedTeams.includes("B") || teamMode === "B") && (
+        {(selectedTeams.includes(Team.OPPONENT) || teamMode === Team.OPPONENT) && (
           <>
             <View
               style={[
                 styles.filterSubHeader,
-                (selectedTeams.includes("A") || teamMode === "BOTH") &&
+                (selectedTeams.includes(Team.MY_TEAM) || teamMode === "BOTH") &&
                   styles.filterSubHeaderMargin,
               ]}
             >
@@ -279,10 +279,10 @@ export default function MatchFilters({
               style={styles.filterCardsScroll}
             >
               {players
-                .filter((p) => p.team === "B")
+                .filter((p) => p.team === Team.OPPONENT)
                 .sort((a, b) => a.num - b.num)
                 .map((player) => {
-                  const playerIdentifier = `B-${player.num}`;
+                  const playerIdentifier = `${Team.OPPONENT}-${player.num}`;
                   return (
                     <TouchableOpacity
                       key={player.id}
@@ -290,7 +290,7 @@ export default function MatchFilters({
                         styles.filterCard,
                         { backgroundColor: colors.surfaceVariant },
                         selectedPlayers.includes(playerIdentifier) &&
-                          { backgroundColor: STATUS_COLORS.success },
+                          { backgroundColor: colors.success },
                       ]}
                       onPress={() => togglePlayer(playerIdentifier)}
                     >
@@ -299,7 +299,7 @@ export default function MatchFilters({
                           styles.filterCardText,
                           { color: colors.text.secondary },
                           selectedPlayers.includes(playerIdentifier) &&
-                            { color: COMMON_COLORS.white },
+                            { color: colors.text.primary },
                         ]}
                       >
                         #{player.num} {player.name}
@@ -347,7 +347,7 @@ export default function MatchFilters({
                   style={[
                     styles.filterCardText,
                     { color: colors.text.secondary },
-                    isSelected && { color: COMMON_COLORS.white },
+                    isSelected && { color: colors.text.primary },
                   ]}
                 >
                   {action.icon} {action.label}
@@ -379,7 +379,7 @@ export default function MatchFilters({
                 style={[
                   styles.filterCard,
                   { backgroundColor: colors.surfaceVariant },
-                  selectedPeriods.includes(period) && { backgroundColor: STATUS_COLORS.success },
+                  selectedPeriods.includes(period) && { backgroundColor: colors.success },
                 ]}
                 onPress={() => togglePeriod(period)}
               >
@@ -388,7 +388,7 @@ export default function MatchFilters({
                     styles.filterCardText,
                     { color: colors.text.secondary },
                     selectedPeriods.includes(period) &&
-                      { color: COMMON_COLORS.white },
+                      { color: colors.text.primary },
                   ]}
                 >
                   {matchFormat === "2_halves" ? `MT${period}` : `QT${period}`}

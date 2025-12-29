@@ -1,6 +1,7 @@
 import React from "react";
 import { View, Text, TouchableOpacity, ScrollView, Image } from "react-native";
 import JerseyIcon from "./icons/JerseyIcon";
+import { Team } from "../src/models/types";
 
 interface Player {
   id: number;
@@ -24,8 +25,8 @@ interface SubstitutesManagerProps {
   onCoachEdit: (id: number) => void;
   onAddSubstitute: () => void;
   onRemoveSubstitute: () => void;
-  currentTeam: "A" | "B";
-  teamLetter: "A" | "B"; // L'équipe réelle de ces remplaçants
+  currentTeam: Team;
+  teamLetter: Team; // L'équipe réelle de ces remplaçants
   maxSubstitutes: number; // 10 maximum
   isPortrait: boolean;
   jerseyPrimaryColor?: string;

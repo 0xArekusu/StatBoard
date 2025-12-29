@@ -5,6 +5,26 @@ import type { SubscriptionService } from "./SubscriptionService";
 
 const MAX_TEAMS_PER_USER_PER_CLUB = 10;
 
+/**
+ * Service Layer Pattern
+ * Business logic for team operations
+ *
+ * Features:
+ * - Team creation with multi-level validation:
+ *   - User must be club member
+ *   - Club subscription limits (via SubscriptionService)
+ *   - Per-user limit (max 10 teams per user per club)
+ * - Team updates (owner only)
+ * - Team status management (pending/approved/rejected)
+ * - Team activation toggle
+ * - Team deletion (owner only)
+ * - Team queries (by ID, club, status, owner)
+ *
+ * Permissions:
+ * - Team owner: Can update and delete team
+ * - Club owner: Can approve/reject teams and toggle active status
+ * - Club member: Can create teams (subject to limits)
+ */
 export class TeamService {
   constructor(
     private teamRepository: ITeamRepository,
@@ -12,6 +32,14 @@ export class TeamService {
     private subscriptionService?: SubscriptionService
   ) {}
 
+  /**
+   * Create a new team with validation
+   * Validates club membership, subscription limits, and user limits
+   *
+   * @param data - Team creation data (name, clubId, etc.)
+   * @param userId - ID of the user creating the team
+   * @returns Success result with team data or error message
+   */
   async createTeam(data: CreateTeamData, userId: string) {
     // Validate team name
     if (!data.name || data.name.trim().length === 0) {
@@ -52,6 +80,15 @@ export class TeamService {
     return { success: true, team };
   }
 
+  /**
+   * Update a team (owner only)
+   * Status changes must use updateTeamStatus instead
+   *
+   * @param id - ID of the team to update
+   * @param data - Team update data (name, etc.)
+   * @param userId - ID of the user attempting the update
+   * @returns Success result with updated team or error message
+   */
   async updateTeam(id: string, data: UpdateTeamData, userId: string) {
     const team = await this.teamRepository.findById(id);
     if (!team) {
@@ -71,6 +108,15 @@ export class TeamService {
     return { success: true, team: updatedTeam };
   }
 
+  /**
+   * Update team status (club owner only)
+   * Used for approving/rejecting team requests
+   *
+   * @param teamId - ID of the team
+   * @param status - New status (pending/approved/rejected)
+   * @param clubOwnerId - ID of the club owner (verified by RLS)
+   * @returns Success result with updated team or error message
+   */
   async updateTeamStatus(teamId: string, status: TeamStatus, clubOwnerId: string) {
     const team = await this.teamRepository.findById(teamId);
     if (!team) {
@@ -87,6 +133,14 @@ export class TeamService {
     return { success: true, team: updatedTeam };
   }
 
+  /**
+   * Toggle team active status (club owner only)
+   * Active teams are shown in team lists, inactive teams are hidden
+   *
+   * @param teamId - ID of the team
+   * @param clubOwnerId - ID of the club owner (verified by RLS)
+   * @returns Success result with updated team or error message
+   */
   async toggleTeamActive(teamId: string, clubOwnerId: string) {
     const team = await this.teamRepository.findById(teamId);
     if (!team) {
@@ -105,6 +159,13 @@ export class TeamService {
     return { success: true, team: updatedTeam };
   }
 
+  /**
+   * Delete a team (owner only)
+   *
+   * @param id - ID of the team to delete
+   * @param userId - ID of the user attempting the deletion
+   * @returns Success result or error message
+   */
   async deleteTeam(id: string, userId: string) {
     const team = await this.teamRepository.findById(id);
     if (!team) {
@@ -123,18 +184,43 @@ export class TeamService {
     return { success: true };
   }
 
+  /**
+   * Get a team by ID
+   *
+   * @param id - ID of the team
+   * @returns Team data or null if not found
+   */
   async getTeamById(id: string) {
     return await this.teamRepository.findById(id);
   }
 
+  /**
+   * Get all teams in a club
+   *
+   * @param clubId - ID of the club
+   * @returns List of teams in the club
+   */
   async getClubTeams(clubId: string) {
     return await this.teamRepository.findByClubId(clubId);
   }
 
+  /**
+   * Get teams in a club filtered by status
+   *
+   * @param clubId - ID of the club
+   * @param status - Status filter (pending/approved/rejected)
+   * @returns List of teams matching the status
+   */
   async getClubTeamsByStatus(clubId: string, status: TeamStatus) {
     return await this.teamRepository.findByClubIdAndStatus(clubId, status);
   }
 
+  /**
+   * Get all teams owned by a user
+   *
+   * @param userId - ID of the user
+   * @returns List of teams owned by the user
+   */
   async getUserTeams(userId: string) {
     return await this.teamRepository.findByOwnerId(userId);
   }
