@@ -22,6 +22,20 @@ interface HistoryScreenProps {
   navigation: any;
 }
 
+/**
+ * HistoryScreen - Displays match history and sync management
+ *
+ * Features:
+ * - Displays all matches (both local and synced) in chronological order
+ * - Shows sync status for each match (synced to cloud or local only)
+ * - Provides batch sync functionality for unsynced matches
+ * - Displays match results, scores, and metadata
+ * - Navigates to detailed match statistics on tap
+ *
+ * Sync States:
+ * - SYNCED: Match data is backed up to Supabase cloud
+ * - LOCAL: Match data exists only on device (not backed up)
+ */
 export default function HistoryScreen({ navigation }: HistoryScreenProps) {
   const { colors, isDark } = useTheme();
   const { user } = useAuth();
@@ -31,12 +45,17 @@ export default function HistoryScreen({ navigation }: HistoryScreenProps) {
   const [showSyncModal, setShowSyncModal] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
 
-  const isGuest = !user;
 
   useEffect(() => {
     loadHistoryData();
   }, [user?.id]);
 
+  /**
+   * Loads all matches from both local storage and Supabase
+   * - Fetches matches from MatchListService (combines local + cloud data)
+   * - Sorts matches by date (most recent first)
+   * - Updates the matches state with combined results
+   */
   const loadHistoryData = async () => {
     try {
       setLoading(true);
@@ -55,6 +74,14 @@ export default function HistoryScreen({ navigation }: HistoryScreenProps) {
     }
   };
 
+  /**
+   * Synchronizes all unsynced matches to Supabase cloud
+   * - Uploads local-only matches to the server
+   * - Shows success message with count of synced matches
+   * - Shows error message if any matches fail to sync
+   * - Reloads match list after successful sync
+   * - Closes sync confirmation modal when complete
+   */
   const handleSyncAll = async () => {
     try {
       setIsSyncing(true);
@@ -92,7 +119,6 @@ export default function HistoryScreen({ navigation }: HistoryScreenProps) {
   };
 
   const bgColor = colors.surface;
-  const surfaceColor = colors.background;
   const textPrimary = colors.text.primary;
   const textSecondary = colors.text.secondary;
   const borderColor = colors.border;
@@ -368,6 +394,22 @@ interface MatchCardProps {
   onPress: () => void;
 }
 
+/**
+ * MatchCard - Individual match display card
+ *
+ * Displays:
+ * - Match date and location (home/away)
+ * - Team names and final scores
+ * - Match result badge (WIN/LOSS)
+ * - Sync status indicator (SYNC/LOCAL)
+ * - Action button to view detailed statistics
+ *
+ * Visual highlights:
+ * - Winning score is emphasized with primary color
+ * - Losing score is dimmed
+ * - Result badge uses success/error colors
+ * - Sync status shows cloud icon for synced, warning for local-only
+ */
 function MatchCard({ match, onPress }: MatchCardProps) {
   const { isDark, colors } = useTheme();
   const scoreA = match.my_team_score || 0;
@@ -375,6 +417,11 @@ function MatchCard({ match, onPress }: MatchCardProps) {
   const isWin = scoreA > scoreB;
   const isSynced = Boolean(match.synced_to_server);
 
+  /**
+   * Formats a date string to French locale format
+   * @param dateString - ISO date string to format
+   * @returns Formatted date string (e.g., "lun. 15 janvier 2024")
+   */
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString("fr-FR", {
@@ -384,9 +431,6 @@ function MatchCard({ match, onPress }: MatchCardProps) {
       year: "numeric",
     });
   };
-
-  // Determine location label - for now we don't have this info, so we skip it
-  // In the future, you could add a location field to the Match model
 
   return (
     <TouchableOpacity
