@@ -39,7 +39,7 @@ import { supabase } from "../src/config/supabase";
 import { ServiceFactory } from "../services/ServiceFactory";
 import { useAuth } from "../src/contexts/AuthContext";
 import { useTheme } from "../src/contexts/ThemeContext";
-import type { Team } from "../models/Team";
+import { Team, TEAM_GENDER_LABELS } from "../models/Team";
 import { logInfo, logError, logWarn } from "../utils/logger";
 
 interface ClubTeamsTabProps {
@@ -270,7 +270,7 @@ export default function ClubTeamsTab({ clubId, isOwner, onCreateTeam, onEditTeam
    * Shows different actions based on pending status and user permissions
    */
   const renderTeam = (team: Team, isPending: boolean) => {
-    const genderLabel = team.gender ? `${team.gender === "male" ? "Masculin" : team.gender === "female" ? "Féminin" : "Mixte"}` : "";
+    const genderLabel = team.gender ? TEAM_GENDER_LABELS[team.gender] : "";
     const isTeamOwner = user && team.ownerId === user.id;
 
     return (

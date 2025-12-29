@@ -13,21 +13,21 @@ import {
 } from "react-native";
 import { MaterialCommunityIcons, Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
-import { useTheme } from "../src/contexts/ThemeContext";
-import { useAuth } from "../src/contexts/AuthContext";
-import { ServiceFactory } from "../services/ServiceFactory";
-import { supabase } from "../src/config/supabase";
-import { PhotoUploadService } from "../services/PhotoUploadService";
-import { Club } from "../models/Club";
-import { Team, TeamStatus } from "../models/Team";
-import { SubscriptionTier, SUBSCRIPTION_LIMITS, SUBSCRIPTION_TIER } from "../models/Subscription";
+import { useTheme } from "../../src/contexts/ThemeContext";
+import { useAuth } from "../../src/contexts/AuthContext";
+import { ServiceFactory } from "../../services/ServiceFactory";
+import { supabase } from "../../src/config/supabase";
+import { PhotoUploadService } from "../../services/PhotoUploadService";
+import { Club } from "../../models/Club";
+import { Team, TeamStatus } from "../../models/Team";
+import { SubscriptionTier, SUBSCRIPTION_LIMITS, SUBSCRIPTION_TIER } from "../../models/Subscription";
 import {
   JoinClubForm,
   SubscriptionView,
   ClubInfoView,
   CreateClubForm,
-} from "../components/Club";
-import { ROUTES } from "../constants/routes";
+} from "../../components/Club";
+import { ROUTES } from "../../constants/routes";
 import {
   CLUB_SUB_TAB,
   ClubSubTab,
@@ -37,7 +37,7 @@ import {
   COURT_COLOR_PALETTE,
   ClubFormData,
   INITIAL_CLUB_FORM_DATA,
-} from "../constants";
+} from "../../constants";
 
 interface ClubScreenProps {
   navigation: any;

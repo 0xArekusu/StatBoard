@@ -4,7 +4,23 @@ export enum TeamStatus {
   REJECTED = 'rejected',
 }
 
-export type TeamGender = 'male' | 'female' | 'mixed';
+/**
+ * Team gender categories
+ */
+export enum TeamGender {
+  MALE = 'male',
+  FEMALE = 'female',
+  MIXED = 'mixed',
+}
+
+/**
+ * Display labels for team genders
+ */
+export const TEAM_GENDER_LABELS: Record<TeamGender, string> = {
+  [TeamGender.MALE]: 'Masculin',
+  [TeamGender.FEMALE]: 'Féminin',
+  [TeamGender.MIXED]: 'Mixte',
+};
 
 export interface Team {
   id: string;

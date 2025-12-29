@@ -44,19 +44,13 @@ import { supabase } from "../src/config/supabase";
 import { StatsTab, CardsTab, CourtTab, EvolutionTab, PlayerDetailModal } from "../components/MatchDetails";
 import type { PlayerStats, Tab, TeamFilter, ActionFilterType, SortBy, SortOrder } from "../constants/matchDetailsConstants";
 import { TAB, ACTION_FILTER } from "../constants";
+import { RootStackParamList, RootNavigationProp } from "../types/navigation";
 
-// Types
-interface RouteParams {
-  match: Match;
-  actions?: any[]; // Optional - will be loaded if not provided
-  fromLiveMatch?: boolean;
-  players?: any[]; // Optional - will be loaded if not provided
-  isLocalMatch?: boolean; // Flag to show local match warning
-}
+type MatchDetailsRouteProp = RouteProp<RootStackParamList, "MatchDetails">;
 
 export default function MatchDetailsScreen() {
-  const navigation = useNavigation();
-  const route = useRoute<RouteProp<{ params: RouteParams }, "params">>();
+  const navigation = useNavigation<RootNavigationProp>();
+  const route = useRoute<MatchDetailsRouteProp>();
   const { match, fromLiveMatch, isLocalMatch } = route.params;
   const { colors, isDark } = useTheme();
 

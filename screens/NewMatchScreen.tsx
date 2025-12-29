@@ -8,6 +8,7 @@
 
 import React, { useState, useEffect } from "react";
 import { View, StyleSheet, ScrollView, Alert, ActivityIndicator } from "react-native";
+import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { useTheme } from "../src/contexts/ThemeContext";
 import { useAuth } from "../src/contexts/AuthContext";
 import { DEFAULT_COURT_COLORS } from "../src/theme";
@@ -36,12 +37,9 @@ import {
   OpponentRosterView,
   MatchFooter,
 } from "../components/NewMatch";
+import { RootStackParamList, RootNavigationProp } from "../types/navigation";
 
-interface NewMatchScreenProps {
-  navigation: any;
-  route: any;
-}
-
+type NewMatchRouteProp = RouteProp<RootStackParamList, "NewMatch">;
 type RosterTab = "HOME" | "AWAY";
 
 /**
@@ -50,15 +48,11 @@ type RosterTab = "HOME" | "AWAY";
  * Handles the creation of a new match with a two-step process.
  * Manages team selection, match configuration, and roster setup.
  */
-export default function NewMatchScreen({
-  navigation,
-  route,
-}: NewMatchScreenProps) {
+export default function NewMatchScreen() {
+  const navigation = useNavigation<RootNavigationProp>();
+  const route = useRoute<NewMatchRouteProp>();
   const { colors, isDark } = useTheme();
   const { user } = useAuth();
-
-  // Get defaultTeamId from route params
-  const defaultTeamId = route.params?.teamId || null;
 
   // ===========================
   // STATE
@@ -517,7 +511,7 @@ export default function NewMatchScreen({
       isHome: matchData.isHome,
       periodCount: matchData.periodCount,
     }));
-    navigation.navigate("LiveMatch", { matchData });
+    navigation.navigate(ROUTES.LIVE_MATCH, { matchData });
   };
 
   // ===========================

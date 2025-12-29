@@ -8,8 +8,10 @@ import {
   Alert,
 } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { useTheme } from "../src/contexts/ThemeContext";
 import { SLATE_COLORS } from "../src/theme/colors";
+import { RootStackParamList, RootNavigationProp } from "../types/navigation";
 import {
   MatchStatus,
   CreateMatchData,
@@ -67,7 +69,11 @@ import {
   SyncModal,
 } from "../components/LiveMatchModals";
 
-export default function LiveMatchScreen({ navigation, route }: any) {
+type LiveMatchRouteProp = RouteProp<RootStackParamList, "LiveMatch">;
+
+export default function LiveMatchScreen() {
+  const navigation = useNavigation<RootNavigationProp>();
+  const route = useRoute<LiveMatchRouteProp>();
   const { colors, isDark } = useTheme();
   const { user } = useAuth();
   const matchData = route.params?.matchData;
@@ -1632,15 +1638,12 @@ export default function LiveMatchScreen({ navigation, route }: any) {
 
                 // Navigate to match details screen with full data (same format as HistoryScreen)
                 setTimeout(() => {
-                  navigation.navigate(
-                    ROUTES.MATCH_DETAILS as never,
-                    {
-                      match: supabaseMatch,
-                      actions: actionDataList,
-                      players: players,
-                      fromLiveMatch: true, // Flag to hide back button
-                    } as never,
-                  );
+                  navigation.navigate(ROUTES.MATCH_DETAILS, {
+                    match: supabaseMatch,
+                    actions: actionDataList,
+                    players: players,
+                    fromLiveMatch: true,
+                  });
                 }, 300);
               } catch (fetchError) {
                 logError("LiveMatchScreen", "❌ Failed to fetch synced match", {
@@ -1697,16 +1700,13 @@ export default function LiveMatchScreen({ navigation, route }: any) {
 
                 // Wait for modal to fully close before navigating
                 setTimeout(() => {
-                  navigation.navigate(
-                    ROUTES.MATCH_DETAILS as never,
-                    {
-                      match: localMatch,
-                      actions: localActions,
-                      players: localPlayers,
-                      fromLiveMatch: true,
-                      isLocalMatch: true, // Flag to show warning in MatchDetails
-                    } as never,
-                  );
+                  navigation.navigate(ROUTES.MATCH_DETAILS, {
+                    match: localMatch,
+                    actions: localActions,
+                    players: localPlayers,
+                    fromLiveMatch: true,
+                    isLocalMatch: true,
+                  });
                 }, 300);
               } catch (fetchError) {
                 logError(

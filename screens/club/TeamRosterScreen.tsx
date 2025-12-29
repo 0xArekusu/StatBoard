@@ -14,66 +14,65 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { useNavigation, useRoute, RouteProp, useFocusEffect } from "@react-navigation/native";
-import { useAuth } from "../src/contexts/AuthContext";
-import { useTheme } from "../src/contexts/ThemeContext";
-import {
-  CommonStyles,
-  BRAND_COLORS,
-  SLATE_COLORS,
-  COMMON_COLORS,
-} from "../src/theme";
-import { ServiceFactory } from "../services/ServiceFactory";
-import { supabase } from "../src/config/supabase";
-import { PhotoUploadService } from "../services/PhotoUploadService";
-import type { TeamGender } from "../models/Team";
+import { useAuth } from "../../src/contexts/AuthContext";
+import { useTheme } from "../../src/contexts/ThemeContext";
+import { CommonStyles } from "../../src/theme";
+import { ServiceFactory } from "../../services/ServiceFactory";
+import { supabase } from "../../src/config/supabase";
+import { PhotoUploadService } from "../../services/PhotoUploadService";
+import { RootStackParamList, RootNavigationProp } from "../../types/navigation";
 
+/**
+ * Local player interface for this screen
+ * Temporary players have an ID starting with "temp-"
+ */
 interface Player {
   id: string;
   name: string;
   jerseyNumber: number;
   photoUrl?: string;
-  isStarter?: boolean;
 }
-
-type RootStackParamList = {
-  TeamRoster: {
-    clubId: string;
-    teamId?: string;
-    teamData: {
-      name: string;
-      category: string;
-      gender: TeamGender;
-    };
-  };
-};
 
 type TeamRosterRouteProp = RouteProp<RootStackParamList, "TeamRoster">;
 
+/**
+ * TeamRosterScreen - Staff and roster management screen
+ * Features:
+ * - Add/edit head coach information
+ * - Manage team roster (5-15 players)
+ * - Add/edit/delete players
+ * - Upload photos for coach and players
+ */
 export default function TeamRosterScreen() {
-  const navigation = useNavigation();
+  const navigation = useNavigation<RootNavigationProp>();
   const route = useRoute<TeamRosterRouteProp>();
   const { user } = useAuth();
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const { clubId, teamId, teamData } = route.params;
 
+  // Coach state
   const [coachName, setCoachName] = useState("");
   const [coachPhotoUrl, setCoachPhotoUrl] = useState("");
   const [isEditingCoach, setIsEditingCoach] = useState(false);
 
+  // Players state
   const [roster, setRoster] = useState<Player[]>([]);
   const [newPlayerName, setNewPlayerName] = useState("");
   const [newPlayerNumber, setNewPlayerNumber] = useState("");
   const [newPlayerPhoto, setNewPlayerPhoto] = useState("");
   const [addPlayerError, setAddPlayerError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Player editing state
   const [editingPlayerId, setEditingPlayerId] = useState<string | null>(null);
   const [editingPlayerName, setEditingPlayerName] = useState("");
   const [editingPlayerNumber, setEditingPlayerNumber] = useState("");
   const [editingPlayerPhoto, setEditingPlayerPhoto] = useState("");
   const [editPlayerError, setEditPlayerError] = useState<string | null>(null);
 
-  const bgColor = isDark ? SLATE_COLORS[950] : SLATE_COLORS[50];
-  const surfaceColor = isDark ? SLATE_COLORS[900] : COMMON_COLORS.white;
+  // Theme colors
+  const bgColor = colors.background;
+  const surfaceColor = colors.surface;
 
   // Load existing team data if editing
   useEffect(() => {
@@ -96,6 +95,10 @@ export default function TeamRosterScreen() {
     }, [navigation])
   );
 
+  /**
+   * Load existing team data in edit mode
+   * Fetches coach info and player list
+   */
   const loadTeamData = async () => {
     try {
       const teamService = ServiceFactory.getTeamService(supabase);
@@ -114,6 +117,14 @@ export default function TeamRosterScreen() {
     }
   };
 
+  /**
+   * Add a new player to the roster
+   * Validations:
+   * - Name and number required
+   * - Max 15 players
+   * - No duplicate names
+   * - Jersey number between 0-99
+   */
   const handleAddPlayer = () => {
     setAddPlayerError(null);
     const trimmedName = newPlayerName.trim();
@@ -161,6 +172,11 @@ export default function TeamRosterScreen() {
     setNewPlayerPhoto("");
   };
 
+  /**
+   * Remove a player from the roster
+   * Shows a warning for existing players (with stats)
+   * No warning for new temporary players
+   */
   const handleRemovePlayer = (id: string, playerName: string) => {
     // Check if player is new (temp ID) or existing
     const isNewPlayer = id.startsWith("temp-");
@@ -244,6 +260,10 @@ export default function TeamRosterScreen() {
     setEditPlayerError(null);
   };
 
+  /**
+   * Open image picker for coach photo
+   * Uploads to Supabase storage
+   */
   const handlePickCoachPhoto = async () => {
     const permissionResult =
       await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -285,6 +305,10 @@ export default function TeamRosterScreen() {
     }
   };
 
+  /**
+   * Open image picker for player photo
+   * @param isEditing - true if editing existing player, false if adding new
+   */
   const handlePickPlayerPhoto = async (isEditing: boolean = false) => {
     const permissionResult =
       await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -338,6 +362,11 @@ export default function TeamRosterScreen() {
     }
   };
 
+  /**
+   * Save the team (create or update)
+   * Creates/updates team with coach info
+   * Then creates/updates/deletes players intelligently
+   */
   const handleNext = async () => {
     if (!coachName.trim()) {
       Alert.alert("Erreur", "Le nom du coach est obligatoire");
@@ -490,10 +519,10 @@ export default function TeamRosterScreen() {
       {/* Progress */}
       <View style={styles.progressContainer}>
         <View
-          style={[styles.progressBar, { backgroundColor: BRAND_COLORS[500] }]}
+          style={[styles.progressBar, { backgroundColor: colors.primary }]}
         />
         <View
-          style={[styles.progressBar, { backgroundColor: BRAND_COLORS[500] }]}
+          style={[styles.progressBar, { backgroundColor: colors.primary }]}
         />
       </View>
 
@@ -547,9 +576,7 @@ export default function TeamRosterScreen() {
                       styles.coachPhoto,
                       {
                         borderColor: colors.border,
-                        backgroundColor: isDark
-                          ? SLATE_COLORS[800]
-                          : SLATE_COLORS[100],
+                        backgroundColor: colors.surface,
                       },
                     ]}
                   >
@@ -572,9 +599,7 @@ export default function TeamRosterScreen() {
                       style={[
                         styles.coachInput,
                         {
-                          backgroundColor: isDark
-                            ? SLATE_COLORS[800]
-                            : SLATE_COLORS[50],
+                          backgroundColor: colors.surface,
                           borderColor: colors.border,
                           color: colors.text.primary,
                         },
@@ -588,7 +613,7 @@ export default function TeamRosterScreen() {
                       style={[
                         styles.saveCoachButton,
                         {
-                          backgroundColor: BRAND_COLORS[600],
+                          backgroundColor: colors.primary,
                         },
                       ]}
                       onPress={() => setIsEditingCoach(false)}
@@ -633,12 +658,12 @@ export default function TeamRosterScreen() {
                       <Ionicons
                         name="briefcase"
                         size={12}
-                        color={BRAND_COLORS[600]}
+                        color={colors.primary}
                       />
                       <Text
                         style={[
                           styles.coachRoleText,
-                          { color: BRAND_COLORS[600] },
+                          { color: colors.primary },
                         ]}
                       >
                         Coach Principal
@@ -651,9 +676,7 @@ export default function TeamRosterScreen() {
                   style={[
                     styles.editButton,
                     {
-                      backgroundColor: isDark
-                        ? SLATE_COLORS[800]
-                        : SLATE_COLORS[50],
+                      backgroundColor: colors.surface,
                     },
                   ]}
                 >
@@ -680,24 +703,22 @@ export default function TeamRosterScreen() {
               style={[
                 styles.warningBox,
                 {
-                  backgroundColor: isDark
-                    ? `${BRAND_COLORS[900]}`
-                    : `${BRAND_COLORS[50]}`,
-                  borderColor: isDark ? BRAND_COLORS[600] : BRAND_COLORS[500],
+                  backgroundColor: `${colors.primary}15`,
+                  borderColor: colors.primary,
                 },
               ]}
             >
               <Ionicons
                 name="alert-circle"
                 size={16}
-                color={BRAND_COLORS[500]}
+                color={colors.primary}
               />
               <Text
                 style={{
                   flex: 1,
                   fontSize: 12,
                   fontWeight: "bold",
-                  color: BRAND_COLORS[500],
+                  color: colors.primary,
                 }}
               >
                 Il manque encore {5 - roster.length} joueur(s) pour continuer.
@@ -716,7 +737,7 @@ export default function TeamRosterScreen() {
             ]}
           >
             <View style={styles.addPlayerHeader}>
-              <Ionicons name="add-circle" size={16} color={BRAND_COLORS[500]} />
+              <Ionicons name="add-circle" size={16} color={colors.primary} />
               <Text
                 style={[styles.addPlayerTitle, { color: colors.text.primary }]}
               >
@@ -730,9 +751,7 @@ export default function TeamRosterScreen() {
                 style={[
                   styles.playerPhotoPreview,
                   {
-                    backgroundColor: isDark
-                      ? SLATE_COLORS[800]
-                      : SLATE_COLORS[100],
+                    backgroundColor: colors.surface,
                     borderColor: colors.border,
                   },
                 ]}
@@ -756,9 +775,7 @@ export default function TeamRosterScreen() {
                   style={[
                     styles.playerInput,
                     {
-                      backgroundColor: isDark
-                        ? SLATE_COLORS[800]
-                        : SLATE_COLORS[50],
+                      backgroundColor: colors.surface,
                       borderColor: colors.border,
                       color: colors.text.primary,
                     },
@@ -776,9 +793,7 @@ export default function TeamRosterScreen() {
                     style={[
                       styles.numberInput,
                       {
-                        backgroundColor: isDark
-                          ? SLATE_COLORS[800]
-                          : SLATE_COLORS[50],
+                        backgroundColor: colors.surface,
                         borderColor: colors.border,
                         color: colors.text.primary,
                       },
@@ -801,7 +816,7 @@ export default function TeamRosterScreen() {
                       {
                         backgroundColor:
                           newPlayerName && newPlayerNumber && roster.length < 15
-                            ? BRAND_COLORS[600]
+                            ? colors.primary
                             : colors.text.disabled,
                       },
                     ]}
@@ -826,9 +841,7 @@ export default function TeamRosterScreen() {
               style={[
                 styles.emptyRoster,
                 {
-                  backgroundColor: isDark
-                    ? `${SLATE_COLORS[900]}80`
-                    : SLATE_COLORS[50],
+                  backgroundColor: `${colors.surface}80`,
                   borderColor: colors.border,
                 },
               ]}
@@ -867,9 +880,7 @@ export default function TeamRosterScreen() {
                           style={[
                             styles.playerPhotoPreview,
                             {
-                              backgroundColor: isDark
-                                ? SLATE_COLORS[800]
-                                : SLATE_COLORS[100],
+                              backgroundColor: colors.surface,
                               borderColor: colors.border,
                             },
                           ]}
@@ -894,9 +905,7 @@ export default function TeamRosterScreen() {
                             style={[
                               styles.playerInput,
                               {
-                                backgroundColor: isDark
-                                  ? SLATE_COLORS[800]
-                                  : SLATE_COLORS[50],
+                                backgroundColor: colors.surface,
                                 borderColor: colors.border,
                                 color: colors.text.primary,
                               },
@@ -914,9 +923,7 @@ export default function TeamRosterScreen() {
                               style={[
                                 styles.numberInput,
                                 {
-                                  backgroundColor: isDark
-                                    ? SLATE_COLORS[800]
-                                    : SLATE_COLORS[50],
+                                  backgroundColor: colors.surface,
                                   borderColor: colors.border,
                                   color: colors.text.primary,
                                 },
@@ -936,7 +943,7 @@ export default function TeamRosterScreen() {
                               onPress={() => handleSavePlayerEdit(player.id)}
                               style={[
                                 styles.saveButton,
-                                { backgroundColor: BRAND_COLORS[600] },
+                                { backgroundColor: colors.primary },
                               ]}
                             >
                               <Ionicons
@@ -954,9 +961,7 @@ export default function TeamRosterScreen() {
                               style={[
                                 styles.cancelButton,
                                 {
-                                  backgroundColor: isDark
-                                    ? SLATE_COLORS[800]
-                                    : SLATE_COLORS[100],
+                                  backgroundColor: colors.surface,
                                 },
                               ]}
                             >
@@ -982,9 +987,7 @@ export default function TeamRosterScreen() {
                             style={[
                               styles.playerNumber,
                               {
-                                backgroundColor: isDark
-                                  ? SLATE_COLORS[800]
-                                  : SLATE_COLORS[200],
+                                backgroundColor: colors.surface,
                               },
                             ]}
                           >
@@ -1029,9 +1032,7 @@ export default function TeamRosterScreen() {
                             style={[
                               styles.editButton,
                               {
-                                backgroundColor: isDark
-                                  ? SLATE_COLORS[800]
-                                  : SLATE_COLORS[50],
+                                backgroundColor: colors.surface,
                               },
                             ]}
                           >
@@ -1080,7 +1081,7 @@ export default function TeamRosterScreen() {
             {
               backgroundColor:
                 coachName.trim() && roster.length >= 5 && !isSubmitting
-                  ? BRAND_COLORS[600]
+                  ? colors.primary
                   : colors.text.disabled,
             },
           ]}

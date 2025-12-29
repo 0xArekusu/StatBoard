@@ -11,58 +11,53 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
-import { useAuth } from "../src/contexts/AuthContext";
-import { useTheme } from "../src/contexts/ThemeContext";
-import {
-  CommonStyles,
-  BRAND_COLORS,
-  SLATE_COLORS,
-  COMMON_COLORS,
-} from "../src/theme";
-import { ServiceFactory } from "../services/ServiceFactory";
-import { supabase } from "../src/config/supabase";
-import type { TeamGender } from "../models/Team";
+import { useAuth } from "../../src/contexts/AuthContext";
+import { useTheme } from "../../src/contexts/ThemeContext";
+import { CommonStyles } from "../../src/theme";
+import { ServiceFactory } from "../../services/ServiceFactory";
+import { supabase } from "../../src/config/supabase";
+import type { TeamGender } from "../../models/Team";
+import { RootStackParamList, RootNavigationProp } from "../../types/navigation";
+import { ROUTES } from "../../constants/routes";
 
+/**
+ * Local player interface for this screen
+ */
 interface Player {
   id: string;
   name: string;
   jerseyNumber: number;
   photoUrl?: string;
-  isStarter?: boolean;
 }
-
-type RootStackParamList = {
-  TeamStarters: {
-    clubId: string;
-    teamId?: string;
-    teamData: {
-      name: string;
-      category: string;
-      gender: TeamGender;
-    };
-    coachData: {
-      name: string;
-      photoUrl: string;
-    };
-    roster: Player[];
-  };
-};
 
 type TeamStartersRouteProp = RouteProp<RootStackParamList, "TeamStarters">;
 
+/**
+ * TeamStartersScreen - Starting lineup selection screen
+ * Final step in team creation/editing flow
+ * Allows selection of exactly 5 starters from the roster
+ * Note: Starters are tracked locally in this screen only for UI purposes
+ */
 export default function TeamStartersScreen() {
-  const navigation = useNavigation();
+  const navigation = useNavigation<RootNavigationProp>();
   const route = useRoute<TeamStartersRouteProp>();
   const { user } = useAuth();
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const { clubId, teamId, teamData, coachData, roster } = route.params;
 
+  // Local state for tracking selected starters (player IDs)
   const [starters, setStarters] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
 
-  const bgColor = isDark ? SLATE_COLORS[950] : SLATE_COLORS[50];
-  const surfaceColor = isDark ? SLATE_COLORS[900] : COMMON_COLORS.white;
+  // Theme colors
+  const bgColor = colors.background;
+  const surfaceColor = colors.surface;
 
+  /**
+   * Toggle a player's starter status
+   * Max 5 starters allowed
+   * @param playerId - The player ID to toggle
+   */
   const toggleStarter = (playerId: string) => {
     if (starters.includes(playerId)) {
       setStarters(starters.filter((id) => id !== playerId));
@@ -78,6 +73,12 @@ export default function TeamStartersScreen() {
     }
   };
 
+  /**
+   * Save the complete team to the database
+   * For new teams: Creates team and all players
+   * For existing teams: Updates team and manages players (create/update/delete)
+   * Requires exactly 5 starters to be selected
+   */
   const handleFinish = async () => {
     if (starters.length !== 5) {
       Alert.alert(
@@ -97,14 +98,9 @@ export default function TeamStartersScreen() {
     try {
       const teamService = ServiceFactory.getTeamService(supabase);
 
-      // Update roster with starter status
-      const finalRoster = roster.map((p) => ({
-        ...p,
-        isStarter: starters.includes(p.id),
-      }));
-
       if (teamId) {
         // UPDATE EXISTING TEAM
+        // Update team metadata
         const result = await teamService.updateTeam(
           teamId,
           {
@@ -125,16 +121,15 @@ export default function TeamStartersScreen() {
           return;
         }
 
-        // Save players
+        // Save players - intelligent update
         const playerService = ServiceFactory.getPlayerService(supabase);
         const existingPlayers = await playerService.getTeamPlayers(teamId);
-        const existingIds = new Set(existingPlayers.map((p) => p.id));
         const currentIds = new Set(
-          finalRoster.filter((p) => !p.id.startsWith("temp-")).map((p) => p.id)
+          roster.filter((p) => !p.id.startsWith("temp-")).map((p) => p.id)
         );
 
-        // Update or create players
-        for (const player of finalRoster) {
+        // 1. Create new players or update existing ones
+        for (const player of roster) {
           if (player.id.startsWith("temp-")) {
             // New player - CREATE
             await playerService.createPlayer({
@@ -142,7 +137,6 @@ export default function TeamStartersScreen() {
               name: player.name,
               jerseyNumber: player.jerseyNumber,
               photoUrl: player.photoUrl,
-              isStarter: player.isStarter,
             });
           } else {
             // Existing player - UPDATE
@@ -150,12 +144,11 @@ export default function TeamStartersScreen() {
               name: player.name,
               jerseyNumber: player.jerseyNumber,
               photoUrl: player.photoUrl,
-              isStarter: player.isStarter,
             });
           }
         }
 
-        // Delete players that are no longer in the list
+        // 2. Delete players that were removed from the roster
         for (const existingPlayer of existingPlayers) {
           if (!currentIds.has(existingPlayer.id)) {
             await playerService.deletePlayer(existingPlayer.id, teamId);
@@ -166,12 +159,13 @@ export default function TeamStartersScreen() {
           {
             text: "OK",
             onPress: () => {
-              navigation.navigate("Club" as never);
+              navigation.navigate(ROUTES.CLUB);
             },
           },
         ]);
       } else {
         // CREATE NEW TEAM
+        // First, create the team
         const result = await teamService.createTeam(
           {
             name: teamData.name,
@@ -196,15 +190,14 @@ export default function TeamStartersScreen() {
           return;
         }
 
-        // Create players
+        // Then, create all players for the new team
         const playerService = ServiceFactory.getPlayerService(supabase);
-        for (const player of finalRoster) {
+        for (const player of roster) {
           await playerService.createPlayer({
             teamId: newTeamId,
             name: player.name,
             jerseyNumber: player.jerseyNumber,
             photoUrl: player.photoUrl,
-            isStarter: player.isStarter,
           });
         }
 
@@ -215,7 +208,7 @@ export default function TeamStartersScreen() {
             {
               text: "OK",
               onPress: () => {
-                navigation.navigate("Club" as never);
+                navigation.navigate(ROUTES.CLUB);
               },
             },
           ]
@@ -255,13 +248,13 @@ export default function TeamStartersScreen() {
       {/* Progress */}
       <View style={styles.progressContainer}>
         <View
-          style={[styles.progressBar, { backgroundColor: BRAND_COLORS[500] }]}
+          style={[styles.progressBar, { backgroundColor: colors.primary }]}
         />
         <View
-          style={[styles.progressBar, { backgroundColor: BRAND_COLORS[500] }]}
+          style={[styles.progressBar, { backgroundColor: colors.primary }]}
         />
         <View
-          style={[styles.progressBar, { backgroundColor: BRAND_COLORS[500] }]}
+          style={[styles.progressBar, { backgroundColor: colors.primary }]}
         />
       </View>
 
@@ -275,14 +268,14 @@ export default function TeamStartersScreen() {
           style={[
             styles.infoBox,
             {
-              backgroundColor: `${BRAND_COLORS[500]}15`,
-              borderColor: `${BRAND_COLORS[500]}30`,
+              backgroundColor: `${colors.primary}15`,
+              borderColor: `${colors.primary}30`,
             },
           ]}
         >
           <View style={styles.infoLeft}>
-            <Ionicons name="shirt" size={18} color={BRAND_COLORS[700]} />
-            <Text style={[styles.infoText, { color: BRAND_COLORS[700] }]}>
+            <Ionicons name="shirt" size={18} color={colors.primary} />
+            <Text style={[styles.infoText, { color: colors.primary }]}>
               Sélectionnez 5 titulaires
             </Text>
           </View>
@@ -291,7 +284,7 @@ export default function TeamStartersScreen() {
               styles.starterBadge,
               {
                 backgroundColor:
-                  starters.length === 5 ? BRAND_COLORS[500] : SLATE_COLORS[200],
+                  starters.length === 5 ? colors.primary : colors.surface,
               },
             ]}
           >
@@ -299,7 +292,7 @@ export default function TeamStartersScreen() {
               style={[
                 styles.starterBadgeText,
                 {
-                  color: starters.length === 5 ? "#fff" : SLATE_COLORS[600],
+                  color: starters.length === 5 ? "#fff" : colors.text.secondary,
                 },
               ]}
             >
@@ -310,9 +303,9 @@ export default function TeamStartersScreen() {
 
         {/* Error if not 5 starters */}
         {starters.length !== 5 && (
-          <View style={[styles.errorBox, { backgroundColor: `${BRAND_COLORS[500]}15`, borderColor: BRAND_COLORS[500] }]}>
-            <Ionicons name="alert-circle" size={16} color={BRAND_COLORS[500]} />
-            <Text style={[styles.errorText, { color: BRAND_COLORS[700] }]}>
+          <View style={[styles.errorBox, { backgroundColor: `${colors.primary}15`, borderColor: colors.primary }]}>
+            <Ionicons name="alert-circle" size={16} color={colors.primary} />
+            <Text style={[styles.errorText, { color: colors.primary }]}>
               Le 5 majeur doit être complet pour valider.
             </Text>
           </View>
@@ -332,7 +325,7 @@ export default function TeamStartersScreen() {
                     backgroundColor: isStarter
                       ? colors.surface
                       : `${colors.surface}80`,
-                    borderColor: isStarter ? BRAND_COLORS[500] : "transparent",
+                    borderColor: isStarter ? colors.primary : "transparent",
                     borderWidth: 2,
                     opacity: isStarter ? 1 : 0.6,
                   },
@@ -349,8 +342,8 @@ export default function TeamStartersScreen() {
                     styles.playerPhoto,
                     {
                       borderColor: isStarter
-                        ? BRAND_COLORS[500]
-                        : SLATE_COLORS[300],
+                        ? colors.primary
+                        : colors.border,
                     },
                   ]}
                 >
@@ -420,7 +413,7 @@ export default function TeamStartersScreen() {
             {
               backgroundColor:
                 starters.length === 5 && !saving
-                  ? BRAND_COLORS[600]
+                  ? colors.primary
                   : colors.text.disabled,
             },
           ]}

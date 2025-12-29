@@ -10,54 +10,36 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useRoute, RouteProp, useFocusEffect } from "@react-navigation/native";
-import { useTheme } from "../src/contexts/ThemeContext";
-import { useAuth } from "../src/contexts/AuthContext";
-import {
-  CommonStyles,
-  BRAND_COLORS,
-  SLATE_COLORS,
-  COMMON_COLORS,
-} from "../src/theme";
-import { ROUTES } from "../constants/routes";
-import type { TeamGender } from "../models/Team";
-import { ServiceFactory } from "../services/ServiceFactory";
-import { supabase } from "../src/config/supabase";
-
-type RootStackParamList = {
-  TeamInfo: {
-    clubId: string;
-    teamId?: string;
-    teamData?: {
-      name: string;
-      category: string;
-      gender: TeamGender;
-    };
-  };
-};
+import { useTheme } from "../../src/contexts/ThemeContext";
+import { useAuth } from "../../src/contexts/AuthContext";
+import { CommonStyles } from "../../src/theme";
+import { ROUTES } from "../../constants/routes";
+import { TeamGender, TEAM_GENDER_LABELS } from "../../models/Team";
+import { ServiceFactory } from "../../services/ServiceFactory";
+import { supabase } from "../../src/config/supabase";
+import { RootStackParamList, RootNavigationProp } from "../../types/navigation";
 
 type TeamInfoRouteProp = RouteProp<RootStackParamList, "TeamInfo">;
 
-const GENDERS: { value: TeamGender; label: string; color: string }[] = [
-  { value: "male", label: "Masculin", color: BRAND_COLORS[500] },
-  { value: "female", label: "Féminin", color: BRAND_COLORS[500] },
-  { value: "mixed", label: "Mixte", color: BRAND_COLORS[500] },
-  // { value: "female", label: "Féminin", color: "#ec4899" },
-  // { value: "mixed", label: "Mixte", color: "#a855f7" },
-];
-
 export default function TeamInfoScreen() {
-  const navigation = useNavigation();
+  const navigation = useNavigation<RootNavigationProp>();
   const route = useRoute<TeamInfoRouteProp>();
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const { user } = useAuth();
   const { clubId, teamId, teamData } = route.params;
 
   const [name, setName] = useState(teamData?.name || "");
   const [category, setCategory] = useState(teamData?.category || "");
-  const [gender, setGender] = useState<TeamGender>(teamData?.gender || "male");
+  const [gender, setGender] = useState<TeamGender>(teamData?.gender || TeamGender.MALE);
 
-  const bgColor = isDark ? SLATE_COLORS[950] : SLATE_COLORS[50];
-  const surfaceColor = isDark ? SLATE_COLORS[900] : COMMON_COLORS.white;
+  const GENDERS: { value: TeamGender; label: string; color: string }[] = [
+    { value: TeamGender.MALE, label: TEAM_GENDER_LABELS[TeamGender.MALE], color: colors.primary },
+    { value: TeamGender.FEMALE, label: TEAM_GENDER_LABELS[TeamGender.FEMALE], color: colors.primary },
+    { value: TeamGender.MIXED, label: TEAM_GENDER_LABELS[TeamGender.MIXED], color: colors.primary },
+  ];
+
+  const bgColor = colors.background;
+  const surfaceColor = colors.surface;
 
   // Load team data if editing
   useEffect(() => {
@@ -88,7 +70,7 @@ export default function TeamInfoScreen() {
       if (team) {
         setName(team.name || "");
         setCategory(team.category || "");
-        setGender(team.gender || "male");
+        setGender(team.gender || TeamGender.MALE);
       }
     } catch (error) {
       console.error("Error loading team data:", error);
@@ -172,7 +154,7 @@ export default function TeamInfoScreen() {
       {/* Progress */}
       <View style={styles.progressContainer}>
         <View
-          style={[styles.progressBar, { backgroundColor: BRAND_COLORS[500] }]}
+          style={[styles.progressBar, { backgroundColor: colors.primary }]}
         />
         <View
           style={[styles.progressBar, { backgroundColor: colors.border }]}
@@ -282,16 +264,14 @@ export default function TeamInfoScreen() {
             style={[
               styles.deleteButton,
               {
-                backgroundColor: isDark
-                  ? `${SLATE_COLORS[800]}`
-                  : `${SLATE_COLORS[100]}`,
-                borderColor: "#ef4444",
+                backgroundColor: colors.surfaceVariant,
+                borderColor: colors.error,
               },
             ]}
             onPress={handleDeleteTeam}
           >
-            <Ionicons name="trash-outline" size={20} color="#ef4444" />
-            <Text style={styles.deleteButtonText}>Supprimer l'équipe</Text>
+            <Ionicons name="trash-outline" size={20} color={colors.error} />
+            <Text style={[styles.deleteButtonText, { color: colors.error }]}>Supprimer l'équipe</Text>
           </TouchableOpacity>
         )}
         <TouchableOpacity
@@ -299,7 +279,7 @@ export default function TeamInfoScreen() {
             styles.nextButton,
             {
               backgroundColor: name.trim()
-                ? BRAND_COLORS[600]
+                ? colors.primary
                 : colors.text.disabled,
             },
           ]}

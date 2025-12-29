@@ -2,7 +2,7 @@ import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { MaterialCommunityIcons, Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../../src/contexts/ThemeContext";
-import { Team, TeamStatus } from "../../models/Team";
+import { Team, TeamStatus, TeamGender, TEAM_GENDER_LABELS } from "../../models/Team";
 import { ROUTES } from "../../constants/routes";
 import JerseyIconSimple from "../icons/JerseySimpleIcon";
 
@@ -85,11 +85,7 @@ export default function TeamCard({
             {team.name}
           </Text>
           <Text style={[styles.teamCategory, { color: colors.text.secondary }]}>
-            {team.gender === "male"
-              ? "Hommes"
-              : team.gender === "female"
-              ? "Femmes"
-              : "Mixte"}{" "}
+            {team.gender ? TEAM_GENDER_LABELS[team.gender] : "N/A"}{" "}
             • {team.playerCount ?? 0} Joueur
             {(team.playerCount ?? 0) > 1 ? "s" : ""}
           </Text>

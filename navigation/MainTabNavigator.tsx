@@ -14,7 +14,7 @@ import { ROUTES } from "../constants/routes";
 
 import DashboardScreen from "../screens/DashboardScreen";
 import HistoryScreen from "../screens/HistoryScreen";
-import ClubScreen from "../screens/ClubScreen";
+import ClubScreen from "../screens/club/ClubScreen";
 
 const Tab = createBottomTabNavigator();
 
