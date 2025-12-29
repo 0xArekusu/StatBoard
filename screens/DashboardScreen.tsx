@@ -19,7 +19,7 @@ import { useTheme } from "../src/contexts/ThemeContext";
 import { useAuth } from "../src/contexts/AuthContext";
 import { ServiceFactory } from "../services/ServiceFactory";
 import { shareLogs } from "../utils/logger";
-import { Match } from "../src/models/types";
+import { Match, MatchStatus } from "../src/models/types";
 import { Club } from "../models/Club";
 import { Team, TeamStatus } from "../models/Team";
 import { supabase } from "../src/config/supabase";
@@ -382,7 +382,7 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
       : matches;
 
   const recentMatches = filteredMatches
-    .filter((m) => m.status === "completed")
+    .filter((m) => m.status === MatchStatus.COMPLETED)
     .sort(
       (a, b) =>
         new Date(b.ended_at || b.created_at).getTime() -
@@ -392,7 +392,7 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
 
   // Calculate stats based on filtered matches
   const completedMatches = filteredMatches.filter(
-    (m) => m.status === "completed"
+    (m) => m.status === MatchStatus.COMPLETED
   );
   const wins = completedMatches.filter(
     (m) =>
