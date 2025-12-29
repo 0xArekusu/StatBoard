@@ -56,6 +56,7 @@ export const Colors = {
     // Primary brand color
     primary: BRAND_COLORS[500],
     onPrimary: COMMON_COLORS.white, // Text/icon color on primary background
+    onSecondary: COMMON_COLORS.black, 
 
     // Backgrounds
     background: COMMON_COLORS.white,
@@ -109,12 +110,16 @@ export const Colors = {
 
     // Shadow (for elevation)
     shadow: COMMON_COLORS.black,
+
+    transparent: COMMON_COLORS.transparent,
+
   },
 
   dark: {
     // Primary brand color
     primary: BRAND_COLORS[500],
     onPrimary: COMMON_COLORS.white, // Text/icon color on primary background
+    onSecondary: COMMON_COLORS.black, 
 
     // Backgrounds
     background: SLATE_COLORS[950],
@@ -168,6 +173,8 @@ export const Colors = {
 
     // Shadow (for elevation)
     shadow: COMMON_COLORS.black,
+
+    transparent: COMMON_COLORS.transparent,
   },
 } as const;
 

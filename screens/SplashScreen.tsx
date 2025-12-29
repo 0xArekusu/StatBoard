@@ -23,7 +23,11 @@ export default function SplashScreen() {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Logo */}
-      <Logo width={350} />
+      <Logo width={350} 
+      primaryColor={colors.onPrimary}
+      secondaryColor={colors.onSecondary}
+      ballColor={colors.primary}
+      ballBackgroundColor={colors.button.secondary}/>
 
       {/* Loading indicator */}
       <ActivityIndicator size="large" color={colors.primary} style={styles.loader} />

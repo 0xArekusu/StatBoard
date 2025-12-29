@@ -9,10 +9,11 @@ import { useState, useEffect, useRef } from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { AppState, AppStateStatus } from "react-native";
-import AuthScreen from "./screens/AuthScreen";
+import AuthScreen from "./screens/authentication/AuthScreen";
+import LoginScreen from "./screens/authentication/LoginScreen";
+import RegisterScreen from "./screens/authentication/RegisterScreen";
 import MatchDetailsScreen from "./screens/MatchDetailsScreen";
 import SplashScreen from "./screens/SplashScreen";
-import LoginScreen from "./screens/LoginScreen";
 import TeamInfoScreen from "./screens/TeamInfoScreen";
 import TeamRosterScreen from "./screens/TeamRosterScreen";
 import TeamStartersScreen from "./screens/TeamStartersScreen";
@@ -70,13 +71,14 @@ function Navigation() {
         }}
       >
         <Stack.Screen name={ROUTES.AUTH} component={AuthScreen} />
+        <Stack.Screen name={ROUTES.LOGIN} component={LoginScreen} />
+        <Stack.Screen name={ROUTES.SIGN_UP} component={RegisterScreen} />
         <Stack.Screen name={ROUTES.MAIN_TABS} component={MainTabNavigator} />
         <Stack.Screen name={ROUTES.DEBUG_COURT} component={DebugCourtClick} />
         <Stack.Screen
           name={ROUTES.MATCH_DETAILS}
           component={MatchDetailsScreen}
         />
-        <Stack.Screen name={ROUTES.LOGIN} component={LoginScreen} />
         <Stack.Screen name={ROUTES.TEAM_INFO} component={TeamInfoScreen} />
         <Stack.Screen name={ROUTES.TEAM_ROSTER} component={TeamRosterScreen} />
         <Stack.Screen

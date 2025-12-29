@@ -3,7 +3,6 @@ import Svg, { Defs, G, ClipPath, Path, Rect, Circle } from "react-native-svg";
 
 interface LogoProps {
   width?: number;
-  height?: number;
   primaryColor?: string;
   secondaryColor?: string;
   ballColor?: string;
@@ -12,7 +11,6 @@ interface LogoProps {
 
 const Logo = ({
   width = 120,
-  height = 120,
   primaryColor = "#000000",
   secondaryColor = "#ffffff",
   ballColor = "#FF8C42",
@@ -124,22 +122,7 @@ const Logo = ({
           <Rect x={0} width={368} y={0} height={183} />
         </ClipPath>
       </Defs>
-      <Rect
-        x={-37.5}
-        width={450}
-        fill={secondaryColor}
-        y={-37.499999}
-        height={449.999989}
-        fillOpacity={1}
-      />
-      <Rect
-        x={-37.5}
-        width={450}
-        fill={secondaryColor}
-        y={-37.499999}
-        height={449.999989}
-        fillOpacity={1}
-      />
+
       <G transform="matrix(1, 0, 0, 1, 7, 91)">
         {/* Cercle en arrière-plan du ballon */}
         <Circle cx="100.5" cy="67" r="35" fill={ballBackgroundColor} />
@@ -276,6 +259,15 @@ const Logo = ({
           <G clipPath="url(#96f7e14ca3)">
             <G transform="matrix(1, 0, 0, 1, 16, 105)">
               <G clipPath="url(#09bb9cc649)">
+
+              <Rect 
+                x={0} 
+                y={0} 
+                width={339.6} 
+                height={66.9}
+                fill={primaryColor}
+              />
+
                 <G fill={secondaryColor} fillOpacity={1}>
                   <G transform="translate(1.065655, 58.007297)">
                     <G>
