@@ -5,3 +5,5 @@
  */
 
 export { CourtView } from "./CourtView";
+export { MatchHeader } from "./MatchHeader";
+export { MatchToolbar } from "./MatchToolbar";
