@@ -1,11 +1,23 @@
 /**
- * MatchDetailsScreen - Modern Design
+ * MatchDetailsScreen - Match details and statistics screen
  *
- * Affiche les détails d'un match terminé avec:
- * - Vue Statistiques (table des joueurs)
- * - Vue Cartes (fiches joueurs individuelles)
- * - Vue Terrain (carte des tirs)
- * - Modal de détail joueur
+ * Displays detailed statistics for a completed match with multiple views:
+ * - Evolution View: Score evolution chart per period
+ * - Statistics View: Table of all player statistics
+ * - Cards View: Individual player cards
+ * - Court View: Shot chart with positions on the court
+ * - Player Detail Modal: Detailed statistics for a single player
+ *
+ * Data sources:
+ * - Completed match from database (SQLite or Supabase)
+ * - Actions recorded during the match
+ * - Players selected for the match
+ *
+ * Features:
+ * - Filter by team (MY_TEAM or OPPONENT)
+ * - Sort statistics by column
+ * - Export statistics to PDF
+ * - Custom back navigation from live match
  */
 
 import React, { useState, useMemo, useEffect } from "react";
@@ -49,21 +61,33 @@ import { RootStackParamList, RootNavigationProp } from "../types/navigation";
 type MatchDetailsRouteProp = RouteProp<RootStackParamList, "MatchDetails">;
 
 export default function MatchDetailsScreen() {
+  // ========================================
+  // NAVIGATION & ROUTING
+  // ========================================
   const navigation = useNavigation<RootNavigationProp>();
   const route = useRoute<MatchDetailsRouteProp>();
   const { match, fromLiveMatch, isLocalMatch } = route.params;
   const { colors, isDark } = useTheme();
 
-  // State for loaded data
+  // ========================================
+  // STATE - LOADED DATA
+  // ========================================
+  // Match actions (shots, rebounds, assists, etc.)
   const [actions, setActions] = useState<any[]>(route.params.actions || []);
+  // Players who participated in the match
   const [players, setPlayers] = useState<any[]>(route.params.players || []);
+  // Loading state if data is not provided
   const [loading, setLoading] = useState<boolean>(!route.params.actions);
+  // Club associated with the match (for court colors and logo)
   const [club, setClub] = useState<Club | null>(null);
 
-  // Load match data if not provided
+  // ========================================
+  // EFFECT - LOAD MATCH DATA
+  // ========================================
+  // Load match actions and players if not provided in route params
   useEffect(() => {
     const loadMatchData = async () => {
-      // If data was already provided, skip loading
+      // If data is already provided (from LiveMatch), skip loading
       if (route.params.actions && route.params.players) {
         return;
       }
@@ -71,7 +95,7 @@ export default function MatchDetailsScreen() {
       try {
         setLoading(true);
 
-        // Use MatchDataService to load data from appropriate source
+        // Use MatchDataService to load from appropriate source (SQLite or Supabase)
         const matchDataService = ServiceFactory.getMatchDataService(supabase);
         const matchDetails = await matchDataService.loadMatchDetails(match);
 
@@ -91,13 +115,13 @@ export default function MatchDetailsScreen() {
     loadMatchData();
   }, [match, route.params.actions, route.params.players]);
 
-  // Show warning for local matches (guest mode)
-
-
-  // Load club data
+  // ========================================
+  // EFFECT - LOAD CLUB DATA
+  // ========================================
+  // Load club data to get logo and court colors
   useEffect(() => {
     const loadClub = async () => {
-      // Skip loading club for guest mode (local matches)
+      // Skip loading for guest mode (offline matches)
       if (!match.club_id || match.club_id === "guest-club") {
         return;
       }
@@ -115,7 +139,10 @@ export default function MatchDetailsScreen() {
     loadClub();
   }, [match.club_id]);
 
-  // Create a map of player numbers to names
+  // ========================================
+  // MEMO - PLAYER NAMES MAP
+  // ========================================
+  // Create a fast lookup map to get player name by team-num key
   const playerNamesMap = useMemo(() => {
     if (!players) return new Map<string, string>();
     const map = new Map<string, string>();
@@ -126,31 +153,59 @@ export default function MatchDetailsScreen() {
     return map;
   }, [players]);
 
+  // ========================================
+  // STATE - USER INTERFACE
+  // ========================================
+  // Active tab (Evolution, Stats, Cards, Court)
   const [activeTab, setActiveTab] = useState<Tab>(TAB.EVOLUTION);
+  // Active team filter (MY_TEAM or OPPONENT)
   const [activeTeamFilter, setActiveTeamFilter] = useState<TeamFilter>(
     Team.MY_TEAM
   );
+  // Selected player to display detail modal
   const [viewPlayer, setViewPlayer] = useState<PlayerStats | null>(null);
+  // Selected action types for court filter
   const [selectedActionTypes, setSelectedActionTypes] = useState<ActionFilterType[]>(
     []
   );
+  // Selected players for court filter
   const [selectedPlayers, setSelectedPlayers] = useState<number[]>([]);
+  // Show/hide court filters
   const [showCourtFilters, setShowCourtFilters] = useState(false);
+  // Statistics sort column
   const [sortBy, setSortBy] = useState<SortBy>("pts");
+  // Sort order (ascending or descending)
   const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
 
-  // Export PDF handler
+  // ========================================
+  // HANDLER - EXPORT PDF
+  // ========================================
+  /**
+   * Generate and share a PDF with match statistics
+   *
+   * The PDF contains:
+   * - Final score and evolution per period
+   * - Complete statistics for all players
+   * - Score evolution chart
+   * - Shot charts on court (if available)
+   */
   const handleExportPDF = async () => {
     try {
+      // Determine if opponent stats are tracked by checking for opponent players
+      // (excluding generic player 9999 used for opponent points without detailed tracking)
+      const trackOpponentStats = players?.some(
+        (p) => p.team === Team.OPPONENT && p.num !== 9999
+      ) || false;
+
       const pdfOptions = {
-        teamA: match.my_team_name || "Notre équipe",
-        teamB: match.opponent_name || "Adversaire",
-        scoreA: match.my_team_score || 0,
-        scoreB: match.opponent_score || 0,
-        actions: actions || [],
+        myTeamName: match.my_team_name || "Notre équipe",
+        opponentName: match.opponent_name || "Adversaire",
+        myTeamScore: match.my_team_score || 0,
+        opponentScore: match.opponent_score || 0,
+        actions: actions || [], // Raw actions from database (with action_type, player_number, etc.)
         matchFormat: (match.total_periods === 2 ? "2_halves" : "4_quarters") as "2_halves" | "4_quarters",
         periodDuration: match.period_duration || 10,
-        teamMode: "BOTH" as const,
+        trackOpponentStats, // If true, PDF will include opponent stats
         players: players || [],
         matchDate: match.created_at ? new Date(match.created_at) : new Date(),
       };
@@ -163,14 +218,18 @@ export default function MatchDetailsScreen() {
     }
   };
 
+  // ========================================
+  // EFFECT - BACK NAVIGATION FROM LIVE MATCH
+  // ========================================
   // Intercept hardware back button when coming from live match
+  // to redirect to Dashboard instead of going back to the live match
   useFocusEffect(
     React.useCallback(() => {
       if (fromLiveMatch) {
         const onBackPress = () => {
-          // Navigate to Dashboard instead of going back
+          // Redirect to Dashboard instead of going back to live match
           navigation.navigate("Dashboard" as never);
-          return true; // Prevent default back behavior
+          return true; // Prevent default behavior
         };
 
         const subscription = BackHandler.addEventListener(
@@ -183,15 +242,35 @@ export default function MatchDetailsScreen() {
     }, [fromLiveMatch, navigation])
   );
 
-  // Calculer les statistiques des joueurs
+  // ========================================
+  // FUNCTION - CALCULATE STATISTICS
+  // ========================================
+  /**
+   * Calculate statistics for all players of a team
+   *
+   * Initializes all players with 0 stats, then iterates through actions
+   * to increment appropriate counters.
+   *
+   * Calculated statistics:
+   * - Points (pts), Shots (fgm/fga, ftm/fta, fg2m/fg2a, fg3m/fg3a)
+   * - Rebounds (reb, reb_off, reb_def)
+   * - Assists (ast), Steals (stl), Blocks (blk)
+   * - Turnovers (to), Fouls (pf)
+   * - Efficiency (eff) = pts + reb + ast + stl + blk - (misses + to)
+   * - Estimated minutes (min) - heuristic estimation based on efficiency
+   *
+   * @param teamFilter - Team.MY_TEAM or Team.OPPONENT
+   * @returns List of statistics for all players on the team
+   */
   const calculateStats = (teamFilter: TeamFilter): PlayerStats[] => {
     const playerStatsMap = new Map<string, PlayerStats>();
 
-    // D'abord, initialiser tous les joueurs sélectionnés pour ce match avec des stats à zéro
+    // STEP 1: Initialize all players with zero stats
+    // This ensures a player appears in the list even if they have no actions
     if (players && players.length > 0) {
       players
         .filter((player) => player.team === teamFilter)
-        // Filter out generic opponent player (9999) used when not tracking opponent stats
+        // Exclude generic player 9999 used for opponent points without tracking
         .filter((player) => player.num !== 9999)
         .forEach((player) => {
           const key = `${player.team}-${player.num}`;
@@ -223,22 +302,23 @@ export default function MatchDetailsScreen() {
         });
     }
 
-    // Ensuite, ajouter les statistiques des actions
+    // STEP 2: Iterate through all actions and increment counters
     if (actions && actions.length > 0) {
       actions
         .filter((action) => action.team === teamFilter)
         .forEach((action) => {
-          // Handle both player and player_number fields
+          // Handle both data formats (player_number from database, player from app)
           const playerNum = action.player_number || action.player;
 
-          // Skip invalid player numbers (9999 = generic opponent when not tracking stats)
+          // Skip invalid player numbers (9999 = generic opponent player)
           if (!playerNum || playerNum === 9999) {
             return;
           }
 
           const key = `${action.team}-${playerNum}`;
 
-          // Si le joueur n'existe pas encore dans la map (cas où il y a une action mais pas de joueur enregistré)
+          // Rare case: action recorded for a player not in the players list
+          // Create an entry for this player with default stats
           if (!playerStatsMap.has(key)) {
             const playerName = playerNamesMap.get(key) || `Joueur ${playerNum}`;
             playerStatsMap.set(key, {
@@ -269,7 +349,9 @@ export default function MatchDetailsScreen() {
 
           const stats = playerStatsMap.get(key)!;
 
-        // Normalize action types to uppercase for comparison
+        // Normalize action types for comparison
+        // Database actions use action_type (e.g., "SHOT", "REBOUND")
+        // Enums are in PascalCase (e.g., ActionType.SHOT = "Shot")
         const actionType = (
           action.action_type ||
           action.type ||
@@ -277,7 +359,7 @@ export default function MatchDetailsScreen() {
         ).toUpperCase();
         const specification = (action.specification || "").toLowerCase();
 
-        // Points et tirs
+        // COUNT SHOTS AND POINTS
         if (actionType === ActionType.SHOT.toUpperCase()) {
           if (specification === ShotSpecification.MADE) {
             stats.pts += action.points || 0;
@@ -294,14 +376,14 @@ export default function MatchDetailsScreen() {
           else if (action.points === 3) stats.fg3a += 1;
         }
 
-        // Rebonds
+        // COUNT REBOUNDS
         if (actionType === ActionType.REBOUND.toUpperCase()) {
           stats.reb += 1;
           if (specification === ReboundSpecification.OFFENSIVE) stats.reb_off += 1;
           else if (specification === ReboundSpecification.DEFENSIVE) stats.reb_def += 1;
         }
 
-        // Autres actions
+        // COUNT OTHER ACTIONS
         if (actionType === ActionType.ASSIST.toUpperCase()) stats.ast += 1;
         if (actionType === ActionType.STEAL.toUpperCase()) stats.stl += 1;
         if (actionType === ActionType.BLOCK.toUpperCase()) stats.blk += 1;
@@ -309,8 +391,9 @@ export default function MatchDetailsScreen() {
         if (actionType === ActionType.FOUL.toUpperCase()) stats.pf += 1;
       });
 
-    // Calculer l'évaluation et estimer les minutes
+    // STEP 3: Calculate efficiency and estimate playing time
     playerStatsMap.forEach((stats) => {
+      // Efficiency formula: positive actions - negative actions
       stats.eff =
         stats.pts +
         stats.reb +
@@ -319,42 +402,47 @@ export default function MatchDetailsScreen() {
         stats.blk -
         (stats.fga - stats.fgm + (stats.fta - stats.ftm) + stats.to);
 
-      // Estimation heuristique des minutes
+      // Heuristic estimation of minutes based on efficiency
+      // Formula: base 10 min + efficiency bonus + fouls bonus
       let estimatedMin = 10 + Math.floor(stats.eff / 1.5) + stats.pf * 2;
+
+      // Adjustments for more realism
       if (estimatedMin < 5 && (stats.pts > 0 || stats.reb > 0))
-        estimatedMin = 8;
-      if (estimatedMin > 38) estimatedMin = 36 + Math.floor(Math.random() * 4);
-      if (
-        stats.eff === 0 &&
-        stats.pts === 0 &&
-        stats.reb === 0 &&
-        stats.ast === 0
-      )
-        estimatedMin = 0;
+        estimatedMin = 8; // Min 8 min if player played
+      if (estimatedMin > 38)
+        estimatedMin = 36 + Math.floor(Math.random() * 4); // Max ~40 min
+      if (stats.eff === 0 && stats.pts === 0 && stats.reb === 0 && stats.ast === 0)
+        estimatedMin = 0; // 0 min if no actions
+
       stats.min = estimatedMin;
     });
   }
 
+    // Convert map to array and sort by points (default sort)
     const playersList = Array.from(playerStatsMap.values()).sort(
       (a, b) => b.pts - a.pts
     );
     return playersList;
   };
 
-  // Calculer les stats (affiche tous les joueurs sélectionnés, même sans actions)
+  // ========================================
+  // MEMO - SORTED STATISTICS
+  // ========================================
+  // Calculate and sort statistics according to active filters
   const stats = useMemo(() => {
     const calculatedStats = calculateStats(activeTeamFilter);
 
-    // Apply sorting
+    // Apply sorting on selected column
     return calculatedStats.sort((a, b) => {
       const aValue = a[sortBy];
       const bValue = b[sortBy];
 
+      // Numeric sort (for pts, reb, ast, etc.)
       if (typeof aValue === "number" && typeof bValue === "number") {
         return sortOrder === "desc" ? bValue - aValue : aValue - bValue;
       }
 
-      // For string values (like name)
+      // Alphabetical sort (for name)
       if (typeof aValue === "string" && typeof bValue === "string") {
         return sortOrder === "desc"
           ? bValue.localeCompare(aValue)
@@ -365,7 +453,9 @@ export default function MatchDetailsScreen() {
     });
   }, [actions, activeTeamFilter, playerNamesMap, sortBy, sortOrder]);
 
-  // Theme colors
+  // ========================================
+  // THEME COLORS
+  // ========================================
   const bgColor = colors.background;
   const surfaceColor = colors.surface;
   const borderColor = colors.border;
@@ -373,27 +463,41 @@ export default function MatchDetailsScreen() {
   const textSecondary = colors.text.secondary;
   const textTertiary = colors.text.tertiary;
 
+  // Determine if our team won
   const isWin = match.my_team_score > match.opponent_score;
 
-  // Handle column header click for sorting
+  // ========================================
+  // HANDLER - COLUMN SORTING
+  // ========================================
+  /**
+   * Handle click on column header to sort statistics
+   * - If clicking on same column: reverse order (asc ↔ desc)
+   * - If clicking on new column: default to descending sort
+   */
   const handleSort = (column: SortBy) => {
     if (sortBy === column) {
-      // Toggle order if clicking on same column
+      // Reverse order if clicking on same column
       setSortOrder(sortOrder === "desc" ? "asc" : "desc");
     } else {
-      // Set new column and default to descending
+      // New column: default to descending sort
       setSortBy(column);
       setSortOrder("desc");
     }
   };
 
-  // Court colors and logo from club
+  // ========================================
+  // COURT CONFIGURATION
+  // ========================================
+  // Court colors and logo (from club or default values)
   const courtBackgroundColor = club?.courtBackgroundColor || colors.court.background;
   const courtLineColor = club?.courtLineColor || colors.court.line;
   const defaultLogoUri = require("../components/icons/coachassistant-logo-margin.png");
   const logoUri = club?.logoUrl || defaultLogoUri;
 
-  // Show loading indicator while data is being loaded
+  // ========================================
+  // LOADING SCREEN
+  // ========================================
+  // Display loading indicator while data is being loaded
   if (loading) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: bgColor, justifyContent: 'center', alignItems: 'center' }]}>
@@ -405,6 +509,9 @@ export default function MatchDetailsScreen() {
     );
   }
 
+  // ========================================
+  // MAIN RENDER
+  // ========================================
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: bgColor }]}>
       {/* PLAYER DETAIL MODAL */}

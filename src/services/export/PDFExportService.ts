@@ -1,32 +1,32 @@
 import * as Print from "expo-print";
 import * as Sharing from "expo-sharing";
-import { ActionData } from "../../../components/ActionSystem";
 import {
   ActionType,
   ShotSpecification,
   ReboundSpecification,
   FoulSpecification,
 } from "../../models/ActionTypes";
+import { Team } from "../../models/types";
 import type { CourtMarker } from "../../../components/BasketballCourtSVG";
-import { getActionColor, ACTION_CONFIG } from "../../config/actionConfig";
+import { getActionColor } from "../../config/actionConfig";
 
 interface Player {
   id: number;
   num: number;
   name: string;
-  team: "A" | "B";
+  team: Team;
   photoUrl?: string;
 }
 
 interface PDFExportOptions {
-  teamA: string;
-  teamB: string;
-  scoreA: number;
-  scoreB: number;
-  actions: ActionData[];
+  myTeamName: string;
+  opponentName: string;
+  myTeamScore: number;
+  opponentScore: number;
+  actions: any[]; // Accept raw actions from database with action_type field
   matchFormat: "2_halves" | "4_quarters";
   periodDuration: number;
-  teamMode: "A" | "B" | "BOTH";
+  trackOpponentStats: boolean; // Whether opponent statistics are tracked
   players: Player[];
   matchDate?: Date;
   watermark?: boolean;
@@ -137,13 +137,13 @@ export class PDFExportService {
    */
   static async generateMatchPDF(options: PDFExportOptions): Promise<string> {
     const {
-      teamA,
-      teamB,
-      scoreA,
-      scoreB,
+      myTeamName,
+      opponentName,
+      myTeamScore,
+      opponentScore,
       actions,
       matchFormat,
-      teamMode,
+      trackOpponentStats,
       players,
       matchDate = new Date(),
       watermark = false,
@@ -188,58 +188,56 @@ export class PDFExportService {
     const periodLabel = matchFormat === "2_halves" ? "MT" : "Q";
 
     // Calculate period scores
-    const { periodScoresA, periodScoresB } = this.calculatePeriodScores(
+    const { periodScoresMyTeam, periodScoresOpponent } = this.calculatePeriodScores(
       actions,
       totalPeriods
     );
 
     // Calculate cumulative scores for chart
-    const cumulativeScoresA: number[] = [];
-    const cumulativeScoresB: number[] = [];
-    let sumA = 0;
-    let sumB = 0;
+    const cumulativeScoresMyTeam: number[] = [];
+    const cumulativeScoresOpponent: number[] = [];
+    let sumMyTeam = 0;
+    let sumOpponent = 0;
 
     for (let i = 0; i < totalPeriods; i++) {
-      sumA += periodScoresA[i];
-      sumB += periodScoresB[i];
-      cumulativeScoresA.push(sumA);
-      cumulativeScoresB.push(sumB);
+      sumMyTeam += periodScoresMyTeam[i];
+      sumOpponent += periodScoresOpponent[i];
+      cumulativeScoresMyTeam.push(sumMyTeam);
+      cumulativeScoresOpponent.push(sumOpponent);
     }
 
-    // Calculate player stats - filter by teamMode
-    const playersTeamA = this.shouldShowTeam(teamMode, "A")
-      ? playersWithBase64Photos.filter((p) => p.team === "A")
-      : [];
-    const playersTeamB = this.shouldShowTeam(teamMode, "B")
-      ? playersWithBase64Photos.filter((p) => p.team === "B")
+    // Calculate player stats - always include MY_TEAM, include OPPONENT only if tracking
+    const playersMyTeam = playersWithBase64Photos.filter((p) => p.team === Team.MY_TEAM);
+    const playersOpponent = trackOpponentStats
+      ? playersWithBase64Photos.filter((p) => p.team === Team.OPPONENT)
       : [];
 
-    const statsTeamA = playersTeamA.map((player) => ({
+    const statsMyTeam = playersMyTeam.map((player) => ({
       ...player,
       stats: this.calculatePlayerStats(player.id, actions),
     }));
 
-    const statsTeamB = playersTeamB.map((player) => ({
+    const statsOpponent = playersOpponent.map((player) => ({
       ...player,
       stats: this.calculatePlayerStats(player.id, actions),
     }));
 
     // Generate HTML
     const html = this.generateHTML({
-      teamA,
-      teamB,
-      scoreA,
-      scoreB,
+      myTeamName,
+      opponentName,
+      myTeamScore,
+      opponentScore,
       matchDate,
       periodLabel,
       totalPeriods,
-      periodScoresA,
-      periodScoresB,
-      cumulativeScoresA,
-      cumulativeScoresB,
-      statsTeamA,
-      statsTeamB,
-      teamMode,
+      periodScoresMyTeam,
+      periodScoresOpponent,
+      cumulativeScoresMyTeam,
+      cumulativeScoresOpponent,
+      statsMyTeam,
+      statsOpponent,
+      trackOpponentStats,
       watermark,
       scoreManuallyAdjusted,
       clubLogoUrl: clubLogoBase64,
@@ -266,11 +264,11 @@ export class PDFExportService {
    * Calculate scores by period
    */
   private static calculatePeriodScores(
-    actions: ActionData[],
+    actions: any[],
     totalPeriods: number
   ) {
-    const periodScoresA: number[] = Array(totalPeriods).fill(0);
-    const periodScoresB: number[] = Array(totalPeriods).fill(0);
+    const periodScoresMyTeam: number[] = Array(totalPeriods).fill(0);
+    const periodScoresOpponent: number[] = Array(totalPeriods).fill(0);
 
     const sortedActions = [...actions].sort(
       (a, b) => a.timestamp.getTime() - b.timestamp.getTime()
@@ -289,23 +287,19 @@ export class PDFExportService {
         action.specification === ShotSpecification.MADE
       ) {
         const points = action.points || 0;
-        if (action.team === "A") {
-          periodScoresA[periodIndex] += points;
-        } else if (action.team === "B") {
-          periodScoresB[periodIndex] += points;
+        const team = action.team;
+        // Support both old ("A"/"B") and new (Team.MY_TEAM/Team.OPPONENT) formats
+        if (team === Team.MY_TEAM || team === "A") {
+          periodScoresMyTeam[periodIndex] += points;
+        } else if (team === Team.OPPONENT || team === "B") {
+          periodScoresOpponent[periodIndex] += points;
         }
       }
     });
 
-    return { periodScoresA, periodScoresB };
+    return { periodScoresMyTeam, periodScoresOpponent };
   }
 
-  /**
-   * Helper: Check if team should be shown based on teamMode
-   */
-  private static shouldShowTeam(teamMode: "A" | "B" | "BOTH", team: "A" | "B"): boolean {
-    return teamMode === team || teamMode === "BOTH";
-  }
 
   /**
    * Helper: Calculate total fouls for a player
@@ -329,7 +323,7 @@ export class PDFExportService {
   /**
    * Calculate individual player stats
    */
-  private static calculatePlayerStats(playerId: number, actions: ActionData[]) {
+  private static calculatePlayerStats(playerId: number, actions: any[]) {
     const playerActions = actions.filter((a) => a.player === playerId);
 
     // Shots
@@ -522,13 +516,13 @@ export class PDFExportService {
    * Generate score evolution SVG chart
    */
   private static generateScoreChart(
-    cumulativeScoresA: number[],
-    cumulativeScoresB: number[],
+    cumulativeScoresMyTeam: number[],
+    cumulativeScoresOpponent: number[],
     periodLabel: string,
     totalPeriods: number,
-    teamMode: "A" | "B" | "BOTH",
-    teamA: string,
-    teamB: string
+    trackOpponentStats: boolean,
+    myTeamName: string,
+    opponentName: string
   ): string {
     const width = 500;
     const height = 200;
@@ -537,30 +531,30 @@ export class PDFExportService {
     const chartHeight = height - padding.top - padding.bottom;
 
     const maxScore = Math.max(
-      ...(this.shouldShowTeam(teamMode, "A") ? cumulativeScoresA : [0]),
-      ...(this.shouldShowTeam(teamMode, "B") ? cumulativeScoresB : [0])
+      ...cumulativeScoresMyTeam,
+      ...(trackOpponentStats ? cumulativeScoresOpponent : [0])
     );
     const yScale = chartHeight / (maxScore || 1);
 
     // Include 0 at start
-    const allScoresA = [0, ...cumulativeScoresA];
-    const allScoresB = [0, ...cumulativeScoresB];
+    const allScoresMyTeam = [0, ...cumulativeScoresMyTeam];
+    const allScoresOpponent = [0, ...cumulativeScoresOpponent];
 
-    // Generate path for team A
-    let pathA = `M ${padding.left} ${padding.top + chartHeight}`;
-    allScoresA.forEach((score, i) => {
+    // Generate path for my team
+    let pathMyTeam = `M ${padding.left} ${padding.top + chartHeight}`;
+    allScoresMyTeam.forEach((score, i) => {
       const x = padding.left + (i * chartWidth) / totalPeriods;
       const y = padding.top + chartHeight - score * yScale;
-      pathA += ` L ${x} ${y}`;
+      pathMyTeam += ` L ${x} ${y}`;
     });
 
-    // Generate path for team B
-    let pathB = `M ${padding.left} ${padding.top + chartHeight}`;
-    if (this.shouldShowTeam(teamMode, "B")) {
-      allScoresB.forEach((score, i) => {
+    // Generate path for opponent
+    let pathOpponent = `M ${padding.left} ${padding.top + chartHeight}`;
+    if (trackOpponentStats) {
+      allScoresOpponent.forEach((score, i) => {
         const x = padding.left + (i * chartWidth) / totalPeriods;
         const y = padding.top + chartHeight - score * yScale;
-        pathB += ` L ${x} ${y}`;
+        pathOpponent += ` L ${x} ${y}`;
       });
     }
 
@@ -616,28 +610,22 @@ export class PDFExportService {
       width - padding.right
     }" y2="${padding.top + chartHeight}" stroke="#333" stroke-width="2"/>
 
-        ${
-          this.shouldShowTeam(teamMode, "A")
-            ? `
-        <!-- Team A line -->
-        <path d="${pathA}" fill="none" stroke="#FF6B35" stroke-width="3"/>
-        ${allScoresA
+        <!-- My Team line (always shown) -->
+        <path d="${pathMyTeam}" fill="none" stroke="#FF6B35" stroke-width="3"/>
+        ${allScoresMyTeam
           .map((score, i) => {
             const x = padding.left + (i * chartWidth) / totalPeriods;
             const y = padding.top + chartHeight - score * yScale;
             return `<circle cx="${x}" cy="${y}" r="4" fill="#FF6B35"/>`;
           })
           .join("")}
-        `
-            : ""
-        }
 
         ${
-          this.shouldShowTeam(teamMode, "B")
+          trackOpponentStats
             ? `
-        <!-- Team B line -->
-        <path d="${pathB}" fill="none" stroke="#004E89" stroke-width="3"/>
-        ${allScoresB
+        <!-- Opponent line -->
+        <path d="${pathOpponent}" fill="none" stroke="#004E89" stroke-width="3"/>
+        ${allScoresOpponent
           .map((score, i) => {
             const x = padding.left + (i * chartWidth) / totalPeriods;
             const y = padding.top + chartHeight - score * yScale;
@@ -653,23 +641,14 @@ export class PDFExportService {
         ${yLabelsHTML}
 
         <!-- Legend -->
-        ${
-          this.shouldShowTeam(teamMode, "A")
-            ? `
         <circle cx="50" cy="15" r="4" fill="#FF6B35"/>
-        <text x="58" y="18" font-size="10">${teamA}</text>
-        `
-            : ""
-        }
+        <text x="58" y="18" font-size="10">${myTeamName}</text>
+
         ${
-          this.shouldShowTeam(teamMode, "B")
+          trackOpponentStats
             ? `
-        <circle cx="${
-          teamMode === "BOTH" ? "150" : "50"
-        }" cy="15" r="4" fill="#004E89"/>
-        <text x="${
-          teamMode === "BOTH" ? "158" : "58"
-        }" y="18" font-size="10">${teamB}</text>
+        <circle cx="150" cy="15" r="4" fill="#004E89"/>
+        <text x="158" y="18" font-size="10">${opponentName}</text>
         `
             : ""
         }
@@ -896,7 +875,7 @@ export class PDFExportService {
    * Generate SVG court for player shots using the full court component
    */
   private static generatePlayerShotCourt(
-    actions: ActionData[],
+    actions: any[],
     playerId: number,
     backgroundColor: string = "#1a472a",
     lineColor: string = "#FFFFFF",
@@ -935,7 +914,7 @@ export class PDFExportService {
    * Generate SVG court for player actions (non-shots) using the full court component
    */
   private static generatePlayerActionCourt(
-    actions: ActionData[],
+    actions: any[],
     playerId: number,
     backgroundColor: string = "#1a472a",
     lineColor: string = "#FFFFFF",
@@ -974,45 +953,45 @@ export class PDFExportService {
    * Generate HTML template for PDF
    */
   private static generateHTML(data: {
-    teamA: string;
-    teamB: string;
-    scoreA: number;
-    scoreB: number;
+    myTeamName: string;
+    opponentName: string;
+    myTeamScore: number;
+    opponentScore: number;
     matchDate: Date;
     periodLabel: string;
     totalPeriods: number;
-    periodScoresA: number[];
-    periodScoresB: number[];
-    cumulativeScoresA: number[];
-    cumulativeScoresB: number[];
-    statsTeamA: any[];
-    statsTeamB: any[];
-    teamMode: "A" | "B" | "BOTH";
+    periodScoresMyTeam: number[];
+    periodScoresOpponent: number[];
+    cumulativeScoresMyTeam: number[];
+    cumulativeScoresOpponent: number[];
+    statsMyTeam: any[];
+    statsOpponent: any[];
+    trackOpponentStats: boolean;
     watermark?: boolean;
     scoreManuallyAdjusted?: boolean;
     clubLogoUrl?: string;
     courtBackgroundColor?: string;
     courtLineColor?: string;
-    actions: ActionData[];
+    actions: any[];
     players: Player[];
     matchFormat: "2_halves" | "4_quarters";
     periodDuration: number;
   }): string {
     const {
-      teamA,
-      teamB,
-      scoreA,
-      scoreB,
+      myTeamName,
+      opponentName,
+      myTeamScore,
+      opponentScore,
       matchDate,
       periodLabel,
       totalPeriods,
-      periodScoresA,
-      periodScoresB,
-      cumulativeScoresA,
-      cumulativeScoresB,
-      statsTeamA,
-      statsTeamB,
-      teamMode,
+      periodScoresMyTeam,
+      periodScoresOpponent,
+      cumulativeScoresMyTeam,
+      cumulativeScoresOpponent,
+      statsMyTeam,
+      statsOpponent,
+      trackOpponentStats,
       watermark = false,
       scoreManuallyAdjusted = false,
       clubLogoUrl,
@@ -1026,13 +1005,13 @@ export class PDFExportService {
 
     // Generate the score chart SVG
     const chartSVG = this.generateScoreChart(
-      cumulativeScoresA,
-      cumulativeScoresB,
+      cumulativeScoresMyTeam,
+      cumulativeScoresOpponent,
       periodLabel,
       totalPeriods,
-      teamMode,
-      teamA,
-      teamB
+      trackOpponentStats,
+      myTeamName,
+      opponentName
     );
 
     const dateStr = matchDate.toLocaleDateString("fr-FR", {
@@ -1489,13 +1468,13 @@ export class PDFExportService {
     }
     <img src="${AppLogoSVG}" alt="App" class="header-logo-right" />
     <h1>FEUILLE DE MATCH - BASKETBALL</h1>
-    <div class="match-info">${teamA} vs ${teamB}</div>
+    <div class="match-info">${myTeamName} vs ${opponentName}</div>
     <div class="date">${dateStr}</div>
   </div>
 
   <div class="score-summary">
     <div>SCORE FINAL</div>
-    <div class="final-score">${scoreA} - ${scoreB}</div>
+    <div class="final-score">${myTeamScore} - ${opponentScore}</div>
     ${
       scoreManuallyAdjusted
         ? `
@@ -1519,24 +1498,20 @@ export class PDFExportService {
       </tr>
     </thead>
     <tbody>
-      ${
-        this.shouldShowTeam(teamMode, "A")
-          ? `
+      <!-- My Team (always shown) -->
       <tr>
-        <td class="team-name">${teamA}</td>
-        ${periodScoresA.map((score) => `<td>${score}</td>`).join("")}
-        <td><strong>${scoreA}</strong></td>
+        <td class="team-name">${myTeamName}</td>
+        ${periodScoresMyTeam.map((score) => `<td>${score}</td>`).join("")}
+        <td><strong>${myTeamScore}</strong></td>
       </tr>
-      `
-          : ""
-      }
       ${
-        this.shouldShowTeam(teamMode, "B")
+        trackOpponentStats
           ? `
+      <!-- Opponent (only if tracked) -->
       <tr>
-        <td class="team-name">${teamB}</td>
-        ${periodScoresB.map((score) => `<td>${score}</td>`).join("")}
-        <td><strong>${scoreB}</strong></td>
+        <td class="team-name">${opponentName}</td>
+        ${periodScoresOpponent.map((score) => `<td>${score}</td>`).join("")}
+        <td><strong>${opponentScore}</strong></td>
       </tr>
       `
           : ""
@@ -1550,17 +1525,17 @@ export class PDFExportService {
     ${chartSVG}
   </div>
 
-  ${this.generateTeamStatsTable(teamA, statsTeamA, "team-a")}
+  ${this.generateTeamStatsTable(myTeamName, statsMyTeam, "team-a")}
 
-  ${this.generateTeamStatsTable(teamB, statsTeamB, "team-b")}
+  ${trackOpponentStats ? this.generateTeamStatsTable(opponentName, statsOpponent, "team-b") : ""}
 
   <!-- Individual Player Stats Section -->
   <div class="individual-stats-section">
     ${players
-      .filter((p) => this.shouldShowTeam(teamMode, p.team))
+      .filter((p) => p.team === Team.MY_TEAM || (trackOpponentStats && p.team === Team.OPPONENT))
       .sort((a, b) => {
         if (a.team === b.team) return a.num - b.num;
-        return a.team === "A" ? -1 : 1;
+        return a.team === Team.MY_TEAM ? -1 : 1;
       })
       .map((player) => {
         const playerStats = this.calculatePlayerStats(player.id, actions);
@@ -1595,7 +1570,7 @@ export class PDFExportService {
 
         const hasStats =
           actions.filter((a) => a.player === player.id).length > 0;
-        const teamName = player.team === "A" ? teamA : teamB;
+        const teamName = player.team === Team.MY_TEAM ? myTeamName : opponentName;
         const totalFouls = this.calculateTotalFouls(playerStats);
         const playerActions = actions.filter(a => a.player === player.id).length;
         const totalActions = actions.length;
@@ -1606,7 +1581,7 @@ export class PDFExportService {
     <div class="player-card-page">
       <img src="${AppLogoSVG}" alt="App" class="player-card-logo" />
       <div class="player-card-header">
-        <div class="player-card-match-info">${teamA} ${scoreA} - ${scoreB} ${teamB}</div>
+        <div class="player-card-match-info">${myTeamName} ${myTeamScore} - ${opponentScore} ${opponentName}</div>
         <div class="player-card-date">${dateStr}</div>
       </div>
       <div class="player-card">
@@ -1682,7 +1657,7 @@ export class PDFExportService {
           </div>
           <div class="stat-box">
             <div class="stat-box-label">BP</div>
-            <div class="stat-box-value">${playerStats.to}</div>
+            <div class="stat-box-value">${playerStats.tov}</div>
           </div>
           <div class="stat-box">
             <div class="stat-box-label">FT</div>
@@ -1690,7 +1665,7 @@ export class PDFExportService {
           </div>
           <div class="stat-box highlight">
             <div class="stat-box-label">ÉVAL</div>
-            <div class="stat-box-value highlight">${playerStats.points + (playerStats.orb + playerStats.drb) + playerStats.ast + playerStats.stl + playerStats.blk - playerStats.to - totalFouls}</div>
+            <div class="stat-box-value highlight">${playerStats.points + (playerStats.orb + playerStats.drb) + playerStats.ast + playerStats.stl + playerStats.blk - playerStats.tov - totalFouls}</div>
           </div>
         </div>
 
