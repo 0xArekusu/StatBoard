@@ -11,6 +11,16 @@
 export type SubscriptionTier = "free" | "basic" | "premium" | "ultimate";
 
 /**
+ * Subscription tier constants
+ */
+export const SUBSCRIPTION_TIER = {
+  FREE: "free" as const,
+  BASIC: "basic" as const,
+  PREMIUM: "premium" as const,
+  ULTIMATE: "ultimate" as const,
+} as const;
+
+/**
  * User mode determining storage limits and feature access
  */
 export enum UserMode {
@@ -39,22 +49,22 @@ export interface SubscriptionLimits {
  */
 export const SUBSCRIPTION_LIMITS: Record<SubscriptionTier, SubscriptionLimits> =
   {
-    free: {
+    [SUBSCRIPTION_TIER.FREE]: {
       maxTeams: 0,
       maxLocalMatches: 3, // 3 matches max in freemium
       canSyncToServer: false, // No sync in freemium
     },
-    basic: {
+    [SUBSCRIPTION_TIER.BASIC]: {
       maxTeams: 1,
       maxLocalMatches: Infinity, // Unlimited with subscription
       canSyncToServer: true, // Sync enabled (no time limit)
     },
-    premium: {
+    [SUBSCRIPTION_TIER.PREMIUM]: {
       maxTeams: 3,
       maxLocalMatches: Infinity,
       canSyncToServer: true,
     },
-    ultimate: {
+    [SUBSCRIPTION_TIER.ULTIMATE]: {
       maxTeams: 9,
       maxLocalMatches: Infinity,
       canSyncToServer: true,
@@ -75,10 +85,10 @@ export const NOT_CONNECTED_LIMITS: SubscriptionLimits = {
  * Display labels for subscription tiers
  */
 export const SUBSCRIPTION_TIER_LABELS: Record<SubscriptionTier, string> = {
-  free: "Free",
-  basic: "Basic",
-  premium: "Premium",
-  ultimate: "Ultimate",
+  [SUBSCRIPTION_TIER.FREE]: "Free",
+  [SUBSCRIPTION_TIER.BASIC]: "Basic",
+  [SUBSCRIPTION_TIER.PREMIUM]: "Premium",
+  [SUBSCRIPTION_TIER.ULTIMATE]: "Ultimate",
 };
 
 /**

@@ -20,7 +20,7 @@ import { supabase } from "../src/config/supabase";
 import { PhotoUploadService } from "../services/PhotoUploadService";
 import { Club } from "../models/Club";
 import { Team, TeamStatus } from "../models/Team";
-import { SubscriptionTier, SUBSCRIPTION_LIMITS } from "../models/Subscription";
+import { SubscriptionTier, SUBSCRIPTION_LIMITS, SUBSCRIPTION_TIER } from "../models/Subscription";
 import {
   JoinClubForm,
   SubscriptionView,
@@ -43,6 +43,20 @@ interface ClubScreenProps {
   navigation: any;
 }
 
+/**
+ * ClubScreen - Main screen for managing clubs and teams
+ *
+ * Features:
+ * - Create a new club or join an existing one
+ * - View and edit club information (for owners)
+ * - Manage teams (create, approve, reject, delete)
+ * - View subscription information and limits
+ * - Color customization for club branding
+ *
+ * User Roles:
+ * - Owner: Full access to club settings and team management
+ * - Member: Can create teams but needs owner approval
+ */
 export default function ClubScreen({ navigation }: ClubScreenProps) {
   const { isDark, colors } = useTheme();
   const { user } = useAuth();
@@ -59,8 +73,6 @@ export default function ClubScreen({ navigation }: ClubScreenProps) {
 
   // Add Team Logic
 
-  const isGuest = !user;
-
   useEffect(() => {
     loadClubData();
   }, [user?.id]);
@@ -73,6 +85,12 @@ export default function ClubScreen({ navigation }: ClubScreenProps) {
     }, [club?.id]),
   );
 
+  /**
+   * Loads club data and associated teams for the current user
+   * - Fetches all clubs where the user is a member
+   * - Loads teams for the first club found
+   * - Sets loading states appropriately
+   */
   const loadClubData = async () => {
     if (!user) {
       setLoading(false);
@@ -110,11 +128,17 @@ export default function ClubScreen({ navigation }: ClubScreenProps) {
     (team) => team.status === TeamStatus.APPROVED,
   );
   const currentTeamCount = approvedTeams.length;
-  const currentTier: SubscriptionTier = club?.subscriptionTier || "free";
+  const currentTier: SubscriptionTier = club?.subscriptionTier || SUBSCRIPTION_TIER.FREE;
   const maxTeams = SUBSCRIPTION_LIMITS[currentTier].maxTeams;
   const isLimitReached = currentTeamCount >= maxTeams;
   const isOwner = club?.ownerId === user?.id;
 
+  /**
+   * Handles adding a new team to the club
+   * - Checks subscription limits before allowing team creation
+   * - Shows alert if limit is reached
+   * - Navigates to team creation screen if allowed
+   */
   const handleAddTeam = () => {
     if (!club) return;
     if (isLimitReached) {
@@ -128,6 +152,13 @@ export default function ClubScreen({ navigation }: ClubScreenProps) {
     navigation.navigate(ROUTES.TEAM_INFO, { clubId: club.id });
   };
 
+  /**
+   * Approves a pending team (owner only)
+   * - Shows confirmation dialog
+   * - Updates team status to APPROVED
+   * - Reloads club data to reflect changes
+   * @param teamId - ID of the team to approve
+   */
   const handleApproveTeam = async (teamId: string) => {
     if (!club || !isOwner || !user) return;
     Alert.alert(
@@ -157,6 +188,14 @@ export default function ClubScreen({ navigation }: ClubScreenProps) {
     );
   };
 
+  /**
+   * Rejects a pending team (owner only)
+   * - Shows confirmation dialog
+   * - Updates team status to REJECTED
+   * - Team creator will be notified of rejection
+   * - Reloads club data to reflect changes
+   * @param teamId - ID of the team to reject
+   */
   const handleRejectTeam = async (teamId: string) => {
     if (!club || !isOwner || !user) return;
     Alert.alert(
@@ -187,6 +226,14 @@ export default function ClubScreen({ navigation }: ClubScreenProps) {
     );
   };
 
+  /**
+   * Permanently deletes a team (owner only)
+   * - Shows confirmation dialog with warning
+   * - Deletes team and all associated data
+   * - Action is irreversible
+   * - Reloads club data to reflect changes
+   * @param teamId - ID of the team to delete
+   */
   const handleDeleteTeam = async (teamId: string) => {
     if (!club || !isOwner || !user) return;
     Alert.alert(
@@ -213,6 +260,13 @@ export default function ClubScreen({ navigation }: ClubScreenProps) {
     );
   };
 
+  /**
+   * Handles club logo image selection and upload
+   * - Requests media library permissions
+   * - Opens image picker with 1:1 aspect ratio
+   * - Uploads selected image to Supabase storage
+   * - Updates form data with uploaded image URL
+   */
   const handlePickImage = async () => {
     const permissionResult =
       await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -254,6 +308,27 @@ export default function ClubScreen({ navigation }: ClubScreenProps) {
     }
   };
 
+  /**
+   * Handles form submission for club operations
+   * Three modes based on context:
+   *
+   * 1. EDIT MODE (isEditingClub = true):
+   *    - Updates existing club's logo and color customization
+   *    - Only available to club owners
+   *
+   * 2. CREATE MODE (activeTab = CREATE):
+   *    - Validates required fields (name, acronym)
+   *    - Generates a unique club code (first 3 letters + random number)
+   *    - Creates new club with user as owner
+   *    - Sets custom colors and branding
+   *
+   * 3. JOIN MODE (activeTab = JOIN):
+   *    - Validates club code input
+   *    - Searches for club by code
+   *    - Adds user as a member of the found club
+   *
+   * @returns {Promise<void>} Reloads club data on success, shows alerts on errors
+   */
   const handleSubmit = async () => {
     if (isEditingClub) {
       // EDIT MODE
@@ -357,11 +432,9 @@ export default function ClubScreen({ navigation }: ClubScreenProps) {
   };
 
   const bgColor = colors.background;
-  const surfaceColor = colors.surface;
   const textPrimary = colors.text.primary;
   const textSecondary = colors.text.secondary;
   const borderColor = colors.border;
-  const requiredColor = colors.required;
 
   if (loading) {
     return (
@@ -382,6 +455,12 @@ export default function ClubScreen({ navigation }: ClubScreenProps) {
 
   // --- INSIDE A CLUB ---
   if (club && !isEditingClub) {
+    /**
+     * Enters edit mode for the club
+     * - Populates the form with current club data (name, acronym, colors, logo)
+     * - Switches to edit mode view
+     * - Only accessible to club owners
+     */
     const handleEditClub = () => {
       setFormData({
         name: club.name,
@@ -396,6 +475,11 @@ export default function ClubScreen({ navigation }: ClubScreenProps) {
       setIsEditingClub(true);
     };
 
+    /**
+     * Toggles between subscription view and info view
+     * - Switches from SUBSCRIPTION tab to INFO tab and vice versa
+     * - Allows users to view either subscription details or club information
+     */
     const handleToggleSubTab = () => {
       setSubTab(
         subTab === CLUB_SUB_TAB.SUBSCRIPTION
