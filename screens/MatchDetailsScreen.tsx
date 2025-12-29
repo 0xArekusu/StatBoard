@@ -148,7 +148,9 @@ export default function MatchDetailsScreen() {
     const map = new Map<string, string>();
     players.forEach((p: any) => {
       const key = `${p.team}-${p.num}`;
-      map.set(key, p.name || `Joueur ${p.num}`);
+      // Use fallback if name is undefined, null, or empty string
+      const playerName = p.name && p.name.trim() !== '' ? p.name : `Joueur ${p.num}`;
+      map.set(key, playerName);
     });
     return map;
   }, [players]);
@@ -271,12 +273,20 @@ export default function MatchDetailsScreen() {
       players
         .filter((player) => player.team === teamFilter)
         // Exclude generic player 9999 used for opponent points without tracking
-        .filter((player) => player.num !== 9999)
+        // Check both 'num' and 'player_number' fields for compatibility
+        .filter((player) => {
+          const playerNum = player.num || player.player_number;
+          return playerNum !== 9999;
+        })
         .forEach((player) => {
-          const key = `${player.team}-${player.num}`;
-          const playerName = player.name || `Joueur ${player.num}`;
+          const playerNum = player.num || player.player_number;
+          const key = `${player.team}-${playerNum}`;
+          // Use fallback if name is undefined, null, or empty string
+          const playerName = (player.name || player.player_name) && (player.name || player.player_name).trim() !== ''
+            ? (player.name || player.player_name)
+            : `Joueur ${playerNum}`;
           playerStatsMap.set(key, {
-            playerNumber: player.num,
+            playerNumber: playerNum,
             name: playerName,
             team: player.team,
             pts: 0,
@@ -319,6 +329,8 @@ export default function MatchDetailsScreen() {
 
           // Rare case: action recorded for a player not in the players list
           // Create an entry for this player with default stats
+          // IMPORTANT: Don't create stats entry for player 9999 (generic opponent player)
+          // This player is only used internally to track opponent points without individual stats
           if (!playerStatsMap.has(key)) {
             const playerName = playerNamesMap.get(key) || `Joueur ${playerNum}`;
             playerStatsMap.set(key, {
@@ -347,7 +359,12 @@ export default function MatchDetailsScreen() {
             });
           }
 
-          const stats = playerStatsMap.get(key)!;
+          const stats = playerStatsMap.get(key);
+
+          // Skip updating stats if player is 9999 (shouldn't happen but safety check)
+          if (!stats) {
+            return;
+          }
 
         // Normalize action types for comparison
         // Database actions use action_type (e.g., "SHOT", "REBOUND")

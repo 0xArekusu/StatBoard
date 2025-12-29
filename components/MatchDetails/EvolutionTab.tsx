@@ -31,6 +31,32 @@ interface EvolutionTabProps {
   colors: any;
 }
 
+/**
+ * Get period label based on match format and period number
+ * - Regular periods: Q1-Q4 (4 quarters), MT1-MT2 (2 halves), or P1-Pn (n periods)
+ * - Overtime periods: OT1, OT2, OT3, etc.
+ *
+ * @param periodNumber - 1-based period number (1, 2, 3, ...)
+ * @param totalPeriods - Total regular periods (2, 4, or custom)
+ * @returns Period label string
+ */
+function getPeriodLabel(periodNumber: number, totalPeriods: number): string {
+  // Check if this is an overtime period
+  if (periodNumber > totalPeriods) {
+    const overtimeNumber = periodNumber - totalPeriods;
+    return `OT${overtimeNumber}`;
+  }
+
+  // Regular periods
+  if (totalPeriods === 4) {
+    return `Q${periodNumber}`;
+  } else if (totalPeriods === 2) {
+    return `MT${periodNumber}`;
+  } else {
+    return `P${periodNumber}`;
+  }
+}
+
 export default function EvolutionTab({
   match,
   actions,
@@ -191,8 +217,8 @@ export default function EvolutionTab({
               Équipe
             </Text>
             {evolution.periods.map((_, i) => {
-              const isOT = i >= evolution.totalPeriods;
-              const label = isOT ? `OT${i - evolution.totalPeriods + 1}` : `Q${i + 1}`;
+              const periodNumber = i + 1;
+              const label = getPeriodLabel(periodNumber, evolution.totalPeriods);
               return (
                 <Text
                   key={i}
@@ -458,8 +484,7 @@ export default function EvolutionTab({
                   } else if (point.period !== undefined && point.actionIndex !== undefined && evolution.scoringActions) {
                     const action = evolution.scoringActions[point.actionIndex];
                     const previousPoint = evolution.graphPoints[i - 1];
-                    const isOT = point.period > totalPeriods;
-                    const periodLabel = isOT ? `OT${point.period - totalPeriods}` : `Q${point.period}`;
+                    const periodLabel = getPeriodLabel(point.period, totalPeriods);
 
                     if (action) {
                       const pointsScored = action.points || 0;
@@ -565,8 +590,8 @@ export default function EvolutionTab({
             {/* X-axis labels */}
             <View style={styles.xAxisLabels}>
               {evolution.periods.map((_, i) => {
-                const isOT = i >= evolution.totalPeriods;
-                const label = isOT ? `OT${i - evolution.totalPeriods + 1}` : `Q${i + 1}`;
+                const periodNumber = i + 1;
+                const label = getPeriodLabel(periodNumber, evolution.totalPeriods);
                 return (
                   <Text
                     key={i}
