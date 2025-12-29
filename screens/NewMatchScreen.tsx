@@ -11,7 +11,7 @@ import { View, StyleSheet, ScrollView, Alert, ActivityIndicator } from "react-na
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { useTheme } from "../src/contexts/ThemeContext";
 import { useAuth } from "../src/contexts/AuthContext";
-import { DEFAULT_COURT_COLORS } from "../src/theme";
+import { DEFAULT_COURT_COLORS, DEFAULT_CLUB_COLORS } from "../src/theme";
 import {
   MATCH_VALIDATION_MESSAGES,
   ROSTER_LIMITS,
@@ -19,12 +19,14 @@ import {
   getDefaultOpponentPlayerName,
   DEFAULT_MATCH_PRESET,
   type MatchCreationStep,
+  ROUTES,
 } from "../constants";
 import { ServiceFactory } from "../services/ServiceFactory";
 import { supabase } from "../src/config/supabase";
 import { Club } from "../models/Club";
 import { Team, TeamStatus } from "../models/Team";
 import { Player } from "../models/Player";
+import { SUBSCRIPTION_TIER } from "../models/Subscription";
 import {
   MatchHeader,
   TeamSelector,
@@ -130,12 +132,10 @@ export default function NewMatchScreen() {
    * Set default team when club and teams load
    */
   useEffect(() => {
-    if (club && defaultTeamId) {
-      setSelectedTeamId(defaultTeamId);
-    } else if (club && teams.length > 0) {
+    if (club && teams.length > 0) {
       setSelectedTeamId(teams[0].id);
     }
-  }, [club, teams, defaultTeamId]);
+  }, [club, teams]);
 
   /**
    * Load roster when team changes
@@ -167,10 +167,16 @@ export default function NewMatchScreen() {
       const guestClub: Club = {
         id: "guest-club",
         name: "Club Local",
+        acronym: "CL",
+        code: "guest",
         ownerId: "guest",
+        ownerEmail: "guest@local.com",
+        subscriptionTier: SUBSCRIPTION_TIER.FREE,
         createdAt: new Date(),
         updatedAt: new Date(),
-        logoUrl: null,
+        logoUrl: undefined,
+        primaryColor: DEFAULT_CLUB_COLORS.primary,
+        secondaryColor: DEFAULT_CLUB_COLORS.secondary,
         courtBackgroundColor: DEFAULT_COURT_COLORS.background,
         courtLineColor: DEFAULT_COURT_COLORS.line,
       };
@@ -181,6 +187,8 @@ export default function NewMatchScreen() {
         clubId: "guest-club",
         ownerId: "guest",
         status: TeamStatus.APPROVED,
+        isActive: true,
+        isDeleted: false,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
