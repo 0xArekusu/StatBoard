@@ -258,15 +258,42 @@ export function useMatchSync({
       const localMatch = await matchRepository.findById(currentMatchId);
       const matchPlayerRepo = new MatchPlayerRepository();
       const actionRepo = new ActionRepository();
-      const localPlayers =
+      const localPlayersRaw =
         await matchPlayerRepo.getPlayersForMatch(currentMatchId);
-      const localActions =
+      const localActionsRaw =
         await actionRepo.getActionsForMatch(currentMatchId);
+
+      // Convert players to expected format (same as Supabase conversion)
+      const players = localPlayersRaw.map((mp: any) => ({
+        id: mp.player_number,
+        num: mp.player_number,
+        name: mp.player_name,
+        team: mp.team,
+        isSubstitute: !mp.is_starter,
+        photoUrl: mp.photo_url || undefined,
+      }));
+
+      // Convert actions to expected format (same as Supabase conversion)
+      const actions = localActionsRaw.map((action: any) => ({
+        type: action.action_type,
+        specification: action.specification,
+        points: action.points,
+        player: action.player_number,
+        team: action.team,
+        timestamp: new Date(action.timestamp),
+        period_number: action.period_number,
+        time_in_period: action.time_in_period,
+        position: { x: 0, y: 0 },
+        semanticPosition: {
+          xNormalized: action.semantic_x,
+          yNormalized: action.semantic_y,
+        },
+      }));
 
       logInfo("useMatchSync", "✅ Local match data fetched for guest", {
         matchId: currentMatchId,
-        playersCount: localPlayers.length,
-        actionsCount: localActions.length,
+        playersCount: players.length,
+        actionsCount: actions.length,
       });
 
       setIsSyncing(false);
@@ -282,8 +309,8 @@ export function useMatchSync({
       setTimeout(() => {
         navigation.navigate(ROUTES.MATCH_DETAILS, {
           match: localMatch,
-          actions: localActions,
-          players: localPlayers,
+          actions: actions,
+          players: players,
           fromLiveMatch: true,
           isLocalMatch: true,
         });

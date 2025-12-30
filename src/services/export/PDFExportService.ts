@@ -35,6 +35,7 @@ interface PDFExportOptions {
   courtBackgroundColor?: string;
   courtLineColor?: string;
   isHome?: boolean; // Whether my team is playing at home
+  overtimePeriods?: number; // Number of overtime periods played
 }
 
 export class PDFExportService {
@@ -185,7 +186,34 @@ export class PDFExportService {
       courtBackgroundColor = PDF_COLORS.court.background,
       courtLineColor = PDF_COLORS.court.line,
       isHome = true,
+      overtimePeriods = 0,
     } = options;
+
+    console.log('[PDF Export] 🚀 Début generateMatchPDF');
+    console.log('[PDF Export] 📊 Nombre de joueurs reçus:', players.length);
+    console.log('[PDF Export] 👥 Liste des joueurs reçus:', players.map(p => ({
+      id: p.id,
+      num: p.num,
+      name: p.name,
+      team: p.team
+    })));
+    console.log('[PDF Export] 🎬 Nombre d\'actions:', actions.length);
+    console.log('[PDF Export] 📌 trackOpponentStats:', trackOpponentStats);
+
+    // Log quelques actions pour voir leur structure
+    if (actions.length > 0) {
+      console.log('[PDF Export] 📝 Échantillon de 5 premières actions:',
+        actions.slice(0, 5).map(a => ({
+          player_number: a.player_number,
+          player: a.player,
+          type: a.type,
+          action_type: a.action_type,
+          team: a.team,
+          specification: a.specification,
+          points: a.points
+        }))
+      );
+    }
 
     // Determine home and away teams based on isHome flag
     const homeTeamName = isHome ? myTeamName : opponentName;
@@ -234,11 +262,12 @@ export class PDFExportService {
 
     const totalPeriods = matchFormat === "2_halves" ? 2 : 4;
     const periodLabel = matchFormat === "2_halves" ? "MT" : "Q";
+    const totalPeriodsPlayed = totalPeriods + overtimePeriods; // Include overtime periods
 
-    // Calculate period scores
+    // Calculate period scores (including overtime periods)
     const { periodScoresMyTeam, periodScoresOpponent } = this.calculatePeriodScores(
       actions,
-      totalPeriods
+      totalPeriodsPlayed
     );
 
     // Arrange period scores in home/away order
@@ -247,23 +276,44 @@ export class PDFExportService {
 
     // Calculate action-by-action evolution for chart
     const { evolutionMyTeam, evolutionOpponent, evolutionPeriods } =
-      this.calculateActionByActionEvolution(actions, totalPeriods);
+      this.calculateActionByActionEvolution(actions, totalPeriodsPlayed);
 
     // Calculate player stats - always include MY_TEAM, include OPPONENT only if tracking
+    console.log('[PDF Export] 🔍 Tous les joueurs reçus:', playersWithBase64Photos.map(p => ({
+      id: p.id,
+      num: p.num,
+      name: p.name,
+      team: p.team,
+      hasPhoto: !!p.photoUrl
+    })));
+
     const playersMyTeam = playersWithBase64Photos.filter((p) => p.team === Team.MY_TEAM);
     const playersOpponent = trackOpponentStats
       ? playersWithBase64Photos.filter((p) => p.team === Team.OPPONENT)
       : [];
 
-    const statsMyTeam = playersMyTeam.map((player) => ({
-      ...player,
-      stats: this.calculatePlayerStats(player.id, actions),
-    }));
+    console.log('[PDF Export] 👥 Joueurs MY_TEAM filtrés:', playersMyTeam.length);
+    console.log('[PDF Export] 👥 Joueurs OPPONENT filtrés:', playersOpponent.length);
 
-    const statsOpponent = playersOpponent.map((player) => ({
-      ...player,
-      stats: this.calculatePlayerStats(player.id, actions),
-    }));
+    const statsMyTeam = playersMyTeam.map((player) => {
+      console.log(`[PDF Export] ⚡ Calcul stats pour joueur MY_TEAM - ID: ${player.id}, Num: ${player.num}, Nom: ${player.name}`);
+      const stats = this.calculatePlayerStats(player.id, actions);
+      console.log(`[PDF Export] 📊 Stats calculées:`, stats);
+      return {
+        ...player,
+        stats,
+      };
+    });
+
+    const statsOpponent = playersOpponent.map((player) => {
+      console.log(`[PDF Export] ⚡ Calcul stats pour joueur OPPONENT - ID: ${player.id}, Num: ${player.num}, Nom: ${player.name}`);
+      const stats = this.calculatePlayerStats(player.id, actions);
+      console.log(`[PDF Export] 📊 Stats calculées:`, stats);
+      return {
+        ...player,
+        stats,
+      };
+    });
 
     // Generate HTML
     const html = this.generateHTML({
@@ -278,6 +328,8 @@ export class PDFExportService {
       matchDate,
       periodLabel,
       totalPeriods,
+      totalPeriodsPlayed,
+      overtimePeriods,
       periodScoresMyTeam,
       periodScoresOpponent,
       periodScoresHome,
@@ -437,11 +489,26 @@ export class PDFExportService {
    * Handles both database format (action_type, player_number) and app format (type, player)
    */
   private static calculatePlayerStats(playerId: number, actions: any[]) {
+    console.log(`[PDF Export] 🎯 calculatePlayerStats appelé pour playerId: ${playerId}`);
+    console.log(`[PDF Export] 📋 Nombre total d'actions à analyser: ${actions.length}`);
+
     // Filter actions for this player - handle both player_number (DB) and player (app) formats
     const playerActions = actions.filter((a) => {
       const playerNum = a.player_number || a.player;
       return playerNum === playerId;
     });
+
+    console.log(`[PDF Export] ✅ Actions trouvées pour playerId ${playerId}: ${playerActions.length}`);
+    if (playerActions.length > 0) {
+      console.log(`[PDF Export] 📝 Première action du joueur ${playerId}:`, {
+        player_number: playerActions[0].player_number,
+        player: playerActions[0].player,
+        type: playerActions[0].type,
+        action_type: playerActions[0].action_type,
+        specification: playerActions[0].specification,
+        points: playerActions[0].points
+      });
+    }
 
     // Helper function to normalize action type
     // Note: Actions from MatchDataService use 'type', database uses 'action_type'
@@ -660,6 +727,14 @@ export class PDFExportService {
       <tbody>
         ${stats
           .map((player) => {
+            console.log(`[PDF Export] 🏀 Génération HTML pour joueur:`, {
+              id: player.id,
+              num: player.num,
+              name: player.name,
+              team: player.team,
+              stats: player.stats
+            });
+
             const totalFouls = this.calculateTotalFouls(player.stats);
             const totalRebounds = player.stats.orb + player.stats.drb;
             const totalFgm = player.stats.twopm + player.stats.threepm;
@@ -727,10 +802,11 @@ export class PDFExportService {
     evolutionOpponent: number[],
     evolutionPeriods: number[],
     periodLabel: string,
-    totalPeriods: number,
+    totalPeriodsPlayed: number,
     trackOpponentStats: boolean,
     myTeamName: string,
-    opponentName: string
+    opponentName: string,
+    basePeriods?: number
   ): string {
     const width = 500;
     const height = 200;
@@ -773,20 +849,33 @@ export class PDFExportService {
     });
 
     // Generate X-axis labels with "FIN" above period labels
-    const xLabelsHTML = Array.from({ length: totalPeriods + 1 }, (_, i) => {
-      const x = padding.left + (i * chartWidth) / totalPeriods;
+    const actualBasePeriods = basePeriods || totalPeriodsPlayed; // Default to totalPeriodsPlayed if basePeriods not provided
+    const overtimes = totalPeriodsPlayed - actualBasePeriods;
+
+    const xLabelsHTML = Array.from({ length: totalPeriodsPlayed + 1 }, (_, i) => {
+      const x = padding.left + (i * chartWidth) / totalPeriodsPlayed;
       if (i === 0) {
         return `<text x="${x}" y="${
           height - 10
         }" text-anchor="middle" font-size="10">Début</text>`;
       }
+
+      // Determine label: regular period or OT
+      let label;
+      if (i <= actualBasePeriods) {
+        label = `${periodLabel}${i}`;
+      } else {
+        const otNumber = i - actualBasePeriods;
+        label = overtimes > 1 ? `OT${otNumber}` : 'OT';
+      }
+
       return `
         <text x="${x}" y="${
         height - 18
       }" text-anchor="middle" font-size="9">FIN</text>
         <text x="${x}" y="${
         height - 8
-      }" text-anchor="middle" font-size="10" font-weight="bold">${periodLabel}${i}</text>
+      }" text-anchor="middle" font-size="10" font-weight="bold">${label}</text>
       `;
     }).join("");
 
@@ -1281,6 +1370,8 @@ export class PDFExportService {
     matchDate: Date;
     periodLabel: string;
     totalPeriods: number;
+    totalPeriodsPlayed: number;
+    overtimePeriods: number;
     periodScoresMyTeam: number[];
     periodScoresOpponent: number[];
     periodScoresHome: number[];
@@ -1312,6 +1403,8 @@ export class PDFExportService {
       matchDate,
       periodLabel,
       totalPeriods,
+      totalPeriodsPlayed,
+      overtimePeriods,
       periodScoresMyTeam,
       periodScoresOpponent,
       periodScoresHome,
@@ -1338,10 +1431,11 @@ export class PDFExportService {
       evolutionOpponent,
       evolutionPeriods,
       periodLabel,
-      totalPeriods,
+      totalPeriodsPlayed,
       trackOpponentStats,
       myTeamName,
-      opponentName
+      opponentName,
+      totalPeriods // Pass base periods (2 or 4) to generate correct labels
     );
 
     const dateStr = matchDate.toLocaleDateString("fr-FR", {
@@ -1831,6 +1925,9 @@ export class PDFExportService {
         <th>Équipe</th>
         ${Array.from({ length: totalPeriods })
           .map((_, i) => `<th>${periodLabel}${i + 1}</th>`)
+          .join("")}
+        ${Array.from({ length: overtimePeriods })
+          .map((_, i) => `<th>OT${overtimePeriods > 1 ? i + 1 : ''}</th>`)
           .join("")}
         <th>Total</th>
       </tr>

@@ -90,6 +90,13 @@ export default function MatchDetailsScreen() {
     const loadMatchData = async () => {
       // If data is already provided (from LiveMatch), skip loading
       if (route.params.actions && route.params.players) {
+        console.log('[MatchDetailsScreen] 📦 Données déjà fournies par route.params');
+        console.log('[MatchDetailsScreen] 👥 Joueurs de route.params:', route.params.players.map((p: any) => ({
+          id: p.id,
+          num: p.num,
+          name: p.name,
+          team: p.team
+        })));
         return;
       }
 
@@ -99,6 +106,16 @@ export default function MatchDetailsScreen() {
         // Use MatchDataService to load from appropriate source (SQLite or Supabase)
         const matchDataService = ServiceFactory.getMatchDataService(supabase);
         const matchDetails = await matchDataService.loadMatchDetails(match);
+
+        console.log('[MatchDetailsScreen] 📥 Données chargées depuis DB');
+        console.log('[MatchDetailsScreen] 🎬 Actions chargées:', matchDetails.actions.length);
+        console.log('[MatchDetailsScreen] 👥 Joueurs chargés:', matchDetails.players.length);
+        console.log('[MatchDetailsScreen] 📋 Liste joueurs:', matchDetails.players.map((p: any) => ({
+          id: p.id,
+          num: p.num,
+          name: p.name,
+          team: p.team
+        })));
 
         setActions(matchDetails.actions);
         setPlayers(matchDetails.players);
@@ -194,11 +211,17 @@ export default function MatchDetailsScreen() {
    */
   const handleExportPDF = async () => {
     try {
+      console.log('[MatchDetailsScreen] 📤 handleExportPDF - Début export');
+      console.log('[MatchDetailsScreen] 📊 État players actuel:', players.length);
+      console.log('[MatchDetailsScreen] 🎬 État actions actuel:', actions.length);
+
       // Determine if opponent stats are tracked by checking for opponent players
       // (excluding generic player 9999 used for opponent points without detailed tracking)
       const trackOpponentStats = players?.some(
         (p) => p.team === Team.OPPONENT && p.num !== 9999
       ) || false;
+
+      console.log('[MatchDetailsScreen] 🏀 trackOpponentStats:', trackOpponentStats);
 
       const pdfOptions = {
         myTeamName: match.my_team_name || "Notre équipe",
@@ -212,7 +235,15 @@ export default function MatchDetailsScreen() {
         players: players || [],
         matchDate: match.created_at ? new Date(match.created_at) : new Date(),
         isHome: match.is_home ?? true, // Pass whether my team is playing at home
+        overtimePeriods: match.overtime_periods || 0, // Number of overtime periods played
       };
+
+      console.log('[MatchDetailsScreen] 📋 pdfOptions.players envoyé:', pdfOptions.players.map(p => ({
+        id: p.id,
+        num: p.num,
+        name: p.name,
+        team: p.team
+      })));
 
       await PDFExportService.generateMatchPDF(pdfOptions);
       Alert.alert("Succès", "Le PDF a été généré et partagé avec succès");
