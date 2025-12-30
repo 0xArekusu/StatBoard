@@ -300,6 +300,16 @@ export const SPORT_COLORS = {
 } as const;
 
 /**
+ * Shooting bar colors for statistics visualization
+ * Used in player stat cards to show shooting percentages
+ */
+export const SHOOTING_BAR_COLORS = {
+  threePoint: "#6366f1",  // Indigo - 3 point shots
+  twoPoint: "#3b82f6",    // Blue - 2 point shots
+  freeThrow: "#06b6d4",   // Cyan - Free throws
+} as const;
+
+/**
  * Team colors for charts and visualizations
  * Used consistently across match summary, details, and statistics
  */

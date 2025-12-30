@@ -271,7 +271,7 @@ export class PDFExportService {
     const periodScoresOpponent: number[] = Array(totalPeriods).fill(0);
 
     const sortedActions = [...actions].sort(
-      (a, b) => a.timestamp.getTime() - b.timestamp.getTime()
+      (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
     );
 
     const actionsPerPeriod = Math.ceil(sortedActions.length / totalPeriods);

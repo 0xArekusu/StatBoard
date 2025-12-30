@@ -19,6 +19,7 @@ import {
   SortOrder,
 } from "../../constants/matchDetailsConstants";
 import { ShootingBar } from "./SharedComponents";
+import { SHOOTING_BAR_COLORS } from "../../src/theme/colors";
 
 // ===========================
 // PROPS INTERFACE
@@ -501,21 +502,21 @@ export default function CardsTab({
               label="3 PTS"
               made={player.fg3m}
               attempted={player.fg3a}
-              color="#6366f1"
+              color={SHOOTING_BAR_COLORS.threePoint}
               compact
             />
             <ShootingBar
               label="2 PTS"
               made={player.fg2m}
               attempted={player.fg2a}
-              color="#3b82f6"
+              color={SHOOTING_BAR_COLORS.twoPoint}
               compact
             />
             <ShootingBar
-              label="LANC"
+              label="LF"
               made={player.ftm}
               attempted={player.fta}
-              color="#06b6d4"
+              color={SHOOTING_BAR_COLORS.freeThrow}
               compact
             />
           </View>
