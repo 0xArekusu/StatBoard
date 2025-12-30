@@ -118,7 +118,7 @@ export default function LiveMatchScreen() {
         teamId: matchData.teamId,
         myTeamName: matchData.teamName || "Mon Équipe",
         opponent: matchData.opponent || "Adversaire",
-        location: matchData.location || TeamId.HOME,
+        location: matchData.isHome ? TeamId.HOME : TeamId.AWAY,
         scoreHome: 0,
         scoreAway: 0,
         status: "in_progress" as MatchStatus,

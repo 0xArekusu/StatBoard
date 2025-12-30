@@ -14,6 +14,7 @@ import { MatchPlayerRepository } from "../src/services/database/MatchPlayerRepos
 import { ActionRepository } from "../src/services/database/ActionRepository";
 import { logInfo, logError, logWarn } from "../utils/logger";
 import { ROUTES } from "../constants/routes";
+import { TeamId } from "../constants/liveMatchConstants";
 
 interface UseMatchSyncProps {
   currentMatchId: number | null;
@@ -51,10 +52,21 @@ export function useMatchSync({
       // Calculate overtime periods played
       const overtimesPlayed = Math.max(0, quarter - maxPeriods);
 
+      // Determine my team's score and opponent's score based on location
+      // If home: my score = scoreHome, opponent score = scoreAway
+      // If away: my score = scoreAway, opponent score = scoreHome
+      const isHome = match.location === TeamId.HOME;
+      const myTeamScore = isHome ? (match.scoreHome || 0) : (match.scoreAway || 0);
+      const opponentScore = isHome ? (match.scoreAway || 0) : (match.scoreHome || 0);
+
       logInfo("useMatchSync", "🏁 Ending match", {
         matchId: currentMatchId,
-        myTeamScore: match.scoreHome,
-        opponentScore: match.scoreAway,
+        location: match.location,
+        isHome,
+        scoreHome: match.scoreHome,
+        scoreAway: match.scoreAway,
+        myTeamScore,
+        opponentScore,
         totalPeriodsPlayed: quarter,
         overtimePeriods: overtimesPlayed,
       });
@@ -65,8 +77,8 @@ export function useMatchSync({
       // Update final scores and overtime info
       await matchRepository.updateFinalScores(
         currentMatchId,
-        match.scoreHome || 0,
-        match.scoreAway || 0,
+        myTeamScore,
+        opponentScore,
         false
       );
 
@@ -81,7 +93,9 @@ export function useMatchSync({
 
       logInfo("useMatchSync", "✅ Match ended and compacted", {
         matchId: currentMatchId,
-        finalScores: `${match.scoreHome} - ${match.scoreAway}`,
+        finalScores: `${myTeamScore} - ${opponentScore}`,
+        scoreHome: match.scoreHome,
+        scoreAway: match.scoreAway,
         overtimes: overtimesPlayed,
       });
 

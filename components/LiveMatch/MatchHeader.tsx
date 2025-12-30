@@ -39,6 +39,8 @@ export function MatchHeader({
   const { colors } = useTheme();
   const amIHome = match.location === TeamId.HOME;
 
+  console.log('[MatchHeader] Location:', match.location, 'amIHome:', amIHome);
+
   const bgColor = colors.background;
   const surfaceColor = colors.surface;
   const textPrimary = colors.text.primary;
@@ -134,7 +136,7 @@ export function MatchHeader({
       ]}
     >
       <View style={styles.headerContent}>
-        {/* LEFT SIDE */}
+        {/* LEFT SIDE - My team when home, opponent when away */}
         {renderTeamSection(amIHome, true)}
 
         {/* CENTER (TIMER) */}
@@ -183,7 +185,7 @@ export function MatchHeader({
           </TouchableOpacity>
         </View>
 
-        {/* RIGHT SIDE */}
+        {/* RIGHT SIDE - Opponent when home, my team when away */}
         {renderTeamSection(!amIHome, false)}
       </View>
     </View>

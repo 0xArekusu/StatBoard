@@ -587,24 +587,35 @@ export default function MatchDetailsScreen() {
         </View>
 
         <View style={styles.scoreContainer}>
+          {/* LEFT SIDE - My team when home, opponent when away */}
           <View style={styles.teamScore}>
             <Text style={[styles.teamLabel, { color: textSecondary }]}>
-              {match.my_team_name || "Notre équipe"}
+              {match.is_home ? (match.my_team_name || "Notre équipe") : match.opponent_name}
             </Text>
             <Text
               style={[
                 styles.scoreValue,
-                { color: isWin ? textPrimary : textTertiary },
+                { color: match.is_home ? (isWin ? textPrimary : textTertiary) : (!isWin ? textPrimary : textTertiary) },
               ]}
             >
-              {match.my_team_score}
+              {match.is_home ? match.my_team_score : match.opponent_score}
             </Text>
-            {isWin && (
-              <Ionicons
-                name="trophy-outline"
-                size={25}
-                color={colors.primary}
-              />
+            {match.is_home ? (
+              isWin && (
+                <Ionicons
+                  name="trophy-outline"
+                  size={25}
+                  color={colors.primary}
+                />
+              )
+            ) : (
+              !isWin && (
+                <Ionicons
+                  name="trophy-outline"
+                  size={25}
+                  color={colors.primary}
+                />
+              )
             )}
           </View>
 
@@ -612,24 +623,35 @@ export default function MatchDetailsScreen() {
             style={[styles.scoreDivider, { backgroundColor: borderColor }]}
           />
 
+          {/* RIGHT SIDE - Opponent when home, my team when away */}
           <View style={styles.teamScore}>
             <Text style={[styles.teamLabel, { color: textSecondary }]}>
-              {match.opponent_name}
+              {match.is_home ? match.opponent_name : (match.my_team_name || "Notre équipe")}
             </Text>
             <Text
               style={[
                 styles.scoreValue,
-                { color: !isWin ? textPrimary : textTertiary },
+                { color: match.is_home ? (!isWin ? textPrimary : textTertiary) : (isWin ? textPrimary : textTertiary) },
               ]}
             >
-              {match.opponent_score}
+              {match.is_home ? match.opponent_score : match.my_team_score}
             </Text>
-            {!isWin && (
-              <Ionicons
-                name="trophy-outline"
-                size={25}
-                color={colors.primary}
-              />
+            {match.is_home ? (
+              !isWin && (
+                <Ionicons
+                  name="trophy-outline"
+                  size={25}
+                  color={colors.primary}
+                />
+              )
+            ) : (
+              isWin && (
+                <Ionicons
+                  name="trophy-outline"
+                  size={25}
+                  color={colors.primary}
+                />
+              )
             )}
           </View>
         </View>
