@@ -5,10 +5,10 @@ import {
   ShotSpecification,
   ReboundSpecification,
   FoulSpecification,
+  getActionColor,
 } from "../../models/ActionTypes";
 import { Team } from "../../models/types";
 import type { CourtMarker } from "../../../components/BasketballCourtSVG";
-import { getActionColor } from "../../config/actionConfig";
 
 interface Player {
   id: number;

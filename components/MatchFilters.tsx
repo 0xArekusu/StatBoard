@@ -20,7 +20,7 @@ import {
   ScrollView,
   StyleSheet,
 } from "react-native";
-import { ACTION_DEFINITIONS } from "../src/config/actionConfig";
+import { ACTION_DEFINITIONS } from "../src/models/ActionTypes";
 import { useTheme } from "../src/contexts/ThemeContext";
 import { Team } from "../src/models/types";
 

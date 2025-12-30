@@ -78,6 +78,7 @@ export default function MatchDetailsScreen() {
   const [players, setPlayers] = useState<any[]>(route.params.players || []);
   // Loading state if data is not provided
   const [loading, setLoading] = useState<boolean>(!route.params.actions);
+
   // Club associated with the match (for court colors and logo)
   const [club, setClub] = useState<Club | null>(null);
 
@@ -636,61 +637,63 @@ export default function MatchDetailsScreen() {
 
       {/* FILTERS & TABS */}
       <View style={[styles.filtersTabsContainer, { backgroundColor: bgColor }]}>
-        {activeTab !== TAB.EVOLUTION && (
-          <View
-            style={[
-              styles.teamFilterContainer,
-              { backgroundColor: colors.surfaceVariant },
-            ]}
-          >
-            <TouchableOpacity
-              onPress={() => setActiveTeamFilter(Team.MY_TEAM)}
+        <View style={styles.leftSection}>
+          {activeTab !== TAB.EVOLUTION && (
+            <View
               style={[
-                styles.teamFilterButton,
-                activeTeamFilter === Team.MY_TEAM && {
-                  backgroundColor: surfaceColor,
-                },
+                styles.teamFilterContainer,
+                { backgroundColor: colors.surfaceVariant },
               ]}
             >
-              <Text
+              <TouchableOpacity
+                onPress={() => setActiveTeamFilter(Team.MY_TEAM)}
                 style={[
-                  styles.teamFilterText,
-                  {
-                    color:
-                      activeTeamFilter === Team.MY_TEAM
-                        ? colors.primary
-                        : textSecondary,
+                  styles.teamFilterButton,
+                  activeTeamFilter === Team.MY_TEAM && {
+                    backgroundColor: surfaceColor,
                   },
                 ]}
               >
-                NOUS
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => setActiveTeamFilter(Team.OPPONENT)}
-              style={[
-                styles.teamFilterButton,
-                activeTeamFilter === Team.OPPONENT && {
-                  backgroundColor: surfaceColor,
-                },
-              ]}
-            >
-              <Text
+                <Text
+                  style={[
+                    styles.teamFilterText,
+                    {
+                      color:
+                        activeTeamFilter === Team.MY_TEAM
+                          ? colors.primary
+                          : textSecondary,
+                    },
+                  ]}
+                >
+                  NOUS
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => setActiveTeamFilter(Team.OPPONENT)}
                 style={[
-                  styles.teamFilterText,
-                  {
-                    color:
-                      activeTeamFilter === Team.OPPONENT
-                        ? colors.primary
-                        : textSecondary,
+                  styles.teamFilterButton,
+                  activeTeamFilter === Team.OPPONENT && {
+                    backgroundColor: surfaceColor,
                   },
                 ]}
               >
-                EUX
-              </Text>
-            </TouchableOpacity>
-          </View>
-        )}
+                <Text
+                  style={[
+                    styles.teamFilterText,
+                    {
+                      color:
+                        activeTeamFilter === Team.OPPONENT
+                          ? colors.primary
+                          : textSecondary,
+                    },
+                  ]}
+                >
+                  EUX
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
 
         <View style={styles.tabsContainer}>
         <TouchableOpacity
@@ -901,11 +904,13 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     gap: 16,
   },
+  leftSection: {
+    flex: 1,
+  },
   teamFilterContainer: {
     flexDirection: "row",
     padding: 4,
     borderRadius: 12,
-    flex: 1,
   },
   teamFilterButton: {
     flex: 1,

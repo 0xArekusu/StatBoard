@@ -8,7 +8,7 @@
 
 import React, { useMemo, useState } from "react";
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from "react-native";
-import Svg, { Path, Line, Circle } from "react-native-svg";
+import Svg, { Path, Line } from "react-native-svg";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { ActionType, ShotSpecification } from "../../src/models/ActionTypes";
 
@@ -211,7 +211,11 @@ export default function EvolutionTab({
               style={[
                 styles.tableHeaderCell,
                 styles.teamCell,
-                { color: colors.text.secondary },
+                {
+                  color: colors.text.secondary,
+                  borderRightWidth: 1,
+                  borderRightColor: colors.border,
+                },
               ]}
             >
               Équipe
@@ -222,7 +226,14 @@ export default function EvolutionTab({
               return (
                 <Text
                   key={i}
-                  style={[styles.tableHeaderCell, { color: colors.text.secondary }]}
+                  style={[
+                    styles.tableHeaderCell,
+                    {
+                      color: colors.text.secondary,
+                      borderRightWidth: 1,
+                      borderRightColor: colors.border,
+                    }
+                  ]}
                 >
                   {label}
                 </Text>
@@ -248,7 +259,11 @@ export default function EvolutionTab({
               style={[
                 styles.tableCell,
                 styles.teamCell,
-                { color: colors.text.primary },
+                {
+                  color: colors.text.primary,
+                  borderRightWidth: 1,
+                  borderRightColor: colors.border,
+                },
               ]}
             >
               {match.my_team_name || "Mon Équipe"}
@@ -263,6 +278,8 @@ export default function EvolutionTab({
                     {
                       color: isWinning ? colors.primary : colors.text.primary,
                       fontWeight: isWinning ? "900" : "700",
+                      borderRightWidth: 1,
+                      borderRightColor: colors.border,
                     },
                   ]}
                 >
@@ -294,7 +311,11 @@ export default function EvolutionTab({
               style={[
                 styles.tableCell,
                 styles.teamCell,
-                { color: colors.text.secondary },
+                {
+                  color: colors.text.secondary,
+                  borderRightWidth: 1,
+                  borderRightColor: colors.border,
+                },
               ]}
             >
               {match.opponent_name || "Adversaire"}
@@ -309,6 +330,8 @@ export default function EvolutionTab({
                     {
                       color: isWinning ? colors.primary : colors.text.secondary,
                       fontWeight: isWinning ? "900" : "700",
+                      borderRightWidth: 1,
+                      borderRightColor: colors.border,
                     },
                   ]}
                 >
@@ -388,7 +411,7 @@ export default function EvolutionTab({
                     x2={evolution.totalPeriods + evolution.overtimePeriods}
                     y2={maxScore * ratio}
                     stroke={colors.border}
-                    strokeWidth="0.5"
+                    strokeWidth="0.1"
                   />
                 ))}
 
@@ -441,33 +464,6 @@ export default function EvolutionTab({
                   />
                 )}
 
-                {/* Interactive Points - Home Team */}
-                {evolution.graphPoints.map((point, i) => (
-                  <Circle
-                    key={`home-${i}`}
-                    cx={point.xPosition || 0}
-                    cy={maxScore - point.home}
-                    r={selectedPoint === i ? 0.15 : 0.08}
-                    fill={colors.primary}
-                    stroke={colors.background}
-                    strokeWidth={selectedPoint === i ? 0.08 : 0.04}
-                    vectorEffect="non-scaling-stroke"
-                  />
-                ))}
-
-                {/* Interactive Points - Away Team */}
-                {evolution.graphPoints.map((point, i) => (
-                  <Circle
-                    key={`away-${i}`}
-                    cx={point.xPosition || 0}
-                    cy={maxScore - point.away}
-                    r={selectedPoint === i ? 0.15 : 0.08}
-                    fill="#FF6B6B"
-                    stroke={colors.background}
-                    strokeWidth={selectedPoint === i ? 0.08 : 0.04}
-                    vectorEffect="non-scaling-stroke"
-                  />
-                ))}
               </Svg>
 
               {/* Touch areas for interaction - clickable points */}

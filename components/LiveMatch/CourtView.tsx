@@ -11,10 +11,9 @@ import {
   FilterMode,
   TeamId,
 } from "../../constants/liveMatchConstants";
-import { ActionType } from "../../src/models/ActionTypes";
+import { ActionType, getActionColor } from "../../src/models/ActionTypes";
 import BasketballCourtSVG from "../BasketballCourtSVG";
 import { useTheme } from "../../src/contexts/ThemeContext";
-import { getActionColor } from "../../src/config/actionConfig";
 
 interface CourtViewProps {
   onCourtClick: (x: number, y: number) => void;

@@ -18,13 +18,7 @@
  * - Semantic position tracking for orientation-independent coordinate storage
  */
 import { useState, useCallback } from "react";
-import {
-  ActionType,
-  ShotSpecification,
-  ReboundSpecification,
-  FoulSpecification,
-} from "../src/models/ActionTypes";
-import { ACTION_DEFINITIONS } from "../src/config/actionConfig";
+import { ACTION_DEFINITIONS } from "../src/models/ActionTypes";
 import { Team } from "../src/models/types";
 
 // Types for the action system
@@ -146,15 +140,15 @@ export interface ActionSystemProps {
 /**
  * ACTION_DEFINITIONS: Available basketball actions
  * Now imported from centralized config
- * @deprecated Import from actionConfig instead
+ * @deprecated Import from ActionTypes instead
  */
-export { ACTION_DEFINITIONS } from "../src/config/actionConfig";
+export { ACTION_DEFINITIONS } from "../src/models/ActionTypes";
 
 /**
  * getActionIcon: Returns the appropriate icon for displaying an action on the court
- * @deprecated Use getActionEmoji from actionConfig instead
+ * @deprecated Use getActionEmoji from ActionTypes instead
  */
-export { getActionEmoji as getActionIcon } from "../src/config/actionConfig";
+export { getActionEmoji as getActionIcon } from "../src/models/ActionTypes";
 
 /**
  * useActionSystem: React hook for managing action recording state

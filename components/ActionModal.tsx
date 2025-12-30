@@ -33,7 +33,7 @@ import {
   StyleSheet,
   ScrollView,
 } from "react-native";
-import { ACTION_DEFINITIONS } from "../src/config/actionConfig";
+import { ACTION_DEFINITIONS } from "../src/models/ActionTypes";
 import { useTheme } from "../src/contexts/ThemeContext";
 import { STATUS_COLORS } from "../src/theme";
 import { Team } from "../src/models/types";

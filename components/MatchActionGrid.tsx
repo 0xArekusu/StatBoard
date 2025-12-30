@@ -1,9 +1,8 @@
 import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { FilterMode } from "../constants/liveMatchConstants";
-import { ActionType, ShotSpecification } from "../src/models/ActionTypes";
+import { ActionType, ShotSpecification, getActionColor } from "../src/models/ActionTypes";
 import { useTheme } from "../src/contexts/ThemeContext";
-import { getActionColor } from "../src/config/actionConfig";
 
 export interface ActionData {
   action_type: string;

@@ -15,8 +15,9 @@ import {
 } from "react-native";
 import { useTheme } from "../../src/contexts/ThemeContext";
 import BasketballCourtSVG from "../BasketballCourtSVG";
-import { ActionType, ShotSpecification, Team, ACTION_FILTER } from "../../constants";
+import { ActionType, ACTION_FILTER } from "../../constants";
 import { PlayerStats, ActionFilterType } from "../../constants/matchDetailsConstants";
+import { getActionColor } from "../../src/models/ActionTypes";
 
 interface CourtTabProps {
   stats: PlayerStats[];
@@ -581,42 +582,12 @@ export default function CourtTab({
                     const svgY =
                       action.semanticPosition.yNormalized * 1146.75;
 
-                    // Determine marker color based on action type
-                    const actionType = (
-                      action.action_type ||
-                      action.type ||
-                      ""
-                    ).toUpperCase();
-                    const specification = (
-                      action.specification || ""
-                    ).toLowerCase();
-                    let markerColor: string = colors.text.secondary;
+                    // Get marker color from action config
+                    const actionType = action.action_type || action.type || "";
+                    const specification = action.specification || "";
+                    const points = action.points;
 
-                    if (actionType === ActionType.SHOT.toUpperCase()) {
-                      if (specification === ShotSpecification.MADE) {
-                        markerColor =
-                          action.team === Team.MY_TEAM
-                            ? colors.success
-                            : colors.error;
-                      } else if (specification === ShotSpecification.MISSED) {
-                        markerColor =
-                          action.team === Team.MY_TEAM
-                            ? colors.warning
-                            : colors.primary;
-                      }
-                    } else if (actionType === ActionType.REBOUND.toUpperCase()) {
-                      markerColor = colors.info; // Rebond
-                    } else if (actionType === ActionType.ASSIST.toUpperCase()) {
-                      markerColor = colors.info; // Assist
-                    } else if (actionType === ActionType.STEAL.toUpperCase()) {
-                      markerColor = colors.warning;
-                    } else if (actionType === ActionType.BLOCK.toUpperCase()) {
-                      markerColor = colors.success; // Block
-                    } else if (actionType === ActionType.TURNOVER.toUpperCase()) {
-                      markerColor = colors.text.secondary;
-                    } else if (actionType === ActionType.FOUL.toUpperCase()) {
-                      markerColor = colors.error;
-                    }
+                    const markerColor = getActionColor(actionType, specification, points);
 
                     return {
                       id: `${action.team}-${

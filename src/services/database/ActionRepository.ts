@@ -229,6 +229,10 @@ export class ActionRepository implements IActionRepository {
                     points: action.points,
                     semantic_x: action.semantic_x,
                     semantic_y: action.semantic_y,
+                    semanticPosition: {
+                      xNormalized: action.semantic_x,
+                      yNormalized: action.semantic_y,
+                    },
                     action_order: action.action_order,
                     period_number: action.period_number,
                     time_in_period: action.time_in_period,
