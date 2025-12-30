@@ -371,6 +371,83 @@ export const DEFAULT_COURT_COLORS = {
 } as const;
 
 // ===========================
+// PDF EXPORT COLORS
+// ===========================
+
+/**
+ * Colors specifically for PDF export
+ * These ensure consistent styling across all exported PDFs
+ */
+export const PDF_COLORS = {
+  // Logo colors
+  logo: {
+    ball: BRAND_COLORS[500],        // "#f97316" - Orange basketball
+    ballBackground: COMMON_COLORS.black,
+    background: COMMON_COLORS.white,
+  },
+
+  // Chart colors
+  chart: {
+    myTeam: ACTION_COLORS.shot.base,  // "#FF6B35" - Orange (reuse existing)
+    opponent: "#004E89",               // "#004E89" - Dark Blue (reuse from TEAM_CHART_COLORS.teamB)
+    gridLine: SLATE_COLORS[200],       // "#e2e8f0" - Light gray
+    axis: SLATE_COLORS[800],           // "#1e293b" - Dark gray
+  },
+
+  // Court colors
+  court: {
+    background: DEFAULT_COURT_COLORS.background, // "#1a472a"
+    line: DEFAULT_COURT_COLORS.line,             // "#FFFFFF"
+    markerStroke: COMMON_COLORS.white,           // "#FFFFFF"
+    markerDefault: ACTION_COLORS.shot.missed,    // "#F44336" - Red
+    noData: SLATE_COLORS[400],                   // "#94a3b8" - Gray
+  },
+
+  // Table colors
+  table: {
+    border: SLATE_COLORS[800],         // "#1e293b" - Dark border
+    headerBg: SLATE_COLORS[100],       // "#f1f5f9" - Light gray
+    rowBg: COMMON_COLORS.white,        // "#FFFFFF"
+    rowAltBg: SLATE_COLORS[50],        // "#f8fafc" - Very light gray
+    text: SLATE_COLORS[800],           // "#1e293b" - Dark text
+    textSecondary: SLATE_COLORS[500],  // "#64748b" - Secondary text
+    textTertiary: SLATE_COLORS[400],   // "#94a3b8" - Tertiary text
+  },
+
+  // Player card colors
+  card: {
+    background: COMMON_COLORS.white,   // "#FFFFFF"
+    border: SLATE_COLORS[200],         // "#e2e8f0"
+    headerBg: SLATE_COLORS[50],        // "#f8fafc"
+    highlightBg: "#fef3f2",            // Light orange tint
+    highlightBorder: BRAND_COLORS[500], // "#f97316"
+    text: SLATE_COLORS[900],           // "#0f172a"
+    textSecondary: SLATE_COLORS[500],  // "#64748b"
+    accent: BRAND_COLORS[500],         // "#f97316" - Orange accent
+  },
+
+  // Shooting bar colors (reuse existing)
+  shooting: {
+    threePoint: SHOOTING_BAR_COLORS.threePoint,  // "#6366f1"
+    twoPoint: SHOOTING_BAR_COLORS.twoPoint,      // "#3b82f6"
+    freeThrow: SHOOTING_BAR_COLORS.freeThrow,    // "#06b6d4"
+  },
+
+  // Team colors for headers
+  team: {
+    myTeam: ACTION_COLORS.shot.base,   // "#FF6B35" - Orange
+    opponent: "#004E89",                 // "#004E89" - Dark Blue
+  },
+
+  // Warning banner
+  warning: {
+    background: "#FFF3E0",  // Light orange
+    border: "#FF9800",      // Orange
+    text: "#E65100",        // Dark orange
+  },
+} as const;
+
+// ===========================
 // TYPES
 // ===========================
 

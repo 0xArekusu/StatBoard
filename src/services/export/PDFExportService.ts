@@ -9,6 +9,7 @@ import {
 } from "../../models/ActionTypes";
 import { Team } from "../../models/types";
 import type { CourtMarker } from "../../../components/BasketballCourtSVG";
+import { PDF_COLORS } from "../../theme/colors";
 
 interface Player {
   id: number;
@@ -30,10 +31,10 @@ interface PDFExportOptions {
   players: Player[];
   matchDate?: Date;
   watermark?: boolean;
-  scoreManuallyAdjusted?: boolean;
   clubLogoUrl?: string;
   courtBackgroundColor?: string;
   courtLineColor?: string;
+  isHome?: boolean; // Whether my team is playing at home
 }
 
 export class PDFExportService {
@@ -41,11 +42,11 @@ export class PDFExportService {
    * Generate App logo SVG with readable formatting
    */
   private static generateAppLogoSVG(
-    ballColor: string = "#FF8C42",
-    ballBackgroundColor: string = "#000000",
+    ballColor: string = PDF_COLORS.logo.ball,
+    ballBackgroundColor: string = PDF_COLORS.logo.ballBackground,
     transparentBackground: boolean = false
   ): string {
-    const bgFill = transparentBackground ? 'transparent' : '#ffffff';
+    const bgFill = transparentBackground ? 'transparent' : PDF_COLORS.logo.background;
     const svgString = `
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
      width="500" height="500" viewBox="0 0 375 374.999991"
@@ -133,6 +134,39 @@ export class PDFExportService {
   }
 
   /**
+   * Load default Coach Assistant logo as base64
+   */
+  private static async loadDefaultLogo(): Promise<string | null> {
+    try {
+      // In React Native, we need to use Asset from expo-asset to load local images
+      const { Asset } = require('expo-asset');
+
+      // Use absolute path from project root - adjust based on file structure
+      // PDFExportService is in src/services/export, logo is in components/icons
+      const logoModule = require('../../../components/icons/coachassistant-logo-margin.png');
+      const asset = Asset.fromModule(logoModule);
+
+      // Ensure the asset is downloaded/available locally
+      await asset.downloadAsync();
+
+      // Convert the local asset to base64
+      const uri = asset.localUri || asset.uri;
+      const response = await fetch(uri);
+      const blob = await response.blob();
+
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+    } catch (error) {
+      console.error(`[PDF Export] Error loading default logo:`, error);
+      return null;
+    }
+  }
+
+  /**
    * Generate a basketball match statistics PDF
    */
   static async generateMatchPDF(options: PDFExportOptions): Promise<string> {
@@ -147,11 +181,17 @@ export class PDFExportService {
       players,
       matchDate = new Date(),
       watermark = false,
-      scoreManuallyAdjusted = false,
       clubLogoUrl,
-      courtBackgroundColor = "#1a472a",
-      courtLineColor = "#FFFFFF",
+      courtBackgroundColor = PDF_COLORS.court.background,
+      courtLineColor = PDF_COLORS.court.line,
+      isHome = true,
     } = options;
+
+    // Determine home and away teams based on isHome flag
+    const homeTeamName = isHome ? myTeamName : opponentName;
+    const awayTeamName = isHome ? opponentName : myTeamName;
+    const homeTeamScore = isHome ? myTeamScore : opponentScore;
+    const awayTeamScore = isHome ? opponentScore : myTeamScore;
 
     // Convert player photos to base64 for PDF embedding
     const playersWithBase64Photos = await Promise.all(
@@ -169,7 +209,7 @@ export class PDFExportService {
 
     // Convert club logo to base64 for PDF embedding
     console.log(`[PDF Export] Club logo URL:`, clubLogoUrl);
-    let clubLogoBase64 = clubLogoUrl;
+    let clubLogoBase64: string | undefined = clubLogoUrl;
     if (clubLogoUrl && clubLogoUrl.startsWith("http")) {
       console.log(`[PDF Export] Converting club logo to base64`);
       const base64Logo = await this.imageUrlToBase64(clubLogoUrl);
@@ -177,6 +217,14 @@ export class PDFExportService {
       console.log(
         `[PDF Export] Club logo conversion complete, has base64:`,
         !!base64Logo
+      );
+    } else if (!clubLogoUrl) {
+      console.log(`[PDF Export] No club logo, using default Coach Assistant logo`);
+      const defaultLogo = await this.loadDefaultLogo();
+      clubLogoBase64 = defaultLogo || undefined;
+      console.log(
+        `[PDF Export] Default logo loaded:`,
+        !!defaultLogo
       );
     } else {
       console.log(
@@ -192,6 +240,10 @@ export class PDFExportService {
       actions,
       totalPeriods
     );
+
+    // Arrange period scores in home/away order
+    const periodScoresHome = isHome ? periodScoresMyTeam : periodScoresOpponent;
+    const periodScoresAway = isHome ? periodScoresOpponent : periodScoresMyTeam;
 
     // Calculate action-by-action evolution for chart
     const { evolutionMyTeam, evolutionOpponent, evolutionPeriods } =
@@ -219,11 +271,17 @@ export class PDFExportService {
       opponentName,
       myTeamScore,
       opponentScore,
+      homeTeamName,
+      awayTeamName,
+      homeTeamScore,
+      awayTeamScore,
       matchDate,
       periodLabel,
       totalPeriods,
       periodScoresMyTeam,
       periodScoresOpponent,
+      periodScoresHome,
+      periodScoresAway,
       evolutionMyTeam,
       evolutionOpponent,
       evolutionPeriods,
@@ -231,7 +289,6 @@ export class PDFExportService {
       statsOpponent,
       trackOpponentStats,
       watermark,
-      scoreManuallyAdjusted,
       clubLogoUrl: clubLogoBase64,
       courtBackgroundColor,
       courtLineColor,
@@ -287,10 +344,9 @@ export class PDFExportService {
       const points = action.points || 0;
       const team = action.team;
 
-      // Support both old ("A"/"B") and new (Team.MY_TEAM/Team.OPPONENT) formats
-      if (team === Team.MY_TEAM || team === "A") {
+      if (team === Team.MY_TEAM) {
         periodScoresMyTeam[periodIndex] += points;
-      } else if (team === Team.OPPONENT || team === "B") {
+      } else if (team === Team.OPPONENT) {
         periodScoresOpponent[periodIndex] += points;
       }
     });
@@ -341,9 +397,9 @@ export class PDFExportService {
       const team = action.team;
 
       // Update score based on team
-      if (team === Team.MY_TEAM || team === "A") {
+      if (team === Team.MY_TEAM) {
         currentMyTeam += points;
-      } else if (team === Team.OPPONENT || team === "B") {
+      } else if (team === Team.OPPONENT) {
         currentOpponent += points;
       }
 
@@ -757,32 +813,32 @@ export class PDFExportService {
           const y = padding.top + chartHeight - (chartHeight / ySteps) * i;
           return `<line x1="${padding.left}" y1="${y}" x2="${
             width - padding.right
-          }" y2="${y}" stroke="#e0e0e0" stroke-width="1"/>`;
+          }" y2="${y}" stroke="${PDF_COLORS.chart.gridLine}" stroke-width="1"/>`;
         }).join("")}
 
         <!-- Axes -->
         <line x1="${padding.left}" y1="${padding.top}" x2="${
       padding.left
-    }" y2="${padding.top + chartHeight}" stroke="#333" stroke-width="2"/>
+    }" y2="${padding.top + chartHeight}" stroke="${PDF_COLORS.chart.axis}" stroke-width="2"/>
         <line x1="${padding.left}" y1="${padding.top + chartHeight}" x2="${
       width - padding.right
-    }" y2="${padding.top + chartHeight}" stroke="#333" stroke-width="2"/>
+    }" y2="${padding.top + chartHeight}" stroke="${PDF_COLORS.chart.axis}" stroke-width="2"/>
 
         <!-- My Team line (always shown with orange color) -->
-        <path d="${pathMyTeam}" fill="none" stroke="#FF6B35" stroke-width="3"/>
+        <path d="${pathMyTeam}" fill="none" stroke="${PDF_COLORS.chart.myTeam}" stroke-width="3"/>
 
         <!-- Opponent line (always shown with blue color) -->
-        <path d="${pathOpponent}" fill="none" stroke="#1E90FF" stroke-width="3"/>
+        <path d="${pathOpponent}" fill="none" stroke="${PDF_COLORS.chart.opponent}" stroke-width="3"/>
 
         <!-- Labels -->
         ${xLabelsHTML}
         ${yLabelsHTML}
 
         <!-- Legend -->
-        <circle cx="50" cy="15" r="4" fill="#FF6B35"/>
+        <circle cx="50" cy="15" r="4" fill="${PDF_COLORS.chart.myTeam}"/>
         <text x="58" y="18" font-size="10">${myTeamName}</text>
 
-        <circle cx="150" cy="15" r="4" fill="#1E90FF"/>
+        <circle cx="150" cy="15" r="4" fill="${PDF_COLORS.chart.opponent}"/>
         <text x="158" y="18" font-size="10">${opponentName}</text>
       </svg>
     `;
@@ -795,27 +851,40 @@ export class PDFExportService {
   private static generateBasketballCourtSVG(
     width: number,
     height: number,
-    backgroundColor: string = "#1a472a",
-    lineColor: string = "#FFFFFF",
+    backgroundColor: string = PDF_COLORS.court.background,
+    lineColor: string = PDF_COLORS.court.line,
     markers: CourtMarker[] = [],
     logoUrl?: string | null
   ): string {
-    const SVG_WIDTH = 615.75;
-    const SVG_HEIGHT = 1146.749971;
+    const isPortrait = height > width;
+    const SVG_WIDTH = isPortrait ? 615.75 : 1146.749971;
+    const SVG_HEIGHT = isPortrait ? 1146.749971 : 615.75;
 
-    // Markers are already in viewBox coordinates (0-615.75 x 0-1146.75)
-    // The viewBox attribute handles scaling automatically to the specified width/height
-    const renderMarkers = markers
+    // Convert markers from portrait coordinates to current orientation
+    const convertedMarkers = markers.map((marker) => {
+      if (isPortrait) {
+        return marker;
+      }
+      // Convert portrait → landscape: (x, y) → (y, 615.75 - x)
+      return {
+        ...marker,
+        svgX: marker.svgY,
+        svgY: 615.75 - marker.svgX,
+      };
+    });
+
+    const renderMarkers = convertedMarkers
       .map((marker) => {
         return `<circle cx="${marker.svgX}" cy="${marker.svgY}" r="8" fill="${
-          marker.color || "#FF0000"
-        }" stroke="#FFFFFF" stroke-width="2"/>`;
+          marker.color || PDF_COLORS.court.markerDefault
+        }" stroke="${PDF_COLORS.court.markerStroke}" stroke-width="2"/>`;
       })
       .join("");
 
     // Center logo - use club logo if provided, otherwise display app logo
-    const renderCenterLogo = logoUrl
-      ? `
+    const renderCenterLogo = isPortrait
+      ? (logoUrl
+        ? `
       <defs>
         <clipPath id="logoClipPortrait">
           <circle cx="307" cy="573" r="76" />
@@ -831,22 +900,55 @@ export class PDFExportService {
         clip-path="url(#logoClipPortrait)"
       />
     `
-      : `
+        : `
       <!-- App logo when no club logo - sized to fit inside circle radius 76 -->
       <image
-        href="${this.generateAppLogoSVG("#FF8C42", "#000000", true)}"
+        href="${this.generateAppLogoSVG()}"
         x="245"
         y="511"
         width="124"
         height="124"
         preserveAspectRatio="xMidYMid meet"
       />
-    `;
+    `)
+      : (logoUrl
+        ? `
+      <defs>
+        <clipPath id="logoClipLandscape">
+          <circle cx="573" cy="307" r="76" />
+        </clipPath>
+      </defs>
+      <image
+        href="${logoUrl}"
+        x="497"
+        y="231"
+        width="152"
+        height="152"
+        preserveAspectRatio="xMidYMid slice"
+        clip-path="url(#logoClipLandscape)"
+      />
+    `
+        : `
+      <!-- App logo when no club logo - sized to fit inside circle radius 76 -->
+      <image
+        href="${this.generateAppLogoSVG()}"
+        x="511"
+        y="245"
+        width="124"
+        height="124"
+        preserveAspectRatio="xMidYMid meet"
+      />
+    `);
 
-    return `
+    const courtBackgroundPath = isPortrait
+      ? `M0 0h615.75v1146.749971H0z`
+      : `M0 0h1146.749971v615.75H0z`;
+
+    if (isPortrait) {
+      return `
       <svg width="${width}" height="${height}" viewBox="0 0 ${SVG_WIDTH} ${SVG_HEIGHT}" xmlns="http://www.w3.org/2000/svg">
         <!-- Court background -->
-        <path fill="${backgroundColor}" d="M0 0h615.75v1146.749971H0z" />
+        <path fill="${backgroundColor}" d="${courtBackgroundPath}" />
 
         <defs>
           <clipPath id="a"><path d="M.164.11h614.75v1145.406H.164zm0 0" /></clipPath>
@@ -1001,6 +1103,89 @@ export class PDFExportService {
         ${renderCenterLogo}
       </svg>
     `;
+    } else {
+      // Landscape orientation
+      return `
+      <svg width="${width}" height="${height}" viewBox="0 0 ${SVG_WIDTH} ${SVG_HEIGHT}" xmlns="http://www.w3.org/2000/svg">
+        <!-- Court background -->
+        <path fill="${backgroundColor}" d="${courtBackgroundPath}" />
+
+        <defs>
+          <clipPath id="a"><path d="M.434.164H1145.84v614.75H.434zm0 0" /></clipPath>
+          <clipPath id="b"><path d="M805 37.32h340.836v540.27H805zm0 0" /></clipPath>
+          <clipPath id="c"><path d="M820.621 217.508c-9.422 27.699-15.601 59.187-15.601 90.094 0 30.906 5.296 60.644 14.718 88.05.293.586.293 1.168.586 1.75 37.68 102.922 137.172 178.73 246.242 180.188h79.27V37.32h-79.211c-109.719 1.457-209.21 76.098-246.004 180.188zm0 0" /></clipPath>
+          <clipPath id="d"><path d="M905.191 207.516h240.645V407.39H905.19zm0 0" /></clipPath>
+          <clipPath id="e"><path d="M905.188 232.645h240.648v149.937H905.187zm0 0" /></clipPath>
+          <clipPath id="f"><path d="M497.613 231.934h151.043v151.043H497.613zm0 0" /></clipPath>
+          <clipPath id="g"><path d="M573.137 382.977c41.707 0 75.52-33.813 75.52-75.524 0-41.707-33.813-75.52-75.52-75.52-41.711 0-75.524 33.813-75.524 75.52 0 41.711 33.813 75.524 75.524 75.524zm0 0" /></clipPath>
+          <clipPath id="i"><path d="M.613.934h151.043v151.043H.613zm0 0" /></clipPath>
+          <clipPath id="j"><path d="M76.137 151.977c41.707 0 75.52-33.813 75.52-75.524 0-41.707-33.813-75.52-75.52-75.52C34.426.934.613 34.747.613 76.454c0 41.711 33.813 75.524 75.524 75.524zm0 0" /></clipPath>
+          <clipPath id="h"><path d="M0 0H152V152H0z" /></clipPath>
+          <clipPath id="k"><path d="M497.969 232.29h150.687v150.687H497.97zm0 0" /></clipPath>
+          <clipPath id="l"><path d="M573.137 382.977c41.71 0 75.52-33.813 75.52-75.52 0-41.71-33.81-75.52-75.52-75.52-41.707 0-75.52 33.81-75.52 75.52 0 41.707 33.813 75.52 75.52 75.52zm0 0" /></clipPath>
+          <clipPath id="m"><path d="M570 380h6v235.5h-6zm0 0" /></clipPath>
+          <clipPath id="n"><path d="M1028.402 255.773h68.97V359.23h-68.97zm0 0" /></clipPath>
+          <clipPath id="o"><path d="M1031.39 324.695c-1.804-5.289-2.988-11.343-2.988-17.265a51.97 51.97 0 012.82-16.88c.06-.109.06-.222.114-.335 7.223-19.727 26.289-34.254 47.273-34.535h18.528v103.55h-18.516c-21.105-.277-40.176-14.582-47.23-34.535zm0 0" /></clipPath>
+          <clipPath id="p"><path d="M1084.234 260.375h21.375v94.168h-21.375zm0 0" /></clipPath>
+          <clipPath id="r"><path d="M.234.375H21.61v94.168H.234zm0 0" /></clipPath>
+          <clipPath id="q"><path d="M0 0H22V95H0z" /></clipPath>
+          <clipPath id="s"><path d="M1070.723 298.188h18.742v18.742h-18.742zm0 0" /></clipPath>
+          <clipPath id="t"><path d="M1079.988 316.93c5.235 0 9.477-4.246 9.477-9.477a9.476 9.476 0 00-9.477-9.476 9.476 9.476 0 00-9.476 9.476c0 5.23 4.242 9.477 9.476 9.477zm0 0" /></clipPath>
+          <clipPath id="u"><path d="M834.66 232.645h74.969v149.937H834.66zm0 0" /></clipPath>
+          <clipPath id="v"><path d="M839 332.473c-2.621-7.68-4.34-16.461-4.34-25.059a75.353 75.353 0 014.094-24.488c.082-.16.082-.324.164-.485 10.477-28.625 38.148-49.707 68.047-50.113h2.898v150.254h-2.898c-30.063-.406-57.735-21.164-67.965-50.11zm0 0" /></clipPath>
+          <clipPath id="w"><path d="M834.73 232.645h149.938v149.937H834.73zm0 0" /></clipPath>
+          <clipPath id="x"><path d="M909.664 382.582c41.426 0 75.004-33.637 75.004-75.129 0-41.488-33.578-75.125-75.004-75.125-41.422 0-75 33.637-75 75.125 0 41.492 33.578 75.129 75 75.129zm0 0" /></clipPath>
+          <clipPath id="y"><path d="M.11 37.32H341v540.274H.11zm0 0" /></clipPath>
+          <clipPath id="z"><path d="M325.328 397.406c9.418-27.699 15.598-59.187 15.598-90.094 0-30.906-5.297-60.648-14.715-88.054-.297-.582-.297-1.164-.59-1.75C287.941 114.586 188.45 38.778 79.38 37.32H.109v540.274H79.32c109.72-1.457 209.211-76.098 246.008-180.188zm0 0" /></clipPath>
+          <clipPath id="A"><path d="M.11 207.52h240.648v199.878H.109zm0 0" /></clipPath>
+          <clipPath id="B"><path d="M.11 232.328h240.648V382.27H.109zm0 0" /></clipPath>
+          <clipPath id="C"><path d="M48.574 255.68h68.969v103.457H48.574zm0 0" /></clipPath>
+          <clipPath id="D"><path d="M114.555 290.215c1.804 5.293 2.988 11.344 2.988 17.27a51.947 51.947 0 01-2.82 16.874c-.055.114-.055.227-.114.336-7.218 19.727-26.289 34.258-47.27 34.535H48.814V255.68h18.511c21.11.28 40.176 14.586 47.23 34.535zm0 0" /></clipPath>
+          <clipPath id="E"><path d="M40.34 260.367h21.37v94.172H40.34zm0 0" /></clipPath>
+          <clipPath id="G"><path d="M.34.367h21.37V94.54H.34zm0 0" /></clipPath>
+          <clipPath id="F"><path d="M0 0H22V95H0z" /></clipPath>
+          <clipPath id="H"><path d="M56.48 297.984h18.743v18.743H56.48zm0 0" /></clipPath>
+          <clipPath id="I"><path d="M65.957 297.984a9.476 9.476 0 00-9.477 9.477 9.476 9.476 0 009.477 9.476 9.476 9.476 0 009.477-9.476 9.476 9.476 0 00-9.477-9.477zm0 0" /></clipPath>
+          <clipPath id="J"><path d="M236.316 232.328h74.97V382.27h-74.97zm0 0" /></clipPath>
+          <clipPath id="K"><path d="M306.95 282.441c2.616 7.68 4.335 16.461 4.335 25.055a75.318 75.318 0 01-4.094 24.488c-.082.164-.082.325-.164.489-10.476 28.62-38.144 49.707-68.043 50.109h-2.902V232.328h2.898c30.063.406 57.735 21.164 67.97 50.113zm0 0" /></clipPath>
+          <clipPath id="L"><path d="M161.277 232.328h149.938V382.27H161.277zm0 0" /></clipPath>
+          <clipPath id="M"><path d="M236.281 232.328c-41.422 0-75.004 33.637-75.004 75.129 0 41.492 33.582 75.129 75.004 75.129 41.422 0 75-33.637 75-75.129 0-41.492-33.578-75.129-75-75.129zm0 0" /></clipPath>
+        </defs>
+
+        <g clip-path="url(#a)"><path fill="none" d="M1145.84 614.914H.433V0H1145.84zm0 0" stroke="${lineColor}" stroke-width="14.994"/></g>
+        <g clip-path="url(#b)"><g clip-path="url(#c)"><path fill="none" d="M820.62 217.508c-9.421 27.7-15.6 59.187-15.6 90.094 0 30.906 5.296 60.644 14.718 88.05.293.586.293 1.169.586 1.75 37.68 102.922 137.172 178.731 246.242 180.188h79.27V37.32h-79.211c-109.719 1.457-209.211 76.098-246.004 180.188zm0 0" stroke="${lineColor}" stroke-width="8.996"/></g></g>
+        <g clip-path="url(#d)"><path fill="none" d="M1145.836 407.39H905.19V207.517h240.645zm0 0" stroke="${lineColor}" stroke-width="8.996"/></g>
+        <g clip-path="url(#e)"><path fill="none" d="M1145.836 382.582H905.187V232.328h240.649zm0 0" stroke="${lineColor}" stroke-width="8.996"/></g>
+        <g clip-path="url(#f)"><g clip-path="url(#g)"><g clip-path="url(#h)" transform="translate(497 231)"><g clip-path="url(#i)"><g clip-path="url(#j)"><path fill="${backgroundColor}" d="M151.656 151.977H.613V.934h151.043zm0 0"/></g></g></g></g></g>
+        <g clip-path="url(#k)"><g clip-path="url(#l)"><path fill="none" d="M573.137 382.977c41.71 0 75.52-33.813 75.52-75.52 0-41.711-33.81-75.52-75.52-75.52-41.707 0-75.52 33.809-75.52 75.52 0 41.707 33.813 75.52 75.52 75.52zm0 0" stroke="${lineColor}" stroke-width="8.996"/></g></g>
+        <path fill="none" d="M573.133 231.93V-.004" stroke="${lineColor}" stroke-width="4.498"/>
+        <g clip-path="url(#m)"><path fill="none" d="M573.133 614.91V382.973" stroke="${lineColor}" stroke-width="4.498"/></g>
+        <g clip-path="url(#n)"><g clip-path="url(#o)"><path fill="none" d="M1031.39 324.695c-1.804-5.289-2.988-11.343-2.988-17.265a51.97 51.97 0 012.82-16.88c.06-.109.06-.222.114-.335 7.223-19.727 26.289-34.254 47.273-34.535h18.528v103.55h-18.516c-21.105-.277-40.176-14.582-47.23-34.535zm0 0" stroke="${lineColor}" stroke-width="8.996"/></g></g>
+        <g clip-path="url(#p)"><g clip-path="url(#q)" transform="translate(1084 260)"><g clip-path="url(#r)"><path fill="${backgroundColor}" d="M21.61 94.543H.233V.371H21.61zm0 0"/></g></g></g>
+        <g clip-path="url(#s)"><g clip-path="url(#t)"><path fill="none" d="M1079.988 316.93c5.235 0 9.477-4.246 9.477-9.477a9.476 9.476 0 00-9.477-9.476 9.476 9.476 0 00-9.476 9.476c0 5.23 4.242 9.477 9.476 9.477zm0 0" stroke="${lineColor}" stroke-width="8.996"/></g></g>
+        <path fill="none" d="M1089.477 307.457h11.03" stroke="${lineColor}" stroke-width="4.498"/>
+        <path fill="none" d="M1097.137 343.64v-72.378" stroke="${lineColor}" stroke-width="6.747"/>
+        <g clip-path="url(#u)"><g clip-path="url(#v)"><path fill="none" d="M839 332.473c-2.621-7.68-4.34-16.461-4.34-25.059a75.353 75.353 0 014.094-24.488c.082-.16.082-.324.164-.485 10.477-28.625 38.148-49.707 68.047-50.113h2.898v150.254h-2.898c-30.063-.406-57.735-21.164-67.965-50.11zm0 0" stroke="${lineColor}" stroke-width="8.996"/></g></g>
+        <g clip-path="url(#w)"><g clip-path="url(#x)"><path fill="${lineColor}" d="M926.438 376.074a69.797 69.797 0 0011.976-4.105l3.676 8.207a78.424 78.424 0 01-13.516 4.637zm15.78-5.949a70.878 70.878 0 0010.665-6.86l5.527 7.098a79.767 79.767 0 01-12.027 7.735zm13.927-9.563a70.963 70.963 0 008.742-9.187l7.047 5.594a80.115 80.115 0 01-9.848 10.351zm11.277-12.585a70.673 70.673 0 006.308-10.989l8.172 3.758a79.415 79.415 0 01-7.113 12.39zm7.96-14.883a70.047 70.047 0 003.509-12.172l8.836 1.7a79.099 79.099 0 01-3.961 13.733zm4.184-16.344c.403-3.074.602-6.172.602-9.297a70.95 70.95 0 00-.078-3.41l8.984-.426a78.44 78.44 0 01.094 3.836c0 3.516-.23 7.008-.684 10.469zm.2-16.91a70.592 70.592 0 00-2.473-12.43l8.629-2.543a79.289 79.289 0 012.789 14.016zm-3.793-16.45a70.495 70.495 0 00-5.364-11.476l7.774-4.527a79.426 79.426 0 016.05 12.941zm-7.602-15.062a70.617 70.617 0 00-7.95-9.894l6.481-6.239a79.555 79.555 0 018.961 11.149zm-10.973-12.855a70.608 70.608 0 00-10.062-7.73l4.82-7.598a79.79 79.79 0 0111.34 8.714zm-13.699-9.891a70.2 70.2 0 00-11.59-5.105l2.868-8.528a79.22 79.22 0 0113.078 5.762zm-15.629-6.328a70.15 70.15 0 00-12.48-2.184l.746-8.965a78.976 78.976 0 0114.078 2.465zm-16.703-2.41a71.022 71.022 0 00-12.684.832l-1.39-8.887a79.684 79.684 0 0114.285-.937zm-16.828 1.61a69.602 69.602 0 00-12.074 3.82l-3.477-8.297a78.55 78.55 0 0113.625-4.313zm-15.926 5.573a70.434 70.434 0 00-10.82 6.598l-5.356-7.23a79.518 79.518 0 0112.204-7.442zm-14.148 9.22a70.71 70.71 0 00-8.953 8.98l-6.914-5.758a79.896 79.896 0 0110.09-10.117zm-11.567 12.315a70.295 70.295 0 00-6.574 10.84l-8.082-3.957a79.671 79.671 0 017.41-12.218zm-8.32 14.696a70.063 70.063 0 00-3.8 12.082l-8.79-1.914a78.945 78.945 0 014.285-13.63zm-4.574 16.23a71.263 71.263 0 00-.82 12.688l-8.996.215a79.897 79.897 0 01.93-14.285zm-.598 16.91a70.124 70.124 0 002.18 12.485l-8.688 2.34a79.314 79.314 0 01-2.457-14.078zm3.399 16.532a70.19 70.19 0 005.086 11.597l-7.88 4.34a79.154 79.154 0 01-5.738-13.082zm7.238 15.242a70.832 70.832 0 007.71 10.078l-6.624 6.082a79.768 79.768 0 01-8.692-11.355zm10.664 13.11a70.9 70.9 0 009.879 7.968l-5 7.48a79.811 79.811 0 01-11.133-8.984zm13.461 10.21a69.936 69.936 0 0011.46 5.383l-3.07 8.457a79.134 79.134 0 01-12.933-6.074zm15.48 6.707c4.059 1.2 8.2 2.028 12.426 2.48l-.96 8.946a79.074 79.074 0 01-14.02-2.8zm16.63 2.805a70.757 70.757 0 0016.027-1.05l1.601 8.85a79.54 79.54 0 01-14.242 1.278 82.64 82.64 0 01-3.812-.09zm0 0"/></g></g>
+        <g clip-path="url(#y)"><g clip-path="url(#z)"><path fill="none" d="M325.328 397.406c9.418-27.7 15.598-59.187 15.598-90.094 0-30.906-5.297-60.648-14.719-88.054-.293-.582-.293-1.164-.586-1.75C287.941 114.586 188.45 38.777 79.38 37.32H.109v540.274H79.32c109.72-1.457 209.211-76.098 246.008-180.188zm0 0" stroke="${lineColor}" stroke-width="8.996"/></g></g>
+        <g clip-path="url(#A)"><path fill="none" d="M.11 207.52h240.648v199.879H.109zm0 0" stroke="${lineColor}" stroke-width="8.996"/></g>
+        <g clip-path="url(#B)"><path fill="none" d="M.11 232.328h240.648v150.258H.109zm0 0" stroke="${lineColor}" stroke-width="8.996"/></g>
+        <g clip-path="url(#C)"><g clip-path="url(#D)"><path fill="none" d="M114.555 290.215c1.804 5.293 2.988 11.344 2.988 17.27a51.947 51.947 0 01-2.82 16.874c-.055.114-.055.227-.114.336-7.218 19.727-26.289 34.258-47.27 34.536H48.813V255.68h18.512c21.11.28 40.176 14.586 47.23 34.535zm0 0" stroke="${lineColor}" stroke-width="8.996"/></g></g>
+        <g clip-path="url(#E)"><g clip-path="url(#F)" transform="translate(40 260)"><g clip-path="url(#G)"><path fill="${backgroundColor}" d="M.34.367h21.37v94.176H.34zm0 0"/></g></g></g>
+        <g clip-path="url(#H)"><g clip-path="url(#I)"><path fill="none" d="M65.957 297.984a9.476 9.476 0 00-9.477 9.477 9.476 9.476 0 009.477 9.477 9.476 9.476 0 009.477-9.477 9.476 9.476 0 00-9.477-9.477zm0 0" stroke="${lineColor}" stroke-width="8.996"/></g></g>
+        <path fill="none" d="M56.469 307.453H45.44" stroke="${lineColor}" stroke-width="4.498"/>
+        <path fill="none" d="M48.809 271.27v72.382" stroke="${lineColor}" stroke-width="6.747"/>
+        <g clip-path="url(#J)"><g clip-path="url(#K)"><path fill="none" d="M306.95 282.441c2.616 7.68 4.335 16.461 4.335 25.055a75.318 75.318 0 01-4.094 24.488c-.082.164-.082.325-.164.489-10.476 28.62-38.144 49.707-68.043 50.11h-2.902V232.327h2.898c30.063.406 57.735 21.164 67.97 50.113zm0 0" stroke="${lineColor}" stroke-width="8.996"/></g></g>
+        <g clip-path="url(#L)"><g clip-path="url(#M)"><path fill="${lineColor}" d="M219.508 238.836a69.926 69.926 0 00-11.977 4.11l-3.676-8.212a78.757 78.757 0 0113.516-4.636zm-15.778 5.953a70.415 70.415 0 00-10.667 6.86l-5.524-7.098a79.126 79.126 0 0112.024-7.735zm-13.93 9.559a70.952 70.952 0 00-8.738 9.191l-7.046-5.594a80.116 80.116 0 019.843-10.355zm-11.273 12.59a70.204 70.204 0 00-6.312 10.988l-8.172-3.762a79.415 79.415 0 017.113-12.39zm-7.96 14.878a70.1 70.1 0 00-3.512 12.176l-8.832-1.703a78.746 78.746 0 013.957-13.734zm-4.184 16.344a70.87 70.87 0 00-.606 9.297c0 1.14.028 2.277.078 3.41l-8.984.426a78.324 78.324 0 01-.09-3.836c0-3.516.227-7.004.68-10.465zm-.203 16.91a70.29 70.29 0 002.476 12.434l-8.629 2.543a79.41 79.41 0 01-2.793-14.02zm3.793 16.453a70.301 70.301 0 005.367 11.473l-7.778 4.527a79.273 79.273 0 01-6.05-12.941zm7.601 15.063c2.352 3.531 5 6.832 7.95 9.894l-6.481 6.239a79.754 79.754 0 01-8.957-11.149zm10.973 12.851a70.635 70.635 0 0010.062 7.735l-4.82 7.594a79.477 79.477 0 01-11.34-8.711zm13.7 9.891a69.874 69.874 0 0011.589 5.106l-2.867 8.527a79.203 79.203 0 01-13.078-5.758zm15.632 6.328a69.696 69.696 0 0012.476 2.184l-.746 8.969a79.328 79.328 0 01-14.078-2.465zm16.703 2.41a70.504 70.504 0 0012.68-.832l1.39 8.891a80.164 80.164 0 01-12.37.957c-.641 0-1.278-.008-1.915-.02zm16.824-1.609a69.589 69.589 0 0012.074-3.816l3.48 8.296a79.023 79.023 0 01-13.628 4.31zm15.926-5.57a70.434 70.434 0 0010.82-6.598l5.356 7.227a79.026 79.026 0 01-12.203 7.441zm14.148-9.223a70.741 70.741 0 008.957-8.98l6.91 5.761a80.154 80.154 0 01-10.09 10.118zm11.57-12.312a70.669 70.669 0 006.575-10.84l8.078 3.953a79.52 79.52 0 01-7.41 12.223zm8.317-14.696a69.997 69.997 0 003.801-12.086l8.789 1.914a78.88 78.88 0 01-4.285 13.633zm4.574-16.23a71.351 71.351 0 00.825-12.688l8.992-.215a79.86 79.86 0 01-.93 14.281zm.598-16.914a70.532 70.532 0 00-2.176-12.485l8.688-2.336a79.662 79.662 0 012.453 14.079zm-3.398-16.528a70.047 70.047 0 00-5.086-11.597l7.879-4.34a79.01 79.01 0 015.738 13.082zm-7.239-15.242a70.394 70.394 0 00-7.71-10.078l6.628-6.086a79.997 79.997 0 018.688 11.36zm-10.664-13.11a70.306 70.306 0 00-9.875-7.968l5-7.48a79.978 79.978 0 0111.13 8.98zm-13.46-10.214a70.088 70.088 0 00-11.462-5.379l3.07-8.457a78.662 78.662 0 0112.934 6.074zm-15.481-6.703a69.803 69.803 0 00-12.426-2.485l.961-8.94a78.382 78.382 0 0114.02 2.8zm-16.625-2.809a75.4 75.4 0 00-3.39-.078c-4.266 0-8.481.375-12.637 1.129l-1.606-8.852a79.93 79.93 0 0114.242-1.273c1.274 0 2.547.031 3.817.09zm0 0"/></g></g>
+
+        <!-- Render markers on top of court -->
+        ${renderMarkers}
+
+        <!-- Render center court logo if provided -->
+        ${renderCenterLogo}
+      </svg>
+    `;
+    }
   }
 
   /**
@@ -1009,18 +1194,18 @@ export class PDFExportService {
   private static generatePlayerShotCourt(
     actions: any[],
     playerId: number,
-    backgroundColor: string = "#1a472a",
-    lineColor: string = "#FFFFFF",
+    backgroundColor: string = PDF_COLORS.court.background,
+    lineColor: string = PDF_COLORS.court.line,
     logoUrl?: string | null
   ): string {
-    const width = 250;
-    const height = 465;
+    const width = 465;
+    const height = 250;
     const shotActions = actions.filter(
       (a) => a.type === ActionType.SHOT && a.player === playerId
     );
 
     if (shotActions.length === 0) {
-      return `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg"><text x="125" y="232" text-anchor="middle" font-size="14" fill="#999">Aucun tir</text></svg>`;
+      return `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg"><text x="125" y="232" text-anchor="middle" font-size="14" fill="${PDF_COLORS.court.noData}">Aucun tir</text></svg>`;
     }
 
     const markers: CourtMarker[] = shotActions.map((action, index) => {
@@ -1048,18 +1233,18 @@ export class PDFExportService {
   private static generatePlayerActionCourt(
     actions: any[],
     playerId: number,
-    backgroundColor: string = "#1a472a",
-    lineColor: string = "#FFFFFF",
+    backgroundColor: string = PDF_COLORS.court.background,
+    lineColor: string = PDF_COLORS.court.line,
     logoUrl?: string | null
   ): string {
-    const width = 250;
-    const height = 465;
+    const width = 465;
+    const height = 250;
     const nonShotActions = actions.filter(
       (a) => a.player === playerId && a.type !== ActionType.SHOT
     );
 
     if (nonShotActions.length === 0) {
-      return `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg"><text x="125" y="232" text-anchor="middle" font-size="14" fill="#999">Aucune action</text></svg>`;
+      return `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg"><text x="125" y="232" text-anchor="middle" font-size="14" fill="${PDF_COLORS.court.noData}">Aucune action</text></svg>`;
     }
 
     const markers: CourtMarker[] = nonShotActions.map((action, index) => {
@@ -1089,11 +1274,17 @@ export class PDFExportService {
     opponentName: string;
     myTeamScore: number;
     opponentScore: number;
+    homeTeamName: string;
+    awayTeamName: string;
+    homeTeamScore: number;
+    awayTeamScore: number;
     matchDate: Date;
     periodLabel: string;
     totalPeriods: number;
     periodScoresMyTeam: number[];
     periodScoresOpponent: number[];
+    periodScoresHome: number[];
+    periodScoresAway: number[];
     evolutionMyTeam: number[];
     evolutionOpponent: number[];
     evolutionPeriods: number[];
@@ -1101,7 +1292,6 @@ export class PDFExportService {
     statsOpponent: any[];
     trackOpponentStats: boolean;
     watermark?: boolean;
-    scoreManuallyAdjusted?: boolean;
     clubLogoUrl?: string;
     courtBackgroundColor?: string;
     courtLineColor?: string;
@@ -1115,11 +1305,17 @@ export class PDFExportService {
       opponentName,
       myTeamScore,
       opponentScore,
+      homeTeamName,
+      awayTeamName,
+      homeTeamScore,
+      awayTeamScore,
       matchDate,
       periodLabel,
       totalPeriods,
       periodScoresMyTeam,
       periodScoresOpponent,
+      periodScoresHome,
+      periodScoresAway,
       evolutionMyTeam,
       evolutionOpponent,
       evolutionPeriods,
@@ -1127,10 +1323,9 @@ export class PDFExportService {
       statsOpponent,
       trackOpponentStats,
       watermark = false,
-      scoreManuallyAdjusted = false,
       clubLogoUrl,
-      courtBackgroundColor = "#1a472a",
-      courtLineColor = "#FFFFFF",
+      courtBackgroundColor = PDF_COLORS.court.background,
+      courtLineColor = PDF_COLORS.court.line,
       actions,
       players,
       matchFormat,
@@ -1198,7 +1393,7 @@ export class PDFExportService {
       position: relative;
       text-align: center;
       margin-bottom: 20px;
-      border-bottom: 2px solid #000;
+      border-bottom: 2px solid ${PDF_COLORS.table.border};
       padding-bottom: 10px;
       padding-top: 10px;
       min-height: 100px;
@@ -1229,7 +1424,7 @@ export class PDFExportService {
     }
     .header .date {
       font-size: 11px;
-      color: #666;
+      color: ${PDF_COLORS.table.textSecondary};
     }
     .score-summary {
       text-align: center;
@@ -1239,7 +1434,7 @@ export class PDFExportService {
     }
     .score-summary .final-score {
       font-size: 24px;
-      color: #000;
+      color: ${PDF_COLORS.table.text};
     }
     .period-scores {
       margin: 20px 0;
@@ -1248,12 +1443,12 @@ export class PDFExportService {
     }
     .period-scores th,
     .period-scores td {
-      border: 1px solid #333;
+      border: 1px solid ${PDF_COLORS.table.border};
       padding: 8px;
       text-align: center;
     }
     .period-scores th {
-      background-color: #f0f0f0;
+      background-color: ${PDF_COLORS.table.headerBg};
       font-weight: bold;
     }
     .period-scores .team-name {
@@ -1264,16 +1459,21 @@ export class PDFExportService {
       margin-top: 30px;
     }
     .stats-section h2 {
-      font-size: 14px;
-      margin-bottom: 10px;
-      padding: 5px;
-      color: white;
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 15px;
+      padding: 12px 16px;
+      background-color: ${PDF_COLORS.table.headerBg};
+      color: ${PDF_COLORS.table.text};
+      border-radius: 8px;
+      border-left: 4px solid ${PDF_COLORS.team.myTeam};
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
     }
     .stats-section.team-a h2 {
-      background-color: #FF6B35;
+      border-left-color: ${PDF_COLORS.team.myTeam};
     }
     .stats-section.team-b h2 {
-      background-color: #004E89;
+      border-left-color: ${PDF_COLORS.team.opponent};
     }
     .stats-table {
       width: 100%;
@@ -1282,13 +1482,13 @@ export class PDFExportService {
     }
     .stats-table th,
     .stats-table td {
-      border: 1px solid #333;
+      border: 1px solid ${PDF_COLORS.table.border};
       padding: 6px 4px;
       text-align: center;
       font-size: 9px;
     }
     .stats-table th {
-      background-color: #f0f0f0;
+      background-color: ${PDF_COLORS.table.headerBg};
       font-weight: bold;
     }
     .stats-table .player-number {
@@ -1301,31 +1501,31 @@ export class PDFExportService {
     }
     .totals-row {
       font-weight: bold;
-      background-color: #f9f9f9;
+      background-color: ${PDF_COLORS.table.rowAltBg};
     }
     .legend {
       margin-top: 10px;
       font-size: 8px;
-      color: #666;
+      color: ${PDF_COLORS.table.textSecondary};
     }
     .footer {
       margin-top: 30px;
       text-align: center;
       font-size: 9px;
-      color: #999;
-      border-top: 1px solid #ddd;
+      color: ${PDF_COLORS.table.textTertiary};
+      border-top: 1px solid ${PDF_COLORS.table.border};
       padding-top: 10px;
     }
     .warning-banner {
-      background-color: #FFF3E0;
-      border: 2px solid #FF9800;
+      background-color: ${PDF_COLORS.warning.background};
+      border: 2px solid ${PDF_COLORS.warning.border};
       border-radius: 8px;
       padding: 10px;
       margin-top: 15px;
       text-align: center;
       font-size: 11px;
       font-weight: bold;
-      color: #E65100;
+      color: ${PDF_COLORS.warning.text};
     }
     .individual-stats-section {
       position: relative;
@@ -1350,17 +1550,17 @@ export class PDFExportService {
       max-width: 800px;
       padding-bottom: 30px;
       padding-top: 10px;
-      border-bottom: 1px solid #000;
+      border-bottom: 1px solid ${PDF_COLORS.table.border};
     }
     .player-card-match-info {
       font-size: 16px;
       font-weight: bold;
-      color: #333;
+      color: ${PDF_COLORS.card.text};
       margin-bottom: 6px;
     }
     .player-card-date {
       font-size: 12px;
-      color: #666;
+      color: ${PDF_COLORS.card.textSecondary};
     }
     .player-card-logo {
       position: absolute;
@@ -1370,14 +1570,14 @@ export class PDFExportService {
       height: auto;
     }
     .player-card {
-      border: 1px solid #e2e8f0;
+      border: 1px solid ${PDF_COLORS.card.border};
       padding: 20px;
       margin-top: 20px;
-      border-radius: 12px;
+      border-radius: 16px;
       max-width: 800px;
       width: 100%;
       page-break-inside: avoid;
-      background: #ffffff;
+      background: ${PDF_COLORS.card.headerBg};
       box-shadow: 0 1px 3px rgba(0,0,0,0.1);
     }
     .player-header {
@@ -1386,7 +1586,7 @@ export class PDFExportService {
       justify-content: space-between;
       margin-bottom: 20px;
       padding-bottom: 15px;
-      border-bottom: 1px solid #e2e8f0;
+      border-bottom: 1px solid ${PDF_COLORS.card.border};
     }
     .player-info-left {
       display: flex;
@@ -1396,15 +1596,15 @@ export class PDFExportService {
     .player-avatar {
       width: 48px;
       height: 48px;
-      border-radius: 8px;
-      background-color: #f8fafc;
-      border: 1px solid #e2e8f0;
+      border-radius: 50%;
+      background-color: ${PDF_COLORS.card.background};
+      border: 2px solid ${PDF_COLORS.card.border};
       display: flex;
       align-items: center;
       justify-content: center;
       font-size: 18px;
       font-weight: 700;
-      color: #1e293b;
+      color: ${PDF_COLORS.card.text};
     }
     .player-info {
       display: flex;
@@ -1414,17 +1614,17 @@ export class PDFExportService {
     .player-name {
       font-size: 18px;
       font-weight: 700;
-      color: #1e293b;
+      color: ${PDF_COLORS.card.text};
       line-height: 1.2;
     }
     .player-number {
       font-size: 14px;
-      color: #64748b;
+      color: ${PDF_COLORS.card.textSecondary};
       line-height: 1.2;
     }
     .player-points-badge {
-      background: #fef3f2;
-      border: 1px solid #FF8C42;
+      background: ${PDF_COLORS.card.highlightBg};
+      border: 1px solid ${PDF_COLORS.card.highlightBorder};
       border-radius: 999px;
       padding: 8px 16px;
       display: inline-flex;
@@ -1435,13 +1635,14 @@ export class PDFExportService {
     .player-points-value {
       font-size: 24px;
       font-weight: 700;
-      color: #FF8C42;
+      color: ${PDF_COLORS.card.accent};
       line-height: 1;
+      text-align: center;
     }
     .player-points-label {
       font-size: 11px;
       font-weight: 600;
-      color: #FF8C42;
+      color: ${PDF_COLORS.card.accent};
       text-transform: uppercase;
       line-height: 1;
     }
@@ -1451,7 +1652,7 @@ export class PDFExportService {
       gap: 12px;
       margin-bottom: 20px;
       padding-bottom: 20px;
-      border-bottom: 1px solid #e2e8f0;
+      border-bottom: 1px solid ${PDF_COLORS.card.border};
     }
     .shooting-bar {
       display: flex;
@@ -1461,14 +1662,14 @@ export class PDFExportService {
     .shooting-bar-label {
       font-size: 11px;
       font-weight: 600;
-      color: #64748b;
+      color: ${PDF_COLORS.card.textSecondary};
       min-width: 50px;
       text-transform: uppercase;
     }
     .shooting-bar-track {
       flex: 1;
-      height: 8px;
-      background-color: #f1f5f9;
+      height: 12px;
+      background-color: ${PDF_COLORS.card.border};
       border-radius: 999px;
       overflow: hidden;
       position: relative;
@@ -1478,9 +1679,18 @@ export class PDFExportService {
       border-radius: 999px;
       transition: width 0.3s ease;
     }
+    .shooting-bar-fill.three-point {
+      background-color: ${PDF_COLORS.shooting.threePoint} !important;
+    }
+    .shooting-bar-fill.two-point {
+      background-color: ${PDF_COLORS.shooting.twoPoint} !important;
+    }
+    .shooting-bar-fill.free-throw {
+      background-color: ${PDF_COLORS.shooting.freeThrow} !important;
+    }
     .shooting-bar-value {
       font-size: 13px;
-      color: #1e293b;
+      color: ${PDF_COLORS.card.text};
       min-width: 90px;
       text-align: right;
     }
@@ -1488,7 +1698,7 @@ export class PDFExportService {
       font-weight: 700;
     }
     .shooting-bar-pct {
-      color: #94a3b8;
+      color: ${PDF_COLORS.card.textSecondary};
       font-weight: 400;
     }
     .stats-grid {
@@ -1502,35 +1712,37 @@ export class PDFExportService {
       align-items: center;
       gap: 4px;
       padding: 12px;
-      background: #f8fafc;
+      background: ${PDF_COLORS.card.background};
+      border: 1px solid ${PDF_COLORS.card.border};
       border-radius: 8px;
     }
     .stat-box.highlight {
-      background: #fef3f2;
+      background: ${PDF_COLORS.card.highlightBg};
     }
     .stat-box-label {
       font-size: 11px;
       font-weight: 600;
-      color: #94a3b8;
+      color: ${PDF_COLORS.card.textSecondary};
       text-transform: uppercase;
       line-height: 1;
     }
     .stat-box-value {
       font-size: 20px;
       font-weight: 700;
-      color: #1e293b;
+      color: ${PDF_COLORS.card.text};
       line-height: 1;
     }
     .stat-box-value.highlight {
-      color: #FF8C42;
+      color: ${PDF_COLORS.card.accent};
     }
     .courts-container {
       display: flex;
-      gap: 20px;
-      margin-bottom: 15px;
+      flex-direction: column;
+      gap: 0px;
+      margin-bottom: 0px;
     }
     .court-wrapper {
-      flex: 1;
+      width: 100%;
       text-align: center;
     }
     .court-title {
@@ -1548,7 +1760,7 @@ export class PDFExportService {
       padding: 10px;
     }
     .stats-column:first-child {
-      border-right: 1px solid #333;
+      border-right: 1px solid ${PDF_COLORS.table.border};
       padding-right: 20px;
     }
     .stat-row {
@@ -1559,7 +1771,7 @@ export class PDFExportService {
       font-size: 10px;
     }
     .stat-label {
-      color: #666;
+      color: ${PDF_COLORS.table.textSecondary};
       font-weight: 500;
       display: flex;
       align-items: center;
@@ -1573,12 +1785,12 @@ export class PDFExportService {
       flex-shrink: 0;
     }
     .stat-value {
-      color: #333;
+      color: ${PDF_COLORS.table.text};
       font-weight: 600;
     }
     .player-points-badge {
       display: inline-block;
-      background-color: #333;
+      background-color: ${PDF_COLORS.table.border};
       color: white;
       padding: 4px 12px;
       border-radius: 12px;
@@ -1588,7 +1800,7 @@ export class PDFExportService {
     }
     .no-stats {
       text-align: center;
-      color: #999;
+      color: ${PDF_COLORS.table.textTertiary};
       font-style: italic;
       padding: 20px;
     }
@@ -1603,22 +1815,13 @@ export class PDFExportService {
     }
     <img src="${AppLogoSVG}" alt="App" class="header-logo-right" />
     <h1>FEUILLE DE MATCH - BASKETBALL</h1>
-    <div class="match-info">${myTeamName} vs ${opponentName}</div>
+    <div class="match-info">${homeTeamName} vs ${awayTeamName}</div>
     <div class="date">${dateStr}</div>
   </div>
 
   <div class="score-summary">
     <div>SCORE FINAL</div>
-    <div class="final-score">${myTeamScore} - ${opponentScore}</div>
-    ${
-      scoreManuallyAdjusted
-        ? `
-    <div class="warning-banner">
-      ⚠️ Score ajusté manuellement - Les statistiques peuvent ne pas correspondre au score affiché
-    </div>
-    `
-        : ""
-    }
+    <div class="final-score">${homeTeamScore} - ${awayTeamScore}</div>
   </div>
 
   <!-- Period Scores -->
@@ -1633,17 +1836,17 @@ export class PDFExportService {
       </tr>
     </thead>
     <tbody>
-      <!-- My Team (always shown) -->
+      <!-- Home Team (always shown first) -->
       <tr>
-        <td class="team-name">${myTeamName}</td>
-        ${periodScoresMyTeam.map((score) => `<td>${score}</td>`).join("")}
-        <td><strong>${myTeamScore}</strong></td>
+        <td class="team-name">${homeTeamName}</td>
+        ${periodScoresHome.map((score) => `<td>${score}</td>`).join("")}
+        <td><strong>${homeTeamScore}</strong></td>
       </tr>
-      <!-- Opponent (always shown for period scores) -->
+      <!-- Away Team (always shown second) -->
       <tr>
-        <td class="team-name">${opponentName}</td>
-        ${periodScoresOpponent.map((score) => `<td>${score}</td>`).join("")}
-        <td><strong>${opponentScore}</strong></td>
+        <td class="team-name">${awayTeamName}</td>
+        ${periodScoresAway.map((score) => `<td>${score}</td>`).join("")}
+        <td><strong>${awayTeamScore}</strong></td>
       </tr>
     </tbody>
   </table>
@@ -1701,16 +1904,19 @@ export class PDFExportService {
           actions.filter((a) => a.player === player.id).length > 0;
         const teamName = player.team === Team.MY_TEAM ? myTeamName : opponentName;
         const totalFouls = this.calculateTotalFouls(playerStats);
-        const playerActions = actions.filter(a => a.player === player.id).length;
-        const totalActions = actions.length;
-        const totalMinutes = matchFormat === '2_halves' ? periodDuration * 2 : periodDuration * 4;
-        const estimatedMinutes = totalActions > 0 ? Math.round((playerActions / totalActions) * totalMinutes) : 0;
+        const totalRebounds = playerStats.orb + playerStats.drb;
+        const totalFgm = playerStats.twopm + playerStats.threepm;
+        const totalFga = playerStats.twopa + playerStats.threepa;
+        const efficiency = playerStats.points + totalRebounds + playerStats.ast +
+          playerStats.stl + playerStats.blk -
+          ((totalFga - totalFgm) + (playerStats.fta - playerStats.ftm) + playerStats.tov);
+        const estimatedMinutes = this.calculateEstimatedMinutes(playerStats, efficiency, totalFouls);
 
         return `
     <div class="player-card-page">
       <img src="${AppLogoSVG}" alt="App" class="player-card-logo" />
       <div class="player-card-header">
-        <div class="player-card-match-info">${myTeamName} ${myTeamScore} - ${opponentScore} ${opponentName}</div>
+        <div class="player-card-match-info">${homeTeamName} ${homeTeamScore} - ${awayTeamScore} ${awayTeamName}</div>
         <div class="player-card-date">${dateStr}</div>
       </div>
       <div class="player-card">
@@ -1733,7 +1939,7 @@ export class PDFExportService {
           <div class="shooting-bar">
             <div class="shooting-bar-label">3 PTS</div>
             <div class="shooting-bar-track">
-              <div class="shooting-bar-fill" style="width: ${threePtPct}%; background-color: #6366f1;"></div>
+              <div class="shooting-bar-fill three-point" style="width: ${threePtPct}%; background-color: ${PDF_COLORS.shooting.threePoint};"></div>
             </div>
             <div class="shooting-bar-value">
               <span class="shooting-bar-value-bold">${playerStats.threepm}/${playerStats.threepa}</span>
@@ -1743,7 +1949,7 @@ export class PDFExportService {
           <div class="shooting-bar">
             <div class="shooting-bar-label">2 PTS</div>
             <div class="shooting-bar-track">
-              <div class="shooting-bar-fill" style="width: ${twoPtPct}%; background-color: #3b82f6;"></div>
+              <div class="shooting-bar-fill two-point" style="width: ${twoPtPct}%; background-color: ${PDF_COLORS.shooting.twoPoint};"></div>
             </div>
             <div class="shooting-bar-value">
               <span class="shooting-bar-value-bold">${playerStats.twopm}/${playerStats.twopa}</span>
@@ -1751,9 +1957,9 @@ export class PDFExportService {
             </div>
           </div>
           <div class="shooting-bar">
-            <div class="shooting-bar-label">LANC</div>
+            <div class="shooting-bar-label">LF</div>
             <div class="shooting-bar-track">
-              <div class="shooting-bar-fill" style="width: ${ftPct}%; background-color: #06b6d4;"></div>
+              <div class="shooting-bar-fill free-throw" style="width: ${ftPct}%; background-color: ${PDF_COLORS.shooting.freeThrow};"></div>
             </div>
             <div class="shooting-bar-value">
               <span class="shooting-bar-value-bold">${playerStats.ftm}/${playerStats.fta}</span>
@@ -1769,8 +1975,8 @@ export class PDFExportService {
             <div class="stat-box-value">${estimatedMinutes}'</div>
           </div>
           <div class="stat-box">
-            <div class="stat-box-label">REB</div>
-            <div class="stat-box-value">${playerStats.orb + playerStats.drb}</div>
+            <div class="stat-box-label">REB OFF/DEF</div>
+            <div class="stat-box-value">${playerStats.orb}/${playerStats.drb}</div>
           </div>
           <div class="stat-box">
             <div class="stat-box-label">AST</div>
@@ -1801,15 +2007,11 @@ export class PDFExportService {
       ${
         hasStats
           ? `
-      <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #e2e8f0;">
+      <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid ${PDF_COLORS.card.border};">
         <div class="courts-container">
           <div class="court-wrapper">
             <div class="court-title">TIRS</div>
             ${shotCourtSVG}
-          </div>
-          <div class="court-wrapper">
-            <div class="court-title">AUTRES ACTIONS</div>
-            ${actionCourtSVG}
           </div>
         </div>
       </div>

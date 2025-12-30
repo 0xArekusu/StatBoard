@@ -230,13 +230,11 @@ export default function PlayerDetailModal({
                 Détails
               </Text>
               <View style={styles.detailedStatsGrid}>
-                <StatBox label="REB" value={player.reb} sub="Total" />
+                <StatBox label="REB OFF/DEF" value={`${player.reb_off}/${player.reb_def}`} sub={`Total: ${player.reb}`} />
                 <StatBox label="AST" value={player.ast} sub="Passes" />
                 <StatBox label="INT" value={player.stl} sub="Vols" />
                 <StatBox label="CTR" value={player.blk} sub="Contres" />
                 <StatBox label="BP" value={player.to} sub="Pertes" />
-                <StatBox label="RO" value={player.reb_off} sub="Reb Off" />
-                <StatBox label="RD" value={player.reb_def} sub="Reb Def" />
                 <StatBox label="FTE" value={player.pf} sub="Fautes" />
               </View>
             </View>

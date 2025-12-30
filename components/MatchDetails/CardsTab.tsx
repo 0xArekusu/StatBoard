@@ -544,12 +544,12 @@ export default function CardsTab({
               <Text
                 style={[styles.cardStatLabel, { color: textTertiary }]}
               >
-                REB
+                REB OFF/DEF
               </Text>
               <Text
                 style={[styles.cardStatValue, { color: textPrimary }]}
               >
-                {player.reb}
+                {player.reb_off}/{player.reb_def}
               </Text>
             </View>
             <View style={styles.cardStatItem}>
@@ -703,12 +703,13 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 12,
     borderWidth: 1,
-    alignItems: "center",
+    alignItems: "flex-end",
   },
   cardPointsValue: {
     fontSize: 28,
     fontWeight: "900",
     lineHeight: 28,
+    textAlign: "right",
   },
   cardPointsLabel: {
     fontSize: 8,

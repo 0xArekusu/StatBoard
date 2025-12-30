@@ -211,6 +211,7 @@ export default function MatchDetailsScreen() {
         trackOpponentStats, // If true, PDF will include opponent stats
         players: players || [],
         matchDate: match.created_at ? new Date(match.created_at) : new Date(),
+        isHome: match.is_home ?? true, // Pass whether my team is playing at home
       };
 
       await PDFExportService.generateMatchPDF(pdfOptions);
