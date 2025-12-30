@@ -164,7 +164,7 @@ export class MatchDataService {
 
     // Convert to PlayerData format
     const players: PlayerData[] = matchPlayers.map((mp) => ({
-      id: mp.id,
+      id: mp.player_number, // Use player_number for consistency with Supabase loading
       num: mp.player_number,
       name: mp.player_name,
       team: mp.team as Team,

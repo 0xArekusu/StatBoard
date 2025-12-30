@@ -193,18 +193,9 @@ export class PDFExportService {
       totalPeriods
     );
 
-    // Calculate cumulative scores for chart
-    const cumulativeScoresMyTeam: number[] = [];
-    const cumulativeScoresOpponent: number[] = [];
-    let sumMyTeam = 0;
-    let sumOpponent = 0;
-
-    for (let i = 0; i < totalPeriods; i++) {
-      sumMyTeam += periodScoresMyTeam[i];
-      sumOpponent += periodScoresOpponent[i];
-      cumulativeScoresMyTeam.push(sumMyTeam);
-      cumulativeScoresOpponent.push(sumOpponent);
-    }
+    // Calculate action-by-action evolution for chart
+    const { evolutionMyTeam, evolutionOpponent, evolutionPeriods } =
+      this.calculateActionByActionEvolution(actions, totalPeriods);
 
     // Calculate player stats - always include MY_TEAM, include OPPONENT only if tracking
     const playersMyTeam = playersWithBase64Photos.filter((p) => p.team === Team.MY_TEAM);
@@ -233,8 +224,9 @@ export class PDFExportService {
       totalPeriods,
       periodScoresMyTeam,
       periodScoresOpponent,
-      cumulativeScoresMyTeam,
-      cumulativeScoresOpponent,
+      evolutionMyTeam,
+      evolutionOpponent,
+      evolutionPeriods,
       statsMyTeam,
       statsOpponent,
       trackOpponentStats,
@@ -262,6 +254,7 @@ export class PDFExportService {
 
   /**
    * Calculate scores by period
+   * Uses period_number field from actions to correctly group scores by period
    */
   private static calculatePeriodScores(
     actions: any[],
@@ -270,34 +263,97 @@ export class PDFExportService {
     const periodScoresMyTeam: number[] = Array(totalPeriods).fill(0);
     const periodScoresOpponent: number[] = Array(totalPeriods).fill(0);
 
-    const sortedActions = [...actions].sort(
-      (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
-    );
-
-    const actionsPerPeriod = Math.ceil(sortedActions.length / totalPeriods);
-
-    sortedActions.forEach((action, index) => {
-      const periodIndex = Math.min(
-        Math.floor(index / actionsPerPeriod),
-        totalPeriods - 1
+    // Filter only scoring actions (made shots)
+    const scoringActions = actions.filter((action) => {
+      // Note: Actions from MatchDataService use 'type', database uses 'action_type'
+      const actionType = (action.type || action.action_type || '').toLowerCase();
+      const specification = (action.specification || '').toLowerCase();
+      return (
+        actionType === ActionType.SHOT &&
+        specification === ShotSpecification.MADE
       );
+    });
 
-      if (
-        action.type === ActionType.SHOT &&
-        action.specification === ShotSpecification.MADE
-      ) {
-        const points = action.points || 0;
-        const team = action.team;
-        // Support both old ("A"/"B") and new (Team.MY_TEAM/Team.OPPONENT) formats
-        if (team === Team.MY_TEAM || team === "A") {
-          periodScoresMyTeam[periodIndex] += points;
-        } else if (team === Team.OPPONENT || team === "B") {
-          periodScoresOpponent[periodIndex] += points;
-        }
+    // Group scores by period using period_number field
+    scoringActions.forEach((action) => {
+      const periodNumber = action.period_number;
+
+      // Skip invalid period numbers or periods beyond totalPeriods
+      if (!periodNumber || periodNumber < 1 || periodNumber > totalPeriods) {
+        return;
+      }
+
+      const periodIndex = periodNumber - 1; // Convert to 0-based index
+      const points = action.points || 0;
+      const team = action.team;
+
+      // Support both old ("A"/"B") and new (Team.MY_TEAM/Team.OPPONENT) formats
+      if (team === Team.MY_TEAM || team === "A") {
+        periodScoresMyTeam[periodIndex] += points;
+      } else if (team === Team.OPPONENT || team === "B") {
+        periodScoresOpponent[periodIndex] += points;
       }
     });
 
     return { periodScoresMyTeam, periodScoresOpponent };
+  }
+
+  /**
+   * Calculate action-by-action score evolution
+   * Returns arrays of scores after each scoring action for both teams
+   */
+  private static calculateActionByActionEvolution(
+    actions: any[],
+    totalPeriods: number
+  ) {
+    // Filter and sort scoring actions
+    const scoringActions = actions
+      .filter((action) => {
+        // Note: Actions from MatchDataService use 'type', database uses 'action_type'
+        const actionType = (action.type || action.action_type || '').toLowerCase();
+        const specification = (action.specification || '').toLowerCase();
+        return (
+          actionType === ActionType.SHOT &&
+          specification === ShotSpecification.MADE
+        );
+      })
+      .sort((a, b) => {
+        // Sort by period first, then by timestamp
+        if (a.period_number !== b.period_number) {
+          return a.period_number - b.period_number;
+        }
+        if (a.timestamp && b.timestamp) {
+          return new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime();
+        }
+        return 0;
+      });
+
+    // Build evolution arrays - start with 0-0
+    const evolutionMyTeam: number[] = [0];
+    const evolutionOpponent: number[] = [0];
+    const evolutionPeriods: number[] = [0]; // Period number for each point (0 = start)
+
+    let currentMyTeam = 0;
+    let currentOpponent = 0;
+
+    scoringActions.forEach((action) => {
+      const points = action.points || 0;
+      const team = action.team;
+
+      // Update score based on team
+      if (team === Team.MY_TEAM || team === "A") {
+        currentMyTeam += points;
+      } else if (team === Team.OPPONENT || team === "B") {
+        currentOpponent += points;
+      }
+
+      // Add point to evolution
+      evolutionMyTeam.push(currentMyTeam);
+      evolutionOpponent.push(currentOpponent);
+      evolutionPeriods.push(action.period_number || 1);
+    });
+
+    return { evolutionMyTeam, evolutionOpponent, evolutionPeriods };
   }
 
 
@@ -322,14 +378,32 @@ export class PDFExportService {
 
   /**
    * Calculate individual player stats
+   * Handles both database format (action_type, player_number) and app format (type, player)
    */
   private static calculatePlayerStats(playerId: number, actions: any[]) {
-    const playerActions = actions.filter((a) => a.player === playerId);
+    // Filter actions for this player - handle both player_number (DB) and player (app) formats
+    const playerActions = actions.filter((a) => {
+      const playerNum = a.player_number || a.player;
+      return playerNum === playerId;
+    });
+
+    // Helper function to normalize action type
+    // Note: Actions from MatchDataService use 'type', database uses 'action_type'
+    const normalizeActionType = (action: any): string => {
+      return (action.type || action.action_type || '').toLowerCase();
+    };
+
+    // Helper function to normalize specification
+    const normalizeSpecification = (action: any): string => {
+      return (action.specification || '').toLowerCase();
+    };
 
     // Shots
-    const shots = playerActions.filter((a) => a.type === ActionType.SHOT);
+    const shots = playerActions.filter(
+      (a) => normalizeActionType(a) === ActionType.SHOT
+    );
     const madeShots = shots.filter(
-      (a) => a.specification === ShotSpecification.MADE
+      (a) => normalizeSpecification(a) === ShotSpecification.MADE
     );
 
     const onePtMade = madeShots.filter((a) => a.points === 1).length;
@@ -343,41 +417,45 @@ export class PDFExportService {
     const totalPoints = onePtMade * 1 + twoPtMade * 2 + threePtMade * 3;
 
     // Rebounds
-    const rebounds = playerActions.filter((a) => a.type === ActionType.REBOUND);
+    const rebounds = playerActions.filter(
+      (a) => normalizeActionType(a) === ActionType.REBOUND
+    );
     const offRebounds = rebounds.filter(
-      (a) => a.specification === ReboundSpecification.OFFENSIVE
+      (a) => normalizeSpecification(a) === ReboundSpecification.OFFENSIVE
     ).length;
     const defRebounds = rebounds.filter(
-      (a) => a.specification === ReboundSpecification.DEFENSIVE
+      (a) => normalizeSpecification(a) === ReboundSpecification.DEFENSIVE
     ).length;
 
     // Fouls
-    const fouls = playerActions.filter((a) => a.type === ActionType.FOUL);
+    const fouls = playerActions.filter(
+      (a) => normalizeActionType(a) === ActionType.FOUL
+    );
     const personalFouls = fouls.filter(
-      (a) => a.specification === FoulSpecification.PERSONAL
+      (a) => normalizeSpecification(a) === FoulSpecification.PERSONAL
     ).length;
     const technicalFouls = fouls.filter(
-      (a) => a.specification === FoulSpecification.TECHNICAL
+      (a) => normalizeSpecification(a) === FoulSpecification.TECHNICAL
     ).length;
     const penalityFouls = fouls.filter(
-      (a) => a.specification === FoulSpecification.PENALITY
+      (a) => normalizeSpecification(a) === FoulSpecification.PENALITY
     ).length;
     const disqualificationFouls = fouls.filter(
-      (a) => a.specification === FoulSpecification.DISQUALIFICATION
+      (a) => normalizeSpecification(a) === FoulSpecification.DISQUALIFICATION
     ).length;
 
     // New stats
     const assists = playerActions.filter(
-      (a) => a.type === ActionType.ASSIST
+      (a) => normalizeActionType(a) === ActionType.ASSIST
     ).length;
     const steals = playerActions.filter(
-      (a) => a.type === ActionType.STEAL
+      (a) => normalizeActionType(a) === ActionType.STEAL
     ).length;
     const blocks = playerActions.filter(
-      (a) => a.type === ActionType.BLOCK
+      (a) => normalizeActionType(a) === ActionType.BLOCK
     ).length;
     const turnovers = playerActions.filter(
-      (a) => a.type === ActionType.TURNOVER
+      (a) => normalizeActionType(a) === ActionType.TURNOVER
     ).length;
 
     return {
@@ -407,29 +485,82 @@ export class PDFExportService {
   /**
    * Stats legend constant
    */
-  private static readonly STATS_LEGEND = `PTS: Points | 2PTS: 2 points (marqués/tentés) | 3PTS: 3 points (marqués/tentés) | LF: Lancers francs (marqués/tentés)<br>
-      RO: Rebonds offensifs | RD: Rebonds défensifs<br>
-      PD: Passes décisives | INT: Interceptions | CT: Contres | BP: Balles perdues | F: Fautes totales`;
+  private static readonly STATS_LEGEND = `MIN: Minutes estimées | PTS: Points | TIRS: Tirs totaux (marqués/tentés) | 2PTS: 2 points (marqués/tentés) | 3PTS: 3 points (marqués/tentés) | LF: Lancers francs (marqués/tentés)<br>
+      REB: Rebonds totaux | RO: Rebonds offensifs | RD: Rebonds défensifs<br>
+      PD: Passes décisives | INT: Interceptions | CTR: Contres | BP: Balles perdues | FT: Fautes totales | EFF: Efficacité`;
+
+  /**
+   * Calculate estimated minutes for a player based on efficiency
+   */
+  private static calculateEstimatedMinutes(
+    stats: any,
+    efficiency: number,
+    totalFouls: number
+  ): number {
+    const totalPoints = stats.points;
+    const totalRebounds = stats.orb + stats.drb;
+    const totalAssists = stats.ast;
+
+    // Heuristic estimation of minutes based on efficiency
+    let estimatedMin = 10 + Math.floor(efficiency / 1.5) + totalFouls * 2;
+
+    // Adjustments for more realism
+    if (estimatedMin < 5 && (totalPoints > 0 || totalRebounds > 0)) {
+      estimatedMin = 8; // Min 8 min if player played
+    }
+    if (estimatedMin > 38) {
+      estimatedMin = 36 + Math.floor(Math.random() * 4); // Max ~40 min
+    }
+    if (efficiency === 0 && totalPoints === 0 && totalRebounds === 0 && totalAssists === 0) {
+      estimatedMin = 0; // 0 min if no actions
+    }
+
+    return estimatedMin;
+  }
 
   /**
    * Calculate team totals from individual player stats
    */
   private static calculateTeamTotals(stats: any[]) {
+    const twopm = stats.reduce((sum, p) => sum + p.stats.twopm, 0);
+    const twopa = stats.reduce((sum, p) => sum + p.stats.twopa, 0);
+    const threepm = stats.reduce((sum, p) => sum + p.stats.threepm, 0);
+    const threepa = stats.reduce((sum, p) => sum + p.stats.threepa, 0);
+    const ftm = stats.reduce((sum, p) => sum + p.stats.ftm, 0);
+    const fta = stats.reduce((sum, p) => sum + p.stats.fta, 0);
+    const orb = stats.reduce((sum, p) => sum + p.stats.orb, 0);
+    const drb = stats.reduce((sum, p) => sum + p.stats.drb, 0);
+    const points = stats.reduce((sum, p) => sum + p.stats.points, 0);
+    const ast = stats.reduce((sum, p) => sum + p.stats.ast, 0);
+    const stl = stats.reduce((sum, p) => sum + p.stats.stl, 0);
+    const blk = stats.reduce((sum, p) => sum + p.stats.blk, 0);
+    const tov = stats.reduce((sum, p) => sum + p.stats.tov, 0);
+    const fouls = stats.reduce((sum, p) => sum + this.calculateTotalFouls(p.stats), 0);
+
+    const fgm = twopm + threepm;
+    const fga = twopa + threepa;
+    const trb = orb + drb;
+    const eff = points + trb + ast + stl + blk - ((fga - fgm) + (fta - ftm) + tov);
+
     return {
-      points: stats.reduce((sum, p) => sum + p.stats.points, 0),
-      twopm: stats.reduce((sum, p) => sum + p.stats.twopm, 0),
-      twopa: stats.reduce((sum, p) => sum + p.stats.twopa, 0),
-      threepm: stats.reduce((sum, p) => sum + p.stats.threepm, 0),
-      threepa: stats.reduce((sum, p) => sum + p.stats.threepa, 0),
-      ftm: stats.reduce((sum, p) => sum + p.stats.ftm, 0),
-      fta: stats.reduce((sum, p) => sum + p.stats.fta, 0),
-      orb: stats.reduce((sum, p) => sum + p.stats.orb, 0),
-      drb: stats.reduce((sum, p) => sum + p.stats.drb, 0),
-      ast: stats.reduce((sum, p) => sum + p.stats.ast, 0),
-      stl: stats.reduce((sum, p) => sum + p.stats.stl, 0),
-      blk: stats.reduce((sum, p) => sum + p.stats.blk, 0),
-      tov: stats.reduce((sum, p) => sum + p.stats.tov, 0),
-      fouls: stats.reduce((sum, p) => sum + this.calculateTotalFouls(p.stats), 0),
+      points,
+      twopm,
+      twopa,
+      threepm,
+      threepa,
+      ftm,
+      fta,
+      fgm,
+      fga,
+      orb,
+      drb,
+      trb,
+      ast,
+      stl,
+      blk,
+      tov,
+      fouls,
+      eff,
     };
   }
 
@@ -453,31 +584,46 @@ export class PDFExportService {
         <tr>
           <th class="player-number">#</th>
           <th class="player-name">Joueur</th>
+          <th>MIN</th>
           <th>PTS</th>
+          <th>TIRS</th>
           <th>2PTS</th>
           <th>3PTS</th>
           <th>LF</th>
+          <th>REB</th>
           <th>RO</th>
           <th>RD</th>
           <th>PD</th>
           <th>INT</th>
-          <th>CT</th>
+          <th>CTR</th>
           <th>BP</th>
-          <th>F</th>
+          <th>FT</th>
+          <th>EFF</th>
         </tr>
       </thead>
       <tbody>
         ${stats
           .map((player) => {
             const totalFouls = this.calculateTotalFouls(player.stats);
+            const totalRebounds = player.stats.orb + player.stats.drb;
+            const totalFgm = player.stats.twopm + player.stats.threepm;
+            const totalFga = player.stats.twopa + player.stats.threepa;
+            const efficiency = player.stats.points + totalRebounds + player.stats.ast +
+              player.stats.stl + player.stats.blk -
+              ((totalFga - totalFgm) + (player.stats.fta - player.stats.ftm) + player.stats.tov);
+            const estimatedMin = this.calculateEstimatedMinutes(player.stats, efficiency, totalFouls);
+
             return `
         <tr>
           <td class="player-number">${player.num}</td>
           <td class="player-name">${player.name}</td>
-          <td>${player.stats.points}</td>
+          <td>${estimatedMin}'</td>
+          <td><strong>${player.stats.points}</strong></td>
+          <td>${totalFgm}/${totalFga}</td>
           <td>${player.stats.twopm}/${player.stats.twopa}</td>
           <td>${player.stats.threepm}/${player.stats.threepa}</td>
           <td>${player.stats.ftm}/${player.stats.fta}</td>
+          <td>${totalRebounds}</td>
           <td>${player.stats.orb}</td>
           <td>${player.stats.drb}</td>
           <td>${player.stats.ast}</td>
@@ -485,16 +631,20 @@ export class PDFExportService {
           <td>${player.stats.blk}</td>
           <td>${player.stats.tov}</td>
           <td>${totalFouls}</td>
+          <td><strong>${efficiency}</strong></td>
         </tr>
         `;
           })
           .join("")}
         <tr class="totals-row">
           <td colspan="2">TOTAL</td>
-          <td>${totals.points}</td>
+          <td>-</td>
+          <td><strong>${totals.points}</strong></td>
+          <td>${totals.fgm}/${totals.fga}</td>
           <td>${totals.twopm}/${totals.twopa}</td>
           <td>${totals.threepm}/${totals.threepa}</td>
           <td>${totals.ftm}/${totals.fta}</td>
+          <td>${totals.trb}</td>
           <td>${totals.orb}</td>
           <td>${totals.drb}</td>
           <td>${totals.ast}</td>
@@ -502,6 +652,7 @@ export class PDFExportService {
           <td>${totals.blk}</td>
           <td>${totals.tov}</td>
           <td>${totals.fouls}</td>
+          <td><strong>${totals.eff}</strong></td>
         </tr>
       </tbody>
     </table>
@@ -513,11 +664,12 @@ export class PDFExportService {
   }
 
   /**
-   * Generate score evolution SVG chart
+   * Generate score evolution SVG chart with action-by-action evolution
    */
   private static generateScoreChart(
-    cumulativeScoresMyTeam: number[],
-    cumulativeScoresOpponent: number[],
+    evolutionMyTeam: number[],
+    evolutionOpponent: number[],
+    evolutionPeriods: number[],
     periodLabel: string,
     totalPeriods: number,
     trackOpponentStats: boolean,
@@ -531,32 +683,38 @@ export class PDFExportService {
     const chartHeight = height - padding.top - padding.bottom;
 
     const maxScore = Math.max(
-      ...cumulativeScoresMyTeam,
-      ...(trackOpponentStats ? cumulativeScoresOpponent : [0])
+      ...evolutionMyTeam,
+      ...evolutionOpponent,
+      20 // Minimum scale
     );
-    const yScale = chartHeight / (maxScore || 1);
+    const yScale = chartHeight / maxScore;
 
-    // Include 0 at start
-    const allScoresMyTeam = [0, ...cumulativeScoresMyTeam];
-    const allScoresOpponent = [0, ...cumulativeScoresOpponent];
-
-    // Generate path for my team
-    let pathMyTeam = `M ${padding.left} ${padding.top + chartHeight}`;
-    allScoresMyTeam.forEach((score, i) => {
-      const x = padding.left + (i * chartWidth) / totalPeriods;
+    // Generate path for my team - action by action
+    let pathMyTeam = '';
+    evolutionMyTeam.forEach((score, i) => {
+      // Calculate x position based on action index distributed across total periods
+      const x = padding.left + (i / Math.max(evolutionMyTeam.length - 1, 1)) * chartWidth;
       const y = padding.top + chartHeight - score * yScale;
-      pathMyTeam += ` L ${x} ${y}`;
+
+      if (i === 0) {
+        pathMyTeam = `M ${x} ${y}`;
+      } else {
+        pathMyTeam += ` L ${x} ${y}`;
+      }
     });
 
-    // Generate path for opponent
-    let pathOpponent = `M ${padding.left} ${padding.top + chartHeight}`;
-    if (trackOpponentStats) {
-      allScoresOpponent.forEach((score, i) => {
-        const x = padding.left + (i * chartWidth) / totalPeriods;
-        const y = padding.top + chartHeight - score * yScale;
+    // Generate path for opponent - action by action (always shown)
+    let pathOpponent = '';
+    evolutionOpponent.forEach((score, i) => {
+      const x = padding.left + (i / Math.max(evolutionOpponent.length - 1, 1)) * chartWidth;
+      const y = padding.top + chartHeight - score * yScale;
+
+      if (i === 0) {
+        pathOpponent = `M ${x} ${y}`;
+      } else {
         pathOpponent += ` L ${x} ${y}`;
-      });
-    }
+      }
+    });
 
     // Generate X-axis labels with "FIN" above period labels
     const xLabelsHTML = Array.from({ length: totalPeriods + 1 }, (_, i) => {
@@ -610,31 +768,11 @@ export class PDFExportService {
       width - padding.right
     }" y2="${padding.top + chartHeight}" stroke="#333" stroke-width="2"/>
 
-        <!-- My Team line (always shown) -->
+        <!-- My Team line (always shown with orange color) -->
         <path d="${pathMyTeam}" fill="none" stroke="#FF6B35" stroke-width="3"/>
-        ${allScoresMyTeam
-          .map((score, i) => {
-            const x = padding.left + (i * chartWidth) / totalPeriods;
-            const y = padding.top + chartHeight - score * yScale;
-            return `<circle cx="${x}" cy="${y}" r="4" fill="#FF6B35"/>`;
-          })
-          .join("")}
 
-        ${
-          trackOpponentStats
-            ? `
-        <!-- Opponent line -->
-        <path d="${pathOpponent}" fill="none" stroke="#004E89" stroke-width="3"/>
-        ${allScoresOpponent
-          .map((score, i) => {
-            const x = padding.left + (i * chartWidth) / totalPeriods;
-            const y = padding.top + chartHeight - score * yScale;
-            return `<circle cx="${x}" cy="${y}" r="4" fill="#004E89"/>`;
-          })
-          .join("")}
-        `
-            : ""
-        }
+        <!-- Opponent line (always shown with blue color) -->
+        <path d="${pathOpponent}" fill="none" stroke="#1E90FF" stroke-width="3"/>
 
         <!-- Labels -->
         ${xLabelsHTML}
@@ -644,14 +782,8 @@ export class PDFExportService {
         <circle cx="50" cy="15" r="4" fill="#FF6B35"/>
         <text x="58" y="18" font-size="10">${myTeamName}</text>
 
-        ${
-          trackOpponentStats
-            ? `
-        <circle cx="150" cy="15" r="4" fill="#004E89"/>
+        <circle cx="150" cy="15" r="4" fill="#1E90FF"/>
         <text x="158" y="18" font-size="10">${opponentName}</text>
-        `
-            : ""
-        }
       </svg>
     `;
   }
@@ -962,8 +1094,9 @@ export class PDFExportService {
     totalPeriods: number;
     periodScoresMyTeam: number[];
     periodScoresOpponent: number[];
-    cumulativeScoresMyTeam: number[];
-    cumulativeScoresOpponent: number[];
+    evolutionMyTeam: number[];
+    evolutionOpponent: number[];
+    evolutionPeriods: number[];
     statsMyTeam: any[];
     statsOpponent: any[];
     trackOpponentStats: boolean;
@@ -987,8 +1120,9 @@ export class PDFExportService {
       totalPeriods,
       periodScoresMyTeam,
       periodScoresOpponent,
-      cumulativeScoresMyTeam,
-      cumulativeScoresOpponent,
+      evolutionMyTeam,
+      evolutionOpponent,
+      evolutionPeriods,
       statsMyTeam,
       statsOpponent,
       trackOpponentStats,
@@ -1003,10 +1137,11 @@ export class PDFExportService {
       periodDuration,
     } = data;
 
-    // Generate the score chart SVG
+    // Generate the score chart SVG with action-by-action evolution
     const chartSVG = this.generateScoreChart(
-      cumulativeScoresMyTeam,
-      cumulativeScoresOpponent,
+      evolutionMyTeam,
+      evolutionOpponent,
+      evolutionPeriods,
       periodLabel,
       totalPeriods,
       trackOpponentStats,
@@ -1504,18 +1639,12 @@ export class PDFExportService {
         ${periodScoresMyTeam.map((score) => `<td>${score}</td>`).join("")}
         <td><strong>${myTeamScore}</strong></td>
       </tr>
-      ${
-        trackOpponentStats
-          ? `
-      <!-- Opponent (only if tracked) -->
+      <!-- Opponent (always shown for period scores) -->
       <tr>
         <td class="team-name">${opponentName}</td>
         ${periodScoresOpponent.map((score) => `<td>${score}</td>`).join("")}
         <td><strong>${opponentScore}</strong></td>
       </tr>
-      `
-          : ""
-      }
     </tbody>
   </table>
 
