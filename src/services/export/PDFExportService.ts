@@ -1777,24 +1777,6 @@ export class PDFExportService {
     .shooting-bar-track {
       flex: 1;
       height: 12px;
-      background-color: ${PDF_COLORS.card.border};
-      border-radius: 999px;
-      overflow: hidden;
-      position: relative;
-    }
-    .shooting-bar-fill {
-      height: 100%;
-      border-radius: 999px;
-      transition: width 0.3s ease;
-    }
-    .shooting-bar-fill.three-point {
-      background-color: ${PDF_COLORS.shooting.threePoint} !important;
-    }
-    .shooting-bar-fill.two-point {
-      background-color: ${PDF_COLORS.shooting.twoPoint} !important;
-    }
-    .shooting-bar-fill.free-throw {
-      background-color: ${PDF_COLORS.shooting.freeThrow} !important;
     }
     .shooting-bar-value {
       font-size: 13px;
@@ -2011,6 +1993,12 @@ export class PDFExportService {
           playerStats.fta
         );
 
+        console.log(`[PDF Export] 📊 Shooting percentages for player ${player.num}:`, {
+          twoPoint: `${playerStats.twopm}/${playerStats.twopa} = ${twoPtPct}%`,
+          threePoint: `${playerStats.threepm}/${playerStats.threepa} = ${threePtPct}%`,
+          freeThrow: `${playerStats.ftm}/${playerStats.fta} = ${ftPct}%`,
+        });
+
         const hasStats =
           actions.filter((a) => a.player === player.id).length > 0;
         const teamName = player.team === Team.MY_TEAM ? myTeamName : opponentName;
@@ -2050,7 +2038,10 @@ export class PDFExportService {
           <div class="shooting-bar">
             <div class="shooting-bar-label">3 PTS</div>
             <div class="shooting-bar-track">
-              <div class="shooting-bar-fill three-point" style="width: ${threePtPct}%; background-color: ${PDF_COLORS.shooting.threePoint};"></div>
+              <svg width="100%" height="12" style="display: block;">
+                <rect x="0" y="0" width="100%" height="12" fill="${PDF_COLORS.card.border}" rx="6"/>
+                <rect x="0" y="0" width="${threePtPct}%" height="12" fill="${PDF_COLORS.shooting.threePoint}" rx="6"/>
+              </svg>
             </div>
             <div class="shooting-bar-value">
               <span class="shooting-bar-value-bold">${playerStats.threepm}/${playerStats.threepa}</span>
@@ -2060,7 +2051,10 @@ export class PDFExportService {
           <div class="shooting-bar">
             <div class="shooting-bar-label">2 PTS</div>
             <div class="shooting-bar-track">
-              <div class="shooting-bar-fill two-point" style="width: ${twoPtPct}%; background-color: ${PDF_COLORS.shooting.twoPoint};"></div>
+              <svg width="100%" height="12" style="display: block;">
+                <rect x="0" y="0" width="100%" height="12" fill="${PDF_COLORS.card.border}" rx="6"/>
+                <rect x="0" y="0" width="${twoPtPct}%" height="12" fill="${PDF_COLORS.shooting.twoPoint}" rx="6"/>
+              </svg>
             </div>
             <div class="shooting-bar-value">
               <span class="shooting-bar-value-bold">${playerStats.twopm}/${playerStats.twopa}</span>
@@ -2070,7 +2064,10 @@ export class PDFExportService {
           <div class="shooting-bar">
             <div class="shooting-bar-label">LF</div>
             <div class="shooting-bar-track">
-              <div class="shooting-bar-fill free-throw" style="width: ${ftPct}%; background-color: ${PDF_COLORS.shooting.freeThrow};"></div>
+              <svg width="100%" height="12" style="display: block;">
+                <rect x="0" y="0" width="100%" height="12" fill="${PDF_COLORS.card.border}" rx="6"/>
+                <rect x="0" y="0" width="${ftPct}%" height="12" fill="${PDF_COLORS.shooting.freeThrow}" rx="6"/>
+              </svg>
             </div>
             <div class="shooting-bar-value">
               <span class="shooting-bar-value-bold">${playerStats.ftm}/${playerStats.fta}</span>
