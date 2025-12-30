@@ -1,5 +1,6 @@
 import * as Print from "expo-print";
 import * as Sharing from "expo-sharing";
+import { Platform } from "react-native";
 import {
   ActionType,
   ShotSpecification,
@@ -10,6 +11,7 @@ import {
 import { Team } from "../../models/types";
 import type { CourtMarker } from "../../../components/BasketballCourtSVG";
 import { PDF_COLORS } from "../../theme/colors";
+import { PlatformOS } from "../../../constants";
 
 interface Player {
   id: number;
@@ -353,9 +355,21 @@ export class PDFExportService {
     // Generate PDF using expo-print
     const { uri } = await Print.printToFileAsync({ html });
 
-    // Share the PDF
+    // Share the PDF with platform-specific options
     if (await Sharing.isAvailableAsync()) {
-      await Sharing.shareAsync(uri);
+      const sharingOptions: Record<string, any> = {};
+
+      // iOS requires UTI and mimeType for proper file handling
+      if (Platform.OS === PlatformOS.IOS) {
+        sharingOptions.UTI = 'com.adobe.pdf';
+        sharingOptions.mimeType = 'application/pdf';
+      }
+      // Android also benefits from mimeType specification
+      else if (Platform.OS === PlatformOS.ANDROID) {
+        sharingOptions.mimeType = 'application/pdf';
+      }
+
+      await Sharing.shareAsync(uri, sharingOptions);
     }
 
     return uri;
