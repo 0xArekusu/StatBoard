@@ -11,6 +11,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from "react-nati
 import Svg, { Path, Line } from "react-native-svg";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { ActionType, ShotSpecification } from "../../src/models/ActionTypes";
+import { Team } from "../../src/models/types";
 
 interface PeriodScore {
   home: number;
@@ -18,8 +19,8 @@ interface PeriodScore {
 }
 
 interface GraphPoint {
-  home: number;
-  away: number;
+  myTeam: number;
+  opponent: number;
   period?: number;
   actionIndex?: number;
   xPosition?: number; // Position normalized between 0 and total periods
@@ -67,7 +68,7 @@ export default function EvolutionTab({
   // Calculate period scores and graph points
   const evolution = useMemo(() => {
     const periods: PeriodScore[] = [];
-    const graphPoints: GraphPoint[] = [{ home: 0, away: 0, period: 0, actionIndex: -1, xPosition: 0 }];
+    const graphPoints: GraphPoint[] = [{ myTeam: 0, opponent: 0, period: 0, actionIndex: -1, xPosition: 0 }];
 
     // Group actions by period
     const totalPeriods = match.total_periods || 4;
@@ -107,13 +108,16 @@ export default function EvolutionTab({
     });
 
     // Build graph points from all scoring actions
-    let currentScore = { home: 0, away: 0 };
+    // Always use myTeam/opponent regardless of home/away
+    let currentScore = { myTeam: 0, opponent: 0 };
     scoringActions.forEach((action, index) => {
       const points = action.points || 0;
-      if (action.team === "MyTeam") {
-        currentScore.home += points;
+      const isMyTeamAction = action.team === Team.MY_TEAM;
+
+      if (isMyTeamAction) {
+        currentScore.myTeam += points;
       } else {
-        currentScore.away += points;
+        currentScore.opponent += points;
       }
 
       const period = action.period_number;
@@ -133,8 +137,8 @@ export default function EvolutionTab({
       const xPosition = periodStart + positionInPeriod;
 
       graphPoints.push({
-        home: currentScore.home,
-        away: currentScore.away,
+        myTeam: currentScore.myTeam,
+        opponent: currentScore.opponent,
         period: action.period_number,
         actionIndex: index,
         xPosition,
@@ -142,27 +146,34 @@ export default function EvolutionTab({
     });
 
     // Calculate period totals for the table
+    // Map to home/away based on location for table display
+    const isHome = match.is_home;
     for (let period = 1; period <= allPeriods; period++) {
       const periodActions = scoringActions.filter((a) => a.period_number === period);
 
-      const homeScore = periodActions
-        .filter((a) => a.team === "MyTeam")
+      const myTeamScore = periodActions
+        .filter((a) => a.team === Team.MY_TEAM)
         .reduce((sum, a) => sum + (a.points || 0), 0);
 
-      const awayScore = periodActions
-        .filter((a) => a.team === "Opponent")
+      const opponentScore = periodActions
+        .filter((a) => a.team === Team.OPPONENT)
         .reduce((sum, a) => sum + (a.points || 0), 0);
 
-      periods.push({ home: homeScore, away: awayScore });
+      // Map scores to home/away based on location
+      if (isHome) {
+        periods.push({ home: myTeamScore, away: opponentScore });
+      } else {
+        periods.push({ home: opponentScore, away: myTeamScore });
+      }
     }
 
     return { periods, graphPoints, totalPeriods, overtimePeriods, scoringActions };
-  }, [actions, match.total_periods, match.overtime_periods]);
+  }, [actions, match.total_periods, match.overtime_periods, match.is_home]);
 
   // Calculate maxScore from actual graph data points for accurate scaling
   const maxScore = useMemo(() => {
     const maxFromGraph = Math.max(
-      ...evolution.graphPoints.map(p => Math.max(p.home, p.away)),
+      ...evolution.graphPoints.map(p => Math.max(p.myTeam, p.opponent)),
       0
     );
     // Add 10% padding, with minimum of 20 for very low scores
@@ -253,30 +264,31 @@ export default function EvolutionTab({
             </Text>
           </View>
 
-          {/* Home Team Row */}
+          {/* Home Team Row (First row - always the team playing at home) */}
           <View style={[styles.tableRow, { borderBottomColor: colors.border }]}>
             <Text
               style={[
                 styles.tableCell,
                 styles.teamCell,
                 {
-                  color: colors.text.primary,
+                  color: match.is_home ? colors.text.primary : colors.text.secondary,
                   borderRightWidth: 1,
                   borderRightColor: colors.border,
                 },
               ]}
             >
-              {match.my_team_name || "Mon Équipe"}
+              {match.is_home ? (match.my_team_name || "Mon Équipe") : (match.opponent_name || "Adversaire")}
             </Text>
             {evolution.periods.map((p, i) => {
               const isWinning = p.home > p.away;
+              const isMyTeam = match.is_home;
               return (
                 <Text
                   key={i}
                   style={[
                     styles.tableCell,
                     {
-                      color: isWinning ? colors.primary : colors.text.primary,
+                      color: isWinning ? (isMyTeam ? colors.primary : colors.primary) : (isMyTeam ? colors.text.primary : colors.text.secondary),
                       fontWeight: isWinning ? "900" : "700",
                       borderRightWidth: 1,
                       borderRightColor: colors.border,
@@ -293,42 +305,42 @@ export default function EvolutionTab({
                 styles.totalCell,
                 styles.totalValue,
                 {
-                  color:
-                    (match.my_team_score || 0) > (match.opponent_score || 0)
-                      ? colors.primary
-                      : colors.text.primary,
+                  color: match.is_home
+                    ? ((match.my_team_score || 0) > (match.opponent_score || 0) ? colors.primary : colors.text.primary)
+                    : ((match.opponent_score || 0) > (match.my_team_score || 0) ? colors.primary : colors.text.secondary),
                   backgroundColor: colors.surface,
                 },
               ]}
             >
-              {match.my_team_score || 0}
+              {match.is_home ? (match.my_team_score || 0) : (match.opponent_score || 0)}
             </Text>
           </View>
 
-          {/* Away Team Row */}
+          {/* Away Team Row (Second row - always the team playing away) */}
           <View style={styles.tableRow}>
             <Text
               style={[
                 styles.tableCell,
                 styles.teamCell,
                 {
-                  color: colors.text.secondary,
+                  color: match.is_home ? colors.text.secondary : colors.text.primary,
                   borderRightWidth: 1,
                   borderRightColor: colors.border,
                 },
               ]}
             >
-              {match.opponent_name || "Adversaire"}
+              {match.is_home ? (match.opponent_name || "Adversaire") : (match.my_team_name || "Mon Équipe")}
             </Text>
             {evolution.periods.map((p, i) => {
               const isWinning = p.away > p.home;
+              const isMyTeam = !match.is_home;
               return (
                 <Text
                   key={i}
                   style={[
                     styles.tableCell,
                     {
-                      color: isWinning ? colors.primary : colors.text.secondary,
+                      color: isWinning ? (isMyTeam ? colors.primary : colors.primary) : (isMyTeam ? colors.text.primary : colors.text.secondary),
                       fontWeight: isWinning ? "900" : "700",
                       borderRightWidth: 1,
                       borderRightColor: colors.border,
@@ -345,15 +357,14 @@ export default function EvolutionTab({
                 styles.totalCell,
                 styles.totalValue,
                 {
-                  color:
-                    (match.opponent_score || 0) > (match.my_team_score || 0)
-                      ? colors.primary
-                      : colors.text.secondary,
+                  color: match.is_home
+                    ? ((match.opponent_score || 0) > (match.my_team_score || 0) ? colors.primary : colors.text.secondary)
+                    : ((match.my_team_score || 0) > (match.opponent_score || 0) ? colors.primary : colors.text.primary),
                   backgroundColor: colors.surface,
                 },
               ]}
             >
-              {match.opponent_score || 0}
+              {match.is_home ? (match.opponent_score || 0) : (match.my_team_score || 0)}
             </Text>
           </View>
         </View>
@@ -432,12 +443,12 @@ export default function EvolutionTab({
                   );
                 })}
 
-                {/* Home Team Line */}
+                {/* My Team Line (always primary color) */}
                 {evolution.graphPoints.length > 1 && (
                   <Path
-                    d={`M ${evolution.graphPoints[0].xPosition || 0} ${maxScore - evolution.graphPoints[0].home} ${evolution.graphPoints
+                    d={`M ${evolution.graphPoints[0].xPosition || 0} ${maxScore - evolution.graphPoints[0].myTeam} ${evolution.graphPoints
                       .slice(1)
-                      .map((p) => `L ${p.xPosition || 0} ${maxScore - p.home}`)
+                      .map((p) => `L ${p.xPosition || 0} ${maxScore - p.myTeam}`)
                       .join(" ")}`}
                     fill="none"
                     stroke={colors.primary}
@@ -448,12 +459,12 @@ export default function EvolutionTab({
                   />
                 )}
 
-                {/* Away Team Line */}
+                {/* Opponent Team Line (always red) */}
                 {evolution.graphPoints.length > 1 && (
                   <Path
-                    d={`M ${evolution.graphPoints[0].xPosition || 0} ${maxScore - evolution.graphPoints[0].away} ${evolution.graphPoints
+                    d={`M ${evolution.graphPoints[0].xPosition || 0} ${maxScore - evolution.graphPoints[0].opponent} ${evolution.graphPoints
                       .slice(1)
-                      .map((p) => `L ${p.xPosition || 0} ${maxScore - p.away}`)
+                      .map((p) => `L ${p.xPosition || 0} ${maxScore - p.opponent}`)
                       .join(" ")}`}
                     fill="none"
                     stroke="#FF6B6B"
@@ -472,8 +483,8 @@ export default function EvolutionTab({
                   const totalPeriods = evolution.totalPeriods;
                   let label = '';
                   let scoreInfo = '';
-                  let homeScoreChange = '';
-                  let awayScoreChange = '';
+                  let myTeamScoreChange = '';
+                  let opponentScoreChange = '';
 
                   if (i === 0) {
                     label = 'Début du match';
@@ -484,7 +495,7 @@ export default function EvolutionTab({
 
                     if (action) {
                       const pointsScored = action.points || 0;
-                      const scorerTeam = action.team === "MyTeam"
+                      const scorerTeam = action.team === Team.MY_TEAM
                         ? (match.my_team_name || "Notre équipe")
                         : (match.opponent_name || "Adversaire");
 
@@ -497,12 +508,12 @@ export default function EvolutionTab({
                       scoreInfo = `${scorerTeam} - ${shotType}`;
 
                       // Calculate score changes
-                      if (action.team === "MyTeam") {
-                        homeScoreChange = `${previousPoint.home} → ${point.home} (+${pointsScored})`;
-                        awayScoreChange = `${previousPoint.away} → ${point.away}`;
+                      if (action.team === Team.MY_TEAM) {
+                        myTeamScoreChange = `${previousPoint.myTeam} → ${point.myTeam} (+${pointsScored})`;
+                        opponentScoreChange = `${previousPoint.opponent} → ${point.opponent}`;
                       } else {
-                        homeScoreChange = `${previousPoint.home} → ${point.home}`;
-                        awayScoreChange = `${previousPoint.away} → ${point.away} (+${pointsScored})`;
+                        myTeamScoreChange = `${previousPoint.myTeam} → ${point.myTeam}`;
+                        opponentScoreChange = `${previousPoint.opponent} → ${point.opponent} (+${pointsScored})`;
                       }
                     }
                   }
@@ -546,13 +557,13 @@ export default function EvolutionTab({
                                 <Text style={[styles.tooltipTeamName, { color: colors.text.primary }]}>
                                   {match.my_team_name || "Notre équipe"}
                                 </Text>
-                                {homeScoreChange ? (
+                                {myTeamScoreChange ? (
                                   <Text style={[styles.tooltipScoreChange, { color: colors.text.primary }]}>
-                                    {homeScoreChange}
+                                    {myTeamScoreChange}
                                   </Text>
                                 ) : (
                                   <Text style={[styles.tooltipScoreChange, { color: colors.text.primary }]}>
-                                    {point.home}
+                                    {point.myTeam}
                                   </Text>
                                 )}
                               </View>
@@ -563,13 +574,13 @@ export default function EvolutionTab({
                                 <Text style={[styles.tooltipTeamName, { color: colors.text.secondary }]}>
                                   {match.opponent_name || "Adversaire"}
                                 </Text>
-                                {awayScoreChange ? (
+                                {opponentScoreChange ? (
                                   <Text style={[styles.tooltipScoreChange, { color: colors.text.primary }]}>
-                                    {awayScoreChange}
+                                    {opponentScoreChange}
                                   </Text>
                                 ) : (
                                   <Text style={[styles.tooltipScoreChange, { color: colors.text.primary }]}>
-                                    {point.away}
+                                    {point.opponent}
                                   </Text>
                                 )}
                               </View>

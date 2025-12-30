@@ -92,9 +92,15 @@ export function convertActionsToMatchEvents(
 
 /**
  * Calculates scores from actions (only counting MADE shots)
+ *
+ * @param actions - Array of database actions
+ * @param isHome - Whether my team is playing at home (true) or away (false)
+ *                If not provided, defaults to true (assumes home game)
+ * @returns Object with scoreHome and scoreAway
  */
 export function calculateScoresFromActions(
-  actions: DatabaseAction[]
+  actions: DatabaseAction[],
+  isHome: boolean = true
 ): { scoreHome: number; scoreAway: number } {
   let scoreHome = 0;
   let scoreAway = 0;
@@ -106,10 +112,20 @@ export function calculateScoresFromActions(
       action.points > 0 &&
       action.specification === ShotSpecification.MADE
     ) {
-      if (action.team === Team.MY_TEAM) {
-        scoreHome += action.points;
+      // When at home: MyTeam -> scoreHome, Opponent -> scoreAway
+      // When away: MyTeam -> scoreAway, Opponent -> scoreHome
+      if (isHome) {
+        if (action.team === Team.MY_TEAM) {
+          scoreHome += action.points;
+        } else {
+          scoreAway += action.points;
+        }
       } else {
-        scoreAway += action.points;
+        if (action.team === Team.MY_TEAM) {
+          scoreAway += action.points;
+        } else {
+          scoreHome += action.points;
+        }
       }
     }
   });

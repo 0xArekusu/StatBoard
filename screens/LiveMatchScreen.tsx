@@ -309,7 +309,8 @@ export default function LiveMatchScreen() {
           const players = await playerRepo.getPlayersForMatch(parseInt(resumeMatchId));
 
           // Calculate scores from actions (using the new action type system)
-          const { scoreHome, scoreAway } = calculateScoresFromActions(actions);
+          const isHome = existingMatch.is_home;
+          const { scoreHome, scoreAway } = calculateScoresFromActions(actions, isHome);
 
           // Separate players by team
           const homePlayersFromDB = players.filter((p) => p.team === "MyTeam");
@@ -815,7 +816,8 @@ export default function LiveMatchScreen() {
       logInfo("LiveMatchScreen", "📊 Mock events summary", eventTypes);
 
       // Calculer le nouveau score en utilisant la fonction existante
-      const { scoreHome: newScoreHome, scoreAway: newScoreAway } = calculateScoresFromActions(loadedActions);
+      const isHomeMock = match.location === TeamId.HOME;
+      const { scoreHome: newScoreHome, scoreAway: newScoreAway } = calculateScoresFromActions(loadedActions, isHomeMock);
 
       // Mettre à jour le match
       setMatch({
