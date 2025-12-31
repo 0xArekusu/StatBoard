@@ -102,14 +102,15 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
 
         if (isGuest) {
           const SHOW_ONCE_KEY = '@show_guest_welcome_once';
-          const shouldShow = await AsyncStorage.getItem(SHOW_ONCE_KEY);
+          const shouldShowValue = await AsyncStorage.getItem(SHOW_ONCE_KEY);
+          const shouldShow = shouldShowValue !== null;
 
           logInfo("DashboardScreen", "📱 Guest welcome check", {
             shouldShow,
-            willShow: shouldShow === 'true'
+            willShow: shouldShow
           });
 
-          if (shouldShow === 'true') {
+          if (shouldShow) {
             logInfo("DashboardScreen", "✅ Showing guest welcome modal");
             setShowGuestWelcome(true);
             // Clear the flag so it won't show again on next focus
