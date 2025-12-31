@@ -18,6 +18,10 @@ import BasketballCourtSVG from "../BasketballCourtSVG";
 import { ActionType, ACTION_FILTER } from "../../constants";
 import { PlayerStats, ActionFilterType } from "../../constants/matchDetailsConstants";
 import { getActionColor } from "../../src/models/ActionTypes";
+import {
+  COURT_SVG_WIDTH_PORTRAIT,
+  COURT_SVG_HEIGHT_PORTRAIT,
+} from "../../constants";
 
 interface CourtTabProps {
   stats: PlayerStats[];
@@ -578,9 +582,9 @@ export default function CourtTab({
                   .map((action: any, index: number) => {
                     // Convert normalized coordinates to SVG coordinates
                     const svgX =
-                      action.semanticPosition.xNormalized * 615.75;
+                      action.semanticPosition.xNormalized * COURT_SVG_WIDTH_PORTRAIT;
                     const svgY =
-                      action.semanticPosition.yNormalized * 1146.75;
+                      action.semanticPosition.yNormalized * COURT_SVG_HEIGHT_PORTRAIT;
 
                     // Get marker color from action config
                     const actionType = action.action_type || action.type || "";

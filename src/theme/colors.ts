@@ -52,6 +52,15 @@ export const COMMON_COLORS = {
   transparent: "transparent",
 } as const;
 
+/**
+ * Default court colors when creating a new club
+ * Defined here before Colors so it can be used in theme definitions
+ */
+export const DEFAULT_COURT_COLORS = {
+  background: SLATE_COLORS[500], // Beige/brown basketball court
+  line: "#000000",       // Black lines
+} as const;
+
 // ===========================
 // THEME COLORS
 // ===========================
@@ -102,8 +111,8 @@ export const Colors = {
 
     // Court colors (basketball)
     court: {
-      background: "#1a472a",
-      line: COMMON_COLORS.white,
+      background: DEFAULT_COURT_COLORS.background,
+      line: DEFAULT_COURT_COLORS.line,
     },
 
     // Borders
@@ -165,8 +174,8 @@ export const Colors = {
 
     // Court colors (basketball)
     court: {
-      background: "#0d2e1a",
-      line: COMMON_COLORS.white,
+      background: DEFAULT_COURT_COLORS.background,
+      line: DEFAULT_COURT_COLORS.line,
     },
 
     // Borders
@@ -362,14 +371,6 @@ export const COURT_PRESET_COLORS = [
   "#FF0000", // Red (completing the circle)
 ] as const;
 
-/**
- * Default court colors when creating a new club
- */
-export const DEFAULT_COURT_COLORS = {
-  background: "#1a472a", // Dark green (basketball court)
-  line: "#FFFFFF",       // White lines
-} as const;
-
 // ===========================
 // PDF EXPORT COLORS
 // ===========================
@@ -396,8 +397,8 @@ export const PDF_COLORS = {
 
   // Court colors
   court: {
-    background: DEFAULT_COURT_COLORS.background, // "#1a472a"
-    line: DEFAULT_COURT_COLORS.line,             // "#FFFFFF"
+    background: DEFAULT_COURT_COLORS.background, // "#dab573"
+    line: DEFAULT_COURT_COLORS.line,             // "#000000"
     markerStroke: COMMON_COLORS.white,           // "#FFFFFF"
     markerDefault: ACTION_COLORS.shot.missed,    // "#F44336" - Red
     noData: SLATE_COLORS[400],                   // "#94a3b8" - Gray

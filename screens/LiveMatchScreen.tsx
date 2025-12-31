@@ -68,6 +68,11 @@ import {
   ViewMode,
   FilterMode,
 } from "../constants/liveMatchConstants";
+import {
+  COURT_SVG_WIDTH_PORTRAIT,
+  COURT_SVG_HEIGHT_PORTRAIT,
+} from "../constants";
+import { DEFAULT_COURT_COLORS } from "../src/theme/colors";
 import { supabase } from "../src/config/supabase";
 import { ROUTES } from "../constants/routes";
 import { MatchActionGrid, ActionData } from "../components/MatchActionGrid";
@@ -130,8 +135,8 @@ export default function LiveMatchScreen() {
         periodDuration: matchData.periodDuration || 10,
         events: [] as MatchEvent[],
         clubLogoUrl: matchData.clubLogoUrl || null,
-        courtBackgroundColor: matchData.courtBackgroundColor || "#1a472a",
-        courtLineColor: matchData.courtLineColor || "#FFFFFF",
+        courtBackgroundColor: matchData.courtBackgroundColor || DEFAULT_COURT_COLORS.background,
+        courtLineColor: matchData.courtLineColor || DEFAULT_COURT_COLORS.line,
       };
     }
     // Fallback to mock data
@@ -151,8 +156,8 @@ export default function LiveMatchScreen() {
       periodDuration: 10,
       events: [] as MatchEvent[],
       clubLogoUrl: null,
-      courtBackgroundColor: "#1a472a",
-      courtLineColor: "#FFFFFF",
+      courtBackgroundColor: DEFAULT_COURT_COLORS.background,
+      courtLineColor: DEFAULT_COURT_COLORS.line,
     };
   });
 
@@ -1129,11 +1134,11 @@ export default function LiveMatchScreen() {
     };
     const desc = `${pNumber} - ${pName} - ${getActionDescription(tempAction, pName)}`;
 
-    // Normalize SVG coordinates (0-615.75 x 0-1146.75) to 0-1 for storage in state
+    // Normalize SVG coordinates (0-COURT_SVG_WIDTH_PORTRAIT x 0-COURT_SVG_HEIGHT_PORTRAIT) to 0-1 for storage in state
     const normalizedCoords = coords
       ? {
-          x: coords.x / 615.75,
-          y: coords.y / 1146.75,
+          x: coords.x / COURT_SVG_WIDTH_PORTRAIT,
+          y: coords.y / COURT_SVG_HEIGHT_PORTRAIT,
         }
       : undefined;
 
@@ -1196,9 +1201,9 @@ export default function LiveMatchScreen() {
   ) => {
     if (!currentMatchId) return;
 
-    // Convert SVG portrait coordinates (0-615.75 x 0-1146.75) to normalized (0-1)
-    const normalizedX = coords ? coords.x / 615.75 : -999;
-    const normalizedY = coords ? coords.y / 1146.75 : -999;
+    // Convert SVG portrait coordinates (0-COURT_SVG_WIDTH_PORTRAIT x 0-COURT_SVG_HEIGHT_PORTRAIT) to normalized (0-1)
+    const normalizedX = coords ? coords.x / COURT_SVG_WIDTH_PORTRAIT : -999;
+    const normalizedY = coords ? coords.y / COURT_SVG_HEIGHT_PORTRAIT : -999;
 
     const actionForDB: CreateActionData = {
       match_id: currentMatchId,
@@ -1662,7 +1667,7 @@ const styles = StyleSheet.create({
   court: {
     width: "100%",
     height: "100%",
-    backgroundColor: "#1a472a",
+    backgroundColor: DEFAULT_COURT_COLORS.background,
     borderRadius: 8,
     borderWidth: 2,
     borderColor: SLATE_COLORS[300],

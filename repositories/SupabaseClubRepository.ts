@@ -1,6 +1,7 @@
 import { SupabaseClient } from "@supabase/supabase-js";
 import { Club, CreateClubData, UpdateClubData } from "../models/Club";
 import { IClubRepository } from "./IClubRepository";
+import { DEFAULT_COURT_COLORS } from "../src/theme/colors";
 
 /**
  * Supabase implementation of Club Repository
@@ -30,8 +31,8 @@ export class SupabaseClubRepository implements IClubRepository {
       logoUrl: row.logo_url,
       primaryColor: row.primary_color,
       secondaryColor: row.secondary_color,
-      courtBackgroundColor: row.court_background_color || "#1a472a",
-      courtLineColor: row.court_line_color || "#FFFFFF",
+      courtBackgroundColor: row.court_background_color || DEFAULT_COURT_COLORS.background,
+      courtLineColor: row.court_line_color || DEFAULT_COURT_COLORS.line,
       ownerId: row.owner_id,
       ownerEmail: row.owner_email,
       subscriptionTier: row.subscription_tier || 'free',

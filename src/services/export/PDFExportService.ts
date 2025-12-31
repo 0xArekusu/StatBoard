@@ -12,6 +12,12 @@ import { Team } from "../../models/types";
 import type { CourtMarker } from "../../../components/BasketballCourtSVG";
 import { PDF_COLORS } from "../../theme/colors";
 import { PlatformOS } from "../../../constants";
+import {
+  COURT_SVG_WIDTH_PORTRAIT,
+  COURT_SVG_HEIGHT_PORTRAIT,
+  COURT_SVG_WIDTH_LANDSCAPE,
+  COURT_SVG_HEIGHT_LANDSCAPE,
+} from "../../../constants/courtConstants";
 
 interface Player {
   id: number;
@@ -960,19 +966,19 @@ export class PDFExportService {
     logoUrl?: string | null
   ): string {
     const isPortrait = height > width;
-    const SVG_WIDTH = isPortrait ? 615.75 : 1146.749971;
-    const SVG_HEIGHT = isPortrait ? 1146.749971 : 615.75;
+    const SVG_WIDTH = isPortrait ? COURT_SVG_WIDTH_PORTRAIT : COURT_SVG_WIDTH_LANDSCAPE;
+    const SVG_HEIGHT = isPortrait ? COURT_SVG_HEIGHT_PORTRAIT : COURT_SVG_HEIGHT_LANDSCAPE;
 
     // Convert markers from portrait coordinates to current orientation
     const convertedMarkers = markers.map((marker) => {
       if (isPortrait) {
         return marker;
       }
-      // Convert portrait → landscape: (x, y) → (y, 615.75 - x)
+      // Convert portrait → landscape: (x, y) → (y, COURT_SVG_WIDTH_PORTRAIT - x)
       return {
         ...marker,
         svgX: marker.svgY,
-        svgY: 615.75 - marker.svgX,
+        svgY: COURT_SVG_WIDTH_PORTRAIT - marker.svgX,
       };
     });
 
@@ -1044,8 +1050,8 @@ export class PDFExportService {
     `);
 
     const courtBackgroundPath = isPortrait
-      ? `M0 0h615.75v1146.749971H0z`
-      : `M0 0h1146.749971v615.75H0z`;
+      ? `M0 0h${COURT_SVG_WIDTH_PORTRAIT}v${COURT_SVG_HEIGHT_PORTRAIT}H0z`
+      : `M0 0h${COURT_SVG_WIDTH_LANDSCAPE}v${COURT_SVG_HEIGHT_LANDSCAPE}H0z`;
 
     if (isPortrait) {
       return `
@@ -1314,8 +1320,8 @@ export class PDFExportService {
     const markers: CourtMarker[] = shotActions.map((action, index) => {
       return {
         id: `shot-${index}`,
-        svgX: action.semanticPosition.xNormalized * 615.75,
-        svgY: action.semanticPosition.yNormalized * 1146.749971,
+        svgX: action.semanticPosition.xNormalized * COURT_SVG_WIDTH_PORTRAIT,
+        svgY: action.semanticPosition.yNormalized * COURT_SVG_HEIGHT_PORTRAIT,
         color: getActionColor(action.type, action.specification, action.points),
       };
     });
@@ -1353,8 +1359,8 @@ export class PDFExportService {
     const markers: CourtMarker[] = nonShotActions.map((action, index) => {
       return {
         id: `action-${index}`,
-        svgX: (action.semanticPosition?.xNormalized || 0.5) * 615.75,
-        svgY: (action.semanticPosition?.yNormalized || 0.5) * 1146.749971,
+        svgX: (action.semanticPosition?.xNormalized || 0.5) * COURT_SVG_WIDTH_PORTRAIT,
+        svgY: (action.semanticPosition?.yNormalized || 0.5) * COURT_SVG_HEIGHT_PORTRAIT,
         color: getActionColor(action.type, action.specification, action.points),
       };
     });

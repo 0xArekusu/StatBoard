@@ -14,6 +14,10 @@ import {
 import { ActionType, getActionColor } from "../../src/models/ActionTypes";
 import BasketballCourtSVG from "../BasketballCourtSVG";
 import { useTheme } from "../../src/contexts/ThemeContext";
+import {
+  COURT_SVG_WIDTH_PORTRAIT,
+  COURT_SVG_HEIGHT_PORTRAIT,
+} from "../../constants";
 
 interface CourtViewProps {
   onCourtClick: (x: number, y: number) => void;
@@ -82,9 +86,9 @@ export const CourtView: React.FC<CourtViewProps> = ({
           // Get color from centralized ACTION_CONFIG
           const markerColor = getActionColor(evt.action_type, evt.specification, evt.points);
 
-          // Convert normalized coordinates (0-1) to portrait SVG coordinates (0-615.75 x 0-1146.75)
-          const svgX = evt.coordinates!.x * 615.75;
-          const svgY = evt.coordinates!.y * 1146.75;
+          // Convert normalized coordinates (0-1) to portrait SVG coordinates (0-COURT_SVG_WIDTH_PORTRAIT x 0-COURT_SVG_HEIGHT_PORTRAIT)
+          const svgX = evt.coordinates!.x * COURT_SVG_WIDTH_PORTRAIT;
+          const svgY = evt.coordinates!.y * COURT_SVG_HEIGHT_PORTRAIT;
 
           return {
             id: evt.id,

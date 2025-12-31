@@ -22,6 +22,10 @@ import { Team } from "../../src/models/types";
 import { Club } from "../../models/Club";
 import BasketballCourtSVG from "../BasketballCourtSVG";
 import { getActionColor } from "../../src/models/ActionTypes";
+import {
+  COURT_SVG_WIDTH_PORTRAIT,
+  COURT_SVG_HEIGHT_PORTRAIT,
+} from "../../constants";
 
 interface PlayerDetailModalProps {
   player: PlayerStats | null;
@@ -62,9 +66,10 @@ export default function PlayerDetailModal({
     return playerActions
       .filter((action: any) => action.semanticPosition) // Only actions with position
       .map((action: any, index: number) => {
-        // Convert normalized coordinates to SVG coordinates (landscape mode)
-        const svgX = action.semanticPosition.yNormalized * 1146.75;
-        const svgY = (1 - action.semanticPosition.xNormalized) * 615.75;
+        // BasketballCourtSVG expects portrait coordinates (0-COURT_SVG_WIDTH_PORTRAIT x 0-COURT_SVG_HEIGHT_PORTRAIT)
+        // semanticPosition contains normalized portrait coords (xNormalized, yNormalized)
+        const svgX = action.semanticPosition.xNormalized * COURT_SVG_WIDTH_PORTRAIT;
+        const svgY = action.semanticPosition.yNormalized * COURT_SVG_HEIGHT_PORTRAIT;
 
         // Get marker color from action config
         const actionType = action.action_type || action.type || "";

@@ -1,10 +1,17 @@
 import React from "react";
 import Svg, { Path, G, ClipPath, Defs, Circle, Image } from "react-native-svg";
 import { useTheme } from "../src/contexts/ThemeContext";
+import {
+  COURT_SVG_WIDTH_PORTRAIT,
+  COURT_SVG_HEIGHT_PORTRAIT,
+  COURT_SVG_WIDTH_LANDSCAPE,
+  COURT_SVG_HEIGHT_LANDSCAPE,
+} from "../constants";
+import { DEFAULT_COURT_COLORS } from "../src/theme/colors";
 
 export interface CourtMarker {
   id: string;
-  // SVG coordinates in portrait orientation (0-615.75 x 0-1146.75)
+  // SVG coordinates in portrait orientation (0-COURT_SVG_WIDTH_PORTRAIT x 0-COURT_SVG_HEIGHT_PORTRAIT)
   svgX: number;
   svgY: number;
   // Optional color for the marker
@@ -30,8 +37,8 @@ export default function BasketballCourtSVG({
   width,
   height,
   onCourtPress,
-  backgroundColor = "#1a472a",
-  lineColor = "#FFFFFF",
+  backgroundColor = DEFAULT_COURT_COLORS.background,
+  lineColor = DEFAULT_COURT_COLORS.line,
   markers = [],
   logoUri = null,
 }: BasketballCourtSVGProps) {
@@ -45,8 +52,8 @@ export default function BasketballCourtSVG({
   const isPortrait = height > width;
 
   // SVG viewBox dimensions for different orientations
-  const SVG_WIDTH = isPortrait ? 615.75 : 1146.749971;
-  const SVG_HEIGHT = isPortrait ? 1146.749971 : 615.75;
+  const SVG_WIDTH = isPortrait ? COURT_SVG_WIDTH_PORTRAIT : COURT_SVG_WIDTH_LANDSCAPE;
+  const SVG_HEIGHT = isPortrait ? COURT_SVG_HEIGHT_PORTRAIT : COURT_SVG_HEIGHT_LANDSCAPE;
 
   /**
    * Handle press events on the basketball court SVG
@@ -106,18 +113,18 @@ export default function BasketballCourtSVG({
     // Normalize to portrait coordinates (so landscape and portrait use same coordinate system)
     // This allows us to save one set of coordinates that works for both orientations
     //
-    // Portrait viewBox: 0 0 615.75 1146.75 (narrow and tall)
-    // Landscape viewBox: 0 0 1146.75 615.75 (wide and short)
+    // Portrait viewBox: 0 0 COURT_SVG_WIDTH_PORTRAIT COURT_SVG_HEIGHT_PORTRAIT (narrow and tall)
+    // Landscape viewBox: 0 0 COURT_SVG_WIDTH_LANDSCAPE COURT_SVG_HEIGHT_LANDSCAPE (wide and short)
     //
     // The landscape SVG is the portrait SVG rotated 90° clockwise
     if (!isPortrait) {
       // Transform landscape coords → portrait coords
-      // Rotation: Landscape (x, y) → Portrait (615.75 - y, x)
+      // Rotation: Landscape (x, y) → Portrait (COURT_SVG_WIDTH_PORTRAIT - y, x)
       //
       // Example points:
-      // - Top-left in landscape (0, 0) → Bottom-left in portrait (615.75, 0)
-      // - Bottom-right in landscape (1146.75, 615.75) → Top-right in portrait (0, 1146.75)
-      const portraitX = 615.75 - svgY;
+      // - Top-left in landscape (0, 0) → Bottom-left in portrait (COURT_SVG_WIDTH_PORTRAIT, 0)
+      // - Bottom-right in landscape (COURT_SVG_WIDTH_LANDSCAPE, COURT_SVG_HEIGHT_LANDSCAPE) → Top-right in portrait (0, COURT_SVG_HEIGHT_PORTRAIT)
+      const portraitX = COURT_SVG_WIDTH_PORTRAIT - svgY;
       const portraitY = svgX;
       svgX = portraitX;
       svgY = portraitY;
@@ -130,8 +137,8 @@ export default function BasketballCourtSVG({
   /**
    * Convert portrait SVG coordinates to current orientation
    *
-   * @param portraitX - X in portrait space (0-615.75)
-   * @param portraitY - Y in portrait space (0-1146.75)
+   * @param portraitX - X in portrait space (0-COURT_SVG_WIDTH_PORTRAIT)
+   * @param portraitY - Y in portrait space (0-COURT_SVG_HEIGHT_PORTRAIT)
    * @returns {x, y} in current orientation's SVG space
    */
   const portraitToCurrentOrientation = (
@@ -143,10 +150,10 @@ export default function BasketballCourtSVG({
     }
 
     // Convert portrait → landscape (inverse of the rotation we do on clicks)
-    // Portrait (x, y) → Landscape (y, 615.75 - x)
+    // Portrait (x, y) → Landscape (y, COURT_SVG_WIDTH_PORTRAIT - x)
     return {
       x: portraitY,
-      y: 615.75 - portraitX,
+      y: COURT_SVG_WIDTH_PORTRAIT - portraitX,
     };
   };
 
@@ -235,12 +242,12 @@ export default function BasketballCourtSVG({
   return isPortrait ? (
     <Svg
       width="100%"
-      viewBox="0 0 615.75 1146.749971"
+      viewBox={`0 0 ${COURT_SVG_WIDTH_PORTRAIT} ${COURT_SVG_HEIGHT_PORTRAIT}`}
       height="100%"
       onPress={onCourtPress ? handlePress : undefined}
     >
       {/* Court background */}
-      <Path fill={backgroundColor} d="M0 0h615.75v1146.749971H0z" />
+      <Path fill={backgroundColor} d={`M0 0h${COURT_SVG_WIDTH_PORTRAIT}v${COURT_SVG_HEIGHT_PORTRAIT}H0z`} />
 
       <Defs>
         <ClipPath id="a">
@@ -585,13 +592,13 @@ export default function BasketballCourtSVG({
     </Svg>
   ) : (
     <Svg
-      viewBox="0 0 1146.749971 615.75"
+      viewBox={`0 0 ${COURT_SVG_WIDTH_LANDSCAPE} ${COURT_SVG_HEIGHT_LANDSCAPE}`}
       width="100%"
       height="100%"
       onPress={onCourtPress ? handlePress : undefined}
     >
       {/* Court background */}
-      <Path fill={backgroundColor} d="M0 0h1146.749971v615.75H0z" />
+      <Path fill={backgroundColor} d={`M0 0h${COURT_SVG_WIDTH_LANDSCAPE}v${COURT_SVG_HEIGHT_LANDSCAPE}H0z`} />
 
       <Defs>
         <ClipPath id="a">
