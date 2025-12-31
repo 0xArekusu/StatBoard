@@ -15,6 +15,7 @@ import {
 import { useFocusEffect } from "@react-navigation/native";
 import { Picker } from "@react-native-picker/picker";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useTheme } from "../src/contexts/ThemeContext";
 import { useAuth } from "../src/contexts/AuthContext";
 import { ServiceFactory } from "../services/ServiceFactory";
@@ -27,6 +28,7 @@ import JerseyIconSimple from "../components/icons/JerseySimpleIcon";
 import DashboardStatsCards from "../components/dashboard/DashboardStatsCards";
 import DashboardResumeMatchModal from "../components/dashboard/DashboardResumeMatchModal";
 import DashboardRecentMatches from "../components/dashboard/DashboardRecentMatches";
+import GuestWelcomeModal from "../components/GuestWelcomeModal";
 import { ROUTES } from "../constants/routes";
 
 /**
@@ -70,6 +72,7 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
   );
   const [isNewMatchFlow, setIsNewMatchFlow] = useState(false); // true if opened from "Nouveau match" button
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [showGuestWelcome, setShowGuestWelcome] = useState(false);
 
   const isGuest = !user;
   const userName =
@@ -87,6 +90,37 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
 
     return () => backHandler.remove();
   }, []);
+
+  /**
+   * Check if guest welcome modal should be shown
+   * Checks on every focus if we need to show the welcome modal
+   */
+  useFocusEffect(
+    useCallback(() => {
+      const checkGuestWelcome = async () => {
+        logInfo("DashboardScreen", "🔍 Checking guest welcome on focus", { isGuest });
+
+        if (isGuest) {
+          const SHOW_ONCE_KEY = '@show_guest_welcome_once';
+          const shouldShow = await AsyncStorage.getItem(SHOW_ONCE_KEY);
+
+          logInfo("DashboardScreen", "📱 Guest welcome check", {
+            shouldShow,
+            willShow: shouldShow === 'true'
+          });
+
+          if (shouldShow === 'true') {
+            logInfo("DashboardScreen", "✅ Showing guest welcome modal");
+            setShowGuestWelcome(true);
+            // Clear the flag so it won't show again on next focus
+            await AsyncStorage.removeItem(SHOW_ONCE_KEY);
+          }
+        }
+      };
+
+      checkGuestWelcome();
+    }, [isGuest])
+  );
 
   /**
    * Reload dashboard data when:
@@ -477,6 +511,13 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
     } as never);
   };
 
+  /**
+   * Closes the guest welcome modal
+   */
+  const handleCloseGuestWelcome = () => {
+    setShowGuestWelcome(false);
+  };
+
   if (loading) {
     return (
       <View
@@ -496,6 +537,12 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
 
   return (
     <>
+      {/* Guest Welcome Modal */}
+      <GuestWelcomeModal
+        visible={showGuestWelcome}
+        onClose={handleCloseGuestWelcome}
+      />
+
       {/* Resume Match Modal */}
       <DashboardResumeMatchModal
         visible={!!liveMatchToResume}

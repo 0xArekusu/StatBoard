@@ -29,7 +29,10 @@ export default function AuthScreen() {
   /**
    * Handles guest login - navigates directly to main app without authentication
    */
-  const handleGuestLogin = () => {
+  const handleGuestLogin = async () => {
+    // Set a flag to show guest welcome modal on next dashboard visit
+    const AsyncStorage = (await import('@react-native-async-storage/async-storage')).default;
+    await AsyncStorage.setItem('@show_guest_welcome_once', 'true');
     navigation.navigate(ROUTES.MAIN_TABS as never);
   };
 
