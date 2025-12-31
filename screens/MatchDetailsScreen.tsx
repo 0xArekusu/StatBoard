@@ -570,6 +570,8 @@ export default function MatchDetailsScreen() {
         onClose={() => setViewPlayer(null)}
         myTeamName={match.my_team_name || "Notre équipe"}
         opponentName={match.opponent_name}
+        actions={actions}
+        club={club}
       />
 
       {/* HEADER */}

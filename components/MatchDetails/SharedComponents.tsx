@@ -50,7 +50,7 @@ export const ShootingBar: React.FC<ShootingBarProps> = ({
         <View
           style={[
             styles.shootingBarTrack,
-            { backgroundColor: isDark ? colors.surfaceVariant : colors.border },
+            { backgroundColor: isDark ? colors.surface : colors.surfaceVariant },
             compact && styles.shootingBarTrackCompact,
           ]}
         >
@@ -92,25 +92,23 @@ interface StatBoxProps {
 }
 
 export const StatBox: React.FC<StatBoxProps> = ({ label, value, sub }) => {
-  const { isDark, colors } = useTheme();
-  const bgColor = isDark ? colors.background : colors.surface;
-  const borderColor = isDark ? colors.surfaceVariant : colors.border;
-  const textPrimary = isDark ? colors.text.primary : colors.text.primary;
-  const textTertiary = isDark ? colors.text.tertiary : colors.text.secondary;
+  const { colors } = useTheme();
+  const textPrimary = colors.text.primary;
+  const textSecondary = colors.text.secondary;
 
   return (
     <View
       style={[
         styles.statBox,
-        { backgroundColor: bgColor, borderColor: borderColor },
+        { backgroundColor: colors.surfaceVariant },
       ]}
     >
-      <Text style={[styles.statBoxLabel, { color: textTertiary }]}>
+      <Text style={[styles.statBoxLabel, { color: textSecondary }]}>
         {label}
       </Text>
       <Text style={[styles.statBoxValue, { color: textPrimary }]}>{value}</Text>
       {sub && (
-        <Text style={[styles.statBoxSub, { color: textTertiary }]}>{sub}</Text>
+        <Text style={[styles.statBoxSub, { color: textSecondary }]}>{sub}</Text>
       )}
     </View>
   );
@@ -176,7 +174,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     padding: 8,
     borderRadius: 8,
-    borderWidth: 1,
   },
   statBoxLabel: {
     fontSize: 8,

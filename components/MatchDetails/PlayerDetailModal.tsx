@@ -5,7 +5,7 @@
  * Extracted from MatchDetailsScreen for better modularity.
  */
 
-import React from "react";
+import React, { useMemo } from "react";
 import {
   View,
   Text,
@@ -19,12 +19,17 @@ import { useTheme } from "../../src/contexts/ThemeContext";
 import { PlayerStats } from "../../constants/matchDetailsConstants";
 import { ShootingBar, StatBox } from "./SharedComponents";
 import { Team } from "../../src/models/types";
+import { Club } from "../../models/Club";
+import BasketballCourtSVG from "../BasketballCourtSVG";
+import { getActionColor } from "../../src/models/ActionTypes";
 
 interface PlayerDetailModalProps {
   player: PlayerStats | null;
   onClose: () => void;
   myTeamName?: string;
   opponentName?: string;
+  actions?: any[];
+  club?: Club | null;
 }
 
 export default function PlayerDetailModal({
@@ -32,16 +37,54 @@ export default function PlayerDetailModal({
   onClose,
   myTeamName = "Notre équipe",
   opponentName = "Adversaire",
+  actions = [],
+  club = null,
 }: PlayerDetailModalProps) {
-  const { colors, isDark } = useTheme();
-  const bgColor = isDark ? colors.background : colors.surface;
-  const surfaceColor = isDark ? colors.surface : colors.background;
-  const borderColor = isDark ? colors.surfaceVariant : colors.border;
-  const textPrimary = isDark ? colors.text.primary : colors.text.primary;
-  const textSecondary = isDark ? colors.text.secondary : colors.text.secondary;
-  const textTertiary = isDark ? colors.text.tertiary : colors.text.secondary;
+  const { colors } = useTheme();
+  const textPrimary = colors.text.primary;
+  const textSecondary = colors.text.secondary;
+  const textTertiary = colors.text.tertiary;
 
   if (!player) return null;
+
+  // Filter actions for this specific player
+  const playerActions = useMemo(() => {
+    if (!actions || actions.length === 0) return [];
+
+    return actions.filter((action) => {
+      const playerNum = action.player_number || action.player;
+      return action.team === player.team && playerNum === player.playerNumber;
+    });
+  }, [actions, player]);
+
+  // Create markers for court visualization
+  const courtMarkers = useMemo(() => {
+    return playerActions
+      .filter((action: any) => action.semanticPosition) // Only actions with position
+      .map((action: any, index: number) => {
+        // Convert normalized coordinates to SVG coordinates (landscape mode)
+        const svgX = action.semanticPosition.yNormalized * 1146.75;
+        const svgY = (1 - action.semanticPosition.xNormalized) * 615.75;
+
+        // Get marker color from action config
+        const actionType = action.action_type || action.type || "";
+        const specification = action.specification || "";
+        const points = action.points;
+
+        const markerColor = getActionColor(actionType, specification, points);
+
+        return {
+          id: `${action.team}-${action.player || action.player_number}-${action.timestamp || index}-${index}`,
+          svgX,
+          svgY,
+          color: markerColor,
+        };
+      });
+  }, [playerActions]);
+
+  // Court colors
+  const courtBackgroundColor = club?.courtBackgroundColor || colors.court.background;
+  const courtLineColor = club?.courtLineColor || colors.court.line;
 
   return (
     <Modal
@@ -52,14 +95,14 @@ export default function PlayerDetailModal({
     >
       <View style={styles.modalOverlay}>
         <View
-          style={[styles.modalContent, { backgroundColor: surfaceColor }]}
+          style={[styles.modalContent, { backgroundColor: colors.surface }]}
         >
           {/* Modal Header */}
           <View style={styles.modalHeader}>
             <View
               style={[
                 styles.modalHeaderBg,
-                { backgroundColor: colors.primary },
+                { backgroundColor: colors.surfaceVariant },
               ]}
             />
             <TouchableOpacity
@@ -74,7 +117,7 @@ export default function PlayerDetailModal({
                 style={[
                   styles.playerAvatarCircle,
                   {
-                    borderColor: surfaceColor,
+                    borderColor: colors.surface,
                     backgroundColor: colors.surfaceVariant,
                   },
                 ]}
@@ -96,9 +139,14 @@ export default function PlayerDetailModal({
             showsVerticalScrollIndicator={false}
           >
             <View style={styles.modalPlayerInfo}>
-              <Text style={[styles.modalPlayerName, { color: textPrimary }]}>
-                {player.name}
-              </Text>
+              <View style={styles.modalPlayerNameRow}>
+                <Text style={[styles.modalPlayerName, { color: textPrimary }]}>
+                  {player.name}
+                </Text>
+                <Text style={[styles.modalPlayerNumber, { color: textSecondary }]}>
+                  - #{player.playerNumber}
+                </Text>
+              </View>
               <Text style={[styles.modalPlayerTeam, { color: textSecondary }]}>
                 {player.team === Team.MY_TEAM ? myTeamName : opponentName}
               </Text>
@@ -106,12 +154,20 @@ export default function PlayerDetailModal({
 
             {/* Main Stats Grid */}
             <View style={styles.mainStatsGrid}>
-              <View style={[styles.statCard, { backgroundColor: bgColor }]}>
+              <View style={[styles.statCard, { backgroundColor: colors.surfaceVariant }]}>
                 <Text style={[styles.statCardValue, { color: textPrimary }]}>
                   {player.min}'
                 </Text>
-                <Text style={[styles.statCardLabel, { color: textTertiary }]}>
+                <Text style={[styles.statCardLabel, { color: textSecondary }]}>
                   Temps
+                </Text>
+              </View>
+              <View style={[styles.statCard, { backgroundColor: colors.surfaceVariant }]}>
+                <Text style={[styles.statCardValue, { color: textPrimary }]}>
+                  {player.pts}
+                </Text>
+                <Text style={[styles.statCardLabel, { color: textSecondary }]}>
+                  Points
                 </Text>
               </View>
               <View
@@ -119,107 +175,98 @@ export default function PlayerDetailModal({
                   styles.statCard,
                   {
                     backgroundColor: colors.surfaceVariant,
+                    borderWidth: 2,
                     borderColor: colors.primary,
                   },
                 ]}
               >
-                <Text
-                  style={[styles.statCardValue, { color: colors.primary }]}
-                >
-                  {player.pts}
-                </Text>
-                <Text
-                  style={[styles.statCardLabel, { color: colors.primary }]}
-                >
-                  Points
-                </Text>
-              </View>
-              <View style={[styles.statCard, { backgroundColor: bgColor }]}>
-                <Text style={[styles.statCardValue, { color: textPrimary }]}>
+                <Text style={[styles.statCardValue, { color: colors.primary }]}>
                   {player.eff}
                 </Text>
-                <Text style={[styles.statCardLabel, { color: textTertiary }]}>
+                <Text style={[styles.statCardLabel, { color: colors.primary }]}>
                   Éval
                 </Text>
               </View>
             </View>
 
             {/* Shooting Stats */}
-            <View
-              style={[
-                styles.shootingSection,
-                {
-                  backgroundColor: bgColor,
-                  borderColor: borderColor,
-                },
-              ]}
-            >
+            <View style={styles.shootingSection}>
               <Text style={[styles.sectionTitle, { color: textPrimary }]}>
-                🎯 Performance aux tirs
+                Performance aux tirs
               </Text>
-              <ShootingBar
-                label="3 Points"
-                made={player.fg3m}
-                attempted={player.fg3a}
-                color="#6366f1"
-              />
-              <ShootingBar
-                label="2 Points"
-                made={player.fg2m}
-                attempted={player.fg2a}
-                color="#3b82f6"
-              />
-              <ShootingBar
-                label="Lancers"
-                made={player.ftm}
-                attempted={player.fta}
-                color="#06b6d4"
-              />
-
               <View
                 style={[
-                  styles.shootingSummary,
-                  { borderTopColor: borderColor },
+                  styles.shootingCard,
+                  {
+                    backgroundColor: colors.surfaceVariant,
+                    borderColor: colors.border,
+                  },
                 ]}
               >
-                <View style={styles.shootingSummaryItem}>
-                  <Text
-                    style={[
-                      styles.shootingSummaryValue,
-                      { color: textPrimary },
-                    ]}
-                  >
-                    {player.fgm}/{player.fga}
-                  </Text>
-                  <Text
-                    style={[
-                      styles.shootingSummaryLabel,
-                      { color: textTertiary },
-                    ]}
-                  >
-                    TOTAL TIRS
-                  </Text>
-                </View>
-                <View style={styles.shootingSummaryItem}>
-                  <Text
-                    style={[
-                      styles.shootingSummaryValue,
-                      { color: textPrimary },
-                    ]}
-                  >
-                    {player.fga > 0
-                      ? Math.round((player.fgm / player.fga) * 100)
-                      : 0}
-                    %
-                  </Text>
-                  <Text
-                    style={[
-                      styles.shootingSummaryLabel,
-                      { color: textTertiary },
-                    ]}
-                  >
-                    RÉUSSITE
-                  </Text>
+                <ShootingBar
+                  label="3 Points"
+                  made={player.fg3m}
+                  attempted={player.fg3a}
+                  color="#6366f1"
+                />
+                <ShootingBar
+                  label="2 Points"
+                  made={player.fg2m}
+                  attempted={player.fg2a}
+                  color="#3b82f6"
+                />
+                <ShootingBar
+                  label="Lancers"
+                  made={player.ftm}
+                  attempted={player.fta}
+                  color="#06b6d4"
+                />
+
+                <View
+                  style={[
+                    styles.shootingSummary,
+                    { borderTopColor: colors.border },
+                  ]}
+                >
+                  <View style={styles.shootingSummaryItem}>
+                    <Text
+                      style={[
+                        styles.shootingSummaryValue,
+                        { color: textPrimary },
+                      ]}
+                    >
+                      {player.fgm}/{player.fga}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.shootingSummaryLabel,
+                        { color: textTertiary },
+                      ]}
+                    >
+                      TOTAL TIRS
+                    </Text>
+                  </View>
+                  <View style={styles.shootingSummaryItem}>
+                    <Text
+                      style={[
+                        styles.shootingSummaryValue,
+                        { color: textPrimary },
+                      ]}
+                    >
+                      {player.fga > 0
+                        ? Math.round((player.fgm / player.fga) * 100)
+                        : 0}
+                      %
+                    </Text>
+                    <Text
+                      style={[
+                        styles.shootingSummaryLabel,
+                        { color: textTertiary },
+                      ]}
+                    >
+                      RÉUSSITE
+                    </Text>
+                  </View>
                 </View>
               </View>
             </View>
@@ -238,6 +285,29 @@ export default function PlayerDetailModal({
                 <StatBox label="FTE" value={player.pf} sub="Fautes" />
               </View>
             </View>
+
+            {/* Court View */}
+            {courtMarkers.length > 0 && (
+              <View style={styles.courtSection}>
+                <Text style={[styles.sectionTitle, { color: textPrimary }]}>
+                  Carte des actions
+                </Text>
+                <View
+                  style={[
+                    styles.courtContainer,
+                    { backgroundColor: courtBackgroundColor },
+                  ]}
+                >
+                  <BasketballCourtSVG
+                    width={600}
+                    height={350}
+                    backgroundColor={courtBackgroundColor}
+                    lineColor={courtLineColor}
+                    markers={courtMarkers}
+                  />
+                </View>
+              </View>
+            )}
           </ScrollView>
         </View>
       </View>
@@ -254,13 +324,13 @@ const styles = StyleSheet.create({
   modalContent: {
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    maxHeight: "90%",
+    height: "95%",
     overflow: "hidden",
   },
   modalHeader: {
     position: "relative",
-    paddingTop: 48,
-    paddingBottom: 80,
+    paddingTop: 28,
+    paddingBottom: 10,
     alignItems: "center",
   },
   modalHeaderBg: {
@@ -283,7 +353,8 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   modalPlayerAvatar: {
-    marginTop: 16,
+    marginTop: 0,
+    marginBottom: 10,
   },
   playerAvatarCircle: {
     width: 80,
@@ -298,18 +369,28 @@ const styles = StyleSheet.create({
     fontWeight: "900",
   },
   modalScroll: {
-    flex: 1,
+    flexGrow: 1,
   },
   modalPlayerInfo: {
     alignItems: "center",
     paddingHorizontal: 24,
     marginBottom: 24,
   },
+  modalPlayerNameRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 4,
+  },
   modalPlayerName: {
     fontSize: 24,
     fontWeight: "900",
-    marginBottom: 4,
     textAlign: "center",
+  },
+  modalPlayerNumber: {
+    fontSize: 18,
+    marginTop: 5,
+    fontWeight: "700",
   },
   modalPlayerTeam: {
     fontSize: 14,
@@ -340,11 +421,13 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   shootingSection: {
-    marginHorizontal: 24,
+    paddingHorizontal: 24,
+    marginBottom: 32,
+  },
+  shootingCard: {
     padding: 20,
     borderRadius: 16,
     borderWidth: 1,
-    marginBottom: 32,
   },
   sectionTitle: {
     fontSize: 12,
@@ -383,5 +466,17 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 12,
+  },
+  courtSection: {
+    paddingHorizontal: 30,
+    marginBottom: 32,
+    height: 380,
+  },
+  courtContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 20,
+    borderRadius: 16,
+    overflow: "hidden",
   },
 });
