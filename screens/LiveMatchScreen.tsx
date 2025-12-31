@@ -1250,13 +1250,13 @@ export default function LiveMatchScreen() {
 
     const newEvent: MatchEvent = {
       id: `evt-${Date.now()}`,
-      type: "POINT" as any,
-      value,
+      action_type: "POINT",
       teamId: TeamId.AWAY,
       timestamp: Date.now(),
       description: `${match.opponent || "Adversaire"} +${value}`,
       period_number: quarter,
       time_in_period: periodDurationMin * 60 - timer,
+      points: value,
     };
     if (!updatedMatch.events) updatedMatch.events = [];
     updatedMatch.events = [newEvent, ...updatedMatch.events];

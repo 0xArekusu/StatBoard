@@ -541,8 +541,7 @@ export default function MatchDetailsScreen() {
   // Court colors and logo (from club or default values)
   const courtBackgroundColor = club?.courtBackgroundColor || colors.court.background;
   const courtLineColor = club?.courtLineColor || colors.court.line;
-  const defaultLogoUri = require("../components/icons/coachassistant-logo-margin.png");
-  const logoUri = club?.logoUrl || defaultLogoUri;
+  const logoUri = club?.logoUrl;
 
   // ========================================
   // LOADING SCREEN

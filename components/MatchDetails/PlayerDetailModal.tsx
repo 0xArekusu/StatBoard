@@ -40,12 +40,12 @@ export default function PlayerDetailModal({
   actions = [],
   club = null,
 }: PlayerDetailModalProps) {
+  if (!player) return null;
+
   const { colors } = useTheme();
   const textPrimary = colors.text.primary;
   const textSecondary = colors.text.secondary;
   const textTertiary = colors.text.tertiary;
-
-  if (!player) return null;
 
   // Filter actions for this specific player
   const playerActions = useMemo(() => {

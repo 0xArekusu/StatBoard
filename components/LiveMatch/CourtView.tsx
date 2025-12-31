@@ -94,10 +94,6 @@ export const CourtView: React.FC<CourtViewProps> = ({
           };
         }) || []
     : [];
-
-  const defaultLogoUri = require("../icons/coachassistant-logo-margin.png");
-  const logoUri = clubLogoUrl || defaultLogoUri;
-
   return (
     <View style={styles.courtContainer} onLayout={handleLayout}>
       <BasketballCourtSVG
@@ -108,7 +104,7 @@ export const CourtView: React.FC<CourtViewProps> = ({
         }}
         backgroundColor={courtBackgroundColor}
         lineColor={courtLineColor}
-        logoUri={logoUri}
+        logoUri={clubLogoUrl}
         markers={markers}
       />
     </View>

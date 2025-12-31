@@ -659,7 +659,7 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
                   {
                     backgroundColor: colors.surfaceVariant,
                     borderColor:
-                      club && club.logoUrl ? colors.primary : colors.border,
+                      colors.primary,
                   },
                 ]}
               >

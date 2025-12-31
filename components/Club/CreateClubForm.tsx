@@ -352,10 +352,7 @@ export default function CreateClubForm({
           backgroundColor={formData.courtColor}
           lineColor={formData.courtLinesColor}
           logoUri={
-            formData.logoUri ||
-            Image.resolveAssetSource(
-              require("../icons/coachassistant-logo-margin.png"),
-            ).uri
+            formData.logoUri
           }
           width={320}
           height={180}

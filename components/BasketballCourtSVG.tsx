@@ -36,6 +36,11 @@ export default function BasketballCourtSVG({
   logoUri = null,
 }: BasketballCourtSVGProps) {
   const { colors } = useTheme();
+
+  // Use default Coach Assistant logo if no logo is provided
+  const defaultLogoUri = require("../components/icons/coachassistant-logo-margin.png");
+  const finalLogoUri = logoUri || defaultLogoUri;
+
   // Calculate court elements proportionally
   const isPortrait = height > width;
 
@@ -175,7 +180,7 @@ export default function BasketballCourtSVG({
    * Center circle radius: 76 (152/2 from clipPath size)
    */
   const renderCenterLogo = () => {
-    if (!logoUri) return null;
+    if (!finalLogoUri) return null;
 
     const radius = 76; // Match the filled circle radius (152/2)
     const logoSize = radius * 2;
@@ -192,7 +197,7 @@ export default function BasketballCourtSVG({
             </ClipPath>
           </Defs>
           <Image
-            href={logoUri}
+            href={finalLogoUri}
             x={centerX - logoSize / 2}
             y={centerY - logoSize / 2}
             width={logoSize}
@@ -214,7 +219,7 @@ export default function BasketballCourtSVG({
             </ClipPath>
           </Defs>
           <Image
-            href={logoUri}
+            href={finalLogoUri}
             x={centerX - logoSize / 2}
             y={centerY - logoSize / 2}
             width={logoSize}
