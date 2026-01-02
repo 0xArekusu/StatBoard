@@ -14,6 +14,7 @@ import { ClubFormData, CLUB_COLOR_PALETTE, COURT_COLOR_PALETTE } from "../../con
 import CourtPreview from "./CourtPreview";
 import JerseyIconSimple from "../icons/JerseySimpleIcon";
 import ColorPickerModal from "./ColorPickerModal";
+import { COACH_ASSISTANT_LOGO_MARGIN } from "../../src/utils/logoHelper";
 
 interface CreateClubFormProps {
   formData: ClubFormData;
@@ -58,7 +59,7 @@ export default function CreateClubForm({
             />
           ) : (
             <Image
-              source={require("../icons/coachassistant-logo-margin.png")}
+              source={COACH_ASSISTANT_LOGO_MARGIN}
               style={styles.logoImage}
             />
           )}

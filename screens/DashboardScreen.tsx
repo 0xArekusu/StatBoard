@@ -30,6 +30,7 @@ import DashboardResumeMatchModal from "../components/dashboard/DashboardResumeMa
 import DashboardRecentMatches from "../components/dashboard/DashboardRecentMatches";
 import GuestWelcomeModal from "../components/GuestWelcomeModal";
 import { ROUTES } from "../constants/routes";
+import { COACH_ASSISTANT_LOGO_MARGIN } from "../src/utils/logoHelper";
 
 /**
  * DashboardScreen navigation prop type
@@ -670,7 +671,7 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
                   />
                 ) : (
                   <Image
-                    source={require("../components/icons/coachassistant-logo-margin.png")}
+                    source={COACH_ASSISTANT_LOGO_MARGIN}
                     style={styles.clubLogoImage}
                   />
                 )}

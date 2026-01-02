@@ -15,6 +15,7 @@ import { Team } from "../../models/Team";
 import { SubscriptionTier, SUBSCRIPTION_LIMITS } from "../../models/Subscription";
 import { ClubSubTab, CLUB_SUB_TAB } from "../../constants";
 import TeamCard from "./TeamCard";
+import { COACH_ASSISTANT_LOGO_MARGIN } from "../../src/utils/logoHelper";
 
 interface ClubInfoViewProps {
   club: Club;
@@ -147,7 +148,7 @@ export default function ClubInfoView({
                   />
                 ) : (
                   <Image
-                    source={require("../../components/icons/coachassistant-logo-margin.png")}
+                    source={COACH_ASSISTANT_LOGO_MARGIN}
                     style={styles.clubLogoImage}
                   />
                 )}

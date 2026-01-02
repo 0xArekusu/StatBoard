@@ -13,6 +13,7 @@ import {
   ScrollView,
   TouchableOpacity,
   Modal,
+  Image,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../../src/contexts/ThemeContext";
@@ -22,6 +23,7 @@ import { Team } from "../../src/models/types";
 import { Club } from "../../models/Club";
 import BasketballCourtSVG from "../BasketballCourtSVG";
 import { getActionColor } from "../../src/models/ActionTypes";
+import { COACH_ASSISTANT_LOGO_NO_BG } from "../../src/utils/logoHelper";
 import {
   COURT_SVG_WIDTH_PORTRAIT,
   COURT_SVG_HEIGHT_PORTRAIT,
@@ -109,6 +111,10 @@ export default function PlayerDetailModal({
                 styles.modalHeaderBg,
                 { backgroundColor: colors.surfaceVariant },
               ]}
+            />
+            <Image
+              source={COACH_ASSISTANT_LOGO_NO_BG}
+              style={styles.modalLogo}
             />
             <TouchableOpacity
               onPress={onClose}
@@ -344,6 +350,14 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: 120,
+  },
+  modalLogo: {
+    position: "absolute",
+    top: -20,
+    left: 60,
+    width: 150,
+    height: 150,
+    zIndex: 10,
   },
   modalCloseButton: {
     position: "absolute",

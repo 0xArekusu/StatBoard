@@ -1,6 +1,7 @@
 import React from "react";
 import Svg, { Path, G, ClipPath, Defs, Circle, Image } from "react-native-svg";
 import { useTheme } from "../src/contexts/ThemeContext";
+import { COACH_ASSISTANT_LOGO_MARGIN } from "../src/utils/logoHelper";
 import {
   COURT_SVG_WIDTH_PORTRAIT,
   COURT_SVG_HEIGHT_PORTRAIT,
@@ -45,8 +46,7 @@ export default function BasketballCourtSVG({
   const { colors } = useTheme();
 
   // Use default Coach Assistant logo if no logo is provided
-  const defaultLogoUri = require("../components/icons/coachassistant-logo-margin.png");
-  const finalLogoUri = logoUri || defaultLogoUri;
+  const finalLogoUri = logoUri || COACH_ASSISTANT_LOGO_MARGIN;
 
   // Calculate court elements proportionally
   const isPortrait = height > width;

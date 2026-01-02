@@ -12,6 +12,7 @@ import { Team } from "../../models/types";
 import type { CourtMarker } from "../../../components/BasketballCourtSVG";
 import { PDF_COLORS } from "../../theme/colors";
 import { PlatformOS } from "../../../constants";
+import { COACH_ASSISTANT_LOGO_MARGIN } from "../../utils/logoHelper";
 import {
   COURT_SVG_WIDTH_PORTRAIT,
   COURT_SVG_HEIGHT_PORTRAIT,
@@ -150,10 +151,8 @@ export class PDFExportService {
       // In React Native, we need to use Asset from expo-asset to load local images
       const { Asset } = require('expo-asset');
 
-      // Use absolute path from project root - adjust based on file structure
-      // PDFExportService is in src/services/export, logo is in components/icons
-      const logoModule = require('../../../components/icons/coachassistant-logo-margin.png');
-      const asset = Asset.fromModule(logoModule);
+      // Use logo from centralized helper
+      const asset = Asset.fromModule(COACH_ASSISTANT_LOGO_MARGIN);
 
       // Ensure the asset is downloaded/available locally
       await asset.downloadAsync();
