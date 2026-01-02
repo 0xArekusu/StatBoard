@@ -95,6 +95,8 @@ export const CourtView: React.FC<CourtViewProps> = ({
             svgX,
             svgY,
             color: markerColor,
+            actionType: evt.action_type,
+            specification: evt.specification,
           };
         }) || []
     : [];

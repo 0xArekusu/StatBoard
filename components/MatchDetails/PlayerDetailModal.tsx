@@ -85,6 +85,8 @@ export default function PlayerDetailModal({
           svgX,
           svgY,
           color: markerColor,
+          actionType: actionType,
+          specification: specification,
         };
       });
   }, [playerActions]);

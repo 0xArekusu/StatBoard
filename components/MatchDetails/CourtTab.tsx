@@ -600,6 +600,8 @@ export default function CourtTab({
                       svgX,
                       svgY,
                       color: markerColor,
+                      actionType: actionType,
+                      specification: specification,
                     };
                   }) || []
               }

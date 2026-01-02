@@ -39,8 +39,6 @@ export function MatchHeader({
   const { colors } = useTheme();
   const amIHome = match.location === TeamId.HOME;
 
-  console.log('[MatchHeader] Location:', match.location, 'amIHome:', amIHome);
-
   const bgColor = colors.background;
   const surfaceColor = colors.surface;
   const textPrimary = colors.text.primary;

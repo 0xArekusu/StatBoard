@@ -1,5 +1,5 @@
 import React from "react";
-import Svg, { Path, G, ClipPath, Defs, Circle, Image } from "react-native-svg";
+import Svg, { Path, G, ClipPath, Defs, Circle, Image, Line, Polygon } from "react-native-svg";
 import { useTheme } from "../src/contexts/ThemeContext";
 import { COACH_ASSISTANT_LOGO_MARGIN } from "../src/utils/logoHelper";
 import {
@@ -9,6 +9,7 @@ import {
   COURT_SVG_HEIGHT_LANDSCAPE,
 } from "../constants";
 import { DEFAULT_COURT_COLORS } from "../src/theme/colors";
+import { ActionType, ShotSpecification } from "../src/models/ActionTypes";
 
 export interface CourtMarker {
   id: string;
@@ -17,6 +18,10 @@ export interface CourtMarker {
   svgY: number;
   // Optional color for the marker
   color?: string;
+  // Action type for marker shape rendering
+  actionType?: string;
+  // Shot specification (for distinguishing made/missed shots)
+  specification?: string;
 }
 
 interface BasketballCourtSVGProps {
@@ -164,15 +169,90 @@ export default function BasketballCourtSVG({
   const renderMarkers = () => {
     return markers.map((marker) => {
       const pos = portraitToCurrentOrientation(marker.svgX, marker.svgY);
+      const color = marker.color || "#FF0000";
+      const size = 8;
 
+      // Shot made: empty circle (border only)
+      if (marker.actionType === ActionType.SHOT && marker.specification === ShotSpecification.MADE) {
+        return (
+          <G key={marker.id}>
+            <Circle
+              cx={pos.x}
+              cy={pos.y}
+              r={size}
+              fill="none"
+              stroke={color}
+              strokeWidth="5"
+            />
+          </G>
+        );
+      }
+
+      // Shot missed: cross (X)
+      if (marker.actionType === ActionType.SHOT && marker.specification === ShotSpecification.MISSED) {
+        return (
+          <G key={marker.id}>
+            <Line
+              x1={pos.x - size}
+              y1={pos.y - size}
+              x2={pos.x + size}
+              y2={pos.y + size}
+              stroke={color}
+              strokeWidth="5"
+              strokeLinecap="round"
+            />
+            <Line
+              x1={pos.x + size}
+              y1={pos.y - size}
+              x2={pos.x - size}
+              y2={pos.y + size}
+              stroke={color}
+              strokeWidth="5"
+              strokeLinecap="round"
+            />
+          </G>
+        );
+      }
+
+      // Rebound: triangle
+      if (marker.actionType === ActionType.REBOUND) {
+        const height = size * 1.2;
+        const width = size * 1.2;
+        return (
+          <G key={marker.id}>
+            <Polygon
+              points={`${pos.x},${pos.y - height} ${pos.x + width},${pos.y + height} ${pos.x - width},${pos.y + height}`}
+              fill={color}
+              stroke="#FFFFFF"
+              strokeWidth="1"
+            />
+          </G>
+        );
+      }
+
+      // Foul: diamond (losange)
+      if (marker.actionType === ActionType.FOUL) {
+        const diamondSize = size * 1.2;
+        return (
+          <G key={marker.id}>
+            <Polygon
+              points={`${pos.x},${pos.y - diamondSize} ${pos.x + diamondSize},${pos.y} ${pos.x},${pos.y + diamondSize} ${pos.x - diamondSize},${pos.y}`}
+              fill={color}
+              stroke="#FFFFFF"
+              strokeWidth="2"
+            />
+          </G>
+        );
+      }
+
+      // Default: filled circle for all other actions (assist, steal, block, turnover)
       return (
         <G key={marker.id}>
-          {/* Colored circle marker */}
           <Circle
             cx={pos.x}
             cy={pos.y}
-            r="8"
-            fill={marker.color || "#FF0000"}
+            r={size}
+            fill={color}
             stroke="#FFFFFF"
             strokeWidth="2"
           />
