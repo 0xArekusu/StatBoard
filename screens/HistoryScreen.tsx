@@ -17,6 +17,8 @@ import { supabase } from "../src/config/supabase";
 import { ROUTES } from "../constants/routes";
 import { ServiceFactory } from "../services/ServiceFactory";
 import { OPACITY } from "../src/theme";
+import { Club } from "../models/Club";
+import { TeamStatus } from "../models/Team";
 
 interface HistoryScreenProps {
   navigation: any;
@@ -44,7 +46,8 @@ export default function HistoryScreen({ navigation }: HistoryScreenProps) {
   const [matches, setMatches] = useState<Match[]>([]);
   const [showSyncModal, setShowSyncModal] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
-
+  const [club, setClub] = useState<Club | null>(null);
+  const [activeTeamId, setActiveTeamId] = useState<string | null>(null);
 
   useEffect(() => {
     loadHistoryData();
@@ -53,6 +56,7 @@ export default function HistoryScreen({ navigation }: HistoryScreenProps) {
   /**
    * Loads all matches from both local storage and Supabase
    * - Fetches matches from MatchListService (combines local + cloud data)
+   * - Loads user's club and team to filter local matches
    * - Sorts matches by date (most recent first)
    * - Updates the matches state with combined results
    */
@@ -60,10 +64,48 @@ export default function HistoryScreen({ navigation }: HistoryScreenProps) {
     try {
       setLoading(true);
 
+      let clubId: string | null = null;
+      let teamId: string | null = null;
+
+      // Load club and team if user is authenticated
+      if (user) {
+        try {
+          const clubService = ServiceFactory.getClubService(supabase);
+          const clubs = await clubService.getUserMemberClubs(user.id);
+
+          const firstClub = clubs.length > 0 ? clubs[0] : null;
+          setClub(firstClub);
+
+          if (firstClub) {
+            clubId = firstClub.id;
+
+            // Load teams for the club
+            const teamService = ServiceFactory.getTeamService(supabase);
+            const clubTeams = await teamService.getClubTeams(firstClub.id);
+
+            // Filter to only show approved teams where user is the owner
+            const myApprovedTeams = clubTeams.filter(
+              (team) =>
+                team.ownerId === user.id && team.status === TeamStatus.APPROVED
+            );
+
+            // Select first team if available
+            if (myApprovedTeams.length > 0) {
+              teamId = myApprovedTeams[0].id;
+              setActiveTeamId(teamId);
+            }
+          }
+        } catch (error) {
+          console.error("Error loading club/team:", error);
+        }
+      }
+
       // Use MatchListService to load all matches from both sources
       const matchListService = ServiceFactory.getMatchListService(supabase);
       const allMatches = await matchListService.loadAllMatchesSorted(
         user?.id || null,
+        clubId,
+        teamId
       );
 
       setMatches(allMatches);

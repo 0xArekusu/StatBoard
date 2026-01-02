@@ -20,14 +20,32 @@ export class MatchListService {
    * Combines local non-synced matches with server matches
    *
    * @param userId - User ID to load matches for (null for guest mode)
+   * @param clubId - Club ID to filter local matches (optional, for authenticated users)
+   * @param teamId - Team ID to filter local matches (optional, for authenticated users)
    * @returns Combined list of matches from both sources
    */
-  async loadAllMatches(userId: string | null): Promise<Match[]> {
+  async loadAllMatches(
+    userId: string | null,
+    clubId: string | null = null,
+    teamId: string | null = null
+  ): Promise<Match[]> {
     // 1. Load LOCAL matches from SQLite (non-synced ones)
     const allLocalMatches = await this.matchRepository.getAllMatches();
-    const localMatches = allLocalMatches.filter((m) => !m.synced_to_server);
+    let localMatches = allLocalMatches.filter((m) => !m.synced_to_server);
 
-    // 2. Load SERVER matches from Supabase if user is authenticated
+    // 2. Filter local matches by club_id and team_id if user is authenticated
+    // This ensures that when a user logs in, they only see their team's local matches
+    // Guest matches (created without club_id/team_id) will be filtered out
+    if (userId && (clubId || teamId)) {
+      localMatches = localMatches.filter((m) => {
+        // Match must belong to the user's club and team
+        const matchesClub = clubId ? m.club_id === clubId : true;
+        const matchesTeam = teamId ? m.team_id === teamId : true;
+        return matchesClub && matchesTeam;
+      });
+    }
+
+    // 3. Load SERVER matches from Supabase if user is authenticated
     let serverMatches: Match[] = [];
     if (userId) {
       try {
@@ -71,7 +89,7 @@ export class MatchListService {
       }
     }
 
-    // 3. Merge and return
+    // 4. Merge and return
     return [...localMatches, ...serverMatches];
   }
 
@@ -79,10 +97,16 @@ export class MatchListService {
    * Load matches and sort by date (most recent first)
    *
    * @param userId - User ID to load matches for (null for guest mode)
+   * @param clubId - Club ID to filter local matches (optional, for authenticated users)
+   * @param teamId - Team ID to filter local matches (optional, for authenticated users)
    * @returns Sorted list of matches
    */
-  async loadAllMatchesSorted(userId: string | null): Promise<Match[]> {
-    const matches = await this.loadAllMatches(userId);
+  async loadAllMatchesSorted(
+    userId: string | null,
+    clubId: string | null = null,
+    teamId: string | null = null
+  ): Promise<Match[]> {
+    const matches = await this.loadAllMatches(userId, clubId, teamId);
 
     // Sort by date (most recent first)
     return matches.sort(

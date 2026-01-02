@@ -205,17 +205,10 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
         }
       }
 
-      // Load all matches from both sources
-      logInfo("DashboardScreen", "📡 Loading matches");
-      const allMatches = await matchListService.loadAllMatches(user?.id || null);
+      let clubId: string | null = null;
+      let teamId: string | null = null;
 
-      logInfo("DashboardScreen", "✅ Matches loaded", {
-        totalCount: allMatches.length,
-      });
-
-      setMatches(allMatches);
-
-      // Load club and teams if user is authenticated
+      // Load club and teams if user is authenticated (BEFORE loading matches)
       if (user) {
         logInfo("DashboardScreen", "📡 Fetching user clubs from Supabase", {
           userId: user.id,
@@ -237,6 +230,8 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
           setClub(firstClub);
 
           if (firstClub) {
+            clubId = firstClub.id;
+
             logInfo("DashboardScreen", "✅ Club selected", {
               clubId: firstClub.id,
               clubName: firstClub.name,
@@ -263,7 +258,8 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
 
             // Select first team if available
             if (myApprovedTeams.length > 0) {
-              setActiveTeamId(myApprovedTeams[0].id);
+              teamId = myApprovedTeams[0].id;
+              setActiveTeamId(teamId);
             }
           } else {
             logInfo("DashboardScreen", "ℹ️ No clubs found for user");
@@ -272,6 +268,20 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
           logError("DashboardScreen", "❌ Error loading clubs/teams", { error });
         }
       }
+
+      // Load all matches from both sources (AFTER loading club and team)
+      logInfo("DashboardScreen", "📡 Loading matches");
+      const allMatches = await matchListService.loadAllMatches(
+        user?.id || null,
+        clubId,
+        teamId
+      );
+
+      logInfo("DashboardScreen", "✅ Matches loaded", {
+        totalCount: allMatches.length,
+      });
+
+      setMatches(allMatches);
     } catch (error) {
       logError("DashboardScreen", "❌ Error loading dashboard data", { error });
     } finally {
