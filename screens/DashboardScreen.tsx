@@ -95,6 +95,7 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
   /**
    * Check if guest welcome modal should be shown
    * Checks on every focus if we need to show the welcome modal
+   * IMPORTANT: Only show if there's NO active match to avoid modal conflicts
    */
   useFocusEffect(
     useCallback(() => {
@@ -112,10 +113,20 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
           });
 
           if (shouldShow) {
-            logInfo("DashboardScreen", "✅ Showing guest welcome modal");
-            setShowGuestWelcome(true);
-            // Clear the flag so it won't show again on next focus
-            await AsyncStorage.removeItem(SHOW_ONCE_KEY);
+            // Check if there's an active match - if yes, don't show guest welcome
+            const matchListService = ServiceFactory.getMatchListService(supabase);
+            const activeMatch = await matchListService.findActiveMatch();
+
+            if (activeMatch) {
+              logInfo("DashboardScreen", "⏭️ Skipping guest welcome - active match found");
+              // Clear the flag anyway so it won't show later
+              await AsyncStorage.removeItem(SHOW_ONCE_KEY);
+            } else {
+              logInfo("DashboardScreen", "✅ Showing guest welcome modal");
+              setShowGuestWelcome(true);
+              // Clear the flag so it won't show again on next focus
+              await AsyncStorage.removeItem(SHOW_ONCE_KEY);
+            }
           }
         }
       };
