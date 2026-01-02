@@ -72,6 +72,9 @@ export const Colors = {
     onPrimary: COMMON_COLORS.white, // Text/icon color on primary background
     onSecondary: COMMON_COLORS.black, 
 
+    onLogoPrimary: COMMON_COLORS.black,
+    onLogoSecondary: COMMON_COLORS.white, 
+
     // Backgrounds
     background: COMMON_COLORS.white,
     surface: SLATE_COLORS[50],
@@ -134,6 +137,10 @@ export const Colors = {
     primary: BRAND_COLORS[500],
     onPrimary: COMMON_COLORS.white, // Text/icon color on primary background
     onSecondary: COMMON_COLORS.black, 
+
+    onLogoPrimary: COMMON_COLORS.white,
+    onLogoSecondary: COMMON_COLORS.black, 
+
 
     // Backgrounds
     background: SLATE_COLORS[950],

@@ -24,8 +24,8 @@ export default function SplashScreen() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Logo */}
       <Logo width={350} 
-      primaryColor={colors.onPrimary}
-      secondaryColor={colors.onSecondary}
+      primaryColor={colors.onLogoPrimary}
+      secondaryColor={colors.onLogoSecondary}
       ballColor={colors.primary}
       ballBackgroundColor={colors.button.secondary}/>
 
