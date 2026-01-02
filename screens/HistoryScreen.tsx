@@ -280,8 +280,8 @@ export default function HistoryScreen({ navigation }: HistoryScreenProps) {
             Historique des matchs
           </Text>
 
-          {/* Sync Banner */}
-          {unsyncedCount > 0 && (
+          {/* Sync Banner - Only show if user is authenticated (not in guest mode) */}
+          {user && unsyncedCount > 0 && (
             <TouchableOpacity
               onPress={() => setShowSyncModal(true)}
               style={[
