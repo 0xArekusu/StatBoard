@@ -19,6 +19,7 @@ import {
   COURT_SVG_WIDTH_LANDSCAPE,
   COURT_SVG_HEIGHT_LANDSCAPE,
 } from "../../../constants/courtConstants";
+import { calculateEfficiency } from "../../utils/statsCalculator";
 
 interface Player {
   id: number;
@@ -682,7 +683,20 @@ export class PDFExportService {
     const fgm = twopm + threepm;
     const fga = twopa + threepa;
     const trb = orb + drb;
-    const eff = points + trb + ast + stl + blk - ((fga - fgm) + (fta - ftm) + tov);
+    const eff = calculateEfficiency({
+      pts: points,
+      reb: trb,
+      ast,
+      stl,
+      blk,
+      fg2a: twopa,
+      fg2m: twopm,
+      fg3a: threepa,
+      fg3m: threepm,
+      fta,
+      ftm,
+      to: tov,
+    });
 
     return {
       points,
@@ -758,9 +772,20 @@ export class PDFExportService {
             const totalRebounds = player.stats.orb + player.stats.drb;
             const totalFgm = player.stats.twopm + player.stats.threepm;
             const totalFga = player.stats.twopa + player.stats.threepa;
-            const efficiency = player.stats.points + totalRebounds + player.stats.ast +
-              player.stats.stl + player.stats.blk -
-              ((totalFga - totalFgm) + (player.stats.fta - player.stats.ftm) + player.stats.tov);
+            const efficiency = calculateEfficiency({
+              pts: player.stats.points,
+              reb: totalRebounds,
+              ast: player.stats.ast,
+              stl: player.stats.stl,
+              blk: player.stats.blk,
+              fg2a: player.stats.twopa,
+              fg2m: player.stats.twopm,
+              fg3a: player.stats.threepa,
+              fg3m: player.stats.threepm,
+              fta: player.stats.fta,
+              ftm: player.stats.ftm,
+              to: player.stats.tov,
+            });
             const estimatedMin = this.calculateEstimatedMinutes(player.stats, efficiency, totalFouls);
 
             return `
@@ -2009,11 +2034,20 @@ export class PDFExportService {
         const teamName = player.team === Team.MY_TEAM ? myTeamName : opponentName;
         const totalFouls = this.calculateTotalFouls(playerStats);
         const totalRebounds = playerStats.orb + playerStats.drb;
-        const totalFgm = playerStats.twopm + playerStats.threepm;
-        const totalFga = playerStats.twopa + playerStats.threepa;
-        const efficiency = playerStats.points + totalRebounds + playerStats.ast +
-          playerStats.stl + playerStats.blk -
-          ((totalFga - totalFgm) + (playerStats.fta - playerStats.ftm) + playerStats.tov);
+        const efficiency = calculateEfficiency({
+          pts: playerStats.points,
+          reb: totalRebounds,
+          ast: playerStats.ast,
+          stl: playerStats.stl,
+          blk: playerStats.blk,
+          fg2a: playerStats.twopa,
+          fg2m: playerStats.twopm,
+          fg3a: playerStats.threepa,
+          fg3m: playerStats.threepm,
+          fta: playerStats.fta,
+          ftm: playerStats.ftm,
+          to: playerStats.tov,
+        });
         const estimatedMinutes = this.calculateEstimatedMinutes(playerStats, efficiency, totalFouls);
 
         return `

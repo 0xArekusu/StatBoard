@@ -57,6 +57,7 @@ import { StatsTab, CardsTab, CourtTab, EvolutionTab, PlayerDetailModal } from ".
 import type { PlayerStats, Tab, TeamFilter, ActionFilterType, SortBy, SortOrder } from "../constants/matchDetailsConstants";
 import { TAB, ACTION_FILTER } from "../constants";
 import { RootStackParamList, RootNavigationProp } from "../types/navigation";
+import { calculateEfficiency } from "../src/utils/statsCalculator";
 
 type MatchDetailsRouteProp = RouteProp<RootStackParamList, "MatchDetails">;
 
@@ -444,13 +445,21 @@ export default function MatchDetailsScreen() {
     // STEP 3: Calculate efficiency and estimate playing time
     playerStatsMap.forEach((stats) => {
       // Efficiency formula: positive actions - negative actions
-      stats.eff =
-        stats.pts +
-        stats.reb +
-        stats.ast +
-        stats.stl +
-        stats.blk -
-        (stats.fga - stats.fgm + (stats.fta - stats.ftm) + stats.to);
+      // Uses the standard basketball efficiency formula
+      stats.eff = calculateEfficiency({
+        pts: stats.pts,
+        reb: stats.reb,
+        ast: stats.ast,
+        stl: stats.stl,
+        blk: stats.blk,
+        fg2a: stats.fg2a,
+        fg2m: stats.fg2m,
+        fg3a: stats.fg3a,
+        fg3m: stats.fg3m,
+        fta: stats.fta,
+        ftm: stats.ftm,
+        to: stats.to,
+      });
 
       // Heuristic estimation of minutes based on efficiency
       // Formula: base 10 min + efficiency bonus + fouls bonus
