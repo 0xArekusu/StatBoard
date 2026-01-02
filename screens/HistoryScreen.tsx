@@ -471,23 +471,44 @@ function MatchCard({ match, onPress }: MatchCardProps) {
 
       {/* Scores */}
       <View style={styles.matchScores}>
-        {/* Team A (Us) */}
-        <View style={styles.matchTeamContainer}>
-          <Text
-            style={[
-              styles.matchScoreValue,
-              { color: isWin ? colors.text.primary : colors.text.tertiary },
-            ]}
-          >
-            {scoreA}
-          </Text>
-          <Text
-            style={[styles.matchTeamLabel, { color: colors.text.secondary }]}
-            numberOfLines={1}
-          >
-            {match.my_team_name || "NOUS"}
-          </Text>
-        </View>
+        {/* Left Team - Home team on left, Away team on right */}
+        {match.is_home ? (
+          // We are home, we go on the left
+          <View style={styles.matchTeamContainer}>
+            <Text
+              style={[
+                styles.matchScoreValue,
+                { color: isWin ? colors.text.primary : colors.text.tertiary },
+              ]}
+            >
+              {scoreA}
+            </Text>
+            <Text
+              style={[styles.matchTeamLabel, { color: colors.text.secondary }]}
+              numberOfLines={1}
+            >
+              {match.my_team_name || "NOUS"}
+            </Text>
+          </View>
+        ) : (
+          // We are away, opponent goes on the left
+          <View style={styles.matchTeamContainer}>
+            <Text
+              style={[
+                styles.matchScoreValue,
+                { color: isWin ? colors.text.tertiary : colors.text.primary },
+              ]}
+            >
+              {scoreB}
+            </Text>
+            <Text
+              style={[styles.matchTeamLabel, { color: colors.text.secondary }]}
+              numberOfLines={1}
+            >
+              {match.opponent_name}
+            </Text>
+          </View>
+        )}
 
         {/* VS */}
         <View
@@ -503,23 +524,44 @@ function MatchCard({ match, onPress }: MatchCardProps) {
           </Text>
         </View>
 
-        {/* Team B (Opponent) */}
-        <View style={styles.matchTeamContainer}>
-          <Text
-            style={[
-              styles.matchScoreValue,
-              { color: isWin ? colors.text.tertiary : colors.text.primary },
-            ]}
-          >
-            {scoreB}
-          </Text>
-          <Text
-            style={[styles.matchTeamLabel, { color: colors.text.secondary }]}
-            numberOfLines={1}
-          >
-            {match.opponent_name}
-          </Text>
-        </View>
+        {/* Right Team - Home team on left, Away team on right */}
+        {match.is_home ? (
+          // We are home, opponent goes on the right
+          <View style={styles.matchTeamContainer}>
+            <Text
+              style={[
+                styles.matchScoreValue,
+                { color: isWin ? colors.text.tertiary : colors.text.primary },
+              ]}
+            >
+              {scoreB}
+            </Text>
+            <Text
+              style={[styles.matchTeamLabel, { color: colors.text.secondary }]}
+              numberOfLines={1}
+            >
+              {match.opponent_name}
+            </Text>
+          </View>
+        ) : (
+          // We are away, we go on the right
+          <View style={styles.matchTeamContainer}>
+            <Text
+              style={[
+                styles.matchScoreValue,
+                { color: isWin ? colors.text.primary : colors.text.tertiary },
+              ]}
+            >
+              {scoreA}
+            </Text>
+            <Text
+              style={[styles.matchTeamLabel, { color: colors.text.secondary }]}
+              numberOfLines={1}
+            >
+              {match.my_team_name || "NOUS"}
+            </Text>
+          </View>
+        )}
       </View>
 
       {/* Result and Action */}

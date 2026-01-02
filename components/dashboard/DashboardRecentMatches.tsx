@@ -46,6 +46,13 @@ export default function DashboardRecentMatches({
             const scoreB = match.opponent_score || 0;
             const isWin = scoreA > scoreB;
 
+            // Determine display order based on home/away
+            // Home team always on the left
+            const leftScore = match.is_home ? scoreA : scoreB;
+            const rightScore = match.is_home ? scoreB : scoreA;
+            const leftTeam = match.is_home ? (match.my_team_name || "Nous") : match.opponent_name;
+            const rightTeam = match.is_home ? match.opponent_name : (match.my_team_name || "Nous");
+
             return (
               <TouchableOpacity
                 key={`match-${match.id}-${index}`}
@@ -72,7 +79,7 @@ export default function DashboardRecentMatches({
                   <View style={styles.matchInfo}>
                     <View style={styles.matchScoreLine}>
                       <Text style={[styles.matchScore, { color: colors.text.primary }]}>
-                        {scoreA} - {scoreB}
+                        {leftScore} - {rightScore}
                       </Text>
                       <View
                         style={[
@@ -88,7 +95,7 @@ export default function DashboardRecentMatches({
                             { color: colors.text.secondary },
                           ]}
                         >
-                          {match.my_team_name || "Nous"}
+                          {leftTeam}
                         </Text>
                       </View>
                     </View>
@@ -96,7 +103,7 @@ export default function DashboardRecentMatches({
                       style={[styles.matchOpponent, { color: colors.text.secondary }]}
                       numberOfLines={1}
                     >
-                      vs {match.opponent_name}
+                      vs {rightTeam}
                     </Text>
                   </View>
                 </View>
