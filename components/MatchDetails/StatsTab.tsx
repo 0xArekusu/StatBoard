@@ -5,7 +5,7 @@
  * and player details navigation.
  */
 
-import React from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -13,6 +13,7 @@ import {
   ScrollView,
   TouchableOpacity,
 } from "react-native";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useTheme } from "../../src/contexts/ThemeContext";
 import {
   PlayerStats,
@@ -20,6 +21,7 @@ import {
   SortOrder,
 } from "../../constants/matchDetailsConstants";
 import PlayerAvatar from "../PlayerAvatar";
+import StatsLegendModal from "./StatsLegendModal";
 
 interface StatsTabProps {
   stats: PlayerStats[];
@@ -37,6 +39,7 @@ export default function StatsTab({
   setViewPlayer,
 }: StatsTabProps) {
   const { colors, isDark } = useTheme();
+  const [showLegend, setShowLegend] = useState(false);
 
   // Define color variables using theme context
   const bgColor = colors.background;
@@ -47,7 +50,12 @@ export default function StatsTab({
   const textTertiary = colors.text.tertiary;
 
   return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={true}>
+    <>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={true}
+        contentContainerStyle={styles.scrollViewContent}
+      >
       <View
         style={[
           styles.tableContainer,
@@ -76,6 +84,19 @@ export default function StatsTab({
               {sortBy === "name" && (sortOrder === "desc" ? "↓" : "↑")}
             </Text>
           </TouchableOpacity>
+          <View style={styles.numberCell}>
+            <Text
+              style={[
+                styles.tableHeaderCell,
+                {
+                  color: textTertiary,
+                  textAlign: "center"
+                },
+              ]}
+            >
+              #
+            </Text>
+          </View>
           <TouchableOpacity onPress={() => handleSort("min")}>
             <Text
               style={[
@@ -329,6 +350,15 @@ export default function StatsTab({
             <Text
               style={[
                 styles.tableCell,
+                styles.numberCell,
+                { color: textSecondary },
+              ]}
+            >
+              {player.playerNumber}
+            </Text>
+            <Text
+              style={[
+                styles.tableCell,
                 styles.minCell,
                 { color: textTertiary },
               ]}
@@ -492,6 +522,15 @@ export default function StatsTab({
             <Text
               style={[
                 styles.tableCell,
+                styles.numberCell,
+                { color: textTertiary },
+              ]}
+            >
+              -
+            </Text>
+            <Text
+              style={[
+                styles.tableCell,
                 styles.minCell,
                 { color: textTertiary },
               ]}
@@ -644,10 +683,39 @@ export default function StatsTab({
         )}
       </View>
     </ScrollView>
+
+      {/* Floating Info Button */}
+      <TouchableOpacity
+        style={[
+          styles.infoButton,
+          {
+            backgroundColor: colors.surface,
+          },
+        ]}
+        onPress={() => setShowLegend(true)}
+        activeOpacity={0.8}
+      >
+        <MaterialCommunityIcons
+          name="information-outline"
+          size={40}
+          color={colors.primary}
+        />
+      </TouchableOpacity>
+
+      {/* Legend Modal */}
+      <StatsLegendModal
+        visible={showLegend}
+        onClose={() => setShowLegend(false)}
+      />
+    </>
   );
 }
 
 const styles = StyleSheet.create({
+  scrollViewContent: {
+    flexGrow: 1,
+    justifyContent: "center",
+  },
   tableContainer: {
     borderRadius: 16,
     borderWidth: 1,
@@ -679,6 +747,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
+  },
+  numberCell: {
+    width: 32,
+    textAlign: "center",
+    fontWeight: "700",
   },
   playerNumberBadge: {
     width: 24,
@@ -725,5 +798,20 @@ const styles = StyleSheet.create({
   },
   emptyStateText: {
     fontSize: 12,
+  },
+  infoButton: {
+    position: "absolute",
+    bottom: 20,
+    right: 20,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
   },
 });
