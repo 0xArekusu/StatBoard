@@ -22,7 +22,9 @@ export const COURT_SVG_HEIGHT_LANDSCAPE = 615.75;
 
 /**
  * Display dimensions for court in MatchDetails (scaled down by 2 from SVG dimensions)
- * These are maximum sizes - portrait is capped to not exceed original display size
+ * These are maximum sizes to ensure the court fits well on screen
  */
-export const COURT_DISPLAY_WIDTH_PORTRAIT_MAX = 350;
-export const COURT_DISPLAY_HEIGHT_PORTRAIT_MAX = 573.375;
+export const COURT_DISPLAY_WIDTH_PORTRAIT_MAX = 400;
+export const COURT_DISPLAY_HEIGHT_PORTRAIT_MAX = 655;
+export const COURT_DISPLAY_WIDTH_LANDSCAPE_MAX = 655;
+export const COURT_DISPLAY_HEIGHT_LANDSCAPE_MAX = 352;

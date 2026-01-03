@@ -22,10 +22,10 @@ import { getActionColor, ACTION_CONFIG } from "../../src/models/ActionTypes";
 import {
   COURT_SVG_WIDTH_PORTRAIT,
   COURT_SVG_HEIGHT_PORTRAIT,
-  COURT_SVG_WIDTH_LANDSCAPE,
-  COURT_SVG_HEIGHT_LANDSCAPE,
   COURT_DISPLAY_WIDTH_PORTRAIT_MAX,
   COURT_DISPLAY_HEIGHT_PORTRAIT_MAX,
+  COURT_DISPLAY_WIDTH_LANDSCAPE_MAX,
+  COURT_DISPLAY_HEIGHT_LANDSCAPE_MAX,
 } from "../../constants";
 import PlayerAvatar from "../PlayerAvatar";
 
@@ -69,30 +69,16 @@ export default function CourtTab({
   const textSecondary = colors.text.secondary;
   const textTertiary = colors.text.tertiary;
 
-  // Determine orientation based on screen dimensions (not container)
+  // Determine orientation based on screen dimensions
   const isPortrait = windowDimensions.height > windowDimensions.width;
 
-  // Calculate court dimensions - use half of the SVG constants, but cap portrait to not exceed current size
+  // Use fixed dimensions from constants
   const courtWidth = isPortrait
-    ? Math.min(COURT_SVG_WIDTH_PORTRAIT / 2, COURT_DISPLAY_WIDTH_PORTRAIT_MAX)
-    : COURT_SVG_WIDTH_LANDSCAPE / 2;
+    ? COURT_DISPLAY_WIDTH_PORTRAIT_MAX
+    : COURT_DISPLAY_WIDTH_LANDSCAPE_MAX;
   const courtHeight = isPortrait
-    ? Math.min(COURT_SVG_HEIGHT_PORTRAIT / 2, COURT_DISPLAY_HEIGHT_PORTRAIT_MAX)
-    : COURT_SVG_HEIGHT_LANDSCAPE / 2;
-
-  console.log('[CourtTab] Court calculations:', {
-    screenWidth: windowDimensions.width,
-    screenHeight: windowDimensions.height,
-    isPortrait,
-    courtWidth,
-    courtHeight,
-    constants: {
-      portraitWidth: COURT_SVG_WIDTH_PORTRAIT,
-      portraitHeight: COURT_SVG_HEIGHT_PORTRAIT,
-      landscapeWidth: COURT_SVG_WIDTH_LANDSCAPE,
-      landscapeHeight: COURT_SVG_HEIGHT_LANDSCAPE,
-    }
-  });
+    ? COURT_DISPLAY_HEIGHT_PORTRAIT_MAX
+    : COURT_DISPLAY_HEIGHT_LANDSCAPE_MAX;
 
   // Determine which specifications to show based on selected action type
   // Only show specifications if exactly one action type is selected
@@ -617,10 +603,16 @@ export default function CourtTab({
           <View
             style={[
               styles.courtContainer,
-              { backgroundColor: surfaceColor },
+              {
+                backgroundColor: surfaceColor,
+                width: "100%", // Court width + padding
+                height: courtHeight + 32, // Court height + padding
+                alignSelf: 'center',
+              },
             ]}
           >
             <BasketballCourtSVG
+              key={`court-${isPortrait ? 'portrait' : 'landscape'}-${courtWidth}-${courtHeight}`}
               width={courtWidth}
               height={courtHeight}
               backgroundColor={courtBackgroundColor}
@@ -743,7 +735,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     padding: 16,
     borderRadius: 16,
-    height: 700,
   },
   shotStatsSummary: {
     marginTop: 0,
