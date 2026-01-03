@@ -20,6 +20,7 @@ import {
 } from "../../constants/matchDetailsConstants";
 import { ShootingBar } from "./SharedComponents";
 import { SHOOTING_BAR_COLORS } from "../../src/theme/colors";
+import PlayerAvatar from "../PlayerAvatar";
 
 // ===========================
 // PROPS INTERFACE
@@ -437,21 +438,16 @@ export default function CardsTab({
           {/* Card Header */}
           <View style={styles.cardHeader}>
             <View style={styles.cardPlayerInfo}>
-              <View
-                style={[
-                  styles.cardAvatar,
-                  {
-                    backgroundColor: bgColor,
-                    borderColor: borderColor,
-                  },
-                ]}
-              >
-                <Text
-                  style={[styles.cardAvatarText, { color: textPrimary }]}
-                >
-                  {player.playerNumber}
-                </Text>
-              </View>
+              <PlayerAvatar
+                playerName={player.name}
+                playerNumber={player.playerNumber}
+                photoUrl={player.photoUrl}
+                size={56}
+                borderColor={borderColor}
+                backgroundColor={bgColor}
+                textColor={textPrimary}
+                borderWidth={2}
+              />
               <View>
                 <Text
                   style={[styles.cardPlayerName, { color: textPrimary }]}
@@ -513,7 +509,7 @@ export default function CardsTab({
               compact
             />
             <ShootingBar
-              label="LF"
+              label="Lancers"
               made={player.ftm}
               attempted={player.fta}
               color={SHOOTING_BAR_COLORS.freeThrow}

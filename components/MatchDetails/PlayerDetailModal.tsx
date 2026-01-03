@@ -28,6 +28,7 @@ import {
   COURT_SVG_WIDTH_PORTRAIT,
   COURT_SVG_HEIGHT_PORTRAIT,
 } from "../../constants";
+import PlayerAvatar from "../PlayerAvatar";
 
 interface PlayerDetailModalProps {
   player: PlayerStats | null;
@@ -126,24 +127,16 @@ export default function PlayerDetailModal({
             </TouchableOpacity>
 
             <View style={styles.modalPlayerAvatar}>
-              <View
-                style={[
-                  styles.playerAvatarCircle,
-                  {
-                    borderColor: colors.surface,
-                    backgroundColor: colors.surfaceVariant,
-                  },
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.playerAvatarNumber,
-                    { color: colors.text.secondary },
-                  ]}
-                >
-                  {player.playerNumber}
-                </Text>
-              </View>
+              <PlayerAvatar
+                playerName={player.name}
+                playerNumber={player.playerNumber}
+                photoUrl={player.photoUrl}
+                size={80}
+                borderColor={colors.surface}
+                backgroundColor={colors.surfaceVariant}
+                textColor={colors.text.secondary}
+                borderWidth={4}
+              />
             </View>
           </View>
 
@@ -291,10 +284,10 @@ export default function PlayerDetailModal({
               </Text>
               <View style={styles.detailedStatsGrid}>
                 <StatBox label="REB OFF/DEF" value={`${player.reb_off}/${player.reb_def}`} sub={`Total: ${player.reb}`} />
-                <StatBox label="AST" value={player.ast} sub="Passes" />
-                <StatBox label="INT" value={player.stl} sub="Vols" />
+                <StatBox label="AST" value={player.ast} sub="Passes décisives" />
+                <StatBox label="INT" value={player.stl} sub="Interceptions" />
                 <StatBox label="CTR" value={player.blk} sub="Contres" />
-                <StatBox label="BP" value={player.to} sub="Pertes" />
+                <StatBox label="BP" value={player.to} sub="Balles perdues" />
                 <StatBox label="FTE" value={player.pf} sub="Fautes" />
               </View>
             </View>

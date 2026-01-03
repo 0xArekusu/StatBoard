@@ -22,6 +22,7 @@ import {
   COURT_SVG_WIDTH_PORTRAIT,
   COURT_SVG_HEIGHT_PORTRAIT,
 } from "../../constants";
+import PlayerAvatar from "../PlayerAvatar";
 
 interface CourtTabProps {
   stats: PlayerStats[];
@@ -450,29 +451,16 @@ export default function CourtTab({
                     },
                   ]}
                 >
-                  <View
-                    style={[
-                      styles.courtPlayerBadge,
-                      {
-                        backgroundColor: isSelected
-                          ? colors.text.primary
-                          : bgColor,
-                      },
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.courtPlayerBadgeText,
-                        {
-                          color: isSelected
-                            ? colors.primary
-                            : textSecondary,
-                        },
-                      ]}
-                    >
-                      {player.playerNumber}
-                    </Text>
-                  </View>
+                  <PlayerAvatar
+                    playerName={player.name}
+                    playerNumber={player.playerNumber}
+                    photoUrl={player.photoUrl}
+                    size={24}
+                    borderColor={isSelected ? colors.primary : borderColor}
+                    backgroundColor={isSelected ? colors.text.primary : bgColor}
+                    textColor={isSelected ? colors.primary : textSecondary}
+                    borderWidth={0}
+                  />
                   <Text
                     style={[
                       styles.courtPlayerName,

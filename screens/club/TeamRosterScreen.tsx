@@ -21,6 +21,7 @@ import { ServiceFactory } from "../../services/ServiceFactory";
 import { supabase } from "../../src/config/supabase";
 import { PhotoUploadService } from "../../services/PhotoUploadService";
 import { RootStackParamList, RootNavigationProp } from "../../types/navigation";
+import PlayerAvatar from "../../components/PlayerAvatar";
 
 /**
  * Local player interface for this screen
@@ -983,30 +984,16 @@ export default function TeamRosterScreen() {
                       // Display mode
                       <>
                         <View style={styles.playerInfo}>
-                          <View
-                            style={[
-                              styles.playerNumber,
-                              {
-                                backgroundColor: colors.surface,
-                              },
-                            ]}
-                          >
-                            {player.photoUrl ? (
-                              <Image
-                                source={{ uri: player.photoUrl }}
-                                style={styles.photoImage}
-                              />
-                            ) : (
-                              <Text
-                                style={[
-                                  styles.playerNumberText,
-                                  { color: colors.text.secondary },
-                                ]}
-                              >
-                                {player.jerseyNumber}
-                              </Text>
-                            )}
-                          </View>
+                          <PlayerAvatar
+                            playerName={player.name}
+                            playerNumber={player.jerseyNumber}
+                            photoUrl={player.photoUrl}
+                            size={48}
+                            borderColor={colors.border}
+                            backgroundColor={colors.surface}
+                            textColor={colors.text.secondary}
+                            borderWidth={2}
+                          />
                           <View>
                             <Text
                               style={[

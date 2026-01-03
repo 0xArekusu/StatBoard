@@ -9,6 +9,7 @@ import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import type { Player } from "../../models/Player";
 import { useTheme } from "../../src/contexts/ThemeContext";
+import PlayerAvatar from "../PlayerAvatar";
 
 interface PlayerRosterCardProps {
   /** Player data */
@@ -70,38 +71,41 @@ export const PlayerRosterCard: React.FC<PlayerRosterCardProps> = ({
           )}
         </View>
 
-        {/* Jersey Number */}
-        <View
-          style={[
-            styles.playerNumber,
-            {
-              backgroundColor: colors.surfaceVariant,
-            },
-          ]}
-        >
+        {/* Player Avatar */}
+        <PlayerAvatar
+          playerName={player.name}
+          playerNumber={player.jerseyNumber}
+          photoUrl={player.photoUrl}
+          size={40}
+          borderColor={colors.border}
+          backgroundColor={colors.surfaceVariant}
+          textColor={isSelected ? colors.text.primary : colors.text.secondary}
+          borderWidth={2}
+        />
+
+        {/* Player Name and Number */}
+        <View style={styles.playerNameContainer}>
           <Text
             style={[
-              styles.playerNumberText,
+              styles.playerName,
               {
                 color: isSelected ? colors.text.primary : colors.text.secondary,
               },
             ]}
           >
-            {player.jerseyNumber}
+            {player.name}
+          </Text>
+          <Text
+            style={[
+              styles.playerNumber,
+              {
+                color: isSelected ? colors.text.secondary : colors.text.tertiary,
+              },
+            ]}
+          >
+            {" - #"}{player.jerseyNumber}
           </Text>
         </View>
-
-        {/* Player Name */}
-        <Text
-          style={[
-            styles.playerName,
-            {
-              color: isSelected ? colors.text.primary : colors.text.secondary,
-            },
-          ]}
-        >
-          {player.name}
-        </Text>
       </View>
 
       {/* Starter Toggle (only visible if selected) */}
@@ -151,21 +155,18 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  playerNumber: {
-    width: 32,
-    height: 32,
-    borderRadius: 999,
+  playerNameContainer: {
+    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-  },
-  playerNumberText: {
-    fontSize: 12,
-    fontWeight: "bold",
+    flex: 1,
   },
   playerName: {
     fontSize: 14,
     fontWeight: "bold",
-    flex: 1,
+  },
+  playerNumber: {
+    fontSize: 14,
+    fontWeight: "600",
   },
   starButton: {
     padding: 8,

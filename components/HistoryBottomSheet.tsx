@@ -41,12 +41,14 @@ import {
 import { useTheme } from "../src/contexts/ThemeContext";
 import { STATUS_COLORS, COMMON_COLORS, TEAM_CHART_COLORS } from "../src/theme";
 import { Team } from "../src/models/types";
+import PlayerAvatar from "./PlayerAvatar";
 
 interface Player {
   id: number;
   num: number;
   name: string;
   isSubstitute: boolean;
+  photoUrl?: string;
 }
 
 interface HistoryBottomSheetProps {
@@ -80,6 +82,11 @@ export default function HistoryBottomSheet({
     return player ? player.name : `Joueur #${playerNum}`;
   };
 
+  // Get player by number
+  const getPlayer = (playerNum: number) => {
+    return players.find((p) => p.num === playerNum);
+  };
+
   // Get team name by team code
   const getTeamName = (team: Team) => {
     return team === Team.MY_TEAM ? teamA : teamB;
@@ -95,7 +102,7 @@ export default function HistoryBottomSheet({
     const playerNum = action.player || 0;
     const playerName = getPlayerName(playerNum);
     const teamName = getTeamName(action.team);
-    let description = `${teamName} - ${playerName} - #${playerNum}`;
+    let description = `${playerName} - #${playerNum}`;
 
     switch (action.type) {
       case ActionType.SHOT:
@@ -235,6 +242,16 @@ export default function HistoryBottomSheet({
                   />
 
                   <View style={styles.actionHeader}>
+                    <PlayerAvatar
+                      playerName={getPlayerName(action.player || 0)}
+                      playerNumber={action.player || 0}
+                      photoUrl={getPlayer(action.player || 0)?.photoUrl}
+                      size={40}
+                      borderColor={getTeamColor(action.team)}
+                      backgroundColor={colors.surface}
+                      textColor={colors.text.secondary}
+                      borderWidth={2}
+                    />
                     <View
                       style={[
                         styles.actionIconContainer,
@@ -448,6 +465,7 @@ const styles = StyleSheet.create({
   actionHeader: {
     flexDirection: "row",
     alignItems: "center",
+    gap: 8,
   },
   actionIconContainer: {
     width: 40,
@@ -456,7 +474,6 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0,123,255,0.1)",
     justifyContent: "center",
     alignItems: "center",
-    marginRight: 12,
   },
   actionIcon: {
     fontSize: 20,

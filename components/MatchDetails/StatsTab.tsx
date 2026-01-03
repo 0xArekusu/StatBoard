@@ -19,6 +19,7 @@ import {
   SortBy,
   SortOrder,
 } from "../../constants/matchDetailsConstants";
+import PlayerAvatar from "../PlayerAvatar";
 
 interface StatsTabProps {
   stats: PlayerStats[];
@@ -308,21 +309,16 @@ export default function StatsTab({
             ]}
           >
             <View style={styles.playerCell}>
-              <View
-                style={[
-                  styles.playerNumberBadge,
-                  { backgroundColor: bgColor },
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.playerNumberBadgeText,
-                    { color: textSecondary },
-                  ]}
-                >
-                  {player.playerNumber}
-                </Text>
-              </View>
+              <PlayerAvatar
+                playerName={player.name}
+                playerNumber={player.playerNumber}
+                photoUrl={player.photoUrl}
+                size={24}
+                borderColor={borderColor}
+                backgroundColor={bgColor}
+                textColor={textSecondary}
+                borderWidth={0}
+              />
               <Text
                 style={[styles.playerNameText, { color: textPrimary }]}
                 numberOfLines={1}

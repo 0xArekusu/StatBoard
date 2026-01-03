@@ -19,6 +19,7 @@ import { supabase } from "../../src/config/supabase";
 import type { TeamGender } from "../../models/Team";
 import { RootStackParamList, RootNavigationProp } from "../../types/navigation";
 import { ROUTES } from "../../constants/routes";
+import PlayerAvatar from "../../components/PlayerAvatar";
 
 /**
  * Local player interface for this screen
@@ -337,32 +338,16 @@ export default function TeamStartersScreen() {
                   </View>
                 )}
 
-                <View
-                  style={[
-                    styles.playerPhoto,
-                    {
-                      borderColor: isStarter
-                        ? colors.primary
-                        : colors.border,
-                    },
-                  ]}
-                >
-                  {player.photoUrl ? (
-                    <Image
-                      source={{ uri: player.photoUrl }}
-                      style={styles.photoImage}
-                    />
-                  ) : (
-                    <Text
-                      style={[
-                        styles.playerNumberBig,
-                        { color: colors.text.secondary },
-                      ]}
-                    >
-                      {player.jerseyNumber}
-                    </Text>
-                  )}
-                </View>
+                <PlayerAvatar
+                  playerName={player.name}
+                  playerNumber={player.jerseyNumber}
+                  photoUrl={player.photoUrl}
+                  size={56}
+                  borderColor={isStarter ? colors.primary : colors.border}
+                  backgroundColor={colors.surface}
+                  textColor={colors.text.secondary}
+                  borderWidth={2}
+                />
 
                 <View style={styles.playerNameContainer}>
                   <Text

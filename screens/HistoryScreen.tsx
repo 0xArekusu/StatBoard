@@ -9,6 +9,7 @@ import {
   Modal,
   Alert,
 } from "react-native";
+import { useFocusEffect } from "@react-navigation/native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useTheme } from "../src/contexts/ThemeContext";
 import { useAuth } from "../src/contexts/AuthContext";
@@ -52,6 +53,13 @@ export default function HistoryScreen({ navigation }: HistoryScreenProps) {
   useEffect(() => {
     loadHistoryData();
   }, [user?.id]);
+
+  // Reload data when screen comes into focus (e.g., after switching tabs)
+  useFocusEffect(
+    React.useCallback(() => {
+      loadHistoryData();
+    }, [user?.id])
+  );
 
   /**
    * Loads all matches from both local storage and Supabase
@@ -160,7 +168,7 @@ export default function HistoryScreen({ navigation }: HistoryScreenProps) {
     }
   };
 
-  const bgColor = colors.surface;
+  const bgColor = colors.background;
   const textPrimary = colors.text.primary;
   const textSecondary = colors.text.secondary;
   const borderColor = colors.border;
@@ -478,7 +486,7 @@ function MatchCard({ match, onPress }: MatchCardProps) {
     <TouchableOpacity
       style={[
         styles.matchCard,
-        { backgroundColor: colors.background, borderColor: colors.border },
+        { backgroundColor: colors.surface, borderColor: colors.border },
       ]}
       onPress={onPress}
       activeOpacity={0.7}

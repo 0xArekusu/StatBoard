@@ -20,6 +20,7 @@ import {
   COURT_SVG_HEIGHT_LANDSCAPE,
 } from "../../../constants/courtConstants";
 import { calculateEfficiency } from "../../utils/statsCalculator";
+import { AvatarService } from "../AvatarService";
 
 interface Player {
   id: number;
@@ -1731,6 +1732,13 @@ export class PDFExportService {
       align-items: center;
       gap: 12px;
     }
+    .player-avatar-img {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      border: 2px solid ${PDF_COLORS.card.border};
+      object-fit: cover;
+    }
     .player-avatar {
       width: 48px;
       height: 48px;
@@ -2050,6 +2058,8 @@ export class PDFExportService {
         });
         const estimatedMinutes = this.calculateEstimatedMinutes(playerStats, efficiency, totalFouls);
 
+        const avatarUrl = AvatarService.getAvatarUrl(player.name, player.photoUrl);
+
         return `
     <div class="player-card-page">
       <img src="${AppLogoSVG}" alt="App" class="player-card-logo" />
@@ -2060,7 +2070,8 @@ export class PDFExportService {
       <div class="player-card">
         <div class="player-header">
           <div class="player-info-left">
-            <div class="player-avatar">${player.num}</div>
+            <img src="${avatarUrl}" alt="${player.name}" class="player-avatar-img" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
+            <div class="player-avatar" style="display: none;">${player.num}</div>
             <div class="player-info">
               <div class="player-name">${player.name}</div>
               <div class="player-number">#${player.num}</div>
