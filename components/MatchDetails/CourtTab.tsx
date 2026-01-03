@@ -5,7 +5,7 @@
  * Extracted from MatchDetailsScreen for better modularity.
  */
 
-import React from "react";
+import React, { useEffect } from "react";
 import {
   View,
   Text,
@@ -17,7 +17,7 @@ import { useTheme } from "../../src/contexts/ThemeContext";
 import BasketballCourtSVG from "../BasketballCourtSVG";
 import { ActionType, ACTION_FILTER } from "../../constants";
 import { PlayerStats, ActionFilterType } from "../../constants/matchDetailsConstants";
-import { getActionColor } from "../../src/models/ActionTypes";
+import { getActionColor, ACTION_CONFIG } from "../../src/models/ActionTypes";
 import {
   COURT_SVG_WIDTH_PORTRAIT,
   COURT_SVG_HEIGHT_PORTRAIT,
@@ -29,6 +29,8 @@ interface CourtTabProps {
   actions: any[];
   selectedActionTypes: ActionFilterType[];
   setSelectedActionTypes: (types: ActionFilterType[]) => void;
+  selectedSpecifications: string[];
+  setSelectedSpecifications: (specs: string[]) => void;
   selectedPlayers: number[];
   setSelectedPlayers: (players: number[]) => void;
   courtBackgroundColor: string;
@@ -42,6 +44,8 @@ export default function CourtTab({
   actions,
   selectedActionTypes,
   setSelectedActionTypes,
+  selectedSpecifications,
+  setSelectedSpecifications,
   selectedPlayers,
   setSelectedPlayers,
   courtBackgroundColor,
@@ -58,6 +62,35 @@ export default function CourtTab({
   const textPrimary = colors.text.primary;
   const textSecondary = colors.text.secondary;
   const textTertiary = colors.text.tertiary;
+
+  // Determine which specifications to show based on selected action type
+  // Only show specifications if exactly one action type is selected
+  const getAvailableSpecifications = () => {
+    if (selectedActionTypes.length !== 1) return [];
+
+    const selectedType = selectedActionTypes[0];
+
+    // Map ACTION_FILTER to ActionType
+    let actionType: string | null = null;
+    if (selectedType === ACTION_FILTER.SHOOTING) actionType = ActionType.SHOT;
+    else if (selectedType === ACTION_FILTER.REBOUNDS) actionType = ActionType.REBOUND;
+    else if (selectedType === ACTION_FILTER.FOULS) actionType = ActionType.FOUL;
+
+    if (!actionType) return [];
+
+    const config = ACTION_CONFIG[actionType];
+    return config?.specifications || [];
+  };
+
+  const availableSpecifications = getAvailableSpecifications();
+
+  // Reset specifications when action type filter changes
+  useEffect(() => {
+    // Clear specifications if no action types selected or multiple selected
+    if (selectedActionTypes.length !== 1) {
+      setSelectedSpecifications([]);
+    }
+  }, [selectedActionTypes, setSelectedSpecifications]);
 
   return (
     <View style={styles.courtViewContainer}>
@@ -403,6 +436,66 @@ export default function CourtTab({
         </ScrollView>
       </View>
 
+      {/* Specification Filters - Only show if one action type is selected and it has specifications */}
+      {availableSpecifications.length > 0 && (
+        <View
+          style={[styles.courtFiltersSection, { backgroundColor: bgColor }]}
+        >
+          <Text style={[styles.courtFilterLabel, { color: textTertiary }]}>
+            SPÉCIFICATIONS
+          </Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.courtFilterScroll}
+          >
+            <View style={styles.courtFilterButtonsRow}>
+              {availableSpecifications.map((spec) => {
+                const isSelected = selectedSpecifications.includes(spec.id);
+                return (
+                  <TouchableOpacity
+                    key={spec.id}
+                    onPress={() => {
+                      if (isSelected) {
+                        setSelectedSpecifications(
+                          selectedSpecifications.filter((s) => s !== spec.id)
+                        );
+                      } else {
+                        setSelectedSpecifications([
+                          ...selectedSpecifications,
+                          spec.id,
+                        ]);
+                      }
+                    }}
+                    style={[
+                      styles.courtFilterChip,
+                      {
+                        backgroundColor: isSelected
+                          ? `${spec.color}20`
+                          : colors.surfaceVariant,
+                        borderColor: isSelected ? spec.color : borderColor,
+                        borderWidth: 2,
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.courtFilterChipText,
+                        {
+                          color: isSelected ? spec.color : textPrimary,
+                        },
+                      ]}
+                    >
+                      {spec.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </ScrollView>
+        </View>
+      )}
+
       {/* Player Filters */}
       <View
         style={[styles.courtFiltersSection, { backgroundColor: bgColor }]}
@@ -556,6 +649,14 @@ export default function CourtTab({
                       if (!matchesFilter) return false;
                     }
 
+                    // Filter by specification (e.g., offensive/defensive for rebounds)
+                    if (selectedSpecifications.length > 0) {
+                      const specification = action.specification || "";
+                      if (!selectedSpecifications.includes(specification)) {
+                        return false;
+                      }
+                    }
+
                     // Filter by player
                     if (selectedPlayers.length > 0) {
                       const playerNum =
@@ -643,7 +744,7 @@ const styles = StyleSheet.create({
 
   // Court Filters
   courtFiltersSection: {
-    marginBottom: 16,
+    marginBottom: 0,
     paddingVertical: 8,
   },
   courtFilterLabel: {

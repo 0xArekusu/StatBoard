@@ -189,6 +189,10 @@ export default function MatchDetailsScreen() {
   const [selectedActionTypes, setSelectedActionTypes] = useState<ActionFilterType[]>(
     []
   );
+  // Selected specifications for court filter (e.g., offensive/defensive for rebounds)
+  const [selectedSpecifications, setSelectedSpecifications] = useState<string[]>(
+    []
+  );
   // Selected players for court filter
   const [selectedPlayers, setSelectedPlayers] = useState<number[]>([]);
   // Show/hide court filters
@@ -874,6 +878,8 @@ export default function MatchDetailsScreen() {
             actions={actions}
             selectedActionTypes={selectedActionTypes}
             setSelectedActionTypes={setSelectedActionTypes}
+            selectedSpecifications={selectedSpecifications}
+            setSelectedSpecifications={setSelectedSpecifications}
             selectedPlayers={selectedPlayers}
             setSelectedPlayers={setSelectedPlayers}
             courtBackgroundColor={courtBackgroundColor}
