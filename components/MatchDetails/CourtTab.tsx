@@ -12,6 +12,7 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  useWindowDimensions,
 } from "react-native";
 import { useTheme } from "../../src/contexts/ThemeContext";
 import BasketballCourtSVG from "../BasketballCourtSVG";
@@ -21,6 +22,10 @@ import { getActionColor, ACTION_CONFIG } from "../../src/models/ActionTypes";
 import {
   COURT_SVG_WIDTH_PORTRAIT,
   COURT_SVG_HEIGHT_PORTRAIT,
+  COURT_SVG_WIDTH_LANDSCAPE,
+  COURT_SVG_HEIGHT_LANDSCAPE,
+  COURT_DISPLAY_WIDTH_PORTRAIT_MAX,
+  COURT_DISPLAY_HEIGHT_PORTRAIT_MAX,
 } from "../../constants";
 import PlayerAvatar from "../PlayerAvatar";
 
@@ -54,6 +59,7 @@ export default function CourtTab({
   activeTeamFilter,
 }: CourtTabProps) {
   const { colors, isDark } = useTheme();
+  const windowDimensions = useWindowDimensions();
 
   // Theme colors
   const bgColor = colors.background;
@@ -62,6 +68,31 @@ export default function CourtTab({
   const textPrimary = colors.text.primary;
   const textSecondary = colors.text.secondary;
   const textTertiary = colors.text.tertiary;
+
+  // Determine orientation based on screen dimensions (not container)
+  const isPortrait = windowDimensions.height > windowDimensions.width;
+
+  // Calculate court dimensions - use half of the SVG constants, but cap portrait to not exceed current size
+  const courtWidth = isPortrait
+    ? Math.min(COURT_SVG_WIDTH_PORTRAIT / 2, COURT_DISPLAY_WIDTH_PORTRAIT_MAX)
+    : COURT_SVG_WIDTH_LANDSCAPE / 2;
+  const courtHeight = isPortrait
+    ? Math.min(COURT_SVG_HEIGHT_PORTRAIT / 2, COURT_DISPLAY_HEIGHT_PORTRAIT_MAX)
+    : COURT_SVG_HEIGHT_LANDSCAPE / 2;
+
+  console.log('[CourtTab] Court calculations:', {
+    screenWidth: windowDimensions.width,
+    screenHeight: windowDimensions.height,
+    isPortrait,
+    courtWidth,
+    courtHeight,
+    constants: {
+      portraitWidth: COURT_SVG_WIDTH_PORTRAIT,
+      portraitHeight: COURT_SVG_HEIGHT_PORTRAIT,
+      landscapeWidth: COURT_SVG_WIDTH_LANDSCAPE,
+      landscapeHeight: COURT_SVG_HEIGHT_LANDSCAPE,
+    }
+  });
 
   // Determine which specifications to show based on selected action type
   // Only show specifications if exactly one action type is selected
@@ -590,8 +621,8 @@ export default function CourtTab({
             ]}
           >
             <BasketballCourtSVG
-              width={COURT_SVG_WIDTH_PORTRAIT / 2}
-              height={COURT_SVG_HEIGHT_PORTRAIT / 2}
+              width={courtWidth}
+              height={courtHeight}
               backgroundColor={courtBackgroundColor}
               lineColor={courtLineColor}
               logoUri={logoUri}
