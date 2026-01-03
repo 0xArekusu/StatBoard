@@ -590,8 +590,8 @@ export default function CourtTab({
             ]}
           >
             <BasketballCourtSVG
-              width={350}
-              height={520}
+              width={COURT_SVG_WIDTH_PORTRAIT / 2}
+              height={COURT_SVG_HEIGHT_PORTRAIT / 2}
               backgroundColor={courtBackgroundColor}
               lineColor={courtLineColor}
               logoUri={logoUri}
