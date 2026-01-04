@@ -113,3 +113,14 @@ export enum FilterMode {
   BLOCKS = "BLOCKS",
   STEALS = "STEALS",
 }
+
+// ===========================
+// UI DISPLAY SETTINGS
+// ===========================
+
+/**
+ * Duration (in milliseconds) to display a newly added marker on the court
+ * when stats are hidden. This provides visual feedback to the user
+ * about where they clicked before the marker disappears.
+ */
+export const TEMPORARY_MARKER_DISPLAY_DURATION = 500;

@@ -7,11 +7,11 @@
 
 // Platform constants
 export enum PlatformOS {
-  IOS = 'ios',
-  ANDROID = 'android',
-  WEB = 'web',
-  WINDOWS = 'windows',
-  MACOS = 'macos',
+  IOS = "ios",
+  ANDROID = "android",
+  WEB = "web",
+  WINDOWS = "windows",
+  MACOS = "macos",
 }
 
 // Match constants
@@ -58,6 +58,7 @@ export {
   TeamId,
   ViewMode,
   FilterMode,
+  TEMPORARY_MARKER_DISPLAY_DURATION,
 } from "./liveMatchConstants";
 
 // Live Match Helpers

@@ -4,12 +4,13 @@
  * Displays the basketball court with action markers
  */
 
-import React, { useState } from "react";
-import { View, StyleSheet } from "react-native";
+import React, { useState, useEffect, useRef } from "react";
+import { View, StyleSheet, Animated } from "react-native";
 import {
   MatchEvent,
   FilterMode,
   TeamId,
+  TEMPORARY_MARKER_DISPLAY_DURATION,
 } from "../../constants/liveMatchConstants";
 import { ActionType, getActionColor } from "../../src/models/ActionTypes";
 import BasketballCourtSVG from "../BasketballCourtSVG";
@@ -46,6 +47,45 @@ export const CourtView: React.FC<CourtViewProps> = ({
     height: 0,
   });
 
+  // Temporary display of last marker when stats are hidden
+  const [showLastMarker, setShowLastMarker] = useState(false);
+  const previousEventsLengthRef = useRef(events?.length || 0);
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  // Detect when a new event is added and briefly show it when markers are hidden
+  useEffect(() => {
+    const currentEventsLength = events?.length || 0;
+
+    // If a new event was added and markers are hidden
+    if (currentEventsLength > previousEventsLengthRef.current && !showMarkers) {
+      // Show the last marker with fade in
+      setShowLastMarker(true);
+
+      // Fade in animation
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 100,
+        useNativeDriver: true,
+      }).start();
+
+      // Fade out animation after the configured duration
+      const timer = setTimeout(() => {
+        Animated.timing(fadeAnim, {
+          toValue: 0,
+          duration: 200, // Fade out over 200ms
+          useNativeDriver: true,
+        }).start(() => {
+          setShowLastMarker(false);
+        });
+      }, TEMPORARY_MARKER_DISPLAY_DURATION);
+
+      return () => clearTimeout(timer);
+    }
+
+    // Update the reference
+    previousEventsLengthRef.current = currentEventsLength;
+  }, [events?.length, showMarkers, fadeAnim]);
+
   const handleLayout = (event: any) => {
     const { width, height } = event.nativeEvent.layout;
     setCourtDimensions({ width, height });
@@ -61,45 +101,70 @@ export const CourtView: React.FC<CourtViewProps> = ({
 
     // Filter by action type
     if (filterMode === FilterMode.ALL) return true;
-    if (filterMode === FilterMode.SHOOTING) return e.action_type === ActionType.SHOT;
-    if (filterMode === FilterMode.REBOUNDS) return e.action_type === ActionType.REBOUND;
-    if (filterMode === FilterMode.FOULS) return e.action_type === ActionType.FOUL;
-    if (filterMode === FilterMode.TURNOVERS) return e.action_type === ActionType.TURNOVER;
-    if (filterMode === FilterMode.BLOCKS) return e.action_type === ActionType.BLOCK;
-    if (filterMode === FilterMode.STEALS) return e.action_type === ActionType.STEAL;
+    if (filterMode === FilterMode.SHOOTING)
+      return e.action_type === ActionType.SHOT;
+    if (filterMode === FilterMode.REBOUNDS)
+      return e.action_type === ActionType.REBOUND;
+    if (filterMode === FilterMode.FOULS)
+      return e.action_type === ActionType.FOUL;
+    if (filterMode === FilterMode.TURNOVERS)
+      return e.action_type === ActionType.TURNOVER;
+    if (filterMode === FilterMode.BLOCKS)
+      return e.action_type === ActionType.BLOCK;
+    if (filterMode === FilterMode.STEALS)
+      return e.action_type === ActionType.STEAL;
     return true;
   });
 
-  const markers = showMarkers
-    ? filteredEvents
-        ?.filter((evt: MatchEvent) => {
-          // Filter out events without valid court coordinates (e.g., quick score buttons with -999)
-          return (
-            evt.coordinates &&
-            evt.coordinates.x >= 0 &&
-            evt.coordinates.y >= 0 &&
-            evt.coordinates.x <= 1 &&
-            evt.coordinates.y <= 1
-          );
-        })
-        .map((evt: MatchEvent) => {
-          // Get color from centralized ACTION_CONFIG
-          const markerColor = getActionColor(evt.action_type, evt.specification, evt.points);
+  // Determine which events to display as markers
+  let eventsToDisplay =
+    filteredEvents?.filter((evt: MatchEvent) => {
+      // Filter out events without valid court coordinates (e.g., quick score buttons with -999)
+      return (
+        evt.coordinates &&
+        evt.coordinates.x >= 0 &&
+        evt.coordinates.y >= 0 &&
+        evt.coordinates.x <= 1 &&
+        evt.coordinates.y <= 1
+      );
+    }) || [];
 
-          // Convert normalized coordinates (0-1) to portrait SVG coordinates (0-COURT_SVG_WIDTH_PORTRAIT x 0-COURT_SVG_HEIGHT_PORTRAIT)
-          const svgX = evt.coordinates!.x * COURT_SVG_WIDTH_PORTRAIT;
-          const svgY = evt.coordinates!.y * COURT_SVG_HEIGHT_PORTRAIT;
+  // If showLastMarker is true and showMarkers is false, only show the most recent marker
+  if (showLastMarker && !showMarkers && eventsToDisplay.length > 0) {
+    eventsToDisplay = [eventsToDisplay[0]]; // First element is the most recent (events are prepended)
+  } else if (!showMarkers) {
+    eventsToDisplay = []; // No markers when hidden and not showing last marker
+  }
 
-          return {
-            id: evt.id,
-            svgX,
-            svgY,
-            color: markerColor,
-            actionType: evt.action_type,
-            specification: evt.specification,
-          };
-        }) || []
-    : [];
+  const markers = eventsToDisplay.map((evt: MatchEvent) => {
+    // Get color from centralized ACTION_CONFIG
+    const markerColor = getActionColor(
+      evt.action_type,
+      evt.specification,
+      evt.points,
+    );
+
+    // Convert normalized coordinates (0-1) to portrait SVG coordinates (0-COURT_SVG_WIDTH_PORTRAIT x 0-COURT_SVG_HEIGHT_PORTRAIT)
+    const svgX = evt.coordinates!.x * COURT_SVG_WIDTH_PORTRAIT;
+    const svgY = evt.coordinates!.y * COURT_SVG_HEIGHT_PORTRAIT;
+
+    return {
+      id: evt.id,
+      svgX,
+      svgY,
+      color: markerColor,
+      actionType: evt.action_type,
+      specification: evt.specification,
+    };
+  });
+
+  // Separate markers for fade animation
+  // When showLastMarker is true, we show only the last marker with fade effect
+  // Otherwise, we show all markers normally
+  const lastMarker =
+    showLastMarker && eventsToDisplay.length > 0 ? [markers[0]] : [];
+  const regularMarkers = showLastMarker ? [] : markers;
+
   return (
     <View style={styles.courtContainer} onLayout={handleLayout}>
       <BasketballCourtSVG
@@ -111,8 +176,29 @@ export const CourtView: React.FC<CourtViewProps> = ({
         backgroundColor={courtBackgroundColor}
         lineColor={courtLineColor}
         logoUri={clubLogoUrl}
-        markers={markers}
+        markers={regularMarkers}
       />
+      {/* Animated overlay for last marker with fade effect */}
+      {showLastMarker && lastMarker.length > 0 && (
+        <Animated.View
+          style={[
+            StyleSheet.absoluteFill,
+            {
+              opacity: fadeAnim,
+              pointerEvents: "none",
+            },
+          ]}
+        >
+          <BasketballCourtSVG
+            width={courtDimensions.width || 400}
+            height={courtDimensions.height || 600}
+            backgroundColor="transparent"
+            lineColor="transparent"
+            logoUri={null}
+            markers={lastMarker}
+          />
+        </Animated.View>
+      )}
     </View>
   );
 };
