@@ -334,7 +334,7 @@ export class MatchSyncService {
 
   /**
    * Transform local match data to Supabase format
-   * Maps SQLite schema to Supabase schema and groups actions by player
+   * Maps SQLite schema to Supabase schema with embedded players and stats
    */
   private transformMatchForSync(
     match: Match,
@@ -342,87 +342,97 @@ export class MatchSyncService {
     actions: Action[],
     userId: string
   ): SupabaseMatchSyncData {
-    // Create match insert data
+    // Group actions by player_id
+    const actionsByPlayerId: Record<string, Action[]> = {};
+
+    // Create player_id mapping first
+    const playerIdMap = new Map<string, string>();
+    for (const player of matchPlayers) {
+      const key = `${player.team}-${player.player_number}`;
+      const playerId = player.player_id || `temp-${player.team}-${player.player_number}`;
+      playerIdMap.set(key, playerId);
+    }
+
+    // Group actions by player_id
+    for (const action of actions) {
+      const key = `${action.team}-${action.player_number}`;
+      const playerId = playerIdMap.get(key);
+
+      if (playerId) {
+        if (!actionsByPlayerId[playerId]) {
+          actionsByPlayerId[playerId] = [];
+        }
+        actionsByPlayerId[playerId].push(action);
+      }
+    }
+
+    // Build players array (light info)
+    const playersArray = matchPlayers.map((player) => ({
+      player_id: player.player_id || null,
+      player_number: player.player_number,
+      player_name: player.player_name,
+      team: player.team,
+      is_starter: player.is_starter,
+      photo_url: player.photo_url || null,
+      on_court: player.on_court || 0,
+      playing_time_seconds: player.playing_time_seconds || 0,
+    }));
+
+    // Build player_stats object: { [player_id]: { actions: [...] } }
+    const playerStatsObject: Record<string, { actions: PlayerAction[] }> = {};
+
+    for (const player of matchPlayers) {
+      const playerId = player.player_id || `temp-${player.team}-${player.player_number}`;
+      const playerActions = actionsByPlayerId[playerId] || [];
+
+      // Transform actions to JSONB format
+      const actionsJson: PlayerAction[] = playerActions.map((action) => ({
+        team: action.team,
+        action_type: action.action_type,
+        specification: action.specification,
+        points: action.points || undefined,
+        semantic_x: action.semantic_x,
+        semantic_y: action.semantic_y,
+        action_order: action.action_order,
+        period_number: action.period_number,
+        time_in_period: action.time_in_period,
+        timestamp: action.timestamp,
+      }));
+
+      playerStatsObject[playerId] = { actions: actionsJson };
+
+      logInfo('MatchSyncService', '📊 Player actions grouped', {
+        playerName: player.player_name,
+        playerId,
+        actionCount: actionsJson.length
+      });
+    }
+
+    // Create match insert data with embedded players and stats
     const matchInsert: SupabaseMatchInsert = {
       club_id: match.club_id || null,
       team_id: match.team_id || null,
       my_team_name: match.my_team_name || null,
       opponent_name: match.opponent_name,
-      is_home: match.is_home === 1,
+      is_home: match.is_home ? true : false,
       total_periods: match.total_periods || 4,
       period_duration: match.period_duration,
       overtime_duration: match.overtime_duration || null,
       overtime_periods: match.overtime_periods || 0,
       my_team_score: match.my_team_score || 0,
       opponent_score: match.opponent_score || 0,
-      status: (match.status as 'completed' | 'abandoned') || 'completed',
+      status: 'completed', // Match is completed when syncing
       created_by: userId,
-      played_at: match.ended_at || match.started_at || match.created_at,
+      started_at: match.started_at || null,
+      ended_at: match.ended_at || null,
+      synced_at: new Date().toISOString(), // Set current time as sync time
+      players: playersArray as any, // JSONB in Supabase
+      player_stats: playerStatsObject as any, // JSONB in Supabase
     };
-
-    // Group actions by player
-    const actionsByPlayer = new Map<string, Action[]>();
-
-    for (const action of actions) {
-      const key = `${action.team}-${action.player_number}`;
-      if (!actionsByPlayer.has(key)) {
-        actionsByPlayer.set(key, []);
-      }
-      actionsByPlayer.get(key)!.push(action);
-    }
-
-    // Create match players insert data with actions grouped
-    // Note: match_id will be added later after match creation in Supabase
-    const playersInsert: Omit<SupabaseMatchPlayerInsert, 'match_id'>[] = matchPlayers.map(
-      (player) => {
-        const key = `${player.team}-${player.player_number}`;
-        const playerActions = actionsByPlayer.get(key) || [];
-
-        // Transform actions to JSONB format
-        const actionsJson: PlayerAction[] = playerActions.map((action) => ({
-          action_type: action.action_type,
-          specification: action.specification,
-          points: action.points || undefined,
-          semantic_x: action.semantic_x,
-          semantic_y: action.semantic_y,
-          action_order: action.action_order,
-          period_number: action.period_number,
-          time_in_period: action.time_in_period,
-          timestamp: action.timestamp,
-        }));
-
-        // Calculate player statistics from actions
-        const stats = this.calculatePlayerStats(playerActions);
-
-        logInfo('MatchSyncService', '📊 Player stats calculated', {
-          playerName: player.player_name,
-          stats
-        });
-
-        return {
-          player_id: player.player_id || null,
-          player_number: player.player_number,
-          player_name: player.player_name,
-          team: player.team,
-          is_starter: player.is_starter,
-          photo_url: player.photo_url || null,
-          actions: actionsJson,
-          // Statistics calculated from actions (basic stats only)
-          total_points: stats.totalPoints,
-          total_shots: stats.totalShots,
-          total_rebounds: stats.totalRebounds,
-          total_fouls: stats.totalFouls,
-          total_assists: stats.totalAssists,
-          total_steals: stats.totalSteals,
-          total_blocks: stats.totalBlocks,
-          total_turnovers: stats.totalTurnovers,
-        };
-      }
-    );
 
     return {
       match: matchInsert,
-      players: playersInsert,
+      players: [], // Empty - no longer needed since embedded
     };
   }
 
@@ -510,20 +520,20 @@ export class MatchSyncService {
   }
 
   /**
-   * Insert match and players to Supabase
-   * Creates match first, then inserts all players with their actions
-   * Rolls back match if player insertion fails
+   * Insert match with embedded players to Supabase
+   * All player data and stats are embedded in the match record
    */
   private async syncToSupabase(
     syncData: SupabaseMatchSyncData
   ): Promise<string> {
     try {
-      logInfo('MatchSyncService', '📤 Inserting match to Supabase', {
+      logInfo('MatchSyncService', '📤 Inserting match to Supabase (with embedded players)', {
         myTeam: syncData.match.my_team_name,
-        opponent: syncData.match.opponent_name
+        opponent: syncData.match.opponent_name,
+        playerCount: syncData.match.players?.length || 0
       });
 
-      // Insert match
+      // Insert match with embedded players and stats
       const { data: matchData, error: matchError } = await this.supabase
         .from("matches")
         .insert(syncData.match)
@@ -540,43 +550,9 @@ export class MatchSyncService {
 
       const matchId = matchData.id;
 
-      logInfo('MatchSyncService', '✅ Match inserted to Supabase', {
-        supabaseMatchId: matchId
-      });
-
-      // Insert players with actions
-      const playersWithMatchId = syncData.players.map((player) => ({
-        ...player,
-        match_id: matchId,
-      }));
-
-      logInfo('MatchSyncService', '📤 Inserting match players to Supabase', {
+      logInfo('MatchSyncService', '✅ Match inserted to Supabase with embedded players', {
         supabaseMatchId: matchId,
-        playerCount: playersWithMatchId.length,
-        teamValues: playersWithMatchId.map(p => p.team)
-      });
-
-      const { error: playersError } = await this.supabase
-        .from("match_players")
-        .insert(playersWithMatchId);
-
-      if (playersError) {
-        logError('MatchSyncService', '❌ Error inserting match players, rolling back', {
-          supabaseMatchId: matchId,
-          error: playersError.message
-        });
-
-        // Try to rollback match insertion
-        await this.supabase.from("matches").delete().eq("id", matchId);
-
-        throw new Error(
-          `Erreur lors de la création des joueurs: ${playersError.message}`
-        );
-      }
-
-      logInfo('MatchSyncService', '✅ Match players inserted to Supabase', {
-        supabaseMatchId: matchId,
-        playerCount: playersWithMatchId.length
+        playerCount: syncData.match.players?.length || 0
       });
 
       return matchId;

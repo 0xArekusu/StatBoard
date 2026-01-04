@@ -173,7 +173,7 @@ export function useMatchSync({
 
   const fetchAndNavigateToSyncedMatch = async (matchId: string) => {
     try {
-      // Fetch match
+      // Fetch match with embedded players and stats
       const { data: supabaseMatch, error: matchError } = await supabase
         .from("matches")
         .select("*")
@@ -182,47 +182,57 @@ export function useMatchSync({
 
       if (matchError) throw matchError;
 
-      // Fetch players for this match
-      const { data: matchPlayers, error: playersError } = await supabase
-        .from("match_players")
-        .select("*")
-        .eq("match_id", matchId);
+      // Extract players from matches.players JSONB array
+      const playersArray = supabaseMatch?.players || [];
+      const players = playersArray.map((p: any) => ({
+        id: p.player_number,
+        num: p.player_number,
+        name: p.player_name,
+        team: p.team,
+        isSubstitute: !p.is_starter,
+        photoUrl: p.photo_url,
+      }));
 
-      if (playersError) throw playersError;
-
-      // Convert match players to expected format
-      const players =
-        matchPlayers?.map((mp: any) => ({
-          id: mp.player_number,
-          num: mp.player_number,
-          name: mp.player_name,
-          team: mp.team,
-          isSubstitute: !mp.is_starter,
-          photoUrl: mp.photo_url,
-        })) || [];
-
-      // Extract actions from match_players
+      // Extract actions from matches.player_stats JSONB object
+      const playerStatsObject = supabaseMatch?.player_stats || {};
       const actionDataList: any[] = [];
-      matchPlayers?.forEach((mp: any) => {
-        if (mp.actions && Array.isArray(mp.actions)) {
-          const playerActions = mp.actions.map((action: any) => ({
-            type: action.action_type,
-            specification: action.specification,
-            points: action.points,
-            player: mp.player_number,
-            team: action.team || mp.team,
-            timestamp: new Date(action.timestamp),
-            period_number: action.period_number,
-            time_in_period: action.time_in_period,
-            position: { x: 0, y: 0 },
-            semanticPosition: {
-              xNormalized: action.semantic_x,
-              yNormalized: action.semantic_y,
-            },
-          }));
-          actionDataList.push(...playerActions);
-        }
+
+      // Create player_id -> player_number mapping
+      const playerMap = new Map<string, number>();
+      playersArray.forEach((p: any) => {
+        const playerId = p.player_id || `temp-${p.team}-${p.player_number}`;
+        playerMap.set(playerId, p.player_number);
       });
+
+      // Iterate through player_stats: { [player_id]: { actions: [...] } }
+      for (const [playerId, stats] of Object.entries(playerStatsObject)) {
+        const playerNumber = playerMap.get(playerId);
+
+        if (!playerNumber) {
+          console.warn(`Player number not found for player_id: ${playerId}`);
+          continue;
+        }
+
+        const playerActions = (stats as any)?.actions || [];
+
+        const convertedActions = playerActions.map((action: any) => ({
+          type: action.action_type,
+          specification: action.specification,
+          points: action.points,
+          player: playerNumber,
+          team: action.team,
+          timestamp: new Date(action.timestamp),
+          period_number: action.period_number,
+          time_in_period: action.time_in_period,
+          position: { x: 0, y: 0 },
+          semanticPosition: {
+            xNormalized: action.semantic_x,
+            yNormalized: action.semantic_y,
+          },
+        }));
+
+        actionDataList.push(...convertedActions);
+      }
 
       logInfo("useMatchSync", "✅ Synced match data fetched", {
         matchId,

@@ -1,12 +1,33 @@
 /**
  * Types for Supabase match sync
- * These types represent the server-side schema for matches and match_players
+ * These types represent the server-side schema for matches with embedded players
  */
 
 import { Team } from '../../../models/types';
 
 /**
- * Match table on Supabase (completed matches only)
+ * Player info stored in matches.players JSONB array
+ */
+export interface SupabaseMatchPlayerInfo {
+  player_id: string | null;
+  player_number: number;
+  player_name: string;
+  team: Team;
+  is_starter: boolean;
+  photo_url: string | null;
+  on_court: number;
+  playing_time_seconds: number;
+}
+
+/**
+ * Player stats stored in matches.player_stats JSONB object
+ */
+export interface SupabaseMatchPlayerStats {
+  actions: PlayerAction[];
+}
+
+/**
+ * Match table on Supabase (with embedded players and stats)
  */
 export interface SupabaseMatch {
   id: string;  // UUID
@@ -25,14 +46,17 @@ export interface SupabaseMatch {
   // Final scores
   my_team_score: number;
   opponent_score: number;
-  status: 'completed' | 'abandoned';
+  status: 'in_progress' | 'completed' | 'cancelled';
+
+  // Embedded player data
+  players: SupabaseMatchPlayerInfo[];  // JSONB array
+  player_stats: Record<string, SupabaseMatchPlayerStats>;  // JSONB object
 
   // Metadata
   created_by: string | null;  // UUID of auth user
   created_at: string;
   started_at: string | null;
   ended_at: string | null;
-  played_at: string;
   synced_at: string | null;
 }
 
@@ -51,15 +75,24 @@ export interface SupabaseMatchInsert {
   overtime_periods: number;
   my_team_score: number;
   opponent_score: number;
-  status: 'completed' | 'abandoned';
+  status: 'in_progress' | 'completed' | 'cancelled';
   created_by?: string | null;
-  played_at: string;
+
+  // Timestamps
+  started_at?: string | null;
+  ended_at?: string | null;
+  synced_at?: string | null;
+
+  // Embedded player data
+  players?: SupabaseMatchPlayerInfo[];  // JSONB array
+  player_stats?: Record<string, SupabaseMatchPlayerStats>;  // JSONB object
 }
 
 /**
  * Player action stored in JSONB
  */
 export interface PlayerAction {
+  team: Team;
   action_type: string;
   specification: string;
   points?: number;

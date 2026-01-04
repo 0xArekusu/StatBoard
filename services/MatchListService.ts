@@ -53,7 +53,7 @@ export class MatchListService {
           .from("matches")
           .select("*")
           .eq("created_by", userId)
-          .order("played_at", { ascending: false });
+          .order("created_at", { ascending: false });
 
         if (error) {
           console.error("Error loading server matches:", error);
@@ -80,7 +80,6 @@ export class MatchListService {
             created_at: sm.created_at,
             started_at: sm.started_at,
             ended_at: sm.ended_at,
-            played_at: sm.played_at,
             last_updated: sm.created_at,
           } as any));
         }

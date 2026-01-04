@@ -22,7 +22,6 @@ export class SQLiteAdapter implements IStorageAdapter {
     try {
       console.log("🔄 Resetting database tables...");
       this.db.execSync("DROP TABLE IF EXISTS match_actions");
-      this.db.execSync("DROP TABLE IF EXISTS match_players");
       this.db.execSync("DROP TABLE IF EXISTS matches");
       this.db.execSync("DROP TABLE IF EXISTS database_version");
       console.log("✅ Database tables reset successfully");
@@ -32,7 +31,7 @@ export class SQLiteAdapter implements IStorageAdapter {
   }
 
   private initializeTables(): void {
-    // Create matches table (new schema)
+    // Create matches table (new schema with embedded players)
     this.db.execSync(`
       CREATE TABLE IF NOT EXISTS matches (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -58,16 +57,19 @@ export class SQLiteAdapter implements IStorageAdapter {
         score_manually_adjusted INTEGER DEFAULT 0,
 
         -- Match State (local only)
-        status TEXT NOT NULL DEFAULT 'in_progress' CHECK(status IN ('in_progress', 'completed', 'abandoned')),
+        status TEXT NOT NULL DEFAULT 'in_progress' CHECK(status IN ('in_progress', 'completed', 'cancelled')),
         current_period INTEGER DEFAULT 1,
         time_elapsed INTEGER DEFAULT 0,
+
+        -- Players data (JSONB stored as TEXT in SQLite)
+        players TEXT DEFAULT '[]',
+        player_stats TEXT DEFAULT '{}',
 
         -- Timestamps
         created_by TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         started_at DATETIME,
         ended_at DATETIME,
-        played_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
         synced_at DATETIME,
         last_updated DATETIME DEFAULT CURRENT_TIMESTAMP,
 
@@ -106,48 +108,6 @@ export class SQLiteAdapter implements IStorageAdapter {
       // Column might already exist, ignore error
     }
 
-    // Create match_players table
-    this.db.execSync(`
-      CREATE TABLE IF NOT EXISTS match_players (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        match_id INTEGER NOT NULL,
-        player_number INTEGER NOT NULL,
-        player_name TEXT NOT NULL,
-        team TEXT NOT NULL CHECK(team IN ('MyTeam', 'Opponent')),
-        is_starter INTEGER NOT NULL DEFAULT 1,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (match_id) REFERENCES matches (id) ON DELETE CASCADE,
-        UNIQUE(match_id, player_number, team)
-      );
-    `);
-
-    // Add actions column if it doesn't exist (for compacted match data)
-    try {
-      this.db.execSync(`
-        ALTER TABLE match_players ADD COLUMN actions TEXT;
-      `);
-    } catch (error) {
-      // Column might already exist, ignore error
-    }
-
-    // Add player_id column if it doesn't exist (link to club players)
-    try {
-      this.db.execSync(`
-        ALTER TABLE match_players ADD COLUMN player_id TEXT;
-      `);
-    } catch (error) {
-      // Column might already exist, ignore error
-    }
-
-    // Add photo_url column if it doesn't exist (Supabase Storage URL for club players)
-    try {
-      this.db.execSync(`
-        ALTER TABLE match_players ADD COLUMN photo_url TEXT;
-      `);
-    } catch (error) {
-      // Column might already exist, ignore error
-    }
-
     // Add my_team_name column if it doesn't exist (migration for existing databases)
     try {
       this.db.execSync(`
@@ -157,19 +117,19 @@ export class SQLiteAdapter implements IStorageAdapter {
       // Column might already exist, ignore error
     }
 
-    // Add on_court column if it doesn't exist (track who is currently on court)
+    // Add players column to matches if it doesn't exist (embedded players data)
     try {
       this.db.execSync(`
-        ALTER TABLE match_players ADD COLUMN on_court INTEGER DEFAULT 0;
+        ALTER TABLE matches ADD COLUMN players TEXT DEFAULT '[]';
       `);
     } catch (error) {
       // Column might already exist, ignore error
     }
 
-    // Add playing_time_seconds column if it doesn't exist (track playing time)
+    // Add player_stats column to matches if it doesn't exist (embedded stats data)
     try {
       this.db.execSync(`
-        ALTER TABLE match_players ADD COLUMN playing_time_seconds INTEGER DEFAULT 0;
+        ALTER TABLE matches ADD COLUMN player_stats TEXT DEFAULT '{}';
       `);
     } catch (error) {
       // Column might already exist, ignore error
@@ -182,10 +142,6 @@ export class SQLiteAdapter implements IStorageAdapter {
 
     this.db.execSync(`
       CREATE INDEX IF NOT EXISTS idx_match_actions_timestamp ON match_actions(timestamp);
-    `);
-
-    this.db.execSync(`
-      CREATE INDEX IF NOT EXISTS idx_match_players_match_id ON match_players(match_id);
     `);
   }
 

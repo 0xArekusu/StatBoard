@@ -76,58 +76,78 @@ export class MatchDataService {
 
   /**
    * Load match details from Supabase
-   * Fetches match_players with embedded actions from the server
+   * Fetches match with embedded players and player_stats from the server
    *
    * @param matchId - UUID of the match in Supabase
    * @returns Match details from server
    */
   private async loadFromSupabase(matchId: string): Promise<MatchDetailsData> {
-    const { data: matchPlayers, error } = await this.supabase
-      .from("match_players")
-      .select("*")
-      .eq("match_id", matchId);
+    const { data: match, error } = await this.supabase
+      .from("matches")
+      .select("players, player_stats")
+      .eq("id", matchId)
+      .single();
 
     if (error) {
-      console.error("Error loading match players from Supabase:", error);
-      throw new Error(`Failed to load match players: ${error.message}`);
+      console.error("Error loading match from Supabase:", error);
+      throw new Error(`Failed to load match: ${error.message}`);
     }
 
-    if (!matchPlayers) {
+    if (!match) {
       return { actions: [], players: [] };
     }
 
-    // Convert match players to PlayerData format
-    const players: PlayerData[] = matchPlayers.map((mp: any) => ({
-      id: mp.player_number,
-      num: mp.player_number,
-      name: mp.player_name,
-      team: mp.team,
-      isSubstitute: !mp.is_starter,
-      photoUrl: mp.photo_url,
+    // Extract players from matches.players JSONB array
+    const playersArray = match.players || [];
+    const players: PlayerData[] = playersArray.map((p: any) => ({
+      id: p.player_number,
+      num: p.player_number,
+      name: p.player_name,
+      team: p.team,
+      isSubstitute: !p.is_starter,
+      photoUrl: p.photo_url,
     }));
 
-    // Extract and convert actions from match_players
+    // Extract actions from matches.player_stats JSONB object
+    const playerStatsObject = match.player_stats || {};
     const actions: ActionData[] = [];
-    matchPlayers.forEach((mp: any) => {
-      if (mp.actions && Array.isArray(mp.actions)) {
-        const playerActions = mp.actions.map((action: any) => ({
-          type: action.action_type,
-          specification: action.specification,
-          points: action.points,
-          player: mp.player_number,
-          team: mp.team,
-          timestamp: new Date(action.timestamp),
-          period_number: action.period_number,
-          time_in_period: action.time_in_period,
-          position: { x: 0, y: 0 },
-          semanticPosition: {
-            xNormalized: action.semantic_x,
-            yNormalized: action.semantic_y,
-          },
-        }));
-        actions.push(...playerActions);
-      }
+
+    // Create player_id -> player_number mapping
+    const playerMap = new Map<string, number>();
+    playersArray.forEach((p: any) => {
+      const playerId = p.player_id || `temp-${p.team}-${p.player_number}`;
+      playerMap.set(playerId, p.player_number);
     });
+
+    // Iterate through player_stats: { [player_id]: { actions: [...] } }
+    for (const [playerId, stats] of Object.entries(playerStatsObject)) {
+      const playerNumber = playerMap.get(playerId);
+
+      if (!playerNumber) {
+        console.warn(`Player number not found for player_id: ${playerId}`);
+        continue;
+      }
+
+      const playerActions = (stats as any)?.actions || [];
+
+      const convertedActions = playerActions.map((action: any) => ({
+        type: action.action_type,
+        specification: action.specification,
+        points: action.points,
+        player: playerNumber,
+        team: action.team,
+        timestamp: new Date(action.timestamp),
+        period_number: action.period_number,
+        time_in_period: action.time_in_period,
+        position: { x: 0, y: 0 },
+        semanticPosition: {
+          xNormalized: action.semantic_x,
+          yNormalized: action.semantic_y,
+        },
+      }));
+
+      actions.push(...convertedActions);
+    }
 
     return { actions, players };
   }

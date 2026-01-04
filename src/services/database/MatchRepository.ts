@@ -65,10 +65,9 @@ export class MatchRepository implements IMatchRepository {
         opponent_score,
         status,
         club_id,
-        team_id,
-        played_at
+        team_id
       )
-      VALUES (?, ?, ?, ?, ?, ?, 0, 0, 0, 'in_progress', ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, 0, 0, 0, 'in_progress', ?, ?)
     `;
 
     try {
@@ -91,8 +90,7 @@ export class MatchRepository implements IMatchRepository {
         data.period_duration,
         data.overtime_duration || 300,
         data.club_id || null,
-        data.team_id || null,
-        data.played_at || new Date().toISOString()
+        data.team_id || null
       ]);
 
       // Get the created match

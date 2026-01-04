@@ -445,7 +445,6 @@ export default function LiveMatchScreen() {
             overtime_duration: overtimeDuration * 60, // Convert minutes to seconds
             club_id: match.clubId || null,
             team_id: match.teamId || null,
-            played_at: new Date().toISOString(),
           };
 
           logInfo(

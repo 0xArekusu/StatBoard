@@ -1,12 +1,43 @@
 export enum MatchStatus {
   IN_PROGRESS = "in_progress",
   COMPLETED = "completed",
-  ABANDONED = "abandoned",
+  CANCELLED = "cancelled",
 }
 
 export enum Team {
   MY_TEAM = "MyTeam",
   OPPONENT = "Opponent",
+}
+
+// Player info stored in matches.players JSON
+export interface MatchPlayerInfo {
+  player_id?: string | null;
+  player_number: number;
+  player_name: string;
+  team: "MyTeam" | "Opponent";
+  is_starter: boolean;
+  photo_url?: string | null;
+  on_court?: number;
+  playing_time_seconds?: number;
+}
+
+// Player stats stored in matches.player_stats JSON
+export interface MatchPlayerStats {
+  actions: CompactedAction[];
+}
+
+// Compacted action format (stored in player_stats)
+export interface CompactedAction {
+  action_type: string;
+  specification: string;
+  points?: number;
+  semantic_x: number;
+  semantic_y: number;
+  action_order: number;
+  period_number: number;
+  time_in_period: number;
+  timestamp: string;
+  team: Team;
 }
 
 export interface Match {
@@ -37,12 +68,15 @@ export interface Match {
   current_period?: number; // Période en cours (local uniquement)
   time_elapsed?: number; // Temps écoulé (local uniquement)
 
+  // Embedded player data (NEW - replaces match_players table)
+  players?: string; // JSON string in SQLite: MatchPlayerInfo[]
+  player_stats?: string; // JSON string in SQLite: { [player_id: string]: MatchPlayerStats }
+
   // Timestamps
   created_by?: string | null;
   created_at: string;
   started_at: string | null;
   ended_at: string | null;
-  played_at: string; // Date/heure prévue du match
   synced_at?: string | null;
   last_updated?: string;
 
@@ -65,9 +99,6 @@ export interface CreateMatchData {
   total_periods: number;
   period_duration: number;
   overtime_duration?: number;
-
-  // Date
-  played_at?: string;
 }
 
 export interface Action {

@@ -7,15 +7,15 @@
  * Features:
  * - Single action creation with immediate logging
  * - Batch action creation within transaction
- * - Action compaction: groups actions by player in JSON format for completed matches
- * - Reads from compacted format (match_players.actions) or live format (match_actions table)
+ * - Action compaction: groups actions by player_id in JSON format for completed matches
+ * - Reads from compacted format (matches.player_stats) or live format (match_actions table)
  * - Action deletion (single or all for match)
  * - Action counting and ordering
  *
  * Architecture:
  * - Uses SQLite via DatabaseService
  * - Stores actions in match_actions table during active match
- * - Compacts actions into match_players.actions JSON after match completion
+ * - Compacts actions into matches.player_stats JSON after match completion
  * - Automatically detects and reads from correct source based on match status
  */
 import { DatabaseService } from "./DatabaseService";
@@ -179,60 +179,76 @@ export class ActionRepository implements IActionRepository {
   /**
    * Get all actions for a match
    * Automatically detects source:
-   * - Completed matches: reads from match_players.actions (compacted JSON)
+   * - Completed matches: reads from matches.player_stats (compacted JSON)
    * - Active matches: reads from match_actions table
    */
   async getActionsForMatch(matchId: number): Promise<Action[]> {
     try {
       logInfo('ActionRepository', '📊 Fetching actions for match', { matchId });
 
-      // Check match status to determine if actions are compacted
+      // Check match status and player_stats to determine if actions are compacted
       const matchResult = await this.db.query(
-        `SELECT status FROM matches WHERE id = ?`,
+        `SELECT status, player_stats, players FROM matches WHERE id = ?`,
         [matchId]
       );
 
-      const matchStatus = matchResult[0]?.status;
+      const match = matchResult[0];
+      const matchStatus = match?.status;
+      const playerStatsJson = match?.player_stats;
+      const playersJson = match?.players;
 
-      // Only try to read compacted actions if match is completed
-      if (matchStatus === 'completed') {
-        const compactedPlayers = await this.db.query(
-          `SELECT player_number, team, actions FROM match_players
-           WHERE match_id = ? AND actions IS NOT NULL AND actions != ''`,
-          [matchId]
-        );
+      // Only try to read compacted actions if match is completed and has player_stats
+      if (matchStatus === 'completed' && playerStatsJson && playerStatsJson !== '{}') {
+        try {
+          const playerStats = JSON.parse(playerStatsJson);
+          const players = playersJson ? JSON.parse(playersJson) : [];
 
-        // If we have compacted actions, use them
-        if (compactedPlayers.length > 0) {
-          logInfo('ActionRepository', '📦 Reading compacted actions from match_players', {
+          // Create player_id -> player_number mapping
+          const playerMap = new Map<string, { player_number: number; team: string }>();
+          for (const player of players) {
+            const playerId = player.player_id || `temp-${player.team}-${player.player_number}`;
+            playerMap.set(playerId, {
+              player_number: player.player_number,
+              team: player.team
+            });
+          }
+
+          logInfo('ActionRepository', '📦 Reading compacted actions from matches.player_stats', {
             matchId,
-            playerCount: compactedPlayers.length,
+            playerCount: Object.keys(playerStats).length,
             matchStatus
           });
 
           const allActions: Action[] = [];
           let actionIdCounter = 1;
 
-          for (const player of compactedPlayers) {
-            if (player.actions) {
+          // Iterate through player_stats: { [player_id]: { actions: [...] } }
+          for (const [playerId, stats] of Object.entries(playerStats)) {
+            const playerInfo = playerMap.get(playerId);
+
+            if (!playerInfo) {
+              logWarn('ActionRepository', '⚠️ Player info not found for player_id', {
+                matchId,
+                playerId
+              });
+              continue;
+            }
+
+            if (stats && (stats as any).actions) {
               try {
-                const playerActions = JSON.parse(player.actions);
+                const playerActions = (stats as any).actions;
 
                 for (const action of playerActions) {
                   allActions.push({
                     id: actionIdCounter++,
                     match_id: matchId,
-                    team: action.team || player.team, // Use team from action if available, fallback to player.team for backward compatibility
-                    player_number: player.player_number,
+                    team: action.team,
+                    player_number: playerInfo.player_number,
                     action_type: action.action_type,
                     specification: action.specification,
                     points: action.points,
                     semantic_x: action.semantic_x,
                     semantic_y: action.semantic_y,
-                    semanticPosition: {
-                      xNormalized: action.semantic_x,
-                      yNormalized: action.semantic_y,
-                    },
                     action_order: action.action_order,
                     period_number: action.period_number,
                     time_in_period: action.time_in_period,
@@ -242,8 +258,7 @@ export class ActionRepository implements IActionRepository {
               } catch (parseError) {
                 logError('ActionRepository', '❌ Error parsing compacted actions for player', {
                   matchId,
-                  team: player.team,
-                  playerNumber: player.player_number,
+                  playerId,
                   error: parseError instanceof Error ? parseError.message : parseError
                 });
               }
@@ -258,6 +273,12 @@ export class ActionRepository implements IActionRepository {
             totalActions: allActions.length
           });
           return allActions;
+        } catch (parseError) {
+          logError('ActionRepository', '❌ Error parsing player_stats JSON', {
+            matchId,
+            error: parseError instanceof Error ? parseError.message : parseError
+          });
+          // Fall through to read from match_actions table
         }
       }
 
@@ -395,7 +416,7 @@ export class ActionRepository implements IActionRepository {
   }
 
   /**
-   * Compact match actions: group by player and store in match_players.actions as JSON
+   * Compact match actions: group by player_id and store in matches.player_stats as JSON
    * Then delete all actions from match_actions table
    * Called after match completion to save space and improve performance
    */
@@ -416,19 +437,50 @@ export class ActionRepository implements IActionRepository {
         actionCount: actions.length
       });
 
-      // 2. Group actions by player (team + player_number)
-      const actionsByPlayer = new Map<string, any[]>();
+      // 2. Get players for this match to map player_number -> player_id
+      const playersResult = await this.db.query(
+        "SELECT players FROM matches WHERE id = ?",
+        [matchId]
+      );
+
+      if (playersResult.length === 0) {
+        throw new Error(`Match not found: ${matchId}`);
+      }
+
+      const playersJson = playersResult[0].players || '[]';
+      const players = JSON.parse(playersJson);
+
+      // Create mapping: team-playerNumber -> player_id
+      const playerIdMap = new Map<string, string>();
+      for (const player of players) {
+        const key = `${player.team}-${player.player_number}`;
+        const playerId = player.player_id || `temp-${player.team}-${player.player_number}`;
+        playerIdMap.set(key, playerId);
+      }
+
+      // 3. Group actions by player_id
+      const actionsByPlayerId: Record<string, any[]> = {};
 
       for (const action of actions) {
         const playerKey = `${action.team}-${action.player_number}`;
+        const playerId = playerIdMap.get(playerKey);
 
-        if (!actionsByPlayer.has(playerKey)) {
-          actionsByPlayer.set(playerKey, []);
+        if (!playerId) {
+          logWarn('ActionRepository', '⚠️ Player not found for action', {
+            matchId,
+            team: action.team,
+            playerNumber: action.player_number
+          });
+          continue;
+        }
+
+        if (!actionsByPlayerId[playerId]) {
+          actionsByPlayerId[playerId] = [];
         }
 
         // Format action in the same way as Supabase
-        actionsByPlayer.get(playerKey)!.push({
-          team: action.team, // Include team field to preserve it during compaction
+        actionsByPlayerId[playerId].push({
+          team: action.team,
           action_type: action.action_type,
           specification: action.specification,
           points: action.points || null,
@@ -441,37 +493,36 @@ export class ActionRepository implements IActionRepository {
         });
       }
 
-      logInfo('ActionRepository', '👥 Actions grouped by player', {
+      logInfo('ActionRepository', '👥 Actions grouped by player_id', {
         matchId,
-        playerCount: actionsByPlayer.size
+        playerCount: Object.keys(actionsByPlayerId).length
       });
 
-      // 3. Update each match_player with their actions
-      for (const [playerKey, playerActions] of actionsByPlayer.entries()) {
-        const [team, playerNumber] = playerKey.split('-');
-        const actionsJson = JSON.stringify(playerActions);
-
-        await this.db.execute(
-          `UPDATE match_players
-           SET actions = ?
-           WHERE match_id = ? AND team = ? AND player_number = ?`,
-          [actionsJson, matchId, team, parseInt(playerNumber)]
-        );
-
-        logInfo('ActionRepository', '💾 Actions saved for player', {
-          matchId,
-          playerKey,
-          actionCount: playerActions.length
-        });
+      // 4. Build player_stats object: { [player_id]: { actions: [...] } }
+      const playerStats: Record<string, { actions: any[] }> = {};
+      for (const [playerId, actions] of Object.entries(actionsByPlayerId)) {
+        playerStats[playerId] = { actions };
       }
 
-      // 4. Delete all actions from match_actions table
+      // 5. Update matches.player_stats with compacted data
+      const playerStatsJson = JSON.stringify(playerStats);
+      await this.db.execute(
+        "UPDATE matches SET player_stats = ? WHERE id = ?",
+        [playerStatsJson, matchId]
+      );
+
+      logInfo('ActionRepository', '💾 Player stats saved to matches.player_stats', {
+        matchId,
+        playerCount: Object.keys(playerStats).length
+      });
+
+      // 6. Delete all actions from match_actions table
       await this.deleteActionsForMatch(matchId);
 
       logInfo('ActionRepository', '✅ Action compaction completed successfully', {
         matchId,
         totalActionsCompacted: actions.length,
-        playerCount: actionsByPlayer.size
+        playerCount: Object.keys(actionsByPlayerId).length
       });
     } catch (error) {
       logError('ActionRepository', '❌ Error compacting actions', {
