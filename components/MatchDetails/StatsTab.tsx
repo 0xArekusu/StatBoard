@@ -363,7 +363,7 @@ export default function StatsTab({
                 { color: textTertiary },
               ]}
             >
-              {player.min}'
+              {player.min}
             </Text>
             <Text
               style={[

@@ -28,6 +28,7 @@ interface Player {
   name: string;
   team: Team;
   photoUrl?: string;
+  playingTimeSeconds?: number;
 }
 
 interface PDFExportOptions {
@@ -629,37 +630,22 @@ export class PDFExportService {
   /**
    * Stats legend constant
    */
-  private static readonly STATS_LEGEND = `MIN: Minutes estimées | PTS: Points | TIRS: Tirs totaux (marqués/tentés) | 2PTS: 2 points (marqués/tentés) | 3PTS: 3 points (marqués/tentés) | LF: Lancers francs (marqués/tentés)<br>
+  private static readonly STATS_LEGEND = `MIN: Minutes jouées | PTS: Points | TIRS: Tirs totaux (marqués/tentés) | 2PTS: 2 points (marqués/tentés) | 3PTS: 3 points (marqués/tentés) | LF: Lancers francs (marqués/tentés)<br>
       REB: Rebonds totaux | RO: Rebonds offensifs | RD: Rebonds défensifs<br>
       PD: Passes décisives | INT: Interceptions | CTR: Contres | BP: Balles perdues | FT: Fautes totales | EFF: Efficacité`;
 
   /**
-   * Calculate estimated minutes for a player based on efficiency
+   * Get playing time formatted as MM:SS from actual tracked time
    */
-  private static calculateEstimatedMinutes(
-    stats: any,
-    efficiency: number,
-    totalFouls: number
-  ): number {
-    const totalPoints = stats.points;
-    const totalRebounds = stats.orb + stats.drb;
-    const totalAssists = stats.ast;
-
-    // Heuristic estimation of minutes based on efficiency
-    let estimatedMin = 10 + Math.floor(efficiency / 1.5) + totalFouls * 2;
-
-    // Adjustments for more realism
-    if (estimatedMin < 5 && (totalPoints > 0 || totalRebounds > 0)) {
-      estimatedMin = 8; // Min 8 min if player played
+  private static getPlayingTime(playingTimeSeconds?: number): string {
+    // Use actual playing time tracked during the match
+    if (playingTimeSeconds !== undefined && playingTimeSeconds > 0) {
+      const minutes = Math.floor(playingTimeSeconds / 60);
+      const seconds = playingTimeSeconds % 60;
+      return `${minutes}:${seconds.toString().padStart(2, '0')}`;
     }
-    if (estimatedMin > 38) {
-      estimatedMin = 36 + Math.floor(Math.random() * 4); // Max ~40 min
-    }
-    if (efficiency === 0 && totalPoints === 0 && totalRebounds === 0 && totalAssists === 0) {
-      estimatedMin = 0; // 0 min if no actions
-    }
-
-    return estimatedMin;
+    // If no tracking data available, return 0:00
+    return "0:00";
   }
 
   /**
@@ -787,13 +773,13 @@ export class PDFExportService {
               ftm: player.stats.ftm,
               to: player.stats.tov,
             });
-            const estimatedMin = this.calculateEstimatedMinutes(player.stats, efficiency, totalFouls);
+            const playingTime = this.getPlayingTime(player.playingTimeSeconds);
 
             return `
         <tr>
           <td class="player-number">${player.num}</td>
           <td class="player-name">${player.name}</td>
-          <td>${estimatedMin}'</td>
+          <td>${playingTime}</td>
           <td><strong>${player.stats.points}</strong></td>
           <td>${totalFgm}/${totalFga}</td>
           <td>${player.stats.twopm}/${player.stats.twopa}</td>
@@ -2041,22 +2027,7 @@ export class PDFExportService {
           actions.filter((a) => a.player === player.id).length > 0;
         const teamName = player.team === Team.MY_TEAM ? myTeamName : opponentName;
         const totalFouls = this.calculateTotalFouls(playerStats);
-        const totalRebounds = playerStats.orb + playerStats.drb;
-        const efficiency = calculateEfficiency({
-          pts: playerStats.points,
-          reb: totalRebounds,
-          ast: playerStats.ast,
-          stl: playerStats.stl,
-          blk: playerStats.blk,
-          fg2a: playerStats.twopa,
-          fg2m: playerStats.twopm,
-          fg3a: playerStats.threepa,
-          fg3m: playerStats.threepm,
-          fta: playerStats.fta,
-          ftm: playerStats.ftm,
-          to: playerStats.tov,
-        });
-        const estimatedMinutes = this.calculateEstimatedMinutes(playerStats, efficiency, totalFouls);
+        const playingTime = this.getPlayingTime(player.playingTimeSeconds);
 
         const avatarUrl = AvatarService.getAvatarUrl(player.name, player.photoUrl);
 
@@ -2130,7 +2101,7 @@ export class PDFExportService {
         <div class="stats-grid">
           <div class="stat-box">
             <div class="stat-box-label">MIN</div>
-            <div class="stat-box-value">${estimatedMinutes}'</div>
+            <div class="stat-box-value">${playingTime}</div>
           </div>
           <div class="stat-box">
             <div class="stat-box-label">REB OFF/DEF</div>

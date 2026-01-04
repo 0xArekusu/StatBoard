@@ -93,7 +93,7 @@ export interface PlayerStats {
   fgm: number;
   fga: number;
   eff: number;
-  min: number;
+  min: string; // Format "MM:SS"
 }
 
 // ===========================

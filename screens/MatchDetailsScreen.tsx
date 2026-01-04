@@ -175,6 +175,22 @@ export default function MatchDetailsScreen() {
   }, [players]);
 
   // ========================================
+  // MEMO - PLAYER PLAYING TIME MAP
+  // ========================================
+  // Create a fast lookup map to get playing time by team-num key
+  const playerPlayingTimeMap = useMemo(() => {
+    if (!players) return new Map<string, number>();
+    const map = new Map<string, number>();
+    players.forEach((p: any) => {
+      const key = `${p.team}-${p.num}`;
+      // Get playing time in seconds, default to 0
+      const playingTimeSeconds = p.playingTimeSeconds || 0;
+      map.set(key, playingTimeSeconds);
+    });
+    return map;
+  }, [players]);
+
+  // ========================================
   // STATE - USER INTERFACE
   // ========================================
   // Active tab (Evolution, Stats, Cards, Court)
@@ -283,6 +299,20 @@ export default function MatchDetailsScreen() {
   );
 
   // ========================================
+  // HELPER - FORMAT PLAYING TIME
+  // ========================================
+  /**
+   * Format playing time from seconds to MM:SS format
+   * @param seconds - Playing time in seconds
+   * @returns Formatted string "MM:SS"
+   */
+  const formatPlayingTime = (seconds: number): string => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+  };
+
+  // ========================================
   // FUNCTION - CALCULATE STATISTICS
   // ========================================
   /**
@@ -297,7 +327,7 @@ export default function MatchDetailsScreen() {
    * - Assists (ast), Steals (stl), Blocks (blk)
    * - Turnovers (to), Fouls (pf)
    * - Efficiency (eff) = pts + reb + ast + stl + blk - (misses + to)
-   * - Estimated minutes (min) - heuristic estimation based on efficiency
+   * - Playing time (min) - actual time tracked during match in real-time (format: "MM:SS")
    *
    * @param teamFilter - Team.MY_TEAM or Team.OPPONENT
    * @returns List of statistics for all players on the team
@@ -346,7 +376,7 @@ export default function MatchDetailsScreen() {
             fg3m: 0,
             fg3a: 0,
             eff: 0,
-            min: 0,
+            min: "0:00",
           });
         });
     }
@@ -395,7 +425,7 @@ export default function MatchDetailsScreen() {
               fg3m: 0,
               fg3a: 0,
               eff: 0,
-              min: 0,
+              min: "0:00",
             });
           }
 
@@ -448,7 +478,7 @@ export default function MatchDetailsScreen() {
         if (actionType === ActionType.FOUL.toUpperCase()) stats.pf += 1;
       });
 
-    // STEP 3: Calculate efficiency and estimate playing time
+    // STEP 3: Calculate efficiency and playing time
     playerStatsMap.forEach((stats) => {
       // Efficiency formula: positive actions - negative actions
       // Uses the standard basketball efficiency formula
@@ -467,19 +497,12 @@ export default function MatchDetailsScreen() {
         to: stats.to,
       });
 
-      // Heuristic estimation of minutes based on efficiency
-      // Formula: base 10 min + efficiency bonus + fouls bonus
-      let estimatedMin = 10 + Math.floor(stats.eff / 1.5) + stats.pf * 2;
+      // Get actual playing time from player data (tracked in real-time during match)
+      const key = `${stats.team}-${stats.playerNumber}`;
+      const playingTimeSeconds = playerPlayingTimeMap.get(key) || 0;
 
-      // Adjustments for more realism
-      if (estimatedMin < 5 && (stats.pts > 0 || stats.reb > 0))
-        estimatedMin = 8; // Min 8 min if player played
-      if (estimatedMin > 38)
-        estimatedMin = 36 + Math.floor(Math.random() * 4); // Max ~40 min
-      if (stats.eff === 0 && stats.pts === 0 && stats.reb === 0 && stats.ast === 0)
-        estimatedMin = 0; // 0 min if no actions
-
-      stats.min = estimatedMin;
+      // Format playing time as MM:SS
+      stats.min = formatPlayingTime(playingTimeSeconds);
     });
   }
 
@@ -501,6 +524,13 @@ export default function MatchDetailsScreen() {
     return calculatedStats.sort((a, b) => {
       const aValue = a[sortBy];
       const bValue = b[sortBy];
+
+      // Special case for "min" - convert "MM:SS" to seconds for proper sorting
+      if (sortBy === "min" && typeof aValue === "string" && typeof bValue === "string") {
+        const aSeconds = aValue.split(':').reduce((acc, time) => (60 * acc) + +time, 0);
+        const bSeconds = bValue.split(':').reduce((acc, time) => (60 * acc) + +time, 0);
+        return sortOrder === "desc" ? bSeconds - aSeconds : aSeconds - bSeconds;
+      }
 
       // Numeric sort (for pts, reb, ast, etc.)
       if (typeof aValue === "number" && typeof bValue === "number") {

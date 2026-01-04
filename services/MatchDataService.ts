@@ -13,6 +13,7 @@ export interface PlayerData {
   team: Team;
   isSubstitute: boolean;
   photoUrl?: string;
+  playingTimeSeconds?: number;
 }
 
 /**
@@ -106,6 +107,7 @@ export class MatchDataService {
       team: p.team,
       isSubstitute: !p.is_starter,
       photoUrl: p.photo_url,
+      playingTimeSeconds: p.playing_time_seconds || 0,
     }));
 
     // Extract actions from matches.player_stats JSONB object
@@ -190,6 +192,7 @@ export class MatchDataService {
       team: mp.team as Team,
       isSubstitute: !mp.is_starter,
       photoUrl: mp.photo_url || undefined,
+      playingTimeSeconds: mp.playing_time_seconds || 0,
     }));
 
     return { actions, players };
