@@ -11,6 +11,7 @@ import { View, StyleSheet, ScrollView, Alert, ActivityIndicator } from "react-na
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { useTheme } from "../src/contexts/ThemeContext";
 import { useAuth } from "../src/contexts/AuthContext";
+import { useClub } from "../src/contexts/ClubContext";
 import { DEFAULT_COURT_COLORS, DEFAULT_CLUB_COLORS } from "../src/theme";
 import {
   MATCH_VALIDATION_MESSAGES,
@@ -55,6 +56,7 @@ export default function NewMatchScreen() {
   const route = useRoute<NewMatchRouteProp>();
   const { colors, isDark } = useTheme();
   const { user } = useAuth();
+  const { currentClub } = useClub();
 
   // ===========================
   // STATE
@@ -64,7 +66,6 @@ export default function NewMatchScreen() {
   const [step, setStep] = useState<MatchCreationStep>(1);
 
   // Step 1: General Info
-  const [club, setClub] = useState<Club | null>(null);
   const [teams, setTeams] = useState<Team[]>([]);
   const [selectedTeamId, setSelectedTeamId] = useState<string>("");
   const [myTeamName, setMyTeamName] = useState(""); // For guest users
@@ -97,11 +98,11 @@ export default function NewMatchScreen() {
   // ===========================
 
   /**
-   * Load club and teams on mount
+   * Load teams when current club changes
    */
   useEffect(() => {
     loadClubData();
-  }, []);
+  }, [currentClub?.id]);
 
   /**
    * Auto-create default opponent players when stats tracking is enabled
@@ -129,13 +130,13 @@ export default function NewMatchScreen() {
   }, [trackOpponentStats]);
 
   /**
-   * Set default team when club and teams load
+   * Set default team when current club and teams load
    */
   useEffect(() => {
-    if (club && teams.length > 0) {
+    if (currentClub && teams.length > 0) {
       setSelectedTeamId(teams[0].id);
     }
-  }, [club, teams]);
+  }, [currentClub, teams]);
 
   /**
    * Load roster when team changes
@@ -146,41 +147,24 @@ export default function NewMatchScreen() {
       return;
     }
 
-    if (club && selectedTeamId && teams.length > 0) {
+    if (currentClub && selectedTeamId && teams.length > 0) {
       const team = teams.find((t) => t.id === selectedTeamId);
       if (team) {
         loadTeamRoster(team.id);
       }
     }
-  }, [selectedTeamId, club, teams, user]);
+  }, [selectedTeamId, currentClub, teams, user]);
 
   // ===========================
   // DATA LOADING
   // ===========================
 
   /**
-   * Load user's club and teams
+   * Load teams for current club
    */
   const loadClubData = async () => {
     if (!user) {
-      // Guest mode: create temporary local club and team
-      const guestClub: Club = {
-        id: "guest-club",
-        name: "Club Local",
-        acronym: "CL",
-        code: "guest",
-        ownerId: "guest",
-        ownerEmail: "guest@local.com",
-        subscriptionTier: SUBSCRIPTION_TIER.FREE,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        logoUrl: undefined,
-        primaryColor: DEFAULT_CLUB_COLORS.primary,
-        secondaryColor: DEFAULT_CLUB_COLORS.secondary,
-        courtBackgroundColor: DEFAULT_COURT_COLORS.background,
-        courtLineColor: DEFAULT_COURT_COLORS.line,
-      };
-
+      // Guest mode: create temporary local team
       const guestTeam: Team = {
         id: "guest-team",
         name: "Mon Équipe",
@@ -204,7 +188,6 @@ export default function NewMatchScreen() {
         updatedAt: now,
       }));
 
-      setClub(guestClub);
       setTeams([guestTeam]);
       setSelectedTeamId("guest-team");
       setMyTeamName("Mon Équipe"); // Default team name for guests
@@ -218,25 +201,24 @@ export default function NewMatchScreen() {
       return;
     }
 
+    // Use current club from context
+    if (!currentClub) {
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
-      const clubService = ServiceFactory.getClubService(supabase);
-      const clubs = await clubService.getUserMemberClubs(user.id);
-      const firstClub = clubs.length > 0 ? clubs[0] : null;
-      setClub(firstClub);
-
-      if (firstClub) {
-        const teamService = ServiceFactory.getTeamService(supabase);
-        const clubTeams = await teamService.getClubTeams(firstClub.id);
-        // Filter to only show approved teams where user is the owner
-        const myApprovedTeams = clubTeams.filter(
-          (team) =>
-            team.ownerId === user.id && team.status === TeamStatus.APPROVED
-        );
-        setTeams(myApprovedTeams);
-      }
+      const teamService = ServiceFactory.getTeamService(supabase);
+      const clubTeams = await teamService.getClubTeams(currentClub.id);
+      // Filter to only show approved teams where user is the owner
+      const myApprovedTeams = clubTeams.filter(
+        (team) =>
+          team.ownerId === user.id && team.status === TeamStatus.APPROVED
+      );
+      setTeams(myApprovedTeams);
     } catch (error) {
-      console.error("Error loading club data:", error);
+      console.error("Error loading teams:", error);
     } finally {
       setLoading(false);
     }
@@ -465,6 +447,24 @@ export default function NewMatchScreen() {
 
     const team = teams.find((t) => t.id === selectedTeamId);
     if (!team) return;
+
+    // Get club (from context for authenticated users, or create guest club)
+    const club = user && currentClub ? currentClub : {
+      id: "guest-club",
+      name: "Club Local",
+      acronym: "CL",
+      code: "guest",
+      ownerId: "guest",
+      ownerEmail: "guest@local.com",
+      subscriptionTier: SUBSCRIPTION_TIER.FREE,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      logoUrl: undefined,
+      primaryColor: DEFAULT_CLUB_COLORS.primary,
+      secondaryColor: DEFAULT_CLUB_COLORS.secondary,
+      courtBackgroundColor: DEFAULT_COURT_COLORS.background,
+      courtLineColor: DEFAULT_COURT_COLORS.line,
+    };
 
     // Validate club exists
     if (!club || !club.id) {

@@ -18,6 +18,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useTheme } from "../src/contexts/ThemeContext";
 import { useAuth } from "../src/contexts/AuthContext";
+import { useClub } from "../src/contexts/ClubContext";
 import { ServiceFactory } from "../services/ServiceFactory";
 import { shareLogs, logInfo, logError } from "../utils/logger";
 import { Match, MatchStatus } from "../src/models/types";
@@ -62,9 +63,9 @@ interface DashboardScreenProps {
 export default function DashboardScreen({ navigation }: DashboardScreenProps) {
   const { colors, isDark, setThemeMode } = useTheme();
   const { user, signOut } = useAuth();
+  const { currentClub, allClubs, setCurrentClub: setGlobalCurrentClub } = useClub();
 
   const [loading, setLoading] = useState(true);
-  const [club, setClub] = useState<Club | null>(null);
   const [teams, setTeams] = useState<Team[]>([]);
   const [activeTeamId, setActiveTeamId] = useState<string | null>(null);
   const [matches, setMatches] = useState<Match[]>([]);
@@ -75,7 +76,6 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showGuestWelcome, setShowGuestWelcome] = useState(false);
   const [showClubSwitcher, setShowClubSwitcher] = useState(false);
-  const [allUserClubs, setAllUserClubs] = useState<Club[]>([]);
 
   const isGuest = !user;
   const userName =
@@ -141,26 +141,32 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
    * Reload dashboard data when:
    * - Screen comes into focus (navigation)
    * - User changes (login/logout/switch account)
+   * - Current club changes
    *
    * Using useFocusEffect instead of useEffect to avoid double loading
    * when both screen focus and user ID change simultaneously
    */
   useFocusEffect(
     useCallback(() => {
-      logInfo("DashboardScreen", "🔄 Screen focused or user changed", {
+      logInfo("DashboardScreen", "🔄 Screen focused or club changed", {
         userId: user?.id,
         isGuest,
+        clubId: currentClub?.id,
       });
 
-      // Reset state when user changes
-      setClub(null);
+      // Reset state
       setTeams([]);
       setActiveTeamId(null);
       setMatches([]);
 
-      // Load fresh data
-      loadDashboardData();
-    }, [user?.id, isGuest])
+      // Load fresh data only if we have a club (for authenticated users) or are in guest mode
+      if (isGuest || currentClub) {
+        loadDashboardData();
+      } else {
+        // Still loading club context, wait for it
+        setLoading(false);
+      }
+    }, [user?.id, isGuest, currentClub?.id])
   );
 
   // Check for active match when team changes
@@ -182,13 +188,12 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
    * - Active/unfinished matches
    * - Local matches from SQLite (non-synced)
    * - Server matches from Supabase (for authenticated users)
-   * - User's clubs and teams
+   * - User's teams for current club
    *
    * Merges local and server data for comprehensive view
    * @param skipActiveMatchCheck - If true, skip checking for active matches (used after abandoning)
-   * @param selectedClubId - If provided, use this club instead of loading all clubs
    */
-  const loadDashboardData = async (skipActiveMatchCheck: boolean = false, selectedClubId?: string) => {
+  const loadDashboardData = async (skipActiveMatchCheck: boolean = false) => {
     try {
       setLoading(true);
       logInfo("DashboardScreen", "📊 Loading dashboard data");
@@ -211,79 +216,42 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
       let clubId: string | null = null;
       let teamId: string | null = null;
 
-      // Load club and teams if user is authenticated (BEFORE loading matches)
-      if (user) {
-        logInfo("DashboardScreen", "📡 Fetching user clubs from Supabase", {
-          userId: user.id,
+      // Use current club from context
+      if (user && currentClub) {
+        clubId = currentClub.id;
+
+        logInfo("DashboardScreen", "📌 Using current club from context", {
+          clubId: currentClub.id,
+          clubName: currentClub.name,
         });
 
         try {
-          const clubService = ServiceFactory.getClubService(supabase);
+          // Load teams for the club - only approved teams where user is owner
+          const teamService = ServiceFactory.getTeamService(supabase);
+          const clubTeams = await teamService.getClubTeams(clubId);
 
-          // Only fetch clubs if we don't have a selected club
-          if (!selectedClubId) {
-            const clubs = await clubService.getUserMemberClubs(user.id);
+          // Filter to only show approved teams where user is the owner
+          const myApprovedTeams = clubTeams.filter(
+            (team) =>
+              team.ownerId === user.id && team.status === TeamStatus.APPROVED
+          );
 
-            logInfo("DashboardScreen", "✅ User clubs fetched", {
-              userId: user.id,
-              clubCount: clubs.length,
-              clubIds: clubs.map((c) => c.id),
-              clubNames: clubs.map((c) => c.name),
-            });
+          logInfo("DashboardScreen", "✅ Teams fetched", {
+            clubId: clubId,
+            totalTeams: clubTeams.length,
+            myApprovedTeams: myApprovedTeams.length,
+            teamNames: myApprovedTeams.map((t) => t.name),
+          });
 
-            // Store all clubs for club switcher
-            setAllUserClubs(clubs);
+          setTeams(myApprovedTeams);
 
-            // Select first club if available
-            const firstClub = clubs.length > 0 ? clubs[0] : null;
-            setClub(firstClub);
-
-            if (firstClub) {
-              clubId = firstClub.id;
-            }
-          } else {
-            // Use the selected club ID
-            clubId = selectedClubId;
-
-            logInfo("DashboardScreen", "📌 Using selected club", {
-              clubId: selectedClubId,
-            });
-          }
-
-          if (clubId) {
-            logInfo("DashboardScreen", "✅ Club selected", {
-              clubId: clubId,
-            });
-
-            // Load teams for the club - only approved teams where user is owner
-            const teamService = ServiceFactory.getTeamService(supabase);
-            const clubTeams = await teamService.getClubTeams(clubId);
-
-            // Filter to only show approved teams where user is the owner
-            const myApprovedTeams = clubTeams.filter(
-              (team) =>
-                team.ownerId === user.id && team.status === TeamStatus.APPROVED
-            );
-
-            logInfo("DashboardScreen", "✅ Teams fetched", {
-              clubId: clubId,
-              totalTeams: clubTeams.length,
-              myApprovedTeams: myApprovedTeams.length,
-              teamNames: myApprovedTeams.map((t) => t.name),
-            });
-
-            setTeams(myApprovedTeams);
-
-            // Select first team if available
-            if (myApprovedTeams.length > 0) {
-              teamId = myApprovedTeams[0].id;
-              setActiveTeamId(teamId);
-            }
-          } else {
-            logInfo("DashboardScreen", "ℹ️ No clubs found for user");
+          // Select first team if available
+          if (myApprovedTeams.length > 0) {
+            teamId = myApprovedTeams[0].id;
+            setActiveTeamId(teamId);
           }
         } catch (error) {
-          logError("DashboardScreen", "❌ Error loading clubs/teams", { error });
+          logError("DashboardScreen", "❌ Error loading teams", { error });
         }
       }
 
@@ -452,7 +420,7 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
 
   // Filter matches based on selected team
   const filteredMatches =
-    club && activeTeamId
+    currentClub && activeTeamId
       ? matches.filter((m) => m.team_id === activeTeamId)
       : matches;
 
@@ -555,12 +523,10 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
   const handleSwitchClub = async (clubId: string) => {
     setShowClubSwitcher(false);
 
-    const selectedClub = allUserClubs.find((c) => c.id === clubId);
+    const selectedClub = allClubs.find((c) => c.id === clubId);
     if (selectedClub) {
-      setClub(selectedClub);
-
-      // Reload dashboard data with the selected club
-      loadDashboardData(false, selectedClub.id);
+      await setGlobalCurrentClub(selectedClub);
+      // Data will reload automatically via useFocusEffect watching currentClub
     }
   };
 
@@ -572,9 +538,9 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
     setShowClubSwitcher(false);
 
     // Check if user is owner of current club
-    const isOwner = club?.ownerId === user?.id;
+    const isOwner = currentClub?.ownerId === user?.id;
 
-    if (!isOwner && club) {
+    if (!isOwner && currentClub) {
       Alert.alert(
         "Créer un nouveau club",
         "Seuls les propriétaires de club peuvent créer de nouveaux clubs. Vous êtes actuellement membre du club mais pas propriétaire.",
@@ -732,14 +698,14 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
             </View>
 
             <ScrollView style={styles.clubSwitcherList}>
-              {allUserClubs.map((userClub) => (
+              {allClubs.map((userClub) => (
                 <TouchableOpacity
                   key={userClub.id}
                   style={[
                     styles.clubSwitcherItem,
                     {
                       backgroundColor:
-                        club?.id === userClub.id
+                        currentClub?.id === userClub.id
                           ? isDark
                             ? `${colors.primary}33`
                             : `${colors.primary}1A`
@@ -788,7 +754,7 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
                       </Text>
                     </View>
                   </View>
-                  {club?.id === userClub.id && (
+                  {currentClub?.id === userClub.id && (
                     <MaterialCommunityIcons
                       name="check-circle"
                       size={24}
@@ -888,9 +854,9 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
                   },
                 ]}
               >
-                {club && club.logoUrl ? (
+                {currentClub && currentClub.logoUrl ? (
                   <Image
-                    source={{ uri: club.logoUrl }}
+                    source={{ uri: currentClub.logoUrl }}
                     style={styles.clubLogoImage}
                   />
                 ) : (
@@ -904,7 +870,7 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
           </View>
 
           {/* No Club/Team CTA - Only for non-guests who haven't set up a club/team yet */}
-          {(!club || teams.length === 0) && !isGuest && (
+          {(!currentClub || teams.length === 0) && !isGuest && (
             <View
               style={[
                 styles.ctaCard,
@@ -925,13 +891,13 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
                 ]}
               >
                 <MaterialCommunityIcons
-                  name={!club ? "shield-outline" : "account-group"}
+                  name={!currentClub ? "shield-outline" : "account-group"}
                   size={24}
                   color={colors.primary}
                 />
               </View>
               <Text style={[styles.ctaTitle, { color: colors.text.primary }]}>
-                {!club
+                {!currentClub
                   ? "Rejoignez ou créez un club"
                   : "Créez votre première équipe"}
               </Text>
@@ -941,7 +907,7 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
                   { color: colors.text.secondary },
                 ]}
               >
-                {!club
+                {!currentClub
                   ? "Pour commencer à suivre les statistiques, vous devez associer votre compte à une équipe."
                   : "Vous faites partie d'un club, créez maintenant une équipe pour commencer à suivre vos matchs."}
               </Text>
@@ -974,10 +940,10 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
           )}
 
           {/* Quick Stats & Team Selector - Displayed for Club Users OR Guests */}
-          {(club || isGuest) && (
+          {(currentClub || isGuest) && (
             <>
               {/* Team Selector (Only if club exists) */}
-              {club && teams.length > 0 && (
+              {currentClub && teams.length > 0 && (
                 <View
                   style={[
                     styles.teamSelector,

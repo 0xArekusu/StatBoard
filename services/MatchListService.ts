@@ -49,11 +49,23 @@ export class MatchListService {
     let serverMatches: Match[] = [];
     if (userId) {
       try {
-        const { data: serverMatchesData, error } = await this.supabase
+        // Build query with filters
+        let query = this.supabase
           .from("matches")
           .select("*")
-          .eq("created_by", userId)
-          .order("created_at", { ascending: false });
+          .eq("created_by", userId);
+
+        // Filter by club_id if provided
+        if (clubId) {
+          query = query.eq("club_id", clubId);
+        }
+
+        // Filter by team_id if provided
+        if (teamId) {
+          query = query.eq("team_id", teamId);
+        }
+
+        const { data: serverMatchesData, error } = await query.order("created_at", { ascending: false });
 
         if (error) {
           console.error("Error loading server matches:", error);

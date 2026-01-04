@@ -22,6 +22,7 @@ import LiveMatchScreen from "./screens/LiveMatchScreen";
 import MainTabNavigator from "./navigation/MainTabNavigator";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { AuthProvider, useAuth } from "./src/contexts/AuthContext";
+import { ClubProvider } from "./src/contexts/ClubContext";
 import { ThemeProvider } from "./src/contexts/ThemeContext";
 import { ROUTES } from "./constants/routes";
 import { logInfo, logWarn } from "./utils/logger";
@@ -174,7 +175,9 @@ export default function App() {
       <SafeAreaView style={{ flex: 1 }}>
         <ThemeProvider>
           <AuthProvider>
-            <Navigation />
+            <ClubProvider>
+              <Navigation />
+            </ClubProvider>
           </AuthProvider>
         </ThemeProvider>
       </SafeAreaView>

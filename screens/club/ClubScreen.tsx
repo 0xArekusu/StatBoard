@@ -15,6 +15,7 @@ import { MaterialCommunityIcons, Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { useTheme } from "../../src/contexts/ThemeContext";
 import { useAuth } from "../../src/contexts/AuthContext";
+import { useClub } from "../../src/contexts/ClubContext";
 import { ServiceFactory } from "../../services/ServiceFactory";
 import { supabase } from "../../src/config/supabase";
 import { PhotoUploadService } from "../../services/PhotoUploadService";
@@ -61,11 +62,11 @@ interface ClubScreenProps {
 export default function ClubScreen({ navigation, route }: ClubScreenProps) {
   const { isDark, colors } = useTheme();
   const { user } = useAuth();
+  const { currentClub, refreshClubs } = useClub();
 
   const forceCreate = route?.params?.forceCreate || false;
 
   const [loading, setLoading] = useState(true);
-  const [club, setClub] = useState<Club | null>(null);
   const [teams, setTeams] = useState<Team[]>([]);
   const [activeTab, setActiveTab] = useState<ClubTab>(CLUB_TAB.CREATE);
   const [subTab, setSubTab] = useState<ClubSubTab>(CLUB_SUB_TAB.INFO);
@@ -79,20 +80,20 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
 
   useEffect(() => {
     loadClubData();
-  }, [user?.id]);
+  }, [user?.id, currentClub?.id]);
 
   useFocusEffect(
     useCallback(() => {
-      if (club) {
+      if (currentClub) {
         loadClubData();
       }
-    }, [club?.id]),
+    }, [currentClub?.id]),
   );
 
   /**
-   * Loads club data and associated teams for the current user
-   * - Fetches all clubs where the user is a member
-   * - Loads teams for the first club found
+   * Loads teams for the current club from context
+   * - Uses current club from ClubContext
+   * - Loads teams for the current club
    * - Sets loading states appropriately
    */
   const loadClubData = async () => {
@@ -103,14 +104,10 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
 
     try {
       setLoading(true);
-      const clubService = ServiceFactory.getClubService(supabase);
-      const clubs = await clubService.getUserMemberClubs(user.id);
-      const firstClub = clubs.length > 0 ? clubs[0] : null;
-      setClub(firstClub);
 
-      if (firstClub) {
+      if (currentClub) {
         const teamService = ServiceFactory.getTeamService(supabase);
-        const clubTeams = await teamService.getClubTeams(firstClub.id);
+        const clubTeams = await teamService.getClubTeams(currentClub.id);
         setTeams(clubTeams);
       }
     } catch (error) {
@@ -122,8 +119,8 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
 
   // Filter teams: owners see all, members see only their own
   const visibleTeams = teams.filter((team) => {
-    if (!club || !user) return false;
-    if (club.ownerId === user.id) return true; // Owner sees all
+    if (!currentClub || !user) return false;
+    if (currentClub.ownerId === user.id) return true; // Owner sees all
     return team.ownerId === user.id; // Members see only their teams
   });
 
@@ -132,10 +129,10 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
     (team) => team.status === TeamStatus.APPROVED,
   );
   const currentTeamCount = approvedTeams.length;
-  const currentTier: SubscriptionTier = club?.subscriptionTier || SUBSCRIPTION_TIER.FREE;
+  const currentTier: SubscriptionTier = currentClub?.subscriptionTier || SUBSCRIPTION_TIER.FREE;
   const maxTeams = SUBSCRIPTION_LIMITS[currentTier].maxTeams;
   const isLimitReached = currentTeamCount >= maxTeams;
-  const isOwner = club?.ownerId === user?.id;
+  const isOwner = currentClub?.ownerId === user?.id;
 
   /**
    * Handles adding a new team to the club
@@ -144,7 +141,7 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
    * - Navigates to team creation screen if allowed
    */
   const handleAddTeam = () => {
-    if (!club) return;
+    if (!currentClub) return;
     if (isLimitReached) {
       Alert.alert(
         "Limite atteinte",
@@ -153,7 +150,7 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
       return;
     }
 
-    navigation.navigate(ROUTES.TEAM_INFO, { clubId: club.id });
+    navigation.navigate(ROUTES.TEAM_INFO, { clubId: currentClub.id });
   };
 
   /**
@@ -164,7 +161,7 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
    * @param teamId - ID of the team to approve
    */
   const handleApproveTeam = async (teamId: string) => {
-    if (!club || !isOwner || !user) return;
+    if (!currentClub || !isOwner || !user) return;
     Alert.alert(
       "Valider l'équipe",
       "Confirmer la validation de cette équipe ?",
@@ -201,7 +198,7 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
    * @param teamId - ID of the team to reject
    */
   const handleRejectTeam = async (teamId: string) => {
-    if (!club || !isOwner || !user) return;
+    if (!currentClub || !isOwner || !user) return;
     Alert.alert(
       "Refuser l'équipe",
       "Confirmer le refus de cette équipe ? Elle apparaîtra comme refusée au créateur.",
@@ -239,7 +236,7 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
    * @param teamId - ID of the team to delete
    */
   const handleDeleteTeam = async (teamId: string) => {
-    if (!club || !isOwner || !user) return;
+    if (!currentClub || !isOwner || !user) return;
     Alert.alert(
       "Supprimer l'équipe",
       "Êtes-vous sûr de vouloir supprimer définitivement cette équipe ? Cette action est irréversible.",
@@ -336,16 +333,17 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
   const handleSubmit = async () => {
     if (isEditingClub) {
       // EDIT MODE
-      if (!club || !user) return;
+      if (!currentClub || !user) return;
       try {
         const clubService = ServiceFactory.getClubService(supabase);
-        await clubService.updateClub(club.id, {
+        await clubService.updateClub(currentClub.id, {
           logoUrl: formData.logoUri || undefined,
           primaryColor: formData.primaryColor,
           secondaryColor: formData.secondaryColor,
           courtBackgroundColor: formData.courtColor,
           courtLineColor: formData.courtLinesColor,
         });
+        await refreshClubs();
         await loadClubData();
         setIsEditingClub(false);
         Alert.alert("Succès", "Club modifié avec succès !");
@@ -380,6 +378,7 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
           user!.id,
         );
 
+        await refreshClubs();
         await loadClubData();
 
         // Reset create mode if we were in it
@@ -427,6 +426,7 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
           return;
         }
 
+        await refreshClubs();
         await loadClubData();
         Alert.alert(
           "Succès",
@@ -465,7 +465,7 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
   }
 
   // --- INSIDE A CLUB ---
-  if (club && !isEditingClub && !isCreatingNewClub) {
+  if (currentClub && !isEditingClub && !isCreatingNewClub) {
     /**
      * Enters edit mode for the club
      * - Populates the form with current club data (name, acronym, colors, logo)
@@ -474,14 +474,14 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
      */
     const handleEditClub = () => {
       setFormData({
-        name: club.name,
-        acronym: club.acronym || "",
-        code: club.code,
-        logoUri: club.logoUrl || null,
-        primaryColor: club.primaryColor || "#FF0000",
-        secondaryColor: club.secondaryColor || "#0000FF",
-        courtColor: club.courtBackgroundColor || "#c2410c",
-        courtLinesColor: club.courtLineColor || "#ffffff",
+        name: currentClub.name,
+        acronym: currentClub.acronym || "",
+        code: currentClub.code,
+        logoUri: currentClub.logoUrl || null,
+        primaryColor: currentClub.primaryColor || "#FF0000",
+        secondaryColor: currentClub.secondaryColor || "#0000FF",
+        courtColor: currentClub.courtBackgroundColor || "#c2410c",
+        courtLinesColor: currentClub.courtLineColor || "#ffffff",
       });
       setIsEditingClub(true);
     };
@@ -504,12 +504,12 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
         {/* SUBSCRIPTION VIEW */}
         {subTab === CLUB_SUB_TAB.SUBSCRIPTION ? (
           <SubscriptionView
-            club={club}
+            club={currentClub}
             onClose={() => setSubTab(CLUB_SUB_TAB.INFO)}
           />
         ) : (
           <ClubInfoView
-            club={club}
+            club={currentClub}
             teams={teams}
             isOwner={isOwner}
             onEditClub={handleEditClub}

@@ -13,6 +13,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useTheme } from "../src/contexts/ThemeContext";
 import { useAuth } from "../src/contexts/AuthContext";
+import { useClub } from "../src/contexts/ClubContext";
 import { Match } from "../src/models/types";
 import { supabase } from "../src/config/supabase";
 import { ROUTES } from "../constants/routes";
@@ -42,29 +43,35 @@ interface HistoryScreenProps {
 export default function HistoryScreen({ navigation }: HistoryScreenProps) {
   const { colors, isDark } = useTheme();
   const { user } = useAuth();
+  const { currentClub } = useClub();
 
   const [loading, setLoading] = useState(true);
   const [matches, setMatches] = useState<Match[]>([]);
   const [showSyncModal, setShowSyncModal] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
-  const [club, setClub] = useState<Club | null>(null);
   const [activeTeamId, setActiveTeamId] = useState<string | null>(null);
 
   useEffect(() => {
-    loadHistoryData();
-  }, [user?.id]);
+    // Only load if we have a club or are in guest mode
+    if (!user || currentClub) {
+      loadHistoryData();
+    }
+  }, [user?.id, currentClub?.id]);
 
   // Reload data when screen comes into focus (e.g., after switching tabs)
   useFocusEffect(
     React.useCallback(() => {
-      loadHistoryData();
-    }, [user?.id])
+      // Only load if we have a club or are in guest mode
+      if (!user || currentClub) {
+        loadHistoryData();
+      }
+    }, [user?.id, currentClub?.id])
   );
 
   /**
    * Loads all matches from both local storage and Supabase
    * - Fetches matches from MatchListService (combines local + cloud data)
-   * - Loads user's club and team to filter local matches
+   * - Uses current club from context to filter matches
    * - Sorts matches by date (most recent first)
    * - Updates the matches state with combined results
    */
@@ -75,36 +82,28 @@ export default function HistoryScreen({ navigation }: HistoryScreenProps) {
       let clubId: string | null = null;
       let teamId: string | null = null;
 
-      // Load club and team if user is authenticated
-      if (user) {
+      // Use current club from context
+      if (user && currentClub) {
+        clubId = currentClub.id;
+
         try {
-          const clubService = ServiceFactory.getClubService(supabase);
-          const clubs = await clubService.getUserMemberClubs(user.id);
+          // Load teams for the club
+          const teamService = ServiceFactory.getTeamService(supabase);
+          const clubTeams = await teamService.getClubTeams(currentClub.id);
 
-          const firstClub = clubs.length > 0 ? clubs[0] : null;
-          setClub(firstClub);
+          // Filter to only show approved teams where user is the owner
+          const myApprovedTeams = clubTeams.filter(
+            (team) =>
+              team.ownerId === user.id && team.status === TeamStatus.APPROVED
+          );
 
-          if (firstClub) {
-            clubId = firstClub.id;
-
-            // Load teams for the club
-            const teamService = ServiceFactory.getTeamService(supabase);
-            const clubTeams = await teamService.getClubTeams(firstClub.id);
-
-            // Filter to only show approved teams where user is the owner
-            const myApprovedTeams = clubTeams.filter(
-              (team) =>
-                team.ownerId === user.id && team.status === TeamStatus.APPROVED
-            );
-
-            // Select first team if available
-            if (myApprovedTeams.length > 0) {
-              teamId = myApprovedTeams[0].id;
-              setActiveTeamId(teamId);
-            }
+          // Select first team if available
+          if (myApprovedTeams.length > 0) {
+            teamId = myApprovedTeams[0].id;
+            setActiveTeamId(teamId);
           }
         } catch (error) {
-          console.error("Error loading club/team:", error);
+          console.error("Error loading teams:", error);
         }
       }
 
