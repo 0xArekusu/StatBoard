@@ -186,8 +186,9 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
    *
    * Merges local and server data for comprehensive view
    * @param skipActiveMatchCheck - If true, skip checking for active matches (used after abandoning)
+   * @param selectedClubId - If provided, use this club instead of loading all clubs
    */
-  const loadDashboardData = async (skipActiveMatchCheck: boolean = false) => {
+  const loadDashboardData = async (skipActiveMatchCheck: boolean = false, selectedClubId?: string) => {
     try {
       setLoading(true);
       logInfo("DashboardScreen", "📊 Loading dashboard data");
@@ -218,33 +219,45 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
 
         try {
           const clubService = ServiceFactory.getClubService(supabase);
-          const clubs = await clubService.getUserMemberClubs(user.id);
 
-          logInfo("DashboardScreen", "✅ User clubs fetched", {
-            userId: user.id,
-            clubCount: clubs.length,
-            clubIds: clubs.map((c) => c.id),
-            clubNames: clubs.map((c) => c.name),
-          });
+          // Only fetch clubs if we don't have a selected club
+          if (!selectedClubId) {
+            const clubs = await clubService.getUserMemberClubs(user.id);
 
-          // Store all clubs for club switcher
-          setAllUserClubs(clubs);
+            logInfo("DashboardScreen", "✅ User clubs fetched", {
+              userId: user.id,
+              clubCount: clubs.length,
+              clubIds: clubs.map((c) => c.id),
+              clubNames: clubs.map((c) => c.name),
+            });
 
-          // Select first club if available
-          const firstClub = clubs.length > 0 ? clubs[0] : null;
-          setClub(firstClub);
+            // Store all clubs for club switcher
+            setAllUserClubs(clubs);
 
-          if (firstClub) {
-            clubId = firstClub.id;
+            // Select first club if available
+            const firstClub = clubs.length > 0 ? clubs[0] : null;
+            setClub(firstClub);
 
+            if (firstClub) {
+              clubId = firstClub.id;
+            }
+          } else {
+            // Use the selected club ID
+            clubId = selectedClubId;
+
+            logInfo("DashboardScreen", "📌 Using selected club", {
+              clubId: selectedClubId,
+            });
+          }
+
+          if (clubId) {
             logInfo("DashboardScreen", "✅ Club selected", {
-              clubId: firstClub.id,
-              clubName: firstClub.name,
+              clubId: clubId,
             });
 
             // Load teams for the club - only approved teams where user is owner
             const teamService = ServiceFactory.getTeamService(supabase);
-            const clubTeams = await teamService.getClubTeams(firstClub.id);
+            const clubTeams = await teamService.getClubTeams(clubId);
 
             // Filter to only show approved teams where user is the owner
             const myApprovedTeams = clubTeams.filter(
@@ -253,7 +266,7 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
             );
 
             logInfo("DashboardScreen", "✅ Teams fetched", {
-              clubId: firstClub.id,
+              clubId: clubId,
               totalTeams: clubTeams.length,
               myApprovedTeams: myApprovedTeams.length,
               teamNames: myApprovedTeams.map((t) => t.name),
@@ -546,26 +559,8 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
     if (selectedClub) {
       setClub(selectedClub);
 
-      // Load teams for the new club
-      const teamService = ServiceFactory.getTeamService(supabase);
-      const clubTeams = await teamService.getClubTeams(selectedClub.id);
-
-      const myApprovedTeams = clubTeams.filter(
-        (team) =>
-          team.ownerId === user!.id && team.status === TeamStatus.APPROVED
-      );
-
-      setTeams(myApprovedTeams);
-
-      // Select first team if available
-      if (myApprovedTeams.length > 0) {
-        setActiveTeamId(myApprovedTeams[0].id);
-      } else {
-        setActiveTeamId(null);
-      }
-
-      // Reload matches
-      loadDashboardData();
+      // Reload dashboard data with the selected club
+      loadDashboardData(false, selectedClub.id);
     }
   };
 
