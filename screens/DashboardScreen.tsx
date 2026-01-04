@@ -74,6 +74,8 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
   const [isNewMatchFlow, setIsNewMatchFlow] = useState(false); // true if opened from "Nouveau match" button
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showGuestWelcome, setShowGuestWelcome] = useState(false);
+  const [showClubSwitcher, setShowClubSwitcher] = useState(false);
+  const [allUserClubs, setAllUserClubs] = useState<Club[]>([]);
 
   const isGuest = !user;
   const userName =
@@ -224,6 +226,9 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
             clubIds: clubs.map((c) => c.id),
             clubNames: clubs.map((c) => c.name),
           });
+
+          // Store all clubs for club switcher
+          setAllUserClubs(clubs);
 
           // Select first club if available
           const firstClub = clubs.length > 0 ? clubs[0] : null;
@@ -524,6 +529,55 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
   };
 
   /**
+   * Opens club switcher modal
+   */
+  const handleOpenClubSwitcher = () => {
+    setShowProfileMenu(false);
+    setShowClubSwitcher(true);
+  };
+
+  /**
+   * Switches to a different club
+   */
+  const handleSwitchClub = async (clubId: string) => {
+    setShowClubSwitcher(false);
+
+    const selectedClub = allUserClubs.find((c) => c.id === clubId);
+    if (selectedClub) {
+      setClub(selectedClub);
+
+      // Load teams for the new club
+      const teamService = ServiceFactory.getTeamService(supabase);
+      const clubTeams = await teamService.getClubTeams(selectedClub.id);
+
+      const myApprovedTeams = clubTeams.filter(
+        (team) =>
+          team.ownerId === user!.id && team.status === TeamStatus.APPROVED
+      );
+
+      setTeams(myApprovedTeams);
+
+      // Select first team if available
+      if (myApprovedTeams.length > 0) {
+        setActiveTeamId(myApprovedTeams[0].id);
+      } else {
+        setActiveTeamId(null);
+      }
+
+      // Reload matches
+      loadDashboardData();
+    }
+  };
+
+  /**
+   * Creates a new club
+   */
+  const handleCreateNewClub = () => {
+    setShowClubSwitcher(false);
+    navigation.navigate("Club");
+  };
+
+  /**
    * Navigates to match details screen
    * Data loading is handled by MatchDetailsScreen itself
    * @param match - The match to view details for
@@ -616,9 +670,148 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
                   Exporter les logs
                 </Text>
               </TouchableOpacity>
+
+              {!isGuest && (
+                <TouchableOpacity
+                  style={styles.profileMenuItem}
+                  onPress={handleOpenClubSwitcher}
+                >
+                  <MaterialCommunityIcons
+                    name="swap-horizontal"
+                    size={20}
+                    color={colors.text.primary}
+                  />
+                  <Text style={[styles.profileMenuItemText, { color: colors.text.primary }]}>
+                    Changer de club
+                  </Text>
+                </TouchableOpacity>
+              )}
             </View>
           </View>
         </TouchableOpacity>
+      </Modal>
+
+      {/* Club Switcher Modal */}
+      <Modal
+        visible={showClubSwitcher}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowClubSwitcher(false)}
+      >
+        <View style={styles.clubSwitcherOverlay}>
+          <View
+            style={[
+              styles.clubSwitcherContainer,
+              {
+                backgroundColor: colors.surface,
+                borderColor: colors.border,
+              },
+            ]}
+          >
+            <View style={styles.clubSwitcherHeader}>
+              <Text style={[styles.clubSwitcherTitle, { color: colors.text.primary }]}>
+                Changer de club
+              </Text>
+              <TouchableOpacity onPress={() => setShowClubSwitcher(false)}>
+                <MaterialCommunityIcons
+                  name="close"
+                  size={24}
+                  color={colors.text.secondary}
+                />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.clubSwitcherList}>
+              {allUserClubs.map((userClub) => (
+                <TouchableOpacity
+                  key={userClub.id}
+                  style={[
+                    styles.clubSwitcherItem,
+                    {
+                      backgroundColor:
+                        club?.id === userClub.id
+                          ? isDark
+                            ? `${colors.primary}33`
+                            : `${colors.primary}1A`
+                          : "transparent",
+                      borderColor: colors.border,
+                    },
+                  ]}
+                  onPress={() => handleSwitchClub(userClub.id)}
+                >
+                  <View style={styles.clubSwitcherItemLeft}>
+                    {userClub.logoUrl ? (
+                      <Image
+                        source={{ uri: userClub.logoUrl }}
+                        style={styles.clubSwitcherLogo}
+                      />
+                    ) : (
+                      <View
+                        style={[
+                          styles.clubSwitcherLogoPlaceholder,
+                          { backgroundColor: colors.surfaceVariant },
+                        ]}
+                      >
+                        <MaterialCommunityIcons
+                          name="shield-outline"
+                          size={24}
+                          color={colors.text.secondary}
+                        />
+                      </View>
+                    )}
+                    <View>
+                      <Text
+                        style={[
+                          styles.clubSwitcherItemName,
+                          { color: colors.text.primary },
+                        ]}
+                      >
+                        {userClub.name}
+                      </Text>
+                      <Text
+                        style={[
+                          styles.clubSwitcherItemAcronym,
+                          { color: colors.text.secondary },
+                        ]}
+                      >
+                        {userClub.acronym}
+                      </Text>
+                    </View>
+                  </View>
+                  {club?.id === userClub.id && (
+                    <MaterialCommunityIcons
+                      name="check-circle"
+                      size={24}
+                      color={colors.primary}
+                    />
+                  )}
+                </TouchableOpacity>
+              ))}
+
+              <TouchableOpacity
+                style={[
+                  styles.clubSwitcherCreateButton,
+                  { backgroundColor: colors.primary },
+                ]}
+                onPress={handleCreateNewClub}
+              >
+                <MaterialCommunityIcons
+                  name="plus-circle-outline"
+                  size={20}
+                  color={colors.text.primary}
+                />
+                <Text
+                  style={[
+                    styles.clubSwitcherCreateButtonText,
+                    { color: colors.text.primary },
+                  ]}
+                >
+                  Créer un nouveau club
+                </Text>
+              </TouchableOpacity>
+            </ScrollView>
+          </View>
+        </View>
       </Modal>
 
       <ScrollView
@@ -1081,5 +1274,89 @@ const styles = StyleSheet.create({
   profileMenuItemText: {
     fontSize: 16,
     fontWeight: "500",
+  },
+  clubSwitcherOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "flex-end",
+  },
+  clubSwitcherContainer: {
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    borderWidth: 1,
+    maxHeight: "80%",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  clubSwitcherHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 24,
+    paddingVertical: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(255, 255, 255, 0.1)",
+  },
+  clubSwitcherTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+  },
+  clubSwitcherList: {
+    paddingHorizontal: 24,
+    paddingVertical: 16,
+  },
+  clubSwitcherItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    marginBottom: 12,
+    borderWidth: 1,
+  },
+  clubSwitcherItemLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    flex: 1,
+  },
+  clubSwitcherLogo: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+  },
+  clubSwitcherLogoPlaceholder: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  clubSwitcherItemName: {
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  clubSwitcherItemAcronym: {
+    fontSize: 14,
+    marginTop: 2,
+  },
+  clubSwitcherCreateButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    marginTop: 8,
+    marginBottom: 16,
+  },
+  clubSwitcherCreateButtonText: {
+    fontSize: 16,
+    fontWeight: "600",
   },
 });
