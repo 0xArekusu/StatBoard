@@ -41,6 +41,7 @@ import {
 
 interface ClubScreenProps {
   navigation: any;
+  route?: any;
 }
 
 /**
@@ -57,9 +58,11 @@ interface ClubScreenProps {
  * - Owner: Full access to club settings and team management
  * - Member: Can create teams but needs owner approval
  */
-export default function ClubScreen({ navigation }: ClubScreenProps) {
+export default function ClubScreen({ navigation, route }: ClubScreenProps) {
   const { isDark, colors } = useTheme();
   const { user } = useAuth();
+
+  const forceCreate = route?.params?.forceCreate || false;
 
   const [loading, setLoading] = useState(true);
   const [club, setClub] = useState<Club | null>(null);
@@ -67,6 +70,7 @@ export default function ClubScreen({ navigation }: ClubScreenProps) {
   const [activeTab, setActiveTab] = useState<ClubTab>(CLUB_TAB.CREATE);
   const [subTab, setSubTab] = useState<ClubSubTab>(CLUB_SUB_TAB.INFO);
   const [isEditingClub, setIsEditingClub] = useState(false);
+  const [isCreatingNewClub, setIsCreatingNewClub] = useState(forceCreate);
 
   // Create Club Form
   const [formData, setFormData] = useState<ClubFormData>(INITIAL_CLUB_FORM_DATA);
@@ -349,7 +353,7 @@ export default function ClubScreen({ navigation }: ClubScreenProps) {
         console.error("Error updating club:", error);
         Alert.alert("Erreur", "Impossible de modifier le club");
       }
-    } else if (activeTab === CLUB_TAB.CREATE) {
+    } else if (activeTab === CLUB_TAB.CREATE || isCreatingNewClub) {
       // CREATE MODE - Validation
       if (!formData.name || !formData.acronym) {
         Alert.alert("Erreur", "Veuillez renseigner le nom du club et le sigle");
@@ -377,6 +381,13 @@ export default function ClubScreen({ navigation }: ClubScreenProps) {
         );
 
         await loadClubData();
+
+        // Reset create mode if we were in it
+        if (isCreatingNewClub) {
+          setIsCreatingNewClub(false);
+          setFormData(INITIAL_CLUB_FORM_DATA);
+        }
+
         Alert.alert("Succès", "Club créé avec succès !");
       } catch (error) {
         console.error("Error creating club:", error);
@@ -454,7 +465,7 @@ export default function ClubScreen({ navigation }: ClubScreenProps) {
   }
 
   // --- INSIDE A CLUB ---
-  if (club && !isEditingClub) {
+  if (club && !isEditingClub && !isCreatingNewClub) {
     /**
      * Enters edit mode for the club
      * - Populates the form with current club data (name, acronym, colors, logo)
@@ -527,16 +538,23 @@ export default function ClubScreen({ navigation }: ClubScreenProps) {
         style={styles.content}
         contentContainerStyle={styles.scrollContent}
       >
-        {isEditingClub ? (
+        {isEditingClub || isCreatingNewClub ? (
           <View style={styles.header}>
             <TouchableOpacity
-              onPress={() => setIsEditingClub(false)}
+              onPress={() => {
+                if (isEditingClub) {
+                  setIsEditingClub(false);
+                } else if (isCreatingNewClub) {
+                  setIsCreatingNewClub(false);
+                  navigation.goBack();
+                }
+              }}
               style={styles.backButton}
             >
               <Ionicons name="arrow-back" size={24} color={textPrimary} />
             </TouchableOpacity>
             <Text style={[styles.title, { color: textPrimary }]}>
-              Modifier mon club
+              {isCreatingNewClub ? "Créer un nouveau club" : "Modifier mon club"}
             </Text>
             <View style={{ width: 24 }} />
           </View>
@@ -546,8 +564,8 @@ export default function ClubScreen({ navigation }: ClubScreenProps) {
           </Text>
         )}
 
-        {/* Tabs - Only show if not editing */}
-        {!isEditingClub && (
+        {/* Tabs - Only show if not editing and not creating new club */}
+        {!isEditingClub && !isCreatingNewClub && (
           <View
             style={[
               styles.tabs,
@@ -604,7 +622,7 @@ export default function ClubScreen({ navigation }: ClubScreenProps) {
           </View>
         )}
 
-        {activeTab === CLUB_TAB.CREATE || isEditingClub ? (
+        {activeTab === CLUB_TAB.CREATE || isEditingClub || isCreatingNewClub ? (
           <CreateClubForm
             formData={formData}
             setFormData={setFormData}
@@ -634,9 +652,11 @@ export default function ClubScreen({ navigation }: ClubScreenProps) {
           <Text style={[styles.submitButtonText, { color: colors.text.primary }]}>
             {isEditingClub
               ? "Modifier"
-              : activeTab === CLUB_TAB.CREATE
-                ? "Créer mon club"
-                : "Rejoindre"}
+              : isCreatingNewClub
+                ? "Créer un nouveau club"
+                : activeTab === CLUB_TAB.CREATE
+                  ? "Créer mon club"
+                  : "Rejoindre"}
           </Text>
         </TouchableOpacity>
       </View>

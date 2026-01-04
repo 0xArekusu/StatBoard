@@ -571,10 +571,25 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
 
   /**
    * Creates a new club
+   * Only club owners can create additional clubs
    */
   const handleCreateNewClub = () => {
     setShowClubSwitcher(false);
-    navigation.navigate("Club");
+
+    // Check if user is owner of current club
+    const isOwner = club?.ownerId === user?.id;
+
+    if (!isOwner && club) {
+      Alert.alert(
+        "Créer un nouveau club",
+        "Seuls les propriétaires de club peuvent créer de nouveaux clubs. Vous êtes actuellement membre du club mais pas propriétaire.",
+        [{ text: "OK" }]
+      );
+      return;
+    }
+
+    // Navigate to Club screen with forceCreate param
+    navigation.navigate("Club", { forceCreate: true });
   };
 
   /**
