@@ -269,17 +269,6 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
    * - Updates form data with uploaded image URL
    */
   const handlePickImage = async () => {
-    const permissionResult =
-      await ImagePicker.requestMediaLibraryPermissionsAsync();
-
-    if (permissionResult.granted === false) {
-      Alert.alert(
-        "Permission requise",
-        "Vous devez autoriser l'accès à vos photos pour importer un logo.",
-      );
-      return;
-    }
-
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: "images",
       allowsEditing: true,

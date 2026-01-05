@@ -19,6 +19,10 @@
         "googleSignIn": {
           "reservedClientId": "com.googleusercontent.apps.14213378665-aj9oq4n27pv75khu703aaj7prtrorl39"
         }
+      },
+      "infoPlist": {
+        "NSPhotoLibraryUsageDescription": "Cette application a besoin d'accéder à vos photos pour que vous puissiez ajouter des logos de club et des photos de joueurs.",
+        "NSCameraUsageDescription": "Cette application a besoin d'accéder à votre caméra pour prendre des photos de joueurs."
       }
     },
     "android": {
@@ -27,13 +31,25 @@
         "backgroundColor": "#ffffff"
       },
       "package": "com.coachassistant.basketball",
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "permissions": [
+        "READ_MEDIA_IMAGES",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "@react-native-google-signin/google-signin"
+      "@react-native-google-signin/google-signin",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Cette application a besoin d'accéder à vos photos pour que vous puissiez ajouter des logos de club et des photos de joueurs.",
+          "cameraPermission": "Cette application a besoin d'accéder à votre caméra pour prendre des photos de joueurs."
+        }
+      ]
     ],
     "extra": {
       "eas": {

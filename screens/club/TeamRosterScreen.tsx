@@ -266,16 +266,6 @@ export default function TeamRosterScreen() {
    * Uploads to Supabase storage
    */
   const handlePickCoachPhoto = async () => {
-    const permissionResult =
-      await ImagePicker.requestMediaLibraryPermissionsAsync();
-
-    if (permissionResult.granted === false) {
-      Alert.alert(
-        "Permission requise",
-        "Vous devez autoriser l'accès à vos photos."
-      );
-      return;
-    }
 
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: "images",
@@ -311,16 +301,6 @@ export default function TeamRosterScreen() {
    * @param isEditing - true if editing existing player, false if adding new
    */
   const handlePickPlayerPhoto = async (isEditing: boolean = false) => {
-    const permissionResult =
-      await ImagePicker.requestMediaLibraryPermissionsAsync();
-
-    if (permissionResult.granted === false) {
-      Alert.alert(
-        "Permission requise",
-        "Vous devez autoriser l'accès à vos photos."
-      );
-      return;
-    }
 
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: "images",
