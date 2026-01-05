@@ -58,7 +58,7 @@ export const COMMON_COLORS = {
  */
 export const DEFAULT_COURT_COLORS = {
   background: SLATE_COLORS[500], // Beige/brown basketball court
-  line: "#000000",       // Black lines
+  line: "#000000", // Black lines
 } as const;
 
 // ===========================
@@ -70,10 +70,10 @@ export const Colors = {
     // Primary brand color
     primary: BRAND_COLORS[500],
     onPrimary: COMMON_COLORS.white, // Text/icon color on primary background
-    onSecondary: COMMON_COLORS.black, 
+    onSecondary: COMMON_COLORS.black,
 
     onLogoPrimary: COMMON_COLORS.black,
-    onLogoSecondary: COMMON_COLORS.white, 
+    onLogoSecondary: COMMON_COLORS.white,
 
     // Backgrounds
     background: COMMON_COLORS.white,
@@ -129,18 +129,16 @@ export const Colors = {
     shadow: COMMON_COLORS.black,
 
     transparent: COMMON_COLORS.transparent,
-
   },
 
   dark: {
     // Primary brand color
     primary: BRAND_COLORS[500],
     onPrimary: COMMON_COLORS.white, // Text/icon color on primary background
-    onSecondary: COMMON_COLORS.black, 
+    onSecondary: COMMON_COLORS.black,
 
     onLogoPrimary: COMMON_COLORS.white,
-    onLogoSecondary: COMMON_COLORS.black, 
-
+    onLogoSecondary: COMMON_COLORS.black,
 
     // Backgrounds
     background: SLATE_COLORS[950],
@@ -252,31 +250,31 @@ export const PASSWORD_VALIDATION = {
  */
 export const ACTION_COLORS = {
   shot: {
-    base: "#FF6B35",      // Orange - Basketball orange
-    made: "#4CAF50",      // Green - Successful shot
-    missed: "#F44336",    // Red - Missed shot
+    base: "#FF6B35", // Orange - Basketball orange
+    made: "#4CAF50", // Green - Successful shot
+    missed: "#F44336", // Red - Missed shot
     points: {
-      one: "#9C27B0",     // Purple - 1 point
-      two: "#2196F3",     // Blue - 2 points
-      three: "#FF9800",   // Orange - 3 points
+      one: "#9C27B0", // Purple - 1 point
+      two: "#2196F3", // Blue - 2 points
+      three: "#FF9800", // Orange - 3 points
     },
   },
   rebound: {
-    base: "#4A90E2",      // Blue
+    base: "#4A90E2", // Blue
     offensive: "#2E7D32", // Dark green - Offensive rebound
     defensive: "#1976D2", // Blue - Defensive rebound
   },
   foul: {
-    base: "#FFD700",      // Gold/Yellow
-    personal: "#FFD700",  // Gold/Yellow - Personal foul
+    base: "#FF1744", // Pink/Red
+    personal: "#FFD700", // Gold/Yellow - Personal foul
     technical: "#FF1744", // Pink/Red - Technical foul
-    penality: "#FF6F00",  // Dark orange - Unsportsmanlike foul
-    disqualification: "#000000", // Black - Disqualifying foul
+    penality: "#FF6F00", // Dark orange - Unsportsmanlike foul
+    disqualification: "#E3E3E3", // Black - Disqualifying foul
   },
-  assist: "#00BCD4",      // Cyan - Assist
-  steal: "#F39C12",       // Yellow - Steal
-  block: "#8E44AD",       // Purple - Block
-  turnover: "#95A5A6",    // Gray - Turnover
+  assist: "#00BCD4", // Cyan - Assist
+  steal: "#F39C12", // Yellow - Steal
+  block: "#8E44AD", // Purple - Block
+  turnover: "#95A5A6", // Gray - Turnover
 } as const;
 
 /**
@@ -284,15 +282,15 @@ export const ACTION_COLORS = {
  * Shared across light and dark themes
  */
 export const STATUS_COLORS = {
-  success: "#4CAF50",   // Green
+  success: "#4CAF50", // Green
   successLight: "#16a34a", // Green for text on light background
   successBackground: "#dcfce7", // Light green background
-  error: "#F44336",     // Red
+  error: "#F44336", // Red
   errorLight: "#dc2626", // Red for text
   errorBackground: "#fee2e2", // Light red background
-  warning: "#F57C00",   // Orange
-  info: "#2196F3",      // Blue
-  required: "#ef4444",  // Red for required fields
+  warning: "#F57C00", // Orange
+  info: "#2196F3", // Blue
+  required: "#ef4444", // Red for required fields
 } as const;
 
 /**
@@ -300,9 +298,9 @@ export const STATUS_COLORS = {
  * Shared across light and dark themes
  */
 export const UI_COLORS = {
-  star: "#eab308",                    // Yellow for star/favorite
-  starBackground: "rgba(234, 179, 8, 0.2)",  // Yellow transparent background
-  starForeground: "#eab308",          // Yellow for star icon (same as star)
+  star: "#eab308", // Yellow for star/favorite
+  starBackground: "rgba(234, 179, 8, 0.2)", // Yellow transparent background
+  starForeground: "#eab308", // Yellow for star icon (same as star)
 } as const;
 
 /**
@@ -310,8 +308,8 @@ export const UI_COLORS = {
  */
 export const SPORT_COLORS = {
   basketball: {
-    orange: ACTION_COLORS.shot.base,  // "#FF6B35" - Basketball orange
-    court: "#1a472a",   // Court green
+    orange: ACTION_COLORS.shot.base, // "#FF6B35" - Basketball orange
+    court: "#1a472a", // Court green
   },
 } as const;
 
@@ -320,9 +318,9 @@ export const SPORT_COLORS = {
  * Used in player stat cards to show shooting percentages
  */
 export const SHOOTING_BAR_COLORS = {
-  threePoint: "#6366f1",  // Indigo - 3 point shots
-  twoPoint: "#3b82f6",    // Blue - 2 point shots
-  freeThrow: "#06b6d4",   // Cyan - Free throws
+  threePoint: "#6366f1", // Indigo - 3 point shots
+  twoPoint: "#3b82f6", // Blue - 2 point shots
+  freeThrow: "#06b6d4", // Cyan - Free throws
 } as const;
 
 /**
@@ -330,17 +328,17 @@ export const SHOOTING_BAR_COLORS = {
  * Used consistently across match summary, details, and statistics
  */
 export const TEAM_CHART_COLORS = {
-  teamA: ACTION_COLORS.shot.base,  // "#FF6B35" - Orange - Team A
-  teamB: "#004E89",  // Dark Blue - Team B
+  teamA: ACTION_COLORS.shot.base, // "#FF6B35" - Orange - Team A
+  teamB: "#004E89", // Dark Blue - Team B
 } as const;
 
 /**
  * Colors for different subscription tiers
  */
 export const SUBSCRIPTION_COLORS = {
-  free: "#FFD700",      // Gold
-  premium: "#9C27B0",   // Purple
-  club: "#9C27B0",      // Purple (same as premium for now)
+  free: "#FFD700", // Gold
+  premium: "#9C27B0", // Purple
+  club: "#9C27B0", // Purple (same as premium for now)
 } as const;
 
 /**
@@ -360,7 +358,7 @@ export const CLUB_PRESET_COLORS = [
  * Default club colors when creating a new club
  */
 export const DEFAULT_CLUB_COLORS = {
-  primary: "#FF0000",   // Red
+  primary: "#FF0000", // Red
   secondary: "#0000FF", // Blue
 } as const;
 
@@ -389,69 +387,69 @@ export const COURT_PRESET_COLORS = [
 export const PDF_COLORS = {
   // Logo colors
   logo: {
-    ball: BRAND_COLORS[500],        // "#f97316" - Orange basketball
+    ball: BRAND_COLORS[500], // "#f97316" - Orange basketball
     ballBackground: COMMON_COLORS.black,
     background: COMMON_COLORS.white,
   },
 
   // Chart colors
   chart: {
-    myTeam: ACTION_COLORS.shot.base,  // "#FF6B35" - Orange (reuse existing)
-    opponent: "#004E89",               // "#004E89" - Dark Blue (reuse from TEAM_CHART_COLORS.teamB)
-    gridLine: SLATE_COLORS[200],       // "#e2e8f0" - Light gray
-    axis: SLATE_COLORS[800],           // "#1e293b" - Dark gray
+    myTeam: ACTION_COLORS.shot.base, // "#FF6B35" - Orange (reuse existing)
+    opponent: "#004E89", // "#004E89" - Dark Blue (reuse from TEAM_CHART_COLORS.teamB)
+    gridLine: SLATE_COLORS[200], // "#e2e8f0" - Light gray
+    axis: SLATE_COLORS[800], // "#1e293b" - Dark gray
   },
 
   // Court colors
   court: {
     background: DEFAULT_COURT_COLORS.background, // "#dab573"
-    line: DEFAULT_COURT_COLORS.line,             // "#000000"
-    markerStroke: COMMON_COLORS.white,           // "#FFFFFF"
-    markerDefault: ACTION_COLORS.shot.missed,    // "#F44336" - Red
-    noData: SLATE_COLORS[400],                   // "#94a3b8" - Gray
+    line: DEFAULT_COURT_COLORS.line, // "#000000"
+    markerStroke: COMMON_COLORS.white, // "#FFFFFF"
+    markerDefault: ACTION_COLORS.shot.missed, // "#F44336" - Red
+    noData: SLATE_COLORS[400], // "#94a3b8" - Gray
   },
 
   // Table colors
   table: {
-    border: SLATE_COLORS[800],         // "#1e293b" - Dark border
-    headerBg: SLATE_COLORS[100],       // "#f1f5f9" - Light gray
-    rowBg: COMMON_COLORS.white,        // "#FFFFFF"
-    rowAltBg: SLATE_COLORS[50],        // "#f8fafc" - Very light gray
-    text: SLATE_COLORS[800],           // "#1e293b" - Dark text
-    textSecondary: SLATE_COLORS[500],  // "#64748b" - Secondary text
-    textTertiary: SLATE_COLORS[400],   // "#94a3b8" - Tertiary text
+    border: SLATE_COLORS[800], // "#1e293b" - Dark border
+    headerBg: SLATE_COLORS[100], // "#f1f5f9" - Light gray
+    rowBg: COMMON_COLORS.white, // "#FFFFFF"
+    rowAltBg: SLATE_COLORS[50], // "#f8fafc" - Very light gray
+    text: SLATE_COLORS[800], // "#1e293b" - Dark text
+    textSecondary: SLATE_COLORS[500], // "#64748b" - Secondary text
+    textTertiary: SLATE_COLORS[400], // "#94a3b8" - Tertiary text
   },
 
   // Player card colors
   card: {
-    background: COMMON_COLORS.white,   // "#FFFFFF"
-    border: SLATE_COLORS[200],         // "#e2e8f0"
-    headerBg: SLATE_COLORS[50],        // "#f8fafc"
-    highlightBg: "#fef3f2",            // Light orange tint
+    background: COMMON_COLORS.white, // "#FFFFFF"
+    border: SLATE_COLORS[200], // "#e2e8f0"
+    headerBg: SLATE_COLORS[50], // "#f8fafc"
+    highlightBg: "#fef3f2", // Light orange tint
     highlightBorder: BRAND_COLORS[500], // "#f97316"
-    text: SLATE_COLORS[900],           // "#0f172a"
-    textSecondary: SLATE_COLORS[500],  // "#64748b"
-    accent: BRAND_COLORS[500],         // "#f97316" - Orange accent
+    text: SLATE_COLORS[900], // "#0f172a"
+    textSecondary: SLATE_COLORS[500], // "#64748b"
+    accent: BRAND_COLORS[500], // "#f97316" - Orange accent
   },
 
   // Shooting bar colors (reuse existing)
   shooting: {
-    threePoint: SHOOTING_BAR_COLORS.threePoint,  // "#6366f1"
-    twoPoint: SHOOTING_BAR_COLORS.twoPoint,      // "#3b82f6"
-    freeThrow: SHOOTING_BAR_COLORS.freeThrow,    // "#06b6d4"
+    threePoint: SHOOTING_BAR_COLORS.threePoint, // "#6366f1"
+    twoPoint: SHOOTING_BAR_COLORS.twoPoint, // "#3b82f6"
+    freeThrow: SHOOTING_BAR_COLORS.freeThrow, // "#06b6d4"
   },
 
   // Team colors for headers
   team: {
-    myTeam: ACTION_COLORS.shot.base,   // "#FF6B35" - Orange
-    opponent: "#004E89",                 // "#004E89" - Dark Blue
+    myTeam: ACTION_COLORS.shot.base, // "#FF6B35" - Orange
+    opponent: "#004E89", // "#004E89" - Dark Blue
   },
 
   // Warning banner
   warning: {
-    background: "#FFF3E0",  // Light orange
-    border: "#FF9800",      // Orange
-    text: "#E65100",        // Dark orange
+    background: "#FFF3E0", // Light orange
+    border: "#FF9800", // Orange
+    text: "#E65100", // Dark orange
   },
 } as const;
 
@@ -460,4 +458,4 @@ export const PDF_COLORS = {
 // ===========================
 
 export type ColorScheme = keyof typeof Colors;
-export type ThemeColors = typeof Colors[ColorScheme];
+export type ThemeColors = (typeof Colors)[ColorScheme];

@@ -183,14 +183,14 @@ export const ACTION_CONFIG: Record<string, ActionConfig> = {
         color: ACTION_COLORS.foul.personal,
       },
       {
-        id: FoulSpecification.TECHNICAL,
-        label: "Technique",
-        color: ACTION_COLORS.foul.technical,
-      },
-      {
         id: FoulSpecification.PENALITY,
         label: "Antisportive",
         color: ACTION_COLORS.foul.penality,
+      },
+      {
+        id: FoulSpecification.TECHNICAL,
+        label: "Technique",
+        color: ACTION_COLORS.foul.technical,
       },
       {
         id: FoulSpecification.DISQUALIFICATION,
@@ -260,7 +260,11 @@ export function getActionColor(
 
   // For shots, prioritize specification (made/missed) over points
   // This ensures made shots are green and missed shots are red
-  if (actionType === ActionType.SHOT && specification && config.specifications) {
+  if (
+    actionType === ActionType.SHOT &&
+    specification &&
+    config.specifications
+  ) {
     const spec = config.specifications.find((s) => s.id === specification);
     if (spec) return spec.color;
   }
@@ -298,23 +302,135 @@ export function getAllActionTypes(): ActionConfig[] {
 /**
  * Export as array for ActionModal and other components
  */
-export const ACTION_DEFINITIONS = Object.values(ACTION_CONFIG).map((config) => ({
-  id: config.id,
-  icon: "",
-  label: config.label,
-  backgroundColor: config.color,
-  description: config.description,
-  hasPointsSelection: config.hasPointsSelection || false,
-  pointsOptions: config.pointsOptions?.map((opt) => ({
-    id: opt.id,
-    label: opt.label,
+export const ACTION_DEFINITIONS = Object.values(ACTION_CONFIG).map(
+  (config) => ({
+    id: config.id,
     icon: "",
-    color: opt.color,
-  })) || [],
-  specifications: (config.specifications || []).map((spec) => ({
-    id: spec.id,
-    label: spec.label,
-    icon: "",
-    color: spec.color,
-  })),
-}));
+    label: config.label,
+    backgroundColor: config.color,
+    description: config.description,
+    hasPointsSelection: config.hasPointsSelection || false,
+    pointsOptions:
+      config.pointsOptions?.map((opt) => ({
+        id: opt.id,
+        label: opt.label,
+        icon: "",
+        color: opt.color,
+      })) || [],
+    specifications: (config.specifications || []).map((spec) => ({
+      id: spec.id,
+      label: spec.label,
+      icon: "",
+      color: spec.color,
+    })),
+  })
+);
+
+/**
+ * Marker rendering utilities for basketball court visualizations
+ */
+
+export interface MarkerPosition {
+  x: number;
+  y: number;
+}
+
+/**
+ * Generate SVG string for any marker based on action type and specification
+ * Used for both React Native SVG and PDF/SVG exports
+ *
+ * @param pos - Position of the marker (x, y coordinates)
+ * @param color - Color of the marker
+ * @param actionType - Type of action (SHOT, REBOUND, FOUL, etc.)
+ * @param specification - Specification of the action (MADE, MISSED, etc.)
+ * @param size - Size of the marker (default: 8)
+ * @returns SVG string for the marker
+ */
+export function renderMarkerSVG(
+  pos: MarkerPosition,
+  color: string,
+  actionType?: string,
+  specification?: string,
+  size: number = 8
+): string {
+  const normalizedActionType = actionType?.toUpperCase();
+  const normalizedSpecification = specification?.toUpperCase();
+
+  // Shot made: empty circle (border only)
+  if (
+    normalizedActionType === ActionType.SHOT.toUpperCase() &&
+    normalizedSpecification === ShotSpecification.MADE.toUpperCase()
+  ) {
+    return `<circle cx="${pos.x}" cy="${pos.y}" r="${size}" fill="none" stroke="${color}" stroke-width="5"/>`;
+  }
+
+  // Shot missed: cross (X)
+  if (
+    normalizedActionType === ActionType.SHOT.toUpperCase() &&
+    normalizedSpecification === ShotSpecification.MISSED.toUpperCase()
+  ) {
+    return `
+      <line x1="${pos.x - size}" y1="${pos.y - size}" x2="${
+      pos.x + size
+    }" y2="${pos.y + size}"
+            stroke="${color}" stroke-width="5" stroke-linecap="round"/>
+      <line x1="${pos.x + size}" y1="${pos.y - size}" x2="${
+      pos.x - size
+    }" y2="${pos.y + size}"
+            stroke="${color}" stroke-width="5" stroke-linecap="round"/>
+    `;
+  }
+
+  // Rebound: triangle
+  if (normalizedActionType === ActionType.REBOUND.toUpperCase()) {
+    const height = size * 1.2;
+    const width = size * 1.2;
+    return `<polygon points="${pos.x},${pos.y - height} ${pos.x + width},${
+      pos.y + height
+    } ${pos.x - width},${pos.y + height}"
+                     fill="${color}" stroke="#FFFFFF" stroke-width="1"/>`;
+  }
+
+  // Foul: diamond (losange)
+  if (normalizedActionType === ActionType.FOUL.toUpperCase()) {
+    const diamondSize = size * 1.2;
+    return `<polygon points="${pos.x},${pos.y - diamondSize} ${
+      pos.x + diamondSize
+    },${pos.y} ${pos.x},${pos.y + diamondSize} ${pos.x - diamondSize},${pos.y}"
+                     fill="${color}" stroke="#FFFFFF" stroke-width="2"/>`;
+  }
+
+  // Default: filled circle for all other actions (assist, steal, block, turnover)
+  return `<circle cx="${pos.x}" cy="${pos.y}" r="${size}" fill="${color}" stroke="#FFFFFF" stroke-width="2"/>`;
+}
+
+/**
+ * Get marker shape type for determining which React Native SVG component to render
+ * Returns: 'circle-outline' | 'cross' | 'triangle' | 'diamond' | 'circle'
+ */
+export function getMarkerShapeType(
+  actionType?: string,
+  specification?: string
+): "circle-outline" | "cross" | "triangle" | "diamond" | "circle" {
+  const normalizedActionType = actionType?.toUpperCase();
+  const normalizedSpecification = specification?.toUpperCase();
+
+  if (normalizedActionType === ActionType.SHOT.toUpperCase()) {
+    if (normalizedSpecification === ShotSpecification.MADE.toUpperCase()) {
+      return "circle-outline";
+    }
+    if (normalizedSpecification === ShotSpecification.MISSED.toUpperCase()) {
+      return "cross";
+    }
+  }
+
+  if (normalizedActionType === ActionType.REBOUND.toUpperCase()) {
+    return "triangle";
+  }
+
+  if (normalizedActionType === ActionType.FOUL.toUpperCase()) {
+    return "diamond";
+  }
+
+  return "circle";
+}
