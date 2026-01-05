@@ -77,34 +77,28 @@ export default function DashboardRecentMatches({
                     ]}
                   />
                   <View style={styles.matchInfo}>
-                    <View style={styles.matchScoreLine}>
-                      <Text style={[styles.matchScore, { color: colors.text.primary }]}>
-                        {leftScore} - {rightScore}
-                      </Text>
-                      <View
-                        style={[
-                          styles.matchTeamBadge,
-                          {
-                            backgroundColor: colors.surface,
-                          },
-                        ]}
-                      >
-                        <Text
-                          style={[
-                            styles.matchTeamBadgeText,
-                            { color: colors.text.secondary },
-                          ]}
-                        >
-                          {leftTeam}
-                        </Text>
-                      </View>
-                    </View>
-                    <Text
-                      style={[styles.matchOpponent, { color: colors.text.secondary }]}
-                      numberOfLines={1}
-                    >
-                      vs {rightTeam}
+                    <Text style={[styles.matchScore, { color: colors.text.primary }]}>
+                      {leftScore} - {rightScore}
                     </Text>
+                    <View style={styles.matchTeamsLine}>
+                      <Text
+                        style={[styles.matchTeamLeft, { color: colors.text.secondary }]}
+                        numberOfLines={1}
+                      >
+                        {leftTeam}
+                      </Text>
+                      <Text
+                        style={[styles.matchVs, { color: colors.text.tertiary }]}
+                      >
+                        vs
+                      </Text>
+                      <Text
+                        style={[styles.matchTeamRight, { color: colors.text.secondary }]}
+                        numberOfLines={1}
+                      >
+                        {rightTeam}
+                      </Text>
+                    </View>
                   </View>
                 </View>
 
@@ -202,27 +196,26 @@ const styles = StyleSheet.create({
   },
   matchInfo: {
     flex: 1,
-  },
-  matchScoreLine: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    marginBottom: 4,
+    gap: 4,
   },
   matchScore: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: "bold",
   },
-  matchTeamBadge: {
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
+  matchTeamsLine: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
   },
-  matchTeamBadgeText: {
-    fontSize: 10,
-  },
-  matchOpponent: {
+  matchTeamLeft: {
     fontSize: 12,
+  },
+  matchTeamRight: {
+    fontSize: 12,
+  },
+  matchVs: {
+    fontSize: 11,
+    fontWeight: "500",
   },
   matchCardRight: {
     alignItems: "flex-end",
