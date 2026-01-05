@@ -9,7 +9,7 @@ import {
   COURT_SVG_HEIGHT_LANDSCAPE,
 } from "../constants";
 import { DEFAULT_COURT_COLORS } from "../src/theme/colors";
-import { ActionType, ShotSpecification } from "../src/models/ActionTypes";
+import { ActionType, ShotSpecification, getMarkerShapeType } from "../src/models/ActionTypes";
 
 export interface CourtMarker {
   id: string;
@@ -165,6 +165,7 @@ export default function BasketballCourtSVG({
   /**
    * Render markers in SVG space
    * Markers are stored in portrait coordinates, we convert them to current orientation
+   * Uses centralized marker shape logic from ActionTypes
    */
   const renderMarkers = () => {
     return markers.map((marker) => {
@@ -172,8 +173,10 @@ export default function BasketballCourtSVG({
       const color = marker.color || "#FF0000";
       const size = 8;
 
+      const shapeType = getMarkerShapeType(marker.actionType, marker.specification);
+
       // Shot made: empty circle (border only)
-      if (marker.actionType === ActionType.SHOT && marker.specification === ShotSpecification.MADE) {
+      if (shapeType === 'circle-outline') {
         return (
           <G key={marker.id}>
             <Circle
@@ -189,7 +192,7 @@ export default function BasketballCourtSVG({
       }
 
       // Shot missed: cross (X)
-      if (marker.actionType === ActionType.SHOT && marker.specification === ShotSpecification.MISSED) {
+      if (shapeType === 'cross') {
         return (
           <G key={marker.id}>
             <Line
@@ -215,7 +218,7 @@ export default function BasketballCourtSVG({
       }
 
       // Rebound: triangle
-      if (marker.actionType === ActionType.REBOUND) {
+      if (shapeType === 'triangle') {
         const height = size * 1.2;
         const width = size * 1.2;
         return (
@@ -231,7 +234,7 @@ export default function BasketballCourtSVG({
       }
 
       // Foul: diamond (losange)
-      if (marker.actionType === ActionType.FOUL) {
+      if (shapeType === 'diamond') {
         const diamondSize = size * 1.2;
         return (
           <G key={marker.id}>

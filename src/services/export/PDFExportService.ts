@@ -7,6 +7,7 @@ import {
   ReboundSpecification,
   FoulSpecification,
   getActionColor,
+  renderMarkerSVG,
 } from "../../models/ActionTypes";
 import { Team } from "../../models/types";
 import type { CourtMarker } from "../../../components/BasketballCourtSVG";
@@ -59,7 +60,9 @@ export class PDFExportService {
     ballBackgroundColor: string = PDF_COLORS.logo.ballBackground,
     transparentBackground: boolean = false
   ): string {
-    const bgFill = transparentBackground ? 'transparent' : PDF_COLORS.logo.background;
+    const bgFill = transparentBackground
+      ? "transparent"
+      : PDF_COLORS.logo.background;
     const svgString = `
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
      width="500" height="500" viewBox="0 0 375 374.999991"
@@ -152,7 +155,7 @@ export class PDFExportService {
   private static async loadDefaultLogo(): Promise<string | null> {
     try {
       // In React Native, we need to use Asset from expo-asset to load local images
-      const { Asset } = require('expo-asset');
+      const { Asset } = require("expo-asset");
 
       // Use logo from centralized helper
       const asset = Asset.fromModule(COACH_ASSISTANT_LOGO_MARGIN);
@@ -199,28 +202,32 @@ export class PDFExportService {
       overtimePeriods = 0,
     } = options;
 
-    console.log('[PDF Export] 🚀 Début generateMatchPDF');
-    console.log('[PDF Export] 📊 Nombre de joueurs reçus:', players.length);
-    console.log('[PDF Export] 👥 Liste des joueurs reçus:', players.map(p => ({
-      id: p.id,
-      num: p.num,
-      name: p.name,
-      team: p.team
-    })));
-    console.log('[PDF Export] 🎬 Nombre d\'actions:', actions.length);
-    console.log('[PDF Export] 📌 trackOpponentStats:', trackOpponentStats);
+    console.log("[PDF Export] 🚀 Début generateMatchPDF");
+    console.log("[PDF Export] 📊 Nombre de joueurs reçus:", players.length);
+    console.log(
+      "[PDF Export] 👥 Liste des joueurs reçus:",
+      players.map((p) => ({
+        id: p.id,
+        num: p.num,
+        name: p.name,
+        team: p.team,
+      }))
+    );
+    console.log("[PDF Export] 🎬 Nombre d'actions:", actions.length);
+    console.log("[PDF Export] 📌 trackOpponentStats:", trackOpponentStats);
 
     // Log quelques actions pour voir leur structure
     if (actions.length > 0) {
-      console.log('[PDF Export] 📝 Échantillon de 5 premières actions:',
-        actions.slice(0, 5).map(a => ({
+      console.log(
+        "[PDF Export] 📝 Échantillon de 5 premières actions:",
+        actions.slice(0, 5).map((a) => ({
           player_number: a.player_number,
           player: a.player,
           type: a.type,
           action_type: a.action_type,
           team: a.team,
           specification: a.specification,
-          points: a.points
+          points: a.points,
         }))
       );
     }
@@ -257,13 +264,12 @@ export class PDFExportService {
         !!base64Logo
       );
     } else if (!clubLogoUrl) {
-      console.log(`[PDF Export] No club logo, using default Coach Assistant logo`);
+      console.log(
+        `[PDF Export] No club logo, using default Coach Assistant logo`
+      );
       const defaultLogo = await this.loadDefaultLogo();
       clubLogoBase64 = defaultLogo || undefined;
-      console.log(
-        `[PDF Export] Default logo loaded:`,
-        !!defaultLogo
-      );
+      console.log(`[PDF Export] Default logo loaded:`, !!defaultLogo);
     } else {
       console.log(
         `[PDF Export] Club logo not converted (not http or undefined)`
@@ -275,10 +281,8 @@ export class PDFExportService {
     const totalPeriodsPlayed = totalPeriods + overtimePeriods; // Include overtime periods
 
     // Calculate period scores (including overtime periods)
-    const { periodScoresMyTeam, periodScoresOpponent } = this.calculatePeriodScores(
-      actions,
-      totalPeriodsPlayed
-    );
+    const { periodScoresMyTeam, periodScoresOpponent } =
+      this.calculatePeriodScores(actions, totalPeriodsPlayed);
 
     // Arrange period scores in home/away order
     const periodScoresHome = isHome ? periodScoresMyTeam : periodScoresOpponent;
@@ -289,24 +293,37 @@ export class PDFExportService {
       this.calculateActionByActionEvolution(actions, totalPeriodsPlayed);
 
     // Calculate player stats - always include MY_TEAM, include OPPONENT only if tracking
-    console.log('[PDF Export] 🔍 Tous les joueurs reçus:', playersWithBase64Photos.map(p => ({
-      id: p.id,
-      num: p.num,
-      name: p.name,
-      team: p.team,
-      hasPhoto: !!p.photoUrl
-    })));
+    console.log(
+      "[PDF Export] 🔍 Tous les joueurs reçus:",
+      playersWithBase64Photos.map((p) => ({
+        id: p.id,
+        num: p.num,
+        name: p.name,
+        team: p.team,
+        hasPhoto: !!p.photoUrl,
+      }))
+    );
 
-    const playersMyTeam = playersWithBase64Photos.filter((p) => p.team === Team.MY_TEAM);
+    const playersMyTeam = playersWithBase64Photos.filter(
+      (p) => p.team === Team.MY_TEAM
+    );
     const playersOpponent = trackOpponentStats
       ? playersWithBase64Photos.filter((p) => p.team === Team.OPPONENT)
       : [];
 
-    console.log('[PDF Export] 👥 Joueurs MY_TEAM filtrés:', playersMyTeam.length);
-    console.log('[PDF Export] 👥 Joueurs OPPONENT filtrés:', playersOpponent.length);
+    console.log(
+      "[PDF Export] 👥 Joueurs MY_TEAM filtrés:",
+      playersMyTeam.length
+    );
+    console.log(
+      "[PDF Export] 👥 Joueurs OPPONENT filtrés:",
+      playersOpponent.length
+    );
 
     const statsMyTeam = playersMyTeam.map((player) => {
-      console.log(`[PDF Export] ⚡ Calcul stats pour joueur MY_TEAM - ID: ${player.id}, Num: ${player.num}, Nom: ${player.name}`);
+      console.log(
+        `[PDF Export] ⚡ Calcul stats pour joueur MY_TEAM - ID: ${player.id}, Num: ${player.num}, Nom: ${player.name}`
+      );
       const stats = this.calculatePlayerStats(player.id, actions);
       console.log(`[PDF Export] 📊 Stats calculées:`, stats);
       return {
@@ -316,7 +333,9 @@ export class PDFExportService {
     });
 
     const statsOpponent = playersOpponent.map((player) => {
-      console.log(`[PDF Export] ⚡ Calcul stats pour joueur OPPONENT - ID: ${player.id}, Num: ${player.num}, Nom: ${player.name}`);
+      console.log(
+        `[PDF Export] ⚡ Calcul stats pour joueur OPPONENT - ID: ${player.id}, Num: ${player.num}, Nom: ${player.name}`
+      );
       const stats = this.calculatePlayerStats(player.id, actions);
       console.log(`[PDF Export] 📊 Stats calculées:`, stats);
       return {
@@ -369,12 +388,12 @@ export class PDFExportService {
 
       // iOS requires UTI and mimeType for proper file handling
       if (Platform.OS === PlatformOS.IOS) {
-        sharingOptions.UTI = 'com.adobe.pdf';
-        sharingOptions.mimeType = 'application/pdf';
+        sharingOptions.UTI = "com.adobe.pdf";
+        sharingOptions.mimeType = "application/pdf";
       }
       // Android also benefits from mimeType specification
       else if (Platform.OS === PlatformOS.ANDROID) {
-        sharingOptions.mimeType = 'application/pdf';
+        sharingOptions.mimeType = "application/pdf";
       }
 
       await Sharing.shareAsync(uri, sharingOptions);
@@ -387,18 +406,19 @@ export class PDFExportService {
    * Calculate scores by period
    * Uses period_number field from actions to correctly group scores by period
    */
-  private static calculatePeriodScores(
-    actions: any[],
-    totalPeriods: number
-  ) {
+  private static calculatePeriodScores(actions: any[], totalPeriods: number) {
     const periodScoresMyTeam: number[] = Array(totalPeriods).fill(0);
     const periodScoresOpponent: number[] = Array(totalPeriods).fill(0);
 
     // Filter only scoring actions (made shots)
     const scoringActions = actions.filter((action) => {
       // Note: Actions from MatchDataService use 'type', database uses 'action_type'
-      const actionType = (action.type || action.action_type || '').toLowerCase();
-      const specification = (action.specification || '').toLowerCase();
+      const actionType = (
+        action.type ||
+        action.action_type ||
+        ""
+      ).toLowerCase();
+      const specification = (action.specification || "").toLowerCase();
       return (
         actionType === ActionType.SHOT &&
         specification === ShotSpecification.MADE
@@ -440,8 +460,12 @@ export class PDFExportService {
     const scoringActions = actions
       .filter((action) => {
         // Note: Actions from MatchDataService use 'type', database uses 'action_type'
-        const actionType = (action.type || action.action_type || '').toLowerCase();
-        const specification = (action.specification || '').toLowerCase();
+        const actionType = (
+          action.type ||
+          action.action_type ||
+          ""
+        ).toLowerCase();
+        const specification = (action.specification || "").toLowerCase();
         return (
           actionType === ActionType.SHOT &&
           specification === ShotSpecification.MADE
@@ -453,7 +477,9 @@ export class PDFExportService {
           return a.period_number - b.period_number;
         }
         if (a.timestamp && b.timestamp) {
-          return new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime();
+          return (
+            new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+          );
         }
         return 0;
       });
@@ -486,7 +512,6 @@ export class PDFExportService {
     return { evolutionMyTeam, evolutionOpponent, evolutionPeriods };
   }
 
-
   /**
    * Helper: Calculate total fouls for a player
    */
@@ -502,7 +527,10 @@ export class PDFExportService {
   /**
    * Helper: Calculate shooting percentage
    */
-  private static calculateShootingPercentage(made: number, attempts: number): number {
+  private static calculateShootingPercentage(
+    made: number,
+    attempts: number
+  ): number {
     return attempts > 0 ? Math.round((made / attempts) * 100) : 0;
   }
 
@@ -511,8 +539,12 @@ export class PDFExportService {
    * Handles both database format (action_type, player_number) and app format (type, player)
    */
   private static calculatePlayerStats(playerId: number, actions: any[]) {
-    console.log(`[PDF Export] 🎯 calculatePlayerStats appelé pour playerId: ${playerId}`);
-    console.log(`[PDF Export] 📋 Nombre total d'actions à analyser: ${actions.length}`);
+    console.log(
+      `[PDF Export] 🎯 calculatePlayerStats appelé pour playerId: ${playerId}`
+    );
+    console.log(
+      `[PDF Export] 📋 Nombre total d'actions à analyser: ${actions.length}`
+    );
 
     // Filter actions for this player - handle both player_number (DB) and player (app) formats
     const playerActions = actions.filter((a) => {
@@ -520,7 +552,9 @@ export class PDFExportService {
       return playerNum === playerId;
     });
 
-    console.log(`[PDF Export] ✅ Actions trouvées pour playerId ${playerId}: ${playerActions.length}`);
+    console.log(
+      `[PDF Export] ✅ Actions trouvées pour playerId ${playerId}: ${playerActions.length}`
+    );
     if (playerActions.length > 0) {
       console.log(`[PDF Export] 📝 Première action du joueur ${playerId}:`, {
         player_number: playerActions[0].player_number,
@@ -528,19 +562,19 @@ export class PDFExportService {
         type: playerActions[0].type,
         action_type: playerActions[0].action_type,
         specification: playerActions[0].specification,
-        points: playerActions[0].points
+        points: playerActions[0].points,
       });
     }
 
     // Helper function to normalize action type
     // Note: Actions from MatchDataService use 'type', database uses 'action_type'
     const normalizeActionType = (action: any): string => {
-      return (action.type || action.action_type || '').toLowerCase();
+      return (action.type || action.action_type || "").toLowerCase();
     };
 
     // Helper function to normalize specification
     const normalizeSpecification = (action: any): string => {
-      return (action.specification || '').toLowerCase();
+      return (action.specification || "").toLowerCase();
     };
 
     // Shots
@@ -642,7 +676,7 @@ export class PDFExportService {
     if (playingTimeSeconds !== undefined && playingTimeSeconds > 0) {
       const minutes = Math.floor(playingTimeSeconds / 60);
       const seconds = playingTimeSeconds % 60;
-      return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+      return `${minutes}:${seconds.toString().padStart(2, "0")}`;
     }
     // If no tracking data available, return 0:00
     return "0:00";
@@ -665,7 +699,10 @@ export class PDFExportService {
     const stl = stats.reduce((sum, p) => sum + p.stats.stl, 0);
     const blk = stats.reduce((sum, p) => sum + p.stats.blk, 0);
     const tov = stats.reduce((sum, p) => sum + p.stats.tov, 0);
-    const fouls = stats.reduce((sum, p) => sum + this.calculateTotalFouls(p.stats), 0);
+    const fouls = stats.reduce(
+      (sum, p) => sum + this.calculateTotalFouls(p.stats),
+      0
+    );
 
     const fgm = twopm + threepm;
     const fga = twopa + threepa;
@@ -752,7 +789,7 @@ export class PDFExportService {
               num: player.num,
               name: player.name,
               team: player.team,
-              stats: player.stats
+              stats: player.stats,
             });
 
             const totalFouls = this.calculateTotalFouls(player.stats);
@@ -853,10 +890,12 @@ export class PDFExportService {
     const yScale = chartHeight / maxScore;
 
     // Generate path for my team - action by action
-    let pathMyTeam = '';
+    let pathMyTeam = "";
     evolutionMyTeam.forEach((score, i) => {
       // Calculate x position based on action index distributed across total periods
-      const x = padding.left + (i / Math.max(evolutionMyTeam.length - 1, 1)) * chartWidth;
+      const x =
+        padding.left +
+        (i / Math.max(evolutionMyTeam.length - 1, 1)) * chartWidth;
       const y = padding.top + chartHeight - score * yScale;
 
       if (i === 0) {
@@ -867,9 +906,11 @@ export class PDFExportService {
     });
 
     // Generate path for opponent - action by action (always shown)
-    let pathOpponent = '';
+    let pathOpponent = "";
     evolutionOpponent.forEach((score, i) => {
-      const x = padding.left + (i / Math.max(evolutionOpponent.length - 1, 1)) * chartWidth;
+      const x =
+        padding.left +
+        (i / Math.max(evolutionOpponent.length - 1, 1)) * chartWidth;
       const y = padding.top + chartHeight - score * yScale;
 
       if (i === 0) {
@@ -883,32 +924,35 @@ export class PDFExportService {
     const actualBasePeriods = basePeriods || totalPeriodsPlayed; // Default to totalPeriodsPlayed if basePeriods not provided
     const overtimes = totalPeriodsPlayed - actualBasePeriods;
 
-    const xLabelsHTML = Array.from({ length: totalPeriodsPlayed + 1 }, (_, i) => {
-      const x = padding.left + (i * chartWidth) / totalPeriodsPlayed;
-      if (i === 0) {
-        return `<text x="${x}" y="${
-          height - 10
-        }" text-anchor="middle" font-size="10">Début</text>`;
-      }
+    const xLabelsHTML = Array.from(
+      { length: totalPeriodsPlayed + 1 },
+      (_, i) => {
+        const x = padding.left + (i * chartWidth) / totalPeriodsPlayed;
+        if (i === 0) {
+          return `<text x="${x}" y="${
+            height - 10
+          }" text-anchor="middle" font-size="10">Début</text>`;
+        }
 
-      // Determine label: regular period or OT
-      let label;
-      if (i <= actualBasePeriods) {
-        label = `${periodLabel}${i}`;
-      } else {
-        const otNumber = i - actualBasePeriods;
-        label = overtimes > 1 ? `OT${otNumber}` : 'OT';
-      }
+        // Determine label: regular period or OT
+        let label;
+        if (i <= actualBasePeriods) {
+          label = `${periodLabel}${i}`;
+        } else {
+          const otNumber = i - actualBasePeriods;
+          label = overtimes > 1 ? `OT${otNumber}` : "OT";
+        }
 
-      return `
+        return `
         <text x="${x}" y="${
-        height - 18
-      }" text-anchor="middle" font-size="9">FIN</text>
+          height - 18
+        }" text-anchor="middle" font-size="9">FIN</text>
         <text x="${x}" y="${
-        height - 8
-      }" text-anchor="middle" font-size="10" font-weight="bold">${label}</text>
+          height - 8
+        }" text-anchor="middle" font-size="10" font-weight="bold">${label}</text>
       `;
-    }).join("");
+      }
+    ).join("");
 
     // Generate Y-axis labels
     const ySteps = 5;
@@ -933,22 +977,32 @@ export class PDFExportService {
           const y = padding.top + chartHeight - (chartHeight / ySteps) * i;
           return `<line x1="${padding.left}" y1="${y}" x2="${
             width - padding.right
-          }" y2="${y}" stroke="${PDF_COLORS.chart.gridLine}" stroke-width="1"/>`;
+          }" y2="${y}" stroke="${
+            PDF_COLORS.chart.gridLine
+          }" stroke-width="1"/>`;
         }).join("")}
 
         <!-- Axes -->
         <line x1="${padding.left}" y1="${padding.top}" x2="${
       padding.left
-    }" y2="${padding.top + chartHeight}" stroke="${PDF_COLORS.chart.axis}" stroke-width="2"/>
+    }" y2="${padding.top + chartHeight}" stroke="${
+      PDF_COLORS.chart.axis
+    }" stroke-width="2"/>
         <line x1="${padding.left}" y1="${padding.top + chartHeight}" x2="${
       width - padding.right
-    }" y2="${padding.top + chartHeight}" stroke="${PDF_COLORS.chart.axis}" stroke-width="2"/>
+    }" y2="${padding.top + chartHeight}" stroke="${
+      PDF_COLORS.chart.axis
+    }" stroke-width="2"/>
 
         <!-- My Team line (always shown with orange color) -->
-        <path d="${pathMyTeam}" fill="none" stroke="${PDF_COLORS.chart.myTeam}" stroke-width="3"/>
+        <path d="${pathMyTeam}" fill="none" stroke="${
+      PDF_COLORS.chart.myTeam
+    }" stroke-width="3"/>
 
         <!-- Opponent line (always shown with blue color) -->
-        <path d="${pathOpponent}" fill="none" stroke="${PDF_COLORS.chart.opponent}" stroke-width="3"/>
+        <path d="${pathOpponent}" fill="none" stroke="${
+      PDF_COLORS.chart.opponent
+    }" stroke-width="3"/>
 
         <!-- Labels -->
         ${xLabelsHTML}
@@ -977,8 +1031,12 @@ export class PDFExportService {
     logoUrl?: string | null
   ): string {
     const isPortrait = height > width;
-    const SVG_WIDTH = isPortrait ? COURT_SVG_WIDTH_PORTRAIT : COURT_SVG_WIDTH_LANDSCAPE;
-    const SVG_HEIGHT = isPortrait ? COURT_SVG_HEIGHT_PORTRAIT : COURT_SVG_HEIGHT_LANDSCAPE;
+    const SVG_WIDTH = isPortrait
+      ? COURT_SVG_WIDTH_PORTRAIT
+      : COURT_SVG_WIDTH_LANDSCAPE;
+    const SVG_HEIGHT = isPortrait
+      ? COURT_SVG_HEIGHT_PORTRAIT
+      : COURT_SVG_HEIGHT_LANDSCAPE;
 
     // Convert markers from portrait coordinates to current orientation
     const convertedMarkers = markers.map((marker) => {
@@ -995,15 +1053,21 @@ export class PDFExportService {
 
     const renderMarkers = convertedMarkers
       .map((marker) => {
-        return `<circle cx="${marker.svgX}" cy="${marker.svgY}" r="8" fill="${
-          marker.color || PDF_COLORS.court.markerDefault
-        }" stroke="${PDF_COLORS.court.markerStroke}" stroke-width="2"/>`;
+        const pos = { x: marker.svgX, y: marker.svgY };
+        const color = marker.color || PDF_COLORS.court.markerDefault;
+        return renderMarkerSVG(
+          pos,
+          color,
+          marker.actionType,
+          marker.specification,
+          8
+        );
       })
       .join("");
 
     // Center logo - use club logo if provided, otherwise display app logo
     const renderCenterLogo = isPortrait
-      ? (logoUrl
+      ? logoUrl
         ? `
       <defs>
         <clipPath id="logoClipPortrait">
@@ -1030,9 +1094,9 @@ export class PDFExportService {
         height="124"
         preserveAspectRatio="xMidYMid meet"
       />
-    `)
-      : (logoUrl
-        ? `
+    `
+      : logoUrl
+      ? `
       <defs>
         <clipPath id="logoClipLandscape">
           <circle cx="573" cy="307" r="76" />
@@ -1048,7 +1112,7 @@ export class PDFExportService {
         clip-path="url(#logoClipLandscape)"
       />
     `
-        : `
+      : `
       <!-- App logo when no club logo - sized to fit inside circle radius 76 -->
       <image
         href="${this.generateAppLogoSVG()}"
@@ -1058,7 +1122,7 @@ export class PDFExportService {
         height="124"
         preserveAspectRatio="xMidYMid meet"
       />
-    `);
+    `;
 
     const courtBackgroundPath = isPortrait
       ? `M0 0h${COURT_SVG_WIDTH_PORTRAIT}v${COURT_SVG_HEIGHT_PORTRAIT}H0z`
@@ -1334,6 +1398,8 @@ export class PDFExportService {
         svgX: action.semanticPosition.xNormalized * COURT_SVG_WIDTH_PORTRAIT,
         svgY: action.semanticPosition.yNormalized * COURT_SVG_HEIGHT_PORTRAIT,
         color: getActionColor(action.type, action.specification, action.points),
+        actionType: action.type,
+        specification: action.specification,
       };
     });
 
@@ -1370,9 +1436,58 @@ export class PDFExportService {
     const markers: CourtMarker[] = nonShotActions.map((action, index) => {
       return {
         id: `action-${index}`,
-        svgX: (action.semanticPosition?.xNormalized || 0.5) * COURT_SVG_WIDTH_PORTRAIT,
-        svgY: (action.semanticPosition?.yNormalized || 0.5) * COURT_SVG_HEIGHT_PORTRAIT,
+        svgX:
+          (action.semanticPosition?.xNormalized || 0.5) *
+          COURT_SVG_WIDTH_PORTRAIT,
+        svgY:
+          (action.semanticPosition?.yNormalized || 0.5) *
+          COURT_SVG_HEIGHT_PORTRAIT,
         color: getActionColor(action.type, action.specification, action.points),
+        actionType: action.type,
+        specification: action.specification,
+      };
+    });
+
+    return this.generateBasketballCourtSVG(
+      width,
+      height,
+      backgroundColor,
+      lineColor,
+      markers,
+      logoUrl
+    );
+  }
+
+  /**
+   * Generate SVG court for ALL player actions (shots + other actions) using the full court component
+   */
+  private static generatePlayerAllActionsCourt(
+    actions: any[],
+    playerId: number,
+    backgroundColor: string = PDF_COLORS.court.background,
+    lineColor: string = PDF_COLORS.court.line,
+    logoUrl?: string | null
+  ): string {
+    const width = 465;
+    const height = 250;
+    const playerActions = actions.filter((a) => a.player === playerId);
+
+    if (playerActions.length === 0) {
+      return `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg"><text x="125" y="232" text-anchor="middle" font-size="14" fill="${PDF_COLORS.court.noData}">Aucune action</text></svg>`;
+    }
+
+    const markers: CourtMarker[] = playerActions.map((action, index) => {
+      return {
+        id: `action-${index}`,
+        svgX:
+          (action.semanticPosition?.xNormalized || 0.5) *
+          COURT_SVG_WIDTH_PORTRAIT,
+        svgY:
+          (action.semanticPosition?.yNormalized || 0.5) *
+          COURT_SVG_HEIGHT_PORTRAIT,
+        color: getActionColor(action.type, action.specification, action.points),
+        actionType: action.type,
+        specification: action.specification,
       };
     });
 
@@ -1694,6 +1809,13 @@ export class PDFExportService {
       width: 100px;
       height: auto;
     }
+    .player-card-club-logo {
+      position: absolute;
+      left: 20px;
+      top: 10px;
+      height: 80px;
+      width: auto;
+    }
     .player-card {
       border: 1px solid ${PDF_COLORS.card.border};
       padding: 20px;
@@ -1755,15 +1877,16 @@ export class PDFExportService {
       line-height: 1.2;
     }
     .player-points-badge {
-      background: ${PDF_COLORS.card.highlightBg};
       border: 1px solid ${PDF_COLORS.card.highlightBorder};
-      border-radius: 999px;
+      border-radius: 12px;
       padding: 8px 16px;
       display: inline-flex;
       flex-direction: column;
       align-items: center;
+      font-weight: bold;
       gap: 2px;
     }
+
     .player-points-value {
       font-size: 24px;
       font-weight: 700;
@@ -1902,16 +2025,7 @@ export class PDFExportService {
       color: ${PDF_COLORS.table.text};
       font-weight: 600;
     }
-    .player-points-badge {
-      display: inline-block;
-      background-color: ${PDF_COLORS.table.border};
-      color: white;
-      padding: 4px 12px;
-      border-radius: 12px;
-      font-size: 14px;
-      font-weight: bold;
-      margin-left: 10px;
-    }
+
     .no-stats {
       text-align: center;
       color: ${PDF_COLORS.table.textTertiary};
@@ -1947,7 +2061,7 @@ export class PDFExportService {
           .map((_, i) => `<th>${periodLabel}${i + 1}</th>`)
           .join("")}
         ${Array.from({ length: overtimePeriods })
-          .map((_, i) => `<th>OT${overtimePeriods > 1 ? i + 1 : ''}</th>`)
+          .map((_, i) => `<th>OT${overtimePeriods > 1 ? i + 1 : ""}</th>`)
           .join("")}
         <th>Total</th>
       </tr>
@@ -1976,26 +2090,27 @@ export class PDFExportService {
 
   ${this.generateTeamStatsTable(myTeamName, statsMyTeam, "team-a")}
 
-  ${trackOpponentStats ? this.generateTeamStatsTable(opponentName, statsOpponent, "team-b") : ""}
+  ${
+    trackOpponentStats
+      ? this.generateTeamStatsTable(opponentName, statsOpponent, "team-b")
+      : ""
+  }
 
   <!-- Individual Player Stats Section -->
   <div class="individual-stats-section">
     ${players
-      .filter((p) => p.team === Team.MY_TEAM || (trackOpponentStats && p.team === Team.OPPONENT))
+      .filter(
+        (p) =>
+          p.team === Team.MY_TEAM ||
+          (trackOpponentStats && p.team === Team.OPPONENT)
+      )
       .sort((a, b) => {
         if (a.team === b.team) return a.num - b.num;
         return a.team === Team.MY_TEAM ? -1 : 1;
       })
       .map((player) => {
         const playerStats = this.calculatePlayerStats(player.id, actions);
-        const shotCourtSVG = this.generatePlayerShotCourt(
-          actions,
-          player.id,
-          courtBackgroundColor,
-          courtLineColor,
-          clubLogoUrl
-        );
-        const actionCourtSVG = this.generatePlayerActionCourt(
+        const allActionsCourtSVG = this.generatePlayerAllActionsCourt(
           actions,
           player.id,
           courtBackgroundColor,
@@ -2017,22 +2132,34 @@ export class PDFExportService {
           playerStats.fta
         );
 
-        console.log(`[PDF Export] 📊 Shooting percentages for player ${player.num}:`, {
-          twoPoint: `${playerStats.twopm}/${playerStats.twopa} = ${twoPtPct}%`,
-          threePoint: `${playerStats.threepm}/${playerStats.threepa} = ${threePtPct}%`,
-          freeThrow: `${playerStats.ftm}/${playerStats.fta} = ${ftPct}%`,
-        });
+        console.log(
+          `[PDF Export] 📊 Shooting percentages for player ${player.num}:`,
+          {
+            twoPoint: `${playerStats.twopm}/${playerStats.twopa} = ${twoPtPct}%`,
+            threePoint: `${playerStats.threepm}/${playerStats.threepa} = ${threePtPct}%`,
+            freeThrow: `${playerStats.ftm}/${playerStats.fta} = ${ftPct}%`,
+          }
+        );
 
         const hasStats =
           actions.filter((a) => a.player === player.id).length > 0;
-        const teamName = player.team === Team.MY_TEAM ? myTeamName : opponentName;
+        const teamName =
+          player.team === Team.MY_TEAM ? myTeamName : opponentName;
         const totalFouls = this.calculateTotalFouls(playerStats);
         const playingTime = this.getPlayingTime(player.playingTimeSeconds);
 
-        const avatarUrl = AvatarService.getAvatarUrl(player.name, player.photoUrl);
+        const avatarUrl = AvatarService.getAvatarUrl(
+          player.name,
+          player.photoUrl
+        );
 
         return `
     <div class="player-card-page">
+      ${
+        clubLogoUrl
+          ? `<img src="${clubLogoUrl}" alt="Club Logo" class="player-card-club-logo" />`
+          : ""
+      }
       <img src="${AppLogoSVG}" alt="App" class="player-card-logo" />
       <div class="player-card-header">
         <div class="player-card-match-info">${homeTeamName} ${homeTeamScore} - ${awayTeamScore} ${awayTeamName}</div>
@@ -2041,8 +2168,12 @@ export class PDFExportService {
       <div class="player-card">
         <div class="player-header">
           <div class="player-info-left">
-            <img src="${avatarUrl}" alt="${player.name}" class="player-avatar-img" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
-            <div class="player-avatar" style="display: none;">${player.num}</div>
+            <img src="${avatarUrl}" alt="${
+          player.name
+        }" class="player-avatar-img" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
+            <div class="player-avatar" style="display: none;">${
+              player.num
+            }</div>
             <div class="player-info">
               <div class="player-name">${player.name}</div>
               <div class="player-number">#${player.num}</div>
@@ -2060,12 +2191,18 @@ export class PDFExportService {
             <div class="shooting-bar-label">3 PTS</div>
             <div class="shooting-bar-track">
               <svg width="100%" height="12" style="display: block;">
-                <rect x="0" y="0" width="100%" height="12" fill="${PDF_COLORS.card.border}" rx="6"/>
-                <rect x="0" y="0" width="${threePtPct}%" height="12" fill="${PDF_COLORS.shooting.threePoint}" rx="6"/>
+                <rect x="0" y="0" width="100%" height="12" fill="${
+                  PDF_COLORS.card.border
+                }" rx="6"/>
+                <rect x="0" y="0" width="${threePtPct}%" height="12" fill="${
+          PDF_COLORS.shooting.threePoint
+        }" rx="6"/>
               </svg>
             </div>
             <div class="shooting-bar-value">
-              <span class="shooting-bar-value-bold">${playerStats.threepm}/${playerStats.threepa}</span>
+              <span class="shooting-bar-value-bold">${playerStats.threepm}/${
+          playerStats.threepa
+        }</span>
               <span class="shooting-bar-pct"> (${threePtPct}%)</span>
             </div>
           </div>
@@ -2073,12 +2210,18 @@ export class PDFExportService {
             <div class="shooting-bar-label">2 PTS</div>
             <div class="shooting-bar-track">
               <svg width="100%" height="12" style="display: block;">
-                <rect x="0" y="0" width="100%" height="12" fill="${PDF_COLORS.card.border}" rx="6"/>
-                <rect x="0" y="0" width="${twoPtPct}%" height="12" fill="${PDF_COLORS.shooting.twoPoint}" rx="6"/>
+                <rect x="0" y="0" width="100%" height="12" fill="${
+                  PDF_COLORS.card.border
+                }" rx="6"/>
+                <rect x="0" y="0" width="${twoPtPct}%" height="12" fill="${
+          PDF_COLORS.shooting.twoPoint
+        }" rx="6"/>
               </svg>
             </div>
             <div class="shooting-bar-value">
-              <span class="shooting-bar-value-bold">${playerStats.twopm}/${playerStats.twopa}</span>
+              <span class="shooting-bar-value-bold">${playerStats.twopm}/${
+          playerStats.twopa
+        }</span>
               <span class="shooting-bar-pct"> (${twoPtPct}%)</span>
             </div>
           </div>
@@ -2086,12 +2229,18 @@ export class PDFExportService {
             <div class="shooting-bar-label">LF</div>
             <div class="shooting-bar-track">
               <svg width="100%" height="12" style="display: block;">
-                <rect x="0" y="0" width="100%" height="12" fill="${PDF_COLORS.card.border}" rx="6"/>
-                <rect x="0" y="0" width="${ftPct}%" height="12" fill="${PDF_COLORS.shooting.freeThrow}" rx="6"/>
+                <rect x="0" y="0" width="100%" height="12" fill="${
+                  PDF_COLORS.card.border
+                }" rx="6"/>
+                <rect x="0" y="0" width="${ftPct}%" height="12" fill="${
+          PDF_COLORS.shooting.freeThrow
+        }" rx="6"/>
               </svg>
             </div>
             <div class="shooting-bar-value">
-              <span class="shooting-bar-value-bold">${playerStats.ftm}/${playerStats.fta}</span>
+              <span class="shooting-bar-value-bold">${playerStats.ftm}/${
+          playerStats.fta
+        }</span>
               <span class="shooting-bar-pct"> (${ftPct}%)</span>
             </div>
           </div>
@@ -2105,7 +2254,9 @@ export class PDFExportService {
           </div>
           <div class="stat-box">
             <div class="stat-box-label">REB OFF/DEF</div>
-            <div class="stat-box-value">${playerStats.orb}/${playerStats.drb}</div>
+            <div class="stat-box-value">${playerStats.orb}/${
+          playerStats.drb
+        }</div>
           </div>
           <div class="stat-box">
             <div class="stat-box-label">AST</div>
@@ -2129,7 +2280,15 @@ export class PDFExportService {
           </div>
           <div class="stat-box highlight">
             <div class="stat-box-label">ÉVAL</div>
-            <div class="stat-box-value highlight">${playerStats.points + (playerStats.orb + playerStats.drb) + playerStats.ast + playerStats.stl + playerStats.blk - playerStats.tov - totalFouls}</div>
+            <div class="stat-box-value highlight">${
+              playerStats.points +
+              (playerStats.orb + playerStats.drb) +
+              playerStats.ast +
+              playerStats.stl +
+              playerStats.blk -
+              playerStats.tov -
+              totalFouls
+            }</div>
           </div>
         </div>
 
@@ -2139,8 +2298,8 @@ export class PDFExportService {
       <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid ${PDF_COLORS.card.border};">
         <div class="courts-container">
           <div class="court-wrapper">
-            <div class="court-title">TIRS</div>
-            ${shotCourtSVG}
+            <div class="court-title">ACTIONS</div>
+            ${allActionsCourtSVG}
           </div>
         </div>
       </div>

@@ -257,6 +257,9 @@ export default function MatchDetailsScreen() {
         matchDate: match.created_at ? new Date(match.created_at) : new Date(),
         isHome: match.is_home ?? true, // Pass whether my team is playing at home
         overtimePeriods: match.overtime_periods || 0, // Number of overtime periods played
+        clubLogoUrl: club?.logoUrl, // Use club logo if configured
+        courtBackgroundColor: club?.courtBackgroundColor, // Use club court background color if configured
+        courtLineColor: club?.courtLineColor, // Use club court line color if configured
       };
 
       console.log('[MatchDetailsScreen] 📋 pdfOptions.players envoyé:', pdfOptions.players.map(p => ({
