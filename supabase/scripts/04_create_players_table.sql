@@ -1,39 +1,44 @@
--- Create players table
+-- ====================================
+-- TABLE: players
+-- Players belong to teams
+-- Managed by team owner and club owner
+-- ====================================
+
 CREATE TABLE IF NOT EXISTS players (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   team_id UUID NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
   jersey_number INTEGER NOT NULL CHECK (jersey_number >= 0 AND jersey_number <= 99),
   photo_url TEXT,
-  position INTEGER CHECK (position >= 1 AND position <= 5),
-  is_starter BOOLEAN DEFAULT false,
-  display_order INTEGER DEFAULT 0,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   UNIQUE(team_id, jersey_number)
 );
 
--- Create index for faster queries
-CREATE INDEX idx_players_team_id ON players(team_id);
-CREATE INDEX idx_players_display_order ON players(team_id, display_order);
-CREATE INDEX idx_players_is_starter ON players(team_id, is_starter);
+COMMENT ON TABLE players IS 'Players belong to teams and are managed by team owner and club owner.';
 
--- Enable Row Level Security
+-- Indexes
+CREATE INDEX IF NOT EXISTS idx_players_team_id ON players(team_id);
+
+-- ====================================
+-- ROW LEVEL SECURITY
+-- ====================================
 ALTER TABLE players ENABLE ROW LEVEL SECURITY;
 
--- RLS Policies for players
--- Anyone can view players of approved teams
-CREATE POLICY "Anyone can view players of approved teams"
+-- Policy: Club members can view players of approved teams
+CREATE POLICY "Club members can view players of approved teams"
   ON players FOR SELECT
   USING (
     EXISTS (
       SELECT 1 FROM teams
+      JOIN club_members ON club_members.club_id = teams.club_id
       WHERE teams.id = players.team_id
       AND teams.status = 'approved'
+      AND club_members.user_id = auth.uid()
     )
   );
 
--- Team owner can view their own team players (even if pending)
+-- Policy: Team owner can view their own team players (even if pending)
 CREATE POLICY "Team owner can view their players"
   ON players FOR SELECT
   USING (
@@ -44,7 +49,7 @@ CREATE POLICY "Team owner can view their players"
     )
   );
 
--- Team owner can manage their players
+-- Policy: Team owner can manage their players
 CREATE POLICY "Team owner can manage players"
   ON players FOR ALL
   USING (
@@ -55,7 +60,7 @@ CREATE POLICY "Team owner can manage players"
     )
   );
 
--- Club owner can view all players in their club
+-- Policy: Club owner can view all players in their club
 CREATE POLICY "Club owner can view club players"
   ON players FOR SELECT
   USING (
@@ -66,6 +71,10 @@ CREATE POLICY "Club owner can view club players"
       AND clubs.owner_id = auth.uid()
     )
   );
+
+-- ====================================
+-- TRIGGERS
+-- ====================================
 
 -- Trigger to update updated_at timestamp
 CREATE OR REPLACE FUNCTION update_players_updated_at()

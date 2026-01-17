@@ -1,4 +1,16 @@
--- Create clubs table
+-- ====================================
+-- TABLE: clubs
+-- Clubs created by users to manage teams and players
+-- Only members can view clubs (join via code)
+-- ====================================
+
+-- Create subscription_tier enum if not exists
+DO $$ BEGIN
+  CREATE TYPE subscription_tier AS ENUM ('free', 'basic', 'premium', 'ultimate');
+EXCEPTION
+  WHEN duplicate_object THEN null;
+END $$;
+
 CREATE TABLE IF NOT EXISTS clubs (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name VARCHAR(30) NOT NULL,
@@ -10,39 +22,46 @@ CREATE TABLE IF NOT EXISTS clubs (
   court_background_color VARCHAR(7) NOT NULL DEFAULT '#1a472a',
   court_line_color VARCHAR(7) NOT NULL DEFAULT '#FFFFFF',
   owner_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  subscription_tier subscription_tier NOT NULL DEFAULT 'free',
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Create index on code for fast lookups
-CREATE INDEX IF NOT EXISTS idx_clubs_code ON clubs(code);
+COMMENT ON TABLE clubs IS 'Clubs created by users to manage teams and players. Only members can view clubs (join via code).';
 
--- Create index on owner_id for fast user club queries
+-- Indexes
+CREATE INDEX IF NOT EXISTS idx_clubs_code ON clubs(code);
 CREATE INDEX IF NOT EXISTS idx_clubs_owner ON clubs(owner_id);
 
--- Enable Row Level Security
+-- ====================================
+-- ROW LEVEL SECURITY
+-- ====================================
 ALTER TABLE clubs ENABLE ROW LEVEL SECURITY;
 
--- Policy: Users can read all clubs (for joining)
-CREATE POLICY "Anyone can view clubs" ON clubs
+-- Policy: Only owners can view their clubs (members policy will be added after club_members table creation)
+CREATE POLICY "Owners can view their clubs" ON clubs
   FOR SELECT
-  USING (true);
+  USING (auth.uid() = owner_id);
 
--- Policy: Users can create their own clubs
+-- Policy: Users can create clubs
 CREATE POLICY "Users can create clubs" ON clubs
   FOR INSERT
   WITH CHECK (auth.uid() = owner_id);
 
--- Policy: Users can update their own clubs
+-- Policy: Users can update own clubs
 CREATE POLICY "Users can update own clubs" ON clubs
   FOR UPDATE
   USING (auth.uid() = owner_id)
   WITH CHECK (auth.uid() = owner_id);
 
--- Policy: Users can delete their own clubs
+-- Policy: Users can delete own clubs
 CREATE POLICY "Users can delete own clubs" ON clubs
   FOR DELETE
   USING (auth.uid() = owner_id);
+
+-- ====================================
+-- TRIGGERS
+-- ====================================
 
 -- Function to update updated_at timestamp
 CREATE OR REPLACE FUNCTION update_clubs_updated_at()

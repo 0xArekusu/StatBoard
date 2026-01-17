@@ -1,13 +1,19 @@
--- Create subscription_plans table to store limits for each tier
+-- ====================================
+-- TABLE: subscription_plans
+-- Store limits for each subscription tier
+-- ====================================
+
 CREATE TABLE IF NOT EXISTS subscription_plans (
   tier subscription_tier PRIMARY KEY,
   name TEXT NOT NULL,
   max_teams INTEGER NOT NULL DEFAULT 0,
   max_local_matches INTEGER NOT NULL DEFAULT 3,
   can_sync_to_server BOOLEAN NOT NULL DEFAULT false,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+COMMENT ON TABLE subscription_plans IS 'Stores subscription tier limits for teams and matches. These limits are enforced server-side via triggers.';
 
 -- Insert default subscription plans
 INSERT INTO subscription_plans (tier, name, max_teams, max_local_matches, can_sync_to_server)
@@ -23,19 +29,23 @@ ON CONFLICT (tier) DO UPDATE SET
   can_sync_to_server = EXCLUDED.can_sync_to_server,
   updated_at = NOW();
 
--- Enable RLS
+-- ====================================
+-- ROW LEVEL SECURITY
+-- ====================================
 ALTER TABLE subscription_plans ENABLE ROW LEVEL SECURITY;
 
--- Policy: Everyone can read subscription plans (public information)
-CREATE POLICY "Subscription plans are viewable by everyone"
+-- Policy: Only authenticated users can read subscription plans
+CREATE POLICY "Authenticated users can view subscription plans"
   ON subscription_plans
   FOR SELECT
+  TO authenticated
   USING (true);
 
--- Policy: Only service role can modify subscription plans
--- (This will be enforced by Supabase RLS, only admins via SQL can modify)
+-- ====================================
+-- TRIGGERS
+-- ====================================
 
--- Update the check_team_approval_limit function to use the database table
+-- Function to check team approval limit based on subscription
 CREATE OR REPLACE FUNCTION check_team_approval_limit()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -44,8 +54,6 @@ DECLARE
   max_teams INTEGER;
 BEGIN
   -- Only check limit when approving a team (status changes to 'approved')
-  -- For INSERT: check if new team is being created as 'approved'
-  -- For UPDATE: check if status is changing TO 'approved'
   IF (TG_OP = 'INSERT' AND NEW.status = 'approved') OR
      (TG_OP = 'UPDATE' AND OLD.status != 'approved' AND NEW.status = 'approved') THEN
 
@@ -75,7 +83,7 @@ BEGIN
     WHERE club_id = NEW.club_id
       AND status = 'approved'
       AND is_deleted = false
-      AND (TG_OP = 'INSERT' OR id != NEW.id); -- Exclude current team when updating
+      AND (TG_OP = 'INSERT' OR id != NEW.id);
 
     -- Check if limit is reached
     IF current_team_count >= max_teams THEN
@@ -88,5 +96,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Add comment for documentation
-COMMENT ON TABLE subscription_plans IS 'Stores subscription tier limits for teams and matches. These limits are enforced server-side via triggers and can be read by clients.';
+CREATE TRIGGER check_team_limit_trigger
+  BEFORE INSERT OR UPDATE ON teams
+  FOR EACH ROW
+  EXECUTE FUNCTION check_team_approval_limit();
