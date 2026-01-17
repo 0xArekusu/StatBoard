@@ -21,20 +21,20 @@ CREATE INDEX IF NOT EXISTS idx_club_members_user_id ON club_members(user_id);
 -- ====================================
 -- ROW LEVEL SECURITY
 -- ====================================
-ALTER TABLE club_members ENABLE ROW LEVEL SECURITY;
+-- ALTER TABLE club_members ENABLE ROW LEVEL SECURITY;
 
--- NOTE: No SELECT policy on club_members to avoid infinite recursion with clubs table
--- SELECT access is managed by application logic (queries filtered by club_id)
+-- -- NOTE: No SELECT policy on club_members to avoid infinite recursion with clubs table
+-- -- SELECT access is managed by application logic (queries filtered by club_id)
 
--- Policy: Users can join a club (insert themselves)
-CREATE POLICY "Users can join a club"
-  ON club_members FOR INSERT
-  WITH CHECK (auth.uid() = user_id);
+-- -- Policy: Users can join a club (insert themselves)
+-- CREATE POLICY "Users can join a club"
+--   ON club_members FOR INSERT
+--   WITH CHECK (auth.uid() = user_id);
 
--- Policy: Users can leave a club (delete themselves)
-CREATE POLICY "Users can leave a club"
-  ON club_members FOR DELETE
-  USING (auth.uid() = user_id);
+-- -- Policy: Users can leave a club (delete themselves)
+-- CREATE POLICY "Users can leave a club"
+--   ON club_members FOR DELETE
+--   USING (auth.uid() = user_id);
 
 -- ====================================
 -- TRIGGERS
@@ -61,13 +61,13 @@ CREATE TRIGGER after_club_insert
 -- Add policy for members to view clubs
 -- ====================================
 
--- Add policy for club members to view their clubs
-CREATE POLICY "Members can view their clubs" ON clubs
-  FOR SELECT
-  USING (
-    EXISTS (
-      SELECT 1 FROM club_members
-      WHERE club_members.club_id = clubs.id
-      AND club_members.user_id = auth.uid()
-    )
-  );
+-- -- Add policy for club members to view their clubs
+-- CREATE POLICY "Members can view their clubs" ON clubs
+--   FOR SELECT
+--   USING (
+--     EXISTS (
+--       SELECT 1 FROM club_members
+--       WHERE club_members.club_id = clubs.id
+--       AND club_members.user_id = auth.uid()
+--     )
+--   );

@@ -5,7 +5,7 @@
 
 -- Create the player-photos bucket if it doesn't exist
 INSERT INTO storage.buckets (id, name, public)
-VALUES ('player-photos', 'player-photos', false)
+VALUES ('player-photos', 'player-photos', true)
 ON CONFLICT (id) DO NOTHING;
 
 -- Drop existing policies if they exist

@@ -22,6 +22,7 @@ CREATE TABLE IF NOT EXISTS clubs (
   court_background_color VARCHAR(7) NOT NULL DEFAULT '#1a472a',
   court_line_color VARCHAR(7) NOT NULL DEFAULT '#FFFFFF',
   owner_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  owner_email VARCHAR(255),
   subscription_tier subscription_tier NOT NULL DEFAULT 'free',
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
@@ -36,28 +37,28 @@ CREATE INDEX IF NOT EXISTS idx_clubs_owner ON clubs(owner_id);
 -- ====================================
 -- ROW LEVEL SECURITY
 -- ====================================
-ALTER TABLE clubs ENABLE ROW LEVEL SECURITY;
+-- ALTER TABLE clubs ENABLE ROW LEVEL SECURITY;
 
--- Policy: Only owners can view their clubs (members policy will be added after club_members table creation)
-CREATE POLICY "Owners can view their clubs" ON clubs
-  FOR SELECT
-  USING (auth.uid() = owner_id);
+-- -- Policy: Only owners can view their clubs (members policy will be added after club_members table creation)
+-- CREATE POLICY "Owners can view their clubs" ON clubs
+--   FOR SELECT
+--   USING (auth.uid() = owner_id);
 
--- Policy: Users can create clubs
-CREATE POLICY "Users can create clubs" ON clubs
-  FOR INSERT
-  WITH CHECK (auth.uid() = owner_id);
+-- -- Policy: Users can create clubs
+-- CREATE POLICY "Users can create clubs" ON clubs
+--   FOR INSERT
+--   WITH CHECK (auth.uid() = owner_id);
 
--- Policy: Users can update own clubs
-CREATE POLICY "Users can update own clubs" ON clubs
-  FOR UPDATE
-  USING (auth.uid() = owner_id)
-  WITH CHECK (auth.uid() = owner_id);
+-- -- Policy: Users can update own clubs
+-- CREATE POLICY "Users can update own clubs" ON clubs
+--   FOR UPDATE
+--   USING (auth.uid() = owner_id)
+--   WITH CHECK (auth.uid() = owner_id);
 
--- Policy: Users can delete own clubs
-CREATE POLICY "Users can delete own clubs" ON clubs
-  FOR DELETE
-  USING (auth.uid() = owner_id);
+-- -- Policy: Users can delete own clubs
+-- CREATE POLICY "Users can delete own clubs" ON clubs
+--   FOR DELETE
+--   USING (auth.uid() = owner_id);
 
 -- ====================================
 -- TRIGGERS
