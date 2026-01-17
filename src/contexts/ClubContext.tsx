@@ -58,6 +58,11 @@ export function ClubProvider({ children }: { children: React.ReactNode }) {
       logInfo('ClubContext', '✅ Clubs loaded', {
         clubCount: clubs.length,
         clubIds: clubs.map((c) => c.id),
+        clubsData: clubs.map((c) => ({
+          id: c.id,
+          name: c.name,
+          logoUrl: c.logoUrl,
+        })),
       });
 
       setAllClubs(clubs);
@@ -71,6 +76,7 @@ export function ClubProvider({ children }: { children: React.ReactNode }) {
           logInfo('ClubContext', '✅ Restored previous club', {
             clubId: savedClub.id,
             clubName: savedClub.name,
+            logoUrl: savedClub.logoUrl,
           });
           setCurrentClubState(savedClub);
           setLoading(false);
@@ -136,7 +142,46 @@ export function ClubProvider({ children }: { children: React.ReactNode }) {
    */
   const refreshClubs = async () => {
     logInfo('ClubContext', '🔄 Refreshing clubs');
-    await loadClubs();
+
+    if (!user) {
+      logInfo('ClubContext', '🚫 No user, clearing clubs');
+      setCurrentClubState(null);
+      setAllClubs([]);
+      return;
+    }
+
+    try {
+      logInfo('ClubContext', '📊 Refreshing user clubs', { userId: user.id });
+
+      const clubService = ServiceFactory.getClubService(supabase);
+      const clubs = await clubService.getUserMemberClubs(user.id);
+
+      logInfo('ClubContext', '✅ Clubs refreshed', {
+        clubCount: clubs.length,
+        clubIds: clubs.map((c) => c.id),
+      });
+
+      setAllClubs(clubs);
+
+      // If we have a current club, update it with the fresh data
+      if (currentClub) {
+        const updatedCurrentClub = clubs.find((c) => c.id === currentClub.id);
+        if (updatedCurrentClub) {
+          logInfo('ClubContext', '✅ Updated current club with fresh data', {
+            clubId: updatedCurrentClub.id,
+            clubName: updatedCurrentClub.name,
+            logoUrl: updatedCurrentClub.logoUrl,
+          });
+          setCurrentClubState(updatedCurrentClub);
+        } else {
+          logInfo('ClubContext', '⚠️ Current club no longer exists, clearing');
+          setCurrentClubState(null);
+          await AsyncStorage.removeItem(CURRENT_CLUB_ID_KEY);
+        }
+      }
+    } catch (error) {
+      logError('ClubContext', '❌ Error refreshing clubs', { error });
+    }
   };
 
   const value = {

@@ -251,6 +251,16 @@ export default function BasketballCourtSVG({
       // Default: filled circle for all other actions (assist, steal, block, turnover)
       return (
         <G key={marker.id}>
+          {/* Black outline first (rendered behind) */}
+          <Circle
+            cx={pos.x}
+            cy={pos.y}
+            r={size + 1.5}
+            fill="none"
+            stroke="#000000"
+            strokeWidth="2"
+          />
+          {/* Colored circle on top with white stroke */}
           <Circle
             cx={pos.x}
             cy={pos.y}
@@ -667,11 +677,11 @@ export default function BasketballCourtSVG({
         </G>
       </G>
 
-      {/* Render markers on top of court */}
-      {renderMarkers()}
-
       {/* Render center court logo if provided */}
       {renderCenterLogo()}
+
+      {/* Render markers on top of everything */}
+      {renderMarkers()}
     </Svg>
   ) : (
     <Svg
@@ -1018,11 +1028,11 @@ export default function BasketballCourtSVG({
         </G>
       </G>
 
-      {/* Render markers on top of court */}
-      {renderMarkers()}
-
       {/* Render center court logo if provided */}
       {renderCenterLogo()}
+
+      {/* Render markers on top of everything */}
+      {renderMarkers()}
     </Svg>
   );
 }

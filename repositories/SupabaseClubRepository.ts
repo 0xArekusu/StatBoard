@@ -43,18 +43,25 @@ export class SupabaseClubRepository implements IClubRepository {
 
   async create(data: CreateClubData): Promise<Club | null> {
     try {
+      console.log('📦 [SupabaseClubRepository] create called with data:', data);
+
       const {
         data: { user },
       } = await this.supabase.auth.getUser();
 
       if (!user) {
+        console.log('❌ [SupabaseClubRepository] User not authenticated');
         throw new Error("User not authenticated");
       }
+
+      console.log('👤 [SupabaseClubRepository] User authenticated:', user.id);
 
       // Generate unique code (retry if collision)
       let code = this.generateClubCode();
       let attempts = 0;
       const maxAttempts = 10;
+
+      console.log('🎲 [SupabaseClubRepository] Generating club code...');
 
       while (attempts < maxAttempts) {
         const { data: existing } = await this.supabase
@@ -70,31 +77,43 @@ export class SupabaseClubRepository implements IClubRepository {
       }
 
       if (attempts === maxAttempts) {
+        console.log('❌ [SupabaseClubRepository] Failed to generate unique club code');
         throw new Error("Failed to generate unique club code");
       }
 
+      console.log('✅ [SupabaseClubRepository] Generated unique code:', code);
+
+      const insertData = {
+        name: data.name,
+        acronym: data.acronym,
+        code,
+        logo_url: data.logoUrl,
+        primary_color: data.primaryColor,
+        secondary_color: data.secondaryColor,
+        court_background_color: data.courtBackgroundColor,
+        court_line_color: data.courtLineColor,
+        owner_id: user.id,
+        owner_email: user.email,
+      };
+
+      console.log('💾 [SupabaseClubRepository] Inserting into Supabase:', insertData);
+
       const { data: club, error } = await this.supabase
         .from(this.tableName)
-        .insert({
-          name: data.name,
-          acronym: data.acronym,
-          code,
-          logo_url: data.logoUrl,
-          primary_color: data.primaryColor,
-          secondary_color: data.secondaryColor,
-          court_background_color: data.courtBackgroundColor,
-          court_line_color: data.courtLineColor,
-          owner_id: user.id,
-          owner_email: user.email,
-        })
+        .insert(insertData)
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.log('❌ [SupabaseClubRepository] Supabase insert error:', error);
+        throw error;
+      }
+
+      console.log('✅ [SupabaseClubRepository] Club inserted successfully:', club);
 
       return club ? this.mapToClub(club) : null;
     } catch (error) {
-      console.error("Error creating club:", error);
+      console.error("❌ [SupabaseClubRepository] Error creating club:", error);
       return null;
     }
   }

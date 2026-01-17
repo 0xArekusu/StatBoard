@@ -67,7 +67,18 @@ export function MatchToolbar({
       </TouchableOpacity>
 
       <TouchableOpacity
-        onPress={onGenerateMock}
+        onPress={() => {
+          // Simple Alert confirmation
+          const { Alert } = require('react-native');
+          Alert.alert(
+            "Ajouter des données de test ?",
+            "Cela va générer des actions fictives pour le match.",
+            [
+              { text: "Annuler", style: "cancel" },
+              { text: "Confirmer", onPress: onGenerateMock },
+            ]
+          );
+        }}
         disabled={isGeneratingMockData}
         style={[
           styles.toolbarButton,

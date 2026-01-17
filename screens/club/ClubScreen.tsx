@@ -262,11 +262,10 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
   };
 
   /**
-   * Handles club logo image selection and upload
+   * Handles club logo image selection
    * - Requests media library permissions
    * - Opens image picker with 1:1 aspect ratio
-   * - Uploads selected image to Supabase storage
-   * - Updates form data with uploaded image URL
+   * - Stores local URI (upload happens on submit)
    */
   const handlePickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -278,23 +277,7 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
 
     if (!result.canceled && result.assets && result.assets.length > 0) {
       const localUri = result.assets[0].uri;
-
-      // Upload to Supabase Storage
-      const photoService = new PhotoUploadService(supabase);
-      const clubLogoId = `club-${Date.now()}`;
-      const { url, error } = await photoService.uploadPlayerPhoto(
-        localUri,
-        clubLogoId,
-      );
-
-      if (error) {
-        Alert.alert("Erreur", "Impossible d'uploader le logo");
-        return;
-      }
-
-      if (url) {
-        setFormData({ ...formData, logoUri: url });
-      }
+      setFormData({ ...formData, logoUri: localUri });
     }
   };
 
@@ -324,9 +307,28 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
       // EDIT MODE
       if (!currentClub || !user) return;
       try {
+        let uploadedLogoUrl = formData.logoUri;
+
+        // Upload new logo if it's a local file (starts with file://)
+        if (formData.logoUri && formData.logoUri.startsWith('file://')) {
+          const photoService = new PhotoUploadService(supabase);
+          const clubLogoId = `club-${currentClub.id}`;
+          const { url, error } = await photoService.uploadPlayerPhoto(
+            formData.logoUri,
+            clubLogoId,
+          );
+
+          if (error) {
+            Alert.alert("Erreur", "Impossible d'uploader le logo");
+            return;
+          }
+
+          uploadedLogoUrl = url;
+        }
+
         const clubService = ServiceFactory.getClubService(supabase);
         await clubService.updateClub(currentClub.id, {
-          logoUrl: formData.logoUri || undefined,
+          logoUrl: uploadedLogoUrl || undefined,
           primaryColor: formData.primaryColor,
           secondaryColor: formData.secondaryColor,
           courtBackgroundColor: formData.courtColor,
@@ -349,16 +351,42 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
       if (!user) return;
 
       try {
+        let uploadedLogoUrl = undefined;
+
+        // Upload logo if selected (local file)
+        if (formData.logoUri && formData.logoUri.startsWith('file://')) {
+          const photoService = new PhotoUploadService(supabase);
+          const clubLogoId = `club-${Date.now()}`;
+          const { url, error } = await photoService.uploadPlayerPhoto(
+            formData.logoUri,
+            clubLogoId,
+          );
+
+          if (error) {
+            Alert.alert("Erreur", "Impossible d'uploader le logo");
+            return;
+          }
+
+          uploadedLogoUrl = url || undefined;
+          console.log('📸 Logo uploaded:', uploadedLogoUrl);
+        }
+
         const clubService = ServiceFactory.getClubService(supabase);
         const code = (
           formData.name.substring(0, 3) + Math.floor(Math.random() * 1000)
         ).toUpperCase();
 
-        await clubService.createClub(
+        console.log('📝 Creating club with data:', {
+          name: formData.name,
+          acronym: formData.acronym,
+          logoUrl: uploadedLogoUrl,
+        });
+
+        const result = await clubService.createClub(
           {
             name: formData.name,
             acronym: formData.acronym,
-            logoUrl: formData.logoUri || undefined,
+            logoUrl: uploadedLogoUrl,
             primaryColor: formData.primaryColor,
             secondaryColor: formData.secondaryColor,
             courtBackgroundColor: formData.courtColor,
@@ -366,6 +394,13 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
           },
           user!.id,
         );
+
+        console.log('🏀 Club creation result:', result);
+
+        if (!result.success) {
+          Alert.alert("Erreur", result.error || "Impossible de créer le club");
+          return;
+        }
 
         await refreshClubs();
         await loadClubData();

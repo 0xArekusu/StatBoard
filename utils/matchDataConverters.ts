@@ -68,7 +68,10 @@ export function convertActionToMatchEvent(
     playerId: player?.player_id || `temp-${action.player_number}`,
     teamId: action.team === Team.MY_TEAM ? TeamId.HOME : TeamId.AWAY,
     coordinates:
-      action.semantic_x !== null && action.semantic_y !== null
+      action.semantic_x !== null &&
+      action.semantic_y !== null &&
+      action.semantic_x >= 0 &&
+      action.semantic_y >= 0
         ? { x: action.semantic_x, y: action.semantic_y }
         : undefined,
     description,

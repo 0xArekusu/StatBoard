@@ -20,35 +20,47 @@ export class ClubService {
     club?: Club;
     error?: string;
   }> {
+    console.log('🏀 [ClubService] createClub called with:', { data, userId });
+
     // Validation
     if (!data.name.trim()) {
+      console.log('❌ [ClubService] Validation failed: Club name is required');
       return { success: false, error: "Club name is required" };
     }
 
     if (data.name.length > 30) {
+      console.log('❌ [ClubService] Validation failed: Club name too long');
       return { success: false, error: "Club name must be 30 characters or less" };
     }
 
     if (!data.acronym.trim()) {
+      console.log('❌ [ClubService] Validation failed: Club acronym is required');
       return { success: false, error: "Club acronym is required" };
     }
 
     if (data.acronym.length > 5) {
+      console.log('❌ [ClubService] Validation failed: Club acronym too long');
       return { success: false, error: "Club acronym must be 5 characters or less" };
     }
 
     // Check if user already has a club (unless multi-club is enabled for this user)
     if (!canUseMultiClub(userId)) {
+      console.log('🔍 [ClubService] Checking existing clubs for user:', userId);
       const existingClubs = await this.clubRepository.findByOwnerId(userId);
+      console.log('📊 [ClubService] Existing clubs count:', existingClubs.length);
       if (existingClubs.length > 0) {
+        console.log('❌ [ClubService] User already has a club');
         return { success: false, error: "Vous avez déjà créé un club" };
       }
     }
 
     // Create club
+    console.log('📝 [ClubService] Creating club in repository...');
     const club = await this.clubRepository.create(data);
+    console.log('✅ [ClubService] Club created:', club);
 
     if (!club) {
+      console.log('❌ [ClubService] Failed to create club - repository returned null');
       return { success: false, error: "Failed to create club" };
     }
 

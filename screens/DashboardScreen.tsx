@@ -152,6 +152,8 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
         userId: user?.id,
         isGuest,
         clubId: currentClub?.id,
+        clubName: currentClub?.name,
+        clubLogoUrl: currentClub?.logoUrl,
       });
 
       // Reset state

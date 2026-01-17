@@ -381,6 +381,9 @@ export default function LiveMatchScreen() {
             periodCount: existingMatch.total_periods,
             periodDuration: existingMatch.period_duration / 60, // Convert seconds to minutes
             events: matchEvents,
+            clubLogoUrl: existingMatch.club_logo_url || null,
+            courtBackgroundColor: existingMatch.court_background_color || DEFAULT_COURT_COLORS.background,
+            courtLineColor: existingMatch.court_line_color || DEFAULT_COURT_COLORS.line,
           });
 
           // Restore active players on court
@@ -445,6 +448,9 @@ export default function LiveMatchScreen() {
             overtime_duration: overtimeDuration * 60, // Convert minutes to seconds
             club_id: match.clubId || null,
             team_id: match.teamId || null,
+            club_logo_url: match.clubLogoUrl || null,
+            court_background_color: match.courtBackgroundColor || null,
+            court_line_color: match.courtLineColor || null,
           };
 
           logInfo(

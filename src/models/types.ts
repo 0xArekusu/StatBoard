@@ -72,6 +72,11 @@ export interface Match {
   players?: string; // JSON string in SQLite: MatchPlayerInfo[]
   player_stats?: string; // JSON string in SQLite: { [player_id: string]: MatchPlayerStats }
 
+  // Court Customization
+  club_logo_url?: string | null;
+  court_background_color?: string | null;
+  court_line_color?: string | null;
+
   // Timestamps
   created_by?: string | null;
   created_at: string;
@@ -99,6 +104,11 @@ export interface CreateMatchData {
   total_periods: number;
   period_duration: number;
   overtime_duration?: number;
+
+  // Court Customization
+  club_logo_url?: string | null;
+  court_background_color?: string | null;
+  court_line_color?: string | null;
 }
 
 export interface Action {
