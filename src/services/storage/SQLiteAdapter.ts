@@ -135,6 +135,33 @@ export class SQLiteAdapter implements IStorageAdapter {
       // Column might already exist, ignore error
     }
 
+    // Add club_logo_url column if it doesn't exist
+    try {
+      this.db.execSync(`
+        ALTER TABLE matches ADD COLUMN club_logo_url TEXT;
+      `);
+    } catch (error) {
+      // Column might already exist, ignore error
+    }
+
+    // Add court_background_color column if it doesn't exist
+    try {
+      this.db.execSync(`
+        ALTER TABLE matches ADD COLUMN court_background_color TEXT;
+      `);
+    } catch (error) {
+      // Column might already exist, ignore error
+    }
+
+    // Add court_line_color column if it doesn't exist
+    try {
+      this.db.execSync(`
+        ALTER TABLE matches ADD COLUMN court_line_color TEXT;
+      `);
+    } catch (error) {
+      // Column might already exist, ignore error
+    }
+
     // Create indexes
     this.db.execSync(`
       CREATE INDEX IF NOT EXISTS idx_match_actions_match_id ON match_actions(match_id);

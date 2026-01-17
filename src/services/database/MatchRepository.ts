@@ -65,9 +65,12 @@ export class MatchRepository implements IMatchRepository {
         opponent_score,
         status,
         club_id,
-        team_id
+        team_id,
+        club_logo_url,
+        court_background_color,
+        court_line_color
       )
-      VALUES (?, ?, ?, ?, ?, ?, 0, 0, 0, 'in_progress', ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, 0, 0, 0, 'in_progress', ?, ?, ?, ?, ?)
     `;
 
     try {
@@ -79,7 +82,10 @@ export class MatchRepository implements IMatchRepository {
         periodDuration: data.period_duration,
         overtimeDuration: data.overtime_duration,
         clubId: data.club_id,
-        teamId: data.team_id
+        teamId: data.team_id,
+        clubLogoUrl: data.club_logo_url,
+        courtBackgroundColor: data.court_background_color,
+        courtLineColor: data.court_line_color
       });
 
       await this.db.execute(sql, [
@@ -90,7 +96,10 @@ export class MatchRepository implements IMatchRepository {
         data.period_duration,
         data.overtime_duration || 300,
         data.club_id || null,
-        data.team_id || null
+        data.team_id || null,
+        data.club_logo_url || null,
+        data.court_background_color || null,
+        data.court_line_color || null
       ]);
 
       // Get the created match
