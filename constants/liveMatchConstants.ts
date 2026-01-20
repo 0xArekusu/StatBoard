@@ -37,6 +37,7 @@ export interface MatchEvent {
   specification?: string; // ShotSpecification, ReboundSpecification, etc.
   points?: number; // For shots: 1, 2, or 3
   playerId?: string;
+  playerNumber?: number; // Player jersey number for display
   teamId: "HOME" | "AWAY";
   timestamp: number;
   description: string;

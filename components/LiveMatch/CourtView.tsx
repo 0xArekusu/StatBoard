@@ -155,6 +155,7 @@ export const CourtView: React.FC<CourtViewProps> = ({
       color: markerColor,
       actionType: evt.action_type,
       specification: evt.specification,
+      playerNumber: evt.playerNumber,
     };
   });
 

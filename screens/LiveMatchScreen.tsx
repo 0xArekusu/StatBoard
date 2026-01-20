@@ -1150,6 +1150,7 @@ export default function LiveMatchScreen() {
       specification,
       points,
       playerId,
+      playerNumber: player?.jerseyNumber,
       teamId,
       timestamp: Date.now(),
       description: desc,

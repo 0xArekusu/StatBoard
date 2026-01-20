@@ -1,5 +1,5 @@
 import React from "react";
-import Svg, { Path, G, ClipPath, Defs, Circle, Image, Line, Polygon } from "react-native-svg";
+import Svg, { Path, G, ClipPath, Defs, Circle, Image, Line, Polygon, Text } from "react-native-svg";
 import { useTheme } from "../src/contexts/ThemeContext";
 import { COACH_ASSISTANT_LOGO_MARGIN } from "../src/utils/logoHelper";
 import {
@@ -22,6 +22,8 @@ export interface CourtMarker {
   actionType?: string;
   // Shot specification (for distinguishing made/missed shots)
   specification?: string;
+  // Player number to display below marker
+  playerNumber?: number;
 }
 
 interface BasketballCourtSVGProps {
@@ -187,6 +189,20 @@ export default function BasketballCourtSVG({
               stroke={color}
               strokeWidth="5"
             />
+            {marker.playerNumber !== undefined && (
+              <Text
+                x={pos.x}
+                y={pos.y + size + 12}
+                fill="#FFFFFF"
+                fontSize="12"
+                fontWeight="bold"
+                textAnchor="middle"
+                stroke="#000000"
+                strokeWidth="0.5"
+              >
+                {marker.playerNumber}
+              </Text>
+            )}
           </G>
         );
       }
@@ -213,6 +229,20 @@ export default function BasketballCourtSVG({
               strokeWidth="5"
               strokeLinecap="round"
             />
+            {marker.playerNumber !== undefined && (
+              <Text
+                x={pos.x}
+                y={pos.y + size + 12}
+                fill="#FFFFFF"
+                fontSize="12"
+                fontWeight="bold"
+                textAnchor="middle"
+                stroke="#000000"
+                strokeWidth="0.5"
+              >
+                {marker.playerNumber}
+              </Text>
+            )}
           </G>
         );
       }
@@ -229,6 +259,20 @@ export default function BasketballCourtSVG({
               stroke="#FFFFFF"
               strokeWidth="1"
             />
+            {marker.playerNumber !== undefined && (
+              <Text
+                x={pos.x}
+                y={pos.y + height + 12}
+                fill="#FFFFFF"
+                fontSize="12"
+                fontWeight="bold"
+                textAnchor="middle"
+                stroke="#000000"
+                strokeWidth="0.5"
+              >
+                {marker.playerNumber}
+              </Text>
+            )}
           </G>
         );
       }
@@ -244,6 +288,20 @@ export default function BasketballCourtSVG({
               stroke="#FFFFFF"
               strokeWidth="2"
             />
+            {marker.playerNumber !== undefined && (
+              <Text
+                x={pos.x}
+                y={pos.y + diamondSize + 12}
+                fill="#FFFFFF"
+                fontSize="12"
+                fontWeight="bold"
+                textAnchor="middle"
+                stroke="#000000"
+                strokeWidth="0.5"
+              >
+                {marker.playerNumber}
+              </Text>
+            )}
           </G>
         );
       }
@@ -269,6 +327,20 @@ export default function BasketballCourtSVG({
             stroke="#FFFFFF"
             strokeWidth="2"
           />
+          {marker.playerNumber !== undefined && (
+            <Text
+              x={pos.x}
+              y={pos.y + size + 12}
+              fill="#FFFFFF"
+              fontSize="12"
+              fontWeight="bold"
+              textAnchor="middle"
+              stroke="#000000"
+              strokeWidth="0.5"
+            >
+              {marker.playerNumber}
+            </Text>
+          )}
         </G>
       );
     });

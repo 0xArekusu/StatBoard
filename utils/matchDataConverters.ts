@@ -66,6 +66,7 @@ export function convertActionToMatchEvent(
     points: action.points,
     timestamp,
     playerId: player?.player_id || `temp-${action.player_number}`,
+    playerNumber: action.player_number !== 9999 ? action.player_number : undefined,
     teamId: action.team === Team.MY_TEAM ? TeamId.HOME : TeamId.AWAY,
     coordinates:
       action.semantic_x !== null &&
