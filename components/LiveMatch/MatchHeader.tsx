@@ -155,7 +155,7 @@ export function MatchHeader({
             >
               <MaterialCommunityIcons
                 name="chevron-right"
-                size={10}
+                size={16}
                 color={colors.primary}
               />
             </TouchableOpacity>
@@ -177,7 +177,7 @@ export function MatchHeader({
           >
             <MaterialCommunityIcons
               name={isRunning ? "pause" : "play"}
-              size={14}
+              size={20}
               color={isRunning ? colors.error : colors.onPrimary}
             />
           </TouchableOpacity>
@@ -193,17 +193,16 @@ export function MatchHeader({
 const styles = StyleSheet.create({
   header: {
     paddingTop: 20,
-    paddingBottom: 16,
+    paddingBottom: 10,
     paddingHorizontal: 8,
     borderBottomWidth: 1,
   },
   headerContent: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
+    alignItems: "center",
   },
   teamSection: {
-    width: 112,
+    flex: 1,
     alignItems: "center",
     paddingTop: 4,
   },
@@ -235,8 +234,8 @@ const styles = StyleSheet.create({
   },
   quickScoreButtons: {
     flexDirection: "row",
-    gap: 4,
-    marginTop: 8,
+    gap: 8,
+    paddingTop: 8,
   },
   quickScoreButton: {
     paddingHorizontal: 6,
@@ -244,7 +243,7 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   quickScoreButtonText: {
-    fontSize: 10,
+    fontSize: 16,
     fontWeight: "bold",
   },
   timerSection: {
@@ -268,6 +267,11 @@ const styles = StyleSheet.create({
     padding: 2,
     borderRadius: 4,
     borderWidth: 1,
+    width: 24,
+    height: 24,
+    textAlign: "center",
+    justifyContent: "center",
+    alignItems: "center",
   },
   timerDisplay: {
     backgroundColor: "#000",
@@ -292,5 +296,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     borderWidth: 4,
     zIndex: 10,
+    width: 40,
+    height: 40,
   },
 });

@@ -22,8 +22,7 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  TouchableOpacity,
-  Alert,
+  TouchableOpacity
 } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
@@ -47,7 +46,7 @@ import { ActionQueue } from "../src/services/match/ActionQueue";
 import { MatchRepository } from "../src/services/database/MatchRepository";
 import { ActionRepository } from "../src/services/database/ActionRepository";
 import { MatchPlayerRepository } from "../src/services/database/MatchPlayerRepository";
-import { logInfo, logError, logWarn } from "../utils/logger";
+import { logInfo, logError } from "../utils/logger";
 import {
   generateMockActions,
   MOCK_ROSTER,
@@ -74,7 +73,6 @@ import {
 } from "../constants";
 import { DEFAULT_COURT_COLORS } from "../src/theme/colors";
 import { supabase } from "../src/config/supabase";
-import { ROUTES } from "../constants/routes";
 import { MatchActionGrid, ActionData } from "../components/MatchActionGrid";
 import { CourtView, MatchHeader, MatchToolbar } from "../components/LiveMatch";
 import { useMatchSync } from "../hooks/useMatchSync";
@@ -244,7 +242,7 @@ export default function LiveMatchScreen() {
   // ========================================
   // UI STATE
   // ========================================
-  const [viewMode, setViewMode] = useState<ViewMode>(ViewMode.GRID);
+  const [viewMode, setViewMode] = useState<ViewMode>(ViewMode.COURT);
   const [playerSelectionTab, setPlayerSelectionTab] = useState<TeamId>(
     TeamId.HOME,
   );
@@ -1127,7 +1125,6 @@ export default function LiveMatchScreen() {
     const teamId = isHomePlayer ? TeamId.HOME : TeamId.AWAY;
 
     const pName = player?.name.split(" ").pop() || "Joueur";
-    const pNumber = player?.jerseyNumber || "";
 
     // Create temporary action object for description
     const tempAction = {
@@ -1137,7 +1134,7 @@ export default function LiveMatchScreen() {
       player_number: player?.jerseyNumber || 0,
       team: teamId === TeamId.HOME ? Team.MY_TEAM : Team.OPPONENT,
     };
-    const desc = `${pNumber} - ${pName} - ${getActionDescription(tempAction, pName)}`;
+    const desc = getActionDescription(tempAction, pName);
 
     // Normalize SVG coordinates (0-COURT_SVG_WIDTH_PORTRAIT x 0-COURT_SVG_HEIGHT_PORTRAIT) to 0-1 for storage in state
     const normalizedCoords = coords
@@ -1397,32 +1394,7 @@ export default function LiveMatchScreen() {
           { backgroundColor: surfaceColor, borderBottomColor: borderColor },
         ]}
       >
-        <TouchableOpacity
-          onPress={() => setViewMode(ViewMode.GRID)}
-          style={[
-            styles.viewModeButton,
-            {
-              backgroundColor:
-                viewMode === ViewMode.GRID ? colors.primary : colors.surfaceVariant,
-            },
-          ]}
-        >
-          <MaterialCommunityIcons
-            name="view-grid-outline"
-            size={16}
-            color={viewMode === ViewMode.GRID ? colors.onPrimary : textSecondary}
-          />
-          <Text
-            style={[
-              styles.viewModeButtonText,
-              {
-                color: viewMode === ViewMode.GRID ? colors.onPrimary : textSecondary,
-              },
-            ]}
-          >
-            ACTIONS
-          </Text>
-        </TouchableOpacity>
+
         <TouchableOpacity
           onPress={() => setViewMode(ViewMode.COURT)}
           style={[
@@ -1447,6 +1419,33 @@ export default function LiveMatchScreen() {
             ]}
           >
             TERRAIN
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          onPress={() => setViewMode(ViewMode.GRID)}
+          style={[
+            styles.viewModeButton,
+            {
+              backgroundColor:
+                viewMode === ViewMode.GRID ? colors.primary : colors.surfaceVariant,
+            },
+          ]}
+        >
+          <MaterialCommunityIcons
+            name="view-grid-outline"
+            size={16}
+            color={viewMode === ViewMode.GRID ? colors.onPrimary : textSecondary}
+          />
+          <Text
+            style={[
+              styles.viewModeButtonText,
+              {
+                color: viewMode === ViewMode.GRID ? colors.onPrimary : textSecondary,
+              },
+            ]}
+          >
+            ACTIONS
           </Text>
         </TouchableOpacity>
       </View>

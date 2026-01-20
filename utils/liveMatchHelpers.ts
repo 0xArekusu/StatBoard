@@ -26,12 +26,15 @@ export const formatTime = (seconds: number): string => {
  * Get human-readable action description for display
  * @param action - Action object from database
  * @param playerName - Name of the player who performed the action
- * @returns Human-readable description in French
+ * @returns Human-readable description in French with player number prefix
  */
 export const getActionDescription = (
   action: any,
   playerName: string,
 ): string => {
+  const playerNumber = action.player_number;
+  const prefix = playerNumber !== undefined && playerNumber !== null ? `${playerNumber} - ` : '';
+
   if (action.action_type === ActionType.SHOT) {
     const isMade =
       action.specification === ShotSpecification.MADE ||
@@ -44,51 +47,51 @@ export const getActionDescription = (
       const isGenericOpponent =
         action.player_number === 9999 && action.team === Team.OPPONENT;
       if (points === 3)
-        return isGenericOpponent ? `${playerName} +3` : `${playerName} (+3)`;
+        return isGenericOpponent ? `${playerName} +3` : `${prefix}${playerName} (+3)`;
       if (points === 2)
-        return isGenericOpponent ? `${playerName} +2` : `${playerName} (+2)`;
+        return isGenericOpponent ? `${playerName} +2` : `${prefix}${playerName} (+2)`;
       if (points === 1)
-        return isGenericOpponent ? `${playerName} +1` : `${playerName} (+1)`;
+        return isGenericOpponent ? `${playerName} +1` : `${prefix}${playerName} (+1)`;
     } else {
-      if (points === 3) return `${playerName} Raté (3pts)`;
-      if (points === 2) return `${playerName} Raté (2pts)`;
-      if (points === 1) return `${playerName} Raté (LF)`;
+      if (points === 3) return `${prefix}${playerName} Raté (3pts)`;
+      if (points === 2) return `${prefix}${playerName} Raté (2pts)`;
+      if (points === 1) return `${prefix}${playerName} Raté (LF)`;
     }
 
     // Support ancien format pour compatibilité
     if (action.specification === "THREE_POINT_MADE")
-      return `${playerName} (+3)`;
-    if (action.specification === "TWO_POINT_MADE") return `${playerName} (+2)`;
-    if (action.specification === "FREE_THROW_MADE") return `${playerName} (+1)`;
+      return `${prefix}${playerName} (+3)`;
+    if (action.specification === "TWO_POINT_MADE") return `${prefix}${playerName} (+2)`;
+    if (action.specification === "FREE_THROW_MADE") return `${prefix}${playerName} (+1)`;
     if (action.specification === "THREE_POINT_MISSED")
-      return `${playerName} Raté (3pts)`;
+      return `${prefix}${playerName} Raté (3pts)`;
     if (action.specification === "TWO_POINT_MISSED")
-      return `${playerName} Raté (2pts)`;
+      return `${prefix}${playerName} Raté (2pts)`;
     if (action.specification === "FREE_THROW_MISSED")
-      return `${playerName} Raté (LF)`;
+      return `${prefix}${playerName} Raté (LF)`;
   } else if (action.action_type === ActionType.REBOUND) {
     if (
       action.specification === ReboundSpecification.DEFENSIVE ||
       action.specification === "DEFENSIVE"
     )
-      return `${playerName} Rebond Déf`;
+      return `${prefix}${playerName} Rebond Déf`;
     if (
       action.specification === ReboundSpecification.OFFENSIVE ||
       action.specification === "OFFENSIVE"
     )
-      return `${playerName} Rebond Off`;
+      return `${prefix}${playerName} Rebond Off`;
   } else if (action.action_type === ActionType.FOUL) {
-    return `Faute ${playerName}`;
+    return `${prefix}Faute ${playerName}`;
   } else if (action.action_type === ActionType.ASSIST) {
-    return `${playerName} Passe décisive`;
+    return `${prefix}${playerName} Passe décisive`;
   } else if (action.action_type === ActionType.STEAL) {
-    return `${playerName} Interception`;
+    return `${prefix}${playerName} Interception`;
   } else if (action.action_type === ActionType.BLOCK) {
-    return `${playerName} Contre`;
+    return `${prefix}${playerName} Contre`;
   } else if (action.action_type === ActionType.TURNOVER) {
-    return `${playerName} Perte de balle`;
+    return `${prefix}${playerName} Perte de balle`;
   }
-  return `${playerName} - ${action.action_type}`;
+  return `${prefix}${playerName} - ${action.action_type}`;
 };
 
 /**
