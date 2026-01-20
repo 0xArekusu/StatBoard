@@ -1,0 +1,54 @@
+# .clauderc - Instructions permanentes pour Claude Code
+
+## Instructions permanentes
+
+- Toujours lire [.claude/project-context.md](.claude/project-context.md) avant de faire des changements importants
+- Respecter l'architecture SOLID décrite dans [ARCHITECTURE.md](ARCHITECTURE.md)
+- Utiliser les constantes centralisées ([constants/](constants/))
+- Ne jamais créer de fichiers .md sans demande explicite
+- Préférer Edit à Write pour les fichiers existants
+
+## Gestion des couleurs et du thème
+
+- **TOUJOURS** utiliser `useTheme()` de [src/contexts/ThemeContext.tsx](src/contexts/ThemeContext.tsx) pour accéder aux couleurs
+- **NE JAMAIS** importer directement depuis `src/theme/colors.ts`
+- **NE PAS** gérer `isDark` avec une propriété locale - utiliser directement `isDark` depuis `useTheme()`
+
+### ✅ BON
+
+```typescript
+import { useTheme } from '../src/contexts/ThemeContext';
+
+function MyComponent() {
+  const { colors, isDark } = useTheme();
+
+  return (
+    <View style={{ backgroundColor: colors.background }}>
+      <Text style={{ color: colors.text.primary }}>Hello</Text>
+      {isDark && <DarkModeFeature />}
+    </View>
+  );
+}
+```
+
+### ❌ MAUVAIS
+
+```typescript
+// ❌ Import direct des couleurs
+import { SLATE_COLORS } from '../src/theme/colors';
+
+// ❌ Propriété isDark locale
+const [isDark, setIsDark] = useState(false);
+
+// ❌ Couleurs en dur
+<View style={{ backgroundColor: '#1e293b' }}>
+```
+
+## Conventions de code
+
+- Typage strict TypeScript (pas de `any`)
+- Utiliser les interfaces pour les props
+- Centraliser les constantes (pas de magic numbers/strings)
+- Utiliser le ServiceFactory pour instancier les services
+- Toujours passer par les interfaces des repositories
+- Créer un README.md si le dossier contient 5+ fichiers complexes

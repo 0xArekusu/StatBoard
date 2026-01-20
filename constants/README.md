@@ -134,11 +134,16 @@ const MY_TEAM = 'MyTeam'; // Utiliser Team.MY_TEAM
 
 ## 🔗 Fichiers
 
-- **[matchConstants.ts](./matchConstants.ts)** : Constantes de formats de match
-- **[types.ts](../src/models/types.ts)** : Enums MatchStatus et Team
-- **[ActionTypes.ts](../src/models/ActionTypes.ts)** : Types d'actions (enum)
-- **[index.ts](./index.ts)** : Point d'export central (utilisez celui-ci !)
-- **[routes.ts](./routes.ts)** : Routes de navigation
+| Fichier | Description | Contenu principal |
+|---------|-------------|-------------------|
+| **[index.ts](./index.ts)** | **Point d'export central** (utilisez celui-ci !) | Re-exporte tout depuis les autres fichiers |
+| [authConstants.ts](./authConstants.ts) | Authentification | Messages d'erreur auth, validations |
+| [clubConstants.ts](./clubConstants.ts) | Clubs et couleurs | Palettes couleurs, limites club, types formulaire |
+| [courtConstants.ts](./courtConstants.ts) | Terrain de basket | Dimensions SVG, couleurs par défaut |
+| [liveMatchConstants.ts](./liveMatchConstants.ts) | Match en direct | WorkflowStep, MatchEvent, FilterMode, TeamId |
+| [matchConstants.ts](./matchConstants.ts) | Formats de match | Présets format (4QT/2MT), limites roster, labels |
+| [matchDetailsConstants.ts](./matchDetailsConstants.ts) | Détails post-match | SortBy, ActionFilterType, labels stats |
+| [routes.ts](./routes.ts) | Routes navigation | Noms des routes de l'app |
 
 ## 📝 Convention de nommage
 
