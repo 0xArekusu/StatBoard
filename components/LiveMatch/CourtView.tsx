@@ -194,7 +194,7 @@ export const CourtView: React.FC<CourtViewProps> = ({
             height={courtDimensions.height || 600}
             backgroundColor="transparent"
             lineColor="transparent"
-            logoUri={null}
+            logoUri={clubLogoUrl}
             markers={lastMarker}
           />
         </Animated.View>
