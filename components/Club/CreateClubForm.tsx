@@ -516,5 +516,6 @@ const styles = StyleSheet.create({
     width: "100%",
     aspectRatio: 2,
     overflow: "hidden",
+    alignItems: "center",
   },
 });

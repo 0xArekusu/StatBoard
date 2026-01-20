@@ -6,6 +6,7 @@
 CREATE TABLE IF NOT EXISTS subscription_plans (
   tier subscription_tier PRIMARY KEY,
   name TEXT NOT NULL,
+  price_monthly NUMERIC(10, 2) NOT NULL DEFAULT 0.00,
   max_teams INTEGER NOT NULL DEFAULT 0,
   max_local_matches INTEGER NOT NULL DEFAULT 3,
   can_sync_to_server BOOLEAN NOT NULL DEFAULT false,
@@ -16,14 +17,15 @@ CREATE TABLE IF NOT EXISTS subscription_plans (
 COMMENT ON TABLE subscription_plans IS 'Stores subscription tier limits for teams and matches. These limits are enforced server-side via triggers.';
 
 -- Insert default subscription plans
-INSERT INTO subscription_plans (tier, name, max_teams, max_local_matches, can_sync_to_server)
+INSERT INTO subscription_plans (tier, name, price_monthly, max_teams, max_local_matches, can_sync_to_server)
 VALUES
-  ('free', 'Gratuit', 0, 3, false),
-  ('basic', 'Basic', 1, 999999, true),
-  ('premium', 'Premium', 3, 999999, true),
-  ('ultimate', 'Ultimate', 9, 999999, true)
+  ('free', 'Gratuit', 0.00, 0, 3, false),
+  ('basic', 'Basic', 9.99, 1, 999999, true),
+  ('premium', 'Premium', 24.99, 3, 999999, true),
+  ('ultimate', 'Ultimate', 49.99, 9, 999999, true)
 ON CONFLICT (tier) DO UPDATE SET
   name = EXCLUDED.name,
+  price_monthly = EXCLUDED.price_monthly,
   max_teams = EXCLUDED.max_teams,
   max_local_matches = EXCLUDED.max_local_matches,
   can_sync_to_server = EXCLUDED.can_sync_to_server,

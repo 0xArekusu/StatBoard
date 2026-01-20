@@ -38,6 +38,7 @@ export interface SubscriptionLimits {
   maxTeams: number; // Maximum number of teams user can manage
   maxLocalMatches: number; // Maximum number of matches stored locally
   canSyncToServer: boolean; // Whether user can sync matches to cloud
+  priceMonthly?: number; // Monthly price in euros (optional for backward compatibility)
 }
 
 /**

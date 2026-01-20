@@ -5,7 +5,7 @@
  * Supports dark/light mode and shows the current active subscription tier.
  */
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -13,12 +13,15 @@ import {
   TouchableOpacity,
   ScrollView,
   Alert,
+  ActivityIndicator,
 } from "react-native";
 import { MaterialCommunityIcons, Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../../src/contexts/ThemeContext";
 import { SLATE_COLORS, BRAND_COLORS, COMMON_COLORS } from "../../src/theme";
 import { Club } from "../../models/Club";
-import { SubscriptionTier, SUBSCRIPTION_LIMITS } from "../../models/Subscription";
+import { SubscriptionTier, SubscriptionLimits } from "../../models/Subscription";
+import { ServiceFactory } from "../../services/ServiceFactory";
+import { supabase } from "../../src/config/supabase";
 
 /** Props for the main SubscriptionView component */
 interface SubscriptionViewProps {
@@ -35,7 +38,7 @@ interface PricingCardProps {
   /** The club's current active subscription tier */
   currentTier: SubscriptionTier;
   /** Price to display for this tier */
-  price: string;
+  price: number;
   /** Maximum number of teams allowed for this tier */
   limit: number;
   /** Theme colors from useTheme */
@@ -117,11 +120,13 @@ function PricingCard({
         {/* Right section: Price */}
         <View style={styles.pricingCardRight}>
           <Text style={[styles.priceValue, { color: colors.text.primary }]}>
-            {price}
+            {price > 0 ? `${price.toFixed(2)}€` : 'Gratuit'}
           </Text>
-          <Text style={[styles.priceLabel, { color: colors.text.tertiary }]}>
-            / mois
-          </Text>
+          {price > 0 && (
+            <Text style={[styles.priceLabel, { color: colors.text.tertiary }]}>
+              / mois
+            </Text>
+          )}
         </View>
       </View>
     </TouchableOpacity>
@@ -141,12 +146,51 @@ export default function SubscriptionView({
   // Get theme context for dark/light mode support
   const { colors } = useTheme();
 
+  // State for subscription data
+  const [loading, setLoading] = useState(true);
+  const [plans, setPlans] = useState<Record<SubscriptionTier, SubscriptionLimits>>({
+    free: { maxTeams: 0, maxLocalMatches: 3, canSyncToServer: false, priceMonthly: 0 },
+    basic: { maxTeams: 1, maxLocalMatches: Infinity, canSyncToServer: true, priceMonthly: 9.99 },
+    premium: { maxTeams: 3, maxLocalMatches: Infinity, canSyncToServer: true, priceMonthly: 24.99 },
+    ultimate: { maxTeams: 9, maxLocalMatches: Infinity, canSyncToServer: true, priceMonthly: 49.99 },
+  });
+
   // Get the club's current subscription tier
   const currentTier: SubscriptionTier = club?.subscriptionTier || "free";
 
   // Get theme-aware colors
   const textPrimary = colors.text.primary;
   const textSecondary = colors.text.secondary;
+
+  // Load subscription plans from database
+  useEffect(() => {
+    const loadPlans = async () => {
+      try {
+        const subscriptionService = ServiceFactory.getSubscriptionService(supabase);
+
+        // Fetch all tiers
+        const [basicLimits, premiumLimits, ultimateLimits] = await Promise.all([
+          subscriptionService.getLimitsForTier("basic"),
+          subscriptionService.getLimitsForTier("premium"),
+          subscriptionService.getLimitsForTier("ultimate"),
+        ]);
+
+        setPlans({
+          free: { maxTeams: 0, maxLocalMatches: 3, canSyncToServer: false, priceMonthly: 0 },
+          basic: basicLimits,
+          premium: premiumLimits,
+          ultimate: ultimateLimits,
+        });
+      } catch (error) {
+        console.error("Error loading subscription plans:", error);
+        // Keep default fallback values
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadPlans();
+  }, []);
 
   /**
    * Handles subscription upgrade requests
@@ -166,6 +210,14 @@ export default function SubscriptionView({
       },
     ]);
   };
+
+  if (loading) {
+    return (
+      <View style={[styles.container, styles.loadingContainer, { backgroundColor: colors.background }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
 
   return (
     <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
@@ -188,24 +240,24 @@ export default function SubscriptionView({
           <PricingCard
             tier="basic"
             currentTier={currentTier}
-            price="9.99€"
-            limit={SUBSCRIPTION_LIMITS.basic.maxTeams}
+            price={plans.basic.priceMonthly || 9.99}
+            limit={plans.basic.maxTeams}
             colors={colors}
             onSelect={handleUpgrade}
           />
           <PricingCard
             tier="premium"
             currentTier={currentTier}
-            price="24.99€"
-            limit={SUBSCRIPTION_LIMITS.premium.maxTeams}
+            price={plans.premium.priceMonthly || 24.99}
+            limit={plans.premium.maxTeams}
             colors={colors}
             onSelect={handleUpgrade}
           />
           <PricingCard
             tier="ultimate"
             currentTier={currentTier}
-            price="49.99€"
-            limit={SUBSCRIPTION_LIMITS.ultimate.maxTeams}
+            price={plans.ultimate.priceMonthly || 49.99}
+            limit={plans.ultimate.maxTeams}
             colors={colors}
             onSelect={handleUpgrade}
           />
@@ -220,6 +272,11 @@ const styles = StyleSheet.create({
   /** Main scrollable container */
   container: {
     flex: 1,
+  },
+  /** Loading container */
+  loadingContainer: {
+    justifyContent: "center",
+    alignItems: "center",
   },
   /** Subscription view wrapper with padding and spacing */
   subscriptionView: {
