@@ -14,12 +14,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.coachassistant.basketball",
-      "config": {
-        "googleSignIn": {
-          "reservedClientId": "com.googleusercontent.apps.14213378665-aj9oq4n27pv75khu703aaj7prtrorl39"
-        }
-      }
+      "bundleIdentifier": "com.coachassistant.basketball"
     },
     "android": {
       "adaptiveIcon": {
@@ -33,7 +28,21 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "@react-native-google-signin/google-signin"
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosUrlScheme": "com.googleusercontent.apps.14213378665-aj9oq4n27pv75khu703aaj7prtrorl39"
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Cette application a besoin d'accéder à vos photos pour que vous puissiez ajouter des logos de club et des photos de joueurs.",
+          "cameraPermission": "Cette application a besoin d'accéder à votre caméra pour prendre des photos de joueurs."
+        }
+      ],
+      "expo-font",
+      "expo-sqlite"
     ],
     "extra": {
       "eas": {
