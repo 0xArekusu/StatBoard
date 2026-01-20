@@ -43,7 +43,7 @@ export default function TeamInfoScreen() {
 
   // Load team data if editing
   useEffect(() => {
-    if (teamId && !teamData) {
+    if (teamId) {
       loadTeamData();
     }
   }, [teamId]);

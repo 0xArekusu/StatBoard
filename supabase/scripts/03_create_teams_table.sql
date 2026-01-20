@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS teams (
   name TEXT NOT NULL,
   club_id UUID NOT NULL REFERENCES clubs(id) ON DELETE CASCADE,
   owner_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  category TEXT,
   coach_name TEXT,
   coach_photo_url TEXT,
   gender TEXT CHECK (gender IN ('male', 'female', 'mixed')),

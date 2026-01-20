@@ -36,6 +36,7 @@ export class SupabaseTeamRepository implements ITeamRepository {
       clubId: row.club_id,
       ownerId: row.owner_id,
       ownerEmail: row.club_members?.email || row.owner_email,
+      category: row.category,
       gender: row.gender,
       coachName: row.coach_name,
       coachPhotoUrl: row.coach_photo_url,
@@ -63,6 +64,7 @@ export class SupabaseTeamRepository implements ITeamRepository {
         name: data.name,
         club_id: data.clubId,
         owner_id: ownerId,
+        category: data.category,
         gender: data.gender,
         coach_name: data.coachName || 'Coach',
         coach_photo_url: data.coachPhotoUrl,
@@ -216,6 +218,7 @@ export class SupabaseTeamRepository implements ITeamRepository {
   async update(id: string, data: UpdateTeamData): Promise<Team | null> {
     const updateData: any = {};
     if (data.name !== undefined) updateData.name = data.name;
+    if (data.category !== undefined) updateData.category = data.category;
     if (data.gender !== undefined) updateData.gender = data.gender;
     if (data.coachName !== undefined) updateData.coach_name = data.coachName;
     if (data.coachPhotoUrl !== undefined) updateData.coach_photo_url = data.coachPhotoUrl;
