@@ -5,11 +5,8 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  TouchableOpacity,
-  TextInput,
-  Alert,
-  ActivityIndicator,
-  Image,
+  TouchableOpacity, Alert,
+  ActivityIndicator
 } from "react-native";
 import { MaterialCommunityIcons, Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
@@ -19,7 +16,6 @@ import { useClub } from "../../src/contexts/ClubContext";
 import { ServiceFactory } from "../../services/ServiceFactory";
 import { supabase } from "../../src/config/supabase";
 import { PhotoUploadService } from "../../services/PhotoUploadService";
-import { Club } from "../../models/Club";
 import { Team, TeamStatus } from "../../models/Team";
 import { SubscriptionTier, SUBSCRIPTION_LIMITS, SUBSCRIPTION_TIER } from "../../models/Subscription";
 import {
@@ -33,11 +29,8 @@ import {
   CLUB_SUB_TAB,
   ClubSubTab,
   CLUB_TAB,
-  ClubTab,
-  CLUB_COLOR_PALETTE,
-  COURT_COLOR_PALETTE,
-  ClubFormData,
-  INITIAL_CLUB_FORM_DATA,
+  ClubTab, ClubFormData,
+  INITIAL_CLUB_FORM_DATA
 } from "../../constants";
 
 interface ClubScreenProps {
@@ -594,7 +587,7 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
             style={[
               styles.tabs,
               {
-                backgroundColor: isDark ? colors.surfaceVariant : colors.surfaceVariant,
+                backgroundColor: colors.surfaceVariant,
                 borderColor,
               },
             ]}

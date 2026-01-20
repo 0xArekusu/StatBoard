@@ -12,7 +12,6 @@ import { MaterialCommunityIcons, Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../../src/contexts/ThemeContext";
 import { ClubFormData, CLUB_COLOR_PALETTE, COURT_COLOR_PALETTE } from "../../constants/clubConstants";
 import CourtPreview from "./CourtPreview";
-import JerseyIconSimple from "../icons/JerseySimpleIcon";
 import ColorPickerModal from "./ColorPickerModal";
 import { COACH_ASSISTANT_LOGO_MARGIN } from "../../src/utils/logoHelper";
 
@@ -226,7 +225,7 @@ export default function CreateClubForm({
         </ScrollView>
 
         {/* Jersey Preview */}
-        <View style={styles.jerseyPreviewContainer}>
+        {/* <View style={styles.jerseyPreviewContainer}>
           <Text style={[styles.colorLabel, { color: colors.text.secondary }]}>
             Aperçu maillot
           </Text>
@@ -239,7 +238,7 @@ export default function CreateClubForm({
               strokeWidth={20}
             />
           </View>
-        </View>
+        </View> */}
       </View>
 
       {/* Court Customization */}
