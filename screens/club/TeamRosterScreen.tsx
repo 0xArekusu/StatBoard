@@ -31,7 +31,7 @@ interface Player {
   id: string;
   name: string;
   jerseyNumber: number;
-  photoUrl?: string;
+  photoUrl?: string | undefined;
 }
 
 type TeamRosterRouteProp = RouteProp<RootStackParamList, "TeamRoster">;
@@ -140,10 +140,10 @@ export default function TeamRosterScreen() {
     }
 
     // Validation: Check duplicate name
-    const isDuplicate = roster.some(
+    const isDuplicateName = roster.some(
       (p) => p.name.toLowerCase() === trimmedName.toLowerCase()
     );
-    if (isDuplicate) {
+    if (isDuplicateName) {
       setAddPlayerError("Un joueur avec ce nom existe déjà.");
       return;
     }
@@ -157,6 +157,15 @@ export default function TeamRosterScreen() {
       !Number.isInteger(Number(trimmedNumber))
     ) {
       setAddPlayerError("Le numéro doit être entre 0 et 99.");
+      return;
+    }
+
+    // Validation: Check duplicate jersey number
+    const isDuplicateNumber = roster.some(
+      (p) => p.jerseyNumber === numValue
+    );
+    if (isDuplicateNumber) {
+      setAddPlayerError("Ce numéro de maillot est déjà utilisé.");
       return;
     }
 
@@ -235,12 +244,22 @@ export default function TeamRosterScreen() {
     }
 
     // Check if name already exists (excluding current player)
-    const isDuplicate = roster.some(
+    const isDuplicateName = roster.some(
       (p) => p.id !== playerId && p.name.toLowerCase() === trimmedName.toLowerCase()
     );
 
-    if (isDuplicate) {
+    if (isDuplicateName) {
       setEditPlayerError("Un joueur avec ce nom existe déjà.");
+      return;
+    }
+
+    // Check if jersey number already exists (excluding current player)
+    const isDuplicateNumber = roster.some(
+      (p) => p.id !== playerId && p.jerseyNumber === numValue
+    );
+
+    if (isDuplicateNumber) {
+      setEditPlayerError("Ce numéro de maillot est déjà utilisé.");
       return;
     }
 
@@ -263,7 +282,7 @@ export default function TeamRosterScreen() {
 
   /**
    * Open image picker for coach photo
-   * Uploads to Supabase storage
+   * Stores local URI (upload happens on submit)
    */
   const handlePickCoachPhoto = async () => {
 
@@ -276,28 +295,13 @@ export default function TeamRosterScreen() {
 
     if (!result.canceled && result.assets && result.assets.length > 0) {
       const localUri = result.assets[0].uri;
-
-      // Upload to Supabase Storage
-      const photoService = new PhotoUploadService(supabase);
-      const coachPhotoId = `coach-${Date.now()}`;
-      const { url, error } = await photoService.uploadPlayerPhoto(
-        localUri,
-        coachPhotoId
-      );
-
-      if (error) {
-        Alert.alert("Erreur", "Impossible d'uploader la photo");
-        return;
-      }
-
-      if (url) {
-        setCoachPhotoUrl(url);
-      }
+      setCoachPhotoUrl(localUri);
     }
   };
 
   /**
    * Open image picker for player photo
+   * Stores local URI (upload happens on submit)
    * @param isEditing - true if editing existing player, false if adding new
    */
   const handlePickPlayerPhoto = async (isEditing: boolean = false) => {
@@ -311,34 +315,10 @@ export default function TeamRosterScreen() {
 
     if (!result.canceled && result.assets && result.assets.length > 0) {
       const localUri = result.assets[0].uri;
-      console.log("📸 Image selected:", localUri);
-
-      // Upload to Supabase Storage
-      const photoService = new PhotoUploadService(supabase);
-      const playerPhotoId = `player-${Date.now()}`;
-      console.log("☁️ Uploading to Supabase...");
-      const { url, error } = await photoService.uploadPlayerPhoto(
-        localUri,
-        playerPhotoId
-      );
-
-      if (error) {
-        console.error("❌ Upload error:", error);
-        Alert.alert("Erreur", "Impossible d'uploader la photo");
-        return;
-      }
-
-      if (url) {
-        console.log("✅ Upload success, URL:", url);
-        if (isEditing) {
-          setEditingPlayerPhoto(url);
-          console.log("✅ Set editing player photo");
-        } else {
-          setNewPlayerPhoto(url);
-          console.log("✅ Set new player photo");
-        }
+      if (isEditing) {
+        setEditingPlayerPhoto(localUri);
       } else {
-        console.warn("⚠️ No URL returned from upload");
+        setNewPlayerPhoto(localUri);
       }
     }
   };
@@ -366,7 +346,26 @@ export default function TeamRosterScreen() {
     setIsSubmitting(true);
 
     try {
+      const photoService = new PhotoUploadService(supabase);
       const teamService = ServiceFactory.getTeamService(supabase);
+
+      // Upload coach photo if it's a local file
+      let uploadedCoachPhotoUrl = coachPhotoUrl;
+      if (coachPhotoUrl && coachPhotoUrl.startsWith('file://')) {
+        const coachPhotoId = `coach-${Date.now()}`;
+        const { url, error } = await photoService.uploadPlayerPhoto(
+          coachPhotoUrl,
+          coachPhotoId
+        );
+
+        if (error) {
+          setIsSubmitting(false);
+          Alert.alert("Erreur", "Impossible d'uploader la photo du coach");
+          return;
+        }
+
+        uploadedCoachPhotoUrl = url ?? undefined;
+      }
 
       if (teamId) {
         // Update existing team
@@ -377,7 +376,7 @@ export default function TeamRosterScreen() {
             category: teamData.category,
             gender: teamData.gender,
             coachName: coachName.trim(),
-            coachPhotoUrl: coachPhotoUrl || undefined,
+            coachPhotoUrl: uploadedCoachPhotoUrl || undefined,
           },
           user!.id
         );
@@ -388,20 +387,38 @@ export default function TeamRosterScreen() {
 
         // 1. Update or create players from roster
         for (const player of roster) {
+          // Upload player photo if it's a local file
+          let uploadedPlayerPhotoUrl = player.photoUrl;
+          if (player.photoUrl && player.photoUrl.startsWith('file://')) {
+            const playerPhotoId = `player-${Date.now()}-${player.id}`;
+            const { url, error } = await photoService.uploadPlayerPhoto(
+              player.photoUrl,
+              playerPhotoId
+            );
+
+            if (error) {
+              console.error(`Error uploading photo for player ${player.name}:`, error);
+              // Continue without photo if upload fails
+              uploadedPlayerPhotoUrl = undefined;
+            } else {
+              uploadedPlayerPhotoUrl = url || undefined;
+            }
+          }
+
           if (player.id.startsWith("temp-")) {
             // New player - create it
             await playerService.createPlayer({
               teamId,
               name: player.name,
               jerseyNumber: player.jerseyNumber,
-              photoUrl: player.photoUrl,
+              photoUrl: uploadedPlayerPhotoUrl,
             });
           } else {
             // Existing player - update it
             await playerService.updatePlayer(player.id, {
               name: player.name,
               jerseyNumber: player.jerseyNumber,
-              photoUrl: player.photoUrl,
+              photoUrl: uploadedPlayerPhotoUrl,
             });
           }
         }
@@ -433,7 +450,7 @@ export default function TeamRosterScreen() {
             category: teamData.category,
             gender: teamData.gender,
             coachName: coachName.trim(),
-            coachPhotoUrl: coachPhotoUrl || undefined,
+            coachPhotoUrl: uploadedCoachPhotoUrl || undefined,
           },
           user!.id
         );
@@ -444,14 +461,32 @@ export default function TeamRosterScreen() {
           return;
         }
 
-        // Create players
+        // Create players with uploaded photos
         const playerService = ServiceFactory.getPlayerService(supabase);
         for (const player of roster) {
+          // Upload player photo if it's a local file
+          let uploadedPlayerPhotoUrl = player.photoUrl;
+          if (player.photoUrl && player.photoUrl.startsWith('file://')) {
+            const playerPhotoId = `player-${Date.now()}-${player.id}`;
+            const { url, error } = await photoService.uploadPlayerPhoto(
+              player.photoUrl,
+              playerPhotoId
+            );
+
+            if (error) {
+              console.error(`Error uploading photo for player ${player.name}:`, error);
+              // Continue without photo if upload fails
+              uploadedPlayerPhotoUrl = undefined;
+            } else {
+              uploadedPlayerPhotoUrl = url || undefined;
+            }
+          }
+
           await playerService.createPlayer({
             teamId: result.team.id,
             name: player.name,
             jerseyNumber: player.jerseyNumber,
-            photoUrl: player.photoUrl,
+            photoUrl: uploadedPlayerPhotoUrl,
           });
         }
 
