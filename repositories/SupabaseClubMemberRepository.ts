@@ -32,6 +32,7 @@ export class SupabaseClubMemberRepository implements IClubMemberRepository {
       clubId: row.club_id,
       userId: row.user_id,
       email: row.email,
+      displayName: row.display_name,
       joinedAt: new Date(row.joined_at),
     };
   }
@@ -50,6 +51,7 @@ export class SupabaseClubMemberRepository implements IClubMemberRepository {
         club_id: data.clubId,
         user_id: data.userId,
         email: data.email,
+        display_name: data.displayName,
       })
       .select()
       .single();

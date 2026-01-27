@@ -8,6 +8,8 @@ CREATE TABLE IF NOT EXISTS club_members (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   club_id UUID NOT NULL REFERENCES clubs(id) ON DELETE CASCADE,
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  email TEXT,
+  display_name TEXT,
   joined_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   UNIQUE(club_id, user_id)
 );
@@ -44,8 +46,11 @@ CREATE INDEX IF NOT EXISTS idx_club_members_user_id ON club_members(user_id);
 CREATE OR REPLACE FUNCTION auto_add_club_owner_as_member()
 RETURNS TRIGGER AS $$
 BEGIN
-  INSERT INTO club_members (club_id, user_id)
-  VALUES (NEW.id, NEW.owner_id)
+  INSERT INTO club_members (club_id, user_id, email, display_name)
+  SELECT NEW.id, NEW.owner_id, au.email,
+    COALESCE(au.raw_user_meta_data->>'display_name', au.raw_user_meta_data->>'full_name', au.email)
+  FROM auth.users au
+  WHERE au.id = NEW.owner_id
   ON CONFLICT (club_id, user_id) DO NOTHING;
   RETURN NEW;
 END;
