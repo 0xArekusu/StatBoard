@@ -94,6 +94,7 @@ export class SupabaseClubRepository implements IClubRepository {
         court_line_color: data.courtLineColor,
         owner_id: user.id,
         owner_email: user.email,
+        subscription_tier: 'ultimate', // Default to ultimate for testing
       };
 
       console.log('💾 [SupabaseClubRepository] Inserting into Supabase:', insertData);

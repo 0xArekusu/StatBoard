@@ -41,6 +41,8 @@ interface PricingCardProps {
   price: number;
   /** Maximum number of teams allowed for this tier */
   limit: number;
+  /** Display name for the tier */
+  name?: string;
   /** Theme colors from useTheme */
   colors: any;
   /** Callback when user selects this tier */
@@ -58,6 +60,7 @@ function PricingCard({
   currentTier,
   price,
   limit,
+  name,
   colors,
   onSelect,
 }: PricingCardProps) {
@@ -109,7 +112,7 @@ function PricingCard({
           <View>
             <View style={styles.tierNameRow}>
               <Text style={[styles.tierName, { color: colors.text.primary }]}>
-                {tier}
+                {name || tier}
               </Text>
             </View>
             <Text style={[styles.tierLimit, { color: colors.text.secondary }]}>
@@ -242,6 +245,7 @@ export default function SubscriptionView({
             currentTier={currentTier}
             price={plans.basic.priceMonthly || 9.99}
             limit={plans.basic.maxTeams}
+            name={plans.basic.name}
             colors={colors}
             onSelect={handleUpgrade}
           />
@@ -250,6 +254,7 @@ export default function SubscriptionView({
             currentTier={currentTier}
             price={plans.premium.priceMonthly || 24.99}
             limit={plans.premium.maxTeams}
+            name={plans.premium.name}
             colors={colors}
             onSelect={handleUpgrade}
           />
@@ -258,6 +263,7 @@ export default function SubscriptionView({
             currentTier={currentTier}
             price={plans.ultimate.priceMonthly || 49.99}
             limit={plans.ultimate.maxTeams}
+            name={plans.ultimate.name}
             colors={colors}
             onSelect={handleUpgrade}
           />

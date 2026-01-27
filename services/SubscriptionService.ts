@@ -24,7 +24,7 @@ export class SubscriptionService {
       // Fetch from database
       const { data, error } = await this.supabase
         .from("subscription_plans")
-        .select("max_teams, max_local_matches, can_sync_to_server, price_monthly")
+        .select("name, max_teams, max_local_matches, can_sync_to_server, price_monthly")
         .eq("tier", tier)
         .single();
 
@@ -36,6 +36,7 @@ export class SubscriptionService {
           maxLocalMatches: data.max_local_matches,
           canSyncToServer: data.can_sync_to_server,
           priceMonthly: data.price_monthly,
+          name: data.name,
         };
 
         // Update cache

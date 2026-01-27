@@ -39,6 +39,7 @@ export interface SubscriptionLimits {
   maxLocalMatches: number; // Maximum number of matches stored locally
   canSyncToServer: boolean; // Whether user can sync matches to cloud
   priceMonthly?: number; // Monthly price in euros (optional for backward compatibility)
+  name?: string; // Display name for the tier (optional, from database)
 }
 
 /**
