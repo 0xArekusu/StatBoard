@@ -60,6 +60,7 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
   const forceCreate = route?.params?.forceCreate || false;
 
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const [teams, setTeams] = useState<Team[]>([]);
   const [activeTab, setActiveTab] = useState<ClubTab>(CLUB_TAB.CREATE);
   const [subTab, setSubTab] = useState<ClubSubTab>(CLUB_SUB_TAB.INFO);
@@ -296,6 +297,8 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
    * @returns {Promise<void>} Reloads club data on success, shows alerts on errors
    */
   const handleSubmit = async () => {
+    setSubmitting(true);
+    try {
     if (isEditingClub) {
       // EDIT MODE
       if (!currentClub || !user) return;
@@ -395,14 +398,13 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
           return;
         }
 
+        // Refresh clubs to get the newly created club
         await refreshClubs();
-        await loadClubData();
 
-        // Reset create mode if we were in it
-        if (isCreatingNewClub) {
-          setIsCreatingNewClub(false);
-          setFormData(INITIAL_CLUB_FORM_DATA);
-        }
+        // Reset states
+        setIsCreatingNewClub(false);
+        setFormData(INITIAL_CLUB_FORM_DATA);
+        setActiveTab(CLUB_TAB.CREATE);
 
         Alert.alert("Succès", "Club créé avec succès !");
       } catch (error) {
@@ -443,8 +445,13 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
           return;
         }
 
+        // Refresh clubs to get the joined club
         await refreshClubs();
-        await loadClubData();
+
+        // Reset form
+        setFormData(INITIAL_CLUB_FORM_DATA);
+        setActiveTab(CLUB_TAB.CREATE);
+
         Alert.alert(
           "Succès",
           `Vous avez rejoint le club "${clubToJoin.name}" !`,
@@ -456,6 +463,9 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
           "Une erreur est survenue lors de la tentative de rejoindre le club",
         );
       }
+    }
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -659,22 +669,35 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
       <View style={[styles.footer]}>
         <TouchableOpacity
           onPress={handleSubmit}
-          style={[styles.submitButton, { backgroundColor: colors.primary }]}
+          disabled={submitting}
+          style={[
+            styles.submitButton,
+            {
+              backgroundColor: submitting ? colors.text.secondary : colors.primary,
+              opacity: submitting ? 0.7 : 1
+            }
+          ]}
         >
-          <MaterialCommunityIcons
-            name="check"
-            size={20}
-            color={colors.text.primary}
-          />
-          <Text style={[styles.submitButtonText, { color: colors.text.primary }]}>
-            {isEditingClub
-              ? "Modifier"
-              : isCreatingNewClub
-                ? "Créer un nouveau club"
-                : activeTab === CLUB_TAB.CREATE
-                  ? "Créer mon club"
-                  : "Rejoindre"}
-          </Text>
+          {submitting ? (
+            <ActivityIndicator size="small" color={colors.text.primary} />
+          ) : (
+            <>
+              <MaterialCommunityIcons
+                name="check"
+                size={20}
+                color={colors.text.primary}
+              />
+              <Text style={[styles.submitButtonText, { color: colors.text.primary }]}>
+                {isEditingClub
+                  ? "Modifier"
+                  : isCreatingNewClub
+                    ? "Créer un nouveau club"
+                    : activeTab === CLUB_TAB.CREATE
+                      ? "Créer mon club"
+                      : "Rejoindre"}
+              </Text>
+            </>
+          )}
         </TouchableOpacity>
       </View>
     </View>

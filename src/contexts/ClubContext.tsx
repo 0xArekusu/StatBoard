@@ -178,6 +178,15 @@ export function ClubProvider({ children }: { children: React.ReactNode }) {
           setCurrentClubState(null);
           await AsyncStorage.removeItem(CURRENT_CLUB_ID_KEY);
         }
+      } else if (clubs.length > 0) {
+        // No current club but we have clubs, select the first one
+        const firstClub = clubs[0];
+        logInfo('ClubContext', '📌 Selecting first club after refresh', {
+          clubId: firstClub.id,
+          clubName: firstClub.name,
+        });
+        setCurrentClubState(firstClub);
+        await AsyncStorage.setItem(CURRENT_CLUB_ID_KEY, firstClub.id);
       }
     } catch (error) {
       logError('ClubContext', '❌ Error refreshing clubs', { error });
