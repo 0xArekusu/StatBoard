@@ -8,6 +8,7 @@ import {
   Image,
   Alert,
 } from "react-native";
+import * as Clipboard from 'expo-clipboard';
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useTheme } from "../../src/contexts/ThemeContext";
 import { Club } from "../../models/Club";
@@ -55,6 +56,15 @@ export default function ClubInfoView({
   currentTier,
 }: ClubInfoViewProps) {
   const { colors } = useTheme();
+
+  const handleCopyCode = async () => {
+    try {
+      await Clipboard.setStringAsync(club.code);
+      Alert.alert("Copié", `Code "${club.code}" copié dans le presse-papiers`);
+    } catch (error) {
+      Alert.alert("Erreur", "Impossible de copier le code");
+    }
+  };
 
   return (
     <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
@@ -180,7 +190,7 @@ export default function ClubInfoView({
                       {club.code}
                     </Text>
                     <TouchableOpacity
-                      onPress={() => Alert.alert("Copié", club.code)}
+                      onPress={handleCopyCode}
                     >
                       <MaterialCommunityIcons
                         name="content-copy"
