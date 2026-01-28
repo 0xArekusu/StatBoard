@@ -32,7 +32,7 @@ export default function LoginScreen({ navigation }: any) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const { signIn, signInWithGoogle } = useAuth();
+  const { signIn, signInWithGoogle, resetPassword } = useAuth();
   const { colors } = useTheme();
 
   /**
@@ -78,6 +78,32 @@ export default function LoginScreen({ navigation }: any) {
       'Bientôt disponible',
       'La connexion avec Facebook sera bientôt disponible'
     );
+  };
+
+  /**
+   * Handles password reset request
+   */
+  const handleForgotPassword = async () => {
+    if (!email) {
+      Alert.alert(
+        'Email requis',
+        'Veuillez entrer votre adresse email pour réinitialiser votre mot de passe'
+      );
+      return;
+    }
+
+    setLoading(true);
+    const { error } = await resetPassword(email);
+    setLoading(false);
+
+    if (error) {
+      Alert.alert('Erreur', error.message);
+    } else {
+      Alert.alert(
+        'Email envoyé',
+        'Un email de réinitialisation a été envoyé à votre adresse email'
+      );
+    }
   };
 
   return (
@@ -180,6 +206,17 @@ export default function LoginScreen({ navigation }: any) {
               </View>
             </View>
           </View>
+
+          {/* Forgot Password Link */}
+          <TouchableOpacity
+            onPress={handleForgotPassword}
+            disabled={loading}
+            style={styles.forgotPasswordButton}
+          >
+            <Text style={[styles.forgotPasswordText, { color: colors.primary }]}>
+              Mot de passe oublié ?
+            </Text>
+          </TouchableOpacity>
 
           {/* Submit Button */}
           <TouchableOpacity
@@ -417,5 +454,13 @@ const styles = StyleSheet.create({
   },
   linkText: {
     fontSize: 14,
+  },
+  forgotPasswordButton: {
+    alignSelf: 'flex-end',
+    marginBottom: 16,
+  },
+  forgotPasswordText: {
+    fontSize: 14,
+    fontWeight: '600',
   },
 });

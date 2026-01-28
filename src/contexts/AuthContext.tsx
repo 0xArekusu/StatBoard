@@ -24,6 +24,7 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signInWithGoogle: () => Promise<{ error: any }>;
   signOut: () => Promise<void>;
+  resetPassword: (email: string) => Promise<{ error: any }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -261,6 +262,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  /**
+   * Send password reset email
+   * @param email - User's email address
+   * @returns Object with error if password reset failed
+   */
+  const resetPassword = async (email: string) => {
+    logInfo("AuthProvider", "🔑 Sending password reset email", { email });
+
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: 'statboard://reset-password',
+    });
+
+    if (error) {
+      logError("AuthProvider", "❌ Password reset failed", {
+        email,
+        error: error.message,
+        errorCode: error.status,
+      });
+    } else {
+      logInfo("AuthProvider", "✅ Password reset email sent", { email });
+    }
+
+    return { error };
+  };
+
   const value = {
     session,
     user,
@@ -269,6 +295,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signIn,
     signInWithGoogle,
     signOut,
+    resetPassword,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

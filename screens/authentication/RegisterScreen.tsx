@@ -68,7 +68,16 @@ export default function RegisterScreen({ navigation }: any) {
     if (error) {
       Alert.alert('Erreur d\'inscription', error.message);
     } else {
-      navigation.navigate(ROUTES.MAIN_TABS);
+      Alert.alert(
+        'Inscription réussie',
+        'Un email de confirmation a été envoyé à votre adresse. Veuillez vérifier votre boîte de réception et cliquer sur le lien de confirmation avant de vous connecter.',
+        [
+          {
+            text: 'OK',
+            onPress: () => navigation.navigate(ROUTES.LOGIN),
+          },
+        ]
+      );
     }
   };
 
