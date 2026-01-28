@@ -245,6 +245,7 @@ export default function LoginScreen({ navigation }: any) {
               )}
             </TouchableOpacity>
 
+            {/* Facebook button - temporarily hidden
             <TouchableOpacity
               style={[
                 styles.socialButton,
@@ -263,6 +264,7 @@ export default function LoginScreen({ navigation }: any) {
                 Facebook
               </Text>
             </TouchableOpacity>
+            */}
           </View>
 
           {/* Link to Register */}
