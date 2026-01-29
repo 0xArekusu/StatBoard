@@ -66,6 +66,7 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
   const [subTab, setSubTab] = useState<ClubSubTab>(CLUB_SUB_TAB.INFO);
   const [isEditingClub, setIsEditingClub] = useState(false);
   const [isCreatingNewClub, setIsCreatingNewClub] = useState(forceCreate);
+  const [subscriptionName, setSubscriptionName] = useState<string>("");
 
   // Create Club Form
   const [formData, setFormData] = useState<ClubFormData>(INITIAL_CLUB_FORM_DATA);
@@ -103,6 +104,11 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
         const teamService = ServiceFactory.getTeamService(supabase);
         const clubTeams = await teamService.getClubTeams(currentClub.id);
         setTeams(clubTeams);
+
+        // Load subscription name from database
+        const subscriptionService = ServiceFactory.getSubscriptionService(supabase);
+        const limits = await subscriptionService.getLimitsForTier(currentClub.subscriptionTier);
+        setSubscriptionName(limits.name || currentClub.subscriptionTier);
       }
     } catch (error) {
       console.error("Error loading club data:", error);
@@ -558,6 +564,7 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
             maxTeams={maxTeams}
             isLimitReached={isLimitReached}
             currentTier={currentTier}
+            subscriptionName={subscriptionName}
           />
         )}
       </>

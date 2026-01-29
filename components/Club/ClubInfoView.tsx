@@ -13,7 +13,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useTheme } from "../../src/contexts/ThemeContext";
 import { Club } from "../../models/Club";
 import { Team } from "../../models/Team";
-import { SubscriptionTier, SUBSCRIPTION_LIMITS } from "../../models/Subscription";
+import { SubscriptionTier, SUBSCRIPTION_LIMITS, SUBSCRIPTION_TIER_LABELS } from "../../models/Subscription";
 import { ClubSubTab, CLUB_SUB_TAB } from "../../constants";
 import TeamCard from "./TeamCard";
 import { COACH_ASSISTANT_LOGO_MARGIN } from "../../src/utils/logoHelper";
@@ -35,6 +35,7 @@ interface ClubInfoViewProps {
   maxTeams: number;
   isLimitReached: boolean;
   currentTier: SubscriptionTier;
+  subscriptionName?: string;
 }
 
 export default function ClubInfoView({
@@ -54,6 +55,7 @@ export default function ClubInfoView({
   maxTeams,
   isLimitReached,
   currentTier,
+  subscriptionName,
 }: ClubInfoViewProps) {
   const { colors } = useTheme();
 
@@ -208,7 +210,7 @@ export default function ClubInfoView({
                   <Text
                     style={[styles.usageBarLabel, { color: colors.text.secondary }]}
                   >
-                    Abonnement {currentTier}
+                    Abonnement {subscriptionName || SUBSCRIPTION_TIER_LABELS[currentTier]}
                   </Text>
                   <Text
                     style={[

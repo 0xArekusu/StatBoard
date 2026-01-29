@@ -227,11 +227,12 @@ export class TeamService {
 
   /**
    * Handle team limit enforcement when subscription changes
-   * Suspends excess teams when downgrading to a lower tier
+   * - Suspends excess teams when downgrading to a lower tier
+   * - Reactivates suspended teams when upgrading to a higher tier
    *
    * @param clubId - ID of the club
    * @param newMaxTeams - New maximum number of teams allowed
-   * @param selectedTeamIds - Array of team IDs to keep active (optional)
+   * @param selectedTeamIds - Array of team IDs to keep active (optional, used for downgrades)
    * @returns Object with success status and info about teams affected
    */
   async enforceTeamLimits(
@@ -241,6 +242,7 @@ export class TeamService {
   ): Promise<{
     success: boolean;
     suspendedCount?: number;
+    reactivatedCount?: number;
     activeCount?: number;
     error?: string;
   }> {
@@ -248,16 +250,43 @@ export class TeamService {
       // Get all approved teams for the club
       const teams = await this.teamRepository.findByClubIdAndStatus(clubId, "approved");
       const activeTeams = teams.filter(t => t.isActive && !t.isDeleted);
+      const suspendedTeams = teams.filter(t => !t.isActive && !t.isDeleted);
+      const totalTeams = activeTeams.length + suspendedTeams.length;
 
-      // If within limit, nothing to do
+      // CASE 1: UPGRADE - Reactivate suspended teams if new limit allows
+      if (activeTeams.length < newMaxTeams && suspendedTeams.length > 0) {
+        const spotsAvailable = newMaxTeams - activeTeams.length;
+        const teamsToReactivate = suspendedTeams
+          .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()) // Most recent first
+          .slice(0, spotsAvailable);
+
+        let reactivatedCount = 0;
+        for (const team of teamsToReactivate) {
+          const result = await this.teamRepository.update(team.id, { isActive: true });
+          if (result) {
+            reactivatedCount++;
+          }
+        }
+
+        return {
+          success: true,
+          activeCount: activeTeams.length + reactivatedCount,
+          reactivatedCount,
+          suspendedCount: 0,
+        };
+      }
+
+      // CASE 2: ALREADY WITHIN LIMIT - Nothing to do
       if (activeTeams.length <= newMaxTeams) {
         return {
           success: true,
           activeCount: activeTeams.length,
           suspendedCount: 0,
+          reactivatedCount: 0,
         };
       }
 
+      // CASE 3: DOWNGRADE - Suspend excess teams
       // Determine which teams to keep active
       let teamsToKeep: string[];
       if (selectedTeamIds && selectedTeamIds.length === newMaxTeams) {
@@ -285,6 +314,7 @@ export class TeamService {
         success: true,
         activeCount: newMaxTeams,
         suspendedCount,
+        reactivatedCount: 0,
       };
     } catch (error) {
       console.error("Error enforcing team limits:", error);

@@ -250,15 +250,27 @@ export default function SubscriptionView({
             const result = await clubService.updateSubscriptionTier(club.id, tier);
 
             if (result.success && result.club) {
-              // Apply team limits if needed
+              // Apply team limits and handle activation/suspension
               const targetPlan = plans.find(p => p.tier === tier);
+              let message = "Abonnement mis à jour avec succès !";
+
               if (targetPlan) {
                 const teamService = ServiceFactory.getTeamService(supabase);
-                await teamService.enforceTeamLimits(
+                const limitResult = await teamService.enforceTeamLimits(
                   club.id,
                   targetPlan.limits.maxTeams,
                   selectedTeamIds
                 );
+
+                // Build success message with team info
+                if (limitResult.success) {
+                  if (limitResult.reactivatedCount && limitResult.reactivatedCount > 0) {
+                    message += `\n\n${limitResult.reactivatedCount} équipe(s) réactivée(s).`;
+                  }
+                  if (limitResult.suspendedCount && limitResult.suspendedCount > 0) {
+                    message += `\n\n${limitResult.suspendedCount} équipe(s) suspendue(s).`;
+                  }
+                }
               }
 
               // Notify parent component to refresh club data
@@ -266,7 +278,7 @@ export default function SubscriptionView({
                 onSubscriptionUpdated(result.club);
               }
 
-              Alert.alert("Succès", "Abonnement mis à jour avec succès !");
+              Alert.alert("Succès", message);
               onClose();
             } else {
               Alert.alert("Erreur", result.error || "Échec de la mise à jour de l'abonnement");
