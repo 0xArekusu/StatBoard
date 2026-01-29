@@ -20,8 +20,10 @@ import { useTheme } from "../../src/contexts/ThemeContext";
 import { SLATE_COLORS, BRAND_COLORS, COMMON_COLORS } from "../../src/theme";
 import { Club } from "../../models/Club";
 import { SubscriptionTier, SubscriptionLimits } from "../../models/Subscription";
+import { Team } from "../../models/Team";
 import { ServiceFactory } from "../../services/ServiceFactory";
 import { supabase } from "../../src/config/supabase";
+import TeamSelectionModal from "./TeamSelectionModal";
 
 /** Props for the main SubscriptionView component */
 interface SubscriptionViewProps {
@@ -29,6 +31,8 @@ interface SubscriptionViewProps {
   club: Club;
   /** Callback to close the subscription view */
   onClose: () => void;
+  /** Callback when subscription is updated */
+  onSubscriptionUpdated?: (updatedClub: Club) => void;
 }
 
 /** Props for individual pricing card display */
@@ -145,18 +149,22 @@ function PricingCard({
 export default function SubscriptionView({
   club,
   onClose,
+  onSubscriptionUpdated,
 }: SubscriptionViewProps) {
   // Get theme context for dark/light mode support
   const { colors } = useTheme();
 
   // State for subscription data
   const [loading, setLoading] = useState(true);
-  const [plans, setPlans] = useState<Record<SubscriptionTier, SubscriptionLimits>>({
-    free: { maxTeams: 0, maxLocalMatches: 3, canSyncToServer: false, priceMonthly: 0 },
-    basic: { maxTeams: 1, maxLocalMatches: Infinity, canSyncToServer: true, priceMonthly: 9.99 },
-    premium: { maxTeams: 3, maxLocalMatches: Infinity, canSyncToServer: true, priceMonthly: 24.99 },
-    ultimate: { maxTeams: 9, maxLocalMatches: Infinity, canSyncToServer: true, priceMonthly: 49.99 },
-  });
+  const [plans, setPlans] = useState<Array<{
+    tier: SubscriptionTier;
+    limits: SubscriptionLimits;
+  }>>([]);
+
+  // State for team selection modal
+  const [showTeamSelectionModal, setShowTeamSelectionModal] = useState(false);
+  const [pendingTier, setPendingTier] = useState<SubscriptionTier | null>(null);
+  const [activeTeams, setActiveTeams] = useState<Team[]>([]);
 
   // Get the club's current subscription tier
   const currentTier: SubscriptionTier = club?.subscriptionTier || "free";
@@ -171,22 +179,12 @@ export default function SubscriptionView({
       try {
         const subscriptionService = ServiceFactory.getSubscriptionService(supabase);
 
-        // Fetch all tiers
-        const [basicLimits, premiumLimits, ultimateLimits] = await Promise.all([
-          subscriptionService.getLimitsForTier("basic"),
-          subscriptionService.getLimitsForTier("premium"),
-          subscriptionService.getLimitsForTier("ultimate"),
-        ]);
-
-        setPlans({
-          free: { maxTeams: 0, maxLocalMatches: 3, canSyncToServer: false, priceMonthly: 0 },
-          basic: basicLimits,
-          premium: premiumLimits,
-          ultimate: ultimateLimits,
-        });
+        // Fetch all plans from database
+        const allPlans = await subscriptionService.getAllPlans();
+        setPlans(allPlans);
       } catch (error) {
         console.error("Error loading subscription plans:", error);
-        // Keep default fallback values
+        // Keep default fallback values (empty array, will be handled by service)
       } finally {
         setLoading(false);
       }
@@ -196,22 +194,111 @@ export default function SubscriptionView({
   }, []);
 
   /**
-   * Handles subscription upgrade requests
+   * Handles subscription upgrade/downgrade requests
    * @param tier - The target subscription tier
    */
-  const handleUpgrade = (tier: SubscriptionTier) => {
+  const handleUpgrade = async (tier: SubscriptionTier) => {
     if (!club) return;
-    Alert.alert("Upgrade", `Confirmer le passage à l'offre ${tier} ?`, [
+
+    // Get the new tier's max teams limit
+    const targetPlan = plans.find(p => p.tier === tier);
+    if (!targetPlan) {
+      Alert.alert("Erreur", "Offre introuvable");
+      return;
+    }
+
+    const newMaxTeams = targetPlan.limits.maxTeams;
+
+    // Check if this is a downgrade that requires team selection
+    try {
+      const teamService = ServiceFactory.getTeamService(supabase);
+      const activeTeamCount = await teamService.getActiveTeamsCount(club.id);
+
+      if (activeTeamCount > newMaxTeams) {
+        // Need to select teams to keep
+        const teams = await teamService.getClubTeamsByStatus(club.id, "approved");
+        const activeTeamsList = teams.filter(t => t.isActive && !t.isDeleted);
+
+        setPendingTier(tier);
+        setActiveTeams(activeTeamsList);
+        setShowTeamSelectionModal(true);
+      } else {
+        // No team selection needed, proceed directly
+        confirmSubscriptionChange(tier);
+      }
+    } catch (error) {
+      console.error("Error checking team count:", error);
+      Alert.alert("Erreur", "Impossible de vérifier le nombre d'équipes");
+    }
+  };
+
+  /**
+   * Confirm subscription change after team selection (if needed)
+   */
+  const confirmSubscriptionChange = (tier: SubscriptionTier, selectedTeamIds?: string[]) => {
+    Alert.alert("Changement d'offre", `Confirmer le passage à l'offre ${tier} ?`, [
       { text: "Annuler", style: "cancel" },
       {
         text: "Confirmer",
-        onPress: () => {
-          // TODO: Implement payment process
-          Alert.alert("Succès", "Abonnement mis à jour avec succès !");
-          onClose();
+        onPress: async () => {
+          try {
+            setLoading(true);
+
+            // TODO: Implement payment process here
+            // For now, we just update the tier directly
+            const clubService = ServiceFactory.getClubService(supabase);
+            const result = await clubService.updateSubscriptionTier(club.id, tier);
+
+            if (result.success && result.club) {
+              // Apply team limits if needed
+              const targetPlan = plans.find(p => p.tier === tier);
+              if (targetPlan) {
+                const teamService = ServiceFactory.getTeamService(supabase);
+                await teamService.enforceTeamLimits(
+                  club.id,
+                  targetPlan.limits.maxTeams,
+                  selectedTeamIds
+                );
+              }
+
+              // Notify parent component to refresh club data
+              if (onSubscriptionUpdated) {
+                onSubscriptionUpdated(result.club);
+              }
+
+              Alert.alert("Succès", "Abonnement mis à jour avec succès !");
+              onClose();
+            } else {
+              Alert.alert("Erreur", result.error || "Échec de la mise à jour de l'abonnement");
+            }
+          } catch (error) {
+            console.error("Error updating subscription:", error);
+            Alert.alert("Erreur", "Une erreur est survenue lors de la mise à jour");
+          } finally {
+            setLoading(false);
+          }
         },
       },
     ]);
+  };
+
+  /**
+   * Handle team selection confirmation
+   */
+  const handleTeamSelectionConfirm = (selectedTeamIds: string[]) => {
+    setShowTeamSelectionModal(false);
+    if (pendingTier) {
+      confirmSubscriptionChange(pendingTier, selectedTeamIds);
+    }
+  };
+
+  /**
+   * Handle team selection cancellation
+   */
+  const handleTeamSelectionCancel = () => {
+    setShowTeamSelectionModal(false);
+    setPendingTier(null);
+    setActiveTeams([]);
   };
 
   if (loading) {
@@ -223,8 +310,9 @@ export default function SubscriptionView({
   }
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={styles.subscriptionView}>
+    <>
+      <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
+        <View style={styles.subscriptionView}>
         {/* Close button */}
         <TouchableOpacity onPress={onClose} style={styles.closeButton}>
           <Ionicons name="close" size={24} color={textPrimary} />
@@ -240,36 +328,32 @@ export default function SubscriptionView({
 
         {/* Pricing cards for available subscription tiers */}
         <View style={styles.pricingCards}>
-          <PricingCard
-            tier="basic"
-            currentTier={currentTier}
-            price={plans.basic.priceMonthly || 9.99}
-            limit={plans.basic.maxTeams}
-            name={plans.basic.name}
-            colors={colors}
-            onSelect={handleUpgrade}
-          />
-          <PricingCard
-            tier="premium"
-            currentTier={currentTier}
-            price={plans.premium.priceMonthly || 24.99}
-            limit={plans.premium.maxTeams}
-            name={plans.premium.name}
-            colors={colors}
-            onSelect={handleUpgrade}
-          />
-          <PricingCard
-            tier="ultimate"
-            currentTier={currentTier}
-            price={plans.ultimate.priceMonthly || 49.99}
-            limit={plans.ultimate.maxTeams}
-            name={plans.ultimate.name}
-            colors={colors}
-            onSelect={handleUpgrade}
-          />
+          {plans.map((plan) => (
+            <PricingCard
+              key={plan.tier}
+              tier={plan.tier}
+              currentTier={currentTier}
+              price={plan.limits.priceMonthly || 0}
+              limit={plan.limits.maxTeams}
+              name={plan.limits.name}
+              colors={colors}
+              onSelect={handleUpgrade}
+            />
+          ))}
         </View>
-      </View>
-    </ScrollView>
+        </View>
+      </ScrollView>
+
+      {/* Team Selection Modal */}
+      <TeamSelectionModal
+        visible={showTeamSelectionModal}
+        teams={activeTeams}
+        maxSelection={pendingTier ? (plans.find(p => p.tier === pendingTier)?.limits.maxTeams || 0) : 0}
+        tierName={pendingTier || ""}
+        onConfirm={handleTeamSelectionConfirm}
+        onCancel={handleTeamSelectionCancel}
+      />
+    </>
   );
 }
 

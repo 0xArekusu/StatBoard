@@ -11,3 +11,4 @@ export { default as JoinClubForm } from './JoinClubForm';
 export { default as CreateClubForm } from './CreateClubForm';
 export { default as ClubInfoView } from './ClubInfoView';
 export { default as SubscriptionView } from './SubscriptionView';
+export { default as TeamSelectionModal } from './TeamSelectionModal';

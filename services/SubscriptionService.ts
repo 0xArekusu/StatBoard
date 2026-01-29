@@ -165,4 +165,59 @@ export class SubscriptionService {
       return null;
     }
   }
+
+  /**
+   * Get all available subscription plans from database
+   * Returns all tiers with their limits and pricing
+   */
+  async getAllPlans(): Promise<Array<{
+    tier: SubscriptionTier;
+    limits: SubscriptionLimits;
+  }>> {
+    try {
+      const { data, error } = await this.supabase
+        .from("subscription_plans")
+        .select("tier, name, max_teams, max_local_matches, can_sync_to_server, price_monthly")
+        .order("price_monthly", { ascending: true });
+
+      if (error) throw error;
+
+      if (!data || data.length === 0) {
+        // Fallback to hardcoded limits if database is empty
+        console.warn("No plans found in database, using fallback");
+        return Object.entries(SUBSCRIPTION_LIMITS).map(([tier, limits]) => ({
+          tier: tier as SubscriptionTier,
+          limits,
+        }));
+      }
+
+      // Map database results to our format
+      const plans = data.map((plan) => ({
+        tier: plan.tier as SubscriptionTier,
+        limits: {
+          maxTeams: plan.max_teams,
+          maxLocalMatches: plan.max_local_matches,
+          canSyncToServer: plan.can_sync_to_server,
+          priceMonthly: plan.price_monthly,
+          name: plan.name,
+        },
+      }));
+
+      // Update cache for all tiers
+      const now = Date.now();
+      plans.forEach(({ tier, limits }) => {
+        this.limitsCache.set(tier, limits);
+      });
+      this.lastFetchTime = now;
+
+      return plans;
+    } catch (error) {
+      console.error("Error fetching all plans:", error);
+      // Return fallback plans
+      return Object.entries(SUBSCRIPTION_LIMITS).map(([tier, limits]) => ({
+        tier: tier as SubscriptionTier,
+        limits,
+      }));
+    }
+  }
 }

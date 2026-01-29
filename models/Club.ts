@@ -45,4 +45,5 @@ export interface UpdateClubData {
   secondaryColor?: string;
   courtBackgroundColor?: string;
   courtLineColor?: string;
+  subscriptionTier?: SubscriptionTier;
 }

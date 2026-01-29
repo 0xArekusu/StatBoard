@@ -533,6 +533,12 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
           <SubscriptionView
             club={currentClub}
             onClose={() => setSubTab(CLUB_SUB_TAB.INFO)}
+            onSubscriptionUpdated={async (updatedClub) => {
+              // Refresh clubs to get updated subscription tier
+              await refreshClubs();
+              // Reload teams and club data
+              await loadClubData();
+            }}
           />
         ) : (
           <ClubInfoView

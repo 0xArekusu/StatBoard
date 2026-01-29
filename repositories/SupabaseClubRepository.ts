@@ -2,6 +2,7 @@ import { SupabaseClient } from "@supabase/supabase-js";
 import { Club, CreateClubData, UpdateClubData } from "../models/Club";
 import { IClubRepository } from "./IClubRepository";
 import { DEFAULT_COURT_COLORS } from "../src/theme/colors";
+import { SubscriptionTier } from "../models/Subscription";
 
 /**
  * Supabase implementation of Club Repository
@@ -244,6 +245,30 @@ export class SupabaseClubRepository implements IClubRepository {
     } catch (error) {
       console.error("Error deleting club:", error);
       return false;
+    }
+  }
+
+  async updateSubscriptionTier(id: string, tier: SubscriptionTier): Promise<Club | null> {
+    try {
+      console.log(`📦 [SupabaseClubRepository] Updating subscription tier for club ${id} to ${tier}`);
+
+      const { data: club, error } = await this.supabase
+        .from(this.tableName)
+        .update({ subscription_tier: tier })
+        .eq("id", id)
+        .select()
+        .single();
+
+      if (error) {
+        console.error("❌ [SupabaseClubRepository] Error updating subscription tier:", error);
+        throw error;
+      }
+
+      console.log("✅ [SupabaseClubRepository] Subscription tier updated successfully");
+      return club ? this.mapToClub(club) : null;
+    } catch (error) {
+      console.error("Error updating subscription tier:", error);
+      return null;
     }
   }
 }

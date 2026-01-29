@@ -26,7 +26,7 @@ export default function TeamCard({
   onDelete,
 }: TeamCardProps) {
   const { colors, isDark } = useTheme();
-  const isClickable = team.status === TeamStatus.APPROVED;
+  const isClickable = team.status === TeamStatus.APPROVED && team.isActive;
 
   return (
     <TouchableOpacity
@@ -35,7 +35,7 @@ export default function TeamCard({
         {
           backgroundColor: colors.surface,
           borderColor: colors.border,
-          opacity: team.status === TeamStatus.APPROVED ? 1 : 0.9,
+          opacity: team.status === TeamStatus.APPROVED && team.isActive ? 1 : 0.6,
         },
       ]}
       onPress={() => {
@@ -56,6 +56,12 @@ export default function TeamCard({
         <View style={[styles.statusBadge, styles.statusRejected]}>
           <Ionicons name="close-circle" size={10} color={colors.text.primary} />
           <Text style={styles.statusBadgeText}>REFUSÉ</Text>
+        </View>
+      )}
+      {team.status === TeamStatus.APPROVED && !team.isActive && (
+        <View style={[styles.statusBadge, styles.statusSuspended]}>
+          <Ionicons name="pause-circle" size={10} color="#fff" />
+          <Text style={styles.statusBadgeText}>SUSPENDUE</Text>
         </View>
       )}
 
@@ -160,6 +166,9 @@ const styles = StyleSheet.create({
   },
   statusRejected: {
     backgroundColor: "#ef4444",
+  },
+  statusSuspended: {
+    backgroundColor: "#64748b",
   },
   statusBadgeText: {
     color: "#fff",

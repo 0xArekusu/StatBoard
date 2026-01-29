@@ -224,4 +224,86 @@ export class TeamService {
   async getUserTeams(userId: string) {
     return await this.teamRepository.findByOwnerId(userId);
   }
+
+  /**
+   * Handle team limit enforcement when subscription changes
+   * Suspends excess teams when downgrading to a lower tier
+   *
+   * @param clubId - ID of the club
+   * @param newMaxTeams - New maximum number of teams allowed
+   * @param selectedTeamIds - Array of team IDs to keep active (optional)
+   * @returns Object with success status and info about teams affected
+   */
+  async enforceTeamLimits(
+    clubId: string,
+    newMaxTeams: number,
+    selectedTeamIds?: string[]
+  ): Promise<{
+    success: boolean;
+    suspendedCount?: number;
+    activeCount?: number;
+    error?: string;
+  }> {
+    try {
+      // Get all approved teams for the club
+      const teams = await this.teamRepository.findByClubIdAndStatus(clubId, "approved");
+      const activeTeams = teams.filter(t => t.isActive && !t.isDeleted);
+
+      // If within limit, nothing to do
+      if (activeTeams.length <= newMaxTeams) {
+        return {
+          success: true,
+          activeCount: activeTeams.length,
+          suspendedCount: 0,
+        };
+      }
+
+      // Determine which teams to keep active
+      let teamsToKeep: string[];
+      if (selectedTeamIds && selectedTeamIds.length === newMaxTeams) {
+        teamsToKeep = selectedTeamIds;
+      } else {
+        // Default: keep the most recently created teams
+        const sortedTeams = [...activeTeams].sort((a, b) =>
+          b.createdAt.getTime() - a.createdAt.getTime()
+        );
+        teamsToKeep = sortedTeams.slice(0, newMaxTeams).map(t => t.id);
+      }
+
+      // Suspend teams that are not in the keep list
+      const teamsToSuspend = activeTeams.filter(t => !teamsToKeep.includes(t.id));
+
+      let suspendedCount = 0;
+      for (const team of teamsToSuspend) {
+        const result = await this.teamRepository.update(team.id, { isActive: false });
+        if (result) {
+          suspendedCount++;
+        }
+      }
+
+      return {
+        success: true,
+        activeCount: newMaxTeams,
+        suspendedCount,
+      };
+    } catch (error) {
+      console.error("Error enforcing team limits:", error);
+      return {
+        success: false,
+        error: "Erreur lors de l'application des limites d'équipes",
+      };
+    }
+  }
+
+  /**
+   * Get active teams count for a club
+   * Used to check if team selection is needed before downgrade
+   *
+   * @param clubId - ID of the club
+   * @returns Number of active approved teams
+   */
+  async getActiveTeamsCount(clubId: string): Promise<number> {
+    const teams = await this.teamRepository.findByClubIdAndStatus(clubId, "approved");
+    return teams.filter(t => t.isActive && !t.isDeleted).length;
+  }
 }

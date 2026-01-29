@@ -54,4 +54,12 @@ export interface IClubRepository {
    * @returns True if deleted, false otherwise
    */
   delete(id: string): Promise<boolean>;
+
+  /**
+   * Update subscription tier for a club
+   * @param id Club UUID
+   * @param tier New subscription tier
+   * @returns Updated club or null on failure
+   */
+  updateSubscriptionTier(id: string, tier: import("../models/Subscription").SubscriptionTier): Promise<Club | null>;
 }

@@ -61,7 +61,7 @@ export default function AuthScreen() {
               ballBackgroundColor={colors.button.secondary}
             />
             <Text style={[styles.tagline, { color: colors.text.secondary }]}>
-              Gérez vos équipes, et analysez vos performances.
+              Vos statistiques au rythme du match.
             </Text>
           </View>
 

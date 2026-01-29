@@ -1,6 +1,7 @@
 import { Club, CreateClubData, UpdateClubData } from "../models/Club";
 import { IClubRepository } from "../repositories/IClubRepository";
 import { canUseMultiClub } from "../src/config/devConfig";
+import { SubscriptionTier } from "../models/Subscription";
 
 /**
  * Service Layer Pattern
@@ -134,5 +135,28 @@ export class ClubService {
    */
   async deleteClub(id: string): Promise<boolean> {
     return await this.clubRepository.delete(id);
+  }
+
+  /**
+   * Update club subscription tier
+   * @param id Club ID
+   * @param tier New subscription tier
+   * @returns Updated club or error
+   */
+  async updateSubscriptionTier(
+    id: string,
+    tier: SubscriptionTier
+  ): Promise<{ success: boolean; club?: Club; error?: string }> {
+    console.log(`🏀 [ClubService] Updating subscription tier for club ${id} to ${tier}`);
+
+    const club = await this.clubRepository.updateSubscriptionTier(id, tier);
+
+    if (!club) {
+      console.log("❌ [ClubService] Failed to update subscription tier");
+      return { success: false, error: "Échec de la mise à jour de l'abonnement" };
+    }
+
+    console.log("✅ [ClubService] Subscription tier updated successfully");
+    return { success: true, club };
   }
 }

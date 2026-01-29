@@ -211,12 +211,32 @@ export default function NewMatchScreen() {
       setLoading(true);
       const teamService = ServiceFactory.getTeamService(supabase);
       const clubTeams = await teamService.getClubTeams(currentClub.id);
-      // Filter to only show approved teams where user is the owner
+      // Filter to only show approved and active teams where user is the owner
       const myApprovedTeams = clubTeams.filter(
         (team) =>
-          team.ownerId === user.id && team.status === TeamStatus.APPROVED
+          team.ownerId === user.id &&
+          team.status === TeamStatus.APPROVED &&
+          team.isActive &&
+          !team.isDeleted
       );
       setTeams(myApprovedTeams);
+
+      // Alert user if they have no active teams
+      if (myApprovedTeams.length === 0) {
+        const allTeams = clubTeams.filter((team) => team.ownerId === user.id);
+        if (allTeams.length > 0) {
+          Alert.alert(
+            "Aucune équipe active",
+            "Vos équipes ont été suspendues suite au changement d'abonnement. Veuillez passer à une offre supérieure pour les réactiver.",
+            [
+              {
+                text: "OK",
+                onPress: () => navigation.goBack(),
+              },
+            ]
+          );
+        }
+      }
     } catch (error) {
       console.error("Error loading teams:", error);
     } finally {
