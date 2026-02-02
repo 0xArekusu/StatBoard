@@ -1117,22 +1117,31 @@ export default function LiveMatchScreen() {
     playerId: string,
     coords?: { x: number; y: number },
   ) => {
-    const isHomePlayer = homeRoster.some((p: Player) => p.id === playerId);
-    const player = isHomePlayer
+    const isMyTeamPlayer = homeRoster.some((p: Player) => p.id === playerId);
+    const player = isMyTeamPlayer
       ? homeRoster.find((p: Player) => p.id === playerId)
       : opponentRoster.find((p: Player) => p.id === playerId);
 
-    const teamId = isHomePlayer ? TeamId.HOME : TeamId.AWAY;
+    // Determine teamId based on whether it's my team and match location
+    // If my team player: use match.location (HOME if home, AWAY if away)
+    // If opponent player: use opposite of match.location
+    const teamId = isMyTeamPlayer ? match.location : (match.location === TeamId.HOME ? TeamId.AWAY : TeamId.HOME);
 
     const pName = player?.name.split(" ").pop() || "Joueur";
 
     // Create temporary action object for description
+    // When we are home (match.location === TeamId.HOME):
+    //   - If teamId is HOME -> Team.MY_TEAM
+    //   - If teamId is AWAY -> Team.OPPONENT
+    // When we are away (match.location === TeamId.AWAY):
+    //   - If teamId is AWAY -> Team.MY_TEAM
+    //   - If teamId is HOME -> Team.OPPONENT
     const tempAction = {
       action_type,
       specification,
       points,
       player_number: player?.jerseyNumber || 0,
-      team: teamId === TeamId.HOME ? Team.MY_TEAM : Team.OPPONENT,
+      team: teamId === match.location ? Team.MY_TEAM : Team.OPPONENT,
     };
     const desc = getActionDescription(tempAction, pName);
 
@@ -1185,7 +1194,7 @@ export default function LiveMatchScreen() {
         specification,
         points,
         player.jerseyNumber,
-        teamId === TeamId.HOME ? Team.MY_TEAM : Team.OPPONENT,
+        teamId === match.location ? Team.MY_TEAM : Team.OPPONENT,
         coords,
       );
     }
@@ -1254,12 +1263,19 @@ export default function LiveMatchScreen() {
 
   const handleOpponentScoreSimple = (value: number) => {
     const updatedMatch = { ...match };
-    updatedMatch.scoreAway += value;
+    // Increment the correct score based on match location
+    // If we're home, opponent is away (increment scoreAway)
+    // If we're away, opponent is home (increment scoreHome)
+    if (match.location === TeamId.HOME) {
+      updatedMatch.scoreAway += value;
+    } else {
+      updatedMatch.scoreHome += value;
+    }
 
     const newEvent: MatchEvent = {
       id: `evt-${Date.now()}`,
       action_type: "POINT",
-      teamId: TeamId.AWAY,
+      teamId: match.location,
       timestamp: Date.now(),
       description: `${match.opponent || "Adversaire"} +${value}`,
       period_number: quarter,

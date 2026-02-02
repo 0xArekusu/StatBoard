@@ -160,6 +160,8 @@ export default function EvolutionTab({
         .reduce((sum, a) => sum + (a.points || 0), 0);
 
       // Map scores to home/away based on location
+      // When we are home: home = myTeamScore, away = opponentScore
+      // When we are away: home = opponentScore (they are home), away = myTeamScore (we are away)
       if (isHome) {
         periods.push({ home: myTeamScore, away: opponentScore });
       } else {

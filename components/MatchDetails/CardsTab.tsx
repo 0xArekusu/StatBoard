@@ -705,7 +705,7 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: "900",
     lineHeight: 28,
-    textAlign: "right",
+    alignSelf: "center",
   },
   cardPointsLabel: {
     fontSize: 8,
