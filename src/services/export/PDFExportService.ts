@@ -20,7 +20,7 @@ import {
   COURT_SVG_WIDTH_LANDSCAPE,
   COURT_SVG_HEIGHT_LANDSCAPE,
 } from "../../../constants/courtConstants";
-import { calculateEfficiency } from "../../utils/statsCalculator";
+import { calculateEfficiencyFromDB } from "../../utils/statsCalculator";
 import { AvatarService } from "../AvatarService";
 
 interface Player {
@@ -707,19 +707,20 @@ export class PDFExportService {
     const fgm = twopm + threepm;
     const fga = twopa + threepa;
     const trb = orb + drb;
-    const eff = calculateEfficiency({
-      pts: points,
-      reb: trb,
+    const eff = calculateEfficiencyFromDB({
+      points,
+      orb,
+      drb,
       ast,
       stl,
       blk,
-      fg2a: twopa,
-      fg2m: twopm,
-      fg3a: threepa,
-      fg3m: threepm,
+      twopa,
+      twopm,
+      threepa,
+      threepm,
       fta,
       ftm,
-      to: tov,
+      tov,
     });
 
     return {
@@ -796,20 +797,21 @@ export class PDFExportService {
             const totalRebounds = player.stats.orb + player.stats.drb;
             const totalFgm = player.stats.twopm + player.stats.threepm;
             const totalFga = player.stats.twopa + player.stats.threepa;
-            const efficiency = calculateEfficiency({
-              pts: player.stats.points,
-              reb: totalRebounds,
+
+            console.log(`[PDF Export] 🔢 Calcul EFF pour ${player.name} (#${player.num}):`, {
+              points: player.stats.points,
+              rebounds: totalRebounds,
               ast: player.stats.ast,
               stl: player.stats.stl,
               blk: player.stats.blk,
-              fg2a: player.stats.twopa,
-              fg2m: player.stats.twopm,
-              fg3a: player.stats.threepa,
-              fg3m: player.stats.threepm,
-              fta: player.stats.fta,
-              ftm: player.stats.ftm,
-              to: player.stats.tov,
+              fgMissed: (player.stats.twopa - player.stats.twopm) + (player.stats.threepa - player.stats.threepm),
+              ftMissed: player.stats.fta - player.stats.ftm,
+              tov: player.stats.tov,
             });
+
+            const efficiency = calculateEfficiencyFromDB(player.stats);
+            console.log(`[PDF Export] ✅ EFF calculée:`, efficiency);
+
             const playingTime = this.getPlayingTime(player.playingTimeSeconds);
 
             return `
@@ -1065,15 +1067,17 @@ export class PDFExportService {
       })
       .join("");
 
+    // Logo clipPath definitions (to be added to <defs>)
+    const logoClipPath = logoUrl
+      ? isPortrait
+        ? `<clipPath id="logoClipPortrait"><circle cx="307" cy="573" r="76" /></clipPath>`
+        : `<clipPath id="logoClipLandscape"><circle cx="573" cy="307" r="76" /></clipPath>`
+      : "";
+
     // Center logo - use club logo if provided, otherwise display app logo
     const renderCenterLogo = isPortrait
       ? logoUrl
         ? `
-      <defs>
-        <clipPath id="logoClipPortrait">
-          <circle cx="307" cy="573" r="76" />
-        </clipPath>
-      </defs>
       <image
         href="${logoUrl}"
         x="231"
@@ -1097,11 +1101,6 @@ export class PDFExportService {
     `
       : logoUrl
       ? `
-      <defs>
-        <clipPath id="logoClipLandscape">
-          <circle cx="573" cy="307" r="76" />
-        </clipPath>
-      </defs>
       <image
         href="${logoUrl}"
         x="497"
@@ -1174,6 +1173,7 @@ export class PDFExportService {
           <clipPath id="K"><path d="M282.441 838.996c7.68-2.617 16.461-4.336 25.055-4.336a75.318 75.318 0 0124.488 4.094c.164.082.329.082.489.164 28.625 10.477 49.707 38.144 50.113 68.043v2.902H232.332v-2.898c.402-30.063 21.16-57.735 50.11-67.969zm0 0" /></clipPath>
           <clipPath id="L"><path d="M232.332 834.73H382.27v149.938H232.332zm0 0" /></clipPath>
           <clipPath id="M"><path d="M232.332 909.664c0 41.422 33.633 75.004 75.125 75.004s75.129-33.582 75.129-75.004c0-41.422-33.637-75-75.129-75-41.492 0-75.125 33.578-75.125 75zm0 0" /></clipPath>
+          ${logoClipPath}
         </defs>
 
         <g clip-path="url(#a)">
@@ -1280,11 +1280,11 @@ export class PDFExportService {
           </g>
         </g>
 
-        <!-- Render markers on top of court -->
-        ${renderMarkers}
-
-        <!-- Render center court logo if provided -->
+        <!-- Render center court logo first (behind markers) -->
         ${renderCenterLogo}
+
+        <!-- Render markers on top of logo -->
+        ${renderMarkers}
       </svg>
     `;
     } else {
@@ -1334,6 +1334,7 @@ export class PDFExportService {
           <clipPath id="K"><path d="M306.95 282.441c2.616 7.68 4.335 16.461 4.335 25.055a75.318 75.318 0 01-4.094 24.488c-.082.164-.082.325-.164.489-10.476 28.62-38.144 49.707-68.043 50.109h-2.902V232.328h2.898c30.063.406 57.735 21.164 67.97 50.113zm0 0" /></clipPath>
           <clipPath id="L"><path d="M161.277 232.328h149.938V382.27H161.277zm0 0" /></clipPath>
           <clipPath id="M"><path d="M236.281 232.328c-41.422 0-75.004 33.637-75.004 75.129 0 41.492 33.582 75.129 75.004 75.129 41.422 0 75-33.637 75-75.129 0-41.492-33.578-75.129-75-75.129zm0 0" /></clipPath>
+          ${logoClipPath}
         </defs>
 
         <g clip-path="url(#a)"><path fill="none" d="M1145.84 614.914H.433V0H1145.84zm0 0" stroke="${lineColor}" stroke-width="14.994"/></g>
@@ -1362,11 +1363,11 @@ export class PDFExportService {
         <g clip-path="url(#J)"><g clip-path="url(#K)"><path fill="none" d="M306.95 282.441c2.616 7.68 4.335 16.461 4.335 25.055a75.318 75.318 0 01-4.094 24.488c-.082.164-.082.325-.164.489-10.476 28.62-38.144 49.707-68.043 50.11h-2.902V232.327h2.898c30.063.406 57.735 21.164 67.97 50.113zm0 0" stroke="${lineColor}" stroke-width="8.996"/></g></g>
         <g clip-path="url(#L)"><g clip-path="url(#M)"><path fill="${lineColor}" d="M219.508 238.836a69.926 69.926 0 00-11.977 4.11l-3.676-8.212a78.757 78.757 0 0113.516-4.636zm-15.778 5.953a70.415 70.415 0 00-10.667 6.86l-5.524-7.098a79.126 79.126 0 0112.024-7.735zm-13.93 9.559a70.952 70.952 0 00-8.738 9.191l-7.046-5.594a80.116 80.116 0 019.843-10.355zm-11.273 12.59a70.204 70.204 0 00-6.312 10.988l-8.172-3.762a79.415 79.415 0 017.113-12.39zm-7.96 14.878a70.1 70.1 0 00-3.512 12.176l-8.832-1.703a78.746 78.746 0 013.957-13.734zm-4.184 16.344a70.87 70.87 0 00-.606 9.297c0 1.14.028 2.277.078 3.41l-8.984.426a78.324 78.324 0 01-.09-3.836c0-3.516.227-7.004.68-10.465zm-.203 16.91a70.29 70.29 0 002.476 12.434l-8.629 2.543a79.41 79.41 0 01-2.793-14.02zm3.793 16.453a70.301 70.301 0 005.367 11.473l-7.778 4.527a79.273 79.273 0 01-6.05-12.941zm7.601 15.063c2.352 3.531 5 6.832 7.95 9.894l-6.481 6.239a79.754 79.754 0 01-8.957-11.149zm10.973 12.851a70.635 70.635 0 0010.062 7.735l-4.82 7.594a79.477 79.477 0 01-11.34-8.711zm13.7 9.891a69.874 69.874 0 0011.589 5.106l-2.867 8.527a79.203 79.203 0 01-13.078-5.758zm15.632 6.328a69.696 69.696 0 0012.476 2.184l-.746 8.969a79.328 79.328 0 01-14.078-2.465zm16.703 2.41a70.504 70.504 0 0012.68-.832l1.39 8.891a80.164 80.164 0 01-12.37.957c-.641 0-1.278-.008-1.915-.02zm16.824-1.609a69.589 69.589 0 0012.074-3.816l3.48 8.296a79.023 79.023 0 01-13.628 4.31zm15.926-5.57a70.434 70.434 0 0010.82-6.598l5.356 7.227a79.026 79.026 0 01-12.203 7.441zm14.148-9.223a70.741 70.741 0 008.957-8.98l6.91 5.761a80.154 80.154 0 01-10.09 10.118zm11.57-12.312a70.669 70.669 0 006.575-10.84l8.078 3.953a79.52 79.52 0 01-7.41 12.223zm8.317-14.696a69.997 69.997 0 003.801-12.086l8.789 1.914a78.88 78.88 0 01-4.285 13.633zm4.574-16.23a71.351 71.351 0 00.825-12.688l8.992-.215a79.86 79.86 0 01-.93 14.281zm.598-16.914a70.532 70.532 0 00-2.176-12.485l8.688-2.336a79.662 79.662 0 012.453 14.079zm-3.398-16.528a70.047 70.047 0 00-5.086-11.597l7.879-4.34a79.01 79.01 0 015.738 13.082zm-7.239-15.242a70.394 70.394 0 00-7.71-10.078l6.628-6.086a79.997 79.997 0 018.688 11.36zm-10.664-13.11a70.306 70.306 0 00-9.875-7.968l5-7.48a79.978 79.978 0 0111.13 8.98zm-13.46-10.214a70.088 70.088 0 00-11.462-5.379l3.07-8.457a78.662 78.662 0 0112.934 6.074zm-15.481-6.703a69.803 69.803 0 00-12.426-2.485l.961-8.94a78.382 78.382 0 0114.02 2.8zm-16.625-2.809a75.4 75.4 0 00-3.39-.078c-4.266 0-8.481.375-12.637 1.129l-1.606-8.852a79.93 79.93 0 0114.242-1.273c1.274 0 2.547.031 3.817.09zm0 0"/></g></g>
 
-        <!-- Render markers on top of court -->
-        ${renderMarkers}
-
-        <!-- Render center court logo if provided -->
+        <!-- Render center court logo first (behind markers) -->
         ${renderCenterLogo}
+
+        <!-- Render markers on top of logo -->
+        ${renderMarkers}
       </svg>
     `;
     }
@@ -2280,15 +2281,9 @@ export class PDFExportService {
           </div>
           <div class="stat-box highlight">
             <div class="stat-box-label">ÉVAL</div>
-            <div class="stat-box-value highlight">${
-              playerStats.points +
-              (playerStats.orb + playerStats.drb) +
-              playerStats.ast +
-              playerStats.stl +
-              playerStats.blk -
-              playerStats.tov -
-              totalFouls
-            }</div>
+            <div class="stat-box-value highlight">${calculateEfficiencyFromDB(
+              playerStats
+            )}</div>
           </div>
         </div>
 

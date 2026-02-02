@@ -485,20 +485,7 @@ export default function MatchDetailsScreen() {
     playerStatsMap.forEach((stats) => {
       // Efficiency formula: positive actions - negative actions
       // Uses the standard basketball efficiency formula
-      stats.eff = calculateEfficiency({
-        pts: stats.pts,
-        reb: stats.reb,
-        ast: stats.ast,
-        stl: stats.stl,
-        blk: stats.blk,
-        fg2a: stats.fg2a,
-        fg2m: stats.fg2m,
-        fg3a: stats.fg3a,
-        fg3m: stats.fg3m,
-        fta: stats.fta,
-        ftm: stats.ftm,
-        to: stats.to,
-      });
+      stats.eff = calculateEfficiency(stats);
 
       // Get actual playing time from player data (tracked in real-time during match)
       const key = `${stats.team}-${stats.playerNumber}`;
