@@ -10,6 +10,16 @@ import Svg, { Circle, Polygon } from "react-native-svg";
 import { useTheme } from "../../src/contexts/ThemeContext";
 
 // ===========================
+// MARKER TYPE ENUM
+// ===========================
+
+export enum MarkerType {
+  CIRCLE = 'circle',
+  TRIANGLE = 'triangle',
+  DIAMOND = 'diamond',
+}
+
+// ===========================
 // SHOOTING BAR COMPONENT
 // ===========================
 
@@ -89,9 +99,9 @@ interface StatBoxProps {
   label: string;
   value: number | string;
   sub?: string;
-  markerType?: 'circle' | 'triangle' | 'diamond';
+  markerType?: MarkerType;
   markerColor?: string;
-  leftMarkerType?: 'circle' | 'triangle' | 'diamond';
+  leftMarkerType?: MarkerType;
   leftMarkerColor?: string;
 }
 
@@ -100,12 +110,12 @@ export const StatBox: React.FC<StatBoxProps> = ({ label, value, sub, markerType,
   const textPrimary = colors.text.primary;
   const textSecondary = colors.text.secondary;
 
-  const renderMarker = (type?: 'circle' | 'triangle' | 'diamond', color?: string) => {
+  const renderMarker = (type?: MarkerType, color?: string) => {
     if (!type || !color) return null;
 
     const size = 12;
 
-    if (type === 'circle') {
+    if (type === MarkerType.CIRCLE) {
       return (
         <Svg width={size} height={size} viewBox="0 0 16 16">
           <Circle
@@ -120,7 +130,7 @@ export const StatBox: React.FC<StatBoxProps> = ({ label, value, sub, markerType,
       );
     }
 
-    if (type === 'triangle') {
+    if (type === MarkerType.TRIANGLE) {
       const height = 6;
       const width = 6;
       return (
@@ -135,7 +145,7 @@ export const StatBox: React.FC<StatBoxProps> = ({ label, value, sub, markerType,
       );
     }
 
-    if (type === 'diamond') {
+    if (type === MarkerType.DIAMOND) {
       const diamondSize = 6;
       return (
         <Svg width={size} height={size} viewBox="0 0 16 16">
