@@ -15,12 +15,15 @@ import { logInfo, logError } from '../../utils/logger';
 import { useAuth } from './AuthContext';
 
 const CURRENT_CLUB_ID_KEY = '@current_club_id';
+const ACTIVE_TEAM_ID_KEY = '@active_team_id';
 
 interface ClubContextType {
   currentClub: Club | null;
   allClubs: Club[];
   loading: boolean;
+  activeTeamId: string | null;
   setCurrentClub: (club: Club) => Promise<void>;
+  setActiveTeamId: (teamId: string | null) => Promise<void>;
   refreshClubs: () => Promise<void>;
 }
 
@@ -35,6 +38,7 @@ export function ClubProvider({ children }: { children: React.ReactNode }) {
   const [currentClub, setCurrentClubState] = useState<Club | null>(null);
   const [allClubs, setAllClubs] = useState<Club[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeTeamId, setActiveTeamIdState] = useState<string | null>(null);
 
   /**
    * Loads all user clubs and restores the previously selected club
@@ -44,8 +48,20 @@ export function ClubProvider({ children }: { children: React.ReactNode }) {
       logInfo('ClubContext', '🚫 No user, clearing clubs');
       setCurrentClubState(null);
       setAllClubs([]);
+      setActiveTeamIdState(null);
       setLoading(false);
       return;
+    }
+
+    // Restore previously selected team
+    try {
+      const savedTeamId = await AsyncStorage.getItem(ACTIVE_TEAM_ID_KEY);
+      if (savedTeamId) {
+        logInfo('ClubContext', '✅ Restored previous team', { teamId: savedTeamId });
+        setActiveTeamIdState(savedTeamId);
+      }
+    } catch (error) {
+      logError('ClubContext', '❌ Error restoring team', { error });
     }
 
     try {
@@ -138,6 +154,28 @@ export function ClubProvider({ children }: { children: React.ReactNode }) {
   };
 
   /**
+   * Sets the active team and persists the selection
+   */
+  const setActiveTeamId = async (teamId: string | null) => {
+    logInfo('ClubContext', '🔄 Setting active team', { teamId });
+
+    try {
+      if (teamId) {
+        await AsyncStorage.setItem(ACTIVE_TEAM_ID_KEY, teamId);
+      } else {
+        await AsyncStorage.removeItem(ACTIVE_TEAM_ID_KEY);
+      }
+      setActiveTeamIdState(teamId);
+
+      logInfo('ClubContext', '✅ Active team set and persisted', { teamId });
+    } catch (error) {
+      logError('ClubContext', '❌ Failed to persist active team', { error });
+      // Still set the team in state even if persistence fails
+      setActiveTeamIdState(teamId);
+    }
+  };
+
+  /**
    * Refreshes the clubs list (useful after creating/joining a new club)
    */
   const refreshClubs = async () => {
@@ -197,7 +235,9 @@ export function ClubProvider({ children }: { children: React.ReactNode }) {
     currentClub,
     allClubs,
     loading,
+    activeTeamId,
     setCurrentClub,
+    setActiveTeamId,
     refreshClubs,
   };
 

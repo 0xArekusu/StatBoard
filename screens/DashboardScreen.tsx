@@ -63,11 +63,10 @@ interface DashboardScreenProps {
 export default function DashboardScreen({ navigation }: DashboardScreenProps) {
   const { colors, isDark, setThemeMode } = useTheme();
   const { user, signOut } = useAuth();
-  const { currentClub, allClubs, setCurrentClub: setGlobalCurrentClub } = useClub();
+  const { currentClub, allClubs, setCurrentClub: setGlobalCurrentClub, activeTeamId, setActiveTeamId } = useClub();
 
   const [loading, setLoading] = useState(true);
   const [teams, setTeams] = useState<Team[]>([]);
-  const [activeTeamId, setActiveTeamId] = useState<string | null>(null);
   const [matches, setMatches] = useState<Match[]>([]);
   const [liveMatchToResume, setLiveMatchToResume] = useState<Match | null>(
     null
@@ -154,11 +153,11 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
         clubId: currentClub?.id,
         clubName: currentClub?.name,
         clubLogoUrl: currentClub?.logoUrl,
+        activeTeamId,
       });
 
-      // Reset state
+      // Reset local state (but NOT activeTeamId from context)
       setTeams([]);
-      setActiveTeamId(null);
       setMatches([]);
 
       // Load fresh data only if we have a club (for authenticated users) or are in guest mode
@@ -168,21 +167,37 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
         // Still loading club context, wait for it
         setLoading(false);
       }
-    }, [user?.id, isGuest, currentClub?.id])
+    }, [user?.id, isGuest, currentClub?.id, activeTeamId])
   );
 
-  // Check for active match when team changes
+  // Check for active match and reload matches when team changes
   useEffect(() => {
-    const checkForActiveMatch = async () => {
-      if (activeTeamId) {
+    const reloadTeamData = async () => {
+      if (activeTeamId && user && currentClub) {
         const matchListService = ServiceFactory.getMatchListService(supabase);
+
+        // Check for active match
         const activeMatch = await matchListService.findActiveMatch();
         if (activeMatch && activeMatch.team_id === activeTeamId) {
           setLiveMatchToResume(activeMatch);
         }
+
+        // Reload matches for the selected team
+        logInfo("DashboardScreen", "🔄 Reloading matches for team change", {
+          teamId: activeTeamId,
+        });
+        const allMatches = await matchListService.loadAllMatches(
+          user.id,
+          currentClub.id,
+          activeTeamId
+        );
+        setMatches(allMatches);
+        logInfo("DashboardScreen", "✅ Matches reloaded", {
+          totalCount: allMatches.length,
+        });
       }
     };
-    checkForActiveMatch();
+    reloadTeamData();
   }, [activeTeamId]);
 
   /**
@@ -247,10 +262,29 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
 
           setTeams(myApprovedTeams);
 
-          // Select first team if available
+          // Select first team if available and no team is selected
           if (myApprovedTeams.length > 0) {
-            teamId = myApprovedTeams[0].id;
-            setActiveTeamId(teamId);
+            // Check if activeTeamId is set and is in the list of approved teams
+            const isActiveTeamValid = activeTeamId && myApprovedTeams.some(t => t.id === activeTeamId);
+
+            if (isActiveTeamValid) {
+              // Use the existing valid activeTeamId
+              teamId = activeTeamId;
+              logInfo("DashboardScreen", "Using existing activeTeamId", { teamId });
+            } else if (!activeTeamId) {
+              // Only set activeTeamId if it's null (first time)
+              teamId = myApprovedTeams[0].id;
+              await setActiveTeamId(teamId);
+              logInfo("DashboardScreen", "First time - selecting first team", { teamId });
+            } else {
+              // activeTeamId is set but not valid (team was deleted?) - reset to first team
+              teamId = myApprovedTeams[0].id;
+              await setActiveTeamId(teamId);
+              logInfo("DashboardScreen", "activeTeamId not valid - resetting to first team", {
+                oldTeamId: activeTeamId,
+                newTeamId: teamId
+              });
+            }
           }
         } catch (error) {
           logError("DashboardScreen", "❌ Error loading teams", { error });

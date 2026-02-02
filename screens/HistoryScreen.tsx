@@ -43,13 +43,12 @@ interface HistoryScreenProps {
 export default function HistoryScreen({ navigation }: HistoryScreenProps) {
   const { colors, isDark } = useTheme();
   const { user } = useAuth();
-  const { currentClub } = useClub();
+  const { currentClub, activeTeamId, setActiveTeamId } = useClub();
 
   const [loading, setLoading] = useState(true);
   const [matches, setMatches] = useState<Match[]>([]);
   const [showSyncModal, setShowSyncModal] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
-  const [activeTeamId, setActiveTeamId] = useState<string | null>(null);
 
   useEffect(() => {
     // Only load if we have a club or are in guest mode
@@ -65,7 +64,7 @@ export default function HistoryScreen({ navigation }: HistoryScreenProps) {
       if (!user || currentClub) {
         loadHistoryData();
       }
-    }, [user?.id, currentClub?.id])
+    }, [user?.id, currentClub?.id, activeTeamId])
   );
 
   /**
@@ -97,10 +96,25 @@ export default function HistoryScreen({ navigation }: HistoryScreenProps) {
               team.ownerId === user.id && team.status === TeamStatus.APPROVED
           );
 
-          // Select first team if available
+          // Use activeTeamId from context if available and valid
           if (myApprovedTeams.length > 0) {
-            teamId = myApprovedTeams[0].id;
-            setActiveTeamId(teamId);
+            const isActiveTeamValid = activeTeamId && myApprovedTeams.some(t => t.id === activeTeamId);
+
+            if (isActiveTeamValid) {
+              // Use the existing valid activeTeamId
+              teamId = activeTeamId;
+              console.log("HistoryScreen: Using existing activeTeamId", teamId);
+            } else if (!activeTeamId) {
+              // Only set activeTeamId if it's null (first time)
+              teamId = myApprovedTeams[0].id;
+              await setActiveTeamId(teamId);
+              console.log("HistoryScreen: First time - selecting first team", teamId);
+            } else {
+              // activeTeamId is set but not valid (team was deleted?) - use it anyway for this load
+              // Don't override it, let the user or Dashboard handle it
+              teamId = activeTeamId;
+              console.log("HistoryScreen: activeTeamId not in list but keeping it", teamId);
+            }
           }
         } catch (error) {
           console.error("Error loading teams:", error);
