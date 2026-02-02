@@ -8,7 +8,7 @@
 import { useState, useEffect, useRef } from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { AppState, AppStateStatus } from "react-native";
+import { AppState, AppStateStatus, Linking } from "react-native";
 import AuthScreen from "./screens/authentication/AuthScreen";
 import LoginScreen from "./screens/authentication/LoginScreen";
 import RegisterScreen from "./screens/authentication/RegisterScreen";
@@ -25,7 +25,7 @@ import { AuthProvider, useAuth } from "./src/contexts/AuthContext";
 import { ClubProvider } from "./src/contexts/ClubContext";
 import { ThemeProvider } from "./src/contexts/ThemeContext";
 import { ROUTES } from "./constants/routes";
-import { logInfo, logWarn } from "./utils/logger";
+import { logInfo, logWarn, logError } from "./utils/logger";
 import DebugCourtClick from "./DebugCourtClick";
 
 const Stack = createNativeStackNavigator();
@@ -35,7 +35,7 @@ const Stack = createNativeStackNavigator();
  * Displays splash screen during loading, then shows the main navigation stack
  */
 function Navigation() {
-  const { loading, user } = useAuth();
+  const { loading, user, createSessionFromUrl } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -47,6 +47,46 @@ function Navigation() {
       logInfo("App", "✅ App initialization completed");
     }, 500);
   }, []);
+
+  useEffect(() => {
+    /**
+     * Handle deep linking for authentication
+     * Listens for incoming deep links (email confirmation, password reset)
+     */
+    const handleDeepLink = async (event: { url: string }) => {
+      const url = event.url;
+      logInfo("App", "🔗 Deep link received", { url });
+
+      // Check if it's an auth-related deep link
+      if (url.includes('auth/callback') || url.includes('reset-password')) {
+        logInfo("App", "🔐 Processing authentication deep link");
+        const { error } = await createSessionFromUrl(url);
+
+        if (error) {
+          logError("App", "❌ Failed to process deep link", { error: error.message });
+        } else {
+          logInfo("App", "✅ Successfully processed deep link");
+        }
+      }
+    };
+
+    // Handle deep link when app is already open
+    const subscription = Linking.addEventListener('url', handleDeepLink);
+
+    // Handle deep link when app is opened from closed state
+    Linking.getInitialURL().then((url) => {
+      if (url) {
+        logInfo("App", "🔗 Initial URL detected", { url });
+        handleDeepLink({ url });
+      }
+    }).catch((err) => {
+      logError("App", "❌ Error getting initial URL", { error: err.message });
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, [createSessionFromUrl]);
 
   // Show splash screen while loading auth or initial data
   if (isLoading || loading) {

@@ -25,6 +25,7 @@ interface AuthContextType {
   signInWithGoogle: () => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: any }>;
+  createSessionFromUrl: (url: string) => Promise<{ error: any }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -112,13 +113,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: fullName
-        ? {
-            data: {
+      options: {
+        emailRedirectTo: 'com.coachassistant.basketball://auth/callback',
+        data: fullName
+          ? {
               full_name: fullName,
-            },
-          }
-        : undefined,
+            }
+          : undefined,
+      },
     });
 
     if (error) {
@@ -271,7 +273,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     logInfo("AuthProvider", "🔑 Sending password reset email", { email });
 
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: 'statboard://reset-password',
+      redirectTo: 'com.coachassistant.basketball://reset-password',
     });
 
     if (error) {
@@ -287,6 +289,56 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { error };
   };
 
+  /**
+   * Create session from deep link URL
+   * Extracts tokens from URL and creates a Supabase session
+   * @param url - Deep link URL containing auth tokens
+   * @returns Object with error if session creation failed
+   */
+  const createSessionFromUrl = async (url: string) => {
+    logInfo("AuthProvider", "🔗 Creating session from deep link URL", { url });
+
+    try {
+      // Extract query parameters from URL
+      const urlObj = new URL(url);
+      const access_token = urlObj.searchParams.get('access_token');
+      const refresh_token = urlObj.searchParams.get('refresh_token');
+
+      if (!access_token || !refresh_token) {
+        const error = new Error('No tokens found in URL');
+        logError("AuthProvider", "❌ Missing tokens in deep link", { url });
+        return { error };
+      }
+
+      logInfo("AuthProvider", "🎫 Tokens extracted, setting session");
+
+      const { data, error } = await supabase.auth.setSession({
+        access_token,
+        refresh_token,
+      });
+
+      if (error) {
+        logError("AuthProvider", "❌ Failed to create session from URL", {
+          error: error.message,
+          errorCode: error.status,
+        });
+      } else {
+        logInfo("AuthProvider", "✅ Session created successfully from deep link", {
+          userId: data.user?.id,
+          email: data.user?.email,
+        });
+      }
+
+      return { error };
+    } catch (error: any) {
+      logError("AuthProvider", "❌ Error parsing deep link URL", {
+        error: error.message || error,
+        url,
+      });
+      return { error };
+    }
+  };
+
   const value = {
     session,
     user,
@@ -296,6 +348,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signInWithGoogle,
     signOut,
     resetPassword,
+    createSessionFromUrl,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
