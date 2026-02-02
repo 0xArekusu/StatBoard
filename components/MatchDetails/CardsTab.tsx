@@ -448,7 +448,7 @@ export default function CardsTab({
                 textColor={textPrimary}
                 borderWidth={2}
               />
-              <View>
+              <View style={{ flex: 1, marginRight: 8 }}>
                 <Text
                   style={[styles.cardPlayerName, { color: textPrimary }]}
                 >
