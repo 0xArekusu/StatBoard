@@ -23,7 +23,7 @@ import { Team } from "../../src/models/types";
 import { Club } from "../../models/Club";
 import BasketballCourtSVG from "../BasketballCourtSVG";
 import { getActionColor } from "../../src/models/ActionTypes";
-import { COACH_ASSISTANT_LOGO_NO_BG } from "../../src/utils/logoHelper";
+import { COACH_ASSISTANT_LOGO_NO_BG, COACH_ASSISTANT_LOGO_WHITE_NO_BG } from "../../src/utils/logoHelper";
 import {
   COURT_SVG_WIDTH_PORTRAIT,
   COURT_SVG_HEIGHT_PORTRAIT,
@@ -49,10 +49,11 @@ export default function PlayerDetailModal({
 }: PlayerDetailModalProps) {
   if (!player) return null;
 
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const textPrimary = colors.text.primary;
   const textSecondary = colors.text.secondary;
   const textTertiary = colors.text.tertiary;
+  const logo = isDark ? COACH_ASSISTANT_LOGO_WHITE_NO_BG : COACH_ASSISTANT_LOGO_NO_BG;
 
   // Filter actions for this specific player
   const playerActions = useMemo(() => {
@@ -116,7 +117,7 @@ export default function PlayerDetailModal({
               ]}
             />
             <Image
-              source={COACH_ASSISTANT_LOGO_NO_BG}
+              source={logo}
               style={styles.modalLogo}
             />
             <TouchableOpacity
@@ -162,7 +163,7 @@ export default function PlayerDetailModal({
             <View style={styles.mainStatsGrid}>
               <View style={[styles.statCard, { backgroundColor: colors.surfaceVariant }]}>
                 <Text style={[styles.statCardValue, { color: textPrimary }]}>
-                  {player.min}'
+                  {player.min}
                 </Text>
                 <Text style={[styles.statCardLabel, { color: textSecondary }]}>
                   Temps
@@ -310,6 +311,7 @@ export default function PlayerDetailModal({
                     backgroundColor={courtBackgroundColor}
                     lineColor={courtLineColor}
                     markers={courtMarkers}
+                    logoUri={club?.logoUrl || null}
                   />
                 </View>
               </View>

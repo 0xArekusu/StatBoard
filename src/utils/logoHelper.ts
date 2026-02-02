@@ -7,3 +7,4 @@
 export const COACH_ASSISTANT_LOGO = require('../../components/icons/coachassistant-logo.png');
 export const COACH_ASSISTANT_LOGO_NO_BG = require('../../components/icons/coachassistant-logo-no-bg.png');
 export const COACH_ASSISTANT_LOGO_MARGIN = require('../../components/icons/coachassistant-logo-margin.png');
+export const COACH_ASSISTANT_LOGO_WHITE_NO_BG = require('../../components/icons/coachassistant-logo-white-no-bg.png');
