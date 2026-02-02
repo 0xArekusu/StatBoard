@@ -22,7 +22,7 @@ import { ShootingBar, StatBox } from "./SharedComponents";
 import { Team } from "../../src/models/types";
 import { Club } from "../../models/Club";
 import BasketballCourtSVG from "../BasketballCourtSVG";
-import { getActionColor, ActionType } from "../../src/models/ActionTypes";
+import { getActionColor, ActionType, ReboundSpecification } from "../../src/models/ActionTypes";
 import { COACH_ASSISTANT_LOGO_NO_BG, COACH_ASSISTANT_LOGO_WHITE_NO_BG } from "../../src/utils/logoHelper";
 import {
   COURT_SVG_WIDTH_PORTRAIT,
@@ -288,8 +288,10 @@ export default function PlayerDetailModal({
                   label="REB OFF/DEF"
                   value={`${player.reb_off}/${player.reb_def}`}
                   sub={`Total: ${player.reb}`}
+                  leftMarkerType="triangle"
+                  leftMarkerColor={getActionColor(ActionType.REBOUND, ReboundSpecification.OFFENSIVE, 0)}
                   markerType="triangle"
-                  markerColor={getActionColor(ActionType.REBOUND, '', 0)}
+                  markerColor={getActionColor(ActionType.REBOUND, ReboundSpecification.DEFENSIVE, 0)}
                 />
                 <StatBox
                   label="AST"

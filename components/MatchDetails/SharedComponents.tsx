@@ -91,26 +91,28 @@ interface StatBoxProps {
   sub?: string;
   markerType?: 'circle' | 'triangle' | 'diamond';
   markerColor?: string;
+  leftMarkerType?: 'circle' | 'triangle' | 'diamond';
+  leftMarkerColor?: string;
 }
 
-export const StatBox: React.FC<StatBoxProps> = ({ label, value, sub, markerType, markerColor }) => {
+export const StatBox: React.FC<StatBoxProps> = ({ label, value, sub, markerType, markerColor, leftMarkerType, leftMarkerColor }) => {
   const { colors } = useTheme();
   const textPrimary = colors.text.primary;
   const textSecondary = colors.text.secondary;
 
-  const renderMarker = () => {
-    if (!markerType || !markerColor) return null;
+  const renderMarker = (type?: 'circle' | 'triangle' | 'diamond', color?: string) => {
+    if (!type || !color) return null;
 
     const size = 12;
 
-    if (markerType === 'circle') {
+    if (type === 'circle') {
       return (
         <Svg width={size} height={size} viewBox="0 0 16 16">
           <Circle
             cx={8}
             cy={8}
             r={6}
-            fill={markerColor}
+            fill={color}
             stroke="#FFFFFF"
             strokeWidth="2"
           />
@@ -118,14 +120,14 @@ export const StatBox: React.FC<StatBoxProps> = ({ label, value, sub, markerType,
       );
     }
 
-    if (markerType === 'triangle') {
+    if (type === 'triangle') {
       const height = 6;
       const width = 6;
       return (
         <Svg width={size} height={size} viewBox="0 0 16 16">
           <Polygon
             points={`8,${8 - height} ${8 + width},${8 + height} ${8 - width},${8 + height}`}
-            fill={markerColor}
+            fill={color}
             stroke="#FFFFFF"
             strokeWidth="1"
           />
@@ -133,13 +135,13 @@ export const StatBox: React.FC<StatBoxProps> = ({ label, value, sub, markerType,
       );
     }
 
-    if (markerType === 'diamond') {
+    if (type === 'diamond') {
       const diamondSize = 6;
       return (
         <Svg width={size} height={size} viewBox="0 0 16 16">
           <Polygon
             points={`8,${8 - diamondSize} ${8 + diamondSize},8 8,${8 + diamondSize} ${8 - diamondSize},8`}
-            fill={markerColor}
+            fill={color}
             stroke="#FFFFFF"
             strokeWidth="2"
           />
@@ -160,9 +162,10 @@ export const StatBox: React.FC<StatBoxProps> = ({ label, value, sub, markerType,
       <Text style={[styles.statBoxLabel, { color: textSecondary }]}>
         {label}
       </Text>
-      <View style={styles.statBoxValueRow}>
+      <View style={[styles.statBoxValueRow, !leftMarkerType && styles.statBoxValueRowNoLeft]}>
+        {renderMarker(leftMarkerType, leftMarkerColor)}
         <Text style={[styles.statBoxValue, { color: textPrimary }]}>{value}</Text>
-        {renderMarker()}
+        {renderMarker(markerType, markerColor)}
       </View>
       {sub && (
         <Text style={[styles.statBoxSub, { color: textSecondary }]}>{sub}</Text>
@@ -243,6 +246,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
+    justifyContent: "center",
+  },
+  statBoxValueRowNoLeft: {
     marginLeft: 14,
   },
   statBoxValue: {
