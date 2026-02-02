@@ -22,7 +22,7 @@ import { ShootingBar, StatBox } from "./SharedComponents";
 import { Team } from "../../src/models/types";
 import { Club } from "../../models/Club";
 import BasketballCourtSVG from "../BasketballCourtSVG";
-import { getActionColor } from "../../src/models/ActionTypes";
+import { getActionColor, ActionType } from "../../src/models/ActionTypes";
 import { COACH_ASSISTANT_LOGO_NO_BG, COACH_ASSISTANT_LOGO_WHITE_NO_BG } from "../../src/utils/logoHelper";
 import {
   COURT_SVG_WIDTH_PORTRAIT,
@@ -284,12 +284,48 @@ export default function PlayerDetailModal({
                 Détails
               </Text>
               <View style={styles.detailedStatsGrid}>
-                <StatBox label="REB OFF/DEF" value={`${player.reb_off}/${player.reb_def}`} sub={`Total: ${player.reb}`} />
-                <StatBox label="AST" value={player.ast} sub="Passes décisives" />
-                <StatBox label="INT" value={player.stl} sub="Interceptions" />
-                <StatBox label="CTR" value={player.blk} sub="Contres" />
-                <StatBox label="BP" value={player.to} sub="Balles perdues" />
-                <StatBox label="FTE" value={player.pf} sub="Fautes" />
+                <StatBox
+                  label="REB OFF/DEF"
+                  value={`${player.reb_off}/${player.reb_def}`}
+                  sub={`Total: ${player.reb}`}
+                  markerType="triangle"
+                  markerColor={getActionColor(ActionType.REBOUND, '', 0)}
+                />
+                <StatBox
+                  label="AST"
+                  value={player.ast}
+                  sub="Passes décisives"
+                  markerType="circle"
+                  markerColor={getActionColor(ActionType.ASSIST, '', 0)}
+                />
+                <StatBox
+                  label="INT"
+                  value={player.stl}
+                  sub="Interceptions"
+                  markerType="circle"
+                  markerColor={getActionColor(ActionType.STEAL, '', 0)}
+                />
+                <StatBox
+                  label="CTR"
+                  value={player.blk}
+                  sub="Contres"
+                  markerType="circle"
+                  markerColor={getActionColor(ActionType.BLOCK, '', 0)}
+                />
+                <StatBox
+                  label="BP"
+                  value={player.to}
+                  sub="Balles perdues"
+                  markerType="circle"
+                  markerColor={getActionColor(ActionType.TURNOVER, '', 0)}
+                />
+                <StatBox
+                  label="FTE"
+                  value={player.pf}
+                  sub="Fautes"
+                  markerType="diamond"
+                  markerColor={getActionColor(ActionType.FOUL, '', 0)}
+                />
               </View>
             </View>
 

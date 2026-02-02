@@ -533,7 +533,7 @@ export default function CardsTab({
               <Text
                 style={[styles.cardStatValue, { color: textPrimary }]}
               >
-                {player.min}'
+                {player.min}
               </Text>
             </View>
             <View style={styles.cardStatItem}>

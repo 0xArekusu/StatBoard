@@ -6,8 +6,8 @@
 
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
+import Svg, { Circle, Polygon } from "react-native-svg";
 import { useTheme } from "../../src/contexts/ThemeContext";
-import { Colors } from "../../src/theme/colors";
 
 // ===========================
 // SHOOTING BAR COMPONENT
@@ -89,12 +89,66 @@ interface StatBoxProps {
   label: string;
   value: number | string;
   sub?: string;
+  markerType?: 'circle' | 'triangle' | 'diamond';
+  markerColor?: string;
 }
 
-export const StatBox: React.FC<StatBoxProps> = ({ label, value, sub }) => {
+export const StatBox: React.FC<StatBoxProps> = ({ label, value, sub, markerType, markerColor }) => {
   const { colors } = useTheme();
   const textPrimary = colors.text.primary;
   const textSecondary = colors.text.secondary;
+
+  const renderMarker = () => {
+    if (!markerType || !markerColor) return null;
+
+    const size = 12;
+
+    if (markerType === 'circle') {
+      return (
+        <Svg width={size} height={size} viewBox="0 0 16 16">
+          <Circle
+            cx={8}
+            cy={8}
+            r={6}
+            fill={markerColor}
+            stroke="#FFFFFF"
+            strokeWidth="2"
+          />
+        </Svg>
+      );
+    }
+
+    if (markerType === 'triangle') {
+      const height = 6;
+      const width = 6;
+      return (
+        <Svg width={size} height={size} viewBox="0 0 16 16">
+          <Polygon
+            points={`8,${8 - height} ${8 + width},${8 + height} ${8 - width},${8 + height}`}
+            fill={markerColor}
+            stroke="#FFFFFF"
+            strokeWidth="1"
+          />
+        </Svg>
+      );
+    }
+
+    if (markerType === 'diamond') {
+      const diamondSize = 6;
+      return (
+        <Svg width={size} height={size} viewBox="0 0 16 16">
+          <Polygon
+            points={`8,${8 - diamondSize} ${8 + diamondSize},8 8,${8 + diamondSize} ${8 - diamondSize},8`}
+            fill={markerColor}
+            stroke="#FFFFFF"
+            strokeWidth="2"
+          />
+        </Svg>
+      );
+    }
+
+    return null;
+  };
 
   return (
     <View
@@ -106,7 +160,10 @@ export const StatBox: React.FC<StatBoxProps> = ({ label, value, sub }) => {
       <Text style={[styles.statBoxLabel, { color: textSecondary }]}>
         {label}
       </Text>
-      <Text style={[styles.statBoxValue, { color: textPrimary }]}>{value}</Text>
+      <View style={styles.statBoxValueRow}>
+        <Text style={[styles.statBoxValue, { color: textPrimary }]}>{value}</Text>
+        {renderMarker()}
+      </View>
       {sub && (
         <Text style={[styles.statBoxSub, { color: textSecondary }]}>{sub}</Text>
       )}
@@ -181,6 +238,12 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
     textTransform: "uppercase",
     marginBottom: 2,
+  },
+  statBoxValueRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    marginLeft: 14,
   },
   statBoxValue: {
     fontSize: 16,
