@@ -749,11 +749,11 @@ export default function BasketballCourtSVG({
         </G>
       </G>
 
-      {/* Render center court logo if provided */}
-      {renderCenterLogo()}
-
-      {/* Render markers on top of everything */}
+      {/* Render markers */}
       {renderMarkers()}
+
+      {/* Render center court logo on top of everything */}
+      {renderCenterLogo()}
     </Svg>
   ) : (
     <Svg
@@ -1100,11 +1100,11 @@ export default function BasketballCourtSVG({
         </G>
       </G>
 
-      {/* Render center court logo if provided */}
-      {renderCenterLogo()}
-
-      {/* Render markers on top of everything */}
+      {/* Render markers */}
       {renderMarkers()}
+
+      {/* Render center court logo on top of everything */}
+      {renderCenterLogo()}
     </Svg>
   );
 }
