@@ -714,6 +714,7 @@ export default function CourtTab({
                       color: markerColor,
                       actionType: actionType,
                       specification: specification,
+                      playerNumber: action.player_number || action.player,
                     };
                   }) || []
               }

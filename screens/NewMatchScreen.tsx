@@ -86,6 +86,7 @@ export default function NewMatchScreen() {
   const [starters, setStarters] = useState<string[]>([]);
   const [tempHomePlayerName, setTempHomePlayerName] = useState("");
   const [tempHomePlayerNumber, setTempHomePlayerNumber] = useState("");
+  const [playerNumberErrors, setPlayerNumberErrors] = useState<Set<string>>(new Set());
 
   // Opponent Management
   const [opponentRoster, setOpponentRoster] = useState<Player[]>([]);
@@ -338,6 +339,34 @@ export default function NewMatchScreen() {
   };
 
   /**
+   * Update player jersey number
+   */
+  const handlePlayerNumberChange = (playerId: string, newNumber: number) => {
+    // Update in both available and selected player lists
+    setAvailableHomePlayers(prev =>
+      prev.map(p => p.id === playerId ? { ...p, jerseyNumber: newNumber } : p)
+    );
+    setSelectedHomePlayers(prev =>
+      prev.map(p => p.id === playerId ? { ...p, jerseyNumber: newNumber } : p)
+    );
+  };
+
+  /**
+   * Handle player number error state changes
+   */
+  const handlePlayerNumberError = (playerId: string, hasError: boolean) => {
+    setPlayerNumberErrors(prev => {
+      const newErrors = new Set(prev);
+      if (hasError) {
+        newErrors.add(playerId);
+      } else {
+        newErrors.delete(playerId);
+      }
+      return newErrors;
+    });
+  };
+
+  /**
    * Add temporary player (reinforcement) to home roster
    */
   const addTempHomePlayer = () => {
@@ -444,6 +473,17 @@ export default function NewMatchScreen() {
       return;
     }
 
+    // Check for duplicate jersey numbers in home team
+    const homeNumbers = selectedHomePlayers.map(p => p.jerseyNumber);
+    const homeDuplicates = homeNumbers.filter((num, index) => homeNumbers.indexOf(num) !== index);
+    if (homeDuplicates.length > 0) {
+      Alert.alert(
+        "Erreur",
+        `Des numéros de maillot sont en double dans votre équipe : ${[...new Set(homeDuplicates)].join(", ")}`
+      );
+      return;
+    }
+
     const requiredStarters = Math.min(ROSTER_LIMITS.STARTERS, selectedHomePlayers.length);
     if (starters.length !== requiredStarters) {
       Alert.alert(
@@ -459,6 +499,18 @@ export default function NewMatchScreen() {
         Alert.alert("Erreur", MATCH_VALIDATION_MESSAGES.OPPONENT_MIN_PLAYERS);
         return;
       }
+
+      // Check for duplicate jersey numbers in opponent team
+      const opponentNumbers = opponentRoster.map(p => p.jerseyNumber);
+      const opponentDuplicates = opponentNumbers.filter((num, index) => opponentNumbers.indexOf(num) !== index);
+      if (opponentDuplicates.length > 0) {
+        Alert.alert(
+          "Erreur",
+          `Des numéros de maillot sont en double dans l'équipe adverse : ${[...new Set(opponentDuplicates)].join(", ")}`
+        );
+        return;
+      }
+
       if (opponentStarters.length !== ROSTER_LIMITS.STARTERS) {
         Alert.alert("Erreur", MATCH_VALIDATION_MESSAGES.OPPONENT_STARTERS_REQUIRED);
         return;
@@ -584,7 +636,8 @@ export default function NewMatchScreen() {
   const isStep1Valid = opponent && (user ? selectedTeamId : myTeamName);
   const isStep2Valid =
     selectedHomePlayers.length >= ROSTER_LIMITS.MIN_PLAYERS &&
-    starters.length === Math.min(ROSTER_LIMITS.STARTERS, selectedHomePlayers.length);
+    starters.length === Math.min(ROSTER_LIMITS.STARTERS, selectedHomePlayers.length) &&
+    playerNumberErrors.size === 0; // Block if there are number errors
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -664,6 +717,8 @@ export default function NewMatchScreen() {
                 onTempNameChange={setTempHomePlayerName}
                 onTempNumberChange={setTempHomePlayerNumber}
                 onAddTempPlayer={addTempHomePlayer}
+                onPlayerNumberChange={handlePlayerNumberChange}
+                onNumberError={handlePlayerNumberError}
                 isDark={isDark}
                 colors={themeColors}
               />

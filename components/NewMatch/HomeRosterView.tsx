@@ -34,6 +34,10 @@ interface HomeRosterViewProps {
   onTempNumberChange: (text: string) => void;
   /** Callback to add temp player */
   onAddTempPlayer: () => void;
+  /** Callback when jersey number changes */
+  onPlayerNumberChange?: (playerId: string, newNumber: number) => void;
+  /** Callback when number error state changes */
+  onNumberError?: (playerId: string, hasError: boolean) => void;
   /** Whether dark mode is enabled */
   isDark: boolean;
   /** Theme colors */
@@ -59,6 +63,8 @@ export const HomeRosterView: React.FC<HomeRosterViewProps> = ({
   onTempNameChange,
   onTempNumberChange,
   onAddTempPlayer,
+  onPlayerNumberChange,
+  onNumberError,
   isDark,
   colors,
 }) => {
@@ -130,8 +136,9 @@ export const HomeRosterView: React.FC<HomeRosterViewProps> = ({
               isStarter={isStarter}
               onToggleSelect={() => onTogglePlayer(player)}
               onToggleStarter={() => onToggleStarter(player.id)}
-              isDark={isDark}
-              colors={colors}
+              onNumberChange={onPlayerNumberChange}
+              onNumberError={onNumberError}
+              allPlayers={availablePlayers}
             />
           );
         })}
@@ -144,6 +151,7 @@ export const HomeRosterView: React.FC<HomeRosterViewProps> = ({
         onNameChange={onTempNameChange}
         onNumberChange={onTempNumberChange}
         onAdd={onAddTempPlayer}
+        allPlayers={availablePlayers}
         isDark={isDark}
         colors={colors}
       />

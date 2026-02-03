@@ -833,7 +833,9 @@ export const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
           {(match.trackOpponentStats && playerSelectionTab === TeamId.AWAY
             ? opponentPlayersOnCourt
             : playersOnCourt
-          ).map((player: Player) => (
+          )
+            .sort((a, b) => a.jerseyNumber - b.jerseyNumber)
+            .map((player: Player) => (
             <TouchableOpacity
               key={player.id}
               onPress={() => onPlayerSelect(player.id)}
@@ -1141,7 +1143,9 @@ export const SubstitutionModal: React.FC<SubstitutionModalProps> = ({
                 </Text>
               </View>
               <View style={styles.subGrid}>
-                {onCourt.map((player: Player) => {
+                {onCourt
+                  .sort((a, b) => a.jerseyNumber - b.jerseyNumber)
+                  .map((player: Player) => {
                   const isOut = subSelection.out.includes(player.id);
                   return (
                     <TouchableOpacity
@@ -1238,7 +1242,9 @@ export const SubstitutionModal: React.FC<SubstitutionModalProps> = ({
                 </Text>
               </View>
               <View style={styles.subGrid}>
-                {onBench.map((player: Player) => {
+                {onBench
+                  .sort((a, b) => a.jerseyNumber - b.jerseyNumber)
+                  .map((player: Player) => {
                   const isIn = subSelection.in.includes(player.id);
                   return (
                     <TouchableOpacity

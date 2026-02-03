@@ -4,11 +4,12 @@
  * Form to add a temporary player (reinforcement) to the roster.
  */
 
-import React from "react";
+import React, { useState } from "react";
 import { View, Text, TextInput, TouchableOpacity, StyleSheet } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { SLATE_COLORS, COMMON_COLORS, OPACITY } from "../../src/theme";
 import { MATCH_CREATION_BUTTON_LABELS } from "../../constants";
+import type { Player } from "../../models/Player";
 
 interface AddPlayerFormProps {
   /** Player name input value */
@@ -21,6 +22,8 @@ interface AddPlayerFormProps {
   onNumberChange: (text: string) => void;
   /** Callback when add button is pressed */
   onAdd: () => void;
+  /** All players to check for duplicates */
+  allPlayers?: Player[];
   /** Whether dark mode is enabled */
   isDark: boolean;
   /** Theme colors */
@@ -41,9 +44,52 @@ export const AddPlayerForm: React.FC<AddPlayerFormProps> = ({
   onNameChange,
   onNumberChange,
   onAdd,
+  allPlayers = [],
   isDark,
   colors,
 }) => {
+  const [error, setError] = useState<string | null>(null);
+
+  const handleNumberChange = (text: string) => {
+    onNumberChange(text);
+    setError(null);
+  };
+
+  const handleAdd = () => {
+    setError(null);
+
+    const numValue = parseInt(number, 10);
+
+    // Validation
+    if (isNaN(numValue) || numValue < 0 || numValue > 99) {
+      setError("Le numéro doit être entre 0 et 99.");
+      return;
+    }
+
+    // Check for duplicate number
+    const isDuplicateNumber = allPlayers.some(
+      (p) => p.jerseyNumber === numValue
+    );
+
+    if (isDuplicateNumber) {
+      setError("Ce numéro de maillot est déjà utilisé.");
+      return;
+    }
+
+    // Check for duplicate name
+    const trimmedName = name.trim();
+    const isDuplicateName = allPlayers.some(
+      (p) => p.name.toLowerCase() === trimmedName.toLowerCase()
+    );
+
+    if (isDuplicateName) {
+      setError("Un joueur avec ce nom existe déjà.");
+      return;
+    }
+
+    onAdd();
+  };
+
   const isValid = name && number;
 
   return (
@@ -58,13 +104,16 @@ export const AddPlayerForm: React.FC<AddPlayerFormProps> = ({
           placeholder="Nom"
           placeholderTextColor={colors.textSecondary}
           value={name}
-          onChangeText={onNameChange}
+          onChangeText={(text) => {
+            onNameChange(text);
+            setError(null);
+          }}
           style={[
             styles.addPlayerInput,
             styles.addPlayerInputName,
             {
               backgroundColor: colors.surfaceColor,
-              borderColor: colors.borderColor,
+              borderColor: error ? "#ef4444" : colors.borderColor,
               color: colors.textPrimary,
             },
           ]}
@@ -73,20 +122,21 @@ export const AddPlayerForm: React.FC<AddPlayerFormProps> = ({
           placeholder="#"
           placeholderTextColor={colors.textSecondary}
           value={number}
-          onChangeText={onNumberChange}
+          onChangeText={handleNumberChange}
           keyboardType="number-pad"
+          maxLength={2}
           style={[
             styles.addPlayerInput,
             styles.addPlayerInputNumber,
             {
               backgroundColor: colors.surfaceColor,
-              borderColor: colors.borderColor,
+              borderColor: error ? "#ef4444" : colors.borderColor,
               color: colors.textPrimary,
             },
           ]}
         />
         <TouchableOpacity
-          onPress={onAdd}
+          onPress={handleAdd}
           disabled={!isValid}
           style={[
             styles.addPlayerButton,
@@ -103,6 +153,7 @@ export const AddPlayerForm: React.FC<AddPlayerFormProps> = ({
           />
         </TouchableOpacity>
       </View>
+      {error && <Text style={styles.errorText}>{error}</Text>}
     </View>
   );
 };
@@ -140,5 +191,10 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
+  },
+  errorText: {
+    fontSize: 12,
+    color: "#ef4444",
+    marginTop: 8,
   },
 });

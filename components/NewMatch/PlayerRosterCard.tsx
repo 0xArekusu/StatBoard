@@ -4,8 +4,14 @@
  * Card displaying a player with selection checkbox and starter toggle.
  */
 
-import React from "react";
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import React, { useState } from "react";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  TextInput,
+} from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import type { Player } from "../../models/Player";
 import { useTheme } from "../../src/contexts/ThemeContext";
@@ -22,6 +28,12 @@ interface PlayerRosterCardProps {
   onToggleSelect: () => void;
   /** Callback when starter status toggles */
   onToggleStarter: () => void;
+  /** Callback when jersey number changes */
+  onNumberChange?: (playerId: string, newNumber: number) => void;
+  /** All players in the roster to check for duplicates */
+  allPlayers?: Player[];
+  /** Callback when number error state changes */
+  onNumberError?: (playerId: string, hasError: boolean) => void;
 }
 
 /**
@@ -33,20 +45,71 @@ export const PlayerRosterCard: React.FC<PlayerRosterCardProps> = ({
   isStarter,
   onToggleSelect,
   onToggleStarter,
+  onNumberChange,
+  allPlayers = [],
+  onNumberError,
 }) => {
   const { colors, isDark } = useTheme();
+  const [isEditingNumber, setIsEditingNumber] = useState(false);
+  const [tempNumber, setTempNumber] = useState(player.jerseyNumber.toString());
+  const [numberError, setNumberError] = useState<string | null>(null);
+
+  const handleNumberSubmit = () => {
+    const newNumber = parseInt(tempNumber, 10);
+
+    // Reset error
+    setNumberError(null);
+    if (onNumberError) {
+      onNumberError(player.id, false);
+    }
+
+    // Validation
+    if (isNaN(newNumber) || newNumber < 0 || newNumber > 99) {
+      setNumberError("Le numéro doit être entre 0 et 99.");
+      if (onNumberError) {
+        onNumberError(player.id, true);
+      }
+      return;
+    }
+
+    // Check for duplicate number
+    const isDuplicateNumber = allPlayers.some(
+      (p) => p.id !== player.id && p.jerseyNumber === newNumber
+    );
+
+    if (isDuplicateNumber) {
+      setNumberError("Ce numéro de maillot est déjà utilisé.");
+      if (onNumberError) {
+        onNumberError(player.id, true);
+      }
+      return;
+    }
+
+    // If valid, update
+    if (onNumberChange) {
+      onNumberChange(player.id, newNumber);
+    }
+    setIsEditingNumber(false);
+  };
+
+  const handleNumberChange = (text: string) => {
+    setTempNumber(text);
+    setNumberError(null);
+    if (onNumberError) {
+      onNumberError(player.id, false);
+    }
+  };
+
   return (
+    <View style={styles.cardWrapper}>
     <TouchableOpacity
       onPress={onToggleSelect}
+      activeOpacity={0.8}
       style={[
         styles.playerCard,
         {
-          backgroundColor: isSelected
-            ? colors.surface
-            : colors.surfaceVariant,
-          borderColor: isSelected
-            ? `${colors.primary}50`
-            : colors.border,
+          backgroundColor: isSelected ? colors.surface : colors.surfaceVariant,
+          borderColor: isSelected ? `${colors.primary}50` : colors.border,
           opacity: isSelected ? 1 : 0.6,
         },
       ]}
@@ -95,16 +158,58 @@ export const PlayerRosterCard: React.FC<PlayerRosterCardProps> = ({
           >
             {player.name}
           </Text>
-          <Text
-            style={[
-              styles.playerNumber,
-              {
-                color: isSelected ? colors.text.secondary : colors.text.tertiary,
-              },
-            ]}
-          >
-            {" - #"}{player.jerseyNumber}
-          </Text>
+
+          {/* Editable Number */}
+          {isEditingNumber ? (
+            <TextInput
+              value={tempNumber}
+              onChangeText={handleNumberChange}
+              onBlur={handleNumberSubmit}
+              onSubmitEditing={handleNumberSubmit}
+              keyboardType="number-pad"
+              maxLength={2}
+              autoFocus
+              selectTextOnFocus
+              style={[
+                styles.numberInput,
+                {
+                  color: colors.text.primary,
+                  backgroundColor: colors.background,
+                  borderColor: numberError ? "#ef4444" : colors.primary,
+                },
+              ]}
+            />
+          ) : (
+            <TouchableOpacity
+              onPress={(e) => {
+                e.stopPropagation();
+                setIsEditingNumber(true);
+              }}
+              style={styles.numberTouchable}
+            >
+              <Text
+                style={[
+                  styles.playerNumber,
+                  {
+                    color: isSelected
+                      ? colors.text.secondary
+                      : colors.text.tertiary,
+                  },
+                ]}
+              >
+                {" - #"}
+                {player.jerseyNumber}
+              </Text>
+              {isSelected && (
+                <MaterialCommunityIcons
+                  name="pencil"
+                  size={12}
+                  color={colors.text.tertiary}
+                  style={styles.editIcon}
+                />
+              )}
+            </TouchableOpacity>
+          )}
         </View>
       </View>
 
@@ -115,7 +220,9 @@ export const PlayerRosterCard: React.FC<PlayerRosterCardProps> = ({
           style={[
             styles.starButton,
             {
-              backgroundColor: isStarter ? `${colors.warning}20` : "transparent",
+              backgroundColor: isStarter
+                ? `${colors.warning}20`
+                : "transparent",
               borderWidth: isStarter ? 2 : 0,
               borderColor: isStarter ? colors.warning : "transparent",
             },
@@ -129,10 +236,19 @@ export const PlayerRosterCard: React.FC<PlayerRosterCardProps> = ({
         </TouchableOpacity>
       )}
     </TouchableOpacity>
+
+    {/* Error message */}
+    {numberError && (
+      <Text style={styles.errorText}>{numberError}</Text>
+    )}
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
+  cardWrapper: {
+    width: "100%",
+  },
   playerCard: {
     flexDirection: "row",
     alignItems: "center",
@@ -168,8 +284,36 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600",
   },
+  numberTouchable: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingVertical: 2,
+    paddingHorizontal: 4,
+    borderRadius: 4,
+  },
+  numberInput: {
+    fontSize: 14,
+    fontWeight: "600",
+    paddingVertical: 2,
+    paddingHorizontal: 8,
+    borderRadius: 4,
+    borderWidth: 1,
+    minWidth: 50,
+    textAlign: "center",
+    marginLeft: 10,
+  },
+  editIcon: {
+    opacity: 0.5,
+  },
   starButton: {
     padding: 8,
     borderRadius: 999,
+  },
+  errorText: {
+    fontSize: 12,
+    color: "#ef4444",
+    marginTop: 4,
+    marginLeft: 12,
   },
 });

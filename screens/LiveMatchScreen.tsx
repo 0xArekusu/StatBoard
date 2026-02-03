@@ -127,8 +127,8 @@ export default function LiveMatchScreen() {
         scoreAway: 0,
         status: "in_progress" as MatchStatus,
         trackOpponentStats: matchData.trackOpponentStats || false,
-        roster: matchData.myTeamPlayers || matchData.homePlayers || [], // Support both old and new field names
-        opponentRoster: matchData.opponentPlayers || matchData.awayPlayers || [], // Support both old and new field names
+        roster: matchData.myTeamPlayers || [],
+        opponentRoster: matchData.opponentPlayers || [],
         starters: matchData.starters || [],
         periodCount: matchData.periodCount || 4,
         periodDuration: matchData.periodDuration || 10,
@@ -215,9 +215,9 @@ export default function LiveMatchScreen() {
     if (matchData?.starters && matchData.starters.length > 0) {
       return matchData.starters;
     }
-    // Otherwise use first 5 players from roster
-    if (matchData?.homePlayers && matchData.homePlayers.length > 0) {
-      return matchData.homePlayers.slice(0, 5).map((p: Player) => p.id);
+    // Otherwise use first 5 players from myTeamPlayers roster
+    if (matchData?.myTeamPlayers && matchData.myTeamPlayers.length > 0) {
+      return matchData.myTeamPlayers.slice(0, 5).map((p: Player) => p.id);
     }
     // Fallback to mock players
     return ["p1", "p2", "p3", "p4", "p5"];
@@ -225,8 +225,12 @@ export default function LiveMatchScreen() {
 
   const [activeOpponentPlayers, setActiveOpponentPlayers] = useState<string[]>(
     () => {
-      if (matchData?.awayPlayers && matchData.awayPlayers.length > 0) {
-        return matchData.awayPlayers.slice(0, 5).map((p: Player) => p.id);
+      // Use opponentStarters if provided, otherwise use first 5 players
+      if (matchData?.opponentStarters && matchData.opponentStarters.length > 0) {
+        return matchData.opponentStarters;
+      }
+      if (matchData?.opponentPlayers && matchData.opponentPlayers.length > 0) {
+        return matchData.opponentPlayers.slice(0, 5).map((p: Player) => p.id);
       }
       // Fallback to mock opponent players
       return ["adv1", "adv2", "adv3", "adv4", "adv5"];
@@ -312,18 +316,27 @@ export default function LiveMatchScreen() {
           const playerRepo = new MatchPlayerRepository();
           const players = await playerRepo.getPlayersForMatch(parseInt(resumeMatchId));
 
+          logInfo("LiveMatchScreen", "📊 Players loaded from DB", {
+            totalPlayers: players.length,
+            playersByTeam: players.reduce((acc, p) => {
+              acc[p.team] = (acc[p.team] || 0) + 1;
+              return acc;
+            }, {} as Record<string, number>),
+            trackOpponentStats: existingMatch.track_opponent_stats,
+          });
+
           // Calculate scores from actions (using the new action type system)
           const isHome = existingMatch.is_home;
           const { scoreHome, scoreAway } = calculateScoresFromActions(actions, isHome);
 
           // Separate players by team
-          const homePlayersFromDB = players.filter((p) => p.team === "MyTeam");
-          const awayPlayersFromDB = players.filter(
+          const myTeamPlayersFromDB = players.filter((p) => p.team === "MyTeam");
+          const opponentPlayersFromDB = players.filter(
             (p) => p.team === "Opponent",
           );
 
           // Convert to Player format
-          const homeRosterLoaded = homePlayersFromDB.map((p) => ({
+          const myTeamRosterLoaded = myTeamPlayersFromDB.map((p) => ({
             id: p.player_id || `temp-${p.id}`,
             name: p.player_name,
             jerseyNumber: p.player_number,
@@ -334,7 +347,7 @@ export default function LiveMatchScreen() {
             updatedAt: new Date(p.created_at),
           }));
 
-          const awayRosterLoaded = awayPlayersFromDB.map((p) => ({
+          const opponentRosterLoaded = opponentPlayersFromDB.map((p) => ({
             id: p.player_id || `temp-${p.id}`,
             name: p.player_name,
             jerseyNumber: p.player_number,
@@ -346,13 +359,13 @@ export default function LiveMatchScreen() {
           }));
 
           // Get active players on court (use on_court status, fallback to starters if not set)
-          const homeOnCourt = homePlayersFromDB
+          const myTeamOnCourt = myTeamPlayersFromDB
             .filter(
               (p) =>
                 p.on_court === 1 || (p.on_court === undefined && p.is_starter),
             )
             .map((p) => p.player_id || `temp-${p.id}`);
-          const awayOnCourt = awayPlayersFromDB
+          const opponentOnCourt = opponentPlayersFromDB
             .filter(
               (p) =>
                 p.on_court === 1 || (p.on_court === undefined && p.is_starter),
@@ -372,11 +385,12 @@ export default function LiveMatchScreen() {
             myTeamName: existingMatch.my_team_name || "Mon Équipe",
             opponent: existingMatch.opponent_name,
             location: existingMatch.is_home ? TeamId.HOME : TeamId.AWAY,
+            trackOpponentStats: existingMatch.track_opponent_stats === 1,
             scoreHome,
             scoreAway,
-            roster: homeRosterLoaded,
-            opponentRoster: awayRosterLoaded,
-            starters: homeOnCourt,
+            roster: myTeamRosterLoaded,
+            opponentRoster: opponentRosterLoaded,
+            starters: myTeamOnCourt,
             periodCount: existingMatch.total_periods,
             periodDuration: existingMatch.period_duration / 60, // Convert seconds to minutes
             events: matchEvents,
@@ -386,11 +400,11 @@ export default function LiveMatchScreen() {
           });
 
           // Restore active players on court
-          if (homeOnCourt.length > 0) {
-            setActivePlayers(homeOnCourt);
+          if (myTeamOnCourt.length > 0) {
+            setActivePlayers(myTeamOnCourt);
           }
-          if (awayOnCourt.length > 0) {
-            setActiveOpponentPlayers(awayOnCourt);
+          if (opponentOnCourt.length > 0) {
+            setActiveOpponentPlayers(opponentOnCourt);
           }
 
           // Restore timer and period state
@@ -420,12 +434,13 @@ export default function LiveMatchScreen() {
             scoreAway,
             actionsLoaded: actions.length,
             playersLoaded: players.length,
-            homeRoster: homeRosterLoaded.length,
-            awayRoster: awayRosterLoaded.length,
-            homeOnCourt: homeOnCourt.length,
-            awayOnCourt: awayOnCourt.length,
-            activePlayers: homeOnCourt,
-            activeOpponentPlayers: awayOnCourt,
+            myTeamRoster: myTeamRosterLoaded.length,
+            opponentRoster: opponentRosterLoaded.length,
+            myTeamOnCourt: myTeamOnCourt.length,
+            opponentOnCourt: opponentOnCourt.length,
+            activePlayers: myTeamOnCourt,
+            activeOpponentPlayers: opponentOnCourt,
+            opponentRosterDetails: opponentRosterLoaded.map(p => ({ id: p.id, name: p.name, isStarter: p.isStarter })),
             timeRemaining,
             currentPeriod: existingMatch.current_period,
           });
@@ -442,6 +457,7 @@ export default function LiveMatchScreen() {
             my_team_name: match.myTeamName || null,
             opponent_name: match.opponent || "Adversaire",
             is_home: match.location === TeamId.HOME,
+            track_opponent_stats: match.trackOpponentStats || false,
             total_periods: match.periodCount || 4,
             period_duration: (match.periodDuration || 10) * 60, // Convert minutes to seconds
             overtime_duration: overtimeDuration * 60, // Convert minutes to seconds
@@ -472,8 +488,8 @@ export default function LiveMatchScreen() {
           // Save players to database
           const matchPlayerRepo = new MatchPlayerRepository();
 
-          // Prepare home team players
-          const homePlayersToSave = homeRoster.map((player: Player) => ({
+          // Prepare my team players
+          const myTeamPlayersToSave = homeRoster.map((player: Player) => ({
             match_id: createdMatch.id,
             player_id: player.id,
             player_number: player.jerseyNumber,
@@ -483,14 +499,15 @@ export default function LiveMatchScreen() {
             photo_url: player.photoUrl || null,
           }));
 
-          // Prepare away team players (if tracking opponent stats)
-          const awayPlayersToSave = match.trackOpponentStats
+          // Prepare opponent players (if tracking opponent stats)
+          const opponentPlayersToSave = match.trackOpponentStats
             ? opponentRoster.map((player: Player) => ({
                 match_id: createdMatch.id,
                 player_id: player.id,
                 player_number: player.jerseyNumber,
                 player_name: player.name,
                 team: "Opponent" as const,
+                is_starter: matchData?.opponentStarters?.includes(player.id) || false,
                 photo_url: player.photoUrl || null,
               }))
             : [
@@ -506,13 +523,13 @@ export default function LiveMatchScreen() {
                 },
               ];
 
-          const allPlayersToSave = [...homePlayersToSave, ...awayPlayersToSave];
+          const allPlayersToSave = [...myTeamPlayersToSave, ...opponentPlayersToSave];
 
           if (allPlayersToSave.length > 0) {
             logInfo("LiveMatchScreen", "💾 Saving players to SQLite", {
               matchId: createdMatch.id,
-              homePlayersCount: homePlayersToSave.length,
-              awayPlayersCount: awayPlayersToSave.length,
+              myTeamPlayersCount: myTeamPlayersToSave.length,
+              opponentPlayersCount: opponentPlayersToSave.length,
               totalPlayers: allPlayersToSave.length,
             });
             await matchPlayerRepo.createBatch(allPlayersToSave);
