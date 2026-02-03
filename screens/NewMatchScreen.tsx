@@ -521,9 +521,9 @@ export default function NewMatchScreen() {
       trackOpponentStats,
       periodCount,
       periodDuration,
-      homePlayers: serializePlayers(selectedHomePlayers),
+      myTeamPlayers: serializePlayers(selectedHomePlayers), // MY_TEAM roster (regardless of home/away)
       starters,
-      awayPlayers: trackOpponentStats ? serializePlayers(opponentRoster) : [],
+      opponentPlayers: trackOpponentStats ? serializePlayers(opponentRoster) : [], // OPPONENT roster (regardless of home/away)
       teamName: finalTeamName,
       clubLogoUrl: club?.logoUrl || null,
       courtBackgroundColor: club?.courtBackgroundColor || DEFAULT_COURT_COLORS.background,

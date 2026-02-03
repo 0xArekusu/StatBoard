@@ -22,7 +22,8 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  TouchableOpacity
+  TouchableOpacity,
+  BackHandler
 } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
@@ -126,8 +127,8 @@ export default function LiveMatchScreen() {
         scoreAway: 0,
         status: "in_progress" as MatchStatus,
         trackOpponentStats: matchData.trackOpponentStats || false,
-        roster: matchData.homePlayers || [],
-        opponentRoster: matchData.awayPlayers || [],
+        roster: matchData.myTeamPlayers || matchData.homePlayers || [], // Support both old and new field names
+        opponentRoster: matchData.opponentPlayers || matchData.awayPlayers || [], // Support both old and new field names
         starters: matchData.starters || [],
         periodCount: matchData.periodCount || 4,
         periodDuration: matchData.periodDuration || 10,
@@ -641,6 +642,19 @@ export default function LiveMatchScreen() {
       }
     };
   }, []); // Empty deps - only run on unmount
+
+  // Block back button during live match
+  useEffect(() => {
+    const backHandler = BackHandler.addEventListener(
+      'hardwareBackPress',
+      () => {
+        // Block back button - user must finish all periods to end match
+        return true;
+      }
+    );
+
+    return () => backHandler.remove();
+  }, []);
 
   // Toggle timer play/pause with automatic save on pause
   const toggleTimer = () => {
