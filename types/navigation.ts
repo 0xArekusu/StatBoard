@@ -8,6 +8,7 @@
 import { NavigationProp } from '@react-navigation/native';
 import { TeamGender } from '../models/Team';
 import { Match } from '../src/models/types';
+import { Player } from '../models/Player';
 
 /**
  * Root Stack Parameter List
@@ -67,7 +68,25 @@ export type RootStackParamList = {
   NewMatch: undefined;
   LiveMatch: {
     matchId?: string;
-    matchData?: any; // Complex match data object from NewMatchScreen
+    matchData?: {
+      id: string;
+      clubId: string;
+      teamId: string;
+      teamName: string;
+      opponent: string;
+      isHome: boolean;
+      trackOpponentStats: boolean;
+      periodCount: number;
+      periodDuration: number;
+      myTeamPlayers: Player[];
+      opponentPlayers: Player[];
+      starters: string[];
+      opponentStarters: string[];
+      clubLogoUrl?: string | null;
+      courtBackgroundColor?: string;
+      courtLineColor?: string;
+      createdAt: string;
+    };
   };
   MatchDetails: {
     match: Match;

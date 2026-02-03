@@ -51,6 +51,7 @@ export interface Match {
   my_team_name?: string | null; // Nom de mon équipe
   opponent_name: string; // Nom de l'équipe adverse
   is_home: boolean; // À domicile ou à l'extérieur
+  track_opponent_stats?: boolean; // Suivre les stats de l'équipe adverse
 
   // Match Configuration
   total_periods: number; // Nombre de périodes réglementaires (2, 3, 4, 5, etc.)
@@ -99,6 +100,7 @@ export interface CreateMatchData {
   my_team_name?: string | null;
   opponent_name: string;
   is_home: boolean;
+  track_opponent_stats?: boolean;
 
   // Match Configuration
   total_periods: number;

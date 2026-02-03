@@ -68,9 +68,10 @@ export class MatchRepository implements IMatchRepository {
         team_id,
         club_logo_url,
         court_background_color,
-        court_line_color
+        court_line_color,
+        track_opponent_stats
       )
-      VALUES (?, ?, ?, ?, ?, ?, 0, 0, 0, 'in_progress', ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, 0, 0, 0, 'in_progress', ?, ?, ?, ?, ?, ?)
     `;
 
     try {
@@ -99,7 +100,8 @@ export class MatchRepository implements IMatchRepository {
         data.team_id || null,
         data.club_logo_url || null,
         data.court_background_color || null,
-        data.court_line_color || null
+        data.court_line_color || null,
+        data.track_opponent_stats ? 1 : 0
       ]);
 
       // Get the created match
