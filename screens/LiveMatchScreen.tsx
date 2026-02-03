@@ -23,7 +23,7 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  BackHandler
+  BackHandler,
 } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
@@ -36,10 +36,7 @@ import {
   CreateActionData,
   Team,
 } from "../src/models/types";
-import {
-  ActionType,
-  ShotSpecification,
-} from "../src/models/ActionTypes";
+import { ActionType, ShotSpecification } from "../src/models/ActionTypes";
 import { Player } from "../models/Player";
 import { useAuth } from "../src/contexts/AuthContext";
 import { MatchManager } from "../src/services/match/MatchManager";
@@ -53,10 +50,7 @@ import {
   MOCK_ROSTER,
   MOCK_OPPONENT_ROSTER,
 } from "../utils/mockActions";
-import {
-  formatTime,
-  getActionDescription,
-} from "../utils/liveMatchHelpers";
+import { formatTime, getActionDescription } from "../utils/liveMatchHelpers";
 import {
   convertActionsToMatchEvents,
   calculateScoresFromActions,
@@ -134,7 +128,8 @@ export default function LiveMatchScreen() {
         periodDuration: matchData.periodDuration || 10,
         events: [] as MatchEvent[],
         clubLogoUrl: matchData.clubLogoUrl || null,
-        courtBackgroundColor: matchData.courtBackgroundColor || DEFAULT_COURT_COLORS.background,
+        courtBackgroundColor:
+          matchData.courtBackgroundColor || DEFAULT_COURT_COLORS.background,
         courtLineColor: matchData.courtLineColor || DEFAULT_COURT_COLORS.line,
       };
     }
@@ -226,7 +221,10 @@ export default function LiveMatchScreen() {
   const [activeOpponentPlayers, setActiveOpponentPlayers] = useState<string[]>(
     () => {
       // Use opponentStarters if provided, otherwise use first 5 players
-      if (matchData?.opponentStarters && matchData.opponentStarters.length > 0) {
+      if (
+        matchData?.opponentStarters &&
+        matchData.opponentStarters.length > 0
+      ) {
         return matchData.opponentStarters;
       }
       if (matchData?.opponentPlayers && matchData.opponentPlayers.length > 0) {
@@ -299,7 +297,9 @@ export default function LiveMatchScreen() {
           });
 
           // Load match data from database
-          const existingMatch = await matchRepository.findById(parseInt(resumeMatchId));
+          const existingMatch = await matchRepository.findById(
+            parseInt(resumeMatchId),
+          );
           if (!existingMatch) {
             logError("LiveMatchScreen", "❌ Match not found", {
               matchId: resumeMatchId,
@@ -310,11 +310,15 @@ export default function LiveMatchScreen() {
 
           // Load actions
           const actionRepo = new ActionRepository();
-          const actions = await actionRepo.getActionsForMatch(parseInt(resumeMatchId));
+          const actions = await actionRepo.getActionsForMatch(
+            parseInt(resumeMatchId),
+          );
 
           // Load players
           const playerRepo = new MatchPlayerRepository();
-          const players = await playerRepo.getPlayersForMatch(parseInt(resumeMatchId));
+          const players = await playerRepo.getPlayersForMatch(
+            parseInt(resumeMatchId),
+          );
 
           logInfo("LiveMatchScreen", "📊 Players loaded from DB", {
             totalPlayers: players.length,
@@ -327,10 +331,15 @@ export default function LiveMatchScreen() {
 
           // Calculate scores from actions (using the new action type system)
           const isHome = existingMatch.is_home;
-          const { scoreHome, scoreAway } = calculateScoresFromActions(actions, isHome);
+          const { scoreHome, scoreAway } = calculateScoresFromActions(
+            actions,
+            isHome,
+          );
 
           // Separate players by team
-          const myTeamPlayersFromDB = players.filter((p) => p.team === "MyTeam");
+          const myTeamPlayersFromDB = players.filter(
+            (p) => p.team === "MyTeam",
+          );
           const opponentPlayersFromDB = players.filter(
             (p) => p.team === "Opponent",
           );
@@ -376,7 +385,7 @@ export default function LiveMatchScreen() {
           const matchEvents = convertActionsToMatchEvents(
             actions,
             players,
-            existingMatch.opponent_name || "Adversaire"
+            existingMatch.opponent_name || "Adversaire",
           );
 
           // Update match state with loaded data
@@ -385,7 +394,7 @@ export default function LiveMatchScreen() {
             myTeamName: existingMatch.my_team_name || "Mon Équipe",
             opponent: existingMatch.opponent_name,
             location: existingMatch.is_home ? TeamId.HOME : TeamId.AWAY,
-            trackOpponentStats: existingMatch.track_opponent_stats === 1,
+            trackOpponentStats: existingMatch.track_opponent_stats,
             scoreHome,
             scoreAway,
             roster: myTeamRosterLoaded,
@@ -395,8 +404,11 @@ export default function LiveMatchScreen() {
             periodDuration: existingMatch.period_duration / 60, // Convert seconds to minutes
             events: matchEvents,
             clubLogoUrl: existingMatch.club_logo_url || null,
-            courtBackgroundColor: existingMatch.court_background_color || DEFAULT_COURT_COLORS.background,
-            courtLineColor: existingMatch.court_line_color || DEFAULT_COURT_COLORS.line,
+            courtBackgroundColor:
+              existingMatch.court_background_color ||
+              DEFAULT_COURT_COLORS.background,
+            courtLineColor:
+              existingMatch.court_line_color || DEFAULT_COURT_COLORS.line,
           });
 
           // Restore active players on court
@@ -440,7 +452,11 @@ export default function LiveMatchScreen() {
             opponentOnCourt: opponentOnCourt.length,
             activePlayers: myTeamOnCourt,
             activeOpponentPlayers: opponentOnCourt,
-            opponentRosterDetails: opponentRosterLoaded.map(p => ({ id: p.id, name: p.name, isStarter: p.isStarter })),
+            opponentRosterDetails: opponentRosterLoaded.map((p) => ({
+              id: p.id,
+              name: p.name,
+              isStarter: p.isStarter,
+            })),
             timeRemaining,
             currentPeriod: existingMatch.current_period,
           });
@@ -507,7 +523,8 @@ export default function LiveMatchScreen() {
                 player_number: player.jerseyNumber,
                 player_name: player.name,
                 team: "Opponent" as const,
-                is_starter: matchData?.opponentStarters?.includes(player.id) || false,
+                is_starter:
+                  matchData?.opponentStarters?.includes(player.id) || false,
                 photo_url: player.photoUrl || null,
               }))
             : [
@@ -523,7 +540,10 @@ export default function LiveMatchScreen() {
                 },
               ];
 
-          const allPlayersToSave = [...myTeamPlayersToSave, ...opponentPlayersToSave];
+          const allPlayersToSave = [
+            ...myTeamPlayersToSave,
+            ...opponentPlayersToSave,
+          ];
 
           if (allPlayersToSave.length > 0) {
             logInfo("LiveMatchScreen", "💾 Saving players to SQLite", {
@@ -663,11 +683,11 @@ export default function LiveMatchScreen() {
   // Block back button during live match
   useEffect(() => {
     const backHandler = BackHandler.addEventListener(
-      'hardwareBackPress',
+      "hardwareBackPress",
       () => {
         // Block back button - user must finish all periods to end match
         return true;
-      }
+      },
     );
 
     return () => backHandler.remove();
@@ -841,22 +861,20 @@ export default function LiveMatchScreen() {
       const convertedEvents = convertActionsToMatchEvents(
         loadedActions,
         allPlayers,
-        match.opponent || "Adversaire"
+        match.opponent || "Adversaire",
       );
 
       // DEBUG: Log summary
-      const eventTypes = convertedEvents.reduce(
-        (acc, e) => {
-          acc[e.action_type] = (acc[e.action_type] || 0) + 1;
-          return acc;
-        },
-        {} as Record<string, number>,
-      );
+      const eventTypes = convertedEvents.reduce((acc, e) => {
+        acc[e.action_type] = (acc[e.action_type] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
       logInfo("LiveMatchScreen", "📊 Mock events summary", eventTypes);
 
       // Calculer le nouveau score en utilisant la fonction existante
       const isHomeMock = match.location === TeamId.HOME;
-      const { scoreHome: newScoreHome, scoreAway: newScoreAway } = calculateScoresFromActions(loadedActions, isHomeMock);
+      const { scoreHome: newScoreHome, scoreAway: newScoreAway } =
+        calculateScoresFromActions(loadedActions, isHomeMock);
 
       // Mettre à jour le match
       setMatch({
@@ -1156,7 +1174,11 @@ export default function LiveMatchScreen() {
     // Determine teamId based on whether it's my team and match location
     // If my team player: use match.location (HOME if home, AWAY if away)
     // If opponent player: use opposite of match.location
-    const teamId = isMyTeamPlayer ? match.location : (match.location === TeamId.HOME ? TeamId.AWAY : TeamId.HOME);
+    const teamId = isMyTeamPlayer
+      ? match.location
+      : match.location === TeamId.HOME
+      ? TeamId.AWAY
+      : TeamId.HOME;
 
     const pName = player?.name.split(" ").pop() || "Joueur";
 
@@ -1442,27 +1464,33 @@ export default function LiveMatchScreen() {
           { backgroundColor: surfaceColor, borderBottomColor: borderColor },
         ]}
       >
-
         <TouchableOpacity
           onPress={() => setViewMode(ViewMode.COURT)}
           style={[
             styles.viewModeButton,
             {
               backgroundColor:
-                viewMode === ViewMode.COURT ? colors.primary : colors.surfaceVariant,
+                viewMode === ViewMode.COURT
+                  ? colors.primary
+                  : colors.surfaceVariant,
             },
           ]}
         >
           <MaterialCommunityIcons
             name="map-outline"
             size={16}
-            color={viewMode === ViewMode.COURT ? colors.onPrimary : textSecondary}
+            color={
+              viewMode === ViewMode.COURT ? colors.onPrimary : textSecondary
+            }
           />
           <Text
             style={[
               styles.viewModeButtonText,
               {
-                color: viewMode === ViewMode.COURT ? colors.onPrimary : textSecondary,
+                color:
+                  viewMode === ViewMode.COURT
+                    ? colors.onPrimary
+                    : textSecondary,
               },
             ]}
           >
@@ -1476,20 +1504,25 @@ export default function LiveMatchScreen() {
             styles.viewModeButton,
             {
               backgroundColor:
-                viewMode === ViewMode.GRID ? colors.primary : colors.surfaceVariant,
+                viewMode === ViewMode.GRID
+                  ? colors.primary
+                  : colors.surfaceVariant,
             },
           ]}
         >
           <MaterialCommunityIcons
             name="view-grid-outline"
             size={16}
-            color={viewMode === ViewMode.GRID ? colors.onPrimary : textSecondary}
+            color={
+              viewMode === ViewMode.GRID ? colors.onPrimary : textSecondary
+            }
           />
           <Text
             style={[
               styles.viewModeButtonText,
               {
-                color: viewMode === ViewMode.GRID ? colors.onPrimary : textSecondary,
+                color:
+                  viewMode === ViewMode.GRID ? colors.onPrimary : textSecondary,
               },
             ]}
           >

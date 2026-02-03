@@ -191,6 +191,7 @@ export function useMatchSync({
         team: p.team,
         isSubstitute: !p.is_starter,
         photoUrl: p.photo_url,
+        playingTimeSeconds: p.playing_time_seconds || 0,
       }));
 
       // Extract actions from matches.player_stats JSONB object
@@ -281,6 +282,7 @@ export function useMatchSync({
         team: mp.team,
         isSubstitute: !mp.is_starter,
         photoUrl: mp.photo_url || undefined,
+        playingTimeSeconds: mp.playing_time_seconds || 0,
       }));
 
       // Convert actions to expected format (same as Supabase conversion)
