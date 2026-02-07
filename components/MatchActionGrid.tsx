@@ -137,16 +137,24 @@ export const MatchActionGrid: React.FC<MatchActionGridProps> = ({ onAction, filt
       </View>
     </View>
 
-    {/* Row 5: Turnover */}
-    {shouldShowAction(ActionType.TURNOVER) && (
-      <View style={[styles.actionRow, { height: 56 }]}>
+    {/* Row 5: Turnover & Foul Drawn */}
+    <View style={[styles.actionRow, { height: 56 }]}>
+      {shouldShowAction(ActionType.TURNOVER) && (
         <ActionButton
           onPress={() => onAction({ action_type: ActionType.TURNOVER })}
           label="BALLE PERDUE"
           color={getActionColor(ActionType.TURNOVER)}
         />
-      </View>
-    )}
+      )}
+      {shouldShowAction(ActionType.FOUL_DRAWN) && (
+        <ActionButton
+          onPress={() => onAction({ action_type: ActionType.FOUL_DRAWN })}
+          label="FTE PROV"
+          sub="Faute provoquée"
+          color={getActionColor(ActionType.FOUL_DRAWN)}
+        />
+      )}
+    </View>
   </View>
 );};
 

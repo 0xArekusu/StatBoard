@@ -370,6 +370,7 @@ export default function MatchDetailsScreen() {
             blk: 0,
             to: 0,
             pf: 0,
+            fd: 0,
             fgm: 0,
             fga: 0,
             ftm: 0,
@@ -419,6 +420,7 @@ export default function MatchDetailsScreen() {
               blk: 0,
               to: 0,
               pf: 0,
+              fd: 0,
               fgm: 0,
               fga: 0,
               ftm: 0,
@@ -479,6 +481,7 @@ export default function MatchDetailsScreen() {
         if (actionType === ActionType.BLOCK.toUpperCase()) stats.blk += 1;
         if (actionType === ActionType.TURNOVER.toUpperCase()) stats.to += 1;
         if (actionType === ActionType.FOUL.toUpperCase()) stats.pf += 1;
+        if (actionType === ActionType.FOUL_DRAWN.toUpperCase()) stats.fd += 1;
       });
 
     // STEP 3: Calculate efficiency and playing time

@@ -275,6 +275,7 @@ export const ACTION_COLORS = {
   steal: "#F39C12", // Yellow - Steal
   block: "#8E44AD", // Purple - Block
   turnover: "#95A5A6", // Gray - Turnover
+  foulDrawn: "#4CAF50", // Green - Foul drawn
 } as const;
 
 /**

@@ -248,6 +248,15 @@ export default function StatsLegendModal({
             </View>
             <View style={styles.legendItem}>
               <Text style={[styles.legendLabel, { color: textSecondary }]}>
+                FP
+              </Text>
+              <Text style={[styles.legendValue, { color: textPrimary }]}>
+                Fautes provoquées
+              </Text>
+              {renderMarker(MarkerType.DIAMOND, getActionColor(ActionType.FOUL_DRAWN, '', 0))}
+            </View>
+            <View style={styles.legendItem}>
+              <Text style={[styles.legendLabel, { color: textSecondary }]}>
                 EFF
               </Text>
               <Text style={[styles.legendValue, { color: textPrimary }]}>

@@ -302,6 +302,20 @@ export default function StatsTab({
               FT {sortBy === "pf" && (sortOrder === "desc" ? "↓" : "↑")}
             </Text>
           </TouchableOpacity>
+          <TouchableOpacity onPress={() => handleSort("fd")}>
+            <Text
+              style={[
+                styles.tableHeaderCell,
+                styles.statCell,
+                {
+                  color:
+                    sortBy === "fd" ? colors.primary : textSecondary,
+                },
+              ]}
+            >
+              FP {sortBy === "fd" && (sortOrder === "desc" ? "↓" : "↑")}
+            </Text>
+          </TouchableOpacity>
           <TouchableOpacity onPress={() => handleSort("eff")}>
             <Text
               style={[
@@ -487,6 +501,15 @@ export default function StatsTab({
               style={[
                 styles.tableCell,
                 styles.statCell,
+                { color: textPrimary },
+              ]}
+            >
+              {player.fd}
+            </Text>
+            <Text
+              style={[
+                styles.tableCell,
+                styles.statCell,
                 styles.statCellBold,
                 { color: colors.primary },
               ]}
@@ -658,6 +681,15 @@ export default function StatsTab({
               ]}
             >
               {stats.reduce((sum, p) => sum + p.pf, 0)}
+            </Text>
+            <Text
+              style={[
+                styles.tableCell,
+                styles.statCell,
+                { color: textPrimary },
+              ]}
+            >
+              {stats.reduce((sum, p) => sum + p.fd, 0)}
             </Text>
             <Text
               style={[

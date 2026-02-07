@@ -636,6 +636,9 @@ export class PDFExportService {
     const turnovers = playerActions.filter(
       (a) => normalizeActionType(a) === ActionType.TURNOVER
     ).length;
+    const foulsDrawn = playerActions.filter(
+      (a) => normalizeActionType(a) === ActionType.FOUL_DRAWN
+    ).length;
 
     return {
       points: totalPoints,
@@ -658,6 +661,7 @@ export class PDFExportService {
       stl: steals,
       blk: blocks,
       tov: turnovers,
+      fd: foulsDrawn,
     };
   }
 
@@ -699,6 +703,7 @@ export class PDFExportService {
     const stl = stats.reduce((sum, p) => sum + p.stats.stl, 0);
     const blk = stats.reduce((sum, p) => sum + p.stats.blk, 0);
     const tov = stats.reduce((sum, p) => sum + p.stats.tov, 0);
+    const fd = stats.reduce((sum, p) => sum + (p.stats.fd || 0), 0);
     const fouls = stats.reduce(
       (sum, p) => sum + this.calculateTotalFouls(p.stats),
       0
@@ -721,6 +726,7 @@ export class PDFExportService {
       fta,
       ftm,
       tov,
+      fd,
     });
 
     return {

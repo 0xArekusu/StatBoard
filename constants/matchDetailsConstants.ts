@@ -34,6 +34,7 @@ export const ACTION_FILTER = {
   BLOCKS: "BLOCKS",
   TURNOVERS: "TURNOVERS",
   FOULS: "FOULS",
+  FOUL_DRAWN: "FOUL_DRAWN",
 } as const;
 
 export type ActionFilterType = typeof ACTION_FILTER[keyof typeof ACTION_FILTER];
@@ -54,6 +55,7 @@ export type SortBy =
   | "blk"
   | "to"
   | "pf"
+  | "fd"
   | "eff"
   | "fgm"
   | "fga"
@@ -84,6 +86,7 @@ export interface PlayerStats {
   blk: number;
   to: number;
   pf: number;
+  fd: number;
   ftm: number;
   fta: number;
   fg2m: number;

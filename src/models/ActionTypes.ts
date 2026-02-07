@@ -14,6 +14,7 @@ export enum ActionType {
   SHOT = "shot",
   REBOUND = "rebound",
   FOUL = "foul",
+  FOUL_DRAWN = "foul_drawn",
   ASSIST = "assist",
   STEAL = "steal",
   BLOCK = "block",
@@ -53,6 +54,7 @@ export const ACTION_TYPE_FR: Record<ActionType, string> = {
   [ActionType.SHOT]: "Tir",
   [ActionType.REBOUND]: "Rebond",
   [ActionType.FOUL]: "Faute",
+  [ActionType.FOUL_DRAWN]: "Faute provoquée",
   [ActionType.ASSIST]: "Passe décisive",
   [ActionType.STEAL]: "Interception",
   [ActionType.BLOCK]: "Contre",
@@ -225,6 +227,13 @@ export const ACTION_CONFIG: Record<string, ActionConfig> = {
     label: "Balle perdue",
     color: ACTION_COLORS.turnover,
     description: "Balle perdue",
+    specifications: [],
+  },
+  [ActionType.FOUL_DRAWN]: {
+    id: ActionType.FOUL_DRAWN,
+    label: "Faute provoquée",
+    color: ACTION_COLORS.foulDrawn,
+    description: "Faute provoquée",
     specifications: [],
   },
 };
@@ -400,6 +409,15 @@ export function renderMarkerSVG(
                      fill="${color}" stroke="#FFFFFF" stroke-width="2"/>`;
   }
 
+  // Foul Drawn: diamond (losange)
+  if (normalizedActionType === ActionType.FOUL_DRAWN.toUpperCase()) {
+    const diamondSize = size * 1.2;
+    return `<polygon points="${pos.x},${pos.y - diamondSize} ${
+      pos.x + diamondSize
+    },${pos.y} ${pos.x},${pos.y + diamondSize} ${pos.x - diamondSize},${pos.y}"
+                     fill="${color}" stroke="#FFFFFF" stroke-width="2"/>`;
+  }
+
   // Default: filled circle for all other actions (assist, steal, block, turnover)
   return `<circle cx="${pos.x}" cy="${pos.y}" r="${size}" fill="${color}" stroke="#FFFFFF" stroke-width="2"/>`;
 }
@@ -429,6 +447,10 @@ export function getMarkerShapeType(
   }
 
   if (normalizedActionType === ActionType.FOUL.toUpperCase()) {
+    return "diamond";
+  }
+
+  if (normalizedActionType === ActionType.FOUL_DRAWN.toUpperCase()) {
     return "diamond";
   }
 

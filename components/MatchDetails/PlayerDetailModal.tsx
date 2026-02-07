@@ -328,6 +328,13 @@ export default function PlayerDetailModal({
                   markerType={MarkerType.DIAMOND}
                   markerColor={getActionColor(ActionType.FOUL, '', 0)}
                 />
+                <StatBox
+                  label="FP"
+                  value={player.fd}
+                  sub="Fautes provoquées"
+                  markerType={MarkerType.DIAMOND}
+                  markerColor={getActionColor(ActionType.FOUL_DRAWN, '', 0)}
+                />
               </View>
             </View>
 

@@ -449,6 +449,47 @@ export default function CourtTab({
                 Fautes
               </Text>
             </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={() => {
+                if (selectedActionTypes.includes(ACTION_FILTER.FOUL_DRAWN)) {
+                  setSelectedActionTypes(
+                    selectedActionTypes.filter((t) => t !== ACTION_FILTER.FOUL_DRAWN)
+                  );
+                } else {
+                  setSelectedActionTypes([
+                    ...selectedActionTypes,
+                    ACTION_FILTER.FOUL_DRAWN,
+                  ]);
+                }
+              }}
+              style={[
+                styles.courtFilterChip,
+                {
+                  backgroundColor: selectedActionTypes.includes(ACTION_FILTER.FOUL_DRAWN)
+                    ? colors.primary
+                    : isDark
+                    ? colors.surfaceVariant
+                    : colors.surfaceVariant,
+                  borderColor: selectedActionTypes.includes(ACTION_FILTER.FOUL_DRAWN)
+                    ? colors.primary
+                    : borderColor,
+                },
+              ]}
+            >
+              <Text
+                style={[
+                  styles.courtFilterChipText,
+                  {
+                    color: selectedActionTypes.includes(ACTION_FILTER.FOUL_DRAWN)
+                      ? colors.text.primary
+                      : textPrimary,
+                  },
+                ]}
+              >
+                Fautes provoquées
+              </Text>
+            </TouchableOpacity>
           </View>
         </ScrollView>
       </View>
@@ -666,6 +707,11 @@ export default function CourtTab({
                       if (
                         selectedActionTypes.includes(ACTION_FILTER.FOULS) &&
                         actionType === ActionType.FOUL.toUpperCase()
+                      )
+                        matchesFilter = true;
+                      if (
+                        selectedActionTypes.includes(ACTION_FILTER.FOUL_DRAWN) &&
+                        actionType === ActionType.FOUL_DRAWN.toUpperCase()
                       )
                         matchesFilter = true;
 
