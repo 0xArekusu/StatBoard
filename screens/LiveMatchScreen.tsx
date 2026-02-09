@@ -1327,7 +1327,8 @@ export default function LiveMatchScreen() {
 
     const newEvent: MatchEvent = {
       id: `evt-${Date.now()}`,
-      action_type: "POINT",
+      action_type: ActionType.SHOT,
+      specification: ShotSpecification.MADE,
       teamId: match.location,
       timestamp: Date.now(),
       description: `${match.opponent || "Adversaire"} +${value}`,
