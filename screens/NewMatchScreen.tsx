@@ -132,12 +132,18 @@ export default function NewMatchScreen() {
 
   /**
    * Set default team when current club and teams load
+   * Use teamId from route params if provided, otherwise use first team
    */
   useEffect(() => {
     if (currentClub && teams.length > 0) {
-      setSelectedTeamId(teams[0].id);
+      const teamIdFromRoute = route.params?.teamId;
+      if (teamIdFromRoute && teams.some(t => t.id === teamIdFromRoute)) {
+        setSelectedTeamId(teamIdFromRoute);
+      } else {
+        setSelectedTeamId(teams[0].id);
+      }
     }
-  }, [currentClub, teams]);
+  }, [currentClub, teams, route.params?.teamId]);
 
   /**
    * Load roster when team changes
