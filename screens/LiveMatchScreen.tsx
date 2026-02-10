@@ -269,6 +269,7 @@ export default function LiveMatchScreen() {
   const [showMarkers, setShowMarkers] = useState(true);
   const [filterMode, setFilterMode] = useState<FilterMode>(FilterMode.ALL);
   const [selectedPlayerIds, setSelectedPlayerIds] = useState<string[]>([]);
+  const [selectedPeriodIds, setSelectedPeriodIds] = useState<number[]>([]);
   const [isGeneratingMockData, setIsGeneratingMockData] = useState(false);
 
   // Multi-step action recording workflow
@@ -1539,6 +1540,7 @@ export default function LiveMatchScreen() {
             showMarkers={showMarkers}
             filterMode={filterMode}
             selectedPlayerIds={selectedPlayerIds}
+            selectedPeriodIds={selectedPeriodIds}
             clubLogoUrl={match.clubLogoUrl}
             courtBackgroundColor={match.courtBackgroundColor}
             courtLineColor={match.courtLineColor}
@@ -1592,6 +1594,10 @@ export default function LiveMatchScreen() {
         trackOpponentStats={match.trackOpponentStats}
         selectedPlayers={selectedPlayerIds}
         onPlayerSelectionChange={setSelectedPlayerIds}
+        matchFormat={match.periodCount === 2 ? "2_halves" : "4_quarters"}
+        actions={match.events}
+        selectedPeriods={selectedPeriodIds}
+        onPeriodSelectionChange={setSelectedPeriodIds}
       />
 
       {/* Sync Modal */}

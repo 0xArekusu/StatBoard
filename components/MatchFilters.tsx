@@ -44,6 +44,9 @@ interface MatchFiltersProps {
   // Players
   players: Player[];
 
+  // Actions (to detect available periods including OT)
+  actions?: any[];
+
   // Current filter values
   selectedTeams: Team[];
   selectedPlayers: string[]; // Format: "team-number" (e.g., "MyTeam-5", "Opponent-7")
@@ -63,6 +66,7 @@ export default function MatchFilters({
   teamMode,
   matchFormat,
   players,
+  actions,
   selectedTeams,
   selectedPlayers,
   selectedActionTypes,
@@ -74,6 +78,41 @@ export default function MatchFilters({
 }: MatchFiltersProps) {
   const { colors } = useTheme();
   const totalPeriods = matchFormat === "2_halves" ? 2 : 4;
+
+  // Find all periods including regular periods and any overtime periods that have been played
+  const availablePeriods = React.useMemo(() => {
+    // Start with regular periods (always show them)
+    const regularPeriods = Array.from({ length: totalPeriods }, (_, i) => i + 1);
+
+    // Find any overtime periods in actions
+    const overtimePeriods: number[] = [];
+    if (actions && actions.length > 0) {
+      actions.forEach((action: any) => {
+        if (action.period_number && action.period_number > totalPeriods) {
+          if (!overtimePeriods.includes(action.period_number)) {
+            overtimePeriods.push(action.period_number);
+          }
+        }
+      });
+    }
+
+    return [...regularPeriods, ...overtimePeriods.sort((a, b) => a - b)];
+  }, [actions, totalPeriods]);
+
+  // Generate period labels
+  const getPeriodLabel = (periodNumber: number) => {
+    // Overtime periods (beyond regular periods)
+    if (periodNumber > totalPeriods) {
+      const otNumber = periodNumber - totalPeriods;
+      return `OT${otNumber}`;
+    }
+    // Regular periods
+    if (matchFormat === "2_halves") {
+      return `MT${periodNumber}`;
+    } else {
+      return `QT${periodNumber}`;
+    }
+  };
 
   const toggleTeam = (team: Team) => {
     const newTeams = selectedTeams.includes(team)
@@ -137,8 +176,7 @@ export default function MatchFilters({
   };
 
   const selectAllPeriods = () => {
-    const newPeriods = Array.from({ length: totalPeriods }, (_, i) => i + 1);
-    onPeriodsChange(newPeriods);
+    onPeriodsChange(availablePeriods);
   };
 
   return (
@@ -362,40 +400,52 @@ export default function MatchFilters({
       <View style={styles.filterCategory}>
         <View style={styles.filterCategoryHeader}>
           <Text style={[styles.filterCategoryLabel, { color: colors.text.primary }]}>
-            {matchFormat === "2_halves" ? "Mi-temps" : "Quart-temps"}
+            Période
           </Text>
-          <TouchableOpacity
-            onPress={selectAllPeriods}
-            style={styles.selectAllButton}
-          >
-            <Text style={[styles.selectAllText, { color: colors.text.tertiary }]}>Tous</Text>
-          </TouchableOpacity>
         </View>
         <View style={styles.filterCards}>
-          {Array.from({ length: totalPeriods }, (_, i) => i + 1).map(
-            (period) => (
-              <TouchableOpacity
-                key={period}
+          <TouchableOpacity
+            style={[
+              styles.filterCard,
+              { backgroundColor: colors.surfaceVariant },
+              selectedPeriods.length === 0 && { backgroundColor: colors.success },
+            ]}
+            onPress={() => onPeriodsChange([])}
+          >
+            <Text
+              style={[
+                styles.filterCardText,
+                { color: colors.text.secondary },
+                selectedPeriods.length === 0 &&
+                  { color: colors.text.primary },
+              ]}
+            >
+              Tout
+            </Text>
+          </TouchableOpacity>
+
+          {availablePeriods.map((period) => (
+            <TouchableOpacity
+              key={period}
+              style={[
+                styles.filterCard,
+                { backgroundColor: colors.surfaceVariant },
+                selectedPeriods.includes(period) && { backgroundColor: colors.success },
+              ]}
+              onPress={() => togglePeriod(period)}
+            >
+              <Text
                 style={[
-                  styles.filterCard,
-                  { backgroundColor: colors.surfaceVariant },
-                  selectedPeriods.includes(period) && { backgroundColor: colors.success },
+                  styles.filterCardText,
+                  { color: colors.text.secondary },
+                  selectedPeriods.includes(period) &&
+                    { color: colors.text.primary },
                 ]}
-                onPress={() => togglePeriod(period)}
               >
-                <Text
-                  style={[
-                    styles.filterCardText,
-                    { color: colors.text.secondary },
-                    selectedPeriods.includes(period) &&
-                      { color: colors.text.primary },
-                  ]}
-                >
-                  {matchFormat === "2_halves" ? `MT${period}` : `QT${period}`}
-                </Text>
-              </TouchableOpacity>
-            )
-          )}
+                {getPeriodLabel(period)}
+              </Text>
+            </TouchableOpacity>
+          ))}
         </View>
       </View>
     </View>

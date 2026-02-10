@@ -26,6 +26,7 @@ interface CourtViewProps {
   showMarkers: boolean;
   filterMode: FilterMode;
   selectedPlayerIds: string[];
+  selectedPeriodIds?: number[];
   clubLogoUrl: string | null;
   courtBackgroundColor: string;
   courtLineColor: string;
@@ -37,6 +38,7 @@ export const CourtView: React.FC<CourtViewProps> = ({
   showMarkers,
   filterMode,
   selectedPlayerIds,
+  selectedPeriodIds = [],
   clubLogoUrl,
   courtBackgroundColor,
   courtLineColor,
@@ -93,6 +95,11 @@ export const CourtView: React.FC<CourtViewProps> = ({
 
   const filteredEvents = events?.filter((e: MatchEvent) => {
     if (!e.coordinates) return false;
+
+    // Filter by period if selection exists
+    if (selectedPeriodIds.length > 0 && e.period_number) {
+      if (!selectedPeriodIds.includes(e.period_number)) return false;
+    }
 
     // Filter by player if selection exists
     if (selectedPlayerIds.length > 0 && e.playerId) {

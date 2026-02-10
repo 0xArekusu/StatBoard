@@ -67,17 +67,25 @@ export default function CourtTab({
   const windowDimensions = useWindowDimensions();
   const [selectedPeriods, setSelectedPeriods] = React.useState<number[]>([]);
 
-  // Find all unique periods in actions (including OT)
+  // Find all periods including regular periods and any overtime periods that have been played
   const availablePeriods = React.useMemo(() => {
-    const periods = new Set<number>();
-    actions?.forEach((action: any) => {
-      if (action.period_number) {
-        periods.add(action.period_number);
-      }
-    });
-    const sortedPeriods = Array.from(periods).sort((a, b) => a - b);
-    return sortedPeriods;
-  }, [actions]);
+    // Start with regular periods (always show them)
+    const regularPeriods = Array.from({ length: totalPeriods }, (_, i) => i + 1);
+
+    // Find any overtime periods in actions
+    const overtimePeriods: number[] = [];
+    if (actions && actions.length > 0) {
+      actions.forEach((action: any) => {
+        if (action.period_number && action.period_number > totalPeriods) {
+          if (!overtimePeriods.includes(action.period_number)) {
+            overtimePeriods.push(action.period_number);
+          }
+        }
+      });
+    }
+
+    return [...regularPeriods, ...overtimePeriods.sort((a, b) => a - b)];
+  }, [actions, totalPeriods]);
 
   // Theme colors
   const bgColor = colors.background;

@@ -242,6 +242,11 @@ interface FilterModalProps {
   trackOpponentStats?: boolean;
   selectedPlayers?: string[];
   onPlayerSelectionChange?: (playerIds: string[]) => void;
+  // Period filtering
+  matchFormat?: "2_halves" | "4_quarters";
+  actions?: ActionData[];
+  selectedPeriods?: number[];
+  onPeriodSelectionChange?: (periods: number[]) => void;
 }
 
 export const FilterModal: React.FC<FilterModalProps> = ({
@@ -254,6 +259,10 @@ export const FilterModal: React.FC<FilterModalProps> = ({
   trackOpponentStats = false,
   selectedPlayers = [],
   onPlayerSelectionChange,
+  matchFormat = "4_quarters",
+  actions = [],
+  selectedPeriods = [],
+  onPeriodSelectionChange,
 }) => {
   const { colors, isDark } = useTheme();
   const surfaceColor = colors.surface;
@@ -261,6 +270,41 @@ export const FilterModal: React.FC<FilterModalProps> = ({
   const borderColor = colors.border;
   const textSecondary = isDark ? SLATE_COLORS[400] : SLATE_COLORS[600];
   const bgColor = isDark ? SLATE_COLORS[950] : SLATE_COLORS[50];
+
+  const totalPeriods = matchFormat === "2_halves" ? 2 : 4;
+
+  // Find all periods including regular periods and any overtime periods that have been played
+  const availablePeriods = React.useMemo(() => {
+    // Start with regular periods (always show them)
+    const regularPeriods = Array.from({ length: totalPeriods }, (_, i) => i + 1);
+
+    // Find any overtime periods in actions
+    const overtimePeriods: number[] = [];
+    if (actions && actions.length > 0) {
+      actions.forEach((action: any) => {
+        if (action.period_number && action.period_number > totalPeriods) {
+          if (!overtimePeriods.includes(action.period_number)) {
+            overtimePeriods.push(action.period_number);
+          }
+        }
+      });
+    }
+
+    return [...regularPeriods, ...overtimePeriods.sort((a, b) => a - b)];
+  }, [actions, totalPeriods]);
+
+  // Generate period labels
+  const getPeriodLabel = (periodNumber: number) => {
+    if (periodNumber > totalPeriods) {
+      const otNumber = periodNumber - totalPeriods;
+      return `OT${otNumber}`;
+    }
+    if (matchFormat === "2_halves") {
+      return `MT${periodNumber}`;
+    } else {
+      return `QT${periodNumber}`;
+    }
+  };
 
   const togglePlayer = (playerId: string) => {
     if (!onPlayerSelectionChange) return;
@@ -275,6 +319,28 @@ export const FilterModal: React.FC<FilterModalProps> = ({
   const clearPlayerSelection = () => {
     if (onPlayerSelectionChange) {
       onPlayerSelectionChange([]);
+    }
+  };
+
+  const togglePeriod = (period: number) => {
+    if (!onPeriodSelectionChange) return;
+
+    const newSelection = selectedPeriods.includes(period)
+      ? selectedPeriods.filter((p) => p !== period)
+      : [...selectedPeriods, period];
+
+    onPeriodSelectionChange(newSelection);
+  };
+
+  const selectAllPeriods = () => {
+    if (onPeriodSelectionChange) {
+      onPeriodSelectionChange(availablePeriods);
+    }
+  };
+
+  const clearPeriodSelection = () => {
+    if (onPeriodSelectionChange) {
+      onPeriodSelectionChange([]);
     }
   };
 
@@ -366,6 +432,9 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                   setFilterMode(FilterMode.ALL);
                   if (onPlayerSelectionChange) {
                     onPlayerSelectionChange([]);
+                  }
+                  if (onPeriodSelectionChange) {
+                    onPeriodSelectionChange([]);
                   }
                 }}
                 style={styles.resetButton}
@@ -650,6 +719,89 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                 </TouchableOpacity>
               </View>
             </View>
+
+            {/* Period filter section */}
+            {onPeriodSelectionChange && availablePeriods.length > 0 && (
+              <View style={styles.filterSection}>
+                <View style={styles.filterSectionHeader}>
+                  <Text
+                    style={[
+                      styles.filterSectionLabel,
+                      { color: SLATE_COLORS[400] },
+                    ]}
+                  >
+                    PÉRIODE
+                  </Text>
+                </View>
+
+                <View style={styles.filterButtonsGrid}>
+                  <TouchableOpacity
+                    onPress={clearPeriodSelection}
+                    style={[
+                      styles.filterPill,
+                      {
+                        backgroundColor:
+                          selectedPeriods.length === 0
+                            ? BRAND_COLORS[600]
+                            : isDark
+                            ? SLATE_COLORS[800]
+                            : SLATE_COLORS[50],
+                        borderColor:
+                          selectedPeriods.length === 0 ? BRAND_COLORS[500] : borderColor,
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.filterPillText,
+                        {
+                          color:
+                            selectedPeriods.length === 0
+                              ? COMMON_COLORS.white
+                              : textPrimary,
+                        },
+                      ]}
+                    >
+                      Tout
+                    </Text>
+                  </TouchableOpacity>
+
+                  {availablePeriods.map((period) => {
+                    const isSelected = selectedPeriods.includes(period);
+                    return (
+                      <TouchableOpacity
+                        key={period}
+                        onPress={() => togglePeriod(period)}
+                        style={[
+                          styles.filterPill,
+                          {
+                            backgroundColor: isSelected
+                              ? BRAND_COLORS[600]
+                              : isDark
+                              ? SLATE_COLORS[800]
+                              : SLATE_COLORS[50],
+                            borderColor: isSelected ? BRAND_COLORS[500] : borderColor,
+                          },
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.filterPillText,
+                            {
+                              color: isSelected
+                                ? COMMON_COLORS.white
+                                : textPrimary,
+                            },
+                          ]}
+                        >
+                          {getPeriodLabel(period)}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </View>
+            )}
 
             {/* Player filter section */}
             {onPlayerSelectionChange && homeRoster.length > 0 && (
@@ -2123,6 +2275,15 @@ const styles = StyleSheet.create({
   clearButtonText: {
     fontSize: 10,
     fontWeight: "700",
+  },
+  selectAllButton: {
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 4,
+  },
+  selectAllText: {
+    fontSize: 10,
+    fontWeight: "600",
   },
   filterButtonsGrid: {
     flexDirection: "row",

@@ -128,6 +128,7 @@ export default function FilterBottomSheet({
               teamMode={teamMode}
               matchFormat={matchFormat}
               players={players}
+              actions={completedActions}
               selectedTeams={selectedTeams}
               selectedPlayers={selectedPlayers}
               selectedActionTypes={selectedActionTypes}
