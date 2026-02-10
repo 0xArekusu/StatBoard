@@ -799,7 +799,7 @@ export const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
                   },
                 ]}
               >
-                {match.myTeamName || "NOUS"}
+                {(match.myTeamName || "NOUS").toString().toUpperCase()}
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -1091,7 +1091,7 @@ export const SubstitutionModal: React.FC<SubstitutionModalProps> = ({
                     },
                   ]}
                 >
-                  {match.myTeamName || "NOUS"}
+                  {(match.myTeamName || "NOUS").toString().toUpperCase()}
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity

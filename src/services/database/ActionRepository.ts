@@ -252,7 +252,7 @@ export class ActionRepository implements IActionRepository {
 
                 for (const action of playerActions) {
                   allActions.push({
-                    id: actionIdCounter++,
+                    id: String(actionIdCounter++),
                     match_id: matchId,
                     team: action.team,
                     player_number: playerInfo.player_number,

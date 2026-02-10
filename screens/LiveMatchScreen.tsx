@@ -387,7 +387,7 @@ export default function LiveMatchScreen() {
           setMatch({
             ...match,
             myTeamName: existingMatch.my_team_name || "Mon Équipe",
-            opponent: existingMatch.opponent_name,
+            opponent: existingMatch.opponent_name || "Adversaire",
             location: existingMatch.is_home ? TeamId.HOME : TeamId.AWAY,
             trackOpponentStats: existingMatch.track_opponent_stats,
             scoreHome,
