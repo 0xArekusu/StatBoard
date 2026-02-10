@@ -745,7 +745,7 @@ export const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
             <Text
               style={[styles.playerModalSubtitle, { color: BRAND_COLORS[600] }]}
             >
-              {pendingEvent.type
+              {pendingEvent?.type
                 ? `Validation : ${pendingEvent.type.replace("_", " ")}`
                 : "Sélectionnez le joueur"}
             </Text>
@@ -799,7 +799,7 @@ export const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
                   },
                 ]}
               >
-                {(match.myTeamName || "NOUS").toString().toUpperCase()}
+                {String(match?.myTeamName || "NOUS").toUpperCase()}
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -894,7 +894,7 @@ export const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
                     },
                   ]}
                 >
-                  {player.jerseyNumber}
+                  {String(player.jerseyNumber)}
                 </Text>
               </View>
               <Text
@@ -906,7 +906,7 @@ export const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
                 ]}
                 numberOfLines={1}
               >
-                {player.name.split(" ").pop()}
+                {player.name?.split(" ").pop() || ''}
               </Text>
             </TouchableOpacity>
           ))}
@@ -1091,7 +1091,7 @@ export const SubstitutionModal: React.FC<SubstitutionModalProps> = ({
                     },
                   ]}
                 >
-                  {(match.myTeamName || "NOUS").toString().toUpperCase()}
+                  {String(match.myTeamName || "NOUS").toUpperCase()}
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity

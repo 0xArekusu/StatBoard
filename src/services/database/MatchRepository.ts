@@ -49,6 +49,20 @@ export class MatchRepository implements IMatchRepository {
   }
 
   /**
+   * Normalize SQLite row data to Match type
+   * Converts SQLite integers to booleans where needed
+   */
+  private normalizeMatch(row: any): Match {
+    return {
+      ...row,
+      is_home: Boolean(row.is_home),
+      track_opponent_stats: Boolean(row.track_opponent_stats),
+      score_manually_adjusted: Boolean(row.score_manually_adjusted),
+      synced_to_server: Boolean(row.synced_to_server),
+    } as Match;
+  }
+
+  /**
    * Create a new match in SQLite database
    * Generates UUID and sets initial status to 'in_progress'
    */
@@ -126,7 +140,7 @@ export class MatchRepository implements IMatchRepository {
         isHome: data.is_home
       });
 
-      return matches[0] as Match;
+      return this.normalizeMatch(matches[0]);
     } catch (error) {
       logError('MatchRepository', '❌ Error creating match in SQLite', {
         error: error instanceof Error ? error.message : error,
@@ -149,7 +163,7 @@ export class MatchRepository implements IMatchRepository {
         [id]
       );
 
-      const match = matches.length > 0 ? matches[0] as Match : null;
+      const match = matches.length > 0 ? this.normalizeMatch(matches[0]) : null;
 
       if (match) {
         logInfo('MatchRepository', '✅ Match found', {
@@ -184,7 +198,7 @@ export class MatchRepository implements IMatchRepository {
         "SELECT * FROM matches WHERE status = 'in_progress' ORDER BY created_at DESC LIMIT 1"
       );
 
-      const match = matches.length > 0 ? matches[0] as Match : null;
+      const match = matches.length > 0 ? this.normalizeMatch(matches[0]) : null;
 
       if (match) {
         logInfo('MatchRepository', '✅ Active match found', {
@@ -224,7 +238,7 @@ export class MatchRepository implements IMatchRepository {
         matchCount: matches.length
       });
 
-      return matches as Match[];
+      return matches.map(match => this.normalizeMatch(match));
     } catch (error) {
       logError('MatchRepository', '❌ Error getting all matches', {
         error: error instanceof Error ? error.message : error
@@ -251,7 +265,7 @@ export class MatchRepository implements IMatchRepository {
         matchCount: matches.length
       });
 
-      return matches as Match[];
+      return matches.map(match => this.normalizeMatch(match));
     } catch (error) {
       logError('MatchRepository', '❌ Error getting matches for team', {
         teamId,
@@ -522,7 +536,7 @@ export class MatchRepository implements IMatchRepository {
         matchCount: matches.length
       });
 
-      return matches as Match[];
+      return matches.map(match => this.normalizeMatch(match));
     } catch (error) {
       logError('MatchRepository', '❌ Error finding unsynced completed matches', {
         error: error instanceof Error ? error.message : error
