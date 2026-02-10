@@ -7,78 +7,56 @@ La base de données SQLite locale stocke les matchs en cours et terminés avant 
 
 ## Table: `matches`
 
-Stocke les informations générales sur chaque match.
+Stocke les informations générales sur chaque match avec les joueurs embarqués dans une colonne JSON.
 
 ### Colonnes
 
 | Colonne | Type | Contraintes | Description |
 |---------|------|-------------|-------------|
-| `id` | INTEGER | PRIMARY KEY AUTOINCREMENT | Identifiant unique du match |
-| `team_a_name` | TEXT | NOT NULL | Nom ou UUID de l'équipe A (selon si équipe du club ou non) |
-| `team_b_name` | TEXT | NOT NULL | Nom ou UUID de l'équipe B (selon si équipe du club ou non) |
-| `status` | TEXT | NOT NULL, CHECK | Statut du match: 'in_progress', 'completed', 'paused', 'abandoned' |
+| `id` | TEXT | PRIMARY KEY | UUID du match |
+| `club_id` | TEXT | NULL | UUID du club (si match lié à un club) |
+| `team_id` | TEXT | NULL | UUID de l'équipe du club qui joue |
+| `my_team_name` | TEXT | NULL | Nom de mon équipe |
+| `opponent_name` | TEXT | NOT NULL | Nom de l'équipe adverse |
+| `is_home` | INTEGER | NOT NULL, DEFAULT 1 | 1 si à domicile, 0 si à l'extérieur |
+| `total_periods` | INTEGER | NOT NULL, DEFAULT 4 | Nombre de périodes (2 ou 4) |
+| `period_duration` | INTEGER | NOT NULL, DEFAULT 600 | Durée d'une période en secondes (défaut 10 min) |
+| `overtime_duration` | INTEGER | NOT NULL, DEFAULT 300 | Durée d'une prolongation en secondes (défaut 5 min) |
+| `overtime_periods` | INTEGER | NOT NULL, DEFAULT 0 | Nombre de prolongations jouées |
+| `my_team_score` | INTEGER | NOT NULL, DEFAULT 0 | Score de mon équipe |
+| `opponent_score` | INTEGER | NOT NULL, DEFAULT 0 | Score de l'équipe adverse |
+| `score_manually_adjusted` | INTEGER | DEFAULT 0 | 1 si le score a été ajusté manuellement, 0 sinon |
+| `status` | TEXT | NOT NULL, DEFAULT 'in_progress' | Statut: 'in_progress', 'completed', 'cancelled' |
+| `current_period` | INTEGER | DEFAULT 1 | Période en cours |
+| `time_elapsed` | INTEGER | DEFAULT 0 | Temps écoulé dans la période en cours (secondes) |
+| `track_opponent_stats` | INTEGER | DEFAULT 0 | 1 si on track les stats adverses, 0 sinon |
+| `players` | TEXT | DEFAULT '[]' | JSON array des joueurs |
+| `player_stats` | TEXT | DEFAULT '{}' | JSON object des stats (legacy, non utilisé) |
+| `club_logo_url` | TEXT | NULL | URL du logo du club |
+| `court_background_color` | TEXT | NULL | Couleur de fond du terrain |
+| `court_line_color` | TEXT | NULL | Couleur des lignes du terrain |
+| `created_by` | TEXT | NULL | UUID de l'utilisateur créateur |
 | `created_at` | DATETIME | DEFAULT CURRENT_TIMESTAMP | Date/heure de création |
 | `started_at` | DATETIME | NULL | Date/heure de début du match |
 | `ended_at` | DATETIME | NULL | Date/heure de fin du match |
-| `team_mode` | TEXT | NOT NULL, CHECK | Mode d'équipe: 'A', 'B', ou 'both' (indique quelle(s) équipe(s) sont gérées) |
-| `match_format` | TEXT | NOT NULL, CHECK, DEFAULT '2_halves' | Format du match: '2_halves' ou '4_quarters' |
-| `period_duration` | INTEGER | NOT NULL, DEFAULT 1200 | Durée d'une période en secondes (défaut 20 min) |
-| `current_period` | INTEGER | DEFAULT 1 | Période en cours |
-| `time_elapsed` | INTEGER | DEFAULT 0 | Temps écoulé dans la période en cours (secondes) |
-| `final_score_a` | INTEGER | DEFAULT 0 | Score final de l'équipe A |
-| `final_score_b` | INTEGER | DEFAULT 0 | Score final de l'équipe B |
-| `score_manually_adjusted` | INTEGER | DEFAULT 0 | 1 si le score a été ajusté manuellement, 0 sinon |
+| `synced_at` | DATETIME | NULL | Date/heure de synchronisation |
 | `last_updated` | DATETIME | DEFAULT CURRENT_TIMESTAMP | Dernière mise à jour |
 | `synced_to_server` | INTEGER | DEFAULT 0 | 1 si synchronisé avec Supabase, 0 sinon |
 | `created_with_tier` | TEXT | DEFAULT 'not_connected' | Tier d'abonnement lors de la création |
-| `club_id` | TEXT | NULL | UUID du club (si match lié à un club) |
-| `team_id` | TEXT | NULL | UUID de l'équipe du club qui joue |
 
-### Logique des équipes
-- Si `team_id` existe:
-  - `team_mode = 'A'` → l'équipe A est du club, `team_a_name` contient l'UUID de l'équipe
-  - `team_mode = 'B'` → l'équipe B est du club, `team_b_name` contient l'UUID de l'équipe
-  - `team_mode = 'both'` → les deux équipes sont gérées, les noms sont conservés
-- Si pas de `team_id`: équipes temporaires, les noms sont des chaînes de caractères
-
----
-
-## Table: `match_players`
-
-Stocke les joueurs participant à chaque match, avec leurs actions compactées en JSON après la fin du match.
-
-### Colonnes
-
-| Colonne | Type | Contraintes | Description |
-|---------|------|-------------|-------------|
-| `id` | INTEGER | PRIMARY KEY AUTOINCREMENT | Identifiant unique |
-| `match_id` | INTEGER | NOT NULL, FOREIGN KEY | Référence au match |
-| `player_id` | TEXT | NULL | UUID du joueur dans la table players (NULL pour joueurs temporaires) |
-| `player_number` | INTEGER | NOT NULL | Numéro du joueur |
-| `player_name` | TEXT | NOT NULL | Nom du joueur |
-| `team` | TEXT | NOT NULL, CHECK | Équipe: 'A' ou 'B' |
-| `is_starter` | INTEGER | NOT NULL, DEFAULT 1 | 1 si titulaire, 0 si remplaçant |
-| `actions` | TEXT | NULL | JSON des actions du joueur (rempli après fin du match, NULL pendant le match) |
-| `created_at` | DATETIME | DEFAULT CURRENT_TIMESTAMP | Date/heure de création |
-
-### UNIQUE constraint
-- (`match_id`, `player_number`, `team`)
-
-### Format JSON des actions (après compactage)
+### Format JSON players
 ```json
 [
   {
-    "action_type": "tir",
-    "specification": "reussi",
-    "points": 2,
-    "semantic_x": 0.65,
-    "semantic_y": 0.71,
-    "action_order": 1,
-    "period_number": 1,
-    "time_in_period": 120,
-    "timestamp": "2025-01-15T19:33:46.947Z"
-  },
-  ...
+    "player_id": "uuid-xxx",
+    "player_number": 7,
+    "player_name": "John Doe",
+    "team": "MyTeam",
+    "is_starter": true,
+    "photo_url": "https://...",
+    "on_court": 1,
+    "playing_time_seconds": 360
+  }
 ]
 ```
 
@@ -86,18 +64,18 @@ Stocke les joueurs participant à chaque match, avec leurs actions compactées e
 
 ## Table: `match_actions`
 
-Stocke les actions individuelles **pendant le match en cours**. Après la fin du match, ces données sont compactées dans `match_players.actions` puis supprimées.
+Stocke les actions individuelles pendant et après le match.
 
 ### Colonnes
 
 | Colonne | Type | Contraintes | Description |
 |---------|------|-------------|-------------|
-| `id` | INTEGER | PRIMARY KEY AUTOINCREMENT | Identifiant unique de l'action |
-| `match_id` | INTEGER | NOT NULL, FOREIGN KEY | Référence au match |
-| `team` | TEXT | NOT NULL, CHECK | Équipe: 'A' ou 'B' |
+| `id` | TEXT | PRIMARY KEY | UUID de l'action |
+| `match_id` | TEXT | NOT NULL, FOREIGN KEY | UUID du match |
+| `team` | TEXT | NOT NULL, CHECK | Équipe: 'MyTeam' ou 'Opponent' |
 | `player_number` | INTEGER | NOT NULL | Numéro du joueur |
-| `action_type` | TEXT | NOT NULL | Type d'action (tir, rebond, passe, etc.) |
-| `specification` | TEXT | NOT NULL | Spécification (reussi, manque, offensif, etc.) |
+| `action_type` | TEXT | NOT NULL | Type d'action (shot, rebound, assist, etc.) |
+| `specification` | TEXT | NOT NULL | Spécification (made, missed, defensive, etc.) |
 | `points` | INTEGER | NULL | Points marqués (pour les tirs) |
 | `semantic_x` | REAL | NOT NULL | Position X normalisée (0-1) |
 | `semantic_y` | REAL | NOT NULL | Position Y normalisée (0-1) |
@@ -110,58 +88,38 @@ Stocke les actions individuelles **pendant le match en cours**. Après la fin du
 - `idx_match_actions_match_id` sur `match_id`
 - `idx_match_actions_timestamp` sur `timestamp`
 
-### Cycle de vie
-1. **Pendant le match**: Les actions sont enregistrées ligne par ligne dans cette table (insertion rapide)
-2. **Fin du match**:
-   - Les actions sont regroupées par joueur
-   - Converties en JSON et stockées dans `match_players.actions`
-   - Toutes les lignes de `match_actions` pour ce match sont supprimées
-3. **Résultat**: Économie de ~95% d'espace disque pour les matchs terminés
-
----
-
-## Index globaux
-
-- `idx_match_actions_match_id` : Accélère la recherche d'actions par match
-- `idx_match_actions_timestamp` : Accélère le tri chronologique des actions
-- `idx_match_players_match_id` : Accélère la recherche de joueurs par match
-
 ---
 
 ## Flux de données
 
 ### 1. Création d'un match
 ```
-BoardScreen → MatchManager.startMatch()
-           → MatchRepository.create()
-           → INSERT INTO matches
-           → MatchPlayerRepository.createBatch()
-           → INSERT INTO match_players (sans actions)
+NewMatchScreen → MatchManager.startMatch()
+              → MatchRepository.create() (génère UUID)
+              → INSERT INTO matches
+              → MatchPlayerRepository.createBatch()
+              → UPDATE matches.players (JSON)
 ```
 
 ### 2. Pendant le match
 ```
-Action sur le terrain → ActionRepository.createBatch()
-                     → INSERT INTO match_actions
+LiveMatchScreen → Action utilisateur
+                → ActionRepository.create() (génère UUID)
+                → INSERT INTO match_actions
 ```
 
 ### 3. Fin du match
 ```
-BoardScreen → MatchManager.endMatch()
-           → MatchRepository.completeMatch() (status = 'completed')
-           → ActionRepository.compactMatchActions()
-              1. SELECT * FROM match_actions WHERE match_id = ?
-              2. Grouper par joueur
-              3. UPDATE match_players SET actions = ? (JSON)
-              4. DELETE FROM match_actions WHERE match_id = ?
+LiveMatchScreen → MatchManager.endMatch()
+               → MatchRepository.completeMatch() (status = 'completed')
 ```
 
 ### 4. Synchronisation avec Supabase
 ```
-MatchSummaryScreen → MatchSyncService.syncMatch()
-                  → Lire match, players (avec actions compactées), etc.
-                  → INSERT dans Supabase
-                  → DELETE match local (cascade sur players et actions)
+MatchDetailsScreen → MatchSyncService.syncMatch()
+                   → Lire match + players (JSON) + actions
+                   → INSERT dans Supabase
+                   → DELETE match local (cascade sur actions)
 ```
 
 ---
@@ -170,29 +128,23 @@ MatchSummaryScreen → MatchSyncService.syncMatch()
 
 | Aspect | SQLite (local) | Supabase (serveur) |
 |--------|----------------|-------------------|
-| Nom des colonnes équipes | `team_a_name`, `team_b_name` | `team_a`, `team_b` |
-| Actions pendant match | Table `match_actions` séparée | N/A (seulement matchs terminés) |
-| Actions après match | JSON dans `match_players.actions` | JSONB dans `match_players.actions` |
-| Joueurs temporaires | `player_id IS NULL` | `player_id IS NULL` |
+| IDs | UUID (TEXT) | UUID (PostgreSQL UUID) |
+| Players | JSON dans matches.players | JSONB dans matches.players |
+| Actions | Table match_actions avec UUIDs | JSONB dans matches.player_stats |
 | Persistance | Supprimé après sync | Permanent |
 
 ---
 
 ## Notes importantes
 
-1. **Compactage automatique**: Les actions sont compactées automatiquement à la fin de chaque match pour économiser de l'espace
+1. **UUIDs partout**: Tous les IDs (matches, actions) sont des UUIDs générés côté client pour éviter les conflits de synchronisation
 
-2. **Lecture intelligente**: `ActionRepository.getActionsForMatch()` lit automatiquement:
-   - Depuis `match_actions` si le match est en cours
-   - Depuis `match_players.actions` (JSON) si le match est terminé
+2. **Players embarqués**: Les joueurs sont stockés en JSON dans la colonne `matches.players`, pas dans une table séparée
 
-3. **Suppression après sync**: Après synchronisation réussie avec Supabase, toutes les données locales du match sont supprimées
+3. **Actions séparées**: Les actions restent dans une table séparée `match_actions` pour faciliter les requêtes pendant le match
 
-4. **player_id**:
+4. **Suppression après sync**: Après synchronisation réussie avec Supabase, toutes les données locales du match sont supprimées
+
+5. **player_id**:
    - Renseigné si le joueur vient de la table `players` du club
-   - NULL si joueur temporaire (ajouté en pré-game)
-
-5. **team_id vs team_a_name/team_b_name**:
-   - Si équipe du club: le champ correspondant contient l'UUID de l'équipe
-   - Si équipe temporaire: le champ contient le nom en texte libre
-   - `team_mode` indique quelle équipe (A/B/both) est gérée
+   - NULL si joueur temporaire (créé pour le match)

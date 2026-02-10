@@ -141,7 +141,7 @@ export class MatchListService {
    *
    * @param matchId - ID of the match to delete
    */
-  async deleteMatch(matchId: number): Promise<void> {
+  async deleteMatch(matchId: string): Promise<void> {
     return await this.matchRepository.delete(matchId);
   }
 }

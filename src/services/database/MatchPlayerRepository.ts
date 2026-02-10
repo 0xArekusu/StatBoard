@@ -22,7 +22,7 @@ import { MatchPlayerInfo } from "../../models/types";
 
 export interface MatchPlayer {
   id: number;
-  match_id: number;
+  match_id: string;
   player_id?: string | null;
   player_number: number;
   player_name: string;
@@ -35,7 +35,7 @@ export interface MatchPlayer {
 }
 
 export interface CreateMatchPlayerData {
-  match_id: number;
+  match_id: string;
   player_id?: string | null;
   player_number: number;
   player_name: string;
@@ -47,8 +47,8 @@ export interface CreateMatchPlayerData {
 export interface IMatchPlayerRepository {
   create(data: CreateMatchPlayerData): Promise<MatchPlayer>;
   createBatch(players: CreateMatchPlayerData[]): Promise<MatchPlayer[]>;
-  getPlayersForMatch(matchId: number): Promise<MatchPlayer[]>;
-  deletePlayersForMatch(matchId: number): Promise<void>;
+  getPlayersForMatch(matchId: string): Promise<MatchPlayer[]>;
+  deletePlayersForMatch(matchId: string): Promise<void>;
 }
 
 export class MatchPlayerRepository implements IMatchPlayerRepository {
@@ -61,7 +61,7 @@ export class MatchPlayerRepository implements IMatchPlayerRepository {
   /**
    * Get players array from matches.players JSON column
    */
-  private async getPlayersJson(matchId: number): Promise<MatchPlayerInfo[]> {
+  private async getPlayersJson(matchId: string): Promise<MatchPlayerInfo[]> {
     const matches = await this.db.query(
       "SELECT players FROM matches WHERE id = ?",
       [matchId]
@@ -82,7 +82,7 @@ export class MatchPlayerRepository implements IMatchPlayerRepository {
   /**
    * Save players array to matches.players JSON column
    */
-  private async savePlayersJson(matchId: number, players: MatchPlayerInfo[]): Promise<void> {
+  private async savePlayersJson(matchId: string, players: MatchPlayerInfo[]): Promise<void> {
     const playersJson = JSON.stringify(players);
     await this.db.execute(
       "UPDATE matches SET players = ? WHERE id = ?",
@@ -219,7 +219,7 @@ export class MatchPlayerRepository implements IMatchPlayerRepository {
    * Get all players for a match
    * Returns players ordered by: team, starter status (starters first), jersey number
    */
-  async getPlayersForMatch(matchId: number): Promise<MatchPlayer[]> {
+  async getPlayersForMatch(matchId: string): Promise<MatchPlayer[]> {
     try {
       logInfo('MatchPlayerRepository', '📋 Fetching players for match', { matchId });
 
@@ -264,7 +264,7 @@ export class MatchPlayerRepository implements IMatchPlayerRepository {
    * Delete all players for a match
    * Clears the players array in matches.players
    */
-  async deletePlayersForMatch(matchId: number): Promise<void> {
+  async deletePlayersForMatch(matchId: string): Promise<void> {
     try {
       logInfo('MatchPlayerRepository', '🗑️ Deleting all players for match', { matchId });
 
@@ -310,7 +310,7 @@ export class MatchPlayerRepository implements IMatchPlayerRepository {
    * Update photo URL by player number and team
    */
   async updatePhotoUrlByPlayerNumber(
-    matchId: number,
+    matchId: string,
     playerNumber: number,
     team: "MyTeam" | "Opponent",
     photoUrl: string
@@ -357,7 +357,7 @@ export class MatchPlayerRepository implements IMatchPlayerRepository {
    * Used during substitutions to track who is currently on the court
    */
   async updateOnCourtStatus(
-    matchId: number,
+    matchId: string,
     playerIds: string[],
     onCourt: boolean
   ): Promise<void> {
@@ -394,7 +394,7 @@ export class MatchPlayerRepository implements IMatchPlayerRepository {
    * Add playing time to players who are currently on court
    * Called periodically (every 5 seconds) when the game clock is running
    */
-  async addPlayingTime(matchId: number, secondsToAdd: number): Promise<void> {
+  async addPlayingTime(matchId: string, secondsToAdd: number): Promise<void> {
     try {
       const players = await this.getPlayersJson(matchId);
 
@@ -425,7 +425,7 @@ export class MatchPlayerRepository implements IMatchPlayerRepository {
    * Initialize on_court status for starters at match start
    * Sets on_court = 1 for all starters
    */
-  async initializeOnCourtForStarters(matchId: number): Promise<void> {
+  async initializeOnCourtForStarters(matchId: string): Promise<void> {
     try {
       const players = await this.getPlayersJson(matchId);
 
@@ -453,7 +453,7 @@ export class MatchPlayerRepository implements IMatchPlayerRepository {
   /**
    * Get players currently on court for a match
    */
-  async getPlayersOnCourt(matchId: number, team?: 'A' | 'B'): Promise<MatchPlayer[]> {
+  async getPlayersOnCourt(matchId: string, team?: 'A' | 'B'): Promise<MatchPlayer[]> {
     try {
       const players = await this.getPlayersJson(matchId);
 

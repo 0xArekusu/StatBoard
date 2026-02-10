@@ -3,16 +3,11 @@
 -- ATTENTION : Ce script supprime TOUTES les données de matchs
 -- ====================================
 
--- 1. Supprimer tous les match_players (cascade automatique via FK, mais on peut le faire explicitement)
-DELETE FROM match_players;
-
--- 2. Supprimer tous les matchs
+-- Supprimer tous les matchs (players sont dans JSON, pas de cascade nécessaire)
 DELETE FROM matches;
 
 -- Vérifier que tout est bien supprimé
-SELECT 'Matches restants:' as info, COUNT(*) as count FROM matches
-UNION ALL
-SELECT 'Match players restants:' as info, COUNT(*) as count FROM match_players;
+SELECT 'Matches restants:' as info, COUNT(*) as count FROM matches;
 
 -- ====================================
 -- Script de nettoyage sélectif (optionnel)
@@ -25,7 +20,7 @@ SELECT 'Match players restants:' as info, COUNT(*) as count FROM match_players;
 -- DELETE FROM matches WHERE club_id = 'UUID_DU_CLUB';
 
 -- Option C : Supprimer les matchs après une certaine date
--- DELETE FROM matches WHERE played_at > '2025-01-01';
+-- DELETE FROM matches WHERE created_at > '2025-01-01';
 
 -- Option D : Supprimer un match spécifique
 -- DELETE FROM matches WHERE id = 'UUID_DU_MATCH';

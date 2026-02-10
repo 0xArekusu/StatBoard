@@ -17,7 +17,7 @@ import { ROUTES } from "../constants/routes";
 import { TeamId } from "../constants/liveMatchConstants";
 
 interface UseMatchSyncProps {
-  currentMatchId: number | null;
+  currentMatchId: string | null;
   match: any;
   quarter: number;
   maxPeriods: number;

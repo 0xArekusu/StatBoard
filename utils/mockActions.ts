@@ -132,7 +132,7 @@ interface MockPlayer {
 }
 
 interface MockAction {
-  match_id: number;
+  match_id: string;
   team: Team;
   player_number: number;
   action_type: string;
@@ -157,7 +157,7 @@ interface MockAction {
  * @returns Array of mock actions spread across all periods
  */
 export function generateMockActions(
-  matchId: number,
+  matchId: string,
   playersMyTeam: MockPlayer[],
   playersOpponent?: MockPlayer[],
   matchFormat: "2_halves" | "4_quarters" = "4_quarters",

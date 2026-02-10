@@ -25,7 +25,7 @@ import { useTheme } from "../src/contexts/ThemeContext";
 import { Team } from "../src/models/types";
 
 interface Player {
-  id: number;
+  id: string;
   num: number;
   name: string;
   team: Team;

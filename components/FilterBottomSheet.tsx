@@ -24,14 +24,7 @@ import { ActionData } from "./ActionSystemModal";
 import MatchFilters from "./MatchFilters";
 import { useTheme } from "../src/contexts/ThemeContext";
 import { Team } from "../src/models/types";
-
-interface Player {
-  id: number;
-  num: number;
-  name: string;
-  team: Team;
-  isSubstitute: boolean;
-}
+import { Player } from "../models/Player";
 
 interface FilterBottomSheetProps {
   visible: boolean;
@@ -83,13 +76,13 @@ export default function FilterBottomSheet({
   }, [visible, appliedFilters]);
 
   const resetFilters = () => {
-    setSelectedTeams(["A", "B"]);
+    setSelectedTeams([Team.MY_TEAM, Team.OPPONENT]);
     setSelectedPlayers([]);
     setSelectedActionTypes([]);
     setSelectedPeriods([]);
     // Apply filter immediately
     onApplyFilters({
-      teams: ["A", "B"],
+      teams: [Team.MY_TEAM, Team.OPPONENT],
       players: [],
       actionTypes: [],
       periods: [],

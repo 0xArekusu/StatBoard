@@ -11,30 +11,15 @@ export class SQLiteAdapter implements IStorageAdapter {
 
   constructor(databaseName: string = "coachassistant.db") {
     this.db = SQLite.openDatabaseSync(databaseName);
-
-    // 🔄 TEMPORARY RESET - Remove after testing!
-    //this.resetDatabaseTables();
+    //this.resetDatabase();
     this.initializeTables();
   }
 
-  // 🔄 TEMPORARY METHOD - Remove after testing! wip
-  private resetDatabaseTables(): void {
-    try {
-      console.log("🔄 Resetting database tables...");
-      this.db.execSync("DROP TABLE IF EXISTS match_actions");
-      this.db.execSync("DROP TABLE IF EXISTS matches");
-      this.db.execSync("DROP TABLE IF EXISTS database_version");
-      console.log("✅ Database tables reset successfully");
-    } catch (error) {
-      console.error("❌ Error resetting database:", error);
-    }
-  }
-
   private initializeTables(): void {
-    // Create matches table (new schema with embedded players)
+    // Create matches table with UUID primary key
     this.db.execSync(`
       CREATE TABLE IF NOT EXISTS matches (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id TEXT PRIMARY KEY,
 
         -- Club & Team
         club_id TEXT,
@@ -61,9 +46,17 @@ export class SQLiteAdapter implements IStorageAdapter {
         current_period INTEGER DEFAULT 1,
         time_elapsed INTEGER DEFAULT 0,
 
-        -- Players data (JSONB stored as TEXT in SQLite)
+        -- Players data (JSON stored as TEXT in SQLite)
         players TEXT DEFAULT '[]',
         player_stats TEXT DEFAULT '{}',
+
+        -- Visual customization
+        club_logo_url TEXT,
+        court_background_color TEXT,
+        court_line_color TEXT,
+
+        -- Match options
+        track_opponent_stats INTEGER DEFAULT 0,
 
         -- Timestamps
         created_by TEXT,
@@ -79,11 +72,11 @@ export class SQLiteAdapter implements IStorageAdapter {
       );
     `);
 
-    // Create match_actions table
+    // Create match_actions table with UUID primary key
     this.db.execSync(`
       CREATE TABLE IF NOT EXISTS match_actions (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        match_id INTEGER NOT NULL,
+        id TEXT PRIMARY KEY,
+        match_id TEXT NOT NULL,
         team TEXT NOT NULL CHECK(team IN ('MyTeam', 'Opponent')),
         player_number INTEGER NOT NULL,
         action_type TEXT NOT NULL,
@@ -98,78 +91,6 @@ export class SQLiteAdapter implements IStorageAdapter {
         FOREIGN KEY (match_id) REFERENCES matches (id) ON DELETE CASCADE
       );
     `);
-
-    // Add points column if it doesn't exist (migration for existing databases)
-    try {
-      this.db.execSync(`
-        ALTER TABLE match_actions ADD COLUMN points INTEGER;
-      `);
-    } catch (error) {
-      // Column might already exist, ignore error
-    }
-
-    // Add my_team_name column if it doesn't exist (migration for existing databases)
-    try {
-      this.db.execSync(`
-        ALTER TABLE matches ADD COLUMN my_team_name TEXT;
-      `);
-    } catch (error) {
-      // Column might already exist, ignore error
-    }
-
-    // Add players column to matches if it doesn't exist (embedded players data)
-    try {
-      this.db.execSync(`
-        ALTER TABLE matches ADD COLUMN players TEXT DEFAULT '[]';
-      `);
-    } catch (error) {
-      // Column might already exist, ignore error
-    }
-
-    // Add player_stats column to matches if it doesn't exist (embedded stats data)
-    try {
-      this.db.execSync(`
-        ALTER TABLE matches ADD COLUMN player_stats TEXT DEFAULT '{}';
-      `);
-    } catch (error) {
-      // Column might already exist, ignore error
-    }
-
-    // Add club_logo_url column if it doesn't exist
-    try {
-      this.db.execSync(`
-        ALTER TABLE matches ADD COLUMN club_logo_url TEXT;
-      `);
-    } catch (error) {
-      // Column might already exist, ignore error
-    }
-
-    // Add court_background_color column if it doesn't exist
-    try {
-      this.db.execSync(`
-        ALTER TABLE matches ADD COLUMN court_background_color TEXT;
-      `);
-    } catch (error) {
-      // Column might already exist, ignore error
-    }
-
-    // Add court_line_color column if it doesn't exist
-    try {
-      this.db.execSync(`
-        ALTER TABLE matches ADD COLUMN court_line_color TEXT;
-      `);
-    } catch (error) {
-      // Column might already exist, ignore error
-    }
-
-    // Add track_opponent_stats column if it doesn't exist
-    try {
-      this.db.execSync(`
-        ALTER TABLE matches ADD COLUMN track_opponent_stats INTEGER DEFAULT 0;
-      `);
-    } catch (error) {
-      // Column might already exist, ignore error
-    }
 
     // Create indexes
     this.db.execSync(`
@@ -213,5 +134,29 @@ export class SQLiteAdapter implements IStorageAdapter {
 
   getDatabase(): SQLite.SQLiteDatabase {
     return this.db;
+  }
+
+  /**
+   * Reset database - drops all tables and recreates them
+   * Useful for development and testing
+   */
+  async resetDatabase(): Promise<void> {
+    try {
+      console.log("🔄 Resetting database...");
+
+      // Drop tables in reverse order (respect foreign keys)
+      this.db.execSync("DROP TABLE IF EXISTS match_actions");
+      this.db.execSync("DROP TABLE IF EXISTS matches");
+
+      console.log("✅ Tables dropped");
+
+      // Recreate tables
+      this.initializeTables();
+
+      console.log("✅ Database reset complete");
+    } catch (error) {
+      console.error("❌ Error resetting database:", error);
+      throw error;
+    }
   }
 }

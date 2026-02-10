@@ -21,23 +21,24 @@
 import { DatabaseService } from './DatabaseService';
 import { Match, CreateMatchData, MatchStatus } from '../../models/types';
 import { logInfo, logError, logWarn } from '../../../utils/logger';
+import { generateUUID } from '../../utils/uuid';
 
 export interface IMatchRepository {
   create(data: CreateMatchData): Promise<Match>;
-  findById(id: number): Promise<Match | null>;
+  findById(id: string): Promise<Match | null>;
   findActiveMatch(): Promise<Match | null>;
   getAllMatches(): Promise<Match[]>;
   getMatchesByTeamId(teamId: string): Promise<Match[]>;
-  updateStatus(id: number, status: MatchStatus, endedAt?: Date): Promise<void>;
-  startMatch(id: number): Promise<void>;
-  abandonMatch(id: number): Promise<void>;
-  completeMatch(id: number): Promise<void>;
-  updateMatchState(id: number, currentPeriod: number, timeElapsed: number): Promise<void>;
-  updateFinalScores(id: number, myTeamScore: number, opponentScore: number, manuallyAdjusted?: boolean): Promise<void>;
-  updateOvertimePeriods(id: number, overtimePeriods: number): Promise<void>;
-  updateSyncStatus(id: number, synced: boolean): Promise<void>;
+  updateStatus(id: string, status: MatchStatus, endedAt?: Date): Promise<void>;
+  startMatch(id: string): Promise<void>;
+  abandonMatch(id: string): Promise<void>;
+  completeMatch(id: string): Promise<void>;
+  updateMatchState(id: string, currentPeriod: number, timeElapsed: number): Promise<void>;
+  updateFinalScores(id: string, myTeamScore: number, opponentScore: number, manuallyAdjusted?: boolean): Promise<void>;
+  updateOvertimePeriods(id: string, overtimePeriods: number): Promise<void>;
+  updateSyncStatus(id: string, synced: boolean): Promise<void>;
   findUnsyncedCompletedMatches(): Promise<Match[]>;
-  delete(id: number): Promise<void>;
+  delete(id: string): Promise<void>;
 }
 
 export class MatchRepository implements IMatchRepository {
@@ -49,11 +50,13 @@ export class MatchRepository implements IMatchRepository {
 
   /**
    * Create a new match in SQLite database
-   * Sets initial status to 'in_progress'
+   * Generates UUID and sets initial status to 'in_progress'
    */
   async create(data: CreateMatchData): Promise<Match> {
+    const matchId = generateUUID();
     const sql = `
       INSERT INTO matches (
+        id,
         my_team_name,
         opponent_name,
         is_home,
@@ -71,11 +74,12 @@ export class MatchRepository implements IMatchRepository {
         court_line_color,
         track_opponent_stats
       )
-      VALUES (?, ?, ?, ?, ?, ?, 0, 0, 0, 'in_progress', ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, 0, 0, 0, 'in_progress', ?, ?, ?, ?, ?, ?)
     `;
 
     try {
       logInfo('MatchRepository', '🏀 Creating new match in SQLite', {
+        matchId,
         myTeam: data.my_team_name,
         opponent: data.opponent_name,
         isHome: data.is_home,
@@ -90,6 +94,7 @@ export class MatchRepository implements IMatchRepository {
       });
 
       await this.db.execute(sql, [
+        matchId,
         data.my_team_name || null,
         data.opponent_name,
         data.is_home ? 1 : 0,
@@ -106,11 +111,12 @@ export class MatchRepository implements IMatchRepository {
 
       // Get the created match
       const matches = await this.db.query(
-        'SELECT * FROM matches ORDER BY id DESC LIMIT 1'
+        'SELECT * FROM matches WHERE id = ?',
+        [matchId]
       );
 
       if (matches.length === 0) {
-        logError('MatchRepository', '❌ Failed to retrieve created match');
+        logError('MatchRepository', '❌ Failed to retrieve created match', { matchId });
         throw new Error('Failed to create match');
       }
 
@@ -134,7 +140,7 @@ export class MatchRepository implements IMatchRepository {
    * Find a match by its ID
    * Returns null if not found
    */
-  async findById(id: number): Promise<Match | null> {
+  async findById(id: string): Promise<Match | null> {
     try {
       logInfo('MatchRepository', '🔍 Finding match by ID', { matchId: id });
 
@@ -259,7 +265,7 @@ export class MatchRepository implements IMatchRepository {
    * Update match status
    * Optionally sets ended_at timestamp for completed matches
    */
-  async updateStatus(id: number, status: MatchStatus, endedAt?: Date): Promise<void> {
+  async updateStatus(id: string, status: MatchStatus, endedAt?: Date): Promise<void> {
     try {
       logInfo('MatchRepository', '🔄 Updating match status', {
         matchId: id,
@@ -298,7 +304,7 @@ export class MatchRepository implements IMatchRepository {
    * Mark match as started
    * Sets started_at timestamp
    */
-  async startMatch(id: number): Promise<void> {
+  async startMatch(id: string): Promise<void> {
     try {
       const timestamp = new Date().toISOString();
       logInfo('MatchRepository', '▶️ Starting match', {
@@ -325,7 +331,7 @@ export class MatchRepository implements IMatchRepository {
    * Mark match as abandoned
    * Sets status to 'abandoned' and records ended_at timestamp
    */
-  async abandonMatch(id: number): Promise<void> {
+  async abandonMatch(id: string): Promise<void> {
     try {
       const timestamp = new Date().toISOString();
       logInfo('MatchRepository', '🚫 Abandoning match', {
@@ -352,7 +358,7 @@ export class MatchRepository implements IMatchRepository {
    * Mark match as completed
    * Sets status to 'completed' and records ended_at timestamp
    */
-  async completeMatch(id: number): Promise<void> {
+  async completeMatch(id: string): Promise<void> {
     try {
       const timestamp = new Date().toISOString();
       logInfo('MatchRepository', '🏁 Completing match', {
@@ -380,7 +386,7 @@ export class MatchRepository implements IMatchRepository {
    * Updates current period, time elapsed, and last_updated timestamp
    * Called periodically during active match
    */
-  async updateMatchState(id: number, currentPeriod: number, timeElapsed: number): Promise<void> {
+  async updateMatchState(id: string, currentPeriod: number, timeElapsed: number): Promise<void> {
     try {
       const timestamp = new Date().toISOString();
 
@@ -406,7 +412,7 @@ export class MatchRepository implements IMatchRepository {
    * Update final scores for match
    * Called at match completion, optionally marks as manually adjusted
    */
-  async updateFinalScores(id: number, myTeamScore: number, opponentScore: number, manuallyAdjusted: boolean = false): Promise<void> {
+  async updateFinalScores(id: string, myTeamScore: number, opponentScore: number, manuallyAdjusted: boolean = false): Promise<void> {
     try {
       logInfo('MatchRepository', '📊 Updating final scores', {
         matchId: id,
@@ -441,7 +447,7 @@ export class MatchRepository implements IMatchRepository {
    * Update overtime periods count
    * Called at match completion to record how many OT were played
    */
-  async updateOvertimePeriods(id: number, overtimePeriods: number): Promise<void> {
+  async updateOvertimePeriods(id: string, overtimePeriods: number): Promise<void> {
     try {
       logInfo('MatchRepository', '⏱️ Updating overtime periods', {
         matchId: id,
@@ -471,7 +477,7 @@ export class MatchRepository implements IMatchRepository {
    * Update Supabase sync status
    * Tracks whether match has been uploaded to server
    */
-  async updateSyncStatus(id: number, synced: boolean): Promise<void> {
+  async updateSyncStatus(id: string, synced: boolean): Promise<void> {
     try {
       logInfo('MatchRepository', '🔄 Updating sync status', {
         matchId: id,
@@ -529,7 +535,7 @@ export class MatchRepository implements IMatchRepository {
    * Delete a match by ID
    * Permanently removes match from database
    */
-  async delete(id: number): Promise<void> {
+  async delete(id: string): Promise<void> {
     try {
       logInfo('MatchRepository', '🗑️ Deleting match from SQLite', { matchId: id });
 

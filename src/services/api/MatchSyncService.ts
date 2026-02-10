@@ -14,7 +14,7 @@
  *
  * Architecture:
  * - Reads from SQLite repositories (MatchRepository, ActionRepository, MatchPlayerRepository)
- * - Writes to Supabase (matches, match_players tables)
+ * - Writes to Supabase (matches table with embedded players in JSONB)
  * - Uploads photos to Supabase Storage
  * - Deletes local data after successful sync (offline→online transition)
  *
@@ -74,7 +74,7 @@ export class MatchSyncService {
    * - User must have a paid subscription (not freemium)
    * - Match must be completed
    */
-  async checkSyncEligibility(matchId: number): Promise<SyncEligibility> {
+  async checkSyncEligibility(matchId: string): Promise<SyncEligibility> {
     try {
       logInfo('MatchSyncService', '🔍 Checking sync eligibility', { matchId });
 
@@ -188,7 +188,7 @@ export class MatchSyncService {
    * 5. Insert match and players to Supabase
    * 6. Delete local match data after successful sync
    */
-  async syncMatch(matchId: number): Promise<SyncResult> {
+  async syncMatch(matchId: string): Promise<SyncResult> {
     try {
       logInfo('MatchSyncService', '🔄 Starting match sync', { matchId });
 

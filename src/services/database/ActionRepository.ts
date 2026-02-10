@@ -21,14 +21,15 @@
 import { DatabaseService } from "./DatabaseService";
 import { Action, CreateActionData } from "../../models/types";
 import { logInfo, logError, logWarn } from "../../../utils/logger";
+import { generateUUID } from "../../utils/uuid";
 
 export interface IActionRepository {
   create(data: CreateActionData): Promise<Action>;
-  getActionsForMatch(matchId: number): Promise<Action[]>;
-  deleteAction(actionId: number): Promise<void>;
-  deleteActionsForMatch(matchId: number): Promise<void>;
+  getActionsForMatch(matchId: string): Promise<Action[]>;
+  deleteAction(actionId: string): Promise<void>;
+  deleteActionsForMatch(matchId: string): Promise<void>;
   createBatch(actions: CreateActionData[]): Promise<Action[]>;
-  getActionCount(matchId: number): Promise<number>;
+  getActionCount(matchId: string): Promise<number>;
 }
 
 export class ActionRepository implements IActionRepository {
@@ -40,18 +41,20 @@ export class ActionRepository implements IActionRepository {
 
   /**
    * Create a single action in SQLite database
-   * Inserts into match_actions table and returns created action with ID
+   * Inserts into match_actions table and returns created action with UUID
    */
   async create(data: CreateActionData): Promise<Action> {
+    const actionId = generateUUID();
     const sql = `
       INSERT INTO match_actions (
-        match_id, team, player_number, action_type, specification, points,
+        id, match_id, team, player_number, action_type, specification, points,
         semantic_x, semantic_y, action_order, period_number, time_in_period
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
     try {
       logInfo('ActionRepository', '📊 Creating action in SQLite', {
+        actionId,
         matchId: data.match_id,
         actionType: data.action_type,
         specification: data.specification,
@@ -63,6 +66,7 @@ export class ActionRepository implements IActionRepository {
       });
 
       await this.db.execute(sql, [
+        actionId,
         data.match_id,
         data.team,
         data.player_number,
@@ -78,12 +82,12 @@ export class ActionRepository implements IActionRepository {
 
       // Retrieve created action
       const actions = await this.db.query(
-        "SELECT * FROM match_actions WHERE match_id = ? ORDER BY id DESC LIMIT 1",
-        [data.match_id]
+        "SELECT * FROM match_actions WHERE id = ?",
+        [actionId]
       );
 
       if (actions.length === 0) {
-        logError('ActionRepository', '❌ Failed to retrieve created action', { matchId: data.match_id });
+        logError('ActionRepository', '❌ Failed to retrieve created action', { actionId });
         throw new Error("Failed to create action");
       }
 
@@ -126,16 +130,23 @@ export class ActionRepository implements IActionRepository {
         matchId: actions[0].match_id
       });
 
+      // Generate UUIDs for all actions
+      const actionsWithIds = actions.map(action => ({
+        ...action,
+        id: generateUUID()
+      }));
+
       await this.db.transaction(async (adapter) => {
         const sql = `
           INSERT INTO match_actions (
-            match_id, team, player_number, action_type, specification, points,
+            id, match_id, team, player_number, action_type, specification, points,
             semantic_x, semantic_y, action_order, period_number, time_in_period
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `;
 
-        for (const action of actions) {
+        for (const action of actionsWithIds) {
           await adapter.execute(sql, [
+            action.id,
             action.match_id,
             action.team,
             action.player_number,
@@ -151,14 +162,15 @@ export class ActionRepository implements IActionRepository {
         }
       });
 
-      // Retrieve created actions
+      // Retrieve created actions by their IDs
       const matchId = actions[0].match_id;
+      const ids = actionsWithIds.map(a => a.id);
+      const placeholders = ids.map(() => '?').join(',');
       const createdActions = await this.db.query(
         `SELECT * FROM match_actions
-         WHERE match_id = ?
-         ORDER BY id DESC
-         LIMIT ?`,
-        [matchId, actions.length]
+         WHERE id IN (${placeholders})
+         ORDER BY action_order DESC`,
+        ids
       );
 
       logInfo('ActionRepository', '✅ Batch created successfully in SQLite', {
@@ -182,7 +194,7 @@ export class ActionRepository implements IActionRepository {
    * - Completed matches: reads from matches.player_stats (compacted JSON)
    * - Active matches: reads from match_actions table
    */
-  async getActionsForMatch(matchId: number): Promise<Action[]> {
+  async getActionsForMatch(matchId: string): Promise<Action[]> {
     try {
       logInfo('ActionRepository', '📊 Fetching actions for match', { matchId });
 
@@ -314,7 +326,7 @@ export class ActionRepository implements IActionRepository {
    * Delete a single action by ID
    * Verifies action exists before deletion
    */
-  async deleteAction(actionId: number): Promise<void> {
+  async deleteAction(actionId: string): Promise<void> {
     try {
       logInfo('ActionRepository', '🗑️ Deleting action from SQLite', { actionId });
 
@@ -350,7 +362,7 @@ export class ActionRepository implements IActionRepository {
    * Delete all actions for a match
    * Used during match cleanup or compaction
    */
-  async deleteActionsForMatch(matchId: number): Promise<void> {
+  async deleteActionsForMatch(matchId: string): Promise<void> {
     try {
       logInfo('ActionRepository', '🗑️ Deleting all actions for match', { matchId });
 
@@ -373,7 +385,7 @@ export class ActionRepository implements IActionRepository {
    * Get total count of actions for a match
    * Returns 0 if error occurs
    */
-  async getActionCount(matchId: number): Promise<number> {
+  async getActionCount(matchId: string): Promise<number> {
     try {
       const result = await this.db.query(
         "SELECT COUNT(*) as count FROM match_actions WHERE match_id = ?",
@@ -396,7 +408,7 @@ export class ActionRepository implements IActionRepository {
    * Get highest action_order value for a match
    * Used to determine next action order number
    */
-  async getLastActionOrder(matchId: number): Promise<number> {
+  async getLastActionOrder(matchId: string): Promise<number> {
     try {
       const result = await this.db.query(
         "SELECT MAX(action_order) as max_order FROM match_actions WHERE match_id = ?",
@@ -420,7 +432,7 @@ export class ActionRepository implements IActionRepository {
    * Then delete all actions from match_actions table
    * Called after match completion to save space and improve performance
    */
-  async compactMatchActions(matchId: number): Promise<void> {
+  async compactMatchActions(matchId: string): Promise<void> {
     try {
       logInfo('ActionRepository', '🗜️ Starting action compaction', { matchId });
 

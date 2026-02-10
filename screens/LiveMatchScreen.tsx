@@ -100,7 +100,7 @@ export default function LiveMatchScreen() {
   const [matchManager] = useState(() => new MatchManager());
   const [matchRepository] = useState(() => new MatchRepository());
   const [actionQueue] = useState(() => new ActionQueue());
-  const [currentMatchId, setCurrentMatchId] = useState<number | null>(null);
+  const [currentMatchId, setCurrentMatchId] = useState<string | null>(null);
   const [actionCounter, setActionCounter] = useState(0);
   const [isLoadingMatch, setIsLoadingMatch] = useState(!!resumeMatchId);
 
@@ -187,7 +187,7 @@ export default function LiveMatchScreen() {
   // Refs to always have access to current values in intervals/callbacks
   const timerRef = useRef(timer);
   const quarterRef = useRef(quarter);
-  const currentMatchIdRef = useRef(currentMatchId);
+  const currentMatchIdRef = useRef<string | null>(currentMatchId);
 
   // Keep refs in sync with state
   useEffect(() => {
@@ -297,9 +297,7 @@ export default function LiveMatchScreen() {
           });
 
           // Load match data from database
-          const existingMatch = await matchRepository.findById(
-            parseInt(resumeMatchId),
-          );
+          const existingMatch = await matchRepository.findById(resumeMatchId);
           if (!existingMatch) {
             logError("LiveMatchScreen", "❌ Match not found", {
               matchId: resumeMatchId,
@@ -310,15 +308,11 @@ export default function LiveMatchScreen() {
 
           // Load actions
           const actionRepo = new ActionRepository();
-          const actions = await actionRepo.getActionsForMatch(
-            parseInt(resumeMatchId),
-          );
+          const actions = await actionRepo.getActionsForMatch(resumeMatchId);
 
           // Load players
           const playerRepo = new MatchPlayerRepository();
-          const players = await playerRepo.getPlayersForMatch(
-            parseInt(resumeMatchId),
-          );
+          const players = await playerRepo.getPlayersForMatch(resumeMatchId);
 
           logInfo("LiveMatchScreen", "📊 Players loaded from DB", {
             totalPlayers: players.length,
@@ -346,7 +340,7 @@ export default function LiveMatchScreen() {
 
           // Convert to Player format
           const myTeamRosterLoaded = myTeamPlayersFromDB.map((p) => ({
-            id: p.player_id || `temp-${p.id}`,
+            id: p.player_id || `temp-${String(p.id)}`,
             name: p.player_name,
             jerseyNumber: p.player_number,
             teamId: existingMatch.team_id || "",
@@ -357,7 +351,7 @@ export default function LiveMatchScreen() {
           }));
 
           const opponentRosterLoaded = opponentPlayersFromDB.map((p) => ({
-            id: p.player_id || `temp-${p.id}`,
+            id: p.player_id || `temp-${String(p.id)}`,
             name: p.player_name,
             jerseyNumber: p.player_number,
             teamId: "",
@@ -373,19 +367,20 @@ export default function LiveMatchScreen() {
               (p) =>
                 p.on_court === 1 || (p.on_court === undefined && p.is_starter),
             )
-            .map((p) => p.player_id || `temp-${p.id}`);
+            .map((p) => p.player_id || `temp-${String(p.id)}`);
           const opponentOnCourt = opponentPlayersFromDB
             .filter(
               (p) =>
                 p.on_court === 1 || (p.on_court === undefined && p.is_starter),
             )
-            .map((p) => p.player_id || `temp-${p.id}`);
+            .map((p) => p.player_id || `temp-${String(p.id)}`);
 
           // Convert actions to MatchEvents for display on court
           const matchEvents = convertActionsToMatchEvents(
             actions,
             players,
             existingMatch.opponent_name || "Adversaire",
+            isHome,
           );
 
           // Update match state with loaded data
@@ -437,7 +432,7 @@ export default function LiveMatchScreen() {
               : 0;
           setActionCounter(maxActionOrder + 1);
 
-          setCurrentMatchId(parseInt(resumeMatchId));
+          setCurrentMatchId(resumeMatchId);
           setIsLoadingMatch(false);
 
           logInfo("LiveMatchScreen", "✅ Match resumed successfully", {
@@ -858,10 +853,12 @@ export default function LiveMatchScreen() {
       ];
 
       // Convertir les actions en événements en utilisant la fonction existante
+      const isHome = match.location === TeamId.HOME;
       const convertedEvents = convertActionsToMatchEvents(
         loadedActions,
         allPlayers,
         match.opponent || "Adversaire",
+        isHome,
       );
 
       // DEBUG: Log summary
@@ -935,37 +932,40 @@ export default function LiveMatchScreen() {
       event.specification === ShotSpecification.MADE &&
       event.points
     ) {
-      if (event.teamId === TeamId.HOME) {
-        updatedMatch.scoreHome = Math.max(
-          0,
-          updatedMatch.scoreHome - event.points,
-        );
+      // Check if this is my team's action or opponent's action
+      // event.teamId represents the team that scored (HOME or AWAY)
+      // We need to determine if that's my team or opponent based on match.location
+      const isMyTeamAction = event.teamId === match.location;
+
+      if (isMyTeamAction) {
+        // My team scored - decrement the correct score based on location
+        if (match.location === TeamId.HOME) {
+          updatedMatch.scoreHome = Math.max(0, updatedMatch.scoreHome - event.points);
+        } else {
+          updatedMatch.scoreAway = Math.max(0, updatedMatch.scoreAway - event.points);
+        }
       } else {
-        updatedMatch.scoreAway = Math.max(
-          0,
-          updatedMatch.scoreAway - event.points,
-        );
+        // Opponent scored - decrement the correct score based on location
+        if (match.location === TeamId.HOME) {
+          updatedMatch.scoreAway = Math.max(0, updatedMatch.scoreAway - event.points);
+        } else {
+          updatedMatch.scoreHome = Math.max(0, updatedMatch.scoreHome - event.points);
+        }
       }
     }
 
     setMatch(updatedMatch);
 
     // Delete from database
-    if (currentMatchId) {
+    if (currentMatchId && event.id) {
       try {
-        // Extract database ID from event ID (format: "evt-{dbId}")
-        const dbId = parseInt(event.id.replace("evt-", ""));
+        const actionRepo = new ActionRepository();
+        await actionRepo.deleteAction(event.id);
 
-        if (!isNaN(dbId)) {
-          const actionRepo = new ActionRepository();
-          await actionRepo.deleteAction(dbId);
-
-          logInfo("LiveMatchScreen", "✅ Action deleted from database", {
-            eventId: event.id,
-            dbId,
-            description: event.description,
-          });
-        }
+        logInfo("LiveMatchScreen", "✅ Action deleted from database", {
+          eventId: event.id,
+          description: event.description,
+        });
       } catch (error) {
         logError(
           "LiveMatchScreen",
@@ -990,37 +990,40 @@ export default function LiveMatchScreen() {
       eventToDelete.specification === ShotSpecification.MADE &&
       eventToDelete.points
     ) {
-      if (eventToDelete.teamId === TeamId.HOME) {
-        updatedMatch.scoreHome = Math.max(
-          0,
-          updatedMatch.scoreHome - eventToDelete.points,
-        );
+      // Check if this is my team's action or opponent's action
+      // eventToDelete.teamId represents the team that scored (HOME or AWAY)
+      // We need to determine if that's my team or opponent based on match.location
+      const isMyTeamAction = eventToDelete.teamId === match.location;
+
+      if (isMyTeamAction) {
+        // My team scored - decrement the correct score based on location
+        if (match.location === TeamId.HOME) {
+          updatedMatch.scoreHome = Math.max(0, updatedMatch.scoreHome - eventToDelete.points);
+        } else {
+          updatedMatch.scoreAway = Math.max(0, updatedMatch.scoreAway - eventToDelete.points);
+        }
       } else {
-        updatedMatch.scoreAway = Math.max(
-          0,
-          updatedMatch.scoreAway - eventToDelete.points,
-        );
+        // Opponent scored - decrement the correct score based on location
+        if (match.location === TeamId.HOME) {
+          updatedMatch.scoreAway = Math.max(0, updatedMatch.scoreAway - eventToDelete.points);
+        } else {
+          updatedMatch.scoreHome = Math.max(0, updatedMatch.scoreHome - eventToDelete.points);
+        }
       }
     }
 
     setMatch(updatedMatch);
 
     // Delete from database
-    if (currentMatchId) {
+    if (currentMatchId && eventToDelete.id) {
       try {
-        // Extract database ID from event ID (format: "evt-{dbId}")
-        const dbId = parseInt(eventToDelete.id.replace("evt-", ""));
+        const actionRepo = new ActionRepository();
+        await actionRepo.deleteAction(eventToDelete.id);
 
-        if (!isNaN(dbId)) {
-          const actionRepo = new ActionRepository();
-          await actionRepo.deleteAction(dbId);
-
-          logInfo("LiveMatchScreen", "✅ Action deleted from database", {
-            eventId: eventToDelete.id,
-            dbId,
-            description: eventToDelete.description,
-          });
-        }
+        logInfo("LiveMatchScreen", "✅ Action deleted from database", {
+          eventId: eventToDelete.id,
+          description: eventToDelete.description,
+        });
       } catch (error) {
         logError(
           "LiveMatchScreen",
@@ -1159,7 +1162,7 @@ export default function LiveMatchScreen() {
 
   // --- FINALIZATION ---
 
-  const finalizeEvent = (
+  const finalizeEvent = async (
     action_type: string,
     specification: string | undefined,
     points: number,
@@ -1206,8 +1209,20 @@ export default function LiveMatchScreen() {
         }
       : undefined;
 
+    // Save to database first to get UUID
+    const team = teamId === match.location ? Team.MY_TEAM : Team.OPPONENT;
+    const actionId = await saveActionToDatabase(
+      action_type,
+      specification,
+      points,
+      player?.jerseyNumber || 0,
+      team,
+      coords,
+    );
+
+    // Create event with real UUID from database
     const newEvent: MatchEvent = {
-      id: `evt-${Date.now()}`,
+      id: actionId || `temp-${Date.now()}`, // Fallback to temp ID if save failed
       action_type,
       specification,
       points,
@@ -1240,31 +1255,19 @@ export default function LiveMatchScreen() {
 
     setMatch(updatedMatch);
 
-    // Save to database
-    if (currentMatchId && player) {
-      saveActionToDatabase(
-        action_type,
-        specification,
-        points,
-        player.jerseyNumber,
-        teamId === match.location ? Team.MY_TEAM : Team.OPPONENT,
-        coords,
-      );
-    }
-
     closeWorkflow();
   };
 
   // Helper function to save action to database
-  const saveActionToDatabase = (
+  const saveActionToDatabase = async (
     actionType: string,
     specification: string | undefined,
     points: number,
     playerNumber: number,
     team: Team.MY_TEAM | Team.OPPONENT,
     coords?: { x: number; y: number },
-  ) => {
-    if (!currentMatchId) return;
+  ): Promise<string | null> => {
+    if (!currentMatchId) return null;
 
     // Convert SVG portrait coordinates (0-COURT_SVG_WIDTH_PORTRAIT x 0-COURT_SVG_HEIGHT_PORTRAIT) to normalized (0-1)
     const normalizedX = coords ? coords.x / COURT_SVG_WIDTH_PORTRAIT : -999;
@@ -1284,29 +1287,35 @@ export default function LiveMatchScreen() {
       time_in_period: periodDurationMin * 60 - timer,
     };
 
-    actionQueue.enqueue(actionForDB);
-    setActionCounter((prev) => prev + 1);
+    // Save immediately to database to get UUID
+    try {
+      const actionRepo = new ActionRepository();
+      const createdAction = await actionRepo.create(actionForDB);
+      setActionCounter((prev) => prev + 1);
 
-    // Save match state immediately after action to persist timer/period
-    const periodDurationSeconds = (periodDurationMin || 10) * 60;
-    const timeElapsed = periodDurationSeconds - timer;
-    matchManager
-      .updateMatchState(currentMatchId, quarter, timeElapsed)
-      .catch((err) => {
-        logError(
-          "LiveMatchScreen",
-          "Failed to update match state after action",
-          err,
-        );
+      // Save match state immediately after action to persist timer/period
+      const periodDurationSeconds = (periodDurationMin || 10) * 60;
+      const timeElapsed = periodDurationSeconds - timer;
+      await matchManager.updateMatchState(currentMatchId, quarter, timeElapsed);
+
+      logInfo("LiveMatchScreen", "✅ Action saved to database", {
+        actionId: createdAction.id,
+        actionType,
+        specification,
+        playerNumber,
+        team,
+        points,
       });
 
-    logInfo("LiveMatchScreen", "✅ Action enqueued for database save", {
-      actionType,
-      specification,
-      playerNumber,
-      team,
-      points,
-    });
+      return createdAction.id;
+    } catch (err) {
+      logError(
+        "LiveMatchScreen",
+        "Failed to save action to database",
+        err,
+      );
+      return null;
+    }
   };
 
   const closeWorkflow = () => {
@@ -1314,7 +1323,7 @@ export default function LiveMatchScreen() {
     setPendingEvent({});
   };
 
-  const handleOpponentScoreSimple = (value: number) => {
+  const handleOpponentScoreSimple = async (value: number) => {
     const updatedMatch = { ...match };
     // Increment the correct score based on match location
     // If we're home, opponent is away (increment scoreAway)
@@ -1325,11 +1334,21 @@ export default function LiveMatchScreen() {
       updatedMatch.scoreHome += value;
     }
 
+    // Save to database first - use a generic opponent player number (9999)
+    const actionId = await saveActionToDatabase(
+      ActionType.SHOT,
+      ShotSpecification.MADE,
+      value,
+      9999, // Generic opponent number
+      Team.OPPONENT,
+      undefined, // No court position for quick score
+    );
+
     const newEvent: MatchEvent = {
-      id: `evt-${Date.now()}`,
+      id: actionId || `temp-${Date.now()}`, // Fallback to temp ID if save failed
       action_type: ActionType.SHOT,
       specification: ShotSpecification.MADE,
-      teamId: match.location,
+      teamId: match.location === TeamId.HOME ? TeamId.AWAY : TeamId.HOME,
       timestamp: Date.now(),
       description: `${match.opponent || "Adversaire"} +${value}`,
       period_number: quarter,
@@ -1340,39 +1359,6 @@ export default function LiveMatchScreen() {
     updatedMatch.events = [newEvent, ...updatedMatch.events];
 
     setMatch(updatedMatch);
-
-    // Save to database - use a generic opponent player number (99)
-    if (currentMatchId) {
-      let actionType = ActionType.SHOT;
-      let specification = ShotSpecification.MADE;
-      let points = value;
-
-      const actionForDB: CreateActionData = {
-        match_id: currentMatchId,
-        team: Team.OPPONENT,
-        player_number: 9999, // Generic opponent number
-        action_type: actionType,
-        specification,
-        points: points,
-        semantic_x: -999, // indicates no court position (quick score button)
-        semantic_y: -999, // indicates no court position (quick score button)
-        action_order: actionCounter,
-        period_number: quarter,
-        time_in_period: periodDurationMin * 60 - timer,
-      };
-
-      actionQueue.enqueue(actionForDB);
-      setActionCounter((prev) => prev + 1);
-
-      logInfo(
-        "LiveMatchScreen",
-        "✅ Opponent score enqueued for database save",
-        {
-          points: value,
-          team: Team.OPPONENT,
-        },
-      );
-    }
   };
 
   const confirmEndMatch = async () => {

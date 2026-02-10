@@ -41,7 +41,7 @@ export interface CompactedAction {
 }
 
 export interface Match {
-  id: number;
+  id: string;
 
   // Club & Team
   club_id?: string | null;
@@ -114,8 +114,8 @@ export interface CreateMatchData {
 }
 
 export interface Action {
-  id: number;
-  match_id: number;
+  id: string;
+  match_id: string;
   team: Team;
   player_number: number;
   action_type: string;
@@ -130,7 +130,7 @@ export interface Action {
 }
 
 export interface CreateActionData {
-  match_id: number;
+  match_id: string;
   team: Team;
   player_number: number;
   action_type: string;

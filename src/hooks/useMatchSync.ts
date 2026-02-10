@@ -16,7 +16,7 @@ export function useMatchSync() {
   /**
    * Check if a match can be synced
    */
-  const checkEligibility = useCallback(async (matchId: number) => {
+  const checkEligibility = useCallback(async (matchId: string) => {
     try {
       setError(null);
       const result = await syncService.checkSyncEligibility(matchId);
@@ -31,7 +31,7 @@ export function useMatchSync() {
   /**
    * Sync a single match to Supabase
    */
-  const syncMatch = useCallback(async (matchId: number) => {
+  const syncMatch = useCallback(async (matchId: string) => {
     try {
       setIsSyncing(true);
       setError(null);

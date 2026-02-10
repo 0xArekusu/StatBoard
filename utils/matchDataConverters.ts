@@ -10,7 +10,7 @@ import { MatchEvent, TeamId } from "../constants/liveMatchConstants";
 import { getActionDescription } from "./liveMatchHelpers";
 
 interface DatabaseAction {
-  id: number;
+  id: string;
   player_number: number;
   team: Team.MY_TEAM | Team.OPPONENT;
   action_type: string;
@@ -36,7 +36,8 @@ interface DatabasePlayer {
 export function convertActionToMatchEvent(
   action: DatabaseAction,
   players: DatabasePlayer[],
-  opponentName: string = "Adversaire"
+  opponentName: string = "Adversaire",
+  isHome: boolean = true
 ): MatchEvent {
   const player = players.find(
     (p) =>
@@ -60,14 +61,16 @@ export function convertActionToMatchEvent(
   }
 
   return {
-    id: `evt-${action.id}`,
+    id: action.id,
     action_type: action.action_type,
     specification: action.specification,
     points: action.points,
     timestamp,
     playerId: player?.player_id || `temp-${action.player_number}`,
     playerNumber: action.player_number !== 9999 ? action.player_number : undefined,
-    teamId: action.team === Team.MY_TEAM ? TeamId.HOME : TeamId.AWAY,
+    teamId: action.team === Team.MY_TEAM
+      ? (isHome ? TeamId.HOME : TeamId.AWAY)
+      : (isHome ? TeamId.AWAY : TeamId.HOME),
     coordinates:
       action.semantic_x !== null &&
       action.semantic_y !== null &&
@@ -87,10 +90,11 @@ export function convertActionToMatchEvent(
 export function convertActionsToMatchEvents(
   actions: DatabaseAction[],
   players: DatabasePlayer[],
-  opponentName: string = "Adversaire"
+  opponentName: string = "Adversaire",
+  isHome: boolean = true
 ): MatchEvent[] {
   return actions.map((action) =>
-    convertActionToMatchEvent(action, players, opponentName)
+    convertActionToMatchEvent(action, players, opponentName, isHome)
   );
 }
 

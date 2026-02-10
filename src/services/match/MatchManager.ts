@@ -79,7 +79,7 @@ export class MatchManager {
    * Resume an existing match
    * Validates match exists and is resumable (status: in_progress)
    */
-  async resumeMatch(matchId: number): Promise<Match> {
+  async resumeMatch(matchId: string): Promise<Match> {
     try {
       // Repository logs the find operation
       const match = await this.matchRepository.findById(matchId);
@@ -121,7 +121,7 @@ export class MatchManager {
    * Marks as completed and triggers action compaction
    * Note: Compaction moves actions from match_actions to match_players.actions JSON
    */
-  async endMatch(matchId: number): Promise<void> {
+  async endMatch(matchId: string): Promise<void> {
     try {
       logInfo('MatchManager', '🏁 Ending match - starting orchestration', { matchId });
 
@@ -161,7 +161,7 @@ export class MatchManager {
    * Pause the current match
    * Updates status to 'paused'
    */
-  async pauseMatch(matchId: number): Promise<void> {
+  async pauseMatch(matchId: string): Promise<void> {
     try {
       // Repository logs the status update
       await this.matchRepository.updateStatus(matchId, 'paused');
@@ -180,7 +180,7 @@ export class MatchManager {
    * Abandon the current match (mark as abandoned)
    * Used when user discards an incomplete match
    */
-  async abandonMatch(matchId: number): Promise<void> {
+  async abandonMatch(matchId: string): Promise<void> {
     try {
       // Repository logs the abandon operation
       await this.matchRepository.abandonMatch(matchId);
@@ -199,7 +199,7 @@ export class MatchManager {
    * Complete the current match normally (mark as completed)
    * Note: Use endMatch() instead for full orchestration with compaction
    */
-  async completeMatch(matchId: number): Promise<void> {
+  async completeMatch(matchId: string): Promise<void> {
     try {
       // Repository logs the complete operation
       await this.matchRepository.completeMatch(matchId);
@@ -219,7 +219,7 @@ export class MatchManager {
    * Called frequently during active match
    * Note: Not logged to avoid spam (called every timer tick)
    */
-  async updateMatchState(matchId: number, currentPeriod: number, timeElapsed: number): Promise<void> {
+  async updateMatchState(matchId: string, currentPeriod: number, timeElapsed: number): Promise<void> {
     try {
       // Repository doesn't log this either to avoid spam
       await this.matchRepository.updateMatchState(matchId, currentPeriod, timeElapsed);
