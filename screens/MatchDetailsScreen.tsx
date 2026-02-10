@@ -909,6 +909,7 @@ export default function MatchDetailsScreen() {
             courtLineColor={courtLineColor}
             logoUri={logoUri}
             activeTeamFilter={activeTeamFilter}
+            totalPeriods={match.total_periods || 4}
           />
         )}
       </ScrollView>

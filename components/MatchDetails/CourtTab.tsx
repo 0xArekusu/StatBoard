@@ -42,6 +42,7 @@ interface CourtTabProps {
   courtLineColor: string;
   logoUri: any;
   activeTeamFilter: "MyTeam" | "Opponent";
+  totalPeriods: number;
 }
 
 export default function CourtTab({
@@ -57,9 +58,11 @@ export default function CourtTab({
   courtLineColor,
   logoUri,
   activeTeamFilter,
+  totalPeriods,
 }: CourtTabProps) {
   const { colors, isDark } = useTheme();
   const windowDimensions = useWindowDimensions();
+  const [selectedPeriods, setSelectedPeriods] = React.useState<number[]>([]);
 
   // Theme colors
   const bgColor = colors.background;
@@ -109,8 +112,107 @@ export default function CourtTab({
     }
   }, [selectedActionTypes, setSelectedSpecifications]);
 
+  // Generate period labels (MT1, MT2 for 2 periods; QT1, QT2, QT3, QT4 for 4 periods)
+  const getPeriodLabel = (periodNumber: number) => {
+    if (totalPeriods === 2) {
+      return `MT${periodNumber}`;
+    } else if (totalPeriods === 4) {
+      return `QT${periodNumber}`;
+    } else {
+      return `P${periodNumber}`;
+    }
+  };
+
   return (
     <View style={styles.courtViewContainer}>
+      {/* Period Filters */}
+      <View
+        style={[styles.courtFiltersSection, { backgroundColor: bgColor }]}
+      >
+        <Text style={[styles.courtFilterLabel, { color: textTertiary }]}>
+          PÉRIODE
+        </Text>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.courtFilterScroll}
+        >
+          <View style={styles.courtFilterButtonsRow}>
+            <TouchableOpacity
+              onPress={() => setSelectedPeriods([])}
+              style={[
+                styles.courtFilterChip,
+                {
+                  backgroundColor:
+                    selectedPeriods.length === 0
+                      ? colors.primary
+                      : isDark
+                      ? colors.surfaceVariant
+                      : colors.surfaceVariant,
+                  borderColor:
+                    selectedPeriods.length === 0
+                      ? colors.primary
+                      : borderColor,
+                },
+              ]}
+            >
+              <Text
+                style={[
+                  styles.courtFilterChipText,
+                  {
+                    color:
+                      selectedPeriods.length === 0
+                        ? colors.text.primary
+                        : textPrimary,
+                  },
+                ]}
+              >
+                Tout
+              </Text>
+            </TouchableOpacity>
+
+            {Array.from({ length: totalPeriods }, (_, i) => i + 1).map((period) => (
+              <TouchableOpacity
+                key={period}
+                onPress={() => {
+                  if (selectedPeriods.includes(period)) {
+                    setSelectedPeriods(selectedPeriods.filter((p) => p !== period));
+                  } else {
+                    setSelectedPeriods([...selectedPeriods, period]);
+                  }
+                }}
+                style={[
+                  styles.courtFilterChip,
+                  {
+                    backgroundColor: selectedPeriods.includes(period)
+                      ? colors.primary
+                      : isDark
+                      ? colors.surfaceVariant
+                      : colors.surfaceVariant,
+                    borderColor: selectedPeriods.includes(period)
+                      ? colors.primary
+                      : borderColor,
+                  },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.courtFilterChipText,
+                    {
+                      color: selectedPeriods.includes(period)
+                        ? colors.text.primary
+                        : textPrimary,
+                    },
+                  ]}
+                >
+                  {getPeriodLabel(period)}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </ScrollView>
+      </View>
+
       {/* Action Type Filters */}
       <View
         style={[styles.courtFiltersSection, { backgroundColor: bgColor }]}
@@ -664,6 +766,14 @@ export default function CourtTab({
                   ?.filter((action: any) => {
                     // Filter by team using activeTeamFilter (already selected at top)
                     if (action.team !== activeTeamFilter) return false;
+
+                    // Filter by period
+                    if (selectedPeriods.length > 0) {
+                      const periodNumber = action.period_number;
+                      if (!selectedPeriods.includes(periodNumber)) {
+                        return false;
+                      }
+                    }
 
                     // Filter by action type
                     if (selectedActionTypes.length > 0) {

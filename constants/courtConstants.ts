@@ -25,6 +25,6 @@ export const COURT_SVG_HEIGHT_LANDSCAPE = 615.75;
  * These are maximum sizes to ensure the court fits well on screen
  */
 export const COURT_DISPLAY_WIDTH_PORTRAIT_MAX = 400;
-export const COURT_DISPLAY_HEIGHT_PORTRAIT_MAX = 655;
+export const COURT_DISPLAY_HEIGHT_PORTRAIT_MAX = 640;
 export const COURT_DISPLAY_WIDTH_LANDSCAPE_MAX = 655;
 export const COURT_DISPLAY_HEIGHT_LANDSCAPE_MAX = 352;
