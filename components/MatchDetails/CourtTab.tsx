@@ -17,7 +17,10 @@ import {
 import { useTheme } from "../../src/contexts/ThemeContext";
 import BasketballCourtSVG from "../BasketballCourtSVG";
 import { ActionType, ACTION_FILTER } from "../../constants";
-import { PlayerStats, ActionFilterType } from "../../constants/matchDetailsConstants";
+import {
+  PlayerStats,
+  ActionFilterType,
+} from "../../constants/matchDetailsConstants";
 import { getActionColor, ACTION_CONFIG } from "../../src/models/ActionTypes";
 import {
   COURT_SVG_WIDTH_PORTRAIT,
@@ -64,6 +67,18 @@ export default function CourtTab({
   const windowDimensions = useWindowDimensions();
   const [selectedPeriods, setSelectedPeriods] = React.useState<number[]>([]);
 
+  // Find all unique periods in actions (including OT)
+  const availablePeriods = React.useMemo(() => {
+    const periods = new Set<number>();
+    actions?.forEach((action: any) => {
+      if (action.period_number) {
+        periods.add(action.period_number);
+      }
+    });
+    const sortedPeriods = Array.from(periods).sort((a, b) => a - b);
+    return sortedPeriods;
+  }, [actions]);
+
   // Theme colors
   const bgColor = colors.background;
   const surfaceColor = colors.surface;
@@ -93,7 +108,8 @@ export default function CourtTab({
     // Map ACTION_FILTER to ActionType
     let actionType: string | null = null;
     if (selectedType === ACTION_FILTER.SHOOTING) actionType = ActionType.SHOT;
-    else if (selectedType === ACTION_FILTER.REBOUNDS) actionType = ActionType.REBOUND;
+    else if (selectedType === ACTION_FILTER.REBOUNDS)
+      actionType = ActionType.REBOUND;
     else if (selectedType === ACTION_FILTER.FOULS) actionType = ActionType.FOUL;
 
     if (!actionType) return [];
@@ -112,8 +128,15 @@ export default function CourtTab({
     }
   }, [selectedActionTypes, setSelectedSpecifications]);
 
-  // Generate period labels (MT1, MT2 for 2 periods; QT1, QT2, QT3, QT4 for 4 periods)
+  // Generate period labels (MT1, MT2 for 2 periods; QT1, QT2, QT3, QT4 for 4 periods; OT1, OT2, etc. for overtime)
   const getPeriodLabel = (periodNumber: number) => {
+    // Overtime periods (beyond regular periods)
+    if (periodNumber > totalPeriods) {
+      const otNumber = periodNumber - totalPeriods;
+      return `OT${otNumber}`;
+    }
+
+    // Regular periods
     if (totalPeriods === 2) {
       return `MT${periodNumber}`;
     } else if (totalPeriods === 4) {
@@ -126,9 +149,7 @@ export default function CourtTab({
   return (
     <View style={styles.courtViewContainer}>
       {/* Period Filters */}
-      <View
-        style={[styles.courtFiltersSection, { backgroundColor: bgColor }]}
-      >
+      <View style={[styles.courtFiltersSection, { backgroundColor: bgColor }]}>
         <Text style={[styles.courtFilterLabel, { color: textTertiary }]}>
           PÉRIODE
         </Text>
@@ -150,9 +171,7 @@ export default function CourtTab({
                       ? colors.surfaceVariant
                       : colors.surfaceVariant,
                   borderColor:
-                    selectedPeriods.length === 0
-                      ? colors.primary
-                      : borderColor,
+                    selectedPeriods.length === 0 ? colors.primary : borderColor,
                 },
               ]}
             >
@@ -171,12 +190,14 @@ export default function CourtTab({
               </Text>
             </TouchableOpacity>
 
-            {Array.from({ length: totalPeriods }, (_, i) => i + 1).map((period) => (
+            {availablePeriods.map((period) => (
               <TouchableOpacity
                 key={period}
                 onPress={() => {
                   if (selectedPeriods.includes(period)) {
-                    setSelectedPeriods(selectedPeriods.filter((p) => p !== period));
+                    setSelectedPeriods(
+                      selectedPeriods.filter((p) => p !== period)
+                    );
                   } else {
                     setSelectedPeriods([...selectedPeriods, period]);
                   }
@@ -214,9 +235,7 @@ export default function CourtTab({
       </View>
 
       {/* Action Type Filters */}
-      <View
-        style={[styles.courtFiltersSection, { backgroundColor: bgColor }]}
-      >
+      <View style={[styles.courtFiltersSection, { backgroundColor: bgColor }]}>
         <Text style={[styles.courtFilterLabel, { color: textTertiary }]}>
           TYPE D'ACTION
         </Text>
@@ -263,7 +282,9 @@ export default function CourtTab({
               onPress={() => {
                 if (selectedActionTypes.includes(ACTION_FILTER.SHOOTING)) {
                   setSelectedActionTypes(
-                    selectedActionTypes.filter((t) => t !== ACTION_FILTER.SHOOTING)
+                    selectedActionTypes.filter(
+                      (t) => t !== ACTION_FILTER.SHOOTING
+                    )
                   );
                 } else {
                   setSelectedActionTypes([
@@ -282,7 +303,9 @@ export default function CourtTab({
                     : isDark
                     ? colors.surfaceVariant
                     : colors.surfaceVariant,
-                  borderColor: selectedActionTypes.includes(ACTION_FILTER.SHOOTING)
+                  borderColor: selectedActionTypes.includes(
+                    ACTION_FILTER.SHOOTING
+                  )
                     ? colors.primary
                     : borderColor,
                 },
@@ -306,7 +329,9 @@ export default function CourtTab({
               onPress={() => {
                 if (selectedActionTypes.includes(ACTION_FILTER.REBOUNDS)) {
                   setSelectedActionTypes(
-                    selectedActionTypes.filter((t) => t !== ACTION_FILTER.REBOUNDS)
+                    selectedActionTypes.filter(
+                      (t) => t !== ACTION_FILTER.REBOUNDS
+                    )
                   );
                 } else {
                   setSelectedActionTypes([
@@ -325,7 +350,9 @@ export default function CourtTab({
                     : isDark
                     ? colors.surfaceVariant
                     : colors.surfaceVariant,
-                  borderColor: selectedActionTypes.includes(ACTION_FILTER.REBOUNDS)
+                  borderColor: selectedActionTypes.includes(
+                    ACTION_FILTER.REBOUNDS
+                  )
                     ? colors.primary
                     : borderColor,
                 },
@@ -349,7 +376,9 @@ export default function CourtTab({
               onPress={() => {
                 if (selectedActionTypes.includes(ACTION_FILTER.ASSISTS)) {
                   setSelectedActionTypes(
-                    selectedActionTypes.filter((t) => t !== ACTION_FILTER.ASSISTS)
+                    selectedActionTypes.filter(
+                      (t) => t !== ACTION_FILTER.ASSISTS
+                    )
                   );
                 } else {
                   setSelectedActionTypes([
@@ -361,12 +390,16 @@ export default function CourtTab({
               style={[
                 styles.courtFilterChip,
                 {
-                  backgroundColor: selectedActionTypes.includes(ACTION_FILTER.ASSISTS)
+                  backgroundColor: selectedActionTypes.includes(
+                    ACTION_FILTER.ASSISTS
+                  )
                     ? colors.primary
                     : isDark
                     ? colors.surfaceVariant
                     : colors.surfaceVariant,
-                  borderColor: selectedActionTypes.includes(ACTION_FILTER.ASSISTS)
+                  borderColor: selectedActionTypes.includes(
+                    ACTION_FILTER.ASSISTS
+                  )
                     ? colors.primary
                     : borderColor,
                 },
@@ -390,7 +423,9 @@ export default function CourtTab({
               onPress={() => {
                 if (selectedActionTypes.includes(ACTION_FILTER.STEALS)) {
                   setSelectedActionTypes(
-                    selectedActionTypes.filter((t) => t !== ACTION_FILTER.STEALS)
+                    selectedActionTypes.filter(
+                      (t) => t !== ACTION_FILTER.STEALS
+                    )
                   );
                 } else {
                   setSelectedActionTypes([
@@ -402,12 +437,16 @@ export default function CourtTab({
               style={[
                 styles.courtFilterChip,
                 {
-                  backgroundColor: selectedActionTypes.includes(ACTION_FILTER.STEALS)
+                  backgroundColor: selectedActionTypes.includes(
+                    ACTION_FILTER.STEALS
+                  )
                     ? colors.primary
                     : isDark
                     ? colors.surfaceVariant
                     : colors.surfaceVariant,
-                  borderColor: selectedActionTypes.includes(ACTION_FILTER.STEALS)
+                  borderColor: selectedActionTypes.includes(
+                    ACTION_FILTER.STEALS
+                  )
                     ? colors.primary
                     : borderColor,
                 },
@@ -431,7 +470,9 @@ export default function CourtTab({
               onPress={() => {
                 if (selectedActionTypes.includes(ACTION_FILTER.BLOCKS)) {
                   setSelectedActionTypes(
-                    selectedActionTypes.filter((t) => t !== ACTION_FILTER.BLOCKS)
+                    selectedActionTypes.filter(
+                      (t) => t !== ACTION_FILTER.BLOCKS
+                    )
                   );
                 } else {
                   setSelectedActionTypes([
@@ -443,12 +484,16 @@ export default function CourtTab({
               style={[
                 styles.courtFilterChip,
                 {
-                  backgroundColor: selectedActionTypes.includes(ACTION_FILTER.BLOCKS)
+                  backgroundColor: selectedActionTypes.includes(
+                    ACTION_FILTER.BLOCKS
+                  )
                     ? colors.primary
                     : isDark
                     ? colors.surfaceVariant
                     : colors.surfaceVariant,
-                  borderColor: selectedActionTypes.includes(ACTION_FILTER.BLOCKS)
+                  borderColor: selectedActionTypes.includes(
+                    ACTION_FILTER.BLOCKS
+                  )
                     ? colors.primary
                     : borderColor,
                 },
@@ -472,7 +517,9 @@ export default function CourtTab({
               onPress={() => {
                 if (selectedActionTypes.includes(ACTION_FILTER.TURNOVERS)) {
                   setSelectedActionTypes(
-                    selectedActionTypes.filter((t) => t !== ACTION_FILTER.TURNOVERS)
+                    selectedActionTypes.filter(
+                      (t) => t !== ACTION_FILTER.TURNOVERS
+                    )
                   );
                 } else {
                   setSelectedActionTypes([
@@ -491,7 +538,9 @@ export default function CourtTab({
                     : isDark
                     ? colors.surfaceVariant
                     : colors.surfaceVariant,
-                  borderColor: selectedActionTypes.includes(ACTION_FILTER.TURNOVERS)
+                  borderColor: selectedActionTypes.includes(
+                    ACTION_FILTER.TURNOVERS
+                  )
                     ? colors.primary
                     : borderColor,
                 },
@@ -527,7 +576,9 @@ export default function CourtTab({
               style={[
                 styles.courtFilterChip,
                 {
-                  backgroundColor: selectedActionTypes.includes(ACTION_FILTER.FOULS)
+                  backgroundColor: selectedActionTypes.includes(
+                    ACTION_FILTER.FOULS
+                  )
                     ? colors.primary
                     : isDark
                     ? colors.surfaceVariant
@@ -556,7 +607,9 @@ export default function CourtTab({
               onPress={() => {
                 if (selectedActionTypes.includes(ACTION_FILTER.FOUL_DRAWN)) {
                   setSelectedActionTypes(
-                    selectedActionTypes.filter((t) => t !== ACTION_FILTER.FOUL_DRAWN)
+                    selectedActionTypes.filter(
+                      (t) => t !== ACTION_FILTER.FOUL_DRAWN
+                    )
                   );
                 } else {
                   setSelectedActionTypes([
@@ -568,12 +621,16 @@ export default function CourtTab({
               style={[
                 styles.courtFilterChip,
                 {
-                  backgroundColor: selectedActionTypes.includes(ACTION_FILTER.FOUL_DRAWN)
+                  backgroundColor: selectedActionTypes.includes(
+                    ACTION_FILTER.FOUL_DRAWN
+                  )
                     ? colors.primary
                     : isDark
                     ? colors.surfaceVariant
                     : colors.surfaceVariant,
-                  borderColor: selectedActionTypes.includes(ACTION_FILTER.FOUL_DRAWN)
+                  borderColor: selectedActionTypes.includes(
+                    ACTION_FILTER.FOUL_DRAWN
+                  )
                     ? colors.primary
                     : borderColor,
                 },
@@ -583,7 +640,9 @@ export default function CourtTab({
                 style={[
                   styles.courtFilterChipText,
                   {
-                    color: selectedActionTypes.includes(ACTION_FILTER.FOUL_DRAWN)
+                    color: selectedActionTypes.includes(
+                      ACTION_FILTER.FOUL_DRAWN
+                    )
                       ? colors.text.primary
                       : textPrimary,
                   },
@@ -657,9 +716,7 @@ export default function CourtTab({
       )}
 
       {/* Player Filters */}
-      <View
-        style={[styles.courtFiltersSection, { backgroundColor: bgColor }]}
-      >
+      <View style={[styles.courtFiltersSection, { backgroundColor: bgColor }]}>
         <Text style={[styles.courtFilterLabel, { color: textTertiary }]}>
           JOUEURS
         </Text>
@@ -670,18 +727,14 @@ export default function CourtTab({
         >
           <View style={styles.courtPlayerButtonsRow}>
             {stats.map((player) => {
-              const isSelected = selectedPlayers.includes(
-                player.playerNumber
-              );
+              const isSelected = selectedPlayers.includes(player.playerNumber);
               return (
                 <TouchableOpacity
                   key={player.playerNumber}
                   onPress={() => {
                     if (isSelected) {
                       setSelectedPlayers(
-                        selectedPlayers.filter(
-                          (n) => n !== player.playerNumber
-                        )
+                        selectedPlayers.filter((n) => n !== player.playerNumber)
                       );
                     } else {
                       setSelectedPlayers([
@@ -698,9 +751,7 @@ export default function CourtTab({
                         : isDark
                         ? colors.surfaceVariant
                         : colors.surfaceVariant,
-                      borderColor: isSelected
-                        ? colors.primary
-                        : borderColor,
+                      borderColor: isSelected ? colors.primary : borderColor,
                     },
                   ]}
                 >
@@ -718,9 +769,7 @@ export default function CourtTab({
                     style={[
                       styles.courtPlayerName,
                       {
-                        color: isSelected
-                          ? colors.text.primary
-                          : textPrimary,
+                        color: isSelected ? colors.text.primary : textPrimary,
                       },
                     ]}
                     numberOfLines={1}
@@ -750,12 +799,14 @@ export default function CourtTab({
                 backgroundColor: surfaceColor,
                 width: "100%", // Court width + padding
                 height: courtHeight + 32, // Court height + padding
-                alignSelf: 'center',
+                alignSelf: "center",
               },
             ]}
           >
             <BasketballCourtSVG
-              key={`court-${isPortrait ? 'portrait' : 'landscape'}-${courtWidth}-${courtHeight}`}
+              key={`court-${
+                isPortrait ? "portrait" : "landscape"
+              }-${courtWidth}-${courtHeight}`}
               width={courtWidth}
               height={courtHeight}
               backgroundColor={courtBackgroundColor}
@@ -820,7 +871,9 @@ export default function CourtTab({
                       )
                         matchesFilter = true;
                       if (
-                        selectedActionTypes.includes(ACTION_FILTER.FOUL_DRAWN) &&
+                        selectedActionTypes.includes(
+                          ACTION_FILTER.FOUL_DRAWN
+                        ) &&
                         actionType === ActionType.FOUL_DRAWN.toUpperCase()
                       )
                         matchesFilter = true;
@@ -838,10 +891,8 @@ export default function CourtTab({
 
                     // Filter by player
                     if (selectedPlayers.length > 0) {
-                      const playerNum =
-                        action.player_number || action.player;
-                      if (!selectedPlayers.includes(playerNum))
-                        return false;
+                      const playerNum = action.player_number || action.player;
+                      if (!selectedPlayers.includes(playerNum)) return false;
                     }
 
                     return true;
@@ -850,16 +901,22 @@ export default function CourtTab({
                   .map((action: any, index: number) => {
                     // Convert normalized coordinates to SVG coordinates
                     const svgX =
-                      action.semanticPosition.xNormalized * COURT_SVG_WIDTH_PORTRAIT;
+                      action.semanticPosition.xNormalized *
+                      COURT_SVG_WIDTH_PORTRAIT;
                     const svgY =
-                      action.semanticPosition.yNormalized * COURT_SVG_HEIGHT_PORTRAIT;
+                      action.semanticPosition.yNormalized *
+                      COURT_SVG_HEIGHT_PORTRAIT;
 
                     // Get marker color from action config
                     const actionType = action.action_type || action.type || "";
                     const specification = action.specification || "";
                     const points = action.points;
 
-                    const markerColor = getActionColor(actionType, specification, points);
+                    const markerColor = getActionColor(
+                      actionType,
+                      specification,
+                      points
+                    );
 
                     return {
                       id: `${action.team}-${
