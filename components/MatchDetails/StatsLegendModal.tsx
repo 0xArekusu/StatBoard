@@ -5,17 +5,15 @@
  */
 
 import React from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  Modal,
-} from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, Modal } from "react-native";
 import Svg, { Circle, Polygon } from "react-native-svg";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useTheme } from "../../src/contexts/ThemeContext";
-import { getActionColor, ActionType, ReboundSpecification } from "../../src/models/ActionTypes";
+import {
+  getActionColor,
+  ActionType,
+  ReboundSpecification,
+} from "../../src/models/ActionTypes";
 import { MarkerType } from "./SharedComponents";
 
 interface StatsLegendModalProps {
@@ -37,7 +35,12 @@ export default function StatsLegendModal({
 
     if (type === MarkerType.CIRCLE) {
       return (
-        <Svg width={size} height={size} viewBox="0 0 16 16" style={styles.markerIcon}>
+        <Svg
+          width={size}
+          height={size}
+          viewBox="0 0 16 16"
+          style={styles.markerIcon}
+        >
           <Circle
             cx={8}
             cy={8}
@@ -54,9 +57,16 @@ export default function StatsLegendModal({
       const height = 6;
       const width = 6;
       return (
-        <Svg width={size} height={size} viewBox="0 0 16 16" style={styles.markerIcon}>
+        <Svg
+          width={size}
+          height={size}
+          viewBox="0 0 16 16"
+          style={styles.markerIcon}
+        >
           <Polygon
-            points={`8,${8 - height} ${8 + width},${8 + height} ${8 - width},${8 + height}`}
+            points={`8,${8 - height} ${8 + width},${8 + height} ${8 - width},${
+              8 + height
+            }`}
             fill={color}
             stroke="#FFFFFF"
             strokeWidth="1"
@@ -68,9 +78,16 @@ export default function StatsLegendModal({
     if (type === MarkerType.DIAMOND) {
       const diamondSize = 6;
       return (
-        <Svg width={size} height={size} viewBox="0 0 16 16" style={styles.markerIcon}>
+        <Svg
+          width={size}
+          height={size}
+          viewBox="0 0 16 16"
+          style={styles.markerIcon}
+        >
           <Polygon
-            points={`8,${8 - diamondSize} ${8 + diamondSize},8 8,${8 + diamondSize} ${8 - diamondSize},8`}
+            points={`8,${8 - diamondSize} ${8 + diamondSize},8 8,${
+              8 + diamondSize
+            } ${8 - diamondSize},8`}
             fill={color}
             stroke="#FFFFFF"
             strokeWidth="2"
@@ -103,10 +120,7 @@ export default function StatsLegendModal({
           ]}
           onStartShouldSetResponder={() => true}
         >
-          <TouchableOpacity
-            onPress={onClose}
-            style={styles.modalCloseButton}
-          >
+          <TouchableOpacity onPress={onClose} style={styles.modalCloseButton}>
             <MaterialCommunityIcons
               name="close"
               size={20}
@@ -181,7 +195,10 @@ export default function StatsLegendModal({
               <Text style={[styles.legendValue, { color: textPrimary }]}>
                 Rebonds
               </Text>
-              {renderMarker(MarkerType.TRIANGLE, getActionColor(ActionType.REBOUND, '', 0))}
+              {renderMarker(
+                MarkerType.TRIANGLE,
+                getActionColor(ActionType.REBOUND, "", 0)
+              )}
             </View>
             <View style={styles.legendItem}>
               <Text style={[styles.legendLabel, { color: textSecondary }]}>
@@ -190,7 +207,14 @@ export default function StatsLegendModal({
               <Text style={[styles.legendValue, { color: textPrimary }]}>
                 Rebonds offensifs
               </Text>
-              {renderMarker(MarkerType.TRIANGLE, getActionColor(ActionType.REBOUND, ReboundSpecification.OFFENSIVE, 0))}
+              {renderMarker(
+                MarkerType.TRIANGLE,
+                getActionColor(
+                  ActionType.REBOUND,
+                  ReboundSpecification.OFFENSIVE,
+                  0
+                )
+              )}
             </View>
             <View style={styles.legendItem}>
               <Text style={[styles.legendLabel, { color: textSecondary }]}>
@@ -199,7 +223,14 @@ export default function StatsLegendModal({
               <Text style={[styles.legendValue, { color: textPrimary }]}>
                 Rebonds défensifs
               </Text>
-              {renderMarker(MarkerType.TRIANGLE, getActionColor(ActionType.REBOUND, ReboundSpecification.DEFENSIVE, 0))}
+              {renderMarker(
+                MarkerType.TRIANGLE,
+                getActionColor(
+                  ActionType.REBOUND,
+                  ReboundSpecification.DEFENSIVE,
+                  0
+                )
+              )}
             </View>
             <View style={styles.legendItem}>
               <Text style={[styles.legendLabel, { color: textSecondary }]}>
@@ -208,7 +239,10 @@ export default function StatsLegendModal({
               <Text style={[styles.legendValue, { color: textPrimary }]}>
                 Passes décisives
               </Text>
-              {renderMarker(MarkerType.CIRCLE, getActionColor(ActionType.ASSIST, '', 0))}
+              {renderMarker(
+                MarkerType.CIRCLE,
+                getActionColor(ActionType.ASSIST, "", 0)
+              )}
             </View>
             <View style={styles.legendItem}>
               <Text style={[styles.legendLabel, { color: textSecondary }]}>
@@ -217,7 +251,10 @@ export default function StatsLegendModal({
               <Text style={[styles.legendValue, { color: textPrimary }]}>
                 Interceptions
               </Text>
-              {renderMarker(MarkerType.CIRCLE, getActionColor(ActionType.STEAL, '', 0))}
+              {renderMarker(
+                MarkerType.CIRCLE,
+                getActionColor(ActionType.STEAL, "", 0)
+              )}
             </View>
             <View style={styles.legendItem}>
               <Text style={[styles.legendLabel, { color: textSecondary }]}>
@@ -226,7 +263,10 @@ export default function StatsLegendModal({
               <Text style={[styles.legendValue, { color: textPrimary }]}>
                 Contres
               </Text>
-              {renderMarker(MarkerType.CIRCLE, getActionColor(ActionType.BLOCK, '', 0))}
+              {renderMarker(
+                MarkerType.CIRCLE,
+                getActionColor(ActionType.BLOCK, "", 0)
+              )}
             </View>
             <View style={styles.legendItem}>
               <Text style={[styles.legendLabel, { color: textSecondary }]}>
@@ -235,7 +275,10 @@ export default function StatsLegendModal({
               <Text style={[styles.legendValue, { color: textPrimary }]}>
                 Balles perdues
               </Text>
-              {renderMarker(MarkerType.CIRCLE, getActionColor(ActionType.TURNOVER, '', 0))}
+              {renderMarker(
+                MarkerType.CIRCLE,
+                getActionColor(ActionType.TURNOVER, "", 0)
+              )}
             </View>
             <View style={styles.legendItem}>
               <Text style={[styles.legendLabel, { color: textSecondary }]}>
@@ -244,7 +287,10 @@ export default function StatsLegendModal({
               <Text style={[styles.legendValue, { color: textPrimary }]}>
                 Fautes
               </Text>
-              {renderMarker(MarkerType.DIAMOND, getActionColor(ActionType.FOUL, '', 0))}
+              {renderMarker(
+                MarkerType.DIAMOND,
+                getActionColor(ActionType.FOUL, "", 0)
+              )}
             </View>
             <View style={styles.legendItem}>
               <Text style={[styles.legendLabel, { color: textSecondary }]}>
@@ -253,14 +299,17 @@ export default function StatsLegendModal({
               <Text style={[styles.legendValue, { color: textPrimary }]}>
                 Fautes provoquées
               </Text>
-              {renderMarker(MarkerType.DIAMOND, getActionColor(ActionType.FOUL_DRAWN, '', 0))}
+              {renderMarker(
+                MarkerType.DIAMOND,
+                getActionColor(ActionType.FOUL_DRAWN, "", 0)
+              )}
             </View>
             <View style={styles.legendItem}>
               <Text style={[styles.legendLabel, { color: textSecondary }]}>
-                EFF
+                EVAL
               </Text>
               <Text style={[styles.legendValue, { color: textPrimary }]}>
-                Efficacité
+                Evaluation
               </Text>
             </View>
           </View>

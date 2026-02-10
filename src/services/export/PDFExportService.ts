@@ -670,7 +670,7 @@ export class PDFExportService {
    */
   private static readonly STATS_LEGEND = `MIN: Minutes jouées | PTS: Points | TIRS: Tirs totaux (marqués/tentés) | 2PTS: 2 points (marqués/tentés) | 3PTS: 3 points (marqués/tentés) | LF: Lancers francs (marqués/tentés)<br>
       REB: Rebonds totaux | RO: Rebonds offensifs | RD: Rebonds défensifs<br>
-      PD: Passes décisives | INT: Interceptions | CTR: Contres | BP: Balles perdues | FT: Fautes totales | EFF: Efficacité`;
+      PD: Passes décisives | INT: Interceptions | CTR: Contres | BP: Balles perdues | FT: Fautes totales | EVAL: Evaluation`;
 
   /**
    * Get playing time formatted as MM:SS from actual tracked time
@@ -785,7 +785,7 @@ export class PDFExportService {
           <th>CTR</th>
           <th>BP</th>
           <th>FT</th>
-          <th>EFF</th>
+          <th>EVAL</th>
         </tr>
       </thead>
       <tbody>
@@ -804,19 +804,25 @@ export class PDFExportService {
             const totalFgm = player.stats.twopm + player.stats.threepm;
             const totalFga = player.stats.twopa + player.stats.threepa;
 
-            console.log(`[PDF Export] 🔢 Calcul EFF pour ${player.name} (#${player.num}):`, {
-              points: player.stats.points,
-              rebounds: totalRebounds,
-              ast: player.stats.ast,
-              stl: player.stats.stl,
-              blk: player.stats.blk,
-              fgMissed: (player.stats.twopa - player.stats.twopm) + (player.stats.threepa - player.stats.threepm),
-              ftMissed: player.stats.fta - player.stats.ftm,
-              tov: player.stats.tov,
-            });
+            console.log(
+              `[PDF Export] 🔢 Calcul EVAL pour ${player.name} (#${player.num}):`,
+              {
+                points: player.stats.points,
+                rebounds: totalRebounds,
+                ast: player.stats.ast,
+                stl: player.stats.stl,
+                blk: player.stats.blk,
+                fgMissed:
+                  player.stats.twopa -
+                  player.stats.twopm +
+                  (player.stats.threepa - player.stats.threepm),
+                ftMissed: player.stats.fta - player.stats.ftm,
+                tov: player.stats.tov,
+              }
+            );
 
             const efficiency = calculateEfficiencyFromDB(player.stats);
-            console.log(`[PDF Export] ✅ EFF calculée:`, efficiency);
+            console.log(`[PDF Export] ✅ EVAL calculée:`, efficiency);
 
             const playingTime = this.getPlayingTime(player.playingTimeSeconds);
 

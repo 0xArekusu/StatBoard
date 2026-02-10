@@ -56,665 +56,638 @@ export default function StatsTab({
         showsHorizontalScrollIndicator={true}
         contentContainerStyle={styles.scrollViewContent}
       >
-      <View
-        style={[
-          styles.tableContainer,
-          { backgroundColor: surfaceColor, borderColor: borderColor },
-        ]}
-      >
-        {/* Table Header */}
         <View
           style={[
-            styles.tableHeader,
-            { backgroundColor: colors.surfaceVariant },
+            styles.tableContainer,
+            { backgroundColor: surfaceColor, borderColor: borderColor },
           ]}
         >
-          <TouchableOpacity onPress={() => handleSort("name")}>
-            <Text
-              style={[
-                styles.tableHeaderCell,
-                styles.playerCell,
-                {
-                  color:
-                    sortBy === "name" ? colors.primary : textSecondary,
-                },
-              ]}
-            >
-              JOUEUR{" "}
-              {sortBy === "name" && (sortOrder === "desc" ? "↓" : "↑")}
-            </Text>
-          </TouchableOpacity>
-          <View style={styles.numberCell}>
-            <Text
-              style={[
-                styles.tableHeaderCell,
-                {
-                  color: textTertiary,
-                  textAlign: "center"
-                },
-              ]}
-            >
-              #
-            </Text>
-          </View>
-          <TouchableOpacity onPress={() => handleSort("min")}>
-            <Text
-              style={[
-                styles.tableHeaderCell,
-                styles.minCell,
-                {
-                  color:
-                    sortBy === "min" ? colors.primary : textTertiary,
-                },
-              ]}
-            >
-              MIN {sortBy === "min" && (sortOrder === "desc" ? "↓" : "↑")}
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => handleSort("pts")}>
-            <Text
-              style={[
-                styles.tableHeaderCell,
-                styles.statCell,
-                {
-                  color:
-                    sortBy === "pts" ? colors.primary : textSecondary,
-                },
-              ]}
-            >
-              PTS {sortBy === "pts" && (sortOrder === "desc" ? "↓" : "↑")}
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => handleSort("fgm")}>
-            <Text
-              style={[
-                styles.tableHeaderCell,
-                styles.statCellWide,
-                {
-                  color:
-                    sortBy === "fgm" ? colors.primary : textSecondary,
-                },
-              ]}
-            >
-              TIRS{" "}
-              {sortBy === "fgm" && (sortOrder === "desc" ? "↓" : "↑")}
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => handleSort("fg2m")}>
-            <Text
-              style={[
-                styles.tableHeaderCell,
-                styles.statCellWide,
-                {
-                  color:
-                    sortBy === "fg2m" ? colors.primary : textSecondary,
-                },
-              ]}
-            >
-              2PTS{" "}
-              {sortBy === "fg2m" && (sortOrder === "desc" ? "↓" : "↑")}
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => handleSort("fg3m")}>
-            <Text
-              style={[
-                styles.tableHeaderCell,
-                styles.statCellWide,
-                {
-                  color:
-                    sortBy === "fg3m" ? colors.primary : textSecondary,
-                },
-              ]}
-            >
-              3PTS{" "}
-              {sortBy === "fg3m" && (sortOrder === "desc" ? "↓" : "↑")}
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => handleSort("ftm")}>
-            <Text
-              style={[
-                styles.tableHeaderCell,
-                styles.statCellWide,
-                {
-                  color:
-                    sortBy === "ftm" ? colors.primary : textSecondary,
-                },
-              ]}
-            >
-              LF {sortBy === "ftm" && (sortOrder === "desc" ? "↓" : "↑")}
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => handleSort("reb")}>
-            <Text
-              style={[
-                styles.tableHeaderCell,
-                styles.statCell,
-                {
-                  color:
-                    sortBy === "reb" ? colors.primary : textSecondary,
-                },
-              ]}
-            >
-              REB {sortBy === "reb" && (sortOrder === "desc" ? "↓" : "↑")}
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => handleSort("reb_off" as SortBy)}>
-            <Text
-              style={[
-                styles.tableHeaderCell,
-                styles.statCell,
-                {
-                  color:
-                    sortBy === "reb_off"
-                      ? colors.primary
-                      : textSecondary,
-                },
-              ]}
-            >
-              RO{" "}
-              {sortBy === "reb_off" && (sortOrder === "desc" ? "↓" : "↑")}
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => handleSort("reb_def" as SortBy)}>
-            <Text
-              style={[
-                styles.tableHeaderCell,
-                styles.statCell,
-                {
-                  color:
-                    sortBy === "reb_def"
-                      ? colors.primary
-                      : textSecondary,
-                },
-              ]}
-            >
-              RD{" "}
-              {sortBy === "reb_def" && (sortOrder === "desc" ? "↓" : "↑")}
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => handleSort("ast")}>
-            <Text
-              style={[
-                styles.tableHeaderCell,
-                styles.statCell,
-                {
-                  color:
-                    sortBy === "ast" ? colors.primary : textSecondary,
-                },
-              ]}
-            >
-              AST {sortBy === "ast" && (sortOrder === "desc" ? "↓" : "↑")}
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => handleSort("stl")}>
-            <Text
-              style={[
-                styles.tableHeaderCell,
-                styles.statCell,
-                {
-                  color:
-                    sortBy === "stl" ? colors.primary : textSecondary,
-                },
-              ]}
-            >
-              INT {sortBy === "stl" && (sortOrder === "desc" ? "↓" : "↑")}
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => handleSort("blk")}>
-            <Text
-              style={[
-                styles.tableHeaderCell,
-                styles.statCell,
-                {
-                  color:
-                    sortBy === "blk" ? colors.primary : textSecondary,
-                },
-              ]}
-            >
-              CTR {sortBy === "blk" && (sortOrder === "desc" ? "↓" : "↑")}
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => handleSort("to")}>
-            <Text
-              style={[
-                styles.tableHeaderCell,
-                styles.statCell,
-                {
-                  color:
-                    sortBy === "to" ? colors.primary : textSecondary,
-                },
-              ]}
-            >
-              BP {sortBy === "to" && (sortOrder === "desc" ? "↓" : "↑")}
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => handleSort("pf")}>
-            <Text
-              style={[
-                styles.tableHeaderCell,
-                styles.statCell,
-                {
-                  color:
-                    sortBy === "pf" ? colors.primary : textSecondary,
-                },
-              ]}
-            >
-              FT {sortBy === "pf" && (sortOrder === "desc" ? "↓" : "↑")}
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => handleSort("fd")}>
-            <Text
-              style={[
-                styles.tableHeaderCell,
-                styles.statCell,
-                {
-                  color:
-                    sortBy === "fd" ? colors.primary : textSecondary,
-                },
-              ]}
-            >
-              FP {sortBy === "fd" && (sortOrder === "desc" ? "↓" : "↑")}
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => handleSort("eff")}>
-            <Text
-              style={[
-                styles.tableHeaderCell,
-                styles.statCell,
-                {
-                  color:
-                    sortBy === "eff" ? colors.primary : textSecondary,
-                },
-              ]}
-            >
-              EFF {sortBy === "eff" && (sortOrder === "desc" ? "↓" : "↑")}
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Table Body */}
-        {stats.map((player, index) => (
-          <TouchableOpacity
-            key={`${player.team}-${player.playerNumber}-${index}`}
-            onPress={() => setViewPlayer(player)}
-            style={[
-              styles.tableRow,
-              { borderBottomColor: borderColor },
-              index === stats.length - 1 && { borderBottomWidth: 0 },
-            ]}
-          >
-            <View style={styles.playerCell}>
-              <PlayerAvatar
-                playerName={player.name}
-                playerNumber={player.playerNumber}
-                photoUrl={player.photoUrl}
-                size={24}
-                borderColor={borderColor}
-                backgroundColor={bgColor}
-                textColor={textSecondary}
-                borderWidth={0}
-              />
-              <Text
-                style={[styles.playerNameText, { color: textPrimary }]}
-                numberOfLines={1}
-              >
-                {player.name}
-              </Text>
-            </View>
-            <Text
-              style={[
-                styles.tableCell,
-                styles.numberCell,
-                { color: textSecondary },
-              ]}
-            >
-              {player.playerNumber}
-            </Text>
-            <Text
-              style={[
-                styles.tableCell,
-                styles.minCell,
-                { color: textTertiary },
-              ]}
-            >
-              {player.min}
-            </Text>
-            <Text
-              style={[
-                styles.tableCell,
-                styles.statCell,
-                styles.statCellBold,
-                { color: textPrimary },
-              ]}
-            >
-              {player.pts}
-            </Text>
-            <Text
-              style={[
-                styles.tableCell,
-                styles.statCellWide,
-                { color: textPrimary },
-              ]}
-            >
-              {player.fgm}/{player.fga}
-            </Text>
-            <Text
-              style={[
-                styles.tableCell,
-                styles.statCellWide,
-                { color: textPrimary },
-              ]}
-            >
-              {player.fg2m}/{player.fg2a}
-            </Text>
-            <Text
-              style={[
-                styles.tableCell,
-                styles.statCellWide,
-                { color: textPrimary },
-              ]}
-            >
-              {player.fg3m}/{player.fg3a}
-            </Text>
-            <Text
-              style={[
-                styles.tableCell,
-                styles.statCellWide,
-                { color: textPrimary },
-              ]}
-            >
-              {player.ftm}/{player.fta}
-            </Text>
-            <Text
-              style={[
-                styles.tableCell,
-                styles.statCell,
-                { color: textPrimary },
-              ]}
-            >
-              {player.reb}
-            </Text>
-            <Text
-              style={[
-                styles.tableCell,
-                styles.statCell,
-                { color: textPrimary },
-              ]}
-            >
-              {player.reb_off}
-            </Text>
-            <Text
-              style={[
-                styles.tableCell,
-                styles.statCell,
-                { color: textPrimary },
-              ]}
-            >
-              {player.reb_def}
-            </Text>
-            <Text
-              style={[
-                styles.tableCell,
-                styles.statCell,
-                { color: textPrimary },
-              ]}
-            >
-              {player.ast}
-            </Text>
-            <Text
-              style={[
-                styles.tableCell,
-                styles.statCell,
-                { color: textPrimary },
-              ]}
-            >
-              {player.stl}
-            </Text>
-            <Text
-              style={[
-                styles.tableCell,
-                styles.statCell,
-                { color: textPrimary },
-              ]}
-            >
-              {player.blk}
-            </Text>
-            <Text
-              style={[
-                styles.tableCell,
-                styles.statCell,
-                { color: textPrimary },
-              ]}
-            >
-              {player.to}
-            </Text>
-            <Text
-              style={[
-                styles.tableCell,
-                styles.statCell,
-                { color: textPrimary },
-              ]}
-            >
-              {player.pf}
-            </Text>
-            <Text
-              style={[
-                styles.tableCell,
-                styles.statCell,
-                { color: textPrimary },
-              ]}
-            >
-              {player.fd}
-            </Text>
-            <Text
-              style={[
-                styles.tableCell,
-                styles.statCell,
-                styles.statCellBold,
-                { color: colors.primary },
-              ]}
-            >
-              {player.eff}
-            </Text>
-          </TouchableOpacity>
-        ))}
-
-        {/* Total Row */}
-        {stats.length > 0 && (
+          {/* Table Header */}
           <View
             style={[
-              styles.tableRow,
-              styles.totalRow,
-              {
-                backgroundColor: colors.surfaceVariant,
-                borderBottomWidth: 0,
-              },
+              styles.tableHeader,
+              { backgroundColor: colors.surfaceVariant },
             ]}
           >
-            <View style={styles.playerCell}>
+            <TouchableOpacity onPress={() => handleSort("name")}>
               <Text
                 style={[
-                  styles.playerNameText,
-                  styles.totalText,
+                  styles.tableHeaderCell,
+                  styles.playerCell,
+                  {
+                    color: sortBy === "name" ? colors.primary : textSecondary,
+                  },
+                ]}
+              >
+                JOUEUR {sortBy === "name" && (sortOrder === "desc" ? "↓" : "↑")}
+              </Text>
+            </TouchableOpacity>
+            <View style={styles.numberCell}>
+              <Text
+                style={[
+                  styles.tableHeaderCell,
+                  {
+                    color: textTertiary,
+                    textAlign: "center",
+                  },
+                ]}
+              >
+                #
+              </Text>
+            </View>
+            <TouchableOpacity onPress={() => handleSort("min")}>
+              <Text
+                style={[
+                  styles.tableHeaderCell,
+                  styles.minCell,
+                  {
+                    color: sortBy === "min" ? colors.primary : textTertiary,
+                  },
+                ]}
+              >
+                MIN {sortBy === "min" && (sortOrder === "desc" ? "↓" : "↑")}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => handleSort("pts")}>
+              <Text
+                style={[
+                  styles.tableHeaderCell,
+                  styles.statCell,
+                  {
+                    color: sortBy === "pts" ? colors.primary : textSecondary,
+                  },
+                ]}
+              >
+                PTS {sortBy === "pts" && (sortOrder === "desc" ? "↓" : "↑")}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => handleSort("fgm")}>
+              <Text
+                style={[
+                  styles.tableHeaderCell,
+                  styles.statCellWide,
+                  {
+                    color: sortBy === "fgm" ? colors.primary : textSecondary,
+                  },
+                ]}
+              >
+                TIRS {sortBy === "fgm" && (sortOrder === "desc" ? "↓" : "↑")}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => handleSort("fg2m")}>
+              <Text
+                style={[
+                  styles.tableHeaderCell,
+                  styles.statCellWide,
+                  {
+                    color: sortBy === "fg2m" ? colors.primary : textSecondary,
+                  },
+                ]}
+              >
+                2PTS {sortBy === "fg2m" && (sortOrder === "desc" ? "↓" : "↑")}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => handleSort("fg3m")}>
+              <Text
+                style={[
+                  styles.tableHeaderCell,
+                  styles.statCellWide,
+                  {
+                    color: sortBy === "fg3m" ? colors.primary : textSecondary,
+                  },
+                ]}
+              >
+                3PTS {sortBy === "fg3m" && (sortOrder === "desc" ? "↓" : "↑")}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => handleSort("ftm")}>
+              <Text
+                style={[
+                  styles.tableHeaderCell,
+                  styles.statCellWide,
+                  {
+                    color: sortBy === "ftm" ? colors.primary : textSecondary,
+                  },
+                ]}
+              >
+                LF {sortBy === "ftm" && (sortOrder === "desc" ? "↓" : "↑")}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => handleSort("reb")}>
+              <Text
+                style={[
+                  styles.tableHeaderCell,
+                  styles.statCell,
+                  {
+                    color: sortBy === "reb" ? colors.primary : textSecondary,
+                  },
+                ]}
+              >
+                REB {sortBy === "reb" && (sortOrder === "desc" ? "↓" : "↑")}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => handleSort("reb_off" as SortBy)}>
+              <Text
+                style={[
+                  styles.tableHeaderCell,
+                  styles.statCell,
+                  {
+                    color:
+                      sortBy === "reb_off" ? colors.primary : textSecondary,
+                  },
+                ]}
+              >
+                RO {sortBy === "reb_off" && (sortOrder === "desc" ? "↓" : "↑")}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => handleSort("reb_def" as SortBy)}>
+              <Text
+                style={[
+                  styles.tableHeaderCell,
+                  styles.statCell,
+                  {
+                    color:
+                      sortBy === "reb_def" ? colors.primary : textSecondary,
+                  },
+                ]}
+              >
+                RD {sortBy === "reb_def" && (sortOrder === "desc" ? "↓" : "↑")}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => handleSort("ast")}>
+              <Text
+                style={[
+                  styles.tableHeaderCell,
+                  styles.statCell,
+                  {
+                    color: sortBy === "ast" ? colors.primary : textSecondary,
+                  },
+                ]}
+              >
+                AST {sortBy === "ast" && (sortOrder === "desc" ? "↓" : "↑")}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => handleSort("stl")}>
+              <Text
+                style={[
+                  styles.tableHeaderCell,
+                  styles.statCell,
+                  {
+                    color: sortBy === "stl" ? colors.primary : textSecondary,
+                  },
+                ]}
+              >
+                INT {sortBy === "stl" && (sortOrder === "desc" ? "↓" : "↑")}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => handleSort("blk")}>
+              <Text
+                style={[
+                  styles.tableHeaderCell,
+                  styles.statCell,
+                  {
+                    color: sortBy === "blk" ? colors.primary : textSecondary,
+                  },
+                ]}
+              >
+                CTR {sortBy === "blk" && (sortOrder === "desc" ? "↓" : "↑")}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => handleSort("to")}>
+              <Text
+                style={[
+                  styles.tableHeaderCell,
+                  styles.statCell,
+                  {
+                    color: sortBy === "to" ? colors.primary : textSecondary,
+                  },
+                ]}
+              >
+                BP {sortBy === "to" && (sortOrder === "desc" ? "↓" : "↑")}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => handleSort("pf")}>
+              <Text
+                style={[
+                  styles.tableHeaderCell,
+                  styles.statCell,
+                  {
+                    color: sortBy === "pf" ? colors.primary : textSecondary,
+                  },
+                ]}
+              >
+                FT {sortBy === "pf" && (sortOrder === "desc" ? "↓" : "↑")}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => handleSort("fd")}>
+              <Text
+                style={[
+                  styles.tableHeaderCell,
+                  styles.statCell,
+                  {
+                    color: sortBy === "fd" ? colors.primary : textSecondary,
+                  },
+                ]}
+              >
+                FP {sortBy === "fd" && (sortOrder === "desc" ? "↓" : "↑")}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => handleSort("eff")}>
+              <Text
+                style={[
+                  styles.tableHeaderCell,
+                  styles.statCell,
+                  {
+                    color: sortBy === "eff" ? colors.primary : textSecondary,
+                  },
+                ]}
+              >
+                EVAL {sortBy === "eff" && (sortOrder === "desc" ? "↓" : "↑")}
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Table Body */}
+          {stats.map((player, index) => (
+            <TouchableOpacity
+              key={`${player.team}-${player.playerNumber}-${index}`}
+              onPress={() => setViewPlayer(player)}
+              style={[
+                styles.tableRow,
+                { borderBottomColor: borderColor },
+                index === stats.length - 1 && { borderBottomWidth: 0 },
+              ]}
+            >
+              <View style={styles.playerCell}>
+                <PlayerAvatar
+                  playerName={player.name}
+                  playerNumber={player.playerNumber}
+                  photoUrl={player.photoUrl}
+                  size={24}
+                  borderColor={borderColor}
+                  backgroundColor={bgColor}
+                  textColor={textSecondary}
+                  borderWidth={0}
+                />
+                <Text
+                  style={[styles.playerNameText, { color: textPrimary }]}
+                  numberOfLines={1}
+                >
+                  {player.name}
+                </Text>
+              </View>
+              <Text
+                style={[
+                  styles.tableCell,
+                  styles.numberCell,
+                  { color: textSecondary },
+                ]}
+              >
+                {player.playerNumber}
+              </Text>
+              <Text
+                style={[
+                  styles.tableCell,
+                  styles.minCell,
+                  { color: textTertiary },
+                ]}
+              >
+                {player.min}
+              </Text>
+              <Text
+                style={[
+                  styles.tableCell,
+                  styles.statCell,
+                  styles.statCellBold,
                   { color: textPrimary },
                 ]}
               >
-                TOTAL
+                {player.pts}
+              </Text>
+              <Text
+                style={[
+                  styles.tableCell,
+                  styles.statCellWide,
+                  { color: textPrimary },
+                ]}
+              >
+                {player.fgm}/{player.fga}
+              </Text>
+              <Text
+                style={[
+                  styles.tableCell,
+                  styles.statCellWide,
+                  { color: textPrimary },
+                ]}
+              >
+                {player.fg2m}/{player.fg2a}
+              </Text>
+              <Text
+                style={[
+                  styles.tableCell,
+                  styles.statCellWide,
+                  { color: textPrimary },
+                ]}
+              >
+                {player.fg3m}/{player.fg3a}
+              </Text>
+              <Text
+                style={[
+                  styles.tableCell,
+                  styles.statCellWide,
+                  { color: textPrimary },
+                ]}
+              >
+                {player.ftm}/{player.fta}
+              </Text>
+              <Text
+                style={[
+                  styles.tableCell,
+                  styles.statCell,
+                  { color: textPrimary },
+                ]}
+              >
+                {player.reb}
+              </Text>
+              <Text
+                style={[
+                  styles.tableCell,
+                  styles.statCell,
+                  { color: textPrimary },
+                ]}
+              >
+                {player.reb_off}
+              </Text>
+              <Text
+                style={[
+                  styles.tableCell,
+                  styles.statCell,
+                  { color: textPrimary },
+                ]}
+              >
+                {player.reb_def}
+              </Text>
+              <Text
+                style={[
+                  styles.tableCell,
+                  styles.statCell,
+                  { color: textPrimary },
+                ]}
+              >
+                {player.ast}
+              </Text>
+              <Text
+                style={[
+                  styles.tableCell,
+                  styles.statCell,
+                  { color: textPrimary },
+                ]}
+              >
+                {player.stl}
+              </Text>
+              <Text
+                style={[
+                  styles.tableCell,
+                  styles.statCell,
+                  { color: textPrimary },
+                ]}
+              >
+                {player.blk}
+              </Text>
+              <Text
+                style={[
+                  styles.tableCell,
+                  styles.statCell,
+                  { color: textPrimary },
+                ]}
+              >
+                {player.to}
+              </Text>
+              <Text
+                style={[
+                  styles.tableCell,
+                  styles.statCell,
+                  { color: textPrimary },
+                ]}
+              >
+                {player.pf}
+              </Text>
+              <Text
+                style={[
+                  styles.tableCell,
+                  styles.statCell,
+                  { color: textPrimary },
+                ]}
+              >
+                {player.fd}
+              </Text>
+              <Text
+                style={[
+                  styles.tableCell,
+                  styles.statCell,
+                  styles.statCellBold,
+                  { color: colors.primary },
+                ]}
+              >
+                {player.eff}
+              </Text>
+            </TouchableOpacity>
+          ))}
+
+          {/* Total Row */}
+          {stats.length > 0 && (
+            <View
+              style={[
+                styles.tableRow,
+                styles.totalRow,
+                {
+                  backgroundColor: colors.surfaceVariant,
+                  borderBottomWidth: 0,
+                },
+              ]}
+            >
+              <View style={styles.playerCell}>
+                <Text
+                  style={[
+                    styles.playerNameText,
+                    styles.totalText,
+                    { color: textPrimary },
+                  ]}
+                >
+                  TOTAL
+                </Text>
+              </View>
+              <Text
+                style={[
+                  styles.tableCell,
+                  styles.numberCell,
+                  { color: textTertiary },
+                ]}
+              >
+                -
+              </Text>
+              <Text
+                style={[
+                  styles.tableCell,
+                  styles.minCell,
+                  { color: textTertiary },
+                ]}
+              >
+                -
+              </Text>
+              <Text
+                style={[
+                  styles.tableCell,
+                  styles.statCell,
+                  styles.statCellBold,
+                  { color: textPrimary },
+                ]}
+              >
+                {stats.reduce((sum, p) => sum + p.pts, 0)}
+              </Text>
+              <Text
+                style={[
+                  styles.tableCell,
+                  styles.statCellWide,
+                  { color: textPrimary },
+                ]}
+              >
+                {stats.reduce((sum, p) => sum + p.fgm, 0)}/
+                {stats.reduce((sum, p) => sum + p.fga, 0)}
+              </Text>
+              <Text
+                style={[
+                  styles.tableCell,
+                  styles.statCellWide,
+                  { color: textPrimary },
+                ]}
+              >
+                {stats.reduce((sum, p) => sum + p.fg2m, 0)}/
+                {stats.reduce((sum, p) => sum + p.fg2a, 0)}
+              </Text>
+              <Text
+                style={[
+                  styles.tableCell,
+                  styles.statCellWide,
+                  { color: textPrimary },
+                ]}
+              >
+                {stats.reduce((sum, p) => sum + p.fg3m, 0)}/
+                {stats.reduce((sum, p) => sum + p.fg3a, 0)}
+              </Text>
+              <Text
+                style={[
+                  styles.tableCell,
+                  styles.statCellWide,
+                  { color: textPrimary },
+                ]}
+              >
+                {stats.reduce((sum, p) => sum + p.ftm, 0)}/
+                {stats.reduce((sum, p) => sum + p.fta, 0)}
+              </Text>
+              <Text
+                style={[
+                  styles.tableCell,
+                  styles.statCell,
+                  { color: textPrimary },
+                ]}
+              >
+                {stats.reduce((sum, p) => sum + p.reb, 0)}
+              </Text>
+              <Text
+                style={[
+                  styles.tableCell,
+                  styles.statCell,
+                  { color: textPrimary },
+                ]}
+              >
+                {stats.reduce((sum, p) => sum + p.reb_off, 0)}
+              </Text>
+              <Text
+                style={[
+                  styles.tableCell,
+                  styles.statCell,
+                  { color: textPrimary },
+                ]}
+              >
+                {stats.reduce((sum, p) => sum + p.reb_def, 0)}
+              </Text>
+              <Text
+                style={[
+                  styles.tableCell,
+                  styles.statCell,
+                  { color: textPrimary },
+                ]}
+              >
+                {stats.reduce((sum, p) => sum + p.ast, 0)}
+              </Text>
+              <Text
+                style={[
+                  styles.tableCell,
+                  styles.statCell,
+                  { color: textPrimary },
+                ]}
+              >
+                {stats.reduce((sum, p) => sum + p.stl, 0)}
+              </Text>
+              <Text
+                style={[
+                  styles.tableCell,
+                  styles.statCell,
+                  { color: textPrimary },
+                ]}
+              >
+                {stats.reduce((sum, p) => sum + p.blk, 0)}
+              </Text>
+              <Text
+                style={[
+                  styles.tableCell,
+                  styles.statCell,
+                  { color: textPrimary },
+                ]}
+              >
+                {stats.reduce((sum, p) => sum + p.to, 0)}
+              </Text>
+              <Text
+                style={[
+                  styles.tableCell,
+                  styles.statCell,
+                  { color: textPrimary },
+                ]}
+              >
+                {stats.reduce((sum, p) => sum + p.pf, 0)}
+              </Text>
+              <Text
+                style={[
+                  styles.tableCell,
+                  styles.statCell,
+                  { color: textPrimary },
+                ]}
+              >
+                {stats.reduce((sum, p) => sum + p.fd, 0)}
+              </Text>
+              <Text
+                style={[
+                  styles.tableCell,
+                  styles.statCell,
+                  styles.statCellBold,
+                  { color: colors.primary },
+                ]}
+              >
+                {stats.reduce((sum, p) => sum + p.eff, 0)}
               </Text>
             </View>
-            <Text
-              style={[
-                styles.tableCell,
-                styles.numberCell,
-                { color: textTertiary },
-              ]}
-            >
-              -
-            </Text>
-            <Text
-              style={[
-                styles.tableCell,
-                styles.minCell,
-                { color: textTertiary },
-              ]}
-            >
-              -
-            </Text>
-            <Text
-              style={[
-                styles.tableCell,
-                styles.statCell,
-                styles.statCellBold,
-                { color: textPrimary },
-              ]}
-            >
-              {stats.reduce((sum, p) => sum + p.pts, 0)}
-            </Text>
-            <Text
-              style={[
-                styles.tableCell,
-                styles.statCellWide,
-                { color: textPrimary },
-              ]}
-            >
-              {stats.reduce((sum, p) => sum + p.fgm, 0)}/
-              {stats.reduce((sum, p) => sum + p.fga, 0)}
-            </Text>
-            <Text
-              style={[
-                styles.tableCell,
-                styles.statCellWide,
-                { color: textPrimary },
-              ]}
-            >
-              {stats.reduce((sum, p) => sum + p.fg2m, 0)}/
-              {stats.reduce((sum, p) => sum + p.fg2a, 0)}
-            </Text>
-            <Text
-              style={[
-                styles.tableCell,
-                styles.statCellWide,
-                { color: textPrimary },
-              ]}
-            >
-              {stats.reduce((sum, p) => sum + p.fg3m, 0)}/
-              {stats.reduce((sum, p) => sum + p.fg3a, 0)}
-            </Text>
-            <Text
-              style={[
-                styles.tableCell,
-                styles.statCellWide,
-                { color: textPrimary },
-              ]}
-            >
-              {stats.reduce((sum, p) => sum + p.ftm, 0)}/
-              {stats.reduce((sum, p) => sum + p.fta, 0)}
-            </Text>
-            <Text
-              style={[
-                styles.tableCell,
-                styles.statCell,
-                { color: textPrimary },
-              ]}
-            >
-              {stats.reduce((sum, p) => sum + p.reb, 0)}
-            </Text>
-            <Text
-              style={[
-                styles.tableCell,
-                styles.statCell,
-                { color: textPrimary },
-              ]}
-            >
-              {stats.reduce((sum, p) => sum + p.reb_off, 0)}
-            </Text>
-            <Text
-              style={[
-                styles.tableCell,
-                styles.statCell,
-                { color: textPrimary },
-              ]}
-            >
-              {stats.reduce((sum, p) => sum + p.reb_def, 0)}
-            </Text>
-            <Text
-              style={[
-                styles.tableCell,
-                styles.statCell,
-                { color: textPrimary },
-              ]}
-            >
-              {stats.reduce((sum, p) => sum + p.ast, 0)}
-            </Text>
-            <Text
-              style={[
-                styles.tableCell,
-                styles.statCell,
-                { color: textPrimary },
-              ]}
-            >
-              {stats.reduce((sum, p) => sum + p.stl, 0)}
-            </Text>
-            <Text
-              style={[
-                styles.tableCell,
-                styles.statCell,
-                { color: textPrimary },
-              ]}
-            >
-              {stats.reduce((sum, p) => sum + p.blk, 0)}
-            </Text>
-            <Text
-              style={[
-                styles.tableCell,
-                styles.statCell,
-                { color: textPrimary },
-              ]}
-            >
-              {stats.reduce((sum, p) => sum + p.to, 0)}
-            </Text>
-            <Text
-              style={[
-                styles.tableCell,
-                styles.statCell,
-                { color: textPrimary },
-              ]}
-            >
-              {stats.reduce((sum, p) => sum + p.pf, 0)}
-            </Text>
-            <Text
-              style={[
-                styles.tableCell,
-                styles.statCell,
-                { color: textPrimary },
-              ]}
-            >
-              {stats.reduce((sum, p) => sum + p.fd, 0)}
-            </Text>
-            <Text
-              style={[
-                styles.tableCell,
-                styles.statCell,
-                styles.statCellBold,
-                { color: colors.primary },
-              ]}
-            >
-              {stats.reduce((sum, p) => sum + p.eff, 0)}
-            </Text>
-          </View>
-        )}
+          )}
 
-        {stats.length === 0 && (
-          <View style={styles.emptyState}>
-            <Text
-              style={[styles.emptyStateText, { color: textTertiary }]}
-            >
-              Aucune donnée disponible
-            </Text>
-          </View>
-        )}
-      </View>
-    </ScrollView>
+          {stats.length === 0 && (
+            <View style={styles.emptyState}>
+              <Text style={[styles.emptyStateText, { color: textTertiary }]}>
+                Aucune donnée disponible
+              </Text>
+            </View>
+          )}
+        </View>
+      </ScrollView>
 
       {/* Floating Info Button */}
       <TouchableOpacity

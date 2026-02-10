@@ -5,8 +5,8 @@
  */
 
 /**
- * Calculate player efficiency (EFF) using the standard formula:
- * EFF = (Points + Rebounds + Assists + Steals + Blocks + Fouls Drawn)
+ * Calculate player efficiency (EVAL) using the standard formula:
+ * EVAL = (Points + Rebounds + Assists + Steals + Blocks + Fouls Drawn)
  *       - (Field Goals Missed + Free Throws Missed + Turnovers)
  *
  * @param stats Player statistics
@@ -27,7 +27,7 @@ export function calculateEfficiency(stats: {
   to: number;
   fd?: number;
 }): number {
-  const fieldGoalsMissed = (stats.fg2a - stats.fg2m) + (stats.fg3a - stats.fg3m);
+  const fieldGoalsMissed = stats.fg2a - stats.fg2m + (stats.fg3a - stats.fg3m);
   const freeThrowsMissed = stats.fta - stats.ftm;
 
   const efficiency =
