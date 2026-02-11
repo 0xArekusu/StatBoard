@@ -41,6 +41,7 @@ export function useMatchSync({
 }: UseMatchSyncProps) {
   const navigation = useNavigation<RootNavigationProp>();
   const [isSyncing, setIsSyncing] = useState(false);
+  const [showLocalSaveWarning, setShowLocalSaveWarning] = useState(false);
 
   const endMatchAndSync = async (onComplete?: () => void) => {
     try {

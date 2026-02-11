@@ -12,15 +12,8 @@ export const DEV_CONFIG = {
 };
 
 /**
- * Check if a user is an admin user
- */
-export const isAdminUser = (userId: string | undefined): boolean => {
-  return userId === DEV_CONFIG.ADMIN_USER_ID;
-};
-
-/**
  * Check if multi-club feature is enabled for a user
  */
 export const canUseMultiClub = (userId: string | undefined): boolean => {
-  return DEV_CONFIG.ENABLE_MULTI_CLUB && isAdminUser(userId);
+  return DEV_CONFIG.ENABLE_MULTI_CLUB && userId === DEV_CONFIG.ADMIN_USER_ID;
 };
