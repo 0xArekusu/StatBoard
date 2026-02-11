@@ -20,7 +20,7 @@ import { useTheme } from "../src/contexts/ThemeContext";
 import { useAuth } from "../src/contexts/AuthContext";
 import { useClub } from "../src/contexts/ClubContext";
 import { ServiceFactory } from "../services/ServiceFactory";
-import { shareLogs, logInfo, logError } from "../utils/logger";
+import { shareLogs, logInfo, logError, logWarn } from "../utils/logger";
 import { Match, MatchStatus } from "../src/models/types";
 import { Club } from "../models/Club";
 import { Team, TeamStatus } from "../models/Team";
@@ -30,8 +30,10 @@ import DashboardStatsCards from "../components/dashboard/DashboardStatsCards";
 import DashboardResumeMatchModal from "../components/dashboard/DashboardResumeMatchModal";
 import DashboardRecentMatches from "../components/dashboard/DashboardRecentMatches";
 import GuestWelcomeModal from "../components/GuestWelcomeModal";
+import MatchLimitModal from "../components/MatchLimitModal";
 import { ROUTES } from "../constants/routes";
 import { COACH_ASSISTANT_LOGO_MARGIN } from "../src/utils/logoHelper";
+import { SUBSCRIPTION_LIMITS, NOT_CONNECTED_LIMITS } from "../models/Subscription";
 
 /**
  * DashboardScreen navigation prop type
@@ -75,6 +77,7 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showGuestWelcome, setShowGuestWelcome] = useState(false);
   const [showClubSwitcher, setShowClubSwitcher] = useState(false);
+  const [showMatchLimitModal, setShowMatchLimitModal] = useState(false);
 
   const isGuest = !user;
   const userName =
@@ -378,10 +381,31 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
 
   /**
    * Handles "New Match" button click
-   * Checks for active matches and shows modal if one exists
+   * Checks for match limit, active matches and shows modal if needed
    * Otherwise navigates to NewMatch screen
    */
   const handleNewMatchClick = async () => {
+    // Check match limit for guest and freemium users
+    const limits = isGuest ? NOT_CONNECTED_LIMITS : (currentClub?.subscriptionTier ? SUBSCRIPTION_LIMITS[currentClub.subscriptionTier] : NOT_CONNECTED_LIMITS);
+    const currentMatchCount = matches.length;
+
+    logInfo("DashboardScreen", "🔍 Checking match limit", {
+      isGuest,
+      currentMatchCount,
+      maxLocalMatches: limits.maxLocalMatches,
+      subscriptionTier: currentClub?.subscriptionTier || "none"
+    });
+
+    // Check if limit is reached
+    if (currentMatchCount >= limits.maxLocalMatches) {
+      logWarn("DashboardScreen", "⚠️ Match limit reached", {
+        currentMatchCount,
+        maxLocalMatches: limits.maxLocalMatches
+      });
+      setShowMatchLimitModal(true);
+      return;
+    }
+
     // Check if there's an active match
     const matchListService = ServiceFactory.getMatchListService(supabase);
     const activeMatch = await matchListService.findActiveMatch();
@@ -630,6 +654,20 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
       <GuestWelcomeModal
         visible={showGuestWelcome}
         onClose={handleCloseGuestWelcome}
+      />
+
+      {/* Match Limit Modal */}
+      <MatchLimitModal
+        visible={showMatchLimitModal}
+        isConnected={!isGuest}
+        currentCount={matches.length}
+        maxCount={isGuest ? NOT_CONNECTED_LIMITS.maxLocalMatches : (currentClub?.subscriptionTier ? SUBSCRIPTION_LIMITS[currentClub.subscriptionTier].maxLocalMatches : NOT_CONNECTED_LIMITS.maxLocalMatches)}
+        onClose={() => setShowMatchLimitModal(false)}
+        onLogin={() => navigation.navigate(ROUTES.LOGIN)}
+        onUpgrade={() => {
+          // TODO: Navigate to subscription screen
+          Alert.alert("Info", "Fonctionnalité d'upgrade à venir");
+        }}
       />
 
       {/* Resume Match Modal */}

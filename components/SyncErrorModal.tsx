@@ -3,7 +3,7 @@ import { Modal, View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useTheme } from "../src/contexts/ThemeContext";
-import { STATUS_COLORS, COMMON_COLORS } from "../src/theme";
+import { STATUS_COLORS, COMMON_COLORS, SHADOW_COLOR } from "../src/theme";
 
 interface SyncErrorModalProps {
   visible: boolean;
@@ -24,11 +24,13 @@ export default function SyncErrorModal({
   onUpgrade,
   onLogin,
 }: SyncErrorModalProps) {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
+
+  const infoBoxColor = isNotConnected ? STATUS_COLORS.info : STATUS_COLORS.warning;
 
   return (
     <Modal visible={visible} transparent animationType="fade">
-      <View style={[styles.overlay, { backgroundColor: isDark ? "rgba(0,0,0,0.8)" : "rgba(0,0,0,0.6)" }]}>
+      <View style={[styles.overlay, { backgroundColor: colors.overlay }]}>
         <View style={[styles.modal, { backgroundColor: colors.surface }]}>
           <View style={[styles.iconContainer, { backgroundColor: STATUS_COLORS.error + "20" }]}>
             <MaterialCommunityIcons
@@ -43,18 +45,18 @@ export default function SyncErrorModal({
           <Text style={[styles.message, { color: colors.text.secondary }]}>{reason}</Text>
 
           {isNotConnected && (
-            <View style={[styles.infoBox, { backgroundColor: STATUS_COLORS.info + (isDark ? "30" : "20"), borderColor: STATUS_COLORS.info }]}>
-              <Ionicons name="information-circle-outline" size={24} color={STATUS_COLORS.info} />
-              <Text style={[styles.infoText, { color: isDark ? STATUS_COLORS.info : "#1565C0" }]}>
+            <View style={[styles.infoBox, { backgroundColor: infoBoxColor + "20", borderColor: infoBoxColor }]}>
+              <Ionicons name="information-circle-outline" size={24} color={infoBoxColor} />
+              <Text style={[styles.infoText, { color: infoBoxColor }]}>
                 Connectez-vous pour sauvegarder vos matchs sur le cloud et y accéder depuis n'importe quel appareil.
               </Text>
             </View>
           )}
 
           {isFreemium && (
-            <View style={[styles.upgradeBox, { backgroundColor: STATUS_COLORS.warning + (isDark ? "25" : "15"), borderColor: STATUS_COLORS.warning }]}>
-              <Ionicons name="rocket-outline" size={24} color={STATUS_COLORS.warning} />
-              <Text style={[styles.upgradeText, { color: isDark ? STATUS_COLORS.warning : "#E65100" }]}>
+            <View style={[styles.infoBox, { backgroundColor: infoBoxColor + "20", borderColor: infoBoxColor }]}>
+              <Ionicons name="rocket-outline" size={24} color={infoBoxColor} />
+              <Text style={[styles.infoText, { color: infoBoxColor }]}>
                 Passez à un abonnement payant pour synchroniser automatiquement vos matchs et profiter d'un stockage illimité.
               </Text>
             </View>
@@ -113,7 +115,7 @@ const styles = StyleSheet.create({
     minWidth: 320,
     maxWidth: 420,
     alignItems: "center",
-    shadowColor: "#000",
+    shadowColor: SHADOW_COLOR,
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.3,
     shadowRadius: 16,
@@ -154,21 +156,6 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     fontWeight: "500",
   },
-  upgradeBox: {
-    borderRadius: 16,
-    padding: 16,
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 12,
-    marginBottom: 24,
-    borderWidth: 1,
-  },
-  upgradeText: {
-    flex: 1,
-    fontSize: 14,
-    lineHeight: 20,
-    fontWeight: "500",
-  },
   actions: {
     width: "100%",
     gap: 12,
@@ -185,7 +172,7 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   primaryButton: {
-    shadowColor: "#000",
+    shadowColor: SHADOW_COLOR,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,

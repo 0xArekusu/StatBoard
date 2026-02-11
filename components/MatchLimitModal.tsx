@@ -1,6 +1,8 @@
 import React from "react";
 import { Modal, View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useTheme } from "../src/contexts/ThemeContext";
+import { STATUS_COLORS, COMMON_COLORS, SHADOW_COLOR } from "../src/theme";
 
 interface MatchLimitModalProps {
   visible: boolean;
@@ -8,8 +10,8 @@ interface MatchLimitModalProps {
   currentCount: number;
   maxCount: number;
   onClose: () => void;
+  onLogin?: () => void;
   onUpgrade?: () => void;
-  onManageMatches: () => void;
 }
 
 export default function MatchLimitModal({
@@ -18,57 +20,75 @@ export default function MatchLimitModal({
   currentCount,
   maxCount,
   onClose,
+  onLogin,
   onUpgrade,
-  onManageMatches,
 }: MatchLimitModalProps) {
+  const { colors } = useTheme();
+
+  const infoBoxColor = !isConnected ? STATUS_COLORS.info : STATUS_COLORS.warning;
+
   return (
     <Modal visible={visible} transparent animationType="fade">
-      <View style={styles.overlay}>
-        <View style={styles.modal}>
-          <View style={styles.iconContainer}>
-            <Ionicons name="warning-outline" size={60} color="#FF6B35" />
+      <View style={[styles.overlay, { backgroundColor: colors.overlay }]}>
+        <View style={[styles.modal, { backgroundColor: colors.surface }]}>
+          <View style={[styles.iconContainer, { backgroundColor: STATUS_COLORS.warning + "20" }]}>
+            <Ionicons name="warning-outline" size={70} color={STATUS_COLORS.warning} />
           </View>
 
-          <Text style={styles.title}>Limite atteinte</Text>
+          <Text style={[styles.title, { color: colors.text.primary }]}>Limite atteinte</Text>
 
-          <Text style={styles.message}>
-            Vous avez atteint la limite de <Text style={styles.bold}>{maxCount} matchs</Text> en stockage local.
+          <Text style={[styles.message, { color: colors.text.secondary }]}>
+            Vous avez atteint la limite de <Text style={[styles.bold, { color: STATUS_COLORS.warning }]}>{maxCount} matchs</Text> en stockage local.
           </Text>
 
           {!isConnected ? (
-            <Text style={styles.suggestion}>
-              Connectez-vous pour accéder à un stockage illimité sur le cloud avec un abonnement premium.
-            </Text>
+            <View style={[styles.infoBox, { backgroundColor: infoBoxColor + "20", borderColor: infoBoxColor }]}>
+              <Ionicons name="information-circle-outline" size={24} color={infoBoxColor} />
+              <Text style={[styles.infoText, { color: infoBoxColor }]}>
+                Connectez-vous pour accéder à un stockage illimité sur le cloud avec un abonnement premium.
+              </Text>
+            </View>
           ) : (
-            <Text style={styles.suggestion}>
-              Passez à un abonnement premium pour un stockage illimité sur le cloud.
-            </Text>
+            <View style={[styles.infoBox, { backgroundColor: infoBoxColor + "20", borderColor: infoBoxColor }]}>
+              <Ionicons name="rocket-outline" size={24} color={infoBoxColor} />
+              <Text style={[styles.infoText, { color: infoBoxColor }]}>
+                Passez à un abonnement premium pour un stockage illimité sur le cloud.
+              </Text>
+            </View>
           )}
 
           <View style={styles.actions}>
-            <TouchableOpacity
-              style={[styles.button, styles.secondaryButton]}
-              onPress={onManageMatches}
-            >
-              <Text style={styles.secondaryButtonText}>Gérer mes matchs</Text>
-            </TouchableOpacity>
-
-            {onUpgrade && (
+            {!isConnected && onLogin && (
               <TouchableOpacity
-                style={[styles.button, styles.primaryButton]}
-                onPress={onUpgrade}
+                style={[styles.button, styles.primaryButton, { backgroundColor: STATUS_COLORS.info }]}
+                onPress={() => {
+                  onClose();
+                  onLogin();
+                }}
               >
-                <Text style={styles.primaryButtonText}>
-                  {isConnected ? "Voir les abonnements" : "Se connecter"}
-                </Text>
+                <Ionicons name="log-in-outline" size={18} color={COMMON_COLORS.white} style={styles.buttonIcon} />
+                <Text style={[styles.primaryButtonText, { color: COMMON_COLORS.white }]}>Se connecter</Text>
+              </TouchableOpacity>
+            )}
+
+            {isConnected && onUpgrade && (
+              <TouchableOpacity
+                style={[styles.button, styles.primaryButton, { backgroundColor: STATUS_COLORS.warning }]}
+                onPress={() => {
+                  onClose();
+                  onUpgrade();
+                }}
+              >
+                <Ionicons name="star" size={18} color={COMMON_COLORS.white} style={styles.buttonIcon} />
+                <Text style={[styles.primaryButtonText, { color: COMMON_COLORS.white }]}>Voir les abonnements</Text>
               </TouchableOpacity>
             )}
 
             <TouchableOpacity
-              style={[styles.button, styles.cancelButton]}
+              style={[styles.button, styles.cancelButton, { backgroundColor: colors.surfaceVariant }]}
               onPress={onClose}
             >
-              <Text style={styles.cancelButtonText}>Fermer</Text>
+              <Text style={[styles.cancelButtonText, { color: colors.text.secondary }]}>Fermer</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -80,83 +100,88 @@ export default function MatchLimitModal({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
     justifyContent: "center",
     alignItems: "center",
+    padding: 20,
   },
   modal: {
-    backgroundColor: "#fff",
-    borderRadius: 20,
+    borderRadius: 24,
     padding: 32,
     minWidth: 320,
-    maxWidth: 400,
+    maxWidth: 420,
     alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
+    shadowColor: SHADOW_COLOR,
+    shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
+    shadowRadius: 16,
+    elevation: 12,
   },
   iconContainer: {
-    marginBottom: 20,
+    marginBottom: 24,
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    justifyContent: "center",
+    alignItems: "center",
   },
   title: {
     fontSize: 24,
     fontWeight: "bold",
-    color: "#333",
     marginBottom: 16,
     textAlign: "center",
   },
   message: {
     fontSize: 16,
-    color: "#666",
-    marginBottom: 12,
+    marginBottom: 24,
     textAlign: "center",
     lineHeight: 24,
   },
   bold: {
     fontWeight: "bold",
-    color: "#FF6B35",
   },
-  suggestion: {
-    fontSize: 14,
-    color: "#999",
+  infoBox: {
+    borderRadius: 16,
+    padding: 16,
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 12,
     marginBottom: 24,
-    textAlign: "center",
+    borderWidth: 1,
+  },
+  infoText: {
+    flex: 1,
+    fontSize: 14,
     lineHeight: 20,
-    fontStyle: "italic",
+    fontWeight: "500",
   },
   actions: {
     width: "100%",
     gap: 12,
   },
   button: {
-    paddingVertical: 14,
+    paddingVertical: 16,
     paddingHorizontal: 24,
-    borderRadius: 12,
+    borderRadius: 14,
     alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "center",
+  },
+  buttonIcon: {
+    marginRight: 8,
   },
   primaryButton: {
-    backgroundColor: "#4CAF50",
+    shadowColor: SHADOW_COLOR,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
   primaryButtonText: {
-    color: "#fff",
     fontSize: 16,
-    fontWeight: "600",
+    fontWeight: "700",
   },
-  secondaryButton: {
-    backgroundColor: "#2196F3",
-  },
-  secondaryButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  cancelButton: {
-    backgroundColor: "#f5f5f5",
-  },
+  cancelButton: {},
   cancelButtonText: {
-    color: "#666",
     fontSize: 16,
     fontWeight: "600",
   },
