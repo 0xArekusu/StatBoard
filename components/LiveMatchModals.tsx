@@ -278,6 +278,18 @@ interface FilteredSummary {
   fgm: number;
   fga: number;
   fgPct: number;
+  // Free throws
+  ftm: number;
+  fta: number;
+  ftPct: number;
+  // Two-pointers
+  twoM: number;
+  twoA: number;
+  twoPct: number;
+  // Three-pointers
+  threeM: number;
+  threeA: number;
+  threePct: number;
 }
 
 export const FilterModal: React.FC<FilterModalProps> = ({
@@ -511,18 +523,48 @@ export const FilterModal: React.FC<FilterModalProps> = ({
       fgm: 0,
       fga: 0,
       fgPct: 0,
+      ftm: 0,
+      fta: 0,
+      ftPct: 0,
+      twoM: 0,
+      twoA: 0,
+      twoPct: 0,
+      threeM: 0,
+      threeA: 0,
+      threePct: 0,
     };
 
     filteredActions.forEach((action: any) => {
       switch (action.action_type) {
         case ActionType.SHOT:
           summary.fga += 1;
-          if (
-            action.specification === ShotSpecification.MADE &&
-            action.points
-          ) {
-            summary.pts += action.points;
-            summary.fgm += 1;
+          const isMade = action.specification === ShotSpecification.MADE;
+          const points = action.points || 0;
+
+          // Track by shot type
+          if (points === 1) {
+            // Free throw
+            summary.fta += 1;
+            if (isMade) {
+              summary.ftm += 1;
+              summary.pts += 1;
+            }
+          } else if (points === 2) {
+            // Two-pointer
+            summary.twoA += 1;
+            if (isMade) {
+              summary.twoM += 1;
+              summary.pts += 2;
+              summary.fgm += 1;
+            }
+          } else if (points === 3) {
+            // Three-pointer
+            summary.threeA += 1;
+            if (isMade) {
+              summary.threeM += 1;
+              summary.pts += 3;
+              summary.fgm += 1;
+            }
           }
           break;
         case ActionType.REBOUND:
@@ -554,9 +596,27 @@ export const FilterModal: React.FC<FilterModalProps> = ({
       }
     });
 
-    // Calculate field goal percentage
+    // Calculate field goal percentage (excluding free throws)
+    const fieldGoalAttempts = summary.twoA + summary.threeA;
+    summary.fga = fieldGoalAttempts;
     summary.fgPct =
-      summary.fga > 0 ? Math.round((summary.fgm / summary.fga) * 100) : 0;
+      fieldGoalAttempts > 0
+        ? Math.round((summary.fgm / fieldGoalAttempts) * 100)
+        : 0;
+
+    // Calculate free throw percentage
+    summary.ftPct =
+      summary.fta > 0 ? Math.round((summary.ftm / summary.fta) * 100) : 0;
+
+    // Calculate two-point percentage
+    summary.twoPct =
+      summary.twoA > 0 ? Math.round((summary.twoM / summary.twoA) * 100) : 0;
+
+    // Calculate three-point percentage
+    summary.threePct =
+      summary.threeA > 0
+        ? Math.round((summary.threeM / summary.threeA) * 100)
+        : 0;
 
     return summary;
   };
@@ -1252,7 +1312,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
               >
                 <View style={styles.filterSummaryHeader}>
                   <MaterialCommunityIcons
-                    name="chart-box"
+                    name="trending-up"
                     size={14}
                     color={BRAND_COLORS[500]}
                   />
@@ -1262,15 +1322,13 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                       { color: textSecondary },
                     ]}
                   >
-                    {trackOpponentStats && teamFilter === TeamFilterMode.THEM
-                      ? "RÉSUMÉ ADVERSAIRE"
-                      : trackOpponentStats && teamFilter === TeamFilterMode.US
-                      ? "NOTRE RÉSUMÉ"
-                      : "RÉSUMÉ DE LA SÉLECTION"}
+                    RÉSUMÉ DE LA SÉLECTION
                   </Text>
                 </View>
-                <View style={styles.filterSummaryGrid}>
-                  <View style={styles.filterSummaryItem}>
+
+                {/* Row 1: Points and Shooting */}
+                <View style={styles.filterSummaryRow}>
+                  <View style={styles.filterSummaryItemFlex}>
                     <Text
                       style={[
                         styles.filterSummaryValue,
@@ -1285,10 +1343,98 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                         { color: textSecondary },
                       ]}
                     >
-                      PTS
+                      Points
                     </Text>
                   </View>
-                  <View style={styles.filterSummaryItem}>
+                  <View style={styles.filterSummaryItemFlex}>
+                    <View style={styles.filterSummaryValueRow}>
+                      <Text
+                        style={[
+                          styles.filterSummaryValue,
+                          { color: textPrimary },
+                        ]}
+                      >
+                        {filteredSummary.ftm}/{filteredSummary.fta}
+                      </Text>
+                      <Text
+                        style={[
+                          styles.filterSummaryPercentage,
+                          { color: textSecondary },
+                        ]}
+                      >
+                        {filteredSummary.ftPct}%
+                      </Text>
+                    </View>
+                    <Text
+                      style={[
+                        styles.filterSummaryLabel,
+                        { color: textSecondary },
+                      ]}
+                    >
+                      LF
+                    </Text>
+                  </View>
+                  <View style={styles.filterSummaryItemFlex}>
+                    <View style={styles.filterSummaryValueRow}>
+                      <Text
+                        style={[
+                          styles.filterSummaryValue,
+                          { color: textPrimary },
+                        ]}
+                      >
+                        {filteredSummary.twoM}/{filteredSummary.twoA}
+                      </Text>
+                      <Text
+                        style={[
+                          styles.filterSummaryPercentage,
+                          { color: textSecondary },
+                        ]}
+                      >
+                        {filteredSummary.twoPct}%
+                      </Text>
+                    </View>
+                    <Text
+                      style={[
+                        styles.filterSummaryLabel,
+                        { color: textSecondary },
+                      ]}
+                    >
+                      2pts
+                    </Text>
+                  </View>
+                  <View style={styles.filterSummaryItemFlex}>
+                    <View style={styles.filterSummaryValueRow}>
+                      <Text
+                        style={[
+                          styles.filterSummaryValue,
+                          { color: textPrimary },
+                        ]}
+                      >
+                        {filteredSummary.threeM}/{filteredSummary.threeA}
+                      </Text>
+                      <Text
+                        style={[
+                          styles.filterSummaryPercentage,
+                          { color: textSecondary },
+                        ]}
+                      >
+                        {filteredSummary.threePct}%
+                      </Text>
+                    </View>
+                    <Text
+                      style={[
+                        styles.filterSummaryLabel,
+                        { color: textSecondary },
+                      ]}
+                    >
+                      3pts
+                    </Text>
+                  </View>
+                </View>
+
+                {/* Row 2: Rebounds and Assists */}
+                <View style={[styles.filterSummaryRow, { marginTop: 12 }]}>
+                  <View style={styles.filterSummaryItemFlex}>
                     <Text
                       style={[
                         styles.filterSummaryValue,
@@ -1303,86 +1449,10 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                         { color: textSecondary },
                       ]}
                     >
-                      REB
+                      Rebonds
                     </Text>
                   </View>
-                  <View style={styles.filterSummaryItem}>
-                    <Text
-                      style={[
-                        styles.filterSummaryValue,
-                        { color: textPrimary },
-                      ]}
-                    >
-                      {filteredSummary.ast}
-                    </Text>
-                    <Text
-                      style={[
-                        styles.filterSummaryLabel,
-                        { color: textSecondary },
-                      ]}
-                    >
-                      AST
-                    </Text>
-                  </View>
-                  <View style={styles.filterSummaryItem}>
-                    <Text
-                      style={[
-                        styles.filterSummaryValue,
-                        { color: textPrimary },
-                      ]}
-                    >
-                      {filteredSummary.stl}
-                    </Text>
-                    <Text
-                      style={[
-                        styles.filterSummaryLabel,
-                        { color: textSecondary },
-                      ]}
-                    >
-                      STL
-                    </Text>
-                  </View>
-                </View>
-
-                {/* Row 2: Shooting stats */}
-                <View style={[styles.filterSummaryGrid, { marginTop: 12 }]}>
-                  <View style={styles.filterSummaryItem}>
-                    <Text
-                      style={[
-                        styles.filterSummaryValue,
-                        { color: textPrimary },
-                      ]}
-                    >
-                      {filteredSummary.fgm}/{filteredSummary.fga}
-                    </Text>
-                    <Text
-                      style={[
-                        styles.filterSummaryLabel,
-                        { color: textSecondary },
-                      ]}
-                    >
-                      TIRS
-                    </Text>
-                  </View>
-                  <View style={styles.filterSummaryItem}>
-                    <Text
-                      style={[
-                        styles.filterSummaryValue,
-                        { color: textPrimary },
-                      ]}
-                    >
-                      {filteredSummary.fgPct}%
-                    </Text>
-                    <Text
-                      style={[
-                        styles.filterSummaryLabel,
-                        { color: textSecondary },
-                      ]}
-                    >
-                      %TIRS
-                    </Text>
-                  </View>
-                  <View style={styles.filterSummaryItem}>
+                  <View style={styles.filterSummaryItemFlex}>
                     <Text
                       style={[
                         styles.filterSummaryValue,
@@ -1397,10 +1467,10 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                         { color: textSecondary },
                       ]}
                     >
-                      REB OFF
+                      Reb. Off.
                     </Text>
                   </View>
-                  <View style={styles.filterSummaryItem}>
+                  <View style={styles.filterSummaryItemFlex}>
                     <Text
                       style={[
                         styles.filterSummaryValue,
@@ -1415,14 +1485,50 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                         { color: textSecondary },
                       ]}
                     >
-                      REB DEF
+                      Reb. Def.
+                    </Text>
+                  </View>
+                  <View style={styles.filterSummaryItemFlex}>
+                    <Text
+                      style={[
+                        styles.filterSummaryValue,
+                        { color: textPrimary },
+                      ]}
+                    >
+                      {filteredSummary.ast}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.filterSummaryLabel,
+                        { color: textSecondary },
+                      ]}
+                    >
+                      Passes
                     </Text>
                   </View>
                 </View>
 
                 {/* Row 3: Other stats */}
-                <View style={[styles.filterSummaryGrid, { marginTop: 12 }]}>
-                  <View style={styles.filterSummaryItem}>
+                <View style={[styles.filterSummaryRow, { marginTop: 12 }]}>
+                  <View style={styles.filterSummaryItemFlex}>
+                    <Text
+                      style={[
+                        styles.filterSummaryValue,
+                        { color: textPrimary },
+                      ]}
+                    >
+                      {filteredSummary.stl}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.filterSummaryLabel,
+                        { color: textSecondary },
+                      ]}
+                    >
+                      Interceptions
+                    </Text>
+                  </View>
+                  <View style={styles.filterSummaryItemFlex}>
                     <Text
                       style={[
                         styles.filterSummaryValue,
@@ -1437,10 +1543,10 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                         { color: textSecondary },
                       ]}
                     >
-                      BLK
+                      Contres
                     </Text>
                   </View>
-                  <View style={styles.filterSummaryItem}>
+                  <View style={styles.filterSummaryItemFlex}>
                     <Text
                       style={[
                         styles.filterSummaryValue,
@@ -1455,28 +1561,10 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                         { color: textSecondary },
                       ]}
                     >
-                      PF
+                      Fautes
                     </Text>
                   </View>
-                  <View style={styles.filterSummaryItem}>
-                    <Text
-                      style={[
-                        styles.filterSummaryValue,
-                        { color: textPrimary },
-                      ]}
-                    >
-                      {filteredSummary.fd}
-                    </Text>
-                    <Text
-                      style={[
-                        styles.filterSummaryLabel,
-                        { color: textSecondary },
-                      ]}
-                    >
-                      FD
-                    </Text>
-                  </View>
-                  <View style={styles.filterSummaryItem}>
+                  <View style={styles.filterSummaryItemFlex}>
                     <Text
                       style={[
                         styles.filterSummaryValue,
@@ -1491,7 +1579,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                         { color: textSecondary },
                       ]}
                     >
-                      TO
+                      Pertes
                     </Text>
                   </View>
                 </View>
@@ -3033,25 +3121,36 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
     textTransform: "uppercase",
   },
-  filterSummaryGrid: {
+  filterSummaryRow: {
     flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 12,
+    justifyContent: "space-between",
+    width: "100%",
   },
-  filterSummaryItem: {
+  filterSummaryItemFlex: {
+    flex: 1,
     alignItems: "center",
-    minWidth: 50,
+  },
+  filterSummaryValueRow: {
+    flexDirection: "row",
+    alignItems: "baseline",
+    gap: 4,
   },
   filterSummaryValue: {
     fontSize: 20,
     fontWeight: "900",
     lineHeight: 24,
   },
+  filterSummaryPercentage: {
+    fontSize: 12,
+    fontWeight: "600",
+    lineHeight: 14,
+  },
   filterSummaryLabel: {
     fontSize: 9,
     fontWeight: "700",
     textTransform: "uppercase",
     marginTop: 2,
+    textAlign: "center",
   },
   // Player Selection Modal
   playerModal: {
