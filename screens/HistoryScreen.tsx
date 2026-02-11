@@ -21,6 +21,7 @@ import { ServiceFactory } from "../services/ServiceFactory";
 import { OPACITY } from "../src/theme";
 import { Club } from "../models/Club";
 import { TeamStatus } from "../models/Team";
+import SyncErrorModal from "../components/SyncErrorModal";
 
 interface HistoryScreenProps {
   navigation: any;
@@ -48,6 +49,15 @@ export default function HistoryScreen({ navigation }: HistoryScreenProps) {
   const [loading, setLoading] = useState(true);
   const [matches, setMatches] = useState<Match[]>([]);
   const [showSyncModal, setShowSyncModal] = useState(false);
+  const [syncError, setSyncError] = useState<{
+    visible: boolean;
+    reason: string;
+    isNotConnected?: boolean;
+    isFreemium?: boolean;
+  }>({
+    visible: false,
+    reason: "",
+  });
   const [isSyncing, setIsSyncing] = useState(false);
 
   useEffect(() => {
@@ -163,19 +173,26 @@ export default function HistoryScreen({ navigation }: HistoryScreenProps) {
       }
 
       if (result.failed > 0) {
-        Alert.alert(
-          "Erreur de synchronisation",
-          `${result.failed} match${result.failed > 1 ? "s" : ""} n'ont pas pu être synchronisé${result.failed > 1 ? "s" : ""}.\n\n${result.errors.join("\n")}`,
-        );
+        // Analyze errors to determine if it's a connection or freemium issue
+        const errorMessages = result.errors.join(" ");
+        const isNotConnected = errorMessages.includes("connecté") || errorMessages.includes("authentifié");
+        const isFreemium = errorMessages.includes("abonnement") || errorMessages.includes("payant");
+
+        setSyncError({
+          visible: true,
+          reason: result.errors[0] || "Erreur lors de la synchronisation",
+          isNotConnected,
+          isFreemium,
+        });
       }
 
       setShowSyncModal(false);
     } catch (error) {
       console.error("Error syncing matches:", error);
-      Alert.alert(
-        "Erreur",
-        "Une erreur est survenue lors de la synchronisation. Veuillez réessayer.",
-      );
+      setSyncError({
+        visible: true,
+        reason: "Une erreur est survenue lors de la synchronisation. Veuillez réessayer.",
+      });
     } finally {
       setIsSyncing(false);
     }
@@ -448,6 +465,20 @@ export default function HistoryScreen({ navigation }: HistoryScreenProps) {
           )}
         </View>
       </ScrollView>
+
+      {/* Sync Error Modal */}
+      <SyncErrorModal
+        visible={syncError.visible}
+        reason={syncError.reason}
+        isNotConnected={syncError.isNotConnected}
+        isFreemium={syncError.isFreemium}
+        onClose={() => setSyncError({ visible: false, reason: "" })}
+        onLogin={() => navigation.navigate(ROUTES.LOGIN)}
+        onUpgrade={() => {
+          // TODO: Navigate to subscription screen
+          Alert.alert("Info", "Fonctionnalité d'upgrade à venir");
+        }}
+      />
     </>
   );
 }
