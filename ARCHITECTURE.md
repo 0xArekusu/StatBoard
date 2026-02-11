@@ -212,3 +212,33 @@ Exécuter le script SQL sur Supabase :
 3. **L** - Liskov Substitution: Les implémentations respectent les interfaces
 4. **I** - Interface Segregation: Interfaces spécifiques et ciblées
 5. **D** - Dependency Inversion: Dépendance sur les abstractions, pas les implémentations
+
+## 📜 Règles de développement à respecter
+
+### 🎨 Qualité du code
+- **Suivre les principes SOLID** dans toutes les nouvelles implémentations
+- **Appliquer les Design Patterns GOF** (Gang of Four) quand approprié
+- **Écrire du code propre et maintenable**:
+  - Noms de variables et fonctions explicites
+  - Fonctions courtes et avec une seule responsabilité
+  - Éviter la duplication de code (DRY - Don't Repeat Yourself)
+  - Commenter uniquement quand nécessaire (le code doit être auto-explicatif)
+
+### 📦 Modularité et structure
+- **Ne pas hésiter à créer de nouveaux composants** pour éviter des fichiers trop volumineux
+- **Séparer les préoccupations**:
+  - Composants réutilisables dans `/components`
+  - Écrans/pages dans `/screens`
+  - Logique métier dans `/services`
+  - Accès aux données dans `/repositories`
+- **Limiter la taille des fichiers**: Un fichier ne devrait pas dépasser 300-400 lignes
+- **Découper les composants complexes** en sous-composants plus petits et réutilisables
+
+### 🎯 Design Patterns à privilégier
+- **Repository Pattern**: Pour l'accès aux données
+- **Service Layer Pattern**: Pour la logique métier
+- **Factory Pattern**: Pour la création d'objets complexes
+- **Singleton Pattern**: Pour les instances uniques (services, stores)
+- **Observer Pattern**: Pour la gestion des événements et états réactifs
+- **Strategy Pattern**: Pour les algorithmes interchangeables
+- **Facade Pattern**: Pour simplifier les interfaces complexes
