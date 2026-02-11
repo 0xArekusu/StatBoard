@@ -10,6 +10,7 @@ import {
   MatchEvent,
   FilterMode,
   TeamId,
+  TeamFilterMode,
   TEMPORARY_MARKER_DISPLAY_DURATION,
 } from "../../constants/liveMatchConstants";
 import { ActionType, getActionColor } from "../../src/models/ActionTypes";
@@ -27,6 +28,9 @@ interface CourtViewProps {
   filterMode: FilterMode;
   selectedPlayerIds: string[];
   selectedPeriodIds?: number[];
+  selectedTeamFilter?: TeamFilterMode;
+  isHome?: boolean;
+  trackOpponentStats?: boolean;
   clubLogoUrl: string | null;
   courtBackgroundColor: string;
   courtLineColor: string;
@@ -39,6 +43,9 @@ export const CourtView: React.FC<CourtViewProps> = ({
   filterMode,
   selectedPlayerIds,
   selectedPeriodIds = [],
+  selectedTeamFilter = TeamFilterMode.ALL,
+  isHome = true,
+  trackOpponentStats = false,
   clubLogoUrl,
   courtBackgroundColor,
   courtLineColor,
@@ -96,6 +103,25 @@ export const CourtView: React.FC<CourtViewProps> = ({
   const filteredEvents = events?.filter((e: MatchEvent) => {
     if (!e.coordinates) return false;
 
+    // Filter by team
+    if (trackOpponentStats) {
+      // If tracking opponent stats, filter by selected team
+      if (selectedTeamFilter === TeamFilterMode.US) {
+        // Show only our team's actions
+        const ourTeamId = isHome ? TeamId.HOME : TeamId.AWAY;
+        if (e.teamId !== ourTeamId) return false;
+      } else if (selectedTeamFilter === TeamFilterMode.THEM) {
+        // Show only opponent's actions
+        const theirTeamId = isHome ? TeamId.AWAY : TeamId.HOME;
+        if (e.teamId !== theirTeamId) return false;
+      }
+      // If TeamFilterMode.ALL, show both teams
+    } else {
+      // If NOT tracking opponent stats, only show our team's actions
+      const ourTeamId = isHome ? TeamId.HOME : TeamId.AWAY;
+      if (e.teamId !== ourTeamId) return false;
+    }
+
     // Filter by period if selection exists
     if (selectedPeriodIds.length > 0 && e.period_number) {
       if (!selectedPeriodIds.includes(e.period_number)) return false;
@@ -112,8 +138,12 @@ export const CourtView: React.FC<CourtViewProps> = ({
       return e.action_type === ActionType.SHOT;
     if (filterMode === FilterMode.REBOUNDS)
       return e.action_type === ActionType.REBOUND;
+    if (filterMode === FilterMode.ASSISTS)
+      return e.action_type === ActionType.ASSIST;
     if (filterMode === FilterMode.FOULS)
       return e.action_type === ActionType.FOUL;
+    if (filterMode === FilterMode.FOULS_DRAWN)
+      return e.action_type === ActionType.FOUL_DRAWN;
     if (filterMode === FilterMode.TURNOVERS)
       return e.action_type === ActionType.TURNOVER;
     if (filterMode === FilterMode.BLOCKS)

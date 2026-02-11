@@ -109,10 +109,21 @@ export enum FilterMode {
   ALL = "ALL",
   SHOOTING = "SHOOTING",
   REBOUNDS = "REBOUNDS",
+  ASSISTS = "ASSISTS",
   FOULS = "FOULS",
+  FOULS_DRAWN = "FOULS_DRAWN",
   TURNOVERS = "TURNOVERS",
   BLOCKS = "BLOCKS",
   STEALS = "STEALS",
+}
+
+/**
+ * Team filter modes for filtering events by team
+ */
+export enum TeamFilterMode {
+  ALL = "all",
+  US = "us",
+  THEM = "them",
 }
 
 // ===========================

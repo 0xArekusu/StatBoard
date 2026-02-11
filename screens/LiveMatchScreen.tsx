@@ -61,6 +61,7 @@ import {
   TeamId,
   ViewMode,
   FilterMode,
+  TeamFilterMode,
 } from "../constants/liveMatchConstants";
 import {
   COURT_SVG_WIDTH_PORTRAIT,
@@ -270,6 +271,7 @@ export default function LiveMatchScreen() {
   const [filterMode, setFilterMode] = useState<FilterMode>(FilterMode.ALL);
   const [selectedPlayerIds, setSelectedPlayerIds] = useState<string[]>([]);
   const [selectedPeriodIds, setSelectedPeriodIds] = useState<number[]>([]);
+  const [selectedTeamFilter, setSelectedTeamFilter] = useState<TeamFilterMode>(TeamFilterMode.ALL);
   const [isGeneratingMockData, setIsGeneratingMockData] = useState(false);
 
   // Multi-step action recording workflow
@@ -1541,6 +1543,9 @@ export default function LiveMatchScreen() {
             filterMode={filterMode}
             selectedPlayerIds={selectedPlayerIds}
             selectedPeriodIds={selectedPeriodIds}
+            selectedTeamFilter={selectedTeamFilter}
+            isHome={match.location === TeamId.HOME}
+            trackOpponentStats={match.trackOpponentStats}
             clubLogoUrl={match.clubLogoUrl}
             courtBackgroundColor={match.courtBackgroundColor}
             courtLineColor={match.courtLineColor}
@@ -1598,6 +1603,9 @@ export default function LiveMatchScreen() {
         actions={match.events}
         selectedPeriods={selectedPeriodIds}
         onPeriodSelectionChange={setSelectedPeriodIds}
+        isHome={match.location === TeamId.HOME}
+        selectedTeamFilter={selectedTeamFilter}
+        onTeamFilterChange={setSelectedTeamFilter}
       />
 
       {/* Sync Modal */}
