@@ -165,6 +165,7 @@ export default function SubscriptionView({
   const [showTeamSelectionModal, setShowTeamSelectionModal] = useState(false);
   const [pendingTier, setPendingTier] = useState<SubscriptionTier | null>(null);
   const [activeTeams, setActiveTeams] = useState<Team[]>([]);
+  const [requireExactSelection, setRequireExactSelection] = useState(true);
 
   // Get the club's current subscription tier
   const currentTier: SubscriptionTier = club?.subscriptionTier || "free";
@@ -209,21 +210,31 @@ export default function SubscriptionView({
 
     const newMaxTeams = targetPlan.limits.maxTeams;
 
-    // Check if this is a downgrade that requires team selection
+    // Check if team selection is needed
     try {
       const teamService = ServiceFactory.getTeamService(supabase);
-      const activeTeamCount = await teamService.getActiveTeamsCount(club.id);
+      const teams = await teamService.getClubTeamsByStatus(club.id, "approved");
+      const activeTeamsList = teams.filter(t => t.isActive && !t.isDeleted);
+      const suspendedTeamsList = teams.filter(t => !t.isActive && !t.isDeleted);
+      const totalTeams = activeTeamsList.length + suspendedTeamsList.length;
 
-      if (activeTeamCount > newMaxTeams) {
-        // Need to select teams to keep
-        const teams = await teamService.getClubTeamsByStatus(club.id, "approved");
-        const activeTeamsList = teams.filter(t => t.isActive && !t.isDeleted);
-
+      // CASE 1: Downgrade - active teams exceed new limit
+      if (activeTeamsList.length > newMaxTeams) {
         setPendingTier(tier);
         setActiveTeams(activeTeamsList);
+        setRequireExactSelection(true); // Must select exactly maxSelection teams
         setShowTeamSelectionModal(true);
-      } else {
-        // No team selection needed, proceed directly
+      }
+      // CASE 2: Upgrade with suspended teams - let user choose which to reactivate
+      else if (suspendedTeamsList.length > 0 && newMaxTeams > 0 && totalTeams > newMaxTeams) {
+        // User has suspended teams and new limit allows some but not all
+        setPendingTier(tier);
+        setActiveTeams([...activeTeamsList, ...suspendedTeamsList]); // Show all teams
+        setRequireExactSelection(false); // Can select up to maxSelection teams
+        setShowTeamSelectionModal(true);
+      }
+      // CASE 3: No selection needed
+      else {
         confirmSubscriptionChange(tier);
       }
     } catch (error) {
@@ -362,6 +373,7 @@ export default function SubscriptionView({
         teams={activeTeams}
         maxSelection={pendingTier ? (plans.find(p => p.tier === pendingTier)?.limits.maxTeams || 0) : 0}
         tierName={pendingTier || ""}
+        requireExactSelection={requireExactSelection}
         onConfirm={handleTeamSelectionConfirm}
         onCancel={handleTeamSelectionCancel}
       />

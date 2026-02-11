@@ -256,24 +256,53 @@ export class TeamService {
       // CASE 1: UPGRADE - Reactivate suspended teams if new limit allows
       if (activeTeams.length < newMaxTeams && suspendedTeams.length > 0) {
         const spotsAvailable = newMaxTeams - activeTeams.length;
-        const teamsToReactivate = suspendedTeams
-          .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()) // Most recent first
-          .slice(0, spotsAvailable);
 
-        let reactivatedCount = 0;
-        for (const team of teamsToReactivate) {
-          const result = await this.teamRepository.update(team.id, { isActive: true });
-          if (result) {
-            reactivatedCount++;
+        // If user provided specific teams to activate, use those (full control)
+        if (selectedTeamIds && selectedTeamIds.length > 0) {
+          // First, ensure currently active teams that were NOT selected are suspended
+          const teamsToSuspend = activeTeams.filter(t => !selectedTeamIds.includes(t.id));
+          let suspendedCount = 0;
+          for (const team of teamsToSuspend) {
+            const result = await this.teamRepository.update(team.id, { isActive: false });
+            if (result) suspendedCount++;
           }
-        }
 
-        return {
-          success: true,
-          activeCount: activeTeams.length + reactivatedCount,
-          reactivatedCount,
-          suspendedCount: 0,
-        };
+          // Then activate selected teams up to the limit
+          const teamsToActivate = teams
+            .filter(t => selectedTeamIds.includes(t.id) && !t.isActive)
+            .slice(0, newMaxTeams);
+
+          let reactivatedCount = 0;
+          for (const team of teamsToActivate) {
+            const result = await this.teamRepository.update(team.id, { isActive: true });
+            if (result) reactivatedCount++;
+          }
+
+          return {
+            success: true,
+            activeCount: activeTeams.length - suspendedCount + reactivatedCount,
+            reactivatedCount,
+            suspendedCount,
+          };
+        } else {
+          // Default: reactivate most recent suspended teams
+          const teamsToReactivate = suspendedTeams
+            .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+            .slice(0, spotsAvailable);
+
+          let reactivatedCount = 0;
+          for (const team of teamsToReactivate) {
+            const result = await this.teamRepository.update(team.id, { isActive: true });
+            if (result) reactivatedCount++;
+          }
+
+          return {
+            success: true,
+            activeCount: activeTeams.length + reactivatedCount,
+            reactivatedCount,
+            suspendedCount: 0,
+          };
+        }
       }
 
       // CASE 2: ALREADY WITHIN LIMIT - Nothing to do

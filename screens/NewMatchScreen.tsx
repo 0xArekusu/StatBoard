@@ -218,6 +218,30 @@ export default function NewMatchScreen() {
       setLoading(true);
       const teamService = ServiceFactory.getTeamService(supabase);
       const clubTeams = await teamService.getClubTeams(currentClub.id);
+
+      // Check if the team from route params exists but is suspended
+      const teamIdFromRoute = route.params?.teamId;
+      if (teamIdFromRoute) {
+        const requestedTeam = clubTeams.find(
+          (team) => team.id === teamIdFromRoute && team.ownerId === user.id
+        );
+
+        if (requestedTeam && (!requestedTeam.isActive || requestedTeam.status !== TeamStatus.APPROVED)) {
+          Alert.alert(
+            "Équipe suspendue",
+            "Cette équipe a été suspendue suite au changement d'abonnement. Veuillez passer à une offre supérieure pour la réactiver.",
+            [
+              {
+                text: "OK",
+                onPress: () => navigation.goBack(),
+              },
+            ]
+          );
+          setLoading(false);
+          return;
+        }
+      }
+
       // Filter to only show approved and active teams where user is the owner
       const myApprovedTeams = clubTeams.filter(
         (team) =>

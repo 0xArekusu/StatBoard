@@ -24,6 +24,8 @@ interface TeamSelectionModalProps {
   teams: Team[];
   maxSelection: number;
   tierName: string;
+  /** If true, user must select exactly maxSelection teams. If false, user can select up to maxSelection teams */
+  requireExactSelection?: boolean;
   onConfirm: (selectedTeamIds: string[]) => void;
   onCancel: () => void;
 }
@@ -33,6 +35,7 @@ export default function TeamSelectionModal({
   teams,
   maxSelection,
   tierName,
+  requireExactSelection = true,
   onConfirm,
   onCancel,
 }: TeamSelectionModalProps) {
@@ -55,10 +58,17 @@ export default function TeamSelectionModal({
   };
 
   const handleConfirm = () => {
-    if (selectedIds.length !== maxSelection && maxSelection > 0) {
+    if (requireExactSelection && selectedIds.length !== maxSelection && maxSelection > 0) {
       Alert.alert(
         "Sélection incomplète",
         `Veuillez sélectionner exactement ${maxSelection} équipe(s).`
+      );
+      return;
+    }
+    if (!requireExactSelection && selectedIds.length > maxSelection) {
+      Alert.alert(
+        "Trop d'équipes sélectionnées",
+        `Vous ne pouvez sélectionner que ${maxSelection} équipe(s) maximum.`
       );
       return;
     }
@@ -86,7 +96,7 @@ export default function TeamSelectionModal({
             </Text>
             <Text style={[styles.subtitle, { color: colors.text.secondary }]}>
               L'offre {tierName} permet {maxSelection} équipe{maxSelection > 1 ? "s" : ""}.
-              {"\n"}Sélectionnez {maxSelection > 0 ? `${maxSelection} équipe(s)` : "aucune équipe"} à garder active{maxSelection > 1 ? "s" : ""}.
+              {"\n"}Sélectionnez {requireExactSelection ? "exactement" : "jusqu'à"} {maxSelection > 0 ? `${maxSelection} équipe(s)` : "aucune équipe"} à garder active{maxSelection > 1 ? "s" : ""}.
             </Text>
             {maxSelection === 0 && (
               <Text style={[styles.warningText, { color: colors.warning || colors.primary }]}>
@@ -152,6 +162,7 @@ export default function TeamSelectionModal({
           <View style={styles.footer}>
             <Text style={[styles.selectionCount, { color: colors.text.secondary }]}>
               {selectedIds.length} / {maxSelection} sélectionné{selectedIds.length > 1 ? "s" : ""}
+              {!requireExactSelection && selectedIds.length < maxSelection && " (optionnel)"}
             </Text>
             <View style={styles.buttons}>
               <TouchableOpacity
