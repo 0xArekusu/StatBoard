@@ -250,15 +250,26 @@ export class SupabaseTeamRepository implements ITeamRepository {
    */
   async delete(id: string): Promise<boolean> {
     // Soft delete - mark as deleted instead of physical deletion
-    const { error } = await this.supabase
+    const { data, error } = await this.supabase
       .from("teams")
       .update({
         is_deleted: true,
         deleted_at: new Date().toISOString(),
       })
-      .eq("id", id);
+      .eq("id", id)
+      .select();
 
-    return !error;
+    if (error) {
+      console.error("Error deleting team:", error);
+      return false;
+    }
+
+    if (!data || data.length === 0) {
+      console.error("Team deletion failed: No rows affected");
+      return false;
+    }
+
+    return true;
   }
 
   /**

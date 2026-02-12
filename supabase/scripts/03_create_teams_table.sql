@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS teams (
   status team_status NOT NULL DEFAULT 'pending',
   is_active BOOLEAN NOT NULL DEFAULT true,
   is_deleted BOOLEAN NOT NULL DEFAULT false,
+  deleted_at TIMESTAMP WITH TIME ZONE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );

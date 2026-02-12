@@ -108,7 +108,16 @@ export default function TeamInfoScreen() {
           onPress: async () => {
             try {
               const teamService = ServiceFactory.getTeamService(supabase);
-              await teamService.deleteTeam(teamId, user.id);
+              const result = await teamService.deleteTeam(teamId, user.id);
+
+              if (!result.success) {
+                Alert.alert(
+                  "Erreur de suppression",
+                  result.error || "Impossible de supprimer l'équipe. Vérifiez vos permissions."
+                );
+                return;
+              }
+
               Alert.alert("Succès", "Équipe supprimée", [
                 {
                   text: "OK",
@@ -120,7 +129,10 @@ export default function TeamInfoScreen() {
               ]);
             } catch (error) {
               console.error("Error deleting team:", error);
-              Alert.alert("Erreur", "Impossible de supprimer l'équipe");
+              Alert.alert(
+                "Erreur",
+                `Impossible de supprimer l'équipe: ${error instanceof Error ? error.message : 'Erreur inconnue'}`
+              );
             }
           },
         },
