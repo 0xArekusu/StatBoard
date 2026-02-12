@@ -59,19 +59,24 @@ export class MatchDataService {
 
   /**
    * Load complete match details including actions and players
-   * Automatically determines the data source based on match ID type
+   * Automatically determines the data source based on match sync status
    *
    * @param match - The match to load details for
    * @returns Match details with actions and players
    */
   async loadMatchDetails(match: Match): Promise<MatchDetailsData> {
-    const matchId = (match as any).supabase_id || match.id;
-    const isUUID = typeof matchId === "string" && matchId.includes("-");
+    const matchId = match.id;
 
-    if (isUUID) {
-      return this.loadFromSupabase(matchId);
+    // Check if match has been synced to Supabase
+    // If match is synced and has supabase_id, load from Supabase
+    // Otherwise, load from local SQLite (guest mode or unsynced match)
+    const hasSupabaseId = (match as any).supabase_id !== undefined && (match as any).supabase_id !== null;
+    const isSynced = match.synced_to_server === true;
+
+    if (hasSupabaseId && isSynced) {
+      return this.loadFromSupabase((match as any).supabase_id);
     } else {
-      return this.loadFromLocal(Number(matchId));
+      return this.loadFromLocal(matchId);
     }
   }
 
@@ -158,10 +163,10 @@ export class MatchDataService {
    * Load match details from local SQLite database
    * Fetches actions and players from repositories
    *
-   * @param matchId - Local database ID of the match
+   * @param matchId - Local database ID of the match (can be UUID string or number)
    * @returns Match details from local storage
    */
-  private async loadFromLocal(matchId: number): Promise<MatchDetailsData> {
+  private async loadFromLocal(matchId: string | number): Promise<MatchDetailsData> {
     const actionsFromDB = await this.actionRepository.getActionsForMatch(matchId);
 
     // Convert to ActionData format
