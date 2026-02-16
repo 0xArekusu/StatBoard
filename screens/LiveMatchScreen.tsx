@@ -467,7 +467,7 @@ export default function LiveMatchScreen() {
             location: match.location,
           });
 
-          const matchCreateData: CreateMatchData = {
+          const matchCreateData: CreateMatchData & { created_at: string } = {
             my_team_name: match.myTeamName || null,
             opponent_name: match.opponent || "Adversaire",
             is_home: match.location === TeamId.HOME,
@@ -480,6 +480,7 @@ export default function LiveMatchScreen() {
             club_logo_url: match.clubLogoUrl || null,
             court_background_color: match.courtBackgroundColor || null,
             court_line_color: match.courtLineColor || null,
+            created_at: match.createdAt || new Date().toISOString(), // Use timestamp from NewMatchScreen
           };
 
           logInfo(
@@ -487,7 +488,7 @@ export default function LiveMatchScreen() {
             "💾 Creating match in SQLite database",
             matchCreateData,
           );
-          const createdMatch = await matchManager.startMatch(matchCreateData);
+          const createdMatch = await matchManager.createMatch(matchCreateData);
           setCurrentMatchId(createdMatch.id);
           logInfo(
             "LiveMatchScreen",
@@ -692,10 +693,27 @@ export default function LiveMatchScreen() {
   }, []);
 
   // Toggle timer play/pause with automatic save on pause
-  const toggleTimer = () => {
+  const toggleTimer = async () => {
     if (isRunning) {
       // Pausing - save state immediately
       saveMatchState();
+    } else {
+      // Starting timer - set started_at if not already set
+      if (currentMatchId) {
+        try {
+          const matchRepo = new MatchRepository();
+          const currentMatch = await matchRepo.findById(currentMatchId);
+          if (currentMatch && !currentMatch.started_at) {
+            const matchManager = new MatchManager();
+            await matchManager.startMatch(currentMatchId);
+            logInfo("LiveMatchScreen", "✅ Match started_at set on timer start", {
+              matchId: currentMatchId,
+            });
+          }
+        } catch (error) {
+          logError("LiveMatchScreen", "❌ Error setting started_at on timer start", { error });
+        }
+      }
     }
     setIsRunning(!isRunning);
   };
@@ -1172,6 +1190,23 @@ export default function LiveMatchScreen() {
     playerId: string,
     coords?: { x: number; y: number },
   ) => {
+    // Set started_at on first action if not already set
+    if (currentMatchId) {
+      try {
+        const matchRepo = new MatchRepository();
+        const currentMatch = await matchRepo.findById(currentMatchId);
+        if (currentMatch && !currentMatch.started_at) {
+          const matchManager = new MatchManager();
+          await matchManager.startMatch(currentMatchId);
+          logInfo("LiveMatchScreen", "✅ Match started_at set on first action", {
+            matchId: currentMatchId,
+          });
+        }
+      } catch (error) {
+        logError("LiveMatchScreen", "❌ Error setting started_at", { error });
+      }
+    }
+
     const isMyTeamPlayer = homeRoster.some((p: Player) => p.id === playerId);
     const player = isMyTeamPlayer
       ? homeRoster.find((p: Player) => p.id === playerId)

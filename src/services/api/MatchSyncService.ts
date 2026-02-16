@@ -423,6 +423,7 @@ export class MatchSyncService {
       opponent_score: match.opponent_score || 0,
       status: 'completed', // Match is completed when syncing
       created_by: userId,
+      created_at: match.created_at, // Preserve creation timestamp from local database
       started_at: match.started_at || null,
       ended_at: match.ended_at || null,
       synced_at: new Date().toISOString(), // Set current time as sync time

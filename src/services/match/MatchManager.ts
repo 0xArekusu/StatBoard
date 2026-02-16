@@ -31,45 +31,56 @@ export class MatchManager {
   }
 
   /**
-   * Create and start a new match
-   * Creates match in database and sets started_at timestamp
+   * Create a new match
+   * Creates match in database with created_at timestamp (when user configured and clicked "Start")
+   * Note: started_at should be set later when first action is recorded or timer starts
    * Note: Repository logs creation, we log high-level orchestration
    */
-  async startMatch(data: CreateMatchData): Promise<Match> {
+  async createMatch(data: CreateMatchData & { created_at?: string }): Promise<Match> {
     try {
-      logInfo('MatchManager', '🏀 Starting new match', {
-        teamA: data.team_a_name,
-        teamB: data.team_b_name,
-        teamMode: data.team_mode,
-        matchFormat: data.match_format
+      logInfo('MatchManager', '🏀 Creating new match', {
+        myTeam: data.my_team_name,
+        opponent: data.opponent_name,
+        isHome: data.is_home,
+        createdAt: data.created_at
       });
 
       // Create the match in database (logged by repository)
       const match = await this.matchRepository.create(data);
 
-      // Set started_at timestamp (logged by repository)
-      await this.matchRepository.startMatch(match.id);
-
-      // Fetch updated match
-      const updatedMatch = await this.matchRepository.findById(match.id);
-
-      if (!updatedMatch) {
-        logError('MatchManager', '❌ Failed to retrieve created match after start');
-        throw new Error('Failed to retrieve created match');
-      }
-
-      logInfo('MatchManager', '✅ Match orchestration completed', {
-        matchId: updatedMatch.id,
-        teamA: updatedMatch.team_a_name,
-        teamB: updatedMatch.team_b_name
+      logInfo('MatchManager', '✅ Match created successfully', {
+        matchId: match.id,
+        myTeam: match.my_team_name,
+        opponent: match.opponent_name,
+        createdAt: match.created_at
       });
 
-      return updatedMatch;
+      return match;
     } catch (error) {
-      logError('MatchManager', '❌ Error in match start orchestration', {
+      logError('MatchManager', '❌ Error creating match', {
         error: error instanceof Error ? error.message : error,
-        teamA: data.team_a_name,
-        teamB: data.team_b_name
+        myTeam: data.my_team_name,
+        opponent: data.opponent_name
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Start a match by setting started_at timestamp
+   * Should be called when first action is recorded or timer starts
+   */
+  async startMatch(matchId: string): Promise<void> {
+    try {
+      logInfo('MatchManager', '▶️ Starting match timer', { matchId });
+
+      await this.matchRepository.startMatch(matchId);
+
+      logInfo('MatchManager', '✅ Match timer started', { matchId });
+    } catch (error) {
+      logError('MatchManager', '❌ Error starting match timer', {
+        matchId,
+        error: error instanceof Error ? error.message : error
       });
       throw error;
     }

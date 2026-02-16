@@ -79,6 +79,7 @@ export interface SupabaseMatchInsert {
   created_by?: string | null;
 
   // Timestamps
+  created_at?: string; // When user configured match and clicked "Start Match"
   started_at?: string | null;
   ended_at?: string | null;
   synced_at?: string | null;

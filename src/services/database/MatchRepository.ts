@@ -65,9 +65,11 @@ export class MatchRepository implements IMatchRepository {
   /**
    * Create a new match in SQLite database
    * Generates UUID and sets initial status to 'in_progress'
+   * Note: created_at should be provided from the UI when user clicks "Start Match"
    */
-  async create(data: CreateMatchData): Promise<Match> {
+  async create(data: CreateMatchData & { created_at?: string }): Promise<Match> {
     const matchId = generateUUID();
+    const createdAt = data.created_at || new Date().toISOString();
     const sql = `
       INSERT INTO matches (
         id,
@@ -86,9 +88,10 @@ export class MatchRepository implements IMatchRepository {
         club_logo_url,
         court_background_color,
         court_line_color,
-        track_opponent_stats
+        track_opponent_stats,
+        created_at
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, 0, 0, 0, 'in_progress', ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, 0, 0, 0, 'in_progress', ?, ?, ?, ?, ?, ?, ?)
     `;
 
     try {
@@ -120,7 +123,8 @@ export class MatchRepository implements IMatchRepository {
         data.club_logo_url || null,
         data.court_background_color || null,
         data.court_line_color || null,
-        data.track_opponent_stats ? 1 : 0
+        data.track_opponent_stats ? 1 : 0,
+        createdAt
       ]);
 
       // Get the created match

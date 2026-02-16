@@ -594,6 +594,8 @@ export default function NewMatchScreen() {
       }));
 
     // Create match object
+    // created_at is set NOW when user clicks "Start Match" (coup d'envoi)
+    const createdAt = new Date().toISOString();
     const matchData = {
       id: Date.now().toString(),
       clubId: club.id,
@@ -611,7 +613,7 @@ export default function NewMatchScreen() {
       clubLogoUrl: club?.logoUrl || null,
       courtBackgroundColor: club?.courtBackgroundColor || DEFAULT_COURT_COLORS.background,
       courtLineColor: club?.courtLineColor || DEFAULT_COURT_COLORS.line,
-      createdAt: new Date().toISOString(),
+      createdAt, // Timestamp when user configured match and clicked "Start Match"
     };
 
     // Navigate to LiveMatch screen
