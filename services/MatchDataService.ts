@@ -71,7 +71,7 @@ export class MatchDataService {
     // If match is synced and has supabase_id, load from Supabase
     // Otherwise, load from local SQLite (guest mode or unsynced match)
     const hasSupabaseId = (match as any).supabase_id !== undefined && (match as any).supabase_id !== null;
-    const isSynced = match.synced_to_server === true;
+    const isSynced = Boolean(match.synced_to_server);
 
     if (hasSupabaseId && isSynced) {
       return this.loadFromSupabase((match as any).supabase_id);
