@@ -29,10 +29,11 @@ import { useResponsive } from '../../src/hooks/useResponsive';
  * - Facebook OAuth (placeholder)
  * - Navigation to registration screen
  */
-export default function LoginScreen({ navigation }: any) {
+export default function LoginScreen({ navigation, route }: any) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const emailConfirmed = route?.params?.emailConfirmed === true;
   const { signIn, signInWithGoogle, resetPassword } = useAuth();
   const { colors } = useTheme();
   const { sp, font, sizes, isCompact } = useResponsive();
@@ -121,6 +122,16 @@ export default function LoginScreen({ navigation }: any) {
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.formContainer}>
+          {/* Email confirmed banner */}
+          {emailConfirmed && (
+            <View style={styles.confirmedBanner}>
+              <MaterialCommunityIcons name="check-circle" size={20} color="#fff" />
+              <Text style={styles.confirmedBannerText}>
+                Email confirmé ! Vous pouvez maintenant vous connecter.
+              </Text>
+            </View>
+          )}
+
           {/* Back Button */}
           <TouchableOpacity
             onPress={() => navigation.goBack()}
@@ -439,5 +450,20 @@ const styles = StyleSheet.create({
   },
   forgotPasswordText: {
     fontWeight: '600',
+  },
+  confirmedBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#22c55e',
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 16,
+    gap: 8,
+  },
+  confirmedBannerText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 14,
+    flex: 1,
   },
 });

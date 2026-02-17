@@ -299,10 +299,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     logInfo("AuthProvider", "🔗 Creating session from deep link URL", { url });
 
     try {
-      // Extract query parameters from URL
+      // Supabase puts tokens in the fragment (#) after redirect
+      // e.g. com.coachassistant.basketball://auth/callback#access_token=...&refresh_token=...
       const urlObj = new URL(url);
-      const access_token = urlObj.searchParams.get('access_token');
-      const refresh_token = urlObj.searchParams.get('refresh_token');
+      const fragment = urlObj.hash.startsWith('#') ? urlObj.hash.slice(1) : urlObj.search.slice(1);
+      const params = new URLSearchParams(fragment);
+      const access_token = params.get('access_token');
+      const refresh_token = params.get('refresh_token');
 
       if (!access_token || !refresh_token) {
         const error = new Error('No tokens found in URL');

@@ -6,7 +6,7 @@
  */
 
 import { useState, useEffect, useRef } from "react";
-import { NavigationContainer } from "@react-navigation/native";
+import { NavigationContainer, createNavigationContainerRef } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { AppState, AppStateStatus, Linking } from "react-native";
 import AuthScreen from "./screens/authentication/AuthScreen";
@@ -29,6 +29,7 @@ import { logInfo, logWarn, logError } from "./utils/logger";
 import DebugCourtClick from "./DebugCourtClick";
 
 const Stack = createNativeStackNavigator();
+const navigationRef = createNavigationContainerRef<Record<string, object | undefined>>();
 
 /**
  * Navigation component that manages the app's screen navigation
@@ -37,6 +38,7 @@ const Stack = createNativeStackNavigator();
 function Navigation() {
   const { loading, user, createSessionFromUrl } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
+  const pendingEmailConfirmed = useRef(false);
 
   useEffect(() => {
     logInfo("App", "🚀 App initialization started");
@@ -58,12 +60,23 @@ function Navigation() {
       logInfo("App", "🔗 Deep link received", { url });
 
       // Check if it's an auth-related deep link
-      if (url.includes('auth/callback') || url.includes('reset-password')) {
+      const isEmailCallback = url.includes('auth/callback');
+      const isPasswordReset = url.includes('reset-password');
+
+      if (isEmailCallback || isPasswordReset) {
         logInfo("App", "🔐 Processing authentication deep link");
         const { error } = await createSessionFromUrl(url);
 
         if (error) {
           logError("App", "❌ Failed to process deep link", { error: error.message });
+        } else if (isEmailCallback) {
+          logInfo("App", "✅ Email confirmed, navigating to login");
+          if (navigationRef.isReady()) {
+            navigationRef.navigate(ROUTES.LOGIN, { emailConfirmed: true });
+          } else {
+            // Nav not ready yet (splash screen), store for later
+            pendingEmailConfirmed.current = true;
+          }
         } else {
           logInfo("App", "✅ Successfully processed deep link");
         }
@@ -88,6 +101,17 @@ function Navigation() {
     };
   }, [createSessionFromUrl]);
 
+  // Once splash screen is done, flush any pending navigation
+  useEffect(() => {
+    if (!isLoading && !loading && pendingEmailConfirmed.current) {
+      pendingEmailConfirmed.current = false;
+      if (navigationRef.isReady()) {
+        logInfo("App", "✅ Flushing pending email confirmed navigation");
+        navigationRef.navigate(ROUTES.LOGIN, { emailConfirmed: true });
+      }
+    }
+  }, [isLoading, loading]);
+
   // Show splash screen while loading auth or initial data
   if (isLoading || loading) {
     return <SplashScreen />;
@@ -104,7 +128,7 @@ function Navigation() {
   });
 
   return (
-    <NavigationContainer>
+    <NavigationContainer ref={navigationRef}>
       <Stack.Navigator
         initialRouteName={initialRoute}
         screenOptions={{
