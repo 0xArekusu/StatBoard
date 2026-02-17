@@ -357,7 +357,7 @@ export default function TeamRosterScreen() {
       const teamService = ServiceFactory.getTeamService(supabase);
 
       // Upload coach photo if it's a local file
-      let uploadedCoachPhotoUrl = coachPhotoUrl;
+      let uploadedCoachPhotoUrl: string | undefined = coachPhotoUrl;
       if (coachPhotoUrl && coachPhotoUrl.startsWith("file://")) {
         const coachPhotoId = `coach-${Date.now()}`;
         const { url, error } = await photoService.uploadPlayerPhoto(
