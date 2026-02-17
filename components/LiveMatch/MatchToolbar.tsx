@@ -1,13 +1,15 @@
 import React from "react";
-import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, Alert } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useTheme } from "../../src/contexts/ThemeContext";
 import { FilterMode } from "../../constants/liveMatchConstants";
+import { AdminService } from "../../services/AdminService";
 
 interface MatchToolbarProps {
   filterMode: FilterMode;
   showMarkers: boolean;
   isGeneratingMockData: boolean;
+  isAdmin?: boolean;
   onUndo: () => void;
   onOpenFilter: () => void;
   onToggleMarkers: () => void;
@@ -19,6 +21,7 @@ export function MatchToolbar({
   filterMode,
   showMarkers,
   isGeneratingMockData,
+  isAdmin = false,
   onUndo,
   onOpenFilter,
   onToggleMarkers,
@@ -66,41 +69,42 @@ export function MatchToolbar({
         </Text>
       </TouchableOpacity>
 
-      <TouchableOpacity
-        onPress={() => {
-          // Simple Alert confirmation
-          const { Alert } = require('react-native');
-          Alert.alert(
-            "Ajouter des données de test ?",
-            "Cela va générer des actions fictives pour le match.",
-            [
-              { text: "Annuler", style: "cancel" },
-              { text: "Confirmer", onPress: onGenerateMock },
-            ]
-          );
-        }}
-        disabled={isGeneratingMockData}
-        style={[
-          styles.toolbarButton,
-          isGeneratingMockData && { opacity: 0.5 },
-        ]}
-      >
-        <MaterialCommunityIcons
-          name="flask"
-          size={22}
-          color={isGeneratingMockData ? colors.primary : colors.primary}
-        />
-        <Text
+      {isAdmin && (
+        <TouchableOpacity
+          onPress={() => {
+            // Simple Alert confirmation
+            Alert.alert(
+              "Ajouter des données de test ?",
+              "Cela va générer des actions fictives pour le match.",
+              [
+                { text: "Annuler", style: "cancel" },
+                { text: "Confirmer", onPress: onGenerateMock },
+              ]
+            );
+          }}
+          disabled={isGeneratingMockData}
           style={[
-            styles.toolbarButtonText,
-            {
-              color: isGeneratingMockData ? colors.primary : colors.primary,
-            },
+            styles.toolbarButton,
+            isGeneratingMockData && { opacity: 0.5 },
           ]}
         >
-          {isGeneratingMockData ? "..." : "Test"}
-        </Text>
-      </TouchableOpacity>
+          <MaterialCommunityIcons
+            name="flask"
+            size={22}
+            color={isGeneratingMockData ? colors.primary : colors.primary}
+          />
+          <Text
+            style={[
+              styles.toolbarButtonText,
+              {
+                color: isGeneratingMockData ? colors.primary : colors.primary,
+              },
+            ]}
+          >
+            {isGeneratingMockData ? "..." : "Test"}
+          </Text>
+        </TouchableOpacity>
+      )}
 
       <TouchableOpacity onPress={onOpenHistory} style={styles.toolbarButton}>
         <MaterialCommunityIcons

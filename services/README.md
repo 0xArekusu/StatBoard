@@ -121,6 +121,28 @@ Service de logging centralisé.
 - Erreurs tracking
 - Performance monitoring
 
+#### **AdminService**
+Vérification du statut admin de l'utilisateur courant.
+- Singleton avec cache en mémoire
+- Invalidation automatique du cache au changement d'utilisateur
+- Accès direct (sans ServiceFactory — pas de repository, pas de dépendances)
+
+**Usage** :
+```typescript
+const adminService = AdminService.getInstance();
+const isAdmin = await adminService.isAdmin(); // DB query la 1ère fois, cache ensuite
+await adminService.refreshAdminStatus();       // Forcer un refresh
+adminService.getCachedStatus();                // boolean | null sans requête
+```
+
+**Setup** :
+1. Exécuter `supabase/scripts/08_create_admins_table.sql` sur Supabase
+2. Ajouter un admin via SQL Editor :
+```sql
+INSERT INTO admins (user_id) VALUES ('user-guid-here');
+-- Trouver le guid : SELECT id, email FROM auth.users;
+```
+
 ## 🏭 ServiceFactory (Design Pattern)
 
 Le **ServiceFactory** centralise la création des services et implémente le **Singleton Pattern**.

@@ -34,6 +34,7 @@ import MatchLimitModal from "../components/MatchLimitModal";
 import { ROUTES } from "../constants/routes";
 import { COACH_ASSISTANT_LOGO_MARGIN } from "../src/utils/logoHelper";
 import { SUBSCRIPTION_LIMITS, NOT_CONNECTED_LIMITS } from "../models/Subscription";
+import { AdminService } from "../services/AdminService";
 
 /**
  * DashboardScreen navigation prop type
@@ -78,10 +79,25 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
   const [showGuestWelcome, setShowGuestWelcome] = useState(false);
   const [showClubSwitcher, setShowClubSwitcher] = useState(false);
   const [showMatchLimitModal, setShowMatchLimitModal] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   const isGuest = !user;
   const userName =
     user?.user_metadata?.full_name || user?.email?.split("@")[0] || "Invité";
+
+  // Check admin status on mount and user change
+  useEffect(() => {
+    const checkAdminStatus = async () => {
+      if (user) {
+        const adminService = AdminService.getInstance();
+        const admin = await adminService.isAdmin();
+        setIsAdmin(admin);
+      } else {
+        setIsAdmin(false);
+      }
+    };
+    checkAdminStatus();
+  }, [user]);
 
   // Block hardware back button to prevent going back to auth screen
   useEffect(() => {
@@ -721,7 +737,7 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
                 </Text>
               </TouchableOpacity>
 
-              {!isGuest && (
+              {!isGuest && isAdmin && (
                 <TouchableOpacity
                   style={styles.profileMenuItem}
                   onPress={handleOpenClubSwitcher}

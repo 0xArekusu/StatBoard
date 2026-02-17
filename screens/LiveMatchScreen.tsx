@@ -41,6 +41,7 @@ import { Player } from "../models/Player";
 import { useAuth } from "../src/contexts/AuthContext";
 import { MatchManager } from "../src/services/match/MatchManager";
 import { ActionQueue } from "../src/services/match/ActionQueue";
+import { AdminService } from "../services/AdminService";
 import { MatchRepository } from "../src/services/database/MatchRepository";
 import { ActionRepository } from "../src/services/database/ActionRepository";
 import { MatchPlayerRepository } from "../src/services/database/MatchPlayerRepository";
@@ -273,6 +274,7 @@ export default function LiveMatchScreen() {
   const [selectedPeriodIds, setSelectedPeriodIds] = useState<number[]>([]);
   const [selectedTeamFilter, setSelectedTeamFilter] = useState<TeamFilterMode>(TeamFilterMode.ALL);
   const [isGeneratingMockData, setIsGeneratingMockData] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   // Multi-step action recording workflow
   const [workflowStep, setWorkflowStep] = useState<WorkflowStep>(
@@ -285,6 +287,22 @@ export default function LiveMatchScreen() {
     coords?: { x: number; y: number };
     playerId?: string;
   }>({});
+
+  // ========================================
+  // ADMIN STATUS CHECK
+  // ========================================
+  useEffect(() => {
+    const checkAdminStatus = async () => {
+      if (user) {
+        const adminService = AdminService.getInstance();
+        const admin = await adminService.isAdmin();
+        setIsAdmin(admin);
+      } else {
+        setIsAdmin(false);
+      }
+    };
+    checkAdminStatus();
+  }, [user]);
 
   // ========================================
   // MATCH INITIALIZATION & RESUME
@@ -1593,6 +1611,7 @@ export default function LiveMatchScreen() {
         filterMode={filterMode}
         showMarkers={showMarkers}
         isGeneratingMockData={isGeneratingMockData}
+        isAdmin={isAdmin}
         onUndo={undoLastAction}
         onOpenFilter={() => setShowFilterModal(true)}
         onToggleMarkers={() => setShowMarkers(!showMarkers)}
