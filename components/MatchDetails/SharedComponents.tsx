@@ -8,6 +8,7 @@ import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 import Svg, { Circle, Polygon } from "react-native-svg";
 import { useTheme } from "../../src/contexts/ThemeContext";
+import { useResponsive } from "../../src/hooks/useResponsive";
 
 // ===========================
 // MARKER TYPE ENUM
@@ -40,19 +41,22 @@ export const ShootingBar: React.FC<ShootingBarProps> = ({
 }) => {
   const { isDark } = useTheme();
   const { colors } = useTheme();
+  const { isCompact: isCompactLayout } = useResponsive();
   const textPrimary = isDark ? colors.text.primary : colors.text.primary;
   const textSecondary = isDark ? colors.text.secondary : colors.text.secondary;
   const textTertiary = isDark ? colors.text.tertiary : colors.text.secondary;
   const pct = attempted > 0 ? Math.round((made / attempted) * 100) : 0;
 
+  const isSmall = compact || isCompactLayout;
+
   return (
-    <View style={[styles.shootingBar, compact && styles.shootingBarCompact]}>
+    <View style={[styles.shootingBar, isSmall && styles.shootingBarCompact]}>
       <View style={styles.shootingBarRow}>
         <Text
           style={[
             styles.shootingBarLabel,
             { color: textSecondary },
-            compact && styles.shootingBarLabelCompact,
+            isSmall && styles.shootingBarLabelCompact,
           ]}
         >
           {label}
@@ -61,7 +65,7 @@ export const ShootingBar: React.FC<ShootingBarProps> = ({
           style={[
             styles.shootingBarTrack,
             { backgroundColor: isDark ? colors.surface : colors.surfaceVariant },
-            compact && styles.shootingBarTrackCompact,
+            isSmall && styles.shootingBarTrackCompact,
           ]}
         >
           <View
@@ -75,7 +79,7 @@ export const ShootingBar: React.FC<ShootingBarProps> = ({
           style={[
             styles.shootingBarValue,
             { color: textPrimary },
-            compact && styles.shootingBarValueCompact,
+            isSmall && styles.shootingBarValueCompact,
           ]}
         >
           <Text style={styles.shootingBarValueBold}>
@@ -107,6 +111,7 @@ interface StatBoxProps {
 
 export const StatBox: React.FC<StatBoxProps> = ({ label, value, sub, markerType, markerColor, leftMarkerType, leftMarkerColor }) => {
   const { colors } = useTheme();
+  const { isCompact, sp, font } = useResponsive();
   const textPrimary = colors.text.primary;
   const textSecondary = colors.text.secondary;
 
@@ -166,7 +171,7 @@ export const StatBox: React.FC<StatBoxProps> = ({ label, value, sub, markerType,
     <View
       style={[
         styles.statBox,
-        { backgroundColor: colors.surfaceVariant },
+        { backgroundColor: colors.surfaceVariant, padding: sp.sm },
       ]}
     >
       <Text style={[styles.statBoxLabel, { color: textSecondary }]}>
@@ -174,7 +179,7 @@ export const StatBox: React.FC<StatBoxProps> = ({ label, value, sub, markerType,
       </Text>
       <View style={[styles.statBoxValueRow, !leftMarkerType && styles.statBoxValueRowNoLeft]}>
         {renderMarker(leftMarkerType, leftMarkerColor)}
-        <Text style={[styles.statBoxValue, { color: textPrimary }]}>{value}</Text>
+        <Text style={[styles.statBoxValue, { color: textPrimary, fontSize: font.lg }]}>{value}</Text>
         {renderMarker(markerType, markerColor)}
       </View>
       {sub && (
@@ -242,7 +247,6 @@ const styles = StyleSheet.create({
   statBox: {
     flex: 1,
     alignItems: "center",
-    padding: 8,
     borderRadius: 8,
   },
   statBoxLabel: {
@@ -262,7 +266,6 @@ const styles = StyleSheet.create({
     marginLeft: 14,
   },
   statBoxValue: {
-    fontSize: 16,
     fontWeight: "900",
     lineHeight: 16,
   },

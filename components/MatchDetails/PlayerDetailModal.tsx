@@ -17,13 +17,21 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../../src/contexts/ThemeContext";
+import { useResponsive } from "../../src/hooks/useResponsive";
 import { PlayerStats } from "../../constants/matchDetailsConstants";
 import { ShootingBar, StatBox, MarkerType } from "./SharedComponents";
 import { Team } from "../../src/models/types";
 import { Club } from "../../models/Club";
 import BasketballCourtSVG from "../BasketballCourtSVG";
-import { getActionColor, ActionType, ReboundSpecification } from "../../src/models/ActionTypes";
-import { COACH_ASSISTANT_LOGO_NO_BG, COACH_ASSISTANT_LOGO_WHITE_NO_BG } from "../../src/utils/logoHelper";
+import {
+  getActionColor,
+  ActionType,
+  ReboundSpecification,
+} from "../../src/models/ActionTypes";
+import {
+  COACH_ASSISTANT_LOGO_NO_BG,
+  COACH_ASSISTANT_LOGO_WHITE_NO_BG,
+} from "../../src/utils/logoHelper";
 import {
   COURT_SVG_WIDTH_PORTRAIT,
   COURT_SVG_HEIGHT_PORTRAIT,
@@ -47,18 +55,18 @@ export default function PlayerDetailModal({
   actions = [],
   club = null,
 }: PlayerDetailModalProps) {
-  if (!player) return null;
-
   const { colors, isDark } = useTheme();
+  const { isCompact, sp, font, sizes } = useResponsive();
   const textPrimary = colors.text.primary;
   const textSecondary = colors.text.secondary;
   const textTertiary = colors.text.tertiary;
-  const logo = isDark ? COACH_ASSISTANT_LOGO_WHITE_NO_BG : COACH_ASSISTANT_LOGO_NO_BG;
+  const logo = isDark
+    ? COACH_ASSISTANT_LOGO_WHITE_NO_BG
+    : COACH_ASSISTANT_LOGO_NO_BG;
 
   // Filter actions for this specific player
   const playerActions = useMemo(() => {
-    if (!actions || actions.length === 0) return [];
-
+    if (!actions || actions.length === 0 || !player) return [];
     return actions.filter((action) => {
       const playerNum = action.player_number || action.player;
       return action.team === player.team && playerNum === player.playerNumber;
@@ -72,8 +80,10 @@ export default function PlayerDetailModal({
       .map((action: any, index: number) => {
         // BasketballCourtSVG expects portrait coordinates (0-COURT_SVG_WIDTH_PORTRAIT x 0-COURT_SVG_HEIGHT_PORTRAIT)
         // semanticPosition contains normalized portrait coords (xNormalized, yNormalized)
-        const svgX = action.semanticPosition.xNormalized * COURT_SVG_WIDTH_PORTRAIT;
-        const svgY = action.semanticPosition.yNormalized * COURT_SVG_HEIGHT_PORTRAIT;
+        const svgX =
+          action.semanticPosition.xNormalized * COURT_SVG_WIDTH_PORTRAIT;
+        const svgY =
+          action.semanticPosition.yNormalized * COURT_SVG_HEIGHT_PORTRAIT;
 
         // Get marker color from action config
         const actionType = action.action_type || action.type || "";
@@ -83,7 +93,9 @@ export default function PlayerDetailModal({
         const markerColor = getActionColor(actionType, specification, points);
 
         return {
-          id: `${action.team}-${action.player || action.player_number}-${action.timestamp || index}-${index}`,
+          id: `${action.team}-${action.player || action.player_number}-${
+            action.timestamp || index
+          }-${index}`,
           svgX,
           svgY,
           color: markerColor,
@@ -94,8 +106,11 @@ export default function PlayerDetailModal({
   }, [playerActions]);
 
   // Court colors
-  const courtBackgroundColor = club?.courtBackgroundColor || colors.court.background;
+  const courtBackgroundColor =
+    club?.courtBackgroundColor || colors.court.background;
   const courtLineColor = club?.courtLineColor || colors.court.line;
+
+  if (!player) return null;
 
   return (
     <Modal
@@ -109,22 +124,44 @@ export default function PlayerDetailModal({
           style={[styles.modalContent, { backgroundColor: colors.surface }]}
         >
           {/* Modal Header */}
-          <View style={styles.modalHeader}>
+          <View
+            style={[
+              styles.modalHeader,
+              {
+                paddingTop: isCompact ? sp.md : sp.lg,
+                paddingBottom: isCompact ? sp.xs : sp.sm,
+              },
+            ]}
+          >
             <View
               style={[
                 styles.modalHeaderBg,
-                { backgroundColor: colors.surfaceVariant },
+                {
+                  backgroundColor: colors.surfaceVariant,
+                  height: isCompact
+                    ? sizes.avatarMd + sp.lg
+                    : sizes.avatarLg + sp.xl,
+                },
               ]}
             />
             <Image
               source={logo}
-              style={styles.modalLogo}
+              style={[
+                styles.modalLogo,
+                {
+                  width: sizes.logoMd,
+                  height: sizes.logoMd,
+                  top: -sp.md,
+                  left: isCompact ? 40 : 60,
+                },
+              ]}
             />
-            <TouchableOpacity
-              onPress={onClose}
-              style={styles.modalCloseButton}
-            >
-              <Ionicons name="close" size={24} color={colors.text.primary} />
+            <TouchableOpacity onPress={onClose} style={styles.modalCloseButton}>
+              <Ionicons
+                name="close"
+                size={sizes.iconMd}
+                color={colors.text.primary}
+              />
             </TouchableOpacity>
 
             <View style={styles.modalPlayerAvatar}>
@@ -132,11 +169,11 @@ export default function PlayerDetailModal({
                 playerName={player.name}
                 playerNumber={player.playerNumber}
                 photoUrl={player.photoUrl}
-                size={80}
+                size={sizes.avatarMd}
                 borderColor={colors.surface}
                 backgroundColor={colors.surfaceVariant}
                 textColor={colors.text.secondary}
-                borderWidth={4}
+                borderWidth={isCompact ? 2 : 4}
               />
             </View>
           </View>
@@ -145,32 +182,77 @@ export default function PlayerDetailModal({
             style={styles.modalScroll}
             showsVerticalScrollIndicator={false}
           >
-            <View style={styles.modalPlayerInfo}>
+            <View
+              style={[
+                styles.modalPlayerInfo,
+                { paddingHorizontal: sp.lg, marginBottom: sp.lg },
+              ]}
+            >
               <View style={styles.modalPlayerNameRow}>
-                <Text style={[styles.modalPlayerName, { color: textPrimary }]}>
+                <Text
+                  style={[
+                    styles.modalPlayerName,
+                    { color: textPrimary, fontSize: font.xxl },
+                  ]}
+                >
                   {player.name}
                 </Text>
-                <Text style={[styles.modalPlayerNumber, { color: textSecondary }]}>
+                <Text
+                  style={[
+                    styles.modalPlayerNumber,
+                    { color: textSecondary, fontSize: font.xl },
+                  ]}
+                >
                   - #{player.playerNumber}
                 </Text>
               </View>
-              <Text style={[styles.modalPlayerTeam, { color: textSecondary }]}>
+              <Text
+                style={[
+                  styles.modalPlayerTeam,
+                  { color: textSecondary, fontSize: font.md },
+                ]}
+              >
                 {player.team === Team.MY_TEAM ? myTeamName : opponentName}
               </Text>
             </View>
 
             {/* Main Stats Grid */}
-            <View style={styles.mainStatsGrid}>
-              <View style={[styles.statCard, { backgroundColor: colors.surfaceVariant }]}>
-                <Text style={[styles.statCardValue, { color: textPrimary }]}>
+            <View
+              style={[
+                styles.mainStatsGrid,
+                { paddingHorizontal: sp.lg, gap: sp.md, marginBottom: sp.lg },
+              ]}
+            >
+              <View
+                style={[
+                  styles.statCard,
+                  { backgroundColor: colors.surfaceVariant, padding: sp.md },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.statCardValue,
+                    { color: textPrimary, fontSize: isCompact ? font.xl : 28 },
+                  ]}
+                >
                   {player.min}
                 </Text>
                 <Text style={[styles.statCardLabel, { color: textSecondary }]}>
                   Temps
                 </Text>
               </View>
-              <View style={[styles.statCard, { backgroundColor: colors.surfaceVariant }]}>
-                <Text style={[styles.statCardValue, { color: textPrimary }]}>
+              <View
+                style={[
+                  styles.statCard,
+                  { backgroundColor: colors.surfaceVariant, padding: sp.md },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.statCardValue,
+                    { color: textPrimary, fontSize: isCompact ? font.xl : 28 },
+                  ]}
+                >
                   {player.pts}
                 </Text>
                 <Text style={[styles.statCardLabel, { color: textSecondary }]}>
@@ -184,10 +266,19 @@ export default function PlayerDetailModal({
                     backgroundColor: colors.surfaceVariant,
                     borderWidth: 2,
                     borderColor: colors.primary,
+                    padding: sp.md,
                   },
                 ]}
               >
-                <Text style={[styles.statCardValue, { color: colors.primary }]}>
+                <Text
+                  style={[
+                    styles.statCardValue,
+                    {
+                      color: colors.primary,
+                      fontSize: isCompact ? font.xl : 28,
+                    },
+                  ]}
+                >
                   {player.eff}
                 </Text>
                 <Text style={[styles.statCardLabel, { color: colors.primary }]}>
@@ -197,8 +288,18 @@ export default function PlayerDetailModal({
             </View>
 
             {/* Shooting Stats */}
-            <View style={styles.shootingSection}>
-              <Text style={[styles.sectionTitle, { color: textPrimary }]}>
+            <View
+              style={[
+                styles.shootingSection,
+                { paddingHorizontal: sp.lg, marginBottom: sp.xl },
+              ]}
+            >
+              <Text
+                style={[
+                  styles.sectionTitle,
+                  { color: textPrimary, marginBottom: sp.md },
+                ]}
+              >
                 Performance aux tirs
               </Text>
               <View
@@ -207,6 +308,7 @@ export default function PlayerDetailModal({
                   {
                     backgroundColor: colors.surfaceVariant,
                     borderColor: colors.border,
+                    padding: sp.lg,
                   },
                 ]}
               >
@@ -279,8 +381,18 @@ export default function PlayerDetailModal({
             </View>
 
             {/* Detailed Stats Grid */}
-            <View style={styles.detailedStatsSection}>
-              <Text style={[styles.sectionTitle, { color: textPrimary }]}>
+            <View
+              style={[
+                styles.detailedStatsSection,
+                { paddingHorizontal: sp.lg, marginBottom: sp.xl },
+              ]}
+            >
+              <Text
+                style={[
+                  styles.sectionTitle,
+                  { color: textPrimary, marginBottom: sp.md },
+                ]}
+              >
                 Détails
               </Text>
               <View style={styles.detailedStatsGrid}>
@@ -289,59 +401,81 @@ export default function PlayerDetailModal({
                   value={`${player.reb_off}/${player.reb_def}`}
                   sub={`Total: ${player.reb}`}
                   leftMarkerType={MarkerType.TRIANGLE}
-                  leftMarkerColor={getActionColor(ActionType.REBOUND, ReboundSpecification.OFFENSIVE, 0)}
+                  leftMarkerColor={getActionColor(
+                    ActionType.REBOUND,
+                    ReboundSpecification.OFFENSIVE,
+                    0
+                  )}
                   markerType={MarkerType.TRIANGLE}
-                  markerColor={getActionColor(ActionType.REBOUND, ReboundSpecification.DEFENSIVE, 0)}
+                  markerColor={getActionColor(
+                    ActionType.REBOUND,
+                    ReboundSpecification.DEFENSIVE,
+                    0
+                  )}
                 />
                 <StatBox
                   label="AST"
                   value={player.ast}
                   sub="Passes décisives"
                   markerType={MarkerType.CIRCLE}
-                  markerColor={getActionColor(ActionType.ASSIST, '', 0)}
+                  markerColor={getActionColor(ActionType.ASSIST, "", 0)}
                 />
                 <StatBox
                   label="INT"
                   value={player.stl}
                   sub="Interceptions"
                   markerType={MarkerType.CIRCLE}
-                  markerColor={getActionColor(ActionType.STEAL, '', 0)}
+                  markerColor={getActionColor(ActionType.STEAL, "", 0)}
                 />
                 <StatBox
                   label="CTR"
                   value={player.blk}
                   sub="Contres"
                   markerType={MarkerType.CIRCLE}
-                  markerColor={getActionColor(ActionType.BLOCK, '', 0)}
+                  markerColor={getActionColor(ActionType.BLOCK, "", 0)}
                 />
                 <StatBox
                   label="BP"
                   value={player.to}
                   sub="Balles perdues"
                   markerType={MarkerType.CIRCLE}
-                  markerColor={getActionColor(ActionType.TURNOVER, '', 0)}
+                  markerColor={getActionColor(ActionType.TURNOVER, "", 0)}
                 />
                 <StatBox
                   label="FTE"
                   value={player.pf}
                   sub="Fautes"
                   markerType={MarkerType.DIAMOND}
-                  markerColor={getActionColor(ActionType.FOUL, '', 0)}
+                  markerColor={getActionColor(ActionType.FOUL, "", 0)}
                 />
                 <StatBox
                   label="FP"
                   value={player.fd}
                   sub="Fautes provoquées"
                   markerType={MarkerType.DIAMOND}
-                  markerColor={getActionColor(ActionType.FOUL_DRAWN, '', 0)}
+                  markerColor={getActionColor(ActionType.FOUL_DRAWN, "", 0)}
                 />
               </View>
             </View>
 
             {/* Court View */}
             {courtMarkers.length > 0 && (
-              <View style={styles.courtSection}>
-                <Text style={[styles.sectionTitle, { color: textPrimary }]}>
+              <View
+                style={[
+                  styles.courtSection,
+                  {
+                    paddingHorizontal: sp.lg,
+                    marginBottom: sp.xl,
+                    height: isCompact ? 210 : 380,
+                  },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.sectionTitle,
+                    { color: textPrimary, marginBottom: sp.md },
+                  ]}
+                >
                   Carte des actions
                 </Text>
                 <View
@@ -382,8 +516,6 @@ const styles = StyleSheet.create({
   },
   modalHeader: {
     position: "relative",
-    paddingTop: 28,
-    paddingBottom: 10,
     alignItems: "center",
   },
   modalHeaderBg: {
@@ -391,14 +523,9 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    height: 120,
   },
   modalLogo: {
     position: "absolute",
-    top: -20,
-    left: 60,
-    width: 150,
-    height: 150,
     zIndex: 10,
   },
   modalCloseButton: {
@@ -434,8 +561,6 @@ const styles = StyleSheet.create({
   },
   modalPlayerInfo: {
     alignItems: "center",
-    paddingHorizontal: 24,
-    marginBottom: 24,
   },
   modalPlayerNameRow: {
     flexDirection: "row",
@@ -444,33 +569,25 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   modalPlayerName: {
-    fontSize: 24,
     fontWeight: "900",
     textAlign: "center",
   },
   modalPlayerNumber: {
-    fontSize: 18,
     marginTop: 5,
     fontWeight: "700",
   },
   modalPlayerTeam: {
-    fontSize: 14,
     fontWeight: "600",
   },
   mainStatsGrid: {
     flexDirection: "row",
-    paddingHorizontal: 24,
-    gap: 12,
-    marginBottom: 24,
   },
   statCard: {
     flex: 1,
     alignItems: "center",
-    padding: 16,
     borderRadius: 12,
   },
   statCardValue: {
-    fontSize: 28,
     fontWeight: "900",
     lineHeight: 28,
   },
@@ -481,12 +598,8 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
     marginTop: 4,
   },
-  shootingSection: {
-    paddingHorizontal: 24,
-    marginBottom: 32,
-  },
+  shootingSection: {},
   shootingCard: {
-    padding: 20,
     borderRadius: 16,
     borderWidth: 1,
   },
@@ -495,12 +608,11 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     letterSpacing: 1,
     textTransform: "uppercase",
-    marginBottom: 16,
   },
   shootingSummary: {
     flexDirection: "row",
-    marginTop: 16,
-    paddingTop: 16,
+    marginTop: 0,
+    paddingTop: 5,
     borderTopWidth: 1,
     gap: 16,
   },
@@ -519,20 +631,13 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
     marginTop: 2,
   },
-  detailedStatsSection: {
-    paddingHorizontal: 24,
-    marginBottom: 32,
-  },
+  detailedStatsSection: {},
   detailedStatsGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 12,
   },
-  courtSection: {
-    paddingHorizontal: 30,
-    marginBottom: 32,
-    height: 380,
-  },
+  courtSection: {},
   courtContainer: {
     alignItems: "center",
     justifyContent: "center",

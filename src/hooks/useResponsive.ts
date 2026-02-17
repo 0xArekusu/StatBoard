@@ -45,6 +45,16 @@ export interface ResponsiveValues {
     xxl: number;
     xxxl: number;
   };
+  /** UI element sizes adapted to current scale */
+  sizes: {
+    avatarSm: number;
+    avatarMd: number;
+    avatarLg: number;
+    logoSm: number;
+    logoMd: number;
+    iconSm: number;
+    iconMd: number;
+  };
   /** Raw window dimensions */
   width: number;
   height: number;
@@ -53,7 +63,9 @@ export interface ResponsiveValues {
 export function useResponsive(): ResponsiveValues {
   const { width, height } = useWindowDimensions();
   const isPortrait = height > width;
-  const isCompact = !isPortrait || height < BREAKPOINTS.smallPortraitMaxHeight;
+  const shortSide = Math.min(width, height);
+  const isMobile = shortSide < BREAKPOINTS.phoneMaxWidth;
+  const isCompact = isMobile || !isPortrait || height < BREAKPOINTS.smallPortraitMaxHeight;
   const scale: SizeScale = isCompact ? "compact" : "normal";
 
   const sp = isCompact
@@ -94,5 +106,25 @@ export function useResponsive(): ResponsiveValues {
         xxxl: Typography.fontSize.xxxl, // 36
       };
 
-  return { isPortrait, isCompact, scale, sp, font, width, height };
+  const sizes = isCompact
+    ? {
+        avatarSm: 32,
+        avatarMd: 56,
+        avatarLg: 72,
+        logoSm: 60,
+        logoMd: 90,
+        iconSm: 16,
+        iconMd: 20,
+      }
+    : {
+        avatarSm: 40,
+        avatarMd: 72,
+        avatarLg: 96,
+        logoSm: 90,
+        logoMd: 150,
+        iconSm: 20,
+        iconMd: 24,
+      };
+
+  return { isPortrait, isCompact, scale, sp, font, sizes, width, height };
 }
