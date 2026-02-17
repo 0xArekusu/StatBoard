@@ -5,6 +5,7 @@ import { useTheme } from "../../src/contexts/ThemeContext";
 import { SLATE_COLORS } from "../../src/theme/colors";
 import { formatTime, getPeriodLabel } from "../../utils/liveMatchHelpers";
 import { TeamId } from "../../constants/liveMatchConstants";
+import { useResponsive } from "../../src/hooks/useResponsive";
 
 interface MatchHeaderProps {
   match: {
@@ -37,6 +38,8 @@ export function MatchHeader({
   onOpponentScoreSimple,
 }: MatchHeaderProps) {
   const { colors } = useTheme();
+  const { isCompact, isPortrait, sp, font, width } = useResponsive();
+  const isNarrow = isPortrait && width < 390;
   const amIHome = match.location === TeamId.HOME;
 
   const bgColor = colors.background;
@@ -51,8 +54,8 @@ export function MatchHeader({
         ? match.scoreHome
         : match.scoreAway
       : amIHome
-        ? match.scoreAway
-        : match.scoreHome;
+      ? match.scoreAway
+      : match.scoreHome;
 
     const teamName = isMyTeam
       ? match.myTeamName || "Nous"
@@ -63,7 +66,10 @@ export function MatchHeader({
         <Text
           style={[
             styles.score,
-            { color: isMyTeam ? textPrimary : textSecondary },
+            {
+              color: isMyTeam ? textPrimary : textSecondary,
+              fontSize: font.xxxl,
+            },
           ]}
         >
           {score}
@@ -85,12 +91,14 @@ export function MatchHeader({
               {
                 backgroundColor: colors.button.brandAlpha,
                 borderColor: colors.button.brandAlphaBorder,
+                marginTop: sp.sm,
+                paddingVertical: isCompact ? 2 : 4,
               },
             ]}
           >
             <MaterialCommunityIcons
               name="swap-horizontal"
-              size={12}
+              size={isCompact ? 10 : 12}
               color={colors.primary}
             />
             <Text style={[styles.subButtonText, { color: colors.primary }]}>
@@ -98,7 +106,7 @@ export function MatchHeader({
             </Text>
           </TouchableOpacity>
         ) : !match.trackOpponentStats && onOpponentScoreSimple ? (
-          <View style={styles.quickScoreButtons}>
+          <View style={[styles.quickScoreButtons, { paddingTop: sp.sm }]}>
             {[1, 2, 3].map((value) => (
               <TouchableOpacity
                 key={value}
@@ -113,7 +121,7 @@ export function MatchHeader({
                 <Text
                   style={[
                     styles.quickScoreButtonText,
-                    { color: textSecondary },
+                    { color: textSecondary, fontSize: font.xl },
                   ]}
                 >
                   +{value}
@@ -130,7 +138,12 @@ export function MatchHeader({
     <View
       style={[
         styles.header,
-        { backgroundColor: surfaceColor, borderBottomColor: borderColor },
+        {
+          backgroundColor: surfaceColor,
+          borderBottomColor: borderColor,
+          paddingTop: isCompact ? sp.sm : 20,
+          paddingBottom: isCompact ? sp.sm : 10,
+        },
       ]}
     >
       <View style={styles.headerContent}>
@@ -139,7 +152,12 @@ export function MatchHeader({
 
         {/* CENTER (TIMER) */}
         <View style={styles.timerSection}>
-          <View style={styles.periodRow}>
+          <View
+            style={[
+              styles.periodRow,
+              { marginBottom: isCompact ? sp.xs : sp.sm },
+            ]}
+          >
             <Text style={[styles.periodText, { color: textSecondary }]}>
               {getPeriodLabel(quarter, maxPeriods)}
             </Text>
@@ -155,13 +173,25 @@ export function MatchHeader({
             >
               <MaterialCommunityIcons
                 name="chevron-right"
-                size={16}
+                size={isCompact ? 14 : 16}
                 color={colors.primary}
               />
             </TouchableOpacity>
           </View>
-          <View style={styles.timerDisplay}>
-            <Text style={styles.timerText}>{formatTime(timer)}</Text>
+          <View
+            style={[
+              styles.timerDisplay,
+              { width: isNarrow ? 110 : isCompact ? 130 : 170 },
+            ]}
+          >
+            <Text
+              style={[
+                styles.timerText,
+                { fontSize: isNarrow ? 22 : isCompact ? 22 : 32 },
+              ]}
+            >
+              {formatTime(timer)}
+            </Text>
           </View>
           <TouchableOpacity
             onPress={onToggleTimer}
@@ -172,12 +202,15 @@ export function MatchHeader({
                   ? colors.button.playPaused
                   : colors.primary,
                 borderColor: surfaceColor,
+                width: isCompact ? 32 : 40,
+                height: isCompact ? 32 : 40,
+                padding: isCompact ? 4 : 6,
               },
             ]}
           >
             <MaterialCommunityIcons
               name={isRunning ? "pause" : "play"}
-              size={20}
+              size={isCompact ? 16 : 20}
               color={isRunning ? colors.error : colors.onPrimary}
             />
           </TouchableOpacity>
@@ -192,8 +225,6 @@ export function MatchHeader({
 
 const styles = StyleSheet.create({
   header: {
-    paddingTop: 20,
-    paddingBottom: 10,
     paddingHorizontal: 8,
     borderBottomWidth: 1,
   },
@@ -207,7 +238,6 @@ const styles = StyleSheet.create({
     paddingTop: 4,
   },
   score: {
-    fontSize: 36,
     fontWeight: "900",
     letterSpacing: -2,
   },
@@ -243,7 +273,6 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   quickScoreButtonText: {
-    fontSize: 16,
     fontWeight: "bold",
   },
   timerSection: {
@@ -292,7 +321,6 @@ const styles = StyleSheet.create({
   },
   playButton: {
     marginTop: -12,
-    padding: 6,
     borderRadius: 999,
     borderWidth: 4,
     zIndex: 10,

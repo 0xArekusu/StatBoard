@@ -73,6 +73,7 @@ import { supabase } from "../src/config/supabase";
 import { MatchActionGrid, ActionData } from "../components/MatchActionGrid";
 import { CourtView, MatchHeader, MatchToolbar } from "../components/LiveMatch";
 import { useMatchSync } from "../hooks/useMatchSync";
+import { useResponsive } from "../src/hooks/useResponsive";
 import {
   HistoryModal,
   FilterModal,
@@ -92,6 +93,7 @@ export default function LiveMatchScreen() {
   const navigation = useNavigation<RootNavigationProp>();
   const route = useRoute<LiveMatchRouteProp>();
   const { colors, isDark } = useTheme();
+  const { isCompact, isPortrait, sp, font } = useResponsive();
   const { user } = useAuth();
   const matchData = route.params?.matchData;
   const resumeMatchId = route.params?.matchId;
@@ -1504,7 +1506,12 @@ export default function LiveMatchScreen() {
       <View
         style={[
           styles.viewModeToggle,
-          { backgroundColor: surfaceColor, borderBottomColor: borderColor },
+          {
+            backgroundColor: surfaceColor,
+            borderBottomColor: borderColor,
+            paddingVertical: isCompact ? sp.xs : sp.sm,
+            paddingHorizontal: sp.sm,
+          },
         ]}
       >
         <TouchableOpacity
@@ -1516,12 +1523,13 @@ export default function LiveMatchScreen() {
                 viewMode === ViewMode.COURT
                   ? colors.primary
                   : colors.surfaceVariant,
+              paddingVertical: isCompact ? sp.xs : sp.sm,
             },
           ]}
         >
           <MaterialCommunityIcons
             name="map-outline"
-            size={16}
+            size={isCompact ? 14 : 16}
             color={
               viewMode === ViewMode.COURT ? colors.onPrimary : textSecondary
             }
@@ -1534,6 +1542,7 @@ export default function LiveMatchScreen() {
                   viewMode === ViewMode.COURT
                     ? colors.onPrimary
                     : textSecondary,
+                fontSize: font.sm,
               },
             ]}
           >
@@ -1550,12 +1559,13 @@ export default function LiveMatchScreen() {
                 viewMode === ViewMode.GRID
                   ? colors.primary
                   : colors.surfaceVariant,
+              paddingVertical: isCompact ? sp.xs : sp.sm,
             },
           ]}
         >
           <MaterialCommunityIcons
             name="view-grid-outline"
-            size={16}
+            size={isCompact ? 14 : 16}
             color={
               viewMode === ViewMode.GRID ? colors.onPrimary : textSecondary
             }
@@ -1566,6 +1576,7 @@ export default function LiveMatchScreen() {
               {
                 color:
                   viewMode === ViewMode.GRID ? colors.onPrimary : textSecondary,
+                fontSize: font.sm,
               },
             ]}
           >
@@ -1575,7 +1586,7 @@ export default function LiveMatchScreen() {
       </View>
 
       {/* Main Content */}
-      <View style={styles.mainContent}>
+      <View style={[styles.mainContent, { paddingBottom: isPortrait ? 64 : 44 }]}>
         {viewMode === ViewMode.GRID && (
           <ScrollView
             style={styles.gridScroll}
@@ -1736,8 +1747,6 @@ const styles = StyleSheet.create({
   },
   viewModeToggle: {
     flexDirection: "row",
-    paddingHorizontal: 8,
-    paddingVertical: 8,
     gap: 8,
     borderBottomWidth: 1,
   },
@@ -1747,16 +1756,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    paddingVertical: 8,
     borderRadius: 8,
   },
   viewModeButtonText: {
-    fontSize: 12,
     fontWeight: "bold",
   },
   mainContent: {
     flex: 1,
-    paddingBottom: 64,
   },
   gridScroll: {
     flex: 1,
