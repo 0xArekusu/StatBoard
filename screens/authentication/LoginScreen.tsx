@@ -18,6 +18,7 @@ import { useTheme } from '../../src/contexts/ThemeContext';
 import { SHADOW_COLOR, OPACITY } from '../../src/theme';
 import GoogleLogo from '../../components/icons/GoogleLogo';
 import FacebookLogo from '../../components/icons/FacebookLogo';
+import { useResponsive } from '../../src/hooks/useResponsive';
 
 /**
  * LoginScreen - Email/password login form
@@ -34,6 +35,7 @@ export default function LoginScreen({ navigation }: any) {
   const [loading, setLoading] = useState(false);
   const { signIn, signInWithGoogle, resetPassword } = useAuth();
   const { colors } = useTheme();
+  const { sp, font, sizes, isCompact } = useResponsive();
 
   /**
    * Handles email/password login with validation
@@ -112,39 +114,42 @@ export default function LoginScreen({ navigation }: any) {
       style={[styles.container, { backgroundColor: colors.surface }]}
     >
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingHorizontal: sp.lg, paddingTop: sp.lg },
+        ]}
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.formContainer}>
           {/* Back Button */}
           <TouchableOpacity
             onPress={() => navigation.goBack()}
-            style={styles.backButton}
+            style={[styles.backButton, { marginBottom: sp.lg }]}
             activeOpacity={OPACITY.interaction.low}
           >
-            <View style={styles.backButtonContent}>
+            <View style={[styles.backButtonContent, { gap: sp.sm }]}>
               <MaterialCommunityIcons
                 name="arrow-left"
-                size={20}
+                size={sizes.iconMd}
                 color={colors.text.secondary}
               />
             </View>
           </TouchableOpacity>
 
           {/* Header */}
-          <View style={styles.formHeader}>
-            <Text style={[styles.formTitle, { color: colors.text.primary }]}>
+          <View style={[styles.formHeader, { marginBottom: sp.xl }]}>
+            <Text style={[styles.formTitle, { color: colors.text.primary, fontSize: font.xxxl, marginBottom: sp.sm }]}>
               Bon retour !
             </Text>
-            <Text style={[styles.formSubtitle, { color: colors.text.secondary }]}>
+            <Text style={[styles.formSubtitle, { color: colors.text.secondary, fontSize: font.lg }]}>
               Entrez vos identifiants pour continuer.
             </Text>
           </View>
 
           {/* Form Fields */}
-          <View style={styles.formFields}>
-            <View style={styles.inputGroup}>
-              <Text style={[styles.label, { color: colors.text.secondary }]}>
+          <View style={[styles.formFields, { gap: sp.lg, marginBottom: sp.xl }]}>
+            <View style={[styles.inputGroup, { gap: sp.sm }]}>
+              <Text style={[styles.label, { color: colors.text.secondary, fontSize: font.md }]}>
                 Email
               </Text>
               <View
@@ -153,19 +158,20 @@ export default function LoginScreen({ navigation }: any) {
                   {
                     backgroundColor: colors.input.background,
                     borderColor: colors.input.border,
+                    paddingHorizontal: sp.md,
                   },
                 ]}
               >
                 <MaterialCommunityIcons
                   name="email"
-                  size={20}
+                  size={sizes.iconMd}
                   color={colors.text.disabled}
-                  style={styles.inputIcon}
+                  style={[styles.inputIcon, { marginRight: sp.md }]}
                 />
                 <TextInput
                   placeholder="coach@exemple.com"
                   placeholderTextColor={colors.text.disabled}
-                  style={[styles.input, { color: colors.text.primary }]}
+                  style={[styles.input, { color: colors.text.primary, fontSize: font.lg, paddingVertical: sp.sm }]}
                   keyboardType="email-address"
                   autoCapitalize="none"
                   value={email}
@@ -175,8 +181,8 @@ export default function LoginScreen({ navigation }: any) {
               </View>
             </View>
 
-            <View style={styles.inputGroup}>
-              <Text style={[styles.label, { color: colors.text.secondary }]}>
+            <View style={[styles.inputGroup, { gap: sp.sm }]}>
+              <Text style={[styles.label, { color: colors.text.secondary, fontSize: font.md }]}>
                 Mot de passe
               </Text>
               <View
@@ -185,19 +191,20 @@ export default function LoginScreen({ navigation }: any) {
                   {
                     backgroundColor: colors.input.background,
                     borderColor: colors.input.border,
+                    paddingHorizontal: sp.md,
                   },
                 ]}
               >
                 <MaterialCommunityIcons
                   name="lock"
-                  size={20}
+                  size={sizes.iconMd}
                   color={colors.text.disabled}
-                  style={styles.inputIcon}
+                  style={[styles.inputIcon, { marginRight: sp.md }]}
                 />
                 <TextInput
                   placeholder="••••••••"
                   placeholderTextColor={colors.text.disabled}
-                  style={[styles.input, { color: colors.text.primary }]}
+                  style={[styles.input, { color: colors.text.primary, fontSize: font.lg, paddingVertical: sp.sm }]}
                   secureTextEntry
                   value={password}
                   onChangeText={setPassword}
@@ -211,9 +218,9 @@ export default function LoginScreen({ navigation }: any) {
           <TouchableOpacity
             onPress={handleForgotPassword}
             disabled={loading}
-            style={styles.forgotPasswordButton}
+            style={[styles.forgotPasswordButton, { marginBottom: sp.md }]}
           >
-            <Text style={[styles.forgotPasswordText, { color: colors.primary }]}>
+            <Text style={[styles.forgotPasswordText, { color: colors.primary, fontSize: font.md }]}>
               Mot de passe oublié ?
             </Text>
           </TouchableOpacity>
@@ -222,7 +229,12 @@ export default function LoginScreen({ navigation }: any) {
           <TouchableOpacity
             style={[
               styles.submitButton,
-              { backgroundColor: colors.primary },
+              {
+                backgroundColor: colors.primary,
+                paddingVertical: sp.md,
+                borderRadius: 12,
+                marginTop: 'auto',
+              },
               loading && styles.submitButtonDisabled,
             ]}
             onPress={handleLogin}
@@ -232,14 +244,14 @@ export default function LoginScreen({ navigation }: any) {
             {loading ? (
               <ActivityIndicator color={colors.onPrimary} />
             ) : (
-              <Text style={[styles.submitButtonText, { color: colors.onPrimary }]}>
+              <Text style={[styles.submitButtonText, { color: colors.onPrimary, fontSize: font.lg }]}>
                 Se connecter
               </Text>
             )}
           </TouchableOpacity>
 
           {/* Social Login Separator */}
-          <View style={styles.dividerContainer}>
+          <View style={[styles.dividerContainer, { marginVertical: sp.lg }]}>
             <View style={[styles.dividerLine, { backgroundColor: colors.input.border }]} />
             <Text
               style={[
@@ -247,6 +259,8 @@ export default function LoginScreen({ navigation }: any) {
                 {
                   color: colors.text.secondary,
                   backgroundColor: colors.surface,
+                  paddingHorizontal: sp.md,
+                  fontSize: font.md,
                 },
               ]}
             >
@@ -256,13 +270,17 @@ export default function LoginScreen({ navigation }: any) {
           </View>
 
           {/* Social Login Buttons */}
-          <View style={styles.socialButtonsContainer}>
+          <View style={[styles.socialButtonsContainer, { gap: sp.md, marginBottom: sp.lg }]}>
             <TouchableOpacity
               style={[
                 styles.socialButton,
                 {
                   backgroundColor: colors.input.background,
                   borderColor: colors.input.border,
+                  paddingVertical: sp.sm,
+                  paddingHorizontal: sp.md,
+                  borderRadius: 12,
+                  gap: sp.md,
                 },
                 loading && styles.submitButtonDisabled,
               ]}
@@ -275,7 +293,7 @@ export default function LoginScreen({ navigation }: any) {
               ) : (
                 <>
                   <GoogleLogo />
-                  <Text style={[styles.socialButtonText, { color: colors.text.primary }]}>
+                  <Text style={[styles.socialButtonText, { color: colors.text.primary, fontSize: font.md }]}>
                     Google
                   </Text>
                 </>
@@ -306,11 +324,11 @@ export default function LoginScreen({ navigation }: any) {
 
           {/* Link to Register */}
           <TouchableOpacity
-            style={styles.linkButton}
+            style={[styles.linkButton, { marginTop: sp.sm }]}
             onPress={() => navigation.navigate(ROUTES.SIGN_UP)}
             disabled={loading}
           >
-            <Text style={[styles.linkText, { color: colors.text.secondary }]}>
+            <Text style={[styles.linkText, { color: colors.text.secondary, fontSize: font.md }]}>
               Pas encore de compte ?{' '}
               <Text style={{ color: colors.primary, fontWeight: '600' }}>
                 S'inscrire
@@ -334,40 +352,23 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    paddingHorizontal: 24,
-    paddingTop: 20,
   },
   formContainer: {
     flex: 1,
   },
-  backButton: {
-    marginBottom: 24,
-  },
+  backButton: {},
   backButtonContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
   },
-  formHeader: {
-    marginBottom: 32,
-  },
+  formHeader: {},
   formTitle: {
-    fontSize: 32,
     fontWeight: '700',
-    marginBottom: 8,
   },
-  formSubtitle: {
-    fontSize: 16,
-  },
-  formFields: {
-    gap: 24,
-    marginBottom: 32,
-  },
-  inputGroup: {
-    gap: 8,
-  },
+  formSubtitle: {},
+  formFields: {},
+  inputGroup: {},
   label: {
-    fontSize: 14,
     fontWeight: '500',
   },
   inputContainer: {
@@ -375,7 +376,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
     borderRadius: 12,
-    paddingHorizontal: 16,
     paddingVertical: 4,
     shadowColor: SHADOW_COLOR,
     shadowOffset: { width: 0, height: 1 },
@@ -383,61 +383,44 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 1,
   },
-  inputIcon: {
-    marginRight: 12,
-  },
+  inputIcon: {},
   input: {
     flex: 1,
-    paddingVertical: 12,
-    fontSize: 16,
   },
   submitButton: {
-    paddingVertical: 16,
-    borderRadius: 12,
     alignItems: 'center',
     shadowColor: SHADOW_COLOR,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 8,
     elevation: 4,
-    marginTop: 'auto',
   },
   submitButtonDisabled: {
     opacity: OPACITY.disabled,
   },
   submitButtonText: {
-    fontSize: 16,
     fontWeight: '700',
   },
   dividerContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: 24,
   },
   dividerLine: {
     flex: 1,
     height: 1,
   },
   dividerText: {
-    paddingHorizontal: 16,
-    fontSize: 14,
     fontWeight: '500',
   },
   socialButtonsContainer: {
     flexDirection: 'row',
-    gap: 16,
-    marginBottom: 24,
   },
   socialButton: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 12,
     borderWidth: 1,
-    gap: 12,
     shadowColor: SHADOW_COLOR,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
@@ -445,22 +428,16 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   socialButtonText: {
-    fontSize: 14,
     fontWeight: '600',
   },
   linkButton: {
-    marginTop: 12,
     alignItems: 'center',
   },
-  linkText: {
-    fontSize: 14,
-  },
+  linkText: {},
   forgotPasswordButton: {
     alignSelf: 'flex-end',
-    marginBottom: 16,
   },
   forgotPasswordText: {
-    fontSize: 14,
     fontWeight: '600',
   },
 });

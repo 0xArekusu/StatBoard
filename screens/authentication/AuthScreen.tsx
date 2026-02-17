@@ -10,9 +10,10 @@ import { LinearGradient } from "expo-linear-gradient";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { useTheme } from "../../src/contexts/ThemeContext";
-import { OPACITY, LOGO_SIZE, SHADOW_COLOR } from "../../src/theme";
+import { OPACITY, SHADOW_COLOR } from "../../src/theme";
 import { ROUTES } from "../../constants/routes";
 import Logo from "../../components/icons/Logo";
+import { useResponsive } from "../../src/hooks/useResponsive";
 
 /**
  * AuthScreen - Landing screen for authentication
@@ -25,14 +26,17 @@ import Logo from "../../components/icons/Logo";
 export default function AuthScreen() {
   const { colors } = useTheme();
   const navigation = useNavigation();
+  const { sp, font, sizes, isCompact } = useResponsive();
 
   /**
    * Handles guest login - navigates directly to main app without authentication
    */
   const handleGuestLogin = async () => {
     // Set a flag to show guest welcome modal on next dashboard visit
-    const AsyncStorage = (await import('@react-native-async-storage/async-storage')).default;
-    await AsyncStorage.setItem('@show_guest_welcome_once', 'true');
+    const AsyncStorage = (
+      await import("@react-native-async-storage/async-storage")
+    ).default;
+    await AsyncStorage.setItem("@show_guest_welcome_once", "true");
     navigation.navigate(ROUTES.MAIN_TABS as never);
   };
 
@@ -50,37 +54,73 @@ export default function AuthScreen() {
         ]}
         style={styles.overlay}
       >
-        <View style={styles.landingContainer}>
+        <View
+          style={[
+            styles.landingContainer,
+            {
+              paddingHorizontal: sp.xl,
+              paddingTop: isCompact ? sp.xxl * 2 : sp.xxl * 2,
+              paddingBottom: sp.xl,
+            },
+          ]}
+        >
           {/* Logo Section */}
-          <View style={styles.logoSection}>
+          <View
+            style={[
+              styles.logoSection,
+              { marginTop: isCompact ? sp.md : sp.xl },
+            ]}
+          >
             <Logo
-              width={LOGO_SIZE.auth.width}
+              width={sizes.logoMd * 2}
               primaryColor={colors.onPrimary}
               secondaryColor={colors.onSecondary}
               ballColor={colors.primary}
               ballBackgroundColor={colors.button.secondary}
             />
-            <Text style={[styles.tagline, { color: colors.text.secondary }]}>
+            <Text
+              style={[
+                styles.tagline,
+                {
+                  color: colors.text.secondary,
+                  marginTop: sp.lg,
+                  fontSize: font.lg,
+                  lineHeight: font.lg * 1.5,
+                },
+              ]}
+            >
               Vos statistiques au rythme du match.
             </Text>
           </View>
 
           {/* Buttons Section */}
-          <View style={styles.buttonSection}>
+          <View
+            style={[styles.buttonSection, { gap: sp.md, marginBottom: sp.sm }]}
+          >
             <TouchableOpacity
               style={[
                 styles.primaryButton,
-                { backgroundColor: colors.primary },
+                {
+                  backgroundColor: colors.primary,
+                  paddingVertical: sp.md,
+                  borderRadius: 12,
+                  gap: sp.sm,
+                },
               ]}
               onPress={() => navigation.navigate(ROUTES.SIGN_UP as never)}
               activeOpacity={OPACITY.interaction.high}
             >
-              <Text style={[styles.primaryButtonText, { color: colors.onPrimary }]}>
+              <Text
+                style={[
+                  styles.primaryButtonText,
+                  { color: colors.onPrimary, fontSize: font.lg },
+                ]}
+              >
                 Créer un compte
               </Text>
               <MaterialCommunityIcons
                 name="arrow-right"
-                size={20}
+                size={sizes.iconMd}
                 color={colors.onPrimary}
               />
             </TouchableOpacity>
@@ -88,12 +128,22 @@ export default function AuthScreen() {
             <TouchableOpacity
               style={[
                 styles.secondaryButton,
-                { backgroundColor: colors.button.secondary, borderColor: colors.border },
+                {
+                  backgroundColor: colors.button.secondary,
+                  borderColor: colors.border,
+                  paddingVertical: sp.md,
+                  borderRadius: 12,
+                },
               ]}
               onPress={() => navigation.navigate(ROUTES.LOGIN as never)}
               activeOpacity={OPACITY.interaction.high}
             >
-              <Text style={[styles.secondaryButtonText, { color: colors.onPrimary }]}>
+              <Text
+                style={[
+                  styles.secondaryButtonText,
+                  { color: colors.onPrimary, fontSize: font.lg },
+                ]}
+              >
                 Se connecter
               </Text>
             </TouchableOpacity>
@@ -102,7 +152,16 @@ export default function AuthScreen() {
               onPress={handleGuestLogin}
               activeOpacity={OPACITY.interaction.low}
             >
-              <Text style={[styles.guestButtonText, { color: colors.text.tertiary }]}>
+              <Text
+                style={[
+                  styles.guestButtonText,
+                  {
+                    color: colors.text.tertiary,
+                    fontSize: font.md,
+                    paddingVertical: sp.sm,
+                  },
+                ]}
+              >
                 Essayer gratuitement (Invité)
               </Text>
             </TouchableOpacity>
@@ -118,7 +177,6 @@ export default function AuthScreen() {
 // ===========================
 
 const styles = StyleSheet.create({
-  // Landing view styles
   backgroundImage: {
     flex: 1,
     width: "100%",
@@ -130,34 +188,22 @@ const styles = StyleSheet.create({
   landingContainer: {
     flex: 1,
     justifyContent: "space-between",
-    paddingHorizontal: 32,
-    paddingTop: 80,
-    paddingBottom: 40,
   },
   logoSection: {
     alignItems: "center",
-    marginTop: 40,
   },
   tagline: {
     textAlign: "center",
-    marginTop: 24,
-    fontSize: 16,
     fontWeight: "500",
     maxWidth: 320,
-    lineHeight: 24,
   },
   buttonSection: {
     width: "100%",
-    gap: 16,
-    marginBottom: 10,
   },
   primaryButton: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 16,
-    borderRadius: 12,
-    gap: 8,
     shadowColor: SHADOW_COLOR,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
@@ -165,23 +211,17 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   primaryButtonText: {
-    fontSize: 16,
     fontWeight: "700",
   },
   secondaryButton: {
-    paddingVertical: 16,
-    borderRadius: 12,
     borderWidth: 1,
     alignItems: "center",
   },
   secondaryButtonText: {
-    fontSize: 16,
     fontWeight: "600",
   },
   guestButtonText: {
-    fontSize: 14,
     fontWeight: "500",
     textAlign: "center",
-    paddingVertical: 8,
   },
 });
