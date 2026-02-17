@@ -15,9 +15,9 @@ import { useResponsive } from "../../src/hooks/useResponsive";
 // ===========================
 
 export enum MarkerType {
-  CIRCLE = 'circle',
-  TRIANGLE = 'triangle',
-  DIAMOND = 'diamond',
+  CIRCLE = "circle",
+  TRIANGLE = "triangle",
+  DIAMOND = "diamond",
 }
 
 // ===========================
@@ -64,7 +64,9 @@ export const ShootingBar: React.FC<ShootingBarProps> = ({
         <View
           style={[
             styles.shootingBarTrack,
-            { backgroundColor: isDark ? colors.surface : colors.surfaceVariant },
+            {
+              backgroundColor: isDark ? colors.surface : colors.surfaceVariant,
+            },
             isSmall && styles.shootingBarTrackCompact,
           ]}
         >
@@ -109,7 +111,15 @@ interface StatBoxProps {
   leftMarkerColor?: string;
 }
 
-export const StatBox: React.FC<StatBoxProps> = ({ label, value, sub, markerType, markerColor, leftMarkerType, leftMarkerColor }) => {
+export const StatBox: React.FC<StatBoxProps> = ({
+  label,
+  value,
+  sub,
+  markerType,
+  markerColor,
+  leftMarkerType,
+  leftMarkerColor,
+}) => {
   const { colors } = useTheme();
   const { isCompact, sp, font } = useResponsive();
   const textPrimary = colors.text.primary;
@@ -141,7 +151,9 @@ export const StatBox: React.FC<StatBoxProps> = ({ label, value, sub, markerType,
       return (
         <Svg width={size} height={size} viewBox="0 0 16 16">
           <Polygon
-            points={`8,${8 - height} ${8 + width},${8 + height} ${8 - width},${8 + height}`}
+            points={`8,${8 - height} ${8 + width},${8 + height} ${8 - width},${
+              8 + height
+            }`}
             fill={color}
             stroke="#FFFFFF"
             strokeWidth="1"
@@ -155,7 +167,9 @@ export const StatBox: React.FC<StatBoxProps> = ({ label, value, sub, markerType,
       return (
         <Svg width={size} height={size} viewBox="0 0 16 16">
           <Polygon
-            points={`8,${8 - diamondSize} ${8 + diamondSize},8 8,${8 + diamondSize} ${8 - diamondSize},8`}
+            points={`8,${8 - diamondSize} ${8 + diamondSize},8 8,${
+              8 + diamondSize
+            } ${8 - diamondSize},8`}
             fill={color}
             stroke="#FFFFFF"
             strokeWidth="2"
@@ -171,15 +185,31 @@ export const StatBox: React.FC<StatBoxProps> = ({ label, value, sub, markerType,
     <View
       style={[
         styles.statBox,
-        { backgroundColor: colors.surfaceVariant, padding: sp.sm },
+        {
+          backgroundColor: colors.surfaceVariant,
+          padding: sp.sm,
+          minWidth: isCompact ? 80 : 90,
+        },
       ]}
     >
       <Text style={[styles.statBoxLabel, { color: textSecondary }]}>
         {label}
       </Text>
-      <View style={[styles.statBoxValueRow, !leftMarkerType && styles.statBoxValueRowNoLeft]}>
+      <View
+        style={[
+          styles.statBoxValueRow,
+          !leftMarkerType && styles.statBoxValueRowNoLeft,
+        ]}
+      >
         {renderMarker(leftMarkerType, leftMarkerColor)}
-        <Text style={[styles.statBoxValue, { color: textPrimary, fontSize: font.lg }]}>{value}</Text>
+        <Text
+          style={[
+            styles.statBoxValue,
+            { color: textPrimary, fontSize: font.lg },
+          ]}
+        >
+          {value}
+        </Text>
         {renderMarker(markerType, markerColor)}
       </View>
       {sub && (
@@ -245,7 +275,6 @@ const styles = StyleSheet.create({
 
   // Stat Box
   statBox: {
-    flex: 1,
     alignItems: "center",
     borderRadius: 8,
   },

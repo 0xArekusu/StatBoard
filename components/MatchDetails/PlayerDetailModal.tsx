@@ -395,7 +395,7 @@ export default function PlayerDetailModal({
               >
                 Détails
               </Text>
-              <View style={styles.detailedStatsGrid}>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.detailedStatsScrollView} contentContainerStyle={[styles.detailedStatsGrid, styles.detailedStatsGridCentered]}>
                 <StatBox
                   label="REB OFF/DEF"
                   value={`${player.reb_off}/${player.reb_def}`}
@@ -455,7 +455,7 @@ export default function PlayerDetailModal({
                   markerType={MarkerType.DIAMOND}
                   markerColor={getActionColor(ActionType.FOUL_DRAWN, "", 0)}
                 />
-              </View>
+              </ScrollView>
             </View>
 
             {/* Court View */}
@@ -632,10 +632,19 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   detailedStatsSection: {},
+  detailedStatsScrollView: {
+    width: "100%",
+  },
   detailedStatsGrid: {
     flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 12,
+    gap: 8,
+    paddingBottom: 4,
+    flexGrow: 1,
+    justifyContent: "center",
+  },
+  detailedStatsGridCentered: {
+    minWidth: "100%",
+    justifyContent: "center",
   },
   courtSection: {},
   courtContainer: {
