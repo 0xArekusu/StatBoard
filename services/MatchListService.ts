@@ -1,4 +1,4 @@
-import { Match } from "../src/models/types";
+import { Match, MatchStatus } from "../src/models/types";
 import { MatchRepository } from "../src/services/database/MatchRepository";
 import { SupabaseClient } from "@supabase/supabase-js";
 
@@ -31,7 +31,9 @@ export class MatchListService {
   ): Promise<Match[]> {
     // 1. Load LOCAL matches from SQLite (non-synced ones)
     const allLocalMatches = await this.matchRepository.getAllMatches();
-    let localMatches = allLocalMatches.filter((m) => !m.synced_to_server);
+    let localMatches = allLocalMatches.filter(
+      (m) => !m.synced_to_server && m.status === MatchStatus.COMPLETED
+    );
 
     // 2. Filter local matches by club_id and team_id if user is authenticated
     // This ensures that when a user logs in, they only see their team's local matches
