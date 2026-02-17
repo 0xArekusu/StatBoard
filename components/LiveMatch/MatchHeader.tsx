@@ -5,6 +5,7 @@ import { useTheme } from "../../src/contexts/ThemeContext";
 import { SLATE_COLORS } from "../../src/theme/colors";
 import { formatTime, getPeriodLabel } from "../../utils/liveMatchHelpers";
 import { TeamId } from "../../constants/liveMatchConstants";
+import { BREAKPOINTS } from "../../constants/breakpoints";
 import { useResponsive } from "../../src/hooks/useResponsive";
 
 interface MatchHeaderProps {
@@ -39,7 +40,7 @@ export function MatchHeader({
 }: MatchHeaderProps) {
   const { colors } = useTheme();
   const { isCompact, isPortrait, sp, font, width } = useResponsive();
-  const isNarrow = isPortrait && width < 390;
+  const isNarrow = isPortrait && width < BREAKPOINTS.narrowPortraitMaxWidth;
   const amIHome = match.location === TeamId.HOME;
 
   const bgColor = colors.background;

@@ -15,6 +15,7 @@
 
 import { useWindowDimensions } from "react-native";
 import { Spacing, Typography } from "../theme";
+import { BREAKPOINTS } from "../../constants/breakpoints";
 
 export type SizeScale = "compact" | "normal";
 
@@ -52,7 +53,7 @@ export interface ResponsiveValues {
 export function useResponsive(): ResponsiveValues {
   const { width, height } = useWindowDimensions();
   const isPortrait = height > width;
-  const isCompact = !isPortrait || height < 700;
+  const isCompact = !isPortrait || height < BREAKPOINTS.smallPortraitMaxHeight;
   const scale: SizeScale = isCompact ? "compact" : "normal";
 
   const sp = isCompact

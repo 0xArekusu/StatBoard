@@ -74,6 +74,7 @@ import { MatchActionGrid, ActionData } from "../components/MatchActionGrid";
 import { CourtView, MatchHeader, MatchToolbar } from "../components/LiveMatch";
 import { useMatchSync } from "../hooks/useMatchSync";
 import { useResponsive } from "../src/hooks/useResponsive";
+import { BREAKPOINTS } from "../constants/breakpoints";
 import {
   HistoryModal,
   FilterModal,
@@ -93,7 +94,8 @@ export default function LiveMatchScreen() {
   const navigation = useNavigation<RootNavigationProp>();
   const route = useRoute<LiveMatchRouteProp>();
   const { colors, isDark } = useTheme();
-  const { isCompact, isPortrait, sp, font } = useResponsive();
+  const { isCompact, isPortrait, sp, font, width } = useResponsive();
+  const isMobileLandscape = !isPortrait && width < BREAKPOINTS.mobileLandscapeMaxWidth;
   const { user } = useAuth();
   const matchData = route.params?.matchData;
   const resumeMatchId = route.params?.matchId;
@@ -1586,7 +1588,7 @@ export default function LiveMatchScreen() {
       </View>
 
       {/* Main Content */}
-      <View style={[styles.mainContent, { paddingBottom: isPortrait ? 64 : 44 }]}>
+      <View style={[styles.mainContent, { paddingBottom: isMobileLandscape ? 44 : 64 }]}>
         {viewMode === ViewMode.GRID && (
           <ScrollView
             style={styles.gridScroll}

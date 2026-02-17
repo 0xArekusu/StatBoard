@@ -3,8 +3,8 @@ import { View, Text, StyleSheet, TouchableOpacity, Alert } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useTheme } from "../../src/contexts/ThemeContext";
 import { FilterMode } from "../../constants/liveMatchConstants";
-import { AdminService } from "../../services/AdminService";
 import { useResponsive } from "../../src/hooks/useResponsive";
+import { BREAKPOINTS } from "../../constants/breakpoints";
 
 interface MatchToolbarProps {
   filterMode: FilterMode;
@@ -30,14 +30,15 @@ export function MatchToolbar({
   onOpenHistory,
 }: MatchToolbarProps) {
   const { colors } = useTheme();
-  const { isPortrait } = useResponsive();
+  const { isPortrait, width } = useResponsive();
   const isLandscape = !isPortrait;
+  const isMobileLandscape = isLandscape && width < BREAKPOINTS.mobileLandscapeMaxWidth;
   const surfaceColor = colors.surface;
   const textSecondary = colors.text.secondary;
   const borderColor = colors.border;
 
-  const iconSize = isLandscape ? 18 : 22;
-  const toolbarHeight = isLandscape ? 44 : 64;
+  const iconSize = isMobileLandscape ? 18 : 22;
+  const toolbarHeight = isMobileLandscape ? 44 : 64;
 
   return (
     <View
@@ -51,8 +52,12 @@ export function MatchToolbar({
       ]}
     >
       <TouchableOpacity onPress={onUndo} style={styles.toolbarButton}>
-        <MaterialCommunityIcons name="undo" size={iconSize} color={textSecondary} />
-        {!isLandscape && (
+        <MaterialCommunityIcons
+          name="undo"
+          size={iconSize}
+          color={textSecondary}
+        />
+        {!isMobileLandscape && (
           <Text style={[styles.toolbarButtonText, { color: textSecondary }]}>
             Annuler
           </Text>
@@ -65,7 +70,7 @@ export function MatchToolbar({
           size={iconSize}
           color={filterMode !== FilterMode.ALL ? colors.primary : textSecondary}
         />
-        {!isLandscape && (
+        {!isMobileLandscape && (
           <Text style={[styles.toolbarButtonText, { color: textSecondary }]}>
             Filtres
           </Text>
@@ -78,7 +83,7 @@ export function MatchToolbar({
           size={iconSize}
           color={showMarkers ? colors.primary : textSecondary}
         />
-        {!isLandscape && (
+        {!isMobileLandscape && (
           <Text style={[styles.toolbarButtonText, { color: textSecondary }]}>
             Vue
           </Text>
@@ -108,7 +113,7 @@ export function MatchToolbar({
             size={iconSize}
             color={colors.primary}
           />
-          {!isLandscape && (
+          {!isMobileLandscape && (
             <Text style={[styles.toolbarButtonText, { color: colors.primary }]}>
               {isGeneratingMockData ? "..." : "Test"}
             </Text>
@@ -122,7 +127,7 @@ export function MatchToolbar({
           size={iconSize}
           color={textSecondary}
         />
-        {!isLandscape && (
+        {!isMobileLandscape && (
           <Text style={[styles.toolbarButtonText, { color: textSecondary }]}>
             Historique
           </Text>

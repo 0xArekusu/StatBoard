@@ -5,6 +5,9 @@
  * Import from here to ensure consistency across the codebase.
  */
 
+// Responsive breakpoints
+export * from "./breakpoints";
+
 // Platform constants
 export enum PlatformOS {
   IOS = "ios",
