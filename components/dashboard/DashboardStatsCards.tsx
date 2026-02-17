@@ -2,6 +2,7 @@ import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { ThemeColors } from "../../src/theme/colors";
+import { useResponsive } from "../../src/hooks/useResponsive";
 
 interface DashboardStatsCardsProps {
   totalMatches: number;
@@ -21,8 +22,10 @@ export default function DashboardStatsCards({
   losses,
   colors,
 }: DashboardStatsCardsProps) {
+  const { isCompact, sp, font } = useResponsive();
+
   return (
-    <View style={styles.statsContainer}>
+    <View style={[styles.statsContainer, { gap: sp.md, marginBottom: sp.md }]}>
       {/* Total Matches Card */}
       <View
         style={[
@@ -30,20 +33,21 @@ export default function DashboardStatsCards({
           {
             backgroundColor: colors.surface,
             borderColor: colors.border,
+            padding: sp.md,
           },
         ]}
       >
-        <View style={styles.statHeader}>
+        <View style={[styles.statHeader, { marginBottom: sp.sm }]}>
           <MaterialCommunityIcons
             name="clock-outline"
-            size={18}
+            size={isCompact ? 14 : 18}
             color={colors.primary}
           />
           <Text style={[styles.statLabel, { color: colors.primary }]}>
             MATCHS
           </Text>
         </View>
-        <Text style={[styles.statValue, { color: colors.text.primary }]}>
+        <Text style={[styles.statValue, { color: colors.text.primary, fontSize: font.xxl }]}>
           {totalMatches}
         </Text>
         <Text style={[styles.statSubtext, { color: colors.text.secondary }]}>
@@ -58,22 +62,23 @@ export default function DashboardStatsCards({
           {
             backgroundColor: colors.surface,
             borderColor: colors.border,
+            padding: sp.md,
           },
         ]}
       >
-        <View style={styles.statHeader}>
+        <View style={[styles.statHeader, { marginBottom: sp.sm }]}>
           <MaterialCommunityIcons
             name="trending-up"
-            size={18}
+            size={isCompact ? 14 : 18}
             color={colors.success}
           />
           <Text style={[styles.statLabel, { color: colors.success }]}>
             VICTOIRES
           </Text>
         </View>
-        <Text style={[styles.statValue, { color: colors.text.primary }]}>
+        <Text style={[styles.statValue, { color: colors.text.primary, fontSize: font.xxl }]}>
           {wins}{" "}
-          <Text style={[styles.statValueSmall, { color: colors.text.secondary }]}>
+          <Text style={[styles.statValueSmall, { color: colors.text.secondary, fontSize: font.md }]}>
             / {losses}
           </Text>
         </Text>
@@ -88,12 +93,9 @@ export default function DashboardStatsCards({
 const styles = StyleSheet.create({
   statsContainer: {
     flexDirection: "row",
-    gap: 16,
-    marginBottom: 16,
   },
   statCard: {
     flex: 1,
-    padding: 16,
     borderRadius: 16,
     borderWidth: 1,
   },
@@ -101,7 +103,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    marginBottom: 8,
   },
   statLabel: {
     fontSize: 10,
@@ -109,11 +110,9 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
   statValue: {
-    fontSize: 24,
     fontWeight: "900",
   },
   statValueSmall: {
-    fontSize: 14,
     fontWeight: "normal",
   },
   statSubtext: {

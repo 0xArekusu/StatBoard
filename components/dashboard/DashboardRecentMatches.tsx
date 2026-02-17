@@ -4,6 +4,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { Match } from "../../src/models/types";
 import { OPACITY } from "../../src/theme";
 import { ThemeColors } from "../../src/theme/colors";
+import { useResponsive } from "../../src/hooks/useResponsive";
 
 interface DashboardRecentMatchesProps {
   matches: Match[];
@@ -24,11 +25,13 @@ export default function DashboardRecentMatches({
   onViewAllPress,
   formatDate,
 }: DashboardRecentMatchesProps) {
+  const { isCompact, sp, font } = useResponsive();
+
   return (
-    <View style={styles.section}>
+    <View style={[styles.section, { marginBottom: sp.lg }]}>
       {/* Header */}
-      <View style={styles.sectionHeader}>
-        <Text style={[styles.sectionTitle, { color: colors.text.primary }]}>
+      <View style={[styles.sectionHeader, { marginBottom: sp.md }]}>
+        <Text style={[styles.sectionTitle, { color: colors.text.primary, fontSize: font.xl }]}>
           Derniers Matchs
         </Text>
         <TouchableOpacity onPress={onViewAllPress}>
@@ -61,13 +64,14 @@ export default function DashboardRecentMatches({
                   {
                     backgroundColor: colors.surface,
                     borderColor: colors.border,
+                    padding: sp.md,
                   },
                 ]}
                 onPress={() => onMatchPress(match)}
                 activeOpacity={OPACITY.interaction.low}
               >
                 {/* Left side: indicator + match info */}
-                <View style={styles.matchCardLeft}>
+                <View style={[styles.matchCardLeft, { gap: sp.md }]}>
                   <View
                     style={[
                       styles.matchIndicator,
@@ -77,7 +81,7 @@ export default function DashboardRecentMatches({
                     ]}
                   />
                   <View style={styles.matchInfo}>
-                    <Text style={[styles.matchScore, { color: colors.text.primary }]}>
+                    <Text style={[styles.matchScore, { color: colors.text.primary, fontSize: font.xl }]}>
                       {leftScore} - {rightScore}
                     </Text>
                     <View style={styles.matchTeamsLine}>
@@ -155,17 +159,13 @@ export default function DashboardRecentMatches({
 }
 
 const styles = StyleSheet.create({
-  section: {
-    marginBottom: 24,
-  },
+  section: {},
   sectionHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 16,
   },
   sectionTitle: {
-    fontSize: 18,
     fontWeight: "bold",
   },
   sectionLink: {
@@ -179,7 +179,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    padding: 16,
     borderRadius: 12,
     borderWidth: 1,
   },
@@ -187,7 +186,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     flex: 1,
-    gap: 16,
   },
   matchIndicator: {
     width: 6,
@@ -199,7 +197,6 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   matchScore: {
-    fontSize: 18,
     fontWeight: "bold",
   },
   matchTeamsLine: {

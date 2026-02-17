@@ -17,6 +17,7 @@ import { Picker } from "@react-native-picker/picker";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useTheme } from "../src/contexts/ThemeContext";
+import { useResponsive } from "../src/hooks/useResponsive";
 import { useAuth } from "../src/contexts/AuthContext";
 import { useClub } from "../src/contexts/ClubContext";
 import { ServiceFactory } from "../services/ServiceFactory";
@@ -65,6 +66,7 @@ interface DashboardScreenProps {
  */
 export default function DashboardScreen({ navigation }: DashboardScreenProps) {
   const { colors, isDark, setThemeMode } = useTheme();
+  const { isCompact, sp, font } = useResponsive();
   const { user, signOut } = useAuth();
   const { currentClub, allClubs, setCurrentClub: setGlobalCurrentClub, activeTeamId, setActiveTeamId } = useClub();
 
@@ -883,16 +885,16 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
       <ScrollView
         style={[styles.container, { backgroundColor: colors.background }]}
       >
-        <View style={styles.content}>
+        <View style={[styles.content, { padding: sp.lg, paddingTop: sp.md }]}>
           {/* Header */}
-          <View style={styles.header}>
+          <View style={[styles.header, { marginBottom: isCompact ? sp.lg : sp.xl }]}>
             <View style={styles.headerLeft}>
-              <Text style={[styles.greeting, { color: colors.text.primary }]}>
+              <Text style={[styles.greeting, { color: colors.text.primary, fontSize: font.xxl }]}>
                 Bonjour, {"\n"}
                 <Text style={{ color: colors.primary }}>{userName}</Text>
               </Text>
               <Text
-                style={[styles.subGreeting, { color: colors.text.secondary }]}
+                style={[styles.subGreeting, { color: colors.text.secondary, fontSize: font.md }]}
               >
                 Prêt pour le match ?
               </Text>
@@ -1113,14 +1115,14 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
               {/* Action Bar - New Match Button - Show for authenticated users with teams OR guests */}
               {(teams.length > 0 || isGuest) && (
                 <TouchableOpacity
-                  style={[styles.newMatchButton, { backgroundColor: colors.primary }]}
+                  style={[styles.newMatchButton, { backgroundColor: colors.primary, padding: sp.lg, marginBottom: isCompact ? sp.lg : sp.xxl }]}
                   onPress={handleNewMatchClick}
                 >
                   <View style={styles.newMatchButtonLeft}>
-                    <Text style={styles.newMatchButtonTitle}>
+                    <Text style={[styles.newMatchButtonTitle, { fontSize: font.xl }]}>
                       Nouveau Match
                     </Text>
-                    <Text style={styles.newMatchButtonSubtitle}>
+                    <Text style={[styles.newMatchButtonSubtitle, { fontSize: font.md }]}>
                       {isGuest ? "Mode Invité" : `Pour ${activeTeamName}`}
                     </Text>
                   </View>
@@ -1154,26 +1156,20 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  content: {
-    padding: 24,
-    paddingTop: 20,
-  },
+  content: {},
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
-    marginBottom: 32,
   },
   headerLeft: {
     flex: 1,
   },
   greeting: {
-    fontSize: 24,
     fontWeight: "bold",
     lineHeight: 32,
   },
   subGreeting: {
-    fontSize: 14,
     marginTop: 4,
   },
   headerRight: {
@@ -1284,21 +1280,17 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    padding: 20,
     borderRadius: 16,
-    marginBottom: 32,
   },
   newMatchButtonLeft: {
     flex: 1,
   },
   newMatchButtonTitle: {
-    fontSize: 18,
     fontWeight: "bold",
     color: "#FFFFFF",
     marginBottom: 4,
   },
   newMatchButtonSubtitle: {
-    fontSize: 14,
     color: "#FFFFFFCC",
   },
   newMatchButtonIcon: {
