@@ -54,6 +54,9 @@ export interface ResponsiveValues {
     logoMd: number;
     iconSm: number;
     iconMd: number;
+    colorSwatch: number;
+    colorSwatchRectW: number;
+    colorSwatchRectH: number;
   };
   /** Raw window dimensions */
   width: number;
@@ -115,6 +118,9 @@ export function useResponsive(): ResponsiveValues {
         logoMd: 90,
         iconSm: 16,
         iconMd: 20,
+        colorSwatch: 36,       // bouton rond couleur (normal: 50)
+        colorSwatchRectW: 48,  // bouton rect parquet largeur (normal: 64)
+        colorSwatchRectH: 30,  // bouton rect parquet hauteur (normal: 40)
       }
     : {
         avatarSm: 40,
@@ -124,6 +130,9 @@ export function useResponsive(): ResponsiveValues {
         logoMd: 150,
         iconSm: 20,
         iconMd: 24,
+        colorSwatch: 50,
+        colorSwatchRectW: 64,
+        colorSwatchRectH: 40,
       };
 
   return { isPortrait, isCompact, scale, sp, font, sizes, width, height };

@@ -13,6 +13,7 @@ import * as ImagePicker from "expo-image-picker";
 import { useTheme } from "../../src/contexts/ThemeContext";
 import { useAuth } from "../../src/contexts/AuthContext";
 import { useClub } from "../../src/contexts/ClubContext";
+import { useResponsive } from "../../src/hooks/useResponsive";
 import { ServiceFactory } from "../../services/ServiceFactory";
 import { supabase } from "../../src/config/supabase";
 import { PhotoUploadService } from "../../services/PhotoUploadService";
@@ -56,6 +57,7 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
   const { isDark, colors } = useTheme();
   const { user } = useAuth();
   const { currentClub, refreshClubs } = useClub();
+  const { sp, font, isCompact } = useResponsive();
 
   const forceCreate = route?.params?.forceCreate || false;
 
@@ -575,11 +577,11 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
   return (
     <View style={[styles.container, { backgroundColor: bgColor }]}>
       <ScrollView
-        style={styles.content}
+        style={[styles.content, { padding: sp.lg, paddingTop: sp.md }]}
         contentContainerStyle={styles.scrollContent}
       >
         {isEditingClub || isCreatingNewClub ? (
-          <View style={styles.header}>
+          <View style={[styles.header, { marginBottom: sp.lg }]}>
             <TouchableOpacity
               onPress={() => {
                 if (isEditingClub) {
@@ -593,13 +595,13 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
             >
               <Ionicons name="arrow-back" size={24} color={textPrimary} />
             </TouchableOpacity>
-            <Text style={[styles.title, { color: textPrimary }]}>
+            <Text style={[styles.title, { color: textPrimary, fontSize: font.xxl, marginBottom: 0 }]}>
               {isCreatingNewClub ? "Créer un nouveau club" : "Modifier mon club"}
             </Text>
             <View style={{ width: 24 }} />
           </View>
         ) : (
-          <Text style={[styles.title, { color: textPrimary }]}>
+          <Text style={[styles.title, { color: textPrimary, fontSize: font.xxl, marginBottom: sp.lg }]}>
             Espace Club
           </Text>
         )}
@@ -612,6 +614,7 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
               {
                 backgroundColor: colors.surfaceVariant,
                 borderColor,
+                marginBottom: sp.xl,
               },
             ]}
           >
@@ -619,6 +622,7 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
               onPress={() => setActiveTab(CLUB_TAB.CREATE)}
               style={[
                 styles.tab,
+                { paddingVertical: sp.sm },
                 activeTab === CLUB_TAB.CREATE && {
                   backgroundColor: colors.primary,
                 },
@@ -632,6 +636,7 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
                       activeTab === CLUB_TAB.CREATE
                         ? colors.text.primary
                         : textSecondary,
+                    fontSize: font.md,
                   },
                 ]}
               >
@@ -642,6 +647,7 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
               onPress={() => setActiveTab(CLUB_TAB.JOIN)}
               style={[
                 styles.tab,
+                { paddingVertical: sp.sm },
                 activeTab === CLUB_TAB.JOIN && { backgroundColor: colors.primary },
               ]}
             >
@@ -653,6 +659,7 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
                       activeTab === CLUB_TAB.JOIN
                         ? colors.text.primary
                         : textSecondary,
+                    fontSize: font.md,
                   },
                 ]}
               >
@@ -679,7 +686,7 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
         )}
       </ScrollView>
 
-      <View style={[styles.footer]}>
+      <View style={[styles.footer, { padding: sp.lg }]}>
         <TouchableOpacity
           onPress={handleSubmit}
           disabled={submitting}
@@ -687,7 +694,8 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
             styles.submitButton,
             {
               backgroundColor: submitting ? colors.text.secondary : colors.primary,
-              opacity: submitting ? 0.7 : 1
+              opacity: submitting ? 0.7 : 1,
+              padding: isCompact ? sp.md : sp.md,
             }
           ]}
         >
@@ -700,7 +708,7 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
                 size={20}
                 color={colors.text.primary}
               />
-              <Text style={[styles.submitButtonText, { color: colors.text.primary }]}>
+              <Text style={[styles.submitButtonText, { color: colors.text.primary, fontSize: font.lg }]}>
                 {isEditingClub
                   ? "Modifier"
                   : isCreatingNewClub

@@ -10,7 +10,12 @@ import {
 } from "react-native";
 import { MaterialCommunityIcons, Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../../src/contexts/ThemeContext";
-import { ClubFormData, CLUB_COLOR_PALETTE, COURT_COLOR_PALETTE } from "../../constants/clubConstants";
+import { useResponsive } from "../../src/hooks/useResponsive";
+import {
+  ClubFormData,
+  CLUB_COLOR_PALETTE,
+  COURT_COLOR_PALETTE,
+} from "../../constants/clubConstants";
 import CourtPreview from "./CourtPreview";
 import ColorPickerModal from "./ColorPickerModal";
 import { COACH_ASSISTANT_LOGO_MARGIN } from "../../src/utils/logoHelper";
@@ -31,6 +36,7 @@ export default function CreateClubForm({
   isEditMode,
 }: CreateClubFormProps) {
   const { colors, isDark } = useTheme();
+  const { sp, font, sizes } = useResponsive();
 
   const [showPrimaryPicker, setShowPrimaryPicker] = useState(false);
   const [showSecondaryPicker, setShowSecondaryPicker] = useState(false);
@@ -38,15 +44,18 @@ export default function CreateClubForm({
   const [showCourtLinesPicker, setShowCourtLinesPicker] = useState(false);
 
   return (
-    <View style={styles.formContainer}>
+    <View style={[styles.formContainer, { gap: sp.lg }]}>
       {/* Logo Section */}
-      <View style={styles.logoSection}>
+      <View style={[styles.logoSection, { marginBottom: sp.sm }]}>
         <TouchableOpacity
           style={[
             styles.logoPlaceholder,
             {
               backgroundColor: colors.surfaceVariant,
               borderColor: colors.border,
+              width: sizes.avatarLg,
+              height: sizes.avatarLg,
+              borderRadius: sizes.avatarLg / 2,
             },
           ]}
           onPress={onPickImage}
@@ -67,23 +76,28 @@ export default function CreateClubForm({
 
       {/* Club Name - Only show in create mode */}
       {!isEditMode && (
-        <View style={styles.formSection}>
-          <Text style={[styles.formLabel, { color: colors.text.secondary }]}>
+        <View style={[styles.formSection, { gap: sp.sm }]}>
+          <Text
+            style={[
+              styles.formLabel,
+              { color: colors.text.secondary, fontSize: font.xs },
+            ]}
+          >
             NOM DU CLUB <Text style={{ color: colors.required }}>*</Text>
           </Text>
           <TextInput
             placeholder="Ex: Los Angeles Lakers"
             placeholderTextColor={colors.text.secondary}
             value={formData.name}
-            onChangeText={(value) =>
-              setFormData({ ...formData, name: value })
-            }
+            onChangeText={(value) => setFormData({ ...formData, name: value })}
             style={[
               styles.formInput,
               {
                 backgroundColor: colors.input.background,
                 borderColor: colors.input.border,
                 color: colors.text.primary,
+                padding: sp.md,
+                fontSize: font.lg,
               },
             ]}
           />
@@ -92,8 +106,13 @@ export default function CreateClubForm({
 
       {/* Acronym - Only show in create mode */}
       {!isEditMode && (
-        <View style={styles.formSection}>
-          <Text style={[styles.formLabel, { color: colors.text.secondary }]}>
+        <View style={[styles.formSection, { gap: sp.sm }]}>
+          <Text
+            style={[
+              styles.formLabel,
+              { color: colors.text.secondary, fontSize: font.xs },
+            ]}
+          >
             SIGLE <Text style={{ color: colors.required }}>*</Text>
           </Text>
           <TextInput
@@ -111,6 +130,8 @@ export default function CreateClubForm({
                 backgroundColor: colors.input.background,
                 borderColor: colors.input.border,
                 color: colors.text.primary,
+                padding: sp.md,
+                fontSize: font.lg,
               },
             ]}
           />
@@ -122,22 +143,34 @@ export default function CreateClubForm({
         style={[
           styles.formSection,
           styles.borderTop,
-          { borderTopColor: colors.border },
+          { borderTopColor: colors.border, paddingTop: sp.lg, gap: sp.sm },
         ]}
       >
-        <View style={styles.sectionHeader}>
+        <View
+          style={[styles.sectionHeader, { gap: sp.sm, marginBottom: sp.md }]}
+        >
           <MaterialCommunityIcons
             name="palette-outline"
             size={16}
             color={colors.primary}
           />
-          <Text style={[styles.sectionTitle, { color: colors.text.primary }]}>
+          <Text
+            style={[
+              styles.sectionTitle,
+              { color: colors.text.primary, fontSize: font.md },
+            ]}
+          >
             Couleurs du Club
           </Text>
         </View>
 
         {/* Primary Color */}
-        <Text style={[styles.colorLabel, { color: colors.text.secondary }]}>
+        <Text
+          style={[
+            styles.colorLabel,
+            { color: colors.text.secondary, fontSize: font.md },
+          ]}
+        >
           Couleur principale
         </Text>
         <ScrollView
@@ -150,38 +183,48 @@ export default function CreateClubForm({
             style={[
               styles.colorOption,
               styles.pickerButton,
-              { borderColor: colors.border },
+              {
+                borderColor: colors.border,
+                width: sizes.colorSwatch,
+                height: sizes.colorSwatch,
+                borderRadius: sizes.colorSwatch / 2,
+              },
             ]}
             onPress={() => setShowPrimaryPicker(true)}
           >
-            <Ionicons name="add" size={28} color={colors.text.secondary} />
+            <Ionicons name="add" size={20} color={colors.text.secondary} />
           </TouchableOpacity>
           {CLUB_COLOR_PALETTE.map((color) => (
             <TouchableOpacity
               key={color}
               style={[
                 styles.colorOption,
-                { backgroundColor: color },
-                formData.primaryColor === color &&
-                  styles.colorOptionSelected,
+                {
+                  backgroundColor: color,
+                  width: sizes.colorSwatch,
+                  height: sizes.colorSwatch,
+                  borderRadius: sizes.colorSwatch / 2,
+                },
+                formData.primaryColor === color && styles.colorOptionSelected,
               ]}
               onPress={() => {
                 setFormData({ ...formData, primaryColor: color });
               }}
             >
               {formData.primaryColor === color && (
-                <Ionicons
-                  name="checkmark"
-                  size={20}
-                  color="#FFFFFF"
-                />
+                <Ionicons name="checkmark" size={20} color="#FFFFFF" />
               )}
             </TouchableOpacity>
           ))}
         </ScrollView>
 
         {/* Secondary Color */}
-        <Text style={[styles.colorLabel, { color: colors.text.secondary }]}>
+        <Text
+          style={[
+            styles.colorLabel,
+            { color: colors.text.secondary, fontSize: font.md },
+          ]}
+        >
           Couleur secondaire
         </Text>
         <ScrollView
@@ -194,31 +237,36 @@ export default function CreateClubForm({
             style={[
               styles.colorOption,
               styles.pickerButton,
-              { borderColor: colors.border },
+              {
+                borderColor: colors.border,
+                width: sizes.colorSwatch,
+                height: sizes.colorSwatch,
+                borderRadius: sizes.colorSwatch / 2,
+              },
             ]}
             onPress={() => setShowSecondaryPicker(true)}
           >
-            <Ionicons name="add" size={28} color={colors.text.secondary} />
+            <Ionicons name="add" size={20} color={colors.text.secondary} />
           </TouchableOpacity>
           {CLUB_COLOR_PALETTE.map((color) => (
             <TouchableOpacity
               key={color}
               style={[
                 styles.colorOption,
-                { backgroundColor: color },
-                formData.secondaryColor === color &&
-                  styles.colorOptionSelected,
+                {
+                  backgroundColor: color,
+                  width: sizes.colorSwatch,
+                  height: sizes.colorSwatch,
+                  borderRadius: sizes.colorSwatch / 2,
+                },
+                formData.secondaryColor === color && styles.colorOptionSelected,
               ]}
               onPress={() => {
                 setFormData({ ...formData, secondaryColor: color });
               }}
             >
               {formData.secondaryColor === color && (
-                <Ionicons
-                  name="checkmark"
-                  size={20}
-                  color="#FFFFFF"
-                />
+                <Ionicons name="checkmark" size={20} color="#FFFFFF" />
               )}
             </TouchableOpacity>
           ))}
@@ -246,21 +294,33 @@ export default function CreateClubForm({
         style={[
           styles.formSection,
           styles.borderTop,
-          { borderTopColor: colors.border },
+          { borderTopColor: colors.border, paddingTop: sp.lg, gap: sp.sm },
         ]}
       >
-        <View style={styles.sectionHeader}>
+        <View
+          style={[styles.sectionHeader, { gap: sp.sm, marginBottom: sp.md }]}
+        >
           <MaterialCommunityIcons
             name="basketball-hoop-outline"
             size={16}
             color={colors.primary}
           />
-          <Text style={[styles.sectionTitle, { color: colors.text.primary }]}>
+          <Text
+            style={[
+              styles.sectionTitle,
+              { color: colors.text.primary, fontSize: font.md },
+            ]}
+          >
             Personnalisation du terrain
           </Text>
         </View>
 
-        <Text style={[styles.colorLabel, { color: colors.text.secondary }]}>
+        <Text
+          style={[
+            styles.colorLabel,
+            { color: colors.text.secondary, fontSize: font.md },
+          ]}
+        >
           Couleur du parquet
         </Text>
         <ScrollView
@@ -273,11 +333,15 @@ export default function CreateClubForm({
             style={[
               styles.courtColorButton,
               styles.pickerButton,
-              { borderColor: colors.border },
+              {
+                borderColor: colors.border,
+                width: sizes.colorSwatchRectW,
+                height: sizes.colorSwatchRectH,
+              },
             ]}
             onPress={() => setShowCourtPicker(true)}
           >
-            <Ionicons name="add" size={28} color={colors.text.secondary} />
+            <Ionicons name="add" size={20} color={colors.text.secondary} />
           </TouchableOpacity>
           {COURT_COLOR_PALETTE.map((c) => (
             <TouchableOpacity
@@ -287,22 +351,27 @@ export default function CreateClubForm({
               }}
               style={[
                 styles.courtColorButton,
-                { backgroundColor: c },
+                {
+                  backgroundColor: c,
+                  width: sizes.colorSwatchRectW,
+                  height: sizes.colorSwatchRectH,
+                },
                 formData.courtColor === c && styles.colorOptionSelected,
               ]}
             >
               {formData.courtColor === c && (
-                <Ionicons
-                  name="checkmark"
-                  size={20}
-                  color="#FFFFFF"
-                />
+                <Ionicons name="checkmark" size={20} color="#FFFFFF" />
               )}
             </TouchableOpacity>
           ))}
         </ScrollView>
 
-        <Text style={[styles.colorLabel, { color: colors.text.secondary }]}>
+        <Text
+          style={[
+            styles.colorLabel,
+            { color: colors.text.secondary, fontSize: font.md },
+          ]}
+        >
           Couleur des lignes
         </Text>
         <ScrollView
@@ -313,13 +382,17 @@ export default function CreateClubForm({
         >
           <TouchableOpacity
             style={[
-              styles.colorOption,
+              styles.courtColorButton,
               styles.pickerButton,
-              { borderColor: colors.border },
+              {
+                borderColor: colors.border,
+                width: sizes.colorSwatchRectW,
+                height: sizes.colorSwatchRectH,
+              },
             ]}
             onPress={() => setShowCourtLinesPicker(true)}
           >
-            <Ionicons name="add" size={28} color={colors.text.secondary} />
+            <Ionicons name="add" size={20} color={colors.text.secondary} />
           </TouchableOpacity>
           {CLUB_COLOR_PALETTE.map((c) => (
             <TouchableOpacity
@@ -328,18 +401,17 @@ export default function CreateClubForm({
                 setFormData({ ...formData, courtLinesColor: c });
               }}
               style={[
-                styles.colorOption,
-                { backgroundColor: c },
-                formData.courtLinesColor === c &&
-                  styles.colorOptionSelected,
+                styles.courtColorButton,
+                {
+                  backgroundColor: c,
+                  width: sizes.colorSwatchRectW,
+                  height: sizes.colorSwatchRectH,
+                },
+                formData.courtLinesColor === c && styles.colorOptionSelected,
               ]}
             >
               {formData.courtLinesColor === c && (
-                <Ionicons
-                  name="checkmark"
-                  size={20}
-                  color="#FFFFFF"
-                />
+                <Ionicons name="checkmark" size={20} color="#FFFFFF" />
               )}
             </TouchableOpacity>
           ))}
@@ -347,13 +419,13 @@ export default function CreateClubForm({
       </View>
 
       {/* Court Preview */}
-      <View style={[styles.courtPreviewContainer, { borderColor: colors.border }]}>
+      <View
+        style={[styles.courtPreviewContainer, { borderColor: colors.border }]}
+      >
         <CourtPreview
           backgroundColor={formData.courtColor}
           lineColor={formData.courtLinesColor}
-          logoUri={
-            formData.logoUri
-          }
+          logoUri={formData.logoUri}
           width={320}
           height={180}
         />
@@ -497,7 +569,7 @@ const styles = StyleSheet.create({
     width: 64,
     height: 40,
     borderRadius: 8,
-    marginRight: 12,
+    marginRight: 0,
     borderWidth: 2,
     borderColor: "transparent",
     justifyContent: "center",

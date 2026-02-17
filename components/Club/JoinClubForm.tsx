@@ -1,6 +1,7 @@
 import React from "react";
 import { View, Text, TextInput, StyleSheet } from "react-native";
 import { useTheme } from "../../src/contexts/ThemeContext";
+import { useResponsive } from "../../src/hooks/useResponsive";
 import { SLATE_COLORS, COMMON_COLORS } from "../../src/theme";
 import { Colors } from "../../src/theme/colors";
 
@@ -16,6 +17,7 @@ export default function JoinClubForm({
   onSubmit,
 }: JoinClubFormProps) {
   const { isDark } = useTheme();
+  const { sp, font } = useResponsive();
 
   const surfaceColor = isDark ? SLATE_COLORS[900] : COMMON_COLORS.white;
   const textPrimary = isDark ? COMMON_COLORS.white : SLATE_COLORS[900];
@@ -24,9 +26,9 @@ export default function JoinClubForm({
   const requiredColor = isDark ? Colors.dark.required : Colors.light.required;
 
   return (
-    <View style={styles.formContainer}>
-      <View style={styles.formSection}>
-        <Text style={[styles.formLabel, { color: textSecondary }]}>
+    <View style={[styles.formContainer, { gap: sp.lg }]}>
+      <View style={[styles.formSection, { gap: sp.sm }]}>
+        <Text style={[styles.formLabel, { color: textSecondary, fontSize: font.xs }]}>
           CODE CLUB <Text style={{ color: requiredColor }}>*</Text>
         </Text>
         <TextInput
@@ -41,6 +43,8 @@ export default function JoinClubForm({
               backgroundColor: surfaceColor,
               borderColor,
               color: textPrimary,
+              padding: sp.md,
+              fontSize: font.xl,
             },
           ]}
         />
@@ -53,10 +57,11 @@ export default function JoinClubForm({
               ? `${SLATE_COLORS[800]}80`
               : SLATE_COLORS[100],
             borderColor,
+            padding: sp.md,
           },
         ]}
       >
-        <Text style={[styles.infoText, { color: textSecondary }]}>
+        <Text style={[styles.infoText, { color: textSecondary, fontSize: font.sm }]}>
           En rejoignant un club existant, vous n'avez pas besoin de payer
           d'abonnement. C'est le propriétaire du club qui gère les quotas
           d'équipes.
