@@ -14,6 +14,7 @@ import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { useAuth } from "../../src/contexts/AuthContext";
 import { useTheme } from "../../src/contexts/ThemeContext";
 import { CommonStyles } from "../../src/theme";
+import { useResponsive } from "../../src/hooks/useResponsive";
 import { ServiceFactory } from "../../services/ServiceFactory";
 import { supabase } from "../../src/config/supabase";
 import type { TeamGender } from "../../models/Team";
@@ -44,6 +45,7 @@ export default function TeamStartersScreen() {
   const route = useRoute<TeamStartersRouteProp>();
   const { user } = useAuth();
   const { colors } = useTheme();
+  const { sp, font, sizes, isCompact } = useResponsive();
   const { clubId, teamId, teamData, coachData, roster } = route.params;
 
   // Local state for tracking selected starters (player IDs)
@@ -247,7 +249,7 @@ export default function TeamStartersScreen() {
       </View>
 
       {/* Progress */}
-      <View style={styles.progressContainer}>
+      <View style={[styles.progressContainer, { gap: sp.sm, paddingHorizontal: sp.lg, paddingVertical: sp.md }]}>
         <View
           style={[styles.progressBar, { backgroundColor: colors.primary }]}
         />
@@ -259,8 +261,8 @@ export default function TeamStartersScreen() {
         />
       </View>
 
-      <ScrollView style={styles.content}>
-        <Text style={[styles.title, { color: colors.text.primary }]}>
+      <ScrollView style={[styles.content, { padding: sp.lg }]}>
+        <Text style={[styles.title, { color: colors.text.primary, fontSize: font.xxl, marginBottom: sp.lg }]}>
           Sélectionnez le 5 Majeur
         </Text>
 
@@ -271,12 +273,14 @@ export default function TeamStartersScreen() {
             {
               backgroundColor: `${colors.primary}15`,
               borderColor: `${colors.primary}30`,
+              padding: sp.md,
+              marginBottom: sp.md,
             },
           ]}
         >
-          <View style={styles.infoLeft}>
+          <View style={[styles.infoLeft, { gap: sp.sm }]}>
             <Ionicons name="shirt" size={18} color={colors.primary} />
-            <Text style={[styles.infoText, { color: colors.primary }]}>
+            <Text style={[styles.infoText, { color: colors.primary, fontSize: font.md }]}>
               Sélectionnez 5 titulaires
             </Text>
           </View>
@@ -286,6 +290,8 @@ export default function TeamStartersScreen() {
               {
                 backgroundColor:
                   starters.length === 5 ? colors.primary : colors.surface,
+                paddingHorizontal: sp.sm,
+                paddingVertical: sp.xs,
               },
             ]}
           >
@@ -294,6 +300,7 @@ export default function TeamStartersScreen() {
                 styles.starterBadgeText,
                 {
                   color: starters.length === 5 ? "#fff" : colors.text.secondary,
+                  fontSize: font.sm,
                 },
               ]}
             >
@@ -304,16 +311,16 @@ export default function TeamStartersScreen() {
 
         {/* Error if not 5 starters */}
         {starters.length !== 5 && (
-          <View style={[styles.errorBox, { backgroundColor: `${colors.primary}15`, borderColor: colors.primary }]}>
+          <View style={[styles.errorBox, { backgroundColor: `${colors.primary}15`, borderColor: colors.primary, gap: sp.sm, padding: sp.sm, marginBottom: sp.md }]}>
             <Ionicons name="alert-circle" size={16} color={colors.primary} />
-            <Text style={[styles.errorText, { color: colors.primary }]}>
+            <Text style={[styles.errorText, { color: colors.primary, fontSize: font.sm }]}>
               Le 5 majeur doit être complet pour valider.
             </Text>
           </View>
         )}
 
         {/* Player Grid */}
-        <View style={styles.playerGrid}>
+        <View style={[styles.playerGrid, { gap: sp.sm }]}>
           {roster.map((player) => {
             const isStarter = starters.includes(player.id);
             return (
@@ -329,11 +336,12 @@ export default function TeamStartersScreen() {
                     borderColor: isStarter ? colors.primary : "transparent",
                     borderWidth: 2,
                     opacity: isStarter ? 1 : 0.6,
+                    padding: sp.sm,
                   },
                 ]}
               >
                 {isStarter && (
-                  <View style={styles.starBadge}>
+                  <View style={[styles.starBadge, { top: sp.sm, right: sp.sm }]}>
                     <Ionicons name="star" size={12} color="#fbbf24" />
                   </View>
                 )}
@@ -342,14 +350,14 @@ export default function TeamStartersScreen() {
                   playerName={player.name}
                   playerNumber={player.jerseyNumber}
                   photoUrl={player.photoUrl}
-                  size={56}
+                  size={sizes.avatarMd}
                   borderColor={isStarter ? colors.primary : colors.border}
                   backgroundColor={colors.surface}
                   textColor={colors.text.secondary}
                   borderWidth={2}
                 />
 
-                <View style={styles.playerNameContainer}>
+                <View style={[styles.playerNameContainer, { gap: sp.xs }]}>
                   <Text
                     style={[
                       styles.playerNumberText,
@@ -357,6 +365,7 @@ export default function TeamStartersScreen() {
                         color: isStarter
                           ? colors.text.secondary
                           : colors.text.tertiary,
+                        fontSize: font.xs,
                       },
                     ]}
                   >
@@ -369,6 +378,7 @@ export default function TeamStartersScreen() {
                         color: isStarter
                           ? colors.text.primary
                           : colors.text.secondary,
+                        fontSize: font.sm,
                       },
                     ]}
                     numberOfLines={1}
@@ -389,6 +399,7 @@ export default function TeamStartersScreen() {
           {
             backgroundColor: surfaceColor,
             borderTopColor: colors.border,
+            padding: sp.lg,
           },
         ]}
       >
@@ -400,6 +411,7 @@ export default function TeamStartersScreen() {
                 starters.length === 5 && !saving
                   ? colors.primary
                   : colors.text.disabled,
+              padding: isCompact ? sp.md : sp.lg,
             },
           ]}
           onPress={handleFinish}
@@ -408,13 +420,13 @@ export default function TeamStartersScreen() {
           {saving ? (
             <>
               <ActivityIndicator color="#fff" size="small" />
-              <Text style={styles.finishButtonText}>
+              <Text style={[styles.finishButtonText, { fontSize: font.lg }]}>
                 {teamId ? "Sauvegarde..." : "Création..."}
               </Text>
             </>
           ) : (
             <>
-              <Text style={styles.finishButtonText}>Valider l'équipe</Text>
+              <Text style={[styles.finishButtonText, { fontSize: font.lg }]}>Valider l'équipe</Text>
               <Ionicons name="checkmark" size={20} color="#fff" />
             </>
           )}

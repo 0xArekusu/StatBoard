@@ -33,12 +33,12 @@ En pratique :
 
 | Token | Compact | Normal |
 |---|---|---|
-| `sp.xs` | 4 | 4 |
+| `sp.xs` | 2 | 4 |
 | `sp.sm` | 4 | 8 |
 | `sp.md` | 8 | 16 |
-| `sp.lg` | 16 | 24 |
-| `sp.xl` | 24 | 32 |
-| `sp.xxl` | 32 | 40 |
+| `sp.lg` | 12 | 24 |
+| `sp.xl` | 16 | 32 |
+| `sp.xxl` | 24 | 40 |
 
 ---
 
@@ -46,11 +46,11 @@ En pratique :
 
 | Token | Compact | Normal |
 |---|---|---|
-| `font.xs` | 10 | 10 |
+| `font.xs` | 9 | 10 |
 | `font.sm` | 10 | 12 |
-| `font.md` | 12 | 14 |
-| `font.lg` | 14 | 16 |
-| `font.xl` | 16 | 18 |
+| `font.md` | 11 | 14 |
+| `font.lg` | 13 | 16 |
+| `font.xl` | 15 | 18 |
 | `font.xxl` | 18 | 24 |
 | `font.xxxl` | 24 | 36 |
 
@@ -60,13 +60,13 @@ En pratique :
 
 | Token | Compact | Normal |
 |---|---|---|
-| `sizes.avatarSm` | 32 | 40 |
-| `sizes.avatarMd` | 56 | 72 |
-| `sizes.avatarLg` | 72 | 96 |
-| `sizes.logoSm` | 60 | 90 |
-| `sizes.logoMd` | 90 | 150 |
-| `sizes.iconSm` | 16 | 20 |
-| `sizes.iconMd` | 20 | 24 |
+| `sizes.avatarSm` | 24 | 40 |
+| `sizes.avatarMd` | 40 | 72 |
+| `sizes.avatarLg` | 56 | 96 |
+| `sizes.logoSm` | 48 | 90 |
+| `sizes.logoMd` | 72 | 150 |
+| `sizes.iconSm` | 14 | 20 |
+| `sizes.iconMd` | 18 | 24 |
 
 ---
 

@@ -13,6 +13,7 @@ import { useNavigation, useRoute, RouteProp, useFocusEffect } from "@react-navig
 import { useTheme } from "../../src/contexts/ThemeContext";
 import { useAuth } from "../../src/contexts/AuthContext";
 import { CommonStyles } from "../../src/theme";
+import { useResponsive } from "../../src/hooks/useResponsive";
 import { ROUTES } from "../../constants/routes";
 import { TeamGender, TEAM_GENDER_LABELS } from "../../models/Team";
 import { ServiceFactory } from "../../services/ServiceFactory";
@@ -26,6 +27,7 @@ export default function TeamInfoScreen() {
   const route = useRoute<TeamInfoRouteProp>();
   const { colors } = useTheme();
   const { user } = useAuth();
+  const { sp, font, isCompact } = useResponsive();
   const { clubId, teamId, teamData } = route.params;
 
   const [name, setName] = useState(teamData?.name || "");
@@ -164,7 +166,7 @@ export default function TeamInfoScreen() {
       </View>
 
       {/* Progress */}
-      <View style={styles.progressContainer}>
+      <View style={[styles.progressContainer, { gap: sp.sm, paddingHorizontal: sp.lg, paddingVertical: sp.md }]}>
         <View
           style={[styles.progressBar, { backgroundColor: colors.primary }]}
         />
@@ -174,14 +176,14 @@ export default function TeamInfoScreen() {
       </View>
 
       {/* Content */}
-      <View style={styles.content}>
-        <Text style={[styles.title, { color: colors.text.primary }]}>
+      <View style={[styles.content, { padding: sp.lg }]}>
+        <Text style={[styles.title, { color: colors.text.primary, fontSize: font.xxl, marginBottom: sp.xl }]}>
           Informations de base
         </Text>
 
         {/* Team Name */}
-        <View style={styles.section}>
-          <Text style={[styles.label, { color: colors.text.secondary }]}>
+        <View style={[styles.section, { marginBottom: sp.lg }]}>
+          <Text style={[styles.label, { color: colors.text.secondary, fontSize: font.md, marginBottom: sp.sm }]}>
             Nom de l'équipe <Text style={styles.required}>*</Text>
           </Text>
           <TextInput
@@ -191,6 +193,8 @@ export default function TeamInfoScreen() {
                 backgroundColor: surfaceColor,
                 borderColor: colors.border,
                 color: colors.text.primary,
+                padding: sp.md,
+                fontSize: font.lg,
               },
             ]}
             placeholder="Ex: U15 Région"
@@ -202,8 +206,8 @@ export default function TeamInfoScreen() {
         </View>
 
         {/* Category */}
-        <View style={styles.section}>
-          <Text style={[styles.label, { color: colors.text.secondary }]}>
+        <View style={[styles.section, { marginBottom: sp.lg }]}>
+          <Text style={[styles.label, { color: colors.text.secondary, fontSize: font.md, marginBottom: sp.sm }]}>
             Catégorie / Niveau
           </Text>
           <TextInput
@@ -213,6 +217,8 @@ export default function TeamInfoScreen() {
                 backgroundColor: surfaceColor,
                 borderColor: colors.border,
                 color: colors.text.primary,
+                padding: sp.md,
+                fontSize: font.lg,
               },
             ]}
             placeholder="Ex: Départemental 1"
@@ -224,11 +230,11 @@ export default function TeamInfoScreen() {
         </View>
 
         {/* Gender */}
-        <View style={styles.section}>
-          <Text style={[styles.label, { color: colors.text.secondary }]}>
+        <View style={[styles.section, { marginBottom: sp.lg }]}>
+          <Text style={[styles.label, { color: colors.text.secondary, fontSize: font.md, marginBottom: sp.sm }]}>
             Genre
           </Text>
-          <View style={styles.genderGrid}>
+          <View style={[styles.genderGrid, { gap: sp.sm }]}>
             {GENDERS.map((g) => (
               <TouchableOpacity
                 key={g.value}
@@ -240,6 +246,7 @@ export default function TeamInfoScreen() {
                       gender === g.value ? `${g.color}15` : surfaceColor,
                     borderColor: gender === g.value ? g.color : colors.border,
                     borderWidth: 2,
+                    paddingVertical: sp.md,
                   },
                 ]}
               >
@@ -250,6 +257,7 @@ export default function TeamInfoScreen() {
                       color:
                         gender === g.value ? g.color : colors.text.secondary,
                       fontWeight: gender === g.value ? "bold" : "600",
+                      fontSize: font.md,
                     },
                   ]}
                 >
@@ -268,6 +276,8 @@ export default function TeamInfoScreen() {
           {
             backgroundColor: surfaceColor,
             borderTopColor: colors.border,
+            padding: sp.lg,
+            gap: sp.sm,
           },
         ]}
       >
@@ -278,12 +288,13 @@ export default function TeamInfoScreen() {
               {
                 backgroundColor: colors.surfaceVariant,
                 borderColor: colors.error,
+                padding: isCompact ? sp.md : sp.lg,
               },
             ]}
             onPress={handleDeleteTeam}
           >
             <Ionicons name="trash-outline" size={20} color={colors.error} />
-            <Text style={[styles.deleteButtonText, { color: colors.error }]}>Supprimer l'équipe</Text>
+            <Text style={[styles.deleteButtonText, { color: colors.error, fontSize: font.lg }]}>Supprimer l'équipe</Text>
           </TouchableOpacity>
         )}
         <TouchableOpacity
@@ -293,12 +304,13 @@ export default function TeamInfoScreen() {
               backgroundColor: name.trim()
                 ? colors.primary
                 : colors.text.disabled,
+              padding: isCompact ? sp.md : sp.lg,
             },
           ]}
           onPress={handleNext}
           disabled={!name.trim()}
         >
-          <Text style={styles.nextButtonText}>Suivant</Text>
+          <Text style={[styles.nextButtonText, { fontSize: font.lg }]}>Suivant</Text>
           <Ionicons name="chevron-forward" size={20} color="#fff" />
         </TouchableOpacity>
       </View>

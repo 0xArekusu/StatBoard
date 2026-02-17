@@ -13,10 +13,16 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
-import { useNavigation, useRoute, RouteProp, useFocusEffect } from "@react-navigation/native";
+import {
+  useNavigation,
+  useRoute,
+  RouteProp,
+  useFocusEffect,
+} from "@react-navigation/native";
 import { useAuth } from "../../src/contexts/AuthContext";
 import { useTheme } from "../../src/contexts/ThemeContext";
 import { CommonStyles } from "../../src/theme";
+import { useResponsive } from "../../src/hooks/useResponsive";
 import { ServiceFactory } from "../../services/ServiceFactory";
 import { supabase } from "../../src/config/supabase";
 import { PhotoUploadService } from "../../services/PhotoUploadService";
@@ -49,6 +55,7 @@ export default function TeamRosterScreen() {
   const route = useRoute<TeamRosterRouteProp>();
   const { user } = useAuth();
   const { colors } = useTheme();
+  const { sp, font, sizes, isCompact } = useResponsive();
   const { clubId, teamId, teamData } = route.params;
 
   // Coach state
@@ -90,7 +97,10 @@ export default function TeamRosterScreen() {
         return true;
       };
 
-      const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+      const subscription = BackHandler.addEventListener(
+        "hardwareBackPress",
+        onBackPress
+      );
 
       return () => subscription.remove();
     }, [navigation])
@@ -161,9 +171,7 @@ export default function TeamRosterScreen() {
     }
 
     // Validation: Check duplicate jersey number
-    const isDuplicateNumber = roster.some(
-      (p) => p.jerseyNumber === numValue
-    );
+    const isDuplicateNumber = roster.some((p) => p.jerseyNumber === numValue);
     if (isDuplicateNumber) {
       setAddPlayerError("Ce numéro de maillot est déjà utilisé.");
       return;
@@ -245,7 +253,8 @@ export default function TeamRosterScreen() {
 
     // Check if name already exists (excluding current player)
     const isDuplicateName = roster.some(
-      (p) => p.id !== playerId && p.name.toLowerCase() === trimmedName.toLowerCase()
+      (p) =>
+        p.id !== playerId && p.name.toLowerCase() === trimmedName.toLowerCase()
     );
 
     if (isDuplicateName) {
@@ -285,7 +294,6 @@ export default function TeamRosterScreen() {
    * Stores local URI (upload happens on submit)
    */
   const handlePickCoachPhoto = async () => {
-
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: "images",
       allowsEditing: true,
@@ -305,7 +313,6 @@ export default function TeamRosterScreen() {
    * @param isEditing - true if editing existing player, false if adding new
    */
   const handlePickPlayerPhoto = async (isEditing: boolean = false) => {
-
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: "images",
       allowsEditing: true,
@@ -351,7 +358,7 @@ export default function TeamRosterScreen() {
 
       // Upload coach photo if it's a local file
       let uploadedCoachPhotoUrl = coachPhotoUrl;
-      if (coachPhotoUrl && coachPhotoUrl.startsWith('file://')) {
+      if (coachPhotoUrl && coachPhotoUrl.startsWith("file://")) {
         const coachPhotoId = `coach-${Date.now()}`;
         const { url, error } = await photoService.uploadPlayerPhoto(
           coachPhotoUrl,
@@ -389,7 +396,7 @@ export default function TeamRosterScreen() {
         for (const player of roster) {
           // Upload player photo if it's a local file
           let uploadedPlayerPhotoUrl = player.photoUrl;
-          if (player.photoUrl && player.photoUrl.startsWith('file://')) {
+          if (player.photoUrl && player.photoUrl.startsWith("file://")) {
             const playerPhotoId = `player-${Date.now()}-${player.id}`;
             const { url, error } = await photoService.uploadPlayerPhoto(
               player.photoUrl,
@@ -397,7 +404,10 @@ export default function TeamRosterScreen() {
             );
 
             if (error) {
-              console.error(`Error uploading photo for player ${player.name}:`, error);
+              console.error(
+                `Error uploading photo for player ${player.name}:`,
+                error
+              );
               // Continue without photo if upload fails
               uploadedPlayerPhotoUrl = undefined;
             } else {
@@ -424,8 +434,12 @@ export default function TeamRosterScreen() {
         }
 
         // 2. Delete players that are no longer in roster
-        const rosterIds = roster.filter(p => !p.id.startsWith("temp-")).map(p => p.id);
-        const playersToDelete = existingPlayers.filter(p => !rosterIds.includes(p.id));
+        const rosterIds = roster
+          .filter((p) => !p.id.startsWith("temp-"))
+          .map((p) => p.id);
+        const playersToDelete = existingPlayers.filter(
+          (p) => !rosterIds.includes(p.id)
+        );
         for (const player of playersToDelete) {
           await playerService.deletePlayer(player.id, teamId);
         }
@@ -466,7 +480,7 @@ export default function TeamRosterScreen() {
         for (const player of roster) {
           // Upload player photo if it's a local file
           let uploadedPlayerPhotoUrl = player.photoUrl;
-          if (player.photoUrl && player.photoUrl.startsWith('file://')) {
+          if (player.photoUrl && player.photoUrl.startsWith("file://")) {
             const playerPhotoId = `player-${Date.now()}-${player.id}`;
             const { url, error } = await photoService.uploadPlayerPhoto(
               player.photoUrl,
@@ -474,7 +488,10 @@ export default function TeamRosterScreen() {
             );
 
             if (error) {
-              console.error(`Error uploading photo for player ${player.name}:`, error);
+              console.error(
+                `Error uploading photo for player ${player.name}:`,
+                error
+              );
               // Continue without photo if upload fails
               uploadedPlayerPhotoUrl = undefined;
             } else {
@@ -533,7 +550,12 @@ export default function TeamRosterScreen() {
       </View>
 
       {/* Progress */}
-      <View style={styles.progressContainer}>
+      <View
+        style={[
+          styles.progressContainer,
+          { gap: sp.sm, paddingHorizontal: sp.lg, paddingVertical: sp.md },
+        ]}
+      >
         <View
           style={[styles.progressBar, { backgroundColor: colors.primary }]}
         />
@@ -542,14 +564,32 @@ export default function TeamRosterScreen() {
         />
       </View>
 
-      <ScrollView style={styles.content}>
-        <Text style={[styles.title, { color: colors.text.primary }]}>
+      <ScrollView style={[styles.content, { padding: sp.lg }]}>
+        <Text
+          style={[
+            styles.title,
+            {
+              color: colors.text.primary,
+              fontSize: font.xxl,
+              marginBottom: sp.lg,
+            },
+          ]}
+        >
           Staff & Effectif
         </Text>
 
         {/* Coach Section */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text.tertiary }]}>
+        <View style={[styles.section, { marginBottom: sp.xl }]}>
+          <Text
+            style={[
+              styles.sectionTitle,
+              {
+                color: colors.text.tertiary,
+                fontSize: font.xs,
+                marginBottom: sp.sm,
+              },
+            ]}
+          >
             STAFF TECHNIQUE
           </Text>
 
@@ -708,8 +748,17 @@ export default function TeamRosterScreen() {
         </View>
 
         {/* Roster Section */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text.tertiary }]}>
+        <View style={[styles.section, { marginBottom: sp.xl }]}>
+          <Text
+            style={[
+              styles.sectionTitle,
+              {
+                color: colors.text.tertiary,
+                fontSize: font.xs,
+                marginBottom: sp.sm,
+              },
+            ]}
+          >
             JOUEURS ({roster.length}/15)
           </Text>
 
@@ -721,18 +770,17 @@ export default function TeamRosterScreen() {
                 {
                   backgroundColor: `${colors.primary}15`,
                   borderColor: colors.primary,
+                  gap: sp.sm,
+                  padding: sp.sm,
+                  marginBottom: sp.sm,
                 },
               ]}
             >
-              <Ionicons
-                name="alert-circle"
-                size={16}
-                color={colors.primary}
-              />
+              <Ionicons name="alert-circle" size={16} color={colors.primary} />
               <Text
                 style={{
                   flex: 1,
-                  fontSize: 12,
+                  fontSize: font.sm,
                   fontWeight: "bold",
                   color: colors.primary,
                 }}
@@ -749,19 +797,34 @@ export default function TeamRosterScreen() {
               {
                 backgroundColor: surfaceColor,
                 borderColor: colors.border,
+                padding: sp.md,
+                marginBottom: sp.sm,
               },
             ]}
           >
-            <View style={styles.addPlayerHeader}>
+            <View
+              style={[
+                styles.addPlayerHeader,
+                { gap: sp.sm, marginBottom: sp.md },
+              ]}
+            >
               <Ionicons name="add-circle" size={16} color={colors.primary} />
               <Text
-                style={[styles.addPlayerTitle, { color: colors.text.primary }]}
+                style={[
+                  styles.addPlayerTitle,
+                  { color: colors.text.primary, fontSize: font.md },
+                ]}
               >
                 Ajouter un joueur
               </Text>
             </View>
 
-            <View style={styles.addPlayerForm}>
+            <View
+              style={[
+                styles.addPlayerForm,
+                { gap: sp.sm, marginBottom: sp.sm },
+              ]}
+            >
               <TouchableOpacity
                 onPress={() => handlePickPlayerPhoto(false)}
                 style={[
@@ -769,6 +832,9 @@ export default function TeamRosterScreen() {
                   {
                     backgroundColor: colors.surface,
                     borderColor: colors.border,
+                    width: sizes.avatarMd,
+                    height: sizes.avatarMd,
+                    borderRadius: sizes.avatarMd / 2,
                   },
                 ]}
               >
@@ -786,7 +852,7 @@ export default function TeamRosterScreen() {
                 )}
               </TouchableOpacity>
 
-              <View style={styles.addPlayerInputs}>
+              <View style={[styles.addPlayerInputs, { gap: sp.sm }]}>
                 <TextInput
                   style={[
                     styles.playerInput,
@@ -794,6 +860,8 @@ export default function TeamRosterScreen() {
                       backgroundColor: colors.surface,
                       borderColor: colors.border,
                       color: colors.text.primary,
+                      padding: sp.sm,
+                      fontSize: font.md,
                     },
                   ]}
                   placeholder="Nom du joueur"
@@ -804,7 +872,7 @@ export default function TeamRosterScreen() {
                     setAddPlayerError(null);
                   }}
                 />
-                <View style={styles.numberRow}>
+                <View style={[styles.numberRow, { gap: sp.sm }]}>
                   <TextInput
                     style={[
                       styles.numberInput,
@@ -812,6 +880,8 @@ export default function TeamRosterScreen() {
                         backgroundColor: colors.surface,
                         borderColor: colors.border,
                         color: colors.text.primary,
+                        padding: sp.sm,
+                        fontSize: font.md,
                       },
                     ]}
                     placeholder="#"
@@ -845,7 +915,9 @@ export default function TeamRosterScreen() {
                   </TouchableOpacity>
                 </View>
                 {addPlayerError && (
-                  <Text style={styles.errorText}>{addPlayerError}</Text>
+                  <Text style={[styles.errorText, { fontSize: font.sm }]}>
+                    {addPlayerError}
+                  </Text>
                 )}
               </View>
             </View>
@@ -859,6 +931,7 @@ export default function TeamRosterScreen() {
                 {
                   backgroundColor: `${colors.surface}80`,
                   borderColor: colors.border,
+                  padding: sp.xl,
                 },
               ]}
             >
@@ -868,12 +941,17 @@ export default function TeamRosterScreen() {
                 color={colors.text.tertiary}
                 style={{ opacity: 0.5 }}
               />
-              <Text style={[styles.emptyText, { color: colors.text.tertiary }]}>
+              <Text
+                style={[
+                  styles.emptyText,
+                  { color: colors.text.tertiary, fontSize: font.md },
+                ]}
+              >
                 Effectif vide
               </Text>
             </View>
           ) : (
-            <View style={styles.playerList}>
+            <View style={[styles.playerList, { gap: sp.sm }]}>
               {roster.map((player) => {
                 const isEditing = editingPlayerId === player.id;
 
@@ -885,12 +963,13 @@ export default function TeamRosterScreen() {
                       {
                         backgroundColor: surfaceColor,
                         borderColor: colors.border,
+                        padding: sp.sm,
                       },
                     ]}
                   >
                     {isEditing ? (
                       // Edit mode
-                      <View style={styles.playerEditForm}>
+                      <View style={[styles.playerEditForm, { gap: sp.sm }]}>
                         <TouchableOpacity
                           onPress={() => handlePickPlayerPhoto(true)}
                           style={[
@@ -898,6 +977,9 @@ export default function TeamRosterScreen() {
                             {
                               backgroundColor: colors.surface,
                               borderColor: colors.border,
+                              width: sizes.avatarMd,
+                              height: sizes.avatarMd,
+                              borderRadius: sizes.avatarMd / 2,
                             },
                           ]}
                         >
@@ -916,7 +998,7 @@ export default function TeamRosterScreen() {
                             />
                           )}
                         </TouchableOpacity>
-                        <View style={styles.playerEditInputs}>
+                        <View style={[styles.playerEditInputs, { gap: sp.sm }]}>
                           <TextInput
                             style={[
                               styles.playerInput,
@@ -924,6 +1006,8 @@ export default function TeamRosterScreen() {
                                 backgroundColor: colors.surface,
                                 borderColor: colors.border,
                                 color: colors.text.primary,
+                                padding: sp.sm,
+                                fontSize: font.md,
                               },
                             ]}
                             placeholder="Nom du joueur"
@@ -934,7 +1018,9 @@ export default function TeamRosterScreen() {
                               setEditPlayerError(null);
                             }}
                           />
-                          <View style={styles.playerEditActions}>
+                          <View
+                            style={[styles.playerEditActions, { gap: sp.sm }]}
+                          >
                             <TextInput
                               style={[
                                 styles.numberInput,
@@ -942,6 +1028,8 @@ export default function TeamRosterScreen() {
                                   backgroundColor: colors.surface,
                                   borderColor: colors.border,
                                   color: colors.text.primary,
+                                  padding: sp.sm,
+                                  fontSize: font.md,
                                 },
                               ]}
                               placeholder="#"
@@ -989,7 +1077,9 @@ export default function TeamRosterScreen() {
                             </TouchableOpacity>
                           </View>
                           {editPlayerError && (
-                            <Text style={styles.errorText}>
+                            <Text
+                              style={[styles.errorText, { fontSize: font.sm }]}
+                            >
                               {editPlayerError}
                             </Text>
                           )}
@@ -998,12 +1088,12 @@ export default function TeamRosterScreen() {
                     ) : (
                       // Display mode
                       <>
-                        <View style={styles.playerInfo}>
+                        <View style={[styles.playerInfo, { gap: sp.sm }]}>
                           <PlayerAvatar
                             playerName={player.name}
                             playerNumber={player.jerseyNumber}
                             photoUrl={player.photoUrl}
-                            size={48}
+                            size={sizes.avatarMd}
                             borderColor={colors.border}
                             backgroundColor={colors.surface}
                             textColor={colors.text.secondary}
@@ -1013,7 +1103,10 @@ export default function TeamRosterScreen() {
                             <Text
                               style={[
                                 styles.playerName,
-                                { color: colors.text.primary },
+                                {
+                                  color: colors.text.primary,
+                                  fontSize: font.md,
+                                },
                               ]}
                             >
                               {player.name}
@@ -1021,7 +1114,10 @@ export default function TeamRosterScreen() {
                             <Text
                               style={[
                                 styles.playerMeta,
-                                { color: colors.text.secondary },
+                                {
+                                  color: colors.text.secondary,
+                                  fontSize: font.sm,
+                                },
                               ]}
                             >
                               #{player.jerseyNumber}
@@ -1074,6 +1170,7 @@ export default function TeamRosterScreen() {
           {
             backgroundColor: surfaceColor,
             borderTopColor: colors.border,
+            padding: sp.lg,
           },
         ]}
       >
@@ -1085,6 +1182,7 @@ export default function TeamRosterScreen() {
                 coachName.trim() && roster.length >= 5 && !isSubmitting
                   ? colors.primary
                   : colors.text.disabled,
+              padding: isCompact ? sp.md : sp.lg,
             },
           ]}
           onPress={handleNext}
@@ -1093,13 +1191,18 @@ export default function TeamRosterScreen() {
           {isSubmitting ? (
             <>
               <ActivityIndicator size="small" color="#fff" />
-              <Text style={[styles.nextButtonText, { marginLeft: 8 }]}>
+              <Text
+                style={[
+                  styles.nextButtonText,
+                  { marginLeft: sp.sm, fontSize: font.lg },
+                ]}
+              >
                 {teamId ? "Modification..." : "Création..."}
               </Text>
             </>
           ) : (
             <>
-              <Text style={styles.nextButtonText}>
+              <Text style={[styles.nextButtonText, { fontSize: font.lg }]}>
                 {teamId ? "Modifier l'équipe" : "Créer l'équipe"}
               </Text>
               <Ionicons name="checkmark" size={20} color="#fff" />
@@ -1143,6 +1246,7 @@ const styles = StyleSheet.create({
   },
   section: {
     marginBottom: 32,
+    gap: 10,
   },
   sectionTitle: {
     fontSize: 11,

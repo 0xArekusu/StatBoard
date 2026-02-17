@@ -10,6 +10,7 @@ import { View, Text, StyleSheet, TextInput } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { STATUS_COLORS } from "../../src/theme";
 import { MATCH_CREATION_FORM_LABELS, MATCH_CREATION_INFO_MESSAGES } from "../../constants";
+import { useResponsive } from "../../src/hooks/useResponsive";
 import type { Team } from "../../models/Team";
 
 interface TeamSelectorProps {
@@ -43,9 +44,11 @@ export const TeamSelector: React.FC<TeamSelectorProps> = ({
   isGuest = false,
   colors,
 }) => {
+  const { sp, font } = useResponsive();
+
   return (
-    <View style={styles.formSection}>
-      <Text style={[styles.formLabel, { color: colors.textSecondary }]}>
+    <View style={[styles.formSection, { marginBottom: sp.lg }]}>
+      <Text style={[styles.formLabel, { color: colors.textSecondary, fontSize: font.xs, marginBottom: sp.sm }]}>
         {MATCH_CREATION_FORM_LABELS.MY_TEAM}
       </Text>
       {isGuest ? (
@@ -58,6 +61,8 @@ export const TeamSelector: React.FC<TeamSelectorProps> = ({
               backgroundColor: colors.surfaceColor,
               borderColor: colors.borderColor,
               color: colors.textPrimary,
+              padding: sp.md,
+              fontSize: font.md,
             },
           ]}
           value={myTeamName}
@@ -70,10 +75,10 @@ export const TeamSelector: React.FC<TeamSelectorProps> = ({
         <View
           style={[
             styles.formInput,
-            { backgroundColor: colors.surfaceColor, borderColor: colors.borderColor },
+            { backgroundColor: colors.surfaceColor, borderColor: colors.borderColor, padding: sp.md },
           ]}
         >
-          <Text style={[styles.formInputText, { color: colors.textPrimary }]}>
+          <Text style={[styles.formInputText, { color: colors.textPrimary, fontSize: font.md }]}>
             {team?.name || "Équipe non trouvée"}
           </Text>
         </View>
@@ -85,6 +90,8 @@ export const TeamSelector: React.FC<TeamSelectorProps> = ({
             {
               backgroundColor: STATUS_COLORS.errorBackground,
               borderColor: STATUS_COLORS.error,
+              gap: sp.sm,
+              padding: sp.sm,
             },
           ]}
         >
@@ -93,7 +100,7 @@ export const TeamSelector: React.FC<TeamSelectorProps> = ({
             size={16}
             color={STATUS_COLORS.error}
           />
-          <Text style={[styles.alertText, { color: STATUS_COLORS.errorLight }]}>
+          <Text style={[styles.alertText, { color: STATUS_COLORS.errorLight, fontSize: font.md }]}>
             {MATCH_CREATION_INFO_MESSAGES.NO_TEAM_CREATED}
           </Text>
         </View>

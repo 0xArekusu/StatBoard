@@ -2,6 +2,7 @@ import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { MaterialCommunityIcons, Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../../src/contexts/ThemeContext";
+import { useResponsive } from "../../src/hooks/useResponsive";
 import { Team, TeamStatus, TeamGender, TEAM_GENDER_LABELS } from "../../models/Team";
 import { ROUTES } from "../../constants/routes";
 import JerseyIconSimple from "../icons/JerseySimpleIcon";
@@ -26,6 +27,7 @@ export default function TeamCard({
   onDelete,
 }: TeamCardProps) {
   const { colors, isDark } = useTheme();
+  const { sp, font, sizes } = useResponsive();
   const isClickable = team.status === TeamStatus.APPROVED && team.isActive;
 
   return (
@@ -36,6 +38,7 @@ export default function TeamCard({
           backgroundColor: colors.surface,
           borderColor: colors.border,
           opacity: team.status === TeamStatus.APPROVED && team.isActive ? 1 : 0.6,
+          padding: sp.md,
         },
       ]}
       onPress={() => {
@@ -65,11 +68,11 @@ export default function TeamCard({
         </View>
       )}
 
-      <View style={styles.teamCardLeft}>
+      <View style={[styles.teamCardLeft, { gap: sp.md }]}>
         <View
           style={[
             styles.teamIcon,
-            { backgroundColor: colors.surfaceVariant },
+            { backgroundColor: colors.surfaceVariant, width: sizes.avatarMd, height: sizes.avatarMd },
           ]}
         >
           <JerseyIconSimple />
@@ -85,18 +88,19 @@ export default function TeamCard({
                     : colors.text.primary,
                 textDecorationLine:
                   team.status === TeamStatus.REJECTED ? "line-through" : "none",
+                fontSize: font.lg,
               },
             ]}
           >
             {team.name}
           </Text>
-          <Text style={[styles.teamCategory, { color: colors.text.secondary }]}>
+          <Text style={[styles.teamCategory, { color: colors.text.secondary, fontSize: font.sm, marginTop: sp.xs }]}>
             {team.gender ? TEAM_GENDER_LABELS[team.gender] : "N/A"}{" "}
             • {team.playerCount ?? 0} Joueur
             {(team.playerCount ?? 0) > 1 ? "s" : ""}
           </Text>
           {team.coachName && (
-            <Text style={[styles.teamCoach, { color: colors.text.secondary }]}>
+            <Text style={[styles.teamCoach, { color: colors.text.secondary, fontSize: font.xs, marginTop: sp.xs }]}>
               {team.coachName}
             </Text>
           )}
