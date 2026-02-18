@@ -15,7 +15,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { ROUTES, PlatformOS } from '../../constants';
 import { useTheme } from '../../src/contexts/ThemeContext';
-import { SHADOW_COLOR, OPACITY } from '../../src/theme';
+import { SHADOW_COLOR, OPACITY, STATUS_COLORS } from '../../src/theme';
 import GoogleLogo from '../../components/icons/GoogleLogo';
 import FacebookLogo from '../../components/icons/FacebookLogo';
 import { useResponsive } from '../../src/hooks/useResponsive';
@@ -35,6 +35,7 @@ export default function LoginScreen({ navigation, route }: any) {
   const [loading, setLoading] = useState(false);
   const emailConfirmed = route?.params?.emailConfirmed === true;
   const emailError = route?.params?.emailError === true;
+  const passwordReset = route?.params?.passwordReset === true;
   const { signIn, signInWithGoogle, resetPassword } = useAuth();
   const { colors } = useTheme();
   const { sp, font, sizes, isCompact } = useResponsive();
@@ -136,9 +137,19 @@ export default function LoginScreen({ navigation, route }: any) {
           {/* Email error banner */}
           {emailError && (
             <View style={styles.errorBanner}>
-              <MaterialCommunityIcons name="alert-circle" size={20} color="#fff" />
+              <MaterialCommunityIcons name="alert-circle" size={20} color={STATUS_COLORS.errorLight} />
               <Text style={styles.errorBannerText}>
                 Le lien de confirmation est invalide ou a expiré. Veuillez vous réinscrire.
+              </Text>
+            </View>
+          )}
+
+          {/* Password reset success banner */}
+          {passwordReset && (
+            <View style={styles.confirmedBanner}>
+              <MaterialCommunityIcons name="check-circle" size={20} color={STATUS_COLORS.successLight} />
+              <Text style={styles.confirmedBannerText}>
+                Mot de passe mis à jour ! Vous pouvez maintenant vous connecter.
               </Text>
             </View>
           )}
@@ -465,14 +476,14 @@ const styles = StyleSheet.create({
   confirmedBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#22c55e',
+    backgroundColor: STATUS_COLORS.successBackground,
     borderRadius: 10,
     padding: 12,
     marginBottom: 16,
     gap: 8,
   },
   confirmedBannerText: {
-    color: '#fff',
+    color: STATUS_COLORS.successLight,
     fontWeight: '600',
     fontSize: 14,
     flex: 1,
@@ -480,14 +491,14 @@ const styles = StyleSheet.create({
   errorBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#ef4444',
+    backgroundColor: STATUS_COLORS.errorBackground,
     borderRadius: 10,
     padding: 12,
     marginBottom: 16,
     gap: 8,
   },
   errorBannerText: {
-    color: '#fff',
+    color: STATUS_COLORS.errorLight,
     fontWeight: '600',
     fontSize: 14,
     flex: 1,

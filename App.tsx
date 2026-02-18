@@ -12,6 +12,7 @@ import { AppState, AppStateStatus, Linking } from "react-native";
 import AuthScreen from "./screens/authentication/AuthScreen";
 import LoginScreen from "./screens/authentication/LoginScreen";
 import RegisterScreen from "./screens/authentication/RegisterScreen";
+import ResetPasswordScreen from "./screens/authentication/ResetPasswordScreen";
 import MatchDetailsScreen from "./screens/MatchDetailsScreen";
 import SplashScreen from "./screens/SplashScreen";
 import TeamInfoScreen from "./screens/club/TeamInfoScreen";
@@ -38,7 +39,7 @@ const navigationRef = createNavigationContainerRef<Record<string, object | undef
 function Navigation() {
   const { loading, user, createSessionFromUrl } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
-  const pendingEmailConfirmed = useRef<'confirmed' | 'error' | false>(false);
+  const pendingNavigation = useRef<'emailConfirmed' | 'emailError' | 'resetPassword' | 'resetPasswordError' | false>(false);
 
   useEffect(() => {
     logInfo("App", "🚀 App initialization started");
@@ -69,24 +70,36 @@ function Navigation() {
 
         if (isEmailCallback) {
           if (error) {
-            logError("App", "❌ Failed to process deep link", { error: error.message });
+            logError("App", "❌ Failed to process email callback", { error: error.message });
             if (navigationRef.isReady()) {
               navigationRef.navigate(ROUTES.LOGIN, { emailError: true });
             } else {
-              pendingEmailConfirmed.current = 'error';
+              pendingNavigation.current = 'emailError';
             }
           } else {
             logInfo("App", "✅ Email confirmed, navigating to login");
             if (navigationRef.isReady()) {
               navigationRef.navigate(ROUTES.LOGIN, { emailConfirmed: true });
             } else {
-              pendingEmailConfirmed.current = 'confirmed';
+              pendingNavigation.current = 'emailConfirmed';
             }
           }
-        } else if (error) {
-          logError("App", "❌ Failed to process deep link", { error: error.message });
-        } else {
-          logInfo("App", "✅ Successfully processed deep link");
+        } else if (isPasswordReset) {
+          if (error) {
+            logError("App", "❌ Failed to process password reset link", { error: error.message });
+            if (navigationRef.isReady()) {
+              navigationRef.navigate(ROUTES.LOGIN, { emailError: true });
+            } else {
+              pendingNavigation.current = 'resetPasswordError';
+            }
+          } else {
+            logInfo("App", "✅ Password reset session created, navigating to reset screen");
+            if (navigationRef.isReady()) {
+              navigationRef.navigate(ROUTES.RESET_PASSWORD);
+            } else {
+              pendingNavigation.current = 'resetPassword';
+            }
+          }
         }
       }
     };
@@ -111,16 +124,24 @@ function Navigation() {
 
   // Once splash screen is done, flush any pending navigation
   useEffect(() => {
-    if (!isLoading && !loading && pendingEmailConfirmed.current) {
-      const pending = pendingEmailConfirmed.current;
-      pendingEmailConfirmed.current = false;
+    if (!isLoading && !loading && pendingNavigation.current) {
+      const pending = pendingNavigation.current;
+      pendingNavigation.current = false;
       if (navigationRef.isReady()) {
-        if (pending === 'confirmed') {
-          logInfo("App", "✅ Flushing pending email confirmed navigation");
-          navigationRef.navigate(ROUTES.LOGIN, { emailConfirmed: true });
-        } else if (pending === 'error') {
-          logInfo("App", "❌ Flushing pending email error navigation");
-          navigationRef.navigate(ROUTES.LOGIN, { emailError: true });
+        switch (pending) {
+          case 'emailConfirmed':
+            logInfo("App", "✅ Flushing pending email confirmed navigation");
+            navigationRef.navigate(ROUTES.LOGIN, { emailConfirmed: true });
+            break;
+          case 'emailError':
+          case 'resetPasswordError':
+            logInfo("App", "❌ Flushing pending auth error navigation");
+            navigationRef.navigate(ROUTES.LOGIN, { emailError: true });
+            break;
+          case 'resetPassword':
+            logInfo("App", "✅ Flushing pending reset password navigation");
+            navigationRef.navigate(ROUTES.RESET_PASSWORD as never);
+            break;
         }
       }
     }
@@ -152,6 +173,7 @@ function Navigation() {
         <Stack.Screen name={ROUTES.AUTH} component={AuthScreen} />
         <Stack.Screen name={ROUTES.LOGIN} component={LoginScreen} />
         <Stack.Screen name={ROUTES.SIGN_UP} component={RegisterScreen} />
+        <Stack.Screen name={ROUTES.RESET_PASSWORD} component={ResetPasswordScreen} />
         <Stack.Screen name={ROUTES.MAIN_TABS} component={MainTabNavigator} />
         <Stack.Screen name={ROUTES.DEBUG_COURT} component={DebugCourtClick} />
         <Stack.Screen

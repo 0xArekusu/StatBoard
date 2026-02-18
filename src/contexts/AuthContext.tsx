@@ -25,6 +25,7 @@ interface AuthContextType {
   signInWithGoogle: () => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: any }>;
+  updatePassword: (newPassword: string) => Promise<{ error: any }>;
   createSessionFromUrl: (url: string) => Promise<{ error: any }>;
 }
 
@@ -342,6 +343,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  /**
+   * Updates the authenticated user's password
+   * Requires an active session (obtained via password reset deep link)
+   */
+  const updatePassword = async (newPassword: string) => {
+    logInfo("AuthProvider", "🔑 Attempting password update");
+
+    try {
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+
+      if (error) {
+        logError("AuthProvider", "❌ Password update failed", { error: error.message });
+      } else {
+        logInfo("AuthProvider", "✅ Password updated successfully");
+      }
+
+      return { error };
+    } catch (err: any) {
+      logError("AuthProvider", "❌ Unexpected error during password update", { error: err.message });
+      return { error: err };
+    }
+  };
+
   const value = {
     session,
     user,
@@ -351,6 +375,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signInWithGoogle,
     signOut,
     resetPassword,
+    updatePassword,
     createSessionFromUrl,
   };
 

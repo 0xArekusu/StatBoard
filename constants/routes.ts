@@ -22,6 +22,7 @@ export const ROUTES = {
   DEBUG_COURT: "DebugCourt",
   NEW_MATCH: "NewMatch",
   LIVE_MATCH: "LiveMatch",
+  RESET_PASSWORD: "ResetPassword",
 } as const;
 
 // Type for route names
