@@ -34,6 +34,7 @@ export default function LoginScreen({ navigation, route }: any) {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const emailConfirmed = route?.params?.emailConfirmed === true;
+  const emailError = route?.params?.emailError === true;
   const { signIn, signInWithGoogle, resetPassword } = useAuth();
   const { colors } = useTheme();
   const { sp, font, sizes, isCompact } = useResponsive();
@@ -128,6 +129,16 @@ export default function LoginScreen({ navigation, route }: any) {
               <MaterialCommunityIcons name="check-circle" size={20} color="#fff" />
               <Text style={styles.confirmedBannerText}>
                 Email confirmé ! Vous pouvez maintenant vous connecter.
+              </Text>
+            </View>
+          )}
+
+          {/* Email error banner */}
+          {emailError && (
+            <View style={styles.errorBanner}>
+              <MaterialCommunityIcons name="alert-circle" size={20} color="#fff" />
+              <Text style={styles.errorBannerText}>
+                Le lien de confirmation est invalide ou a expiré. Veuillez vous réinscrire.
               </Text>
             </View>
           )}
@@ -461,6 +472,21 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   confirmedBannerText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 14,
+    flex: 1,
+  },
+  errorBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#ef4444',
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 16,
+    gap: 8,
+  },
+  errorBannerText: {
     color: '#fff',
     fontWeight: '600',
     fontSize: 14,

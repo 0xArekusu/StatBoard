@@ -38,7 +38,7 @@ const navigationRef = createNavigationContainerRef<Record<string, object | undef
 function Navigation() {
   const { loading, user, createSessionFromUrl } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
-  const pendingEmailConfirmed = useRef(false);
+  const pendingEmailConfirmed = useRef<'confirmed' | 'error' | false>(false);
 
   useEffect(() => {
     logInfo("App", "🚀 App initialization started");
@@ -67,16 +67,24 @@ function Navigation() {
         logInfo("App", "🔐 Processing authentication deep link");
         const { error } = await createSessionFromUrl(url);
 
-        if (error) {
-          logError("App", "❌ Failed to process deep link", { error: error.message });
-        } else if (isEmailCallback) {
-          logInfo("App", "✅ Email confirmed, navigating to login");
-          if (navigationRef.isReady()) {
-            navigationRef.navigate(ROUTES.LOGIN, { emailConfirmed: true });
+        if (isEmailCallback) {
+          if (error) {
+            logError("App", "❌ Failed to process deep link", { error: error.message });
+            if (navigationRef.isReady()) {
+              navigationRef.navigate(ROUTES.LOGIN, { emailError: true });
+            } else {
+              pendingEmailConfirmed.current = 'error';
+            }
           } else {
-            // Nav not ready yet (splash screen), store for later
-            pendingEmailConfirmed.current = true;
+            logInfo("App", "✅ Email confirmed, navigating to login");
+            if (navigationRef.isReady()) {
+              navigationRef.navigate(ROUTES.LOGIN, { emailConfirmed: true });
+            } else {
+              pendingEmailConfirmed.current = 'confirmed';
+            }
           }
+        } else if (error) {
+          logError("App", "❌ Failed to process deep link", { error: error.message });
         } else {
           logInfo("App", "✅ Successfully processed deep link");
         }
@@ -104,10 +112,16 @@ function Navigation() {
   // Once splash screen is done, flush any pending navigation
   useEffect(() => {
     if (!isLoading && !loading && pendingEmailConfirmed.current) {
+      const pending = pendingEmailConfirmed.current;
       pendingEmailConfirmed.current = false;
       if (navigationRef.isReady()) {
-        logInfo("App", "✅ Flushing pending email confirmed navigation");
-        navigationRef.navigate(ROUTES.LOGIN, { emailConfirmed: true });
+        if (pending === 'confirmed') {
+          logInfo("App", "✅ Flushing pending email confirmed navigation");
+          navigationRef.navigate(ROUTES.LOGIN, { emailConfirmed: true });
+        } else if (pending === 'error') {
+          logInfo("App", "❌ Flushing pending email error navigation");
+          navigationRef.navigate(ROUTES.LOGIN, { emailError: true });
+        }
       }
     }
   }, [isLoading, loading]);
