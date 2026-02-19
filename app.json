@@ -43,7 +43,14 @@
         }
       ],
       "expo-font",
-      "expo-sqlite"
+      "expo-sqlite",
+      [
+        "@sentry/react-native/expo",
+        {
+          "organization": "coach-assistant",
+          "project": "coach-assistant"
+        }
+      ]
     ],
     "extra": {
       "eas": {

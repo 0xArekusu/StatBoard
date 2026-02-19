@@ -11,6 +11,7 @@
 import * as FileSystem from "expo-file-system/legacy";
 import * as Sharing from "expo-sharing";
 import { Platform } from "react-native";
+import * as Sentry from "@sentry/react-native";
 
 class LoggerService {
   private static instance: LoggerService;
@@ -112,6 +113,15 @@ class LoggerService {
     } else {
       console.log(logMessage);
     }
+
+    // Add breadcrumb to Sentry for context
+    Sentry.addBreadcrumb({
+      category: tag,
+      message: message,
+      level: level === "ERROR" ? "error" : level === "WARN" ? "warning" : "info",
+      data: data,
+      timestamp: Date.now() / 1000,
+    });
 
     // Write to file asynchronously (don't await to avoid blocking)
     this.writeToFile(logEntry).catch((err) => {
@@ -303,6 +313,26 @@ class LoggerService {
    */
   getLogFilePath(): string {
     return this.logFilePath;
+  }
+
+  /**
+   * Get last N lines from current log file
+   * Used for attaching to Sentry errors
+   */
+  async getLastLines(lineCount: number = 2000): Promise<string> {
+    try {
+      const fileInfo = await FileSystem.getInfoAsync(this.logFilePath);
+      if (!fileInfo.exists) {
+        return "No logs available";
+      }
+
+      const content = await FileSystem.readAsStringAsync(this.logFilePath);
+      const lines = content.split("\n");
+      const lastLines = lines.slice(-lineCount);
+      return lastLines.join("\n");
+    } catch (error) {
+      return `Error reading logs: ${error}`;
+    }
   }
 }
 

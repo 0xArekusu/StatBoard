@@ -11,6 +11,7 @@ import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "../config/supabase";
 import { GoogleSignin } from "@react-native-google-signin/google-signin";
 import { logInfo, logError, logWarn } from "../../utils/logger";
+import * as Sentry from "@sentry/react-native";
 
 interface AuthContextType {
   session: Session | null;
@@ -90,6 +91,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
+
+      // Update Sentry user context
+      if (session?.user) {
+        Sentry.setUser({
+          id: session.user.id,
+          email: session.user.email,
+          username: session.user.user_metadata?.full_name || session.user.email,
+        });
+        logInfo("AuthProvider", "📊 Sentry user context updated", {
+          userId: session.user.id,
+        });
+      } else {
+        Sentry.setUser(null);
+        logInfo("AuthProvider", "📊 Sentry user context cleared");
+      }
     });
 
     return () => {

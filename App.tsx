@@ -9,6 +9,7 @@ import { useState, useEffect, useRef } from "react";
 import { NavigationContainer, createNavigationContainerRef } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { AppState, AppStateStatus, Linking } from "react-native";
+import * as Sentry from "@sentry/react-native";
 import AuthScreen from "./screens/authentication/AuthScreen";
 import LoginScreen from "./screens/authentication/LoginScreen";
 import RegisterScreen from "./screens/authentication/RegisterScreen";
@@ -20,14 +21,40 @@ import TeamRosterScreen from "./screens/club/TeamRosterScreen";
 import TeamStartersScreen from "./screens/club/TeamStartersScreen";
 import NewMatchScreen from "./screens/NewMatchScreen";
 import LiveMatchScreen from "./screens/LiveMatchScreen";
+import SentryTestScreen from "./screens/SentryTestScreen";
 import MainTabNavigator from "./navigation/MainTabNavigator";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { AuthProvider, useAuth } from "./src/contexts/AuthContext";
 import { ClubProvider } from "./src/contexts/ClubContext";
 import { ThemeProvider } from "./src/contexts/ThemeContext";
 import { ROUTES } from "./constants/routes";
-import { logInfo, logWarn, logError } from "./utils/logger";
+import { logInfo, logWarn, logError, logger } from "./utils/logger";
 import DebugCourtClick from "./DebugCourtClick";
+
+// Initialize Sentry
+Sentry.init({
+  dsn: process.env.EXPO_PUBLIC_SENTRY_DSN,
+  enableAutoSessionTracking: true,
+  sessionTrackingIntervalMillis: 10000,
+  enableNativeFramesTracking: true,
+  tracesSampleRate: 1.0,
+  environment: __DEV__ ? "development" : "production",
+  beforeSend: async (event, hint) => {
+    // Attach last 2000 lines of logs to the error
+    try {
+      const logContent = await logger.getLastLines(2000);
+      if (logContent && logContent !== "No logs available") {
+        event.contexts = event.contexts || {};
+        event.contexts.logs = {
+          last_2000_lines: logContent,
+        };
+      }
+    } catch (error) {
+      console.error("Failed to attach logs to Sentry event:", error);
+    }
+    return event;
+  },
+});
 
 const Stack = createNativeStackNavigator();
 const navigationRef = createNavigationContainerRef<Record<string, object | undefined>>();
@@ -176,6 +203,7 @@ function Navigation() {
         <Stack.Screen name={ROUTES.RESET_PASSWORD} component={ResetPasswordScreen} />
         <Stack.Screen name={ROUTES.MAIN_TABS} component={MainTabNavigator} />
         <Stack.Screen name={ROUTES.DEBUG_COURT} component={DebugCourtClick} />
+        <Stack.Screen name="SentryTest" component={SentryTestScreen} />
         <Stack.Screen
           name={ROUTES.MATCH_DETAILS}
           component={MatchDetailsScreen}
@@ -198,7 +226,7 @@ function Navigation() {
  * Sets up providers (SafeArea, Auth) and renders the navigation
  * Also tracks app lifecycle (foreground, background, inactive)
  */
-export default function App() {
+function App() {
   const appState = useRef<AppStateStatus>(AppState.currentState);
 
   useEffect(() => {
@@ -284,3 +312,6 @@ export default function App() {
     </SafeAreaProvider>
   );
 }
+
+// Wrap App with Sentry for error tracking
+export default Sentry.wrap(App);

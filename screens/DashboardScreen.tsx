@@ -742,6 +742,25 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
               {!isGuest && isAdmin && (
                 <TouchableOpacity
                   style={styles.profileMenuItem}
+                  onPress={() => {
+                    setShowProfileMenu(false);
+                    navigation.navigate("SentryTest");
+                  }}
+                >
+                  <MaterialCommunityIcons
+                    name="bug-outline"
+                    size={20}
+                    color={colors.text.primary}
+                  />
+                  <Text style={[styles.profileMenuItemText, { color: colors.text.primary }]}>
+                    Test Sentry
+                  </Text>
+                </TouchableOpacity>
+              )}
+
+              {!isGuest && isAdmin && (
+                <TouchableOpacity
+                  style={styles.profileMenuItem}
                   onPress={handleOpenClubSwitcher}
                 >
                   <MaterialCommunityIcons
