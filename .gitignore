@@ -42,4 +42,6 @@ yarn-error.*
 *claude
 
 *.env
+*.env.Development
+*.env.Production
 *.env.example

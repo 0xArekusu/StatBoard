@@ -1,3 +1,17 @@
 npx expo prebuild --clean --platform android
 cd android && ./gradlew :app:assembleRelease
 eas build --platform android --profile preview
+
+
+Pour générer des builds selon l'environnement : Development (base dev, avec debug menu)
+    eas build --profile development --platform android
+    eas build --profile development --platform ios
+Preview (base dev, sans debug, pour tester en conditions réelles)
+    eas build --profile preview --platform android
+    eas build --profile preview --platform ios
+Production (base prod, pour déployer sur les stores)
+    eas build --profile production --platform android
+    eas build --profile production --platform ios
+Les deux plateformes en même temps :
+    eas build --profile production --platform all
+EAS injectera automatiquement les bonnes variables (DEV_* ou PROD_*) selon le profil choisi.
