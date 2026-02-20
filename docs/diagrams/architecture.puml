@@ -1,0 +1,75 @@
+@startuml Architecture Globale - Coach Assistant
+
+title Architecture Globale - Coach Assistant
+
+skinparam componentStyle rectangle
+skinparam backgroundColor #FEFEFE
+skinparam package {
+  BackgroundColor LightSkyBlue
+  BorderColor DarkBlue
+}
+skinparam component {
+  BackgroundColor LightYellow
+  BorderColor DarkOrange
+}
+skinparam database {
+  BackgroundColor LightGreen
+  BorderColor DarkGreen
+}
+
+' Composants principaux
+package "Application Mobile" {
+  component "React Native\n+ Expo" as app
+  component "Dev Client" as devclient
+}
+
+package "Backend & Services" {
+  database "Supabase\n(PostgreSQL)" as supabase
+  component "Supabase Auth" as auth
+  component "Supabase Storage" as storage
+}
+
+package "Services Externes" {
+  component "Google OAuth" as google
+  component "Sentry\n(Monitoring)" as sentry
+}
+
+package "Build & Deploy" {
+  component "EAS Build" as eas
+  component "Expo Updates" as updates
+}
+
+' Relations
+app --> supabase : API REST\n(données équipes,\njoueurs, stats)
+app --> auth : Authentification
+app --> storage : Upload images\n(logos, photos)
+app --> sentry : Erreurs & Crashes
+auth --> google : OAuth 2.0
+app ..> updates : OTA Updates
+eas --> app : Build Android/iOS
+
+' Notes
+note right of supabase
+  **Base de données**
+  - Équipes
+  - Joueurs
+  - Matchs
+  - Statistiques
+end note
+
+note right of sentry
+  **Monitoring**
+  - Error tracking
+  - Performance
+  - Source maps
+end note
+
+note bottom of app
+  **Technologies**
+  - React Native (New Architecture)
+  - TypeScript
+  - Expo SDK
+  - React Navigation
+end note
+
+@enduml

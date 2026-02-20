@@ -1,4 +1,4 @@
-# StatBoard
+# Coach Assistant
 
 ## Responsive Layout & Sizing
 

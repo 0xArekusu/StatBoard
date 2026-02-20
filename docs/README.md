@@ -1,14 +1,20 @@
-# Documentation du projet StatBoard
+# Documentation du projet Coach Assistant
 
 ## Vue d'ensemble
 
-StatBoard est une application React Native construite avec Expo pour la gestion d'équipes de basketball.
+Coach Assistant est une application React Native construite avec Expo pour la gestion d'équipes de basketball.
 
 ## Guides de configuration
 
 - [Configuration Sentry](./SENTRY_SETUP.md) - Monitoring et tracking des erreurs
 - [Configuration Supabase](./SUPABASE_SETUP.md) - Backend et authentification
 - [Secrets EAS](./EAS_SECRETS_SETUP.md) - Gestion des variables d'environnement
+
+## Diagrammes
+
+- [Architecture globale](./diagrams/architecture.puml) - Vue d'ensemble de l'architecture
+- [Flux d'authentification](./diagrams/authentication-flow.puml) - Processus d'authentification
+- [Processus de build](./diagrams/build-process.puml) - Build EAS étape par étape
 
 ## Technologies utilisées
 
@@ -21,13 +27,18 @@ StatBoard est une application React Native construite avec Expo pour la gestion 
 ## Structure du projet
 
 ```
-StatBoard/
+coach-assistant/
 ├── app/                    # Code de l'application (navigation, screens)
 ├── components/             # Composants réutilisables
 ├── constants/              # Constantes et configuration
 ├── hooks/                  # Custom React hooks
 ├── lib/                    # Utilitaires et services (Supabase, etc.)
 ├── docs/                   # Documentation
+│   ├── diagrams/           # Diagrammes PlantUML
+│   ├── README.md           # Index de la documentation
+│   ├── SENTRY_SETUP.md     # Configuration Sentry
+│   ├── SUPABASE_SETUP.md   # Configuration Supabase
+│   └── EAS_SECRETS_SETUP.md # Gestion des secrets EAS
 ├── android/                # Code natif Android (ignoré par git)
 ├── ios/                    # Code natif iOS (ignoré par git)
 ├── .env.Development        # Variables d'environnement dev (ignoré par git)
@@ -83,7 +94,7 @@ eas secret:delete --name SECRET_NAME
 1. **Cloner le projet**
    ```bash
    git clone <repo-url>
-   cd StatBoard
+   cd coach-assistant
    npm install
    ```
 

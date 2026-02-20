@@ -1,4 +1,4 @@
-# Guidelines de Développement StatBoard
+# Guidelines de Développement Coach Assistant
 
 ## Gestion du Thème et des Couleurs
 

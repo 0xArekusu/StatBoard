@@ -1,0 +1,81 @@
+@startuml Processus de Build EAS
+
+title Processus de Build EAS - Coach Assistant
+
+|Développeur|
+start
+:Lance build EAS;
+:eas build --platform android\n--profile preview;
+
+|EAS Build Service|
+:Clone le repository;
+:Installe les dépendances\n(npm install);
+
+partition "Configuration de l'environnement" {
+  :Charge les secrets EAS;
+  note right
+    - DEV_SUPABASE_URL
+    - DEV_SUPABASE_ANON_KEY
+    - GOOGLE_*_CLIENT_ID
+    - SENTRY_DSN
+    - SENTRY_AUTH_TOKEN
+  end note
+
+  :Injecte les variables\nselon le profil (preview/production);
+}
+
+partition "Prebuild Expo" {
+  :Génère dossiers android/ios;
+  :Configure les fichiers natifs\n(AndroidManifest, Info.plist);
+  :Applique les plugins Expo\n(Sentry, Google Sign-In);
+}
+
+partition "Build JavaScript" {
+  :Bundle JavaScript avec Metro;
+  :Compile TypeScript;
+  :Génère source maps;
+}
+
+|Sentry|
+partition "Upload Source Maps" {
+  :Lit android/sentry.properties;
+  :Authentifie avec\nSENTRY_AUTH_TOKEN;
+  :Upload source maps\npour le debugging;
+
+  if (Upload réussi ?) then (oui)
+    :✓ Source maps disponibles;
+  else (non)
+    :✗ Build échoue;
+    stop
+  endif
+}
+
+|EAS Build Service|
+partition "Build Natif Android" {
+  :Configure Gradle;
+  :Compile code Kotlin/Java;
+  :Link bibliothèques natives\n(Reanimated, Screens, etc.);
+  :Génère APK/AAB;
+  :Signe l'application;
+}
+
+partition "Post-build" {
+  :Upload artifact sur EAS;
+  :Génère QR code;
+  :Envoie notification;
+}
+
+|Développeur|
+:Scanne QR code;
+:Installe l'app sur device;
+stop
+
+note left
+  **Troubleshooting**
+  Si le build échoue sur l'upload Sentry:
+  - Vérifier SENTRY_AUTH_TOKEN
+  - Vérifier Organization/Project slug
+  - Vérifier permissions du token
+end note
+
+@enduml

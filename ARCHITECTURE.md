@@ -5,7 +5,7 @@ Cette architecture suit les principes **SOLID** et utilise plusieurs **Design Pa
 ## 📁 Structure des fichiers
 
 ```
-StatBoard/
+coach-assistant/
 ├── models/
 │   └── Club.ts                    # Domain models & DTOs
 ├── repositories/

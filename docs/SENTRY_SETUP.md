@@ -93,7 +93,7 @@ Ajouter dans chaque profil de build :
 
 1. Aller sur https://sentry.io/settings/account/api/auth-tokens/
 2. Cliquer sur "Create New Token"
-3. Nom : `StatBoard Build`
+3. Nom : `Coach Assistant Build`
 4. Scopes requis :
    - `project:releases`
    - `project:write`

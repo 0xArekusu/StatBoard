@@ -1,0 +1,57 @@
+@startuml Flux d'Authentification
+
+title Flux d'Authentification - Coach Assistant
+
+actor Utilisateur
+participant "App\nReact Native" as App
+participant "Supabase\nAuth" as Supabase
+participant "Google\nOAuth" as Google
+database "Supabase\nDB" as DB
+
+== Authentification Email/Password ==
+
+Utilisateur -> App: Saisit email/password
+App -> Supabase: signInWithPassword()
+Supabase -> DB: Vérifie credentials
+DB --> Supabase: Utilisateur validé
+Supabase --> App: Session + JWT
+App --> Utilisateur: Redirige vers app
+
+== Authentification Google ==
+
+Utilisateur -> App: Clique "Sign in with Google"
+App -> Google: Ouvre écran Google Sign-In
+Google -> Utilisateur: Demande autorisation
+Utilisateur -> Google: Autorise
+Google --> App: ID Token + Access Token
+App -> Supabase: signInWithIdToken()
+Supabase -> DB: Crée/Met à jour utilisateur
+DB --> Supabase: Utilisateur enregistré
+Supabase --> App: Session + JWT
+App --> Utilisateur: Redirige vers app
+
+== Gestion de Session ==
+
+App -> Supabase: onAuthStateChange()
+note right
+  Écoute les changements
+  d'état de session
+end note
+
+Supabase --> App: Événement session
+App -> App: Met à jour UI\n(connecté/déconnecté)
+
+== Reset Password ==
+
+Utilisateur -> App: "Mot de passe oublié"
+App -> Supabase: resetPasswordForEmail()
+Supabase -> Utilisateur: Email avec lien
+Utilisateur -> Supabase: Clique sur lien
+Supabase -> App: Deep link vers app
+App -> Utilisateur: Écran nouveau mot de passe
+Utilisateur -> App: Nouveau mot de passe
+App -> Supabase: updateUser()
+Supabase --> App: Succès
+App --> Utilisateur: Confirmation
+
+@enduml
