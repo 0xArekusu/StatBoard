@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS clubs (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name VARCHAR(60) NOT NULL,
   acronym VARCHAR(5) NOT NULL,
-  code VARCHAR(6) UNIQUE NOT NULL,
+  code VARCHAR(8) UNIQUE NOT NULL,
   logo_url TEXT,
   primary_color VARCHAR(7) NOT NULL,
   secondary_color VARCHAR(7) NOT NULL,

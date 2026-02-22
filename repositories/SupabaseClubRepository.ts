@@ -14,10 +14,10 @@ export class SupabaseClubRepository implements IClubRepository {
   constructor(private readonly supabase: SupabaseClient) {}
 
   /**
-   * Generate a unique 6-digit club code
+   * Generate a unique 8-digit club code
    */
   private generateClubCode(): string {
-    return Math.floor(100000 + Math.random() * 900000).toString();
+    return Math.floor(10000000 + Math.random() * 90000000).toString();
   }
 
   /**
