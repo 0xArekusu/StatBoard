@@ -14,6 +14,7 @@ import {
   TouchableOpacity,
   Modal,
   Image,
+  Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../../src/contexts/ThemeContext";
@@ -188,7 +189,10 @@ export default function PlayerDetailModal({
                 { paddingHorizontal: sp.lg, marginBottom: sp.lg },
               ]}
             >
-              <View style={styles.modalPlayerNameRow}>
+              <View style={[
+                    styles.modalPlayerNameRow,
+                    { marginTop: sp.lg },
+                  ]}>
                 <Text
                   style={[
                     styles.modalPlayerName,
