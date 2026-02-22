@@ -23,6 +23,7 @@ import {
 import { ActionData } from "./ActionSystemModal";
 import MatchFilters from "./MatchFilters";
 import { useTheme } from "../src/contexts/ThemeContext";
+import { useResponsive } from "../src/hooks/useResponsive";
 import { Team } from "../src/models/types";
 import { Player } from "../models/Player";
 
@@ -60,6 +61,7 @@ export default function FilterBottomSheet({
   isPortrait,
 }: FilterBottomSheetProps) {
   const { colors } = useTheme();
+  const { sp, font, sizes } = useResponsive();
   const [selectedTeams, setSelectedTeams] = useState<Team[]>([Team.MY_TEAM, Team.OPPONENT]);
   const [selectedPlayers, setSelectedPlayers] = useState<string[]>([]);
   const [selectedActionTypes, setSelectedActionTypes] = useState<string[]>([]);
@@ -112,11 +114,32 @@ export default function FilterBottomSheet({
             isPortrait
               ? styles.filterSheetContainer
               : styles.filterSheetContainerLandscape,
-            { backgroundColor: colors.surface }
+            {
+              backgroundColor: colors.surface,
+              borderTopLeftRadius: sp.lg,
+              borderTopRightRadius: sp.lg,
+              padding: sp.md,
+            }
           ]}
         >
-          <View style={[styles.filterSheetHandle, { backgroundColor: colors.text.disabled }]} />
-          <Text style={[styles.filterSheetTitle, { color: colors.text.primary }]}>Filtrer les actions</Text>
+          <View style={[
+            styles.filterSheetHandle,
+            {
+              backgroundColor: colors.text.disabled,
+              width: sizes.avatarSm,
+              height: sp.xs,
+              borderRadius: sp.xs,
+              marginBottom: sp.md,
+            }
+          ]} />
+          <Text style={[
+            styles.filterSheetTitle,
+            {
+              color: colors.text.primary,
+              fontSize: font.xl,
+              marginBottom: sp.md,
+            }
+          ]}>Filtrer les actions</Text>
 
           <ScrollView
             style={styles.scrollContainer}

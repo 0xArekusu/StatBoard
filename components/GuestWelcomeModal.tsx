@@ -2,6 +2,7 @@ import React from "react";
 import { Modal, View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../src/contexts/ThemeContext";
+import { useResponsive } from "../src/hooks/useResponsive";
 
 interface GuestWelcomeModalProps {
   visible: boolean;
@@ -13,43 +14,80 @@ export default function GuestWelcomeModal({
   onClose,
 }: GuestWelcomeModalProps) {
   const { colors, isDark } = useTheme();
+  const { sp, font, sizes } = useResponsive();
 
   return (
     <Modal visible={visible} transparent animationType="fade">
-      <View style={styles.overlay}>
-        <View style={[styles.modal, { backgroundColor: colors.surface }]}>
+      <View style={[styles.overlay, { padding: sp.lg }]}>
+        <View style={[
+          styles.modal,
+          {
+            backgroundColor: colors.surface,
+            borderRadius: sp.lg,
+            padding: sp.lg,
+          }
+        ]}>
           <View style={[
             styles.iconContainer,
-            { backgroundColor: isDark ? `${colors.primary}33` : `${colors.primary}1A` }
+            {
+              backgroundColor: isDark ? `${colors.primary}33` : `${colors.primary}1A`,
+              width: sizes.avatarLg,
+              height: sizes.avatarLg,
+              borderRadius: sizes.avatarLg / 2,
+              marginBottom: sp.md,
+            }
           ]}>
-            <Ionicons name="information-circle" size={64} color={colors.primary} />
+            <Ionicons name="information-circle" size={sizes.avatarMd} color={colors.primary} />
           </View>
 
-          <Text style={[styles.title, { color: colors.text.primary }]}>Mode Invité</Text>
+          <Text style={[styles.title, { color: colors.text.primary, fontSize: font.xxl, marginBottom: sp.md }]}>Mode Invité</Text>
 
-          <Text style={[styles.message, { color: colors.text.secondary }]}>
+          <Text style={[styles.message, { color: colors.text.secondary, fontSize: font.md, marginBottom: sp.md }]}>
             Bienvenue ! En mode invité, vous pouvez tester toutes les fonctionnalités.
           </Text>
 
-          <View style={[styles.infoBox, { backgroundColor: colors.surfaceVariant }]}>
-            <Ionicons name="save-outline" size={18} color={colors.text.secondary} style={styles.infoIcon} />
-            <Text style={[styles.infoText, { color: colors.text.secondary }]}>
+          <View style={[
+            styles.infoBox,
+            {
+              backgroundColor: colors.surfaceVariant,
+              padding: sp.md,
+              borderRadius: sp.sm,
+              marginBottom: sp.sm,
+            }
+          ]}>
+            <Ionicons name="save-outline" size={font.lg} color={colors.text.secondary} style={[styles.infoIcon, { marginRight: sp.sm }]} />
+            <Text style={[styles.infoText, { color: colors.text.secondary, fontSize: font.sm }]}>
               Vos données sont stockées <Text style={[styles.bold, { color: colors.text.primary }]}>localement</Text> sur cet appareil. Si vous videz le cache, elles seront perdues.
             </Text>
           </View>
 
-          <View style={[styles.infoBox, { backgroundColor: colors.surfaceVariant }]}>
-            <Ionicons name="shield-checkmark-outline" size={18} color={colors.text.secondary} style={styles.infoIcon} />
-            <Text style={[styles.infoText, { color: colors.text.secondary }]}>
+          <View style={[
+            styles.infoBox,
+            {
+              backgroundColor: colors.surfaceVariant,
+              padding: sp.md,
+              borderRadius: sp.sm,
+              marginBottom: sp.lg,
+            }
+          ]}>
+            <Ionicons name="shield-checkmark-outline" size={font.lg} color={colors.text.secondary} style={[styles.infoIcon, { marginRight: sp.sm }]} />
+            <Text style={[styles.infoText, { color: colors.text.secondary, fontSize: font.sm }]}>
               Vous pouvez créer jusqu'à <Text style={[styles.bold, { color: colors.text.primary }]}>1 match</Text> gratuitement. Pour en faire plus, créez un compte !
             </Text>
           </View>
 
           <TouchableOpacity
-            style={[styles.button, { backgroundColor: colors.primary }]}
+            style={[
+              styles.button,
+              {
+                backgroundColor: colors.primary,
+                paddingVertical: sp.md,
+                borderRadius: sp.md,
+              }
+            ]}
             onPress={onClose}
           >
-            <Text style={[styles.buttonText, { color: colors.onPrimary }]}>Compris, c'est parti !</Text>
+            <Text style={[styles.buttonText, { color: colors.onPrimary, fontSize: font.md }]}>Compris, c'est parti !</Text>
           </TouchableOpacity>
         </View>
       </View>

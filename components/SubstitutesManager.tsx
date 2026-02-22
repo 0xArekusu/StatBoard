@@ -2,6 +2,7 @@ import React from "react";
 import { View, Text, TouchableOpacity, ScrollView, Image } from "react-native";
 import JerseyIcon from "./icons/JerseyIcon";
 import { Team } from "../src/models/types";
+import { useResponsive } from "../src/hooks/useResponsive";
 
 interface Player {
   id: number;
@@ -47,6 +48,7 @@ export default function SubstitutesManager({
   jerseyPrimaryColor = "#FF0000",
   jerseySecondaryColor = "#000000",
 }: SubstitutesManagerProps) {
+  const { sp, font, sizes } = useResponsive();
   const canAddSubstitute = substitutes.length < maxSubstitutes;
   const canRemoveSubstitute = substitutes.length > 0;
 
@@ -59,18 +61,18 @@ export default function SubstitutesManager({
     if (isPortrait) {
       // Portrait : position à gauche, verticalement selon l'équipe
       return {
-        left: 10,
-        top: isTeamOnTop ? 90 : 660,
-        width: 100,
+        left: sp.sm,
+        top: isTeamOnTop ? sp.xxl * 2.5 : 660,
+        width: sizes.avatarLg + sp.xl,
         height: 400,
       };
     } else {
       // Paysage : position en bas, horizontalement selon l'équipe
       return {
-        left: isTeamOnTop ? 40 : 700,
-        top: 5,
+        left: isTeamOnTop ? sp.xxl : 700,
+        top: sp.xs,
         width: 400,
-        height: 100,
+        height: sizes.avatarLg + sp.md,
       };
     }
   };
@@ -83,18 +85,18 @@ export default function SubstitutesManager({
         flexDirection: isPortrait ? "row" : "column",
         justifyContent: "center",
         alignItems: "center",
-        marginBottom: isPortrait ? 8 : 0,
-        marginRight: isPortrait ? 0 : 8,
-        gap: 8,
+        marginBottom: isPortrait ? sp.sm : 0,
+        marginRight: isPortrait ? 0 : sp.sm,
+        gap: sp.sm,
       }}
     >
       <TouchableOpacity
         onPress={onAddSubstitute}
         disabled={!canAddSubstitute}
         style={{
-          width: 32,
-          height: 32,
-          borderRadius: 16,
+          width: sizes.avatarSm,
+          height: sizes.avatarSm,
+          borderRadius: sizes.avatarSm / 2,
           backgroundColor: canAddSubstitute ? "#4caf50" : "#666",
           justifyContent: "center",
           alignItems: "center",
@@ -103,9 +105,8 @@ export default function SubstitutesManager({
         <Text
           style={{
             color: "#fff",
-            fontSize: 18,
+            fontSize: font.lg,
             fontWeight: "bold",
-            lineHeight: 20,
           }}
         >
           +
@@ -116,9 +117,9 @@ export default function SubstitutesManager({
         onPress={onRemoveSubstitute}
         disabled={!canRemoveSubstitute}
         style={{
-          width: 32,
-          height: 32,
-          borderRadius: 16,
+          width: sizes.avatarSm,
+          height: sizes.avatarSm,
+          borderRadius: sizes.avatarSm / 2,
           backgroundColor: canRemoveSubstitute ? "#f44336" : "#666",
           justifyContent: "center",
           alignItems: "center",
@@ -127,9 +128,8 @@ export default function SubstitutesManager({
         <Text
           style={{
             color: "#fff",
-            fontSize: 18,
+            fontSize: font.lg,
             fontWeight: "bold",
-            lineHeight: 20,
           }}
         >
           -
@@ -142,7 +142,7 @@ export default function SubstitutesManager({
     <Text
       style={{
         color: "#fff",
-        fontSize: 10,
+        fontSize: font.xs,
         textAlign: "center",
         opacity: 0.8,
         textShadowColor: "rgba(0,0,0,0.8)",

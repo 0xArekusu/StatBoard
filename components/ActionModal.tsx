@@ -35,6 +35,7 @@ import {
 } from "react-native";
 import { ACTION_DEFINITIONS } from "../src/models/ActionTypes";
 import { useTheme } from "../src/contexts/ThemeContext";
+import { useResponsive } from "../src/hooks/useResponsive";
 import { STATUS_COLORS } from "../src/theme";
 import { Team } from "../src/models/types";
 
@@ -77,11 +78,8 @@ interface ActionModalProps {
   teamB: string;
 }
 
-// Modal dimensions and styling constants
-const MODAL_WIDTH = 220;
-const MODAL_HEIGHT = 160;
-const POINTER_SIZE = 12;
-const MODAL_CONTENT_PADDING = 16;
+// Modal dimensions and styling constants - now responsive
+// These will be calculated based on screen size in the component
 
 export default function ActionModal({
   visible,
@@ -104,6 +102,13 @@ export default function ActionModal({
   teamB,
 }: ActionModalProps) {
   const { colors } = useTheme();
+  const { sp, font, sizes, width, height, isCompact } = useResponsive();
+
+  // Responsive modal dimensions
+  const MODAL_WIDTH = isCompact ? Math.min(200, width * 0.5) : 220;
+  const MODAL_HEIGHT = isCompact ? 140 : 160;
+  const POINTER_SIZE = sp.sm;
+  const MODAL_CONTENT_PADDING = sp.md;
 
   /**
    * Render back button with conditional visibility
@@ -119,10 +124,18 @@ export default function ActionModal({
 
     return (
       <TouchableOpacity
-        style={[styles.backButton, { backgroundColor: colors.surfaceVariant }]}
+        style={[
+          styles.backButton,
+          {
+            backgroundColor: colors.surfaceVariant,
+            width: sizes.avatarSm,
+            height: sizes.avatarSm,
+            borderRadius: sizes.avatarSm / 2,
+          },
+        ]}
         onPress={onGoBack}
       >
-        <Text style={[styles.backButtonText, { color: colors.text.secondary }]}>
+        <Text style={[styles.backButtonText, { color: colors.text.secondary, fontSize: font.lg }]}>
           ←
         </Text>
       </TouchableOpacity>
@@ -135,22 +148,38 @@ export default function ActionModal({
    */
   const renderTeamSelection = () => {
     return (
-      <View style={styles.actionsContainer}>
+      <View style={[styles.actionsContainer, { gap: sp.sm }]}>
         <TouchableOpacity
-          style={[styles.actionButton, { backgroundColor: "#4CAF50" }]}
+          style={[
+            styles.actionButton,
+            {
+              backgroundColor: "#4CAF50",
+              padding: sp.sm,
+              borderRadius: sp.sm,
+              minHeight: sizes.avatarSm,
+            },
+          ]}
           onPress={() => onTeamSelect(Team.MY_TEAM)}
           activeOpacity={0.8}
         >
-          <Text style={styles.actionIcon}>🏀</Text>
-          <Text style={styles.actionLabel}>{teamA}</Text>
+          <Text style={[styles.actionIcon, { fontSize: font.lg }]}>🏀</Text>
+          <Text style={[styles.actionLabel, { fontSize: font.sm }]}>{teamA}</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.actionButton, { backgroundColor: "#2196F3" }]}
+          style={[
+            styles.actionButton,
+            {
+              backgroundColor: "#2196F3",
+              padding: sp.sm,
+              borderRadius: sp.sm,
+              minHeight: sizes.avatarSm,
+            },
+          ]}
           onPress={() => onTeamSelect(Team.OPPONENT)}
           activeOpacity={0.8}
         >
-          <Text style={styles.actionIcon}>🏀</Text>
-          <Text style={styles.actionLabel}>{teamB}</Text>
+          <Text style={[styles.actionIcon, { fontSize: font.lg }]}>🏀</Text>
+          <Text style={[styles.actionLabel, { fontSize: font.sm }]}>{teamB}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -162,26 +191,29 @@ export default function ActionModal({
    */
   const renderActionSelection = () => {
     return (
-      <View style={styles.actionsContainer}>
+      <View style={[styles.actionsContainer, { flex: 1 }]}>
         <ScrollView
           style={styles.actionScrollView}
           showsVerticalScrollIndicator={true}
-          contentContainerStyle={styles.actionScrollContent}
+          contentContainerStyle={[styles.actionScrollContent, { gap: sp.xs }]}
         >
           {ACTION_DEFINITIONS.map((action, index) => (
             <TouchableOpacity
               key={action.id}
               style={[
                 styles.actionButton,
-                { backgroundColor: action.backgroundColor },
-                index < ACTION_DEFINITIONS.length - 1 &&
-                  styles.actionButtonMargin,
+                {
+                  backgroundColor: action.backgroundColor,
+                  padding: sp.sm,
+                  borderRadius: sp.sm,
+                  minHeight: sizes.avatarSm,
+                },
               ]}
               onPress={() => onActionSelect(action.id)}
               activeOpacity={0.8}
             >
-              <Text style={styles.actionIcon}>{action.icon}</Text>
-              <Text style={styles.actionLabel}>{action.label}</Text>
+              <Text style={[styles.actionIcon, { fontSize: font.lg }]}>{action.icon}</Text>
+              <Text style={[styles.actionLabel, { fontSize: font.sm }]}>{action.label}</Text>
             </TouchableOpacity>
           ))}
         </ScrollView>
@@ -200,26 +232,29 @@ export default function ActionModal({
     if (!currentAction || !currentAction.pointsOptions) return null;
 
     return (
-      <View style={styles.actionsContainer}>
+      <View style={[styles.actionsContainer, { flex: 1 }]}>
         <ScrollView
           style={styles.actionScrollView}
           showsVerticalScrollIndicator={true}
-          contentContainerStyle={styles.actionScrollContent}
+          contentContainerStyle={[styles.actionScrollContent, { gap: sp.xs }]}
         >
           {currentAction.pointsOptions.map((pointOption, index) => (
             <TouchableOpacity
               key={pointOption.id}
               style={[
                 styles.actionButton,
-                { backgroundColor: pointOption.color },
-                index < currentAction.pointsOptions!.length - 1 &&
-                  styles.actionButtonMargin,
+                {
+                  backgroundColor: pointOption.color,
+                  padding: sp.sm,
+                  borderRadius: sp.sm,
+                  minHeight: sizes.avatarSm,
+                },
               ]}
               onPress={() => onPointsSelect(pointOption.id)}
               activeOpacity={0.8}
             >
-              <Text style={styles.actionIcon}>{pointOption.icon}</Text>
-              <Text style={styles.actionLabel}>{pointOption.label}</Text>
+              <Text style={[styles.actionIcon, { fontSize: font.lg }]}>{pointOption.icon}</Text>
+              <Text style={[styles.actionLabel, { fontSize: font.sm }]}>{pointOption.label}</Text>
             </TouchableOpacity>
           ))}
         </ScrollView>
@@ -356,7 +391,10 @@ export default function ActionModal({
               backgroundColor: colors.surface,
               left: position.x,
               top: position.y,
-              height: MODAL_HEIGHT, // 🎯 Constant size, no more changes at step 4
+              height: MODAL_HEIGHT,
+              width: MODAL_WIDTH,
+              borderRadius: sp.md,
+              padding: MODAL_CONTENT_PADDING,
             },
           ]}
           onPress={(e) => {
@@ -368,7 +406,12 @@ export default function ActionModal({
           <View
             style={[
               styles.pointer,
-              { borderTopColor: colors.surface },
+              {
+                borderTopColor: colors.surface,
+                borderTopWidth: POINTER_SIZE,
+                borderRightWidth: POINTER_SIZE,
+                borderLeftWidth: POINTER_SIZE,
+              },
               position.showPointerOnTop
                 ? styles.pointerTop
                 : styles.pointerBottom,

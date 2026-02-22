@@ -10,6 +10,7 @@ import React, { useState, useEffect } from "react";
 import { View, StyleSheet, ScrollView, Alert, ActivityIndicator } from "react-native";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { useTheme } from "../src/contexts/ThemeContext";
+import { useResponsive } from "../src/hooks/useResponsive";
 import { useAuth } from "../src/contexts/AuthContext";
 import { useClub } from "../src/contexts/ClubContext";
 import { DEFAULT_COURT_COLORS, DEFAULT_CLUB_COLORS } from "../src/theme";
@@ -55,6 +56,7 @@ export default function NewMatchScreen() {
   const navigation = useNavigation<RootNavigationProp>();
   const route = useRoute<NewMatchRouteProp>();
   const { colors, isDark } = useTheme();
+  const { sp, font, sizes } = useResponsive();
   const { user } = useAuth();
   const { currentClub } = useClub();
 
@@ -674,13 +676,13 @@ export default function NewMatchScreen() {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header with Progress Bar */}
-      <MatchHeader step={step} onBack={handleBack} colors={themeColors} />
+      <MatchHeader step={step} onBack={handleBack} colors={themeColors} sp={sp} font={font} sizes={sizes} />
 
       {/* STEP 1: CONFIGURATION */}
       {step === 1 && (
         <ScrollView
           style={styles.content}
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={[styles.scrollContent, { padding: sp.md, gap: sp.md }]}
         >
           <TeamSelector
             team={selectedTeam}
@@ -689,12 +691,17 @@ export default function NewMatchScreen() {
             onMyTeamNameChange={setMyTeamName}
             isGuest={!user}
             colors={themeColors}
+            sp={sp}
+            font={font}
+            sizes={sizes}
           />
 
           <OpponentInput
             value={opponent}
             onChangeText={setOpponent}
             colors={themeColors}
+            sp={sp}
+            font={font}
           />
 
           <MatchFormatSelector
@@ -704,12 +711,16 @@ export default function NewMatchScreen() {
             onPeriodDurationChange={setPeriodDuration}
             isDark={isDark}
             colors={themeColors}
+            sp={sp}
+            font={font}
           />
 
           <LocationSelector
             isHome={isHome}
             onLocationChange={setIsHome}
             colors={themeColors}
+            sp={sp}
+            font={font}
           />
 
           <OpponentStatsToggle
@@ -717,6 +728,8 @@ export default function NewMatchScreen() {
             onToggle={() => setTrackOpponentStats(!trackOpponentStats)}
             isDark={isDark}
             colors={themeColors}
+            sp={sp}
+            font={font}
           />
         </ScrollView>
       )}
@@ -731,11 +744,13 @@ export default function NewMatchScreen() {
             opponentCount={opponentRoster.length}
             isDark={isDark}
             colors={themeColors}
+            sp={sp}
+            font={font}
           />
 
           <ScrollView
             style={styles.rosterContent}
-            contentContainerStyle={styles.rosterScrollContent}
+            contentContainerStyle={[styles.rosterScrollContent, { padding: sp.md }]}
           >
             {rosterTab === "HOME" ? (
               <HomeRosterView
@@ -783,6 +798,8 @@ export default function NewMatchScreen() {
         onPress={step === 1 ? handleNextStep : handleStart}
         isDark={isDark}
         colors={themeColors}
+        sp={sp}
+        font={font}
       />
     </View>
   );

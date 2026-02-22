@@ -12,9 +12,11 @@ import { useEffect } from "react";
 import { logInfo } from "../utils/logger";
 import Logo from "../components/icons/Logo";
 import { useTheme } from "../src/contexts/ThemeContext";
+import { useResponsive } from "../src/hooks/useResponsive";
 
 export default function SplashScreen() {
   const { colors, isDark } = useTheme();
+  const { sp, font, sizes } = useResponsive();
 
   useEffect(() => {
     logInfo("SplashScreen", "🚀 App initialization started");
@@ -23,15 +25,21 @@ export default function SplashScreen() {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Logo */}
-      <Logo width={350} 
-      primaryColor={colors.onLogoPrimary}
-      secondaryColor={colors.onLogoSecondary}
-      ballColor={colors.primary}
-      ballBackgroundColor={colors.button.secondary}/>
+      <Logo
+        width={sizes.logoMd * 2.5}
+        primaryColor={colors.onLogoPrimary}
+        secondaryColor={colors.onLogoSecondary}
+        ballColor={colors.primary}
+        ballBackgroundColor={colors.button.secondary}
+      />
 
       {/* Loading indicator */}
-      <ActivityIndicator size="large" color={colors.primary} style={styles.loader} />
-      <Text style={[styles.loadingText, { color: colors.text.secondary }]}>
+      <ActivityIndicator
+        size="large"
+        color={colors.primary}
+        style={[styles.loader, { marginTop: sp.xxl }]}
+      />
+      <Text style={[styles.loadingText, { color: colors.text.secondary, fontSize: font.lg, marginTop: sp.md }]}>
         Chargement...
       </Text>
       <StatusBar style={isDark ? "light" : "dark"} />

@@ -12,6 +12,7 @@ import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import type { Player, PlayerPosition } from "../models/Player";
 import { useTheme } from "../src/contexts/ThemeContext";
+import { useResponsive } from "../src/hooks/useResponsive";
 
 interface PlayerCardProps {
   player?: Player;
@@ -53,6 +54,7 @@ export default function PlayerCard({
   hideStarter = false,
 }: PlayerCardProps) {
   const { colors } = useTheme();
+  const { sp, font, sizes } = useResponsive();
   const [name, setName] = useState(player?.name || "");
   const [jerseyNumber, setJerseyNumber] = useState(
     player?.jerseyNumber?.toString() || ""
@@ -146,50 +148,83 @@ export default function PlayerCard({
   return (
     <View style={[
       styles.card,
-      { backgroundColor: colors.surface, borderColor: colors.border },
+      {
+        backgroundColor: colors.surface,
+        borderColor: colors.border,
+        borderRadius: sp.md,
+        padding: sp.md,
+      },
       isStarter && [styles.starterCard, { backgroundColor: colors.surfaceVariant }]
     ]}>
       {/* Starter Badge */}
       {isStarter && (
-        <View style={[styles.starterBadge, {
-          backgroundColor: colors.surface,
-          borderColor: "#FFD700"
-        }]}>
-          <Ionicons name="star" size={16} color="#FFD700" />
-          <Text style={[styles.starterText, { color: colors.text.primary }]}>Titulaire</Text>
+        <View style={[
+          styles.starterBadge,
+          {
+            backgroundColor: colors.surface,
+            borderColor: "#FFD700",
+            paddingHorizontal: sp.sm,
+            paddingVertical: sp.xs,
+            borderRadius: sp.md,
+            gap: sp.xs,
+          }
+        ]}>
+          <Ionicons name="star" size={font.md} color="#FFD700" />
+          <Text style={[styles.starterText, { color: colors.text.primary, fontSize: font.xs }]}>Titulaire</Text>
         </View>
       )}
 
       {/* Photo */}
       <TouchableOpacity
-        style={styles.photoContainer}
+        style={[
+          styles.photoContainer,
+          {
+            width: sizes.avatarLg,
+            height: sizes.avatarLg,
+            borderRadius: sizes.avatarLg / 2,
+          }
+        ]}
         onPress={canEdit && isEditing ? pickImage : undefined}
         disabled={!canEdit || !isEditing}
       >
         {photoUrl ? (
-          <Image source={{ uri: photoUrl }} style={styles.photo} />
+          <Image source={{ uri: photoUrl }} style={[styles.photo, { width: sizes.avatarLg, height: sizes.avatarLg, borderRadius: sizes.avatarLg / 2 }]} />
         ) : (
-          <View style={[styles.photoPlaceholder, { backgroundColor: colors.surfaceVariant }]}>
-            <Ionicons name="person" size={40} color={colors.text.tertiary} />
+          <View style={[
+            styles.photoPlaceholder,
+            {
+              backgroundColor: colors.surfaceVariant,
+              width: sizes.avatarLg,
+              height: sizes.avatarLg,
+              borderRadius: sizes.avatarLg / 2,
+            }
+          ]}>
+            <Ionicons name="person" size={sizes.avatarSm} color={colors.text.tertiary} />
           </View>
         )}
         {canEdit && isEditing && (
           <View style={styles.photoOverlay}>
-            <Ionicons name="camera" size={24} color="#fff" />
+            <Ionicons name="camera" size={sizes.iconMd} color="#fff" />
           </View>
         )}
       </TouchableOpacity>
 
       {/* Player Info */}
-      <View style={styles.infoContainer}>
+      <View style={[styles.infoContainer, { gap: sp.sm }]}>
         {isEditing ? (
           <>
             <TextInput
-              style={[styles.input, {
-                borderColor: colors.border,
-                backgroundColor: colors.background,
-                color: colors.text.primary
-              }]}
+              style={[
+                styles.input,
+                {
+                  borderColor: colors.border,
+                  backgroundColor: colors.background,
+                  color: colors.text.primary,
+                  padding: sp.sm,
+                  borderRadius: sp.sm,
+                  fontSize: font.md,
+                }
+              ]}
               placeholder="Nom du joueur"
               placeholderTextColor={colors.text.tertiary}
               value={name}
@@ -198,11 +233,19 @@ export default function PlayerCard({
             />
             {!hideJerseyNumber && (
               <TextInput
-                style={[styles.input, styles.numberInput, {
-                  borderColor: colors.border,
-                  backgroundColor: colors.background,
-                  color: colors.text.primary
-                }]}
+                style={[
+                  styles.input,
+                  styles.numberInput,
+                  {
+                    borderColor: colors.border,
+                    backgroundColor: colors.background,
+                    color: colors.text.primary,
+                    padding: sp.sm,
+                    borderRadius: sp.sm,
+                    fontSize: font.md,
+                    width: sizes.avatarMd,
+                  }
+                ]}
                 placeholder="N°"
                 placeholderTextColor={colors.text.tertiary}
                 value={jerseyNumber}
@@ -214,9 +257,9 @@ export default function PlayerCard({
           </>
         ) : (
           <>
-            <Text style={[styles.playerName, { color: colors.text.primary }]}>{player?.name}</Text>
+            <Text style={[styles.playerName, { color: colors.text.primary, fontSize: font.lg }]}>{player?.name}</Text>
             {!hideJerseyNumber && (
-              <Text style={[styles.playerNumber, { color: colors.button.club }]}>#{player?.jerseyNumber}</Text>
+              <Text style={[styles.playerNumber, { color: colors.button.club, fontSize: font.md }]}>#{player?.jerseyNumber}</Text>
             )}
           </>
         )}
@@ -224,13 +267,18 @@ export default function PlayerCard({
         {/* Position Selector */}
         {!hidePosition && (
           isEditing ? (
-            <View style={styles.positionContainer}>
+            <View style={[styles.positionContainer, { gap: sp.xs }]}>
               {POSITIONS.map((pos) => (
                 <TouchableOpacity
                   key={pos.value}
                   style={[
                     styles.positionButton,
-                    { borderColor: colors.border },
+                    {
+                      borderColor: colors.border,
+                      paddingHorizontal: sp.sm,
+                      paddingVertical: sp.xs,
+                      borderRadius: sp.xs,
+                    },
                     position === pos.value && [
                       styles.positionButtonSelected,
                       { borderColor: colors.button.club, backgroundColor: colors.button.club }
@@ -241,7 +289,7 @@ export default function PlayerCard({
                   <Text
                     style={[
                       styles.positionText,
-                      { color: colors.text.secondary },
+                      { color: colors.text.secondary, fontSize: font.xs },
                       position === pos.value && styles.positionTextSelected,
                     ]}
                   >

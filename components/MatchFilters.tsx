@@ -22,6 +22,7 @@ import {
 } from "react-native";
 import { ACTION_DEFINITIONS } from "../src/models/ActionTypes";
 import { useTheme } from "../src/contexts/ThemeContext";
+import { useResponsive } from "../src/hooks/useResponsive";
 import { Team } from "../src/models/types";
 
 interface Player {
@@ -77,6 +78,7 @@ export default function MatchFilters({
   onPeriodsChange,
 }: MatchFiltersProps) {
   const { colors } = useTheme();
+  const { sp, font, sizes } = useResponsive();
   const totalPeriods = matchFormat === "2_halves" ? 2 : 4;
 
   // Find all periods including regular periods and any overtime periods that have been played
@@ -182,23 +184,28 @@ export default function MatchFilters({
   return (
     <View style={styles.container}>
       {/* Équipes */}
-      <View style={styles.filterCategory}>
-        <View style={styles.filterCategoryHeader}>
-          <Text style={[styles.filterCategoryLabel, { color: colors.text.primary }]}>Équipe</Text>
+      <View style={[styles.filterCategory, { marginBottom: sp.md }]}>
+        <View style={[styles.filterCategoryHeader, { marginBottom: sp.sm }]}>
+          <Text style={[styles.filterCategoryLabel, { color: colors.text.primary, fontSize: font.md }]}>Équipe</Text>
           <TouchableOpacity
             onPress={selectAllTeams}
             style={styles.selectAllButton}
           >
-            <Text style={[styles.selectAllText, { color: colors.text.tertiary }]}>Tous</Text>
+            <Text style={[styles.selectAllText, { color: colors.text.tertiary, fontSize: font.xs }]}>Tous</Text>
           </TouchableOpacity>
         </View>
-        <View style={styles.filterCards}>
+        <View style={[styles.filterCards, { gap: sp.sm }]}>
           {/* Show Team A option if managing Team A or both */}
           {(teamMode === Team.MY_TEAM || teamMode === "BOTH") && (
             <TouchableOpacity
               style={[
                 styles.filterCard,
-                { backgroundColor: colors.surfaceVariant },
+                {
+                  backgroundColor: colors.surfaceVariant,
+                  paddingHorizontal: sp.md,
+                  paddingVertical: sp.sm,
+                  borderRadius: sp.sm,
+                },
                 selectedTeams.includes(Team.MY_TEAM) && { backgroundColor: colors.success },
               ]}
               onPress={() => toggleTeam(Team.MY_TEAM)}
@@ -206,7 +213,7 @@ export default function MatchFilters({
               <Text
                 style={[
                   styles.filterCardText,
-                  { color: colors.text.secondary },
+                  { color: colors.text.secondary, fontSize: font.sm },
                   selectedTeams.includes(Team.MY_TEAM) && { color: colors.text.primary },
                 ]}
               >
@@ -220,7 +227,12 @@ export default function MatchFilters({
             <TouchableOpacity
               style={[
                 styles.filterCard,
-                { backgroundColor: colors.surfaceVariant },
+                {
+                  backgroundColor: colors.surfaceVariant,
+                  paddingHorizontal: sp.md,
+                  paddingVertical: sp.sm,
+                  borderRadius: sp.sm,
+                },
                 selectedTeams.includes(Team.OPPONENT) && { backgroundColor: colors.success },
               ]}
               onPress={() => toggleTeam(Team.OPPONENT)}
@@ -228,7 +240,7 @@ export default function MatchFilters({
               <Text
                 style={[
                   styles.filterCardText,
-                  { color: colors.text.secondary },
+                  { color: colors.text.secondary, fontSize: font.sm },
                   selectedTeams.includes(Team.OPPONENT) && { color: colors.text.primary },
                 ]}
               >
@@ -240,19 +252,19 @@ export default function MatchFilters({
       </View>
 
       {/* Joueurs */}
-      <View style={styles.filterCategory}>
-        <Text style={[styles.filterCategoryLabel, { color: colors.text.primary }]}>Joueurs</Text>
+      <View style={[styles.filterCategory, { marginBottom: sp.md }]}>
+        <Text style={[styles.filterCategoryLabel, { color: colors.text.primary, fontSize: font.md, marginBottom: sp.sm }]}>Joueurs</Text>
 
         {/* Team A Players - Show if managing Team A or both */}
         {(selectedTeams.includes(Team.MY_TEAM) || teamMode === Team.MY_TEAM) && (
           <>
-            <View style={styles.filterSubHeader}>
-              <Text style={[styles.filterSubLabel, { color: colors.text.secondary }]}>{teamA}</Text>
+            <View style={[styles.filterSubHeader, { marginBottom: sp.sm }]}>
+              <Text style={[styles.filterSubLabel, { color: colors.text.secondary, fontSize: font.sm }]}>{teamA}</Text>
               <TouchableOpacity
                 onPress={selectAllPlayersTeamA}
                 style={styles.selectAllButton}
               >
-                <Text style={[styles.selectAllText, { color: colors.text.tertiary }]}>Tous</Text>
+                <Text style={[styles.selectAllText, { color: colors.text.tertiary, fontSize: font.xs }]}>Tous</Text>
               </TouchableOpacity>
             </View>
             <ScrollView
@@ -270,7 +282,13 @@ export default function MatchFilters({
                       key={player.id}
                       style={[
                         styles.filterCard,
-                        { backgroundColor: colors.surfaceVariant },
+                        {
+                          backgroundColor: colors.surfaceVariant,
+                          paddingHorizontal: sp.md,
+                          paddingVertical: sp.sm,
+                          borderRadius: sp.sm,
+                          marginRight: sp.sm,
+                        },
                         selectedPlayers.includes(playerIdentifier) &&
                           { backgroundColor: colors.success },
                       ]}
@@ -279,6 +297,7 @@ export default function MatchFilters({
                       <Text
                         style={[
                           styles.filterCardText,
+                          { fontSize: font.sm },
                           { color: colors.text.secondary },
                           selectedPlayers.includes(playerIdentifier) &&
                             { color: colors.text.primary },

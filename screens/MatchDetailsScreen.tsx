@@ -47,6 +47,7 @@ import {
   ReboundSpecification,
 } from "../src/models/ActionTypes";
 import { useTheme } from "../src/contexts/ThemeContext";
+import { useResponsive } from "../src/hooks/useResponsive";
 import { Colors } from "../src/theme/colors";
 import BasketballCourtSVG from "../components/BasketballCourtSVG";
 import { PDFExportService } from "../src/services/export/PDFExportService";
@@ -69,6 +70,7 @@ export default function MatchDetailsScreen() {
   const route = useRoute<MatchDetailsRouteProp>();
   const { match, fromLiveMatch, isLocalMatch } = route.params;
   const { colors, isDark } = useTheme();
+  const { sp, font, sizes } = useResponsive();
 
   // ========================================
   // STATE - LOADED DATA
@@ -615,10 +617,14 @@ export default function MatchDetailsScreen() {
       <View
         style={[
           styles.header,
-          { backgroundColor: surfaceColor, borderBottomColor: borderColor },
+          {
+            backgroundColor: surfaceColor,
+            borderBottomColor: borderColor,
+            padding: sp.md,
+          },
         ]}
       >
-        <View style={styles.headerTop}>
+        <View style={[styles.headerTop, { marginBottom: sp.md }]}>
           {!fromLiveMatch ? (
             <TouchableOpacity
               onPress={() => navigation.goBack()}
@@ -627,7 +633,7 @@ export default function MatchDetailsScreen() {
               <View style={styles.backButtonContent}>
                 <Ionicons
                   name="arrow-back"
-                  size={24}
+                  size={sizes.iconMd}
                   color={colors.text.secondary}
                 />
               </View>
@@ -638,19 +644,36 @@ export default function MatchDetailsScreen() {
           <View style={styles.headerButtons}>
             <TouchableOpacity
               onPress={handleExportPDF}
-              style={[styles.menuButton, { backgroundColor: bgColor, marginRight: 8 }]}
+              style={[
+                styles.menuButton,
+                {
+                  backgroundColor: bgColor,
+                  marginRight: sp.sm,
+                  paddingVertical: sp.xs,
+                  paddingHorizontal: sp.sm,
+                  borderRadius: sp.sm,
+                },
+              ]}
             >
-              <Ionicons name="document-text-outline" size={15} color={colors.primary} />
-              <Text style={[styles.menuButtonText, { color: colors.primary }]}>
+              <Ionicons name="document-text-outline" size={font.md} color={colors.primary} />
+              <Text style={[styles.menuButtonText, { color: colors.primary, fontSize: font.xs }]}>
                 PDF
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
               onPress={() => navigation.navigate("Dashboard" as never)}
-              style={[styles.menuButton, { backgroundColor: bgColor }]}
+              style={[
+                styles.menuButton,
+                {
+                  backgroundColor: bgColor,
+                  paddingVertical: sp.xs,
+                  paddingHorizontal: sp.sm,
+                  borderRadius: sp.sm,
+                },
+              ]}
             >
-              <Ionicons name="grid-outline" size={15} color={colors.primary} />
-              <Text style={[styles.menuButtonText, { color: colors.primary }]}>
+              <Ionicons name="grid-outline" size={font.md} color={colors.primary} />
+              <Text style={[styles.menuButtonText, { color: colors.primary, fontSize: font.xs }]}>
                 Menu
               </Text>
             </TouchableOpacity>
@@ -660,13 +683,16 @@ export default function MatchDetailsScreen() {
         <View style={styles.scoreContainer}>
           {/* LEFT SIDE - My team when home, opponent when away */}
           <View style={styles.teamScore}>
-            <Text style={[styles.teamLabel, { color: textSecondary }]}>
+            <Text style={[styles.teamLabel, { color: textSecondary, fontSize: font.sm }]}>
               {match.is_home ? (match.my_team_name || "Notre équipe") : match.opponent_name}
             </Text>
             <Text
               style={[
                 styles.scoreValue,
-                { color: match.is_home ? (isWin ? textPrimary : textTertiary) : (!isWin ? textPrimary : textTertiary) },
+                {
+                  color: match.is_home ? (isWin ? textPrimary : textTertiary) : (!isWin ? textPrimary : textTertiary),
+                  fontSize: font.xxxl,
+                },
               ]}
             >
               {match.is_home ? match.my_team_score : match.opponent_score}
@@ -675,7 +701,7 @@ export default function MatchDetailsScreen() {
               isWin && (
                 <Ionicons
                   name="trophy-outline"
-                  size={25}
+                  size={sizes.iconMd}
                   color={colors.primary}
                 />
               )
@@ -683,7 +709,7 @@ export default function MatchDetailsScreen() {
               !isWin && (
                 <Ionicons
                   name="trophy-outline"
-                  size={25}
+                  size={sizes.iconMd}
                   color={colors.primary}
                 />
               )
@@ -696,13 +722,16 @@ export default function MatchDetailsScreen() {
 
           {/* RIGHT SIDE - Opponent when home, my team when away */}
           <View style={styles.teamScore}>
-            <Text style={[styles.teamLabel, { color: textSecondary }]}>
+            <Text style={[styles.teamLabel, { color: textSecondary, fontSize: font.sm }]}>
               {match.is_home ? match.opponent_name : (match.my_team_name || "Notre équipe")}
             </Text>
             <Text
               style={[
                 styles.scoreValue,
-                { color: match.is_home ? (!isWin ? textPrimary : textTertiary) : (isWin ? textPrimary : textTertiary) },
+                {
+                  color: match.is_home ? (!isWin ? textPrimary : textTertiary) : (isWin ? textPrimary : textTertiary),
+                  fontSize: font.xxxl,
+                },
               ]}
             >
               {match.is_home ? match.opponent_score : match.my_team_score}
@@ -711,7 +740,7 @@ export default function MatchDetailsScreen() {
               !isWin && (
                 <Ionicons
                   name="trophy-outline"
-                  size={25}
+                  size={sizes.iconMd}
                   color={colors.primary}
                 />
               )
@@ -719,7 +748,7 @@ export default function MatchDetailsScreen() {
               isWin && (
                 <Ionicons
                   name="trophy-outline"
-                  size={25}
+                  size={sizes.iconMd}
                   color={colors.primary}
                 />
               )
@@ -729,19 +758,28 @@ export default function MatchDetailsScreen() {
       </View>
 
       {/* FILTERS & TABS */}
-      <View style={[styles.filtersTabsContainer, { backgroundColor: bgColor }]}>
+      <View style={[styles.filtersTabsContainer, { backgroundColor: bgColor, padding: sp.md, gap: sp.sm }]}>
         <View style={styles.leftSection}>
           {activeTab !== TAB.EVOLUTION && (
             <View
               style={[
                 styles.teamFilterContainer,
-                { backgroundColor: colors.surfaceVariant },
+                {
+                  backgroundColor: colors.surfaceVariant,
+                  borderRadius: sp.sm,
+                  padding: sp.xs,
+                },
               ]}
             >
               <TouchableOpacity
                 onPress={() => setActiveTeamFilter(Team.MY_TEAM)}
                 style={[
                   styles.teamFilterButton,
+                  {
+                    paddingHorizontal: sp.md,
+                    paddingVertical: sp.xs,
+                    borderRadius: sp.xs,
+                  },
                   activeTeamFilter === Team.MY_TEAM && {
                     backgroundColor: surfaceColor,
                   },
@@ -755,6 +793,7 @@ export default function MatchDetailsScreen() {
                         activeTeamFilter === Team.MY_TEAM
                           ? colors.primary
                           : textSecondary,
+                      fontSize: font.xs,
                     },
                   ]}
                 >
@@ -765,6 +804,11 @@ export default function MatchDetailsScreen() {
                 onPress={() => setActiveTeamFilter(Team.OPPONENT)}
                 style={[
                   styles.teamFilterButton,
+                  {
+                    paddingHorizontal: sp.md,
+                    paddingVertical: sp.xs,
+                    borderRadius: sp.xs,
+                  },
                   activeTeamFilter === Team.OPPONENT && {
                     backgroundColor: surfaceColor,
                   },
@@ -778,6 +822,7 @@ export default function MatchDetailsScreen() {
                         activeTeamFilter === Team.OPPONENT
                           ? colors.primary
                           : textSecondary,
+                      fontSize: font.xs,
                     },
                   ]}
                 >
@@ -788,7 +833,7 @@ export default function MatchDetailsScreen() {
           )}
         </View>
 
-        <View style={styles.tabsContainer}>
+        <View style={[styles.tabsContainer, { gap: sp.xs }]}>
         <TouchableOpacity
             onPress={() => setActiveTab(TAB.EVOLUTION)}
             style={[
@@ -797,12 +842,15 @@ export default function MatchDetailsScreen() {
                 backgroundColor:
                   activeTab === TAB.EVOLUTION ? colors.primary : surfaceColor,
                 borderColor: borderColor,
+                width: sizes.avatarSm,
+                height: sizes.avatarSm,
+                borderRadius: sp.sm,
               },
             ]}
           >
             <Ionicons
               name="trending-up"
-              size={20}
+              size={sizes.iconSm}
               color={activeTab === TAB.EVOLUTION ? colors.text.primary : textTertiary}
             />
           </TouchableOpacity>
@@ -814,12 +862,15 @@ export default function MatchDetailsScreen() {
                 backgroundColor:
                   activeTab === TAB.STATS ? colors.primary : surfaceColor,
                 borderColor: borderColor,
+                width: sizes.avatarSm,
+                height: sizes.avatarSm,
+                borderRadius: sp.sm,
               },
             ]}
           >
             <Ionicons
               name="list"
-              size={20}
+              size={sizes.iconSm}
               color={activeTab === TAB.STATS ? colors.text.primary : textTertiary}
             />
           </TouchableOpacity>
@@ -831,12 +882,15 @@ export default function MatchDetailsScreen() {
                 backgroundColor:
                   activeTab === TAB.CARDS ? colors.primary : surfaceColor,
                 borderColor: borderColor,
+                width: sizes.avatarSm,
+                height: sizes.avatarSm,
+                borderRadius: sp.sm,
               },
             ]}
           >
             <Ionicons
               name="person-outline"
-              size={20}
+              size={sizes.iconSm}
               color={activeTab === TAB.CARDS ? colors.text.primary : textTertiary}
             />
           </TouchableOpacity>
@@ -848,12 +902,15 @@ export default function MatchDetailsScreen() {
                 backgroundColor:
                   activeTab === TAB.COURT ? colors.primary : surfaceColor,
                 borderColor: borderColor,
+                width: sizes.avatarSm,
+                height: sizes.avatarSm,
+                borderRadius: sp.sm,
               },
             ]}
           >
             <Ionicons
               name="basketball-outline"
-              size={20}
+              size={sizes.iconSm}
               color={activeTab === TAB.COURT ? colors.text.primary : textTertiary}
             />
           </TouchableOpacity>
@@ -861,7 +918,7 @@ export default function MatchDetailsScreen() {
       </View>
 
       {/* CONTENT */}
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView style={[styles.content, { padding: sp.md }]} showsVerticalScrollIndicator={false}>
         
           {/* EVOLUTION VIEW */}
           {activeTab === TAB.EVOLUTION && (

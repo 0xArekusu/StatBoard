@@ -14,6 +14,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useTheme } from "../src/contexts/ThemeContext";
 import { useAuth } from "../src/contexts/AuthContext";
 import { useClub } from "../src/contexts/ClubContext";
+import { useResponsive } from "../src/hooks/useResponsive";
 import { Match } from "../src/models/types";
 import { supabase } from "../src/config/supabase";
 import { ROUTES } from "../constants/routes";
@@ -45,6 +46,7 @@ export default function HistoryScreen({ navigation }: HistoryScreenProps) {
   const { colors, isDark } = useTheme();
   const { user } = useAuth();
   const { currentClub, activeTeamId, setActiveTeamId } = useClub();
+  const { sp, font, sizes } = useResponsive();
 
   const [loading, setLoading] = useState(true);
   const [matches, setMatches] = useState<Match[]>([]);
@@ -234,7 +236,7 @@ export default function HistoryScreen({ navigation }: HistoryScreenProps) {
         onRequestClose={() => !isSyncing && setShowSyncModal(false)}
       >
         <TouchableOpacity
-          style={styles.modalOverlay}
+          style={[styles.modalOverlay, { padding: sp.lg }]}
           activeOpacity={1}
           onPress={() => !isSyncing && setShowSyncModal(false)}
         >
@@ -243,6 +245,8 @@ export default function HistoryScreen({ navigation }: HistoryScreenProps) {
               styles.modalContent,
               {
                 backgroundColor: colors.surface,
+                borderRadius: sp.lg,
+                padding: sp.lg,
               },
             ]}
             onStartShouldSetResponder={() => true}
@@ -354,9 +358,9 @@ export default function HistoryScreen({ navigation }: HistoryScreenProps) {
       </Modal>
 
       <ScrollView style={[styles.container, { backgroundColor: bgColor }]}>
-        <View style={styles.content}>
+        <View style={[styles.content, { padding: sp.lg, paddingTop: sp.md }]}>
           {/* Title */}
-          <Text style={[styles.title, { color: textPrimary }]}>
+          <Text style={[styles.title, { color: textPrimary, fontSize: font.xxl, marginBottom: sp.lg }]}>
             Historique des matchs
           </Text>
 
@@ -373,6 +377,9 @@ export default function HistoryScreen({ navigation }: HistoryScreenProps) {
                   borderColor: isDark
                     ? `${colors.primary}33`
                     : `${colors.primary}33`,
+                  padding: sp.md,
+                  borderRadius: sp.md,
+                  marginBottom: sp.md,
                 },
               ]}
               activeOpacity={OPACITY.interaction.high}
@@ -383,12 +390,16 @@ export default function HistoryScreen({ navigation }: HistoryScreenProps) {
                     styles.syncBannerIcon,
                     {
                       backgroundColor: colors.primary,
+                      width: sizes.avatarSm,
+                      height: sizes.avatarSm,
+                      borderRadius: sizes.avatarSm / 2,
+                      marginRight: sp.sm,
                     },
                   ]}
                 >
                   <MaterialCommunityIcons
                     name="refresh"
-                    size={18}
+                    size={sizes.iconSm}
                     color="#FFFFFF"
                   />
                 </View>
@@ -398,6 +409,8 @@ export default function HistoryScreen({ navigation }: HistoryScreenProps) {
                       styles.syncBannerTitle,
                       {
                         color: colors.text.primary,
+                        fontSize: font.md,
+                        marginBottom: sp.xs,
                       },
                     ]}
                   >
@@ -409,6 +422,7 @@ export default function HistoryScreen({ navigation }: HistoryScreenProps) {
                       styles.syncBannerSubtitle,
                       {
                         color: colors.primary,
+                        fontSize: font.xs,
                       },
                     ]}
                   >
@@ -418,7 +432,7 @@ export default function HistoryScreen({ navigation }: HistoryScreenProps) {
               </View>
               <MaterialCommunityIcons
                 name="chevron-right"
-                size={16}
+                size={sizes.iconSm}
                 color={colors.primary}
               />
             </TouchableOpacity>
@@ -432,21 +446,25 @@ export default function HistoryScreen({ navigation }: HistoryScreenProps) {
                 {
                   backgroundColor: colors.surfaceVariant,
                   borderColor,
+                  paddingVertical: sp.xxl * 2,
+                  paddingHorizontal: sp.xl,
+                  borderRadius: sp.md,
+                  marginTop: sp.xxl * 2,
                 },
               ]}
             >
               <MaterialCommunityIcons
                 name="calendar-blank"
-                size={40}
+                size={sizes.avatarSm}
                 color={textSecondary}
                 style={{ opacity: 0.5 }}
               />
-              <Text style={[styles.emptyStateText, { color: textSecondary }]}>
+              <Text style={[styles.emptyStateText, { color: textSecondary, fontSize: font.lg, marginTop: sp.md }]}>
                 Aucun match enregistré.
               </Text>
             </View>
           ) : (
-            <View style={styles.matchesList}>
+            <View style={[styles.matchesList, { gap: sp.md }]}>
               {matches.map((match, index) => (
                 <MatchCard
                   key={`match-${match.id}-${index}`}
@@ -506,6 +524,7 @@ interface MatchCardProps {
  */
 function MatchCard({ match, onPress }: MatchCardProps) {
   const { isDark, colors } = useTheme();
+  const { sp, font, sizes } = useResponsive();
   const scoreA = match.my_team_score || 0;
   const scoreB = match.opponent_score || 0;
   const isWin = scoreA > scoreB;
@@ -530,33 +549,38 @@ function MatchCard({ match, onPress }: MatchCardProps) {
     <TouchableOpacity
       style={[
         styles.matchCard,
-        { backgroundColor: colors.surface, borderColor: colors.border },
+        {
+          backgroundColor: colors.surface,
+          borderColor: colors.border,
+          borderRadius: sp.md,
+          padding: sp.md,
+        },
       ]}
       onPress={onPress}
       activeOpacity={0.7}
     >
       {/* Date and Location */}
-      <View style={styles.matchCardHeader}>
-        <View style={styles.matchCardInfo}>
+      <View style={[styles.matchCardHeader, { marginBottom: sp.md }]}>
+        <View style={[styles.matchCardInfo, { gap: sp.xs }]}>
           <MaterialCommunityIcons
             name="calendar"
-            size={12}
+            size={font.sm}
             color={colors.text.secondary}
           />
           <Text
-            style={[styles.matchCardInfoText, { color: colors.text.secondary }]}
+            style={[styles.matchCardInfoText, { color: colors.text.secondary, fontSize: font.sm }]}
           >
             {formatDate(match.ended_at || match.created_at)}
           </Text>
         </View>
-        <View style={styles.matchCardInfo}>
+        <View style={[styles.matchCardInfo, { gap: sp.xs }]}>
           <MaterialCommunityIcons
             name="map-marker"
-            size={12}
+            size={font.sm}
             color={colors.text.secondary}
           />
           <Text
-            style={[styles.matchCardInfoText, { color: colors.text.secondary }]}
+            style={[styles.matchCardInfoText, { color: colors.text.secondary, fontSize: font.sm }]}
           >
             {match.is_home ? "Domicile" : "Extérieur"}
           </Text>
@@ -564,7 +588,7 @@ function MatchCard({ match, onPress }: MatchCardProps) {
       </View>
 
       {/* Scores */}
-      <View style={styles.matchScores}>
+      <View style={[styles.matchScores, { marginBottom: sp.sm }]}>
         {/* Left Team - Home team on left, Away team on right */}
         {match.is_home ? (
           // We are home, we go on the left
@@ -572,13 +596,16 @@ function MatchCard({ match, onPress }: MatchCardProps) {
             <Text
               style={[
                 styles.matchScoreValue,
-                { color: isWin ? colors.text.primary : colors.text.tertiary },
+                {
+                  color: isWin ? colors.text.primary : colors.text.tertiary,
+                  fontSize: font.xxl,
+                },
               ]}
             >
               {scoreA}
             </Text>
             <Text
-              style={[styles.matchTeamLabel, { color: colors.text.secondary }]}
+              style={[styles.matchTeamLabel, { color: colors.text.secondary, fontSize: font.sm, marginTop: sp.xs }]}
               numberOfLines={1}
             >
               {match.my_team_name || "NOUS"}
@@ -590,13 +617,16 @@ function MatchCard({ match, onPress }: MatchCardProps) {
             <Text
               style={[
                 styles.matchScoreValue,
-                { color: isWin ? colors.text.tertiary : colors.text.primary },
+                {
+                  color: isWin ? colors.text.tertiary : colors.text.primary,
+                  fontSize: font.xxl,
+                },
               ]}
             >
               {scoreB}
             </Text>
             <Text
-              style={[styles.matchTeamLabel, { color: colors.text.secondary }]}
+              style={[styles.matchTeamLabel, { color: colors.text.secondary, fontSize: font.sm, marginTop: sp.xs }]}
               numberOfLines={1}
             >
               {match.opponent_name}
@@ -610,10 +640,13 @@ function MatchCard({ match, onPress }: MatchCardProps) {
             styles.matchVs,
             {
               backgroundColor: colors.surfaceVariant,
+              paddingHorizontal: sp.sm,
+              paddingVertical: sp.xs,
+              marginHorizontal: sp.sm,
             },
           ]}
         >
-          <Text style={[styles.matchVsText, { color: colors.text.secondary }]}>
+          <Text style={[styles.matchVsText, { color: colors.text.secondary, fontSize: font.sm }]}>
             VS
           </Text>
         </View>
@@ -625,13 +658,16 @@ function MatchCard({ match, onPress }: MatchCardProps) {
             <Text
               style={[
                 styles.matchScoreValue,
-                { color: isWin ? colors.text.tertiary : colors.text.primary },
+                {
+                  color: isWin ? colors.text.tertiary : colors.text.primary,
+                  fontSize: font.xxl,
+                },
               ]}
             >
               {scoreB}
             </Text>
             <Text
-              style={[styles.matchTeamLabel, { color: colors.text.secondary }]}
+              style={[styles.matchTeamLabel, { color: colors.text.secondary, fontSize: font.sm, marginTop: sp.xs }]}
               numberOfLines={1}
             >
               {match.opponent_name}
@@ -643,13 +679,16 @@ function MatchCard({ match, onPress }: MatchCardProps) {
             <Text
               style={[
                 styles.matchScoreValue,
-                { color: isWin ? colors.text.primary : colors.text.tertiary },
+                {
+                  color: isWin ? colors.text.primary : colors.text.tertiary,
+                  fontSize: font.xxl,
+                },
               ]}
             >
               {scoreA}
             </Text>
             <Text
-              style={[styles.matchTeamLabel, { color: colors.text.secondary }]}
+              style={[styles.matchTeamLabel, { color: colors.text.secondary, fontSize: font.sm, marginTop: sp.xs }]}
               numberOfLines={1}
             >
               {match.my_team_name || "NOUS"}
@@ -659,7 +698,7 @@ function MatchCard({ match, onPress }: MatchCardProps) {
       </View>
 
       {/* Result and Action */}
-      <View style={[styles.matchCardFooter, { borderTopColor: colors.border }]}>
+      <View style={[styles.matchCardFooter, { borderTopColor: colors.border, paddingTop: sp.sm }]}>
         {/* Result Badge */}
         <View style={styles.matchCardFooterLeft}>
           <View
@@ -673,13 +712,19 @@ function MatchCard({ match, onPress }: MatchCardProps) {
                   : isDark
                     ? `${colors.error}33`
                     : `${colors.error}1A`,
+                paddingHorizontal: sp.sm,
+                paddingVertical: sp.xs,
+                borderRadius: sp.xs,
               },
             ]}
           >
             <Text
               style={[
                 styles.matchResultText,
-                { color: isWin ? colors.success : colors.error },
+                {
+                  color: isWin ? colors.success : colors.error,
+                  fontSize: font.sm,
+                },
               ]}
             >
               {isWin ? "VICTOIRE" : "DÉFAITE"}
@@ -690,10 +735,10 @@ function MatchCard({ match, onPress }: MatchCardProps) {
         {/* Sync Status Badge */}
         <View style={styles.matchCardFooterCenter}>
           {isSynced ? (
-            <View style={styles.syncStatusBadge}>
+            <View style={[styles.syncStatusBadge, { gap: sp.xs }]}>
               <MaterialCommunityIcons
                 name="cloud-check"
-                size={12}
+                size={font.sm}
                 color={colors.success}
                 style={{ opacity: 0.4 }}
               />
@@ -703,6 +748,7 @@ function MatchCard({ match, onPress }: MatchCardProps) {
                   {
                     color: colors.success,
                     opacity: 0.4,
+                    fontSize: font.xs,
                   },
                 ]}
               >
@@ -710,10 +756,10 @@ function MatchCard({ match, onPress }: MatchCardProps) {
               </Text>
             </View>
           ) : (
-            <View style={styles.syncStatusBadge}>
+            <View style={[styles.syncStatusBadge, { gap: sp.xs }]}>
               <MaterialCommunityIcons
                 name="cloud-off-outline"
-                size={12}
+                size={font.sm}
                 color={colors.warning}
               />
               <Text
@@ -721,6 +767,7 @@ function MatchCard({ match, onPress }: MatchCardProps) {
                   styles.syncStatusText,
                   {
                     color: colors.warning,
+                    fontSize: font.xs,
                   },
                 ]}
               >
@@ -732,13 +779,13 @@ function MatchCard({ match, onPress }: MatchCardProps) {
 
         {/* Analyze Button */}
         <View style={styles.matchCardFooterRight}>
-          <TouchableOpacity style={styles.matchAnalyzeButton} onPress={onPress}>
-            <Text style={[styles.matchAnalyzeText, { color: colors.primary }]}>
+          <TouchableOpacity style={[styles.matchAnalyzeButton, { gap: sp.xs }]} onPress={onPress}>
+            <Text style={[styles.matchAnalyzeText, { color: colors.primary, fontSize: font.xs }]}>
               Détails
             </Text>
             <MaterialCommunityIcons
               name="chart-bar"
-              size={12}
+              size={font.sm}
               color={colors.primary}
             />
           </TouchableOpacity>
