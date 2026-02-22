@@ -1625,6 +1625,12 @@ export default function LiveMatchScreen() {
         showMarkers={showMarkers}
         isGeneratingMockData={isGeneratingMockData}
         isAdmin={isAdmin}
+        hasActiveFilters={
+          filterMode !== FilterMode.ALL ||
+          selectedPlayerIds.length > 0 ||
+          selectedPeriodIds.length > 0 ||
+          selectedTeamFilter !== TeamFilterMode.ALL
+        }
         onUndo={undoLastAction}
         onOpenFilter={() => setShowFilterModal(true)}
         onToggleMarkers={() => setShowMarkers(!showMarkers)}

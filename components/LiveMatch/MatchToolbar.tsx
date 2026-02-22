@@ -11,6 +11,7 @@ interface MatchToolbarProps {
   showMarkers: boolean;
   isGeneratingMockData: boolean;
   isAdmin?: boolean;
+  hasActiveFilters?: boolean;
   onUndo: () => void;
   onOpenFilter: () => void;
   onToggleMarkers: () => void;
@@ -23,6 +24,7 @@ export function MatchToolbar({
   showMarkers,
   isGeneratingMockData,
   isAdmin = false,
+  hasActiveFilters = false,
   onUndo,
   onOpenFilter,
   onToggleMarkers,
@@ -32,7 +34,8 @@ export function MatchToolbar({
   const { colors } = useTheme();
   const { isPortrait, width } = useResponsive();
   const isLandscape = !isPortrait;
-  const isMobileLandscape = isLandscape && width < BREAKPOINTS.mobileLandscapeMaxWidth;
+  const isMobileLandscape =
+    isLandscape && width < BREAKPOINTS.mobileLandscapeMaxWidth;
   const surfaceColor = colors.surface;
   const textSecondary = colors.text.secondary;
   const borderColor = colors.border;
@@ -66,12 +69,19 @@ export function MatchToolbar({
 
       <TouchableOpacity onPress={onOpenFilter} style={styles.toolbarButton}>
         <MaterialCommunityIcons
-          name="filter-outline"
+          name={hasActiveFilters ? "filter" : "filter-outline"}
           size={iconSize}
-          color={filterMode !== FilterMode.ALL ? colors.primary : textSecondary}
+          color={hasActiveFilters ? colors.primary : textSecondary}
         />
         {!isMobileLandscape && (
-          <Text style={[styles.toolbarButtonText, { color: textSecondary }]}>
+          <Text
+            style={[
+              styles.toolbarButtonText,
+              {
+                color: hasActiveFilters ? colors.primary : textSecondary,
+              },
+            ]}
+          >
             Filtres
           </Text>
         )}
@@ -84,7 +94,12 @@ export function MatchToolbar({
           color={showMarkers ? colors.primary : textSecondary}
         />
         {!isMobileLandscape && (
-          <Text style={[styles.toolbarButtonText, { color: textSecondary }]}>
+          <Text
+            style={[
+              styles.toolbarButtonText,
+              { color: showMarkers ? colors.primary : textSecondary },
+            ]}
+          >
             Vue
           </Text>
         )}
@@ -99,7 +114,7 @@ export function MatchToolbar({
               [
                 { text: "Annuler", style: "cancel" },
                 { text: "Confirmer", onPress: onGenerateMock },
-              ]
+              ],
             );
           }}
           disabled={isGeneratingMockData}
