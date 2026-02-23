@@ -9,6 +9,7 @@ import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { BRAND_COLORS, SLATE_COLORS, COMMON_COLORS } from "../../src/theme";
 import { MATCH_CREATION_INFO_MESSAGES } from "../../constants";
+import { useResponsive } from "../../src/hooks/useResponsive";
 
 interface OpponentStatsToggleProps {
   /** Whether opponent stats tracking is enabled */
@@ -35,6 +36,7 @@ export const OpponentStatsToggle: React.FC<OpponentStatsToggleProps> = ({
   isDark,
   colors,
 }) => {
+  const { sp, font, sizes } = useResponsive();
   return (
     <TouchableOpacity
       onPress={onToggle}
@@ -43,10 +45,12 @@ export const OpponentStatsToggle: React.FC<OpponentStatsToggleProps> = ({
         {
           backgroundColor: colors.surfaceColor,
           borderColor: enabled ? BRAND_COLORS[500] : colors.borderColor,
+          padding: sp.md,
+          borderRadius: sp.md,
         },
       ]}
     >
-      <View style={styles.optionCardLeft}>
+      <View style={[styles.optionCardLeft, { gap: sp.sm + sp.xs }]}>
         <View
           style={[
             styles.optionIcon,
@@ -56,12 +60,14 @@ export const OpponentStatsToggle: React.FC<OpponentStatsToggleProps> = ({
                 : isDark
                 ? SLATE_COLORS[800]
                 : SLATE_COLORS[200],
+              width: sizes.avatarMd,
+              height: sizes.avatarMd,
             },
           ]}
         >
           <MaterialCommunityIcons
             name="chart-bar"
-            size={20}
+            size={sizes.iconMd}
             color={enabled ? BRAND_COLORS[600] : colors.textSecondary}
           />
         </View>
@@ -71,12 +77,13 @@ export const OpponentStatsToggle: React.FC<OpponentStatsToggleProps> = ({
               styles.optionTitle,
               {
                 color: enabled ? colors.textPrimary : colors.textSecondary,
+                fontSize: font.md,
               },
             ]}
           >
             {MATCH_CREATION_INFO_MESSAGES.OPPONENT_STATS_TITLE}
           </Text>
-          <Text style={[styles.optionSubtitle, { color: colors.textSecondary }]}>
+          <Text style={[styles.optionSubtitle, { color: colors.textSecondary, fontSize: font.sm, marginTop: sp.xs }]}>
             {MATCH_CREATION_INFO_MESSAGES.OPPONENT_STATS_OPTION}
           </Text>
         </View>
@@ -87,13 +94,15 @@ export const OpponentStatsToggle: React.FC<OpponentStatsToggleProps> = ({
           {
             borderColor: enabled ? BRAND_COLORS[500] : colors.borderColor,
             backgroundColor: enabled ? BRAND_COLORS[500] : "transparent",
+            width: sizes.avatarSm * 0.6,
+            height: sizes.avatarSm * 0.6,
           },
         ]}
       >
         {enabled && (
           <MaterialCommunityIcons
             name="check"
-            size={16}
+            size={sizes.iconSm}
             color={COMMON_COLORS.white}
           />
         )}

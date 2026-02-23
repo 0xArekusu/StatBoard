@@ -8,6 +8,7 @@ import React from "react";
 import { View, Text, TextInput, StyleSheet } from "react-native";
 import { STATUS_COLORS } from "../../src/theme";
 import { MATCH_CREATION_FORM_LABELS } from "../../constants";
+import { useResponsive } from "../../src/hooks/useResponsive";
 
 interface OpponentInputProps {
   /** Opponent team name */
@@ -31,9 +32,10 @@ export const OpponentInput: React.FC<OpponentInputProps> = ({
   onChangeText,
   colors,
 }) => {
+  const { sp, font } = useResponsive();
   return (
-    <View style={styles.formSection}>
-      <Text style={[styles.formLabel, { color: colors.textSecondary }]}>
+    <View style={[styles.formSection, { marginBottom: sp.lg }]}>
+      <Text style={[styles.formLabel, { color: colors.textSecondary, fontSize: font.xs, marginBottom: sp.sm }]}>
         {MATCH_CREATION_FORM_LABELS.OPPONENT}{" "}
         <Text style={{ color: STATUS_COLORS.required }}>*</Text>
       </Text>
@@ -48,6 +50,9 @@ export const OpponentInput: React.FC<OpponentInputProps> = ({
             backgroundColor: colors.surfaceColor,
             borderColor: colors.borderColor,
             color: colors.textPrimary,
+            padding: sp.md,
+            borderRadius: sp.md,
+            fontSize: font.md,
           },
         ]}
       />

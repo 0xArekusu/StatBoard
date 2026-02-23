@@ -13,6 +13,7 @@ import {
   TouchableOpacity,
 } from "react-native";
 import { useTheme } from "../../src/contexts/ThemeContext";
+import { useResponsive } from "../../src/hooks/useResponsive";
 import {
   PlayerStats,
   SortBy,
@@ -46,6 +47,7 @@ export default function CardsTab({
   setViewPlayer,
 }: CardsTabProps) {
   const { colors, isDark } = useTheme();
+  const { sp, font, sizes, isCompact } = useResponsive();
 
   // Theme colors
   const textPrimary = isDark ? colors.text.primary : colors.text.primary;
@@ -56,10 +58,10 @@ export default function CardsTab({
   const bgColor = isDark ? colors.background : colors.surface;
 
   return (
-    <View style={styles.cardsContainer}>
+    <View style={[styles.cardsContainer, { padding: sp.md }]}>
       {/* Sort Chips */}
-      <View style={styles.cardsSortSection}>
-        <Text style={[styles.courtFilterLabel, { color: textTertiary }]}>
+      <View style={[styles.cardsSortSection, { marginBottom: sp.md }]}>
+        <Text style={[styles.courtFilterLabel, { color: textTertiary, fontSize: font.xs, marginBottom: sp.sm }]}>
           TRIER PAR
         </Text>
         <ScrollView
@@ -67,7 +69,7 @@ export default function CardsTab({
           showsHorizontalScrollIndicator={false}
           style={styles.courtFilterScroll}
         >
-          <View style={styles.courtFilterButtonsRow}>
+          <View style={[styles.courtFilterButtonsRow, { gap: sp.sm }]}>
             <TouchableOpacity
               onPress={() => handleSort("name")}
               style={[
@@ -442,7 +444,7 @@ export default function CardsTab({
                 playerName={player.name}
                 playerNumber={player.playerNumber}
                 photoUrl={player.photoUrl}
-                size={56}
+                size={isCompact ? 40 : 56}
                 borderColor={borderColor}
                 backgroundColor={bgColor}
                 textColor={textPrimary}
@@ -450,7 +452,7 @@ export default function CardsTab({
               />
               <View style={{ flex: 1, marginRight: 8 }}>
                 <Text
-                  style={[styles.cardPlayerName, { color: textPrimary }]}
+                  style={[styles.cardPlayerName, { color: textPrimary, fontSize: isCompact ? 16 : 20 }]}
                 >
                   {player.name}
                 </Text>
@@ -524,7 +526,7 @@ export default function CardsTab({
               { borderTopColor: borderColor },
             ]}
           >
-            <View style={styles.cardStatItem}>
+            <View style={[styles.cardStatItem, { backgroundColor: isDark ? colors.surfaceVariant : colors.surface }]}>
               <Text
                 style={[styles.cardStatLabel, { color: textTertiary }]}
               >
@@ -536,7 +538,7 @@ export default function CardsTab({
                 {player.min}
               </Text>
             </View>
-            <View style={styles.cardStatItem}>
+            <View style={[styles.cardStatItem, { backgroundColor: isDark ? colors.surfaceVariant : colors.surface }]}>
               <Text
                 style={[styles.cardStatLabel, { color: textTertiary }]}
               >
@@ -548,7 +550,7 @@ export default function CardsTab({
                 {player.reb_off}/{player.reb_def}
               </Text>
             </View>
-            <View style={styles.cardStatItem}>
+            <View style={[styles.cardStatItem, { backgroundColor: isDark ? colors.surfaceVariant : colors.surface }]}>
               <Text
                 style={[styles.cardStatLabel, { color: textTertiary }]}
               >
@@ -560,7 +562,7 @@ export default function CardsTab({
                 {player.ast}
               </Text>
             </View>
-            <View style={styles.cardStatItem}>
+            <View style={[styles.cardStatItem, { backgroundColor: isDark ? colors.surfaceVariant : colors.surface }]}>
               <Text
                 style={[styles.cardStatLabel, { color: textTertiary }]}
               >
@@ -572,7 +574,7 @@ export default function CardsTab({
                 {player.stl}
               </Text>
             </View>
-            <View style={styles.cardStatItem}>
+            <View style={[styles.cardStatItem, { backgroundColor: isDark ? colors.surfaceVariant : colors.surface }]}>
               <Text
                 style={[styles.cardStatLabel, { color: textTertiary }]}
               >
@@ -584,7 +586,7 @@ export default function CardsTab({
                 {player.blk}
               </Text>
             </View>
-            <View style={styles.cardStatItem}>
+            <View style={[styles.cardStatItem, { backgroundColor: isDark ? colors.surfaceVariant : colors.surface }]}>
               <Text
                 style={[styles.cardStatLabel, { color: textTertiary }]}
               >
@@ -596,7 +598,7 @@ export default function CardsTab({
                 {player.to}
               </Text>
             </View>
-            <View style={styles.cardStatItem}>
+            <View style={[styles.cardStatItem, { backgroundColor: isDark ? colors.surfaceVariant : colors.surface }]}>
               <Text
                 style={[styles.cardStatLabel, { color: textTertiary }]}
               >
@@ -609,7 +611,7 @@ export default function CardsTab({
               </Text>
             </View>
             <View
-              style={[styles.cardStatItem, { backgroundColor: bgColor }]}
+              style={[styles.cardStatItem, { backgroundColor: isDark ? colors.surfaceVariant : colors.surface }]}
             >
               <Text
                 style={[styles.cardStatLabel, { color: textTertiary }]}

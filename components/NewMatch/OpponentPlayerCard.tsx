@@ -9,6 +9,7 @@ import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { SLATE_COLORS, UI_COLORS, STATUS_COLORS } from "../../src/theme";
 import type { Player } from "../../models/Player";
+import { useResponsive } from "../../src/hooks/useResponsive";
 
 interface OpponentPlayerCardProps {
   /** Player data */
@@ -41,38 +42,46 @@ export const OpponentPlayerCard: React.FC<OpponentPlayerCardProps> = ({
   isDark,
   colors,
 }) => {
+  const { sp, font, sizes } = useResponsive();
   return (
     <View
       style={[
         styles.opponentCard,
-        { backgroundColor: colors.surfaceColor, borderColor: colors.borderColor },
+        {
+          backgroundColor: colors.surfaceColor,
+          borderColor: colors.borderColor,
+          padding: sp.sm + sp.xs,
+          borderRadius: sp.sm,
+        },
       ]}
     >
-      <View style={styles.opponentCardLeft}>
+      <View style={[styles.opponentCardLeft, { gap: sp.sm + sp.xs }]}>
         {/* Jersey Number */}
         <View
           style={[
             styles.opponentNumber,
             {
               backgroundColor: isDark ? SLATE_COLORS[800] : SLATE_COLORS[100],
+              width: sp.xxl,
+              height: sp.xxl,
             },
           ]}
         >
-          <Text style={[styles.opponentNumberText, { color: colors.textPrimary }]}>
+          <Text style={[styles.opponentNumberText, { color: colors.textPrimary, fontSize: font.sm }]}>
             {player.jerseyNumber}
           </Text>
         </View>
 
         {/* Player Name */}
         <Text
-          style={[styles.opponentName, { color: colors.textPrimary }]}
+          style={[styles.opponentName, { color: colors.textPrimary, fontSize: font.md }]}
           numberOfLines={1}
         >
           {player.name}
         </Text>
       </View>
 
-      <View style={styles.opponentCardRight}>
+      <View style={[styles.opponentCardRight, { gap: sp.sm }]}>
         {/* Starter Toggle */}
         <TouchableOpacity
           onPress={onToggleStarter}
@@ -82,21 +91,22 @@ export const OpponentPlayerCard: React.FC<OpponentPlayerCardProps> = ({
               backgroundColor: isStarter ? UI_COLORS.starBackground : "transparent",
               borderWidth: isStarter ? 2 : 0,
               borderColor: isStarter ? UI_COLORS.star : "transparent",
+              padding: sp.sm,
             },
           ]}
         >
           <MaterialCommunityIcons
             name={isStarter ? "star" : "star-outline"}
-            size={20}
+            size={sizes.iconMd}
             color={isStarter ? UI_COLORS.star : colors.textSecondary}
           />
         </TouchableOpacity>
 
         {/* Delete Button */}
-        <TouchableOpacity onPress={onDelete} style={styles.deleteButton}>
+        <TouchableOpacity onPress={onDelete} style={[styles.deleteButton, { padding: sp.xs }]}>
           <MaterialCommunityIcons
             name="delete"
-            size={20}
+            size={sizes.iconMd}
             color={STATUS_COLORS.error}
           />
         </TouchableOpacity>

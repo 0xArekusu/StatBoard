@@ -12,6 +12,7 @@ import Svg, { Path, Line } from "react-native-svg";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { ActionType, ShotSpecification } from "../../src/models/ActionTypes";
 import { Team } from "../../src/models/types";
+import { useResponsive } from "../../src/hooks/useResponsive";
 
 interface PeriodScore {
   home: number;
@@ -63,6 +64,7 @@ export default function EvolutionTab({
   actions,
   colors,
 }: EvolutionTabProps) {
+  const { sp, font, sizes } = useResponsive();
   const [selectedPoint, setSelectedPoint] = useState<number | null>(null);
 
   // Calculate period scores and graph points
@@ -186,7 +188,7 @@ export default function EvolutionTab({
   return (
     <ScrollView
       style={styles.container}
-      contentContainerStyle={styles.contentContainer}
+      contentContainerStyle={[styles.contentContainer, { padding: sp.md, gap: sp.md }]}
     >
       {/* Period Scores Table */}
       <View
@@ -195,6 +197,8 @@ export default function EvolutionTab({
           {
             backgroundColor: colors.surface,
             borderColor: colors.border,
+            borderRadius: sp.md,
+            padding: sp.md,
           },
         ]}
       >
@@ -204,15 +208,18 @@ export default function EvolutionTab({
             {
               backgroundColor: colors.surface,
               borderBottomColor: colors.border,
+              marginBottom: sp.md,
+              paddingBottom: sp.sm,
+              gap: sp.sm,
             },
           ]}
         >
           <MaterialCommunityIcons
             name="chart-timeline-variant"
-            size={16}
+            size={font.md}
             color={colors.primary}
           />
-          <Text style={[styles.cardTitle, { color: colors.text.primary }]}>
+          <Text style={[styles.cardTitle, { color: colors.text.primary, fontSize: font.md }]}>
             SCORES PAR PÉRIODE
           </Text>
         </View>
@@ -228,6 +235,8 @@ export default function EvolutionTab({
                   color: colors.text.secondary,
                   borderRightWidth: 1,
                   borderRightColor: colors.border,
+                  fontSize: font.xs,
+                  padding: sp.xs,
                 },
               ]}
             >
@@ -245,6 +254,8 @@ export default function EvolutionTab({
                       color: colors.text.secondary,
                       borderRightWidth: 1,
                       borderRightColor: colors.border,
+                      fontSize: font.xs,
+                      padding: sp.xs,
                     }
                   ]}
                 >
@@ -259,6 +270,8 @@ export default function EvolutionTab({
                 {
                   color: colors.text.secondary,
                   backgroundColor: colors.surface,
+                  fontSize: font.xs,
+                  padding: sp.xs,
                 },
               ]}
             >

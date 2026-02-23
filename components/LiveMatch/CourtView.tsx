@@ -20,6 +20,7 @@ import {
   COURT_SVG_WIDTH_PORTRAIT,
   COURT_SVG_HEIGHT_PORTRAIT,
 } from "../../constants";
+import { useResponsive } from "../../src/hooks/useResponsive";
 
 interface CourtViewProps {
   onCourtClick: (x: number, y: number) => void;

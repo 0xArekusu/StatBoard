@@ -9,6 +9,7 @@ import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { BRAND_COLORS, SLATE_COLORS, COMMON_COLORS, OPACITY } from "../../src/theme";
 import { MATCH_CREATION_BUTTON_LABELS } from "../../constants";
+import { useResponsive } from "../../src/hooks/useResponsive";
 
 interface MatchFooterProps {
   /** Current step (1 or 2) */
@@ -36,6 +37,7 @@ export const MatchFooter: React.FC<MatchFooterProps> = ({
   isDark,
   colors,
 }) => {
+  const { sp, font, sizes } = useResponsive();
   return (
     <View
       style={[
@@ -43,6 +45,7 @@ export const MatchFooter: React.FC<MatchFooterProps> = ({
         {
           backgroundColor: colors.surfaceColor,
           borderTopColor: colors.borderColor,
+          padding: sp.lg,
         },
       ]}
     >
@@ -59,17 +62,20 @@ export const MatchFooter: React.FC<MatchFooterProps> = ({
                 ? SLATE_COLORS[800]
                 : SLATE_COLORS[300],
               opacity: enabled ? 1 : OPACITY.disabled,
+              gap: sp.sm,
+              padding: sp.md,
+              borderRadius: sp.md,
             },
           ]}
         >
           <Text
-            style={[styles.primaryButtonText, { color: COMMON_COLORS.white }]}
+            style={[styles.primaryButtonText, { color: COMMON_COLORS.white, fontSize: font.md }]}
           >
             {MATCH_CREATION_BUTTON_LABELS.NEXT}
           </Text>
           <MaterialCommunityIcons
             name="arrow-right"
-            size={20}
+            size={sizes.iconMd}
             color={COMMON_COLORS.white}
           />
         </TouchableOpacity>
@@ -86,16 +92,19 @@ export const MatchFooter: React.FC<MatchFooterProps> = ({
                 ? SLATE_COLORS[800]
                 : SLATE_COLORS[300],
               opacity: enabled ? 1 : OPACITY.disabled,
+              gap: sp.sm,
+              padding: sp.md,
+              borderRadius: sp.md,
             },
           ]}
         >
           <MaterialCommunityIcons
             name="play-circle"
-            size={24}
+            size={sizes.iconMd}
             color={COMMON_COLORS.white}
           />
           <Text
-            style={[styles.primaryButtonText, { color: COMMON_COLORS.white }]}
+            style={[styles.primaryButtonText, { color: COMMON_COLORS.white, fontSize: font.md }]}
           >
             {MATCH_CREATION_BUTTON_LABELS.START}
           </Text>

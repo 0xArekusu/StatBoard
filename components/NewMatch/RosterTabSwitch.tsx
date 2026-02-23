@@ -8,6 +8,7 @@ import React, { useRef } from "react";
 import { View, Text, TouchableOpacity, StyleSheet, Animated } from "react-native";
 import { BRAND_COLORS, SLATE_COLORS, COMMON_COLORS } from "../../src/theme";
 import { MATCH_ROSTER_TAB_LABELS } from "../../constants";
+import { useResponsive } from "../../src/hooks/useResponsive";
 
 type RosterTab = "HOME" | "AWAY";
 
@@ -41,7 +42,14 @@ export const RosterTabSwitch: React.FC<RosterTabSwitchProps> = ({
   isDark,
   colors,
 }) => {
+  const { sp, font } = useResponsive();
   const toggleAnimation = useRef(new Animated.Value(activeTab === "HOME" ? 0 : 1)).current;
+
+  // Responsive toggle dimensions
+  const toggleWidth = sp.xxl * 7.5; // ~240 default
+  const toggleHeight = sp.xxl * 1.5; // ~48 default
+  const sliderWidth = toggleWidth / 2 - sp.xs; // Half width minus small gap
+  const sliderHeight = toggleHeight - sp.xs; // Height minus small gap
 
   const handleToggle = () => {
     const newTab: RosterTab = activeTab === "HOME" ? "AWAY" : "HOME";
@@ -61,7 +69,12 @@ export const RosterTabSwitch: React.FC<RosterTabSwitchProps> = ({
     <View
       style={[
         styles.tabsContainer,
-        { backgroundColor: colors.surfaceColor, borderBottomColor: colors.borderColor },
+        {
+          backgroundColor: colors.surfaceColor,
+          borderBottomColor: colors.borderColor,
+          paddingHorizontal: sp.lg,
+          paddingVertical: sp.md,
+        },
       ]}
     >
       <TouchableOpacity
@@ -71,6 +84,9 @@ export const RosterTabSwitch: React.FC<RosterTabSwitchProps> = ({
           {
             backgroundColor: isDark ? SLATE_COLORS[800] : SLATE_COLORS[100],
             borderColor: colors.borderColor,
+            width: toggleWidth,
+            height: toggleHeight,
+            borderRadius: sp.sm + 2,
           },
         ]}
       >
@@ -79,11 +95,14 @@ export const RosterTabSwitch: React.FC<RosterTabSwitchProps> = ({
             styles.toggleSlider,
             {
               backgroundColor: BRAND_COLORS[600],
+              width: sliderWidth,
+              height: sliderHeight,
+              borderRadius: sp.sm + 2,
               transform: [
                 {
                   translateX: toggleAnimation.interpolate({
                     inputRange: [0, 1],
-                    outputRange: [0, 120],
+                    outputRange: [0, sliderWidth + sp.xs],
                   }),
                 },
               ],
@@ -100,6 +119,7 @@ export const RosterTabSwitch: React.FC<RosterTabSwitchProps> = ({
                     ? COMMON_COLORS.white
                     : colors.textSecondary,
                 fontWeight: activeTab === "HOME" ? "bold" : "normal",
+                fontSize: font.sm,
               },
             ]}
           >
@@ -116,6 +136,7 @@ export const RosterTabSwitch: React.FC<RosterTabSwitchProps> = ({
                     ? COMMON_COLORS.white
                     : colors.textSecondary,
                 fontWeight: activeTab === "AWAY" ? "bold" : "normal",
+                fontSize: font.sm,
               },
             ]}
           >

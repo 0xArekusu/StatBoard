@@ -17,6 +17,7 @@ import { SubscriptionTier, SUBSCRIPTION_LIMITS, SUBSCRIPTION_TIER_LABELS } from 
 import { ClubSubTab, CLUB_SUB_TAB } from "../../constants";
 import TeamCard from "./TeamCard";
 import { COACH_ASSISTANT_LOGO_MARGIN } from "../../src/utils/logoHelper";
+import { useResponsive } from "../../src/hooks/useResponsive";
 
 interface ClubInfoViewProps {
   club: Club;
@@ -58,6 +59,7 @@ export default function ClubInfoView({
   subscriptionName,
 }: ClubInfoViewProps) {
   const { colors } = useTheme();
+  const { sp, font, sizes } = useResponsive();
 
   const handleCopyCode = async () => {
     try {

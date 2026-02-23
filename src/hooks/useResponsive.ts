@@ -37,6 +37,7 @@ export interface ResponsiveValues {
   };
   /** Font sizes adapted to current scale */
   font: {
+    xxs: number;
     xs: number;
     sm: number;
     md: number;
@@ -47,6 +48,7 @@ export interface ResponsiveValues {
   };
   /** UI element sizes adapted to current scale */
   sizes: {
+    avatarXs: number;
     avatarSm: number;
     avatarMd: number;
     avatarLg: number;
@@ -68,62 +70,67 @@ export function useResponsive(): ResponsiveValues {
   const isPortrait = height > width;
   const shortSide = Math.min(width, height);
   const isMobile = shortSide < BREAKPOINTS.phoneMaxWidth;
-  const isCompact = isMobile || !isPortrait || height < BREAKPOINTS.smallPortraitMaxHeight;
+  const isCompact =
+    isMobile || !isPortrait || height < BREAKPOINTS.smallPortraitMaxHeight;
   const scale: SizeScale = isCompact ? "compact" : "normal";
 
   const sp = isCompact
     ? {
-        xs: Spacing.xs,   // 4
-        sm: Spacing.xs,   // 4  (was 8)
-        md: Spacing.sm,   // 8  (was 16)
-        lg: Spacing.md,   // 16 (was 24)
-        xl: Spacing.lg,   // 24 (was 32)
-        xxl: Spacing.xl,  // 32 (was 40)
+        xs: Spacing.xs, // 4
+        sm: Spacing.xs, // 4  (was 8)
+        md: Spacing.sm, // 8  (was 16)
+        lg: Spacing.md, // 16 (was 24)
+        xl: Spacing.lg, // 24 (was 32)
+        xxl: Spacing.xl, // 32 (was 40)
       }
     : {
-        xs: Spacing.xs,   // 4
-        sm: Spacing.sm,   // 8
-        md: Spacing.md,   // 16
-        lg: Spacing.lg,   // 24
-        xl: Spacing.xl,   // 32
+        xs: Spacing.xs, // 4
+        sm: Spacing.sm, // 8
+        md: Spacing.md, // 16
+        lg: Spacing.lg, // 24
+        xl: Spacing.xl, // 32
         xxl: Spacing.xxl, // 40
       };
 
   const font = isCompact
     ? {
-        xs: Typography.fontSize.xs,   // 10
-        sm: Typography.fontSize.xs,   // 10 (was 12)
-        md: Typography.fontSize.sm,   // 12 (was 14)
-        lg: Typography.fontSize.md,   // 14 (was 16)
-        xl: Typography.fontSize.lg,   // 16 (was 18)
-        xxl: Typography.fontSize.xl,  // 18 (was 24)
+        xxs: 8,
+        xs: Typography.fontSize.xs, // 10
+        sm: Typography.fontSize.xs, // 10 (was 12)
+        md: Typography.fontSize.sm, // 12 (was 14)
+        lg: Typography.fontSize.md, // 14 (was 16)
+        xl: Typography.fontSize.lg, // 16 (was 18)
+        xxl: Typography.fontSize.xl, // 18 (was 24)
         xxxl: Typography.fontSize.xxl, // 24 (was 36)
       }
     : {
-        xs: Typography.fontSize.xs,   // 10
-        sm: Typography.fontSize.sm,   // 12
-        md: Typography.fontSize.md,   // 14
-        lg: Typography.fontSize.lg,   // 16
-        xl: Typography.fontSize.xl,   // 18
+        xxs: Typography.fontSize.xs, // 10
+        xs: Typography.fontSize.xs, // 10
+        sm: Typography.fontSize.sm, // 12
+        md: Typography.fontSize.md, // 14
+        lg: Typography.fontSize.lg, // 16
+        xl: Typography.fontSize.xl, // 18
         xxl: Typography.fontSize.xxl, // 24
         xxxl: Typography.fontSize.xxxl, // 36
       };
 
   const sizes = isCompact
     ? {
-        avatarSm: 32,
+        avatarXs: 24,
+        avatarSm: 38,
         avatarMd: 56,
         avatarLg: 72,
         logoSm: 60,
         logoMd: 90,
         iconSm: 16,
         iconMd: 20,
-        colorSwatch: 36,       // bouton rond couleur (normal: 50)
-        colorSwatchRectW: 48,  // bouton rect parquet largeur (normal: 64)
-        colorSwatchRectH: 30,  // bouton rect parquet hauteur (normal: 40)
+        colorSwatch: 36, // bouton rond couleur (normal: 50)
+        colorSwatchRectW: 48, // bouton rect parquet largeur (normal: 64)
+        colorSwatchRectH: 30, // bouton rect parquet hauteur (normal: 40)
       }
     : {
-        avatarSm: 40,
+        avatarXs: 32,
+        avatarSm: 45,
         avatarMd: 72,
         avatarLg: 96,
         logoSm: 90,

@@ -2,6 +2,7 @@ import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from "react-native";
 import * as Sentry from "@sentry/react-native";
 import { useTheme } from "../src/contexts/ThemeContext";
+import { useResponsive } from "../src/hooks/useResponsive";
 
 interface SentryTestScreenProps {
   navigation: {
@@ -11,6 +12,7 @@ interface SentryTestScreenProps {
 
 export default function SentryTestScreen({ navigation }: SentryTestScreenProps) {
   const { colors } = useTheme();
+  const { sp, font, sizes } = useResponsive();
 
   const testCrash = () => {
     Alert.alert(
@@ -54,28 +56,28 @@ export default function SentryTestScreen({ navigation }: SentryTestScreenProps) 
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={[styles.header, { backgroundColor: colors.primary }]}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Text style={styles.backButtonText}>← Retour</Text>
+      <View style={[styles.header, { backgroundColor: colors.primary, padding: sp.lg, paddingTop: sp.xxl * 1.5 }]}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={[styles.backButton, { marginBottom: sp.sm }]}>
+          <Text style={[styles.backButtonText, { fontSize: font.md }]}>← Retour</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Test Sentry</Text>
+        <Text style={[styles.headerTitle, { fontSize: font.xxl }]}>Test Sentry</Text>
       </View>
 
-      <ScrollView style={styles.content}>
-        <View style={styles.section}>
-          <Text style={[styles.title, { color: colors.text }]}>Tester l'intégration Sentry</Text>
-          <Text style={[styles.description, { color: colors.textSecondary }]}>
+      <ScrollView style={[styles.content, { padding: sp.lg }]}>
+        <View style={[styles.section, { marginBottom: sp.xl }]}>
+          <Text style={[styles.title, { color: colors.text, fontSize: font.xl, marginBottom: sp.sm }]}>Tester l'intégration Sentry</Text>
+          <Text style={[styles.description, { color: colors.textSecondary, fontSize: font.md }]}>
             Utilisez ces boutons pour vérifier que Sentry capture correctement les erreurs et événements.
           </Text>
         </View>
 
-        <View style={styles.buttonContainer}>
+        <View style={[styles.buttonContainer, { gap: sp.md }]}>
           <TouchableOpacity
-            style={[styles.button, { backgroundColor: "#E74C3C" }]}
+            style={[styles.button, { backgroundColor: "#E74C3C", padding: sp.md, borderRadius: sp.md }]}
             onPress={testCrash}
           >
-            <Text style={styles.buttonText}>🔥 Crash l'app</Text>
-            <Text style={styles.buttonSubtext}>Force un crash complet</Text>
+            <Text style={[styles.buttonText, { fontSize: font.lg, marginBottom: sp.xs }]}>🔥 Crash l'app</Text>
+            <Text style={[styles.buttonSubtext, { fontSize: font.sm }]}>Force un crash complet</Text>
           </TouchableOpacity>
 
           <TouchableOpacity

@@ -15,6 +15,7 @@ import {
   ReboundSpecification,
 } from "../../src/models/ActionTypes";
 import { MarkerType } from "./SharedComponents";
+import { useResponsive } from "../../src/hooks/useResponsive";
 
 interface StatsLegendModalProps {
   visible: boolean;
@@ -26,6 +27,7 @@ export default function StatsLegendModal({
   onClose,
 }: StatsLegendModalProps) {
   const { colors } = useTheme();
+  const { sp, font, sizes } = useResponsive();
 
   const textPrimary = colors.text.primary;
   const textSecondary = colors.text.secondary;

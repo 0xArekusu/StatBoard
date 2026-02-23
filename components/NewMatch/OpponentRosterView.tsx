@@ -15,6 +15,7 @@ import {
 } from "../../constants";
 import { OpponentPlayerCard } from "./OpponentPlayerCard";
 import type { Player } from "../../models/Player";
+import { useResponsive } from "../../src/hooks/useResponsive";
 
 interface OpponentRosterViewProps {
   /** Whether opponent stats tracking is enabled */
@@ -71,9 +72,11 @@ export const OpponentRosterView: React.FC<OpponentRosterViewProps> = ({
   isDark,
   colors,
 }) => {
+  const { sp, font, sizes } = useResponsive();
+
   if (!trackOpponentStats) {
     return (
-      <View style={styles.rosterSection}>
+      <View style={[styles.rosterSection, { marginBottom: sp.lg }]}>
         <View
           style={[
             styles.disabledOpponentBox,
@@ -82,22 +85,24 @@ export const OpponentRosterView: React.FC<OpponentRosterViewProps> = ({
                 ? `${SLATE_COLORS[900]}80`
                 : SLATE_COLORS[100],
               borderColor: colors.borderColor,
+              padding: sp.xxl,
+              borderRadius: sp.md,
             },
           ]}
         >
           <MaterialCommunityIcons
             name="chart-bar"
-            size={32}
+            size={sp.xxl}
             color={colors.textSecondary}
             style={{ opacity: 0.5 }}
           />
           <Text
-            style={[styles.disabledOpponentTitle, { color: colors.textPrimary }]}
+            style={[styles.disabledOpponentTitle, { color: colors.textPrimary, fontSize: font.md, marginTop: sp.md }]}
           >
             {MATCH_CREATION_INFO_MESSAGES.OPPONENT_STATS_DISABLED}
           </Text>
           <Text
-            style={[styles.disabledOpponentText, { color: colors.textSecondary }]}
+            style={[styles.disabledOpponentText, { color: colors.textSecondary, fontSize: font.sm, marginTop: sp.sm }]}
           >
             {MATCH_CREATION_INFO_MESSAGES.OPPONENT_STATS_DISABLED_DETAIL}
           </Text>

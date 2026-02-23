@@ -99,11 +99,11 @@ export default function TeamRosterScreen() {
 
       const subscription = BackHandler.addEventListener(
         "hardwareBackPress",
-        onBackPress
+        onBackPress,
       );
 
       return () => subscription.remove();
-    }, [navigation])
+    }, [navigation]),
   );
 
   /**
@@ -151,7 +151,7 @@ export default function TeamRosterScreen() {
 
     // Validation: Check duplicate name
     const isDuplicateName = roster.some(
-      (p) => p.name.toLowerCase() === trimmedName.toLowerCase()
+      (p) => p.name.toLowerCase() === trimmedName.toLowerCase(),
     );
     if (isDuplicateName) {
       setAddPlayerError("Un joueur avec ce nom existe déjà.");
@@ -216,7 +216,7 @@ export default function TeamRosterScreen() {
               setRoster(roster.filter((p) => p.id !== id));
             },
           },
-        ]
+        ],
       );
     }
   };
@@ -254,7 +254,7 @@ export default function TeamRosterScreen() {
     // Check if name already exists (excluding current player)
     const isDuplicateName = roster.some(
       (p) =>
-        p.id !== playerId && p.name.toLowerCase() === trimmedName.toLowerCase()
+        p.id !== playerId && p.name.toLowerCase() === trimmedName.toLowerCase(),
     );
 
     if (isDuplicateName) {
@@ -264,7 +264,7 @@ export default function TeamRosterScreen() {
 
     // Check if jersey number already exists (excluding current player)
     const isDuplicateNumber = roster.some(
-      (p) => p.id !== playerId && p.jerseyNumber === numValue
+      (p) => p.id !== playerId && p.jerseyNumber === numValue,
     );
 
     if (isDuplicateNumber) {
@@ -281,8 +281,8 @@ export default function TeamRosterScreen() {
               jerseyNumber: numValue,
               photoUrl: editingPlayerPhoto || p.photoUrl,
             }
-          : p
-      )
+          : p,
+      ),
     );
     setEditingPlayerId(null);
     setEditingPlayerPhoto("");
@@ -345,7 +345,7 @@ export default function TeamRosterScreen() {
     if (roster.length < 5) {
       Alert.alert(
         "Erreur",
-        `L'équipe doit comporter au moins 5 joueurs (Actuellement : ${roster.length})`
+        `L'équipe doit comporter au moins 5 joueurs (Actuellement : ${roster.length})`,
       );
       return;
     }
@@ -362,7 +362,7 @@ export default function TeamRosterScreen() {
         const coachPhotoId = `coach-${Date.now()}`;
         const { url, error } = await photoService.uploadPlayerPhoto(
           coachPhotoUrl,
-          coachPhotoId
+          coachPhotoId,
         );
 
         if (error) {
@@ -385,7 +385,7 @@ export default function TeamRosterScreen() {
             coachName: coachName.trim(),
             coachPhotoUrl: uploadedCoachPhotoUrl || undefined,
           },
-          user!.id
+          user!.id,
         );
 
         // Update players intelligently
@@ -400,13 +400,13 @@ export default function TeamRosterScreen() {
             const playerPhotoId = `player-${Date.now()}-${player.id}`;
             const { url, error } = await photoService.uploadPlayerPhoto(
               player.photoUrl,
-              playerPhotoId
+              playerPhotoId,
             );
 
             if (error) {
               console.error(
                 `Error uploading photo for player ${player.name}:`,
-                error
+                error,
               );
               // Continue without photo if upload fails
               uploadedPlayerPhotoUrl = undefined;
@@ -438,7 +438,7 @@ export default function TeamRosterScreen() {
           .filter((p) => !p.id.startsWith("temp-"))
           .map((p) => p.id);
         const playersToDelete = existingPlayers.filter(
-          (p) => !rosterIds.includes(p.id)
+          (p) => !rosterIds.includes(p.id),
         );
         for (const player of playersToDelete) {
           await playerService.deletePlayer(player.id, teamId);
@@ -466,7 +466,7 @@ export default function TeamRosterScreen() {
             coachName: coachName.trim(),
             coachPhotoUrl: uploadedCoachPhotoUrl || undefined,
           },
-          user!.id
+          user!.id,
         );
 
         if (!result.success || !result.team) {
@@ -484,13 +484,13 @@ export default function TeamRosterScreen() {
             const playerPhotoId = `player-${Date.now()}-${player.id}`;
             const { url, error } = await photoService.uploadPlayerPhoto(
               player.photoUrl,
-              playerPhotoId
+              playerPhotoId,
             );
 
             if (error) {
               console.error(
                 `Error uploading photo for player ${player.name}:`,
-                error
+                error,
               );
               // Continue without photo if upload fails
               uploadedPlayerPhotoUrl = undefined;
@@ -832,9 +832,11 @@ export default function TeamRosterScreen() {
                   {
                     backgroundColor: colors.surface,
                     borderColor: colors.border,
-                    width: sizes.avatarMd,
-                    height: sizes.avatarMd,
-                    borderRadius: sizes.avatarMd / 2,
+                    width: isCompact ? sizes.avatarSm : sizes.avatarMd,
+                    height: isCompact ? sizes.avatarSm : sizes.avatarMd,
+                    borderRadius: isCompact
+                      ? sizes.avatarSm / 2
+                      : sizes.avatarMd / 2,
                   },
                 ]}
               >
@@ -977,9 +979,15 @@ export default function TeamRosterScreen() {
                             {
                               backgroundColor: colors.surface,
                               borderColor: colors.border,
-                              width: sizes.avatarMd,
-                              height: sizes.avatarMd,
-                              borderRadius: sizes.avatarMd / 2,
+                              width: isCompact
+                                ? sizes.avatarSm
+                                : sizes.avatarMd,
+                              height: isCompact
+                                ? sizes.avatarSm
+                                : sizes.avatarMd,
+                              borderRadius: isCompact
+                                ? sizes.avatarSm / 2
+                                : sizes.avatarMd / 2,
                             },
                           ]}
                         >
@@ -1093,7 +1101,7 @@ export default function TeamRosterScreen() {
                             playerName={player.name}
                             playerNumber={player.jerseyNumber}
                             photoUrl={player.photoUrl}
-                            size={sizes.avatarMd}
+                            size={isCompact ? sizes.avatarSm : sizes.avatarSm}
                             borderColor={colors.border}
                             backgroundColor={colors.surface}
                             textColor={colors.text.secondary}

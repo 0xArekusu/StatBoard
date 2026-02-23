@@ -13,6 +13,7 @@ import {
   MATCH_FORMAT_PRESETS,
   ROSTER_LIMITS,
 } from "../../constants";
+import { useResponsive } from "../../src/hooks/useResponsive";
 
 interface MatchFormatSelectorProps {
   /** Number of periods */
@@ -55,14 +56,16 @@ export const MatchFormatSelector: React.FC<MatchFormatSelectorProps> = ({
     onPeriodDurationChange(MATCH_FORMAT_PRESETS.HALVES.periodDuration);
   };
 
+  const { sp, font, sizes } = useResponsive();
+
   return (
-    <View style={styles.formSection}>
-      <Text style={[styles.formLabel, { color: colors.textSecondary }]}>
+    <View style={[styles.formSection, { marginBottom: sp.lg }]}>
+      <Text style={[styles.formLabel, { color: colors.textSecondary, fontSize: font.xs, marginBottom: sp.sm }]}>
         {MATCH_CREATION_FORM_LABELS.MATCH_FORMAT}
       </Text>
 
       {/* Preset Buttons */}
-      <View style={styles.formatButtons}>
+      <View style={[styles.formatButtons, { gap: sp.md, marginBottom: sp.md }]}>
         <TouchableOpacity
           onPress={handleQuartersPreset}
           style={[
@@ -74,6 +77,8 @@ export const MatchFormatSelector: React.FC<MatchFormatSelectorProps> = ({
                   : colors.surfaceColor,
               borderColor:
                 periodCount === 4 ? BRAND_COLORS[500] : colors.borderColor,
+              paddingVertical: sp.sm + sp.xs,
+              borderRadius: sp.sm,
             },
           ]}
         >
@@ -83,6 +88,7 @@ export const MatchFormatSelector: React.FC<MatchFormatSelectorProps> = ({
               {
                 color:
                   periodCount === 4 ? BRAND_COLORS[600] : colors.textSecondary,
+                fontSize: font.md,
               },
             ]}
           >
@@ -100,6 +106,8 @@ export const MatchFormatSelector: React.FC<MatchFormatSelectorProps> = ({
                   : colors.surfaceColor,
               borderColor:
                 periodCount === 2 ? BRAND_COLORS[500] : colors.borderColor,
+              paddingVertical: sp.sm + sp.xs,
+              borderRadius: sp.sm,
             },
           ]}
         >
@@ -109,6 +117,7 @@ export const MatchFormatSelector: React.FC<MatchFormatSelectorProps> = ({
               {
                 color:
                   periodCount === 2 ? BRAND_COLORS[600] : colors.textSecondary,
+                fontSize: font.md,
               },
             ]}
           >
@@ -118,13 +127,13 @@ export const MatchFormatSelector: React.FC<MatchFormatSelectorProps> = ({
       </View>
 
       {/* Custom Adjusters */}
-      <View style={styles.durationRow}>
+      <View style={[styles.durationRow, { gap: sp.md }]}>
         {/* Period Count Adjuster */}
         <View style={styles.durationControl}>
-          <Text style={[styles.durationLabel, { color: colors.textSecondary }]}>
+          <Text style={[styles.durationLabel, { color: colors.textSecondary, fontSize: font.xs, marginBottom: sp.sm }]}>
             {MATCH_CREATION_FORM_LABELS.PERIODS}
           </Text>
-          <View style={styles.durationAdjuster}>
+          <View style={[styles.durationAdjuster, { gap: sp.xs }]}>
             <TouchableOpacity
               onPress={() =>
                 onPeriodCountChange(
@@ -137,12 +146,15 @@ export const MatchFormatSelector: React.FC<MatchFormatSelectorProps> = ({
                   backgroundColor: isDark
                     ? SLATE_COLORS[800]
                     : SLATE_COLORS[100],
+                  width: sp.xxl,
+                  height: sp.xxl,
+                  borderRadius: sp.md,
                 },
               ]}
             >
               <MaterialCommunityIcons
                 name="minus"
-                size={18}
+                size={sizes.iconMd * 0.75}
                 color={colors.textSecondary}
               />
             </TouchableOpacity>
@@ -152,15 +164,19 @@ export const MatchFormatSelector: React.FC<MatchFormatSelectorProps> = ({
                 {
                   backgroundColor: colors.surfaceColor,
                   borderColor: colors.borderColor,
+                  gap: sp.xs + 2,
+                  paddingVertical: sp.sm,
+                  paddingHorizontal: sp.sm + sp.xs,
+                  borderRadius: sp.sm,
                 },
               ]}
             >
               <MaterialCommunityIcons
                 name="timeline-clock"
-                size={16}
+                size={sizes.iconSm}
                 color={colors.textSecondary}
               />
-              <Text style={[styles.durationValue, { color: colors.textPrimary }]}>
+              <Text style={[styles.durationValue, { color: colors.textPrimary, fontSize: font.md }]}>
                 {periodCount}
               </Text>
             </View>
@@ -176,12 +192,15 @@ export const MatchFormatSelector: React.FC<MatchFormatSelectorProps> = ({
                   backgroundColor: isDark
                     ? SLATE_COLORS[800]
                     : SLATE_COLORS[100],
+                  width: sp.xxl,
+                  height: sp.xxl,
+                  borderRadius: sp.md,
                 },
               ]}
             >
               <MaterialCommunityIcons
                 name="plus"
-                size={18}
+                size={sizes.iconMd * 0.75}
                 color={colors.textSecondary}
               />
             </TouchableOpacity>
@@ -190,10 +209,10 @@ export const MatchFormatSelector: React.FC<MatchFormatSelectorProps> = ({
 
         {/* Duration Adjuster */}
         <View style={styles.durationControl}>
-          <Text style={[styles.durationLabel, { color: colors.textSecondary }]}>
+          <Text style={[styles.durationLabel, { color: colors.textSecondary, fontSize: font.xs, marginBottom: sp.sm }]}>
             {MATCH_CREATION_FORM_LABELS.MINUTES_PER_PERIOD}
           </Text>
-          <View style={styles.durationAdjuster}>
+          <View style={[styles.durationAdjuster, { gap: sp.xs }]}>
             <TouchableOpacity
               onPress={() =>
                 onPeriodDurationChange(
@@ -206,12 +225,15 @@ export const MatchFormatSelector: React.FC<MatchFormatSelectorProps> = ({
                   backgroundColor: isDark
                     ? SLATE_COLORS[800]
                     : SLATE_COLORS[100],
+                  width: sp.xxl,
+                  height: sp.xxl,
+                  borderRadius: sp.md,
                 },
               ]}
             >
               <MaterialCommunityIcons
                 name="minus"
-                size={18}
+                size={sizes.iconMd * 0.75}
                 color={colors.textSecondary}
               />
             </TouchableOpacity>
@@ -221,15 +243,19 @@ export const MatchFormatSelector: React.FC<MatchFormatSelectorProps> = ({
                 {
                   backgroundColor: colors.surfaceColor,
                   borderColor: colors.borderColor,
+                  gap: sp.xs + 2,
+                  paddingVertical: sp.sm,
+                  paddingHorizontal: sp.sm + sp.xs,
+                  borderRadius: sp.sm,
                 },
               ]}
             >
               <MaterialCommunityIcons
                 name="clock-outline"
-                size={16}
+                size={sizes.iconSm}
                 color={colors.textSecondary}
               />
-              <Text style={[styles.durationValue, { color: colors.textPrimary }]}>
+              <Text style={[styles.durationValue, { color: colors.textPrimary, fontSize: font.md }]}>
                 {periodDuration}
               </Text>
             </View>
@@ -245,12 +271,15 @@ export const MatchFormatSelector: React.FC<MatchFormatSelectorProps> = ({
                   backgroundColor: isDark
                     ? SLATE_COLORS[800]
                     : SLATE_COLORS[100],
+                  width: sp.xxl,
+                  height: sp.xxl,
+                  borderRadius: sp.md,
                 },
               ]}
             >
               <MaterialCommunityIcons
                 name="plus"
-                size={18}
+                size={sizes.iconMd * 0.75}
                 color={colors.textSecondary}
               />
             </TouchableOpacity>

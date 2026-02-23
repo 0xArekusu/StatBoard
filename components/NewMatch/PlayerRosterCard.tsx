@@ -16,6 +16,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import type { Player } from "../../models/Player";
 import { useTheme } from "../../src/contexts/ThemeContext";
 import PlayerAvatar from "../PlayerAvatar";
+import { useResponsive } from "../../src/hooks/useResponsive";
 
 interface PlayerRosterCardProps {
   /** Player data */
@@ -50,6 +51,7 @@ export const PlayerRosterCard: React.FC<PlayerRosterCardProps> = ({
   onNumberError,
 }) => {
   const { colors, isDark } = useTheme();
+  const { sp, font, sizes, isCompact } = useResponsive();
   const [isEditingNumber, setIsEditingNumber] = useState(false);
   const [tempNumber, setTempNumber] = useState(player.jerseyNumber.toString());
   const [numberError, setNumberError] = useState<string | null>(null);
@@ -74,7 +76,7 @@ export const PlayerRosterCard: React.FC<PlayerRosterCardProps> = ({
 
     // Check for duplicate number
     const isDuplicateNumber = allPlayers.some(
-      (p) => p.id !== player.id && p.jerseyNumber === newNumber
+      (p) => p.id !== player.id && p.jerseyNumber === newNumber,
     );
 
     if (isDuplicateNumber) {
@@ -102,145 +104,177 @@ export const PlayerRosterCard: React.FC<PlayerRosterCardProps> = ({
 
   return (
     <View style={styles.cardWrapper}>
-    <TouchableOpacity
-      onPress={onToggleSelect}
-      activeOpacity={0.8}
-      style={[
-        styles.playerCard,
-        {
-          backgroundColor: isSelected ? colors.surface : colors.surfaceVariant,
-          borderColor: isSelected ? `${colors.primary}50` : colors.border,
-          opacity: isSelected ? 1 : 0.6,
-        },
-      ]}
-    >
-      <View style={styles.playerCardLeft}>
-        {/* Checkbox */}
-        <View
-          style={[
-            styles.playerCheckbox,
-            {
-              borderColor: isSelected ? colors.primary : colors.border,
-              backgroundColor: isSelected ? colors.primary : "transparent",
-            },
-          ]}
-        >
-          {isSelected && (
-            <MaterialCommunityIcons
-              name="check"
-              size={16}
-              color={colors.text.primary}
-            />
-          )}
-        </View>
-
-        {/* Player Avatar */}
-        <PlayerAvatar
-          playerName={player.name}
-          playerNumber={player.jerseyNumber}
-          photoUrl={player.photoUrl}
-          size={40}
-          borderColor={colors.border}
-          backgroundColor={colors.surfaceVariant}
-          textColor={isSelected ? colors.text.primary : colors.text.secondary}
-          borderWidth={2}
-        />
-
-        {/* Player Name and Number */}
-        <View style={styles.playerNameContainer}>
-          <Text
+      <TouchableOpacity
+        onPress={onToggleSelect}
+        activeOpacity={0.8}
+        style={[
+          styles.playerCard,
+          {
+            backgroundColor: isSelected
+              ? colors.surface
+              : colors.surfaceVariant,
+            borderColor: isSelected ? `${colors.primary}50` : colors.border,
+            opacity: isSelected ? 1 : 0.6,
+            padding: sp.sm + sp.xs,
+            borderRadius: sp.md,
+          },
+        ]}
+      >
+        <View style={[styles.playerCardLeft, { gap: sp.sm + sp.xs }]}>
+          {/* Checkbox */}
+          <View
             style={[
-              styles.playerName,
+              styles.playerCheckbox,
               {
-                color: isSelected ? colors.text.primary : colors.text.secondary,
+                borderColor: isSelected ? colors.primary : colors.border,
+                backgroundColor: isSelected ? colors.primary : "transparent",
+                width: sizes.avatarSm * 0.6,
+                height: sizes.avatarSm * 0.6,
               },
             ]}
           >
-            {player.name}
-          </Text>
+            {isSelected && (
+              <MaterialCommunityIcons
+                name="check"
+                size={sizes.iconSm}
+                color={colors.text.primary}
+              />
+            )}
+          </View>
 
-          {/* Editable Number */}
-          {isEditingNumber ? (
-            <TextInput
-              value={tempNumber}
-              onChangeText={handleNumberChange}
-              onBlur={handleNumberSubmit}
-              onSubmitEditing={handleNumberSubmit}
-              keyboardType="number-pad"
-              maxLength={2}
-              autoFocus
-              selectTextOnFocus
+          {/* Player Avatar */}
+          <PlayerAvatar
+            playerName={player.name}
+            playerNumber={player.jerseyNumber}
+            photoUrl={player.photoUrl}
+            size={isCompact ? sizes.avatarSm : sizes.avatarSm}
+            borderColor={colors.border}
+            backgroundColor={colors.surfaceVariant}
+            textColor={isSelected ? colors.text.primary : colors.text.secondary}
+            borderWidth={2}
+          />
+
+          {/* Player Name and Number */}
+          <View style={styles.playerNameContainer}>
+            <Text
               style={[
-                styles.numberInput,
+                styles.playerName,
                 {
-                  color: colors.text.primary,
-                  backgroundColor: colors.background,
-                  borderColor: numberError ? "#ef4444" : colors.primary,
+                  color: isSelected
+                    ? colors.text.primary
+                    : colors.text.secondary,
+                  fontSize: font.md,
                 },
               ]}
-            />
-          ) : (
-            <TouchableOpacity
-              onPress={(e) => {
-                e.stopPropagation();
-                setIsEditingNumber(true);
-              }}
-              style={styles.numberTouchable}
             >
-              <Text
+              {player.name}
+            </Text>
+
+            {/* Editable Number */}
+            {isEditingNumber ? (
+              <TextInput
+                value={tempNumber}
+                onChangeText={handleNumberChange}
+                onBlur={handleNumberSubmit}
+                onSubmitEditing={handleNumberSubmit}
+                keyboardType="number-pad"
+                maxLength={2}
+                autoFocus
+                selectTextOnFocus
                 style={[
-                  styles.playerNumber,
+                  styles.numberInput,
                   {
-                    color: isSelected
-                      ? colors.text.secondary
-                      : colors.text.tertiary,
+                    color: colors.text.primary,
+                    backgroundColor: colors.background,
+                    borderColor: numberError ? "#ef4444" : colors.primary,
+                    fontSize: font.md,
+                    paddingVertical: sp.xs,
+                    paddingHorizontal: sp.sm,
+                    borderRadius: sp.xs,
+                    minWidth: sp.xxl * 1.5,
+                    marginLeft: sp.sm + 2,
+                  },
+                ]}
+              />
+            ) : (
+              <TouchableOpacity
+                onPress={(e) => {
+                  e.stopPropagation();
+                  setIsEditingNumber(true);
+                }}
+                style={[
+                  styles.numberTouchable,
+                  {
+                    gap: sp.xs,
+                    paddingVertical: sp.xs,
+                    paddingHorizontal: sp.xs,
+                    borderRadius: sp.xs,
                   },
                 ]}
               >
-                {" - #"}
-                {player.jerseyNumber}
-              </Text>
-              {isSelected && (
-                <MaterialCommunityIcons
-                  name="pencil"
-                  size={12}
-                  color={colors.text.tertiary}
-                  style={styles.editIcon}
-                />
-              )}
-            </TouchableOpacity>
-          )}
+                <Text
+                  style={[
+                    styles.playerNumber,
+                    {
+                      color: isSelected
+                        ? colors.text.secondary
+                        : colors.text.tertiary,
+                      fontSize: font.md,
+                    },
+                  ]}
+                >
+                  {" - #"}
+                  {player.jerseyNumber}
+                </Text>
+                {isSelected && (
+                  <MaterialCommunityIcons
+                    name="pencil"
+                    size={sizes.iconSm}
+                    color={colors.text.tertiary}
+                    style={styles.editIcon}
+                  />
+                )}
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
-      </View>
 
-      {/* Starter Toggle (only visible if selected) */}
-      {isSelected && (
-        <TouchableOpacity
-          onPress={onToggleStarter}
+        {/* Starter Toggle (only visible if selected) */}
+        {isSelected && (
+          <TouchableOpacity
+            onPress={onToggleStarter}
+            style={[
+              styles.starButton,
+              {
+                backgroundColor: isStarter
+                  ? `${colors.warning}20`
+                  : "transparent",
+                borderWidth: isStarter ? 2 : 0,
+                borderColor: isStarter ? colors.warning : "transparent",
+                padding: sp.sm,
+              },
+            ]}
+          >
+            <MaterialCommunityIcons
+              name={isStarter ? "star" : "star-outline"}
+              size={sizes.iconMd}
+              color={isStarter ? colors.warning : colors.text.secondary}
+            />
+          </TouchableOpacity>
+        )}
+      </TouchableOpacity>
+
+      {/* Error message */}
+      {numberError && (
+        <Text
           style={[
-            styles.starButton,
-            {
-              backgroundColor: isStarter
-                ? `${colors.warning}20`
-                : "transparent",
-              borderWidth: isStarter ? 2 : 0,
-              borderColor: isStarter ? colors.warning : "transparent",
-            },
+            styles.errorText,
+            { fontSize: font.sm, marginTop: sp.xs, marginLeft: sp.sm + sp.xs },
           ]}
         >
-          <MaterialCommunityIcons
-            name={isStarter ? "star" : "star-outline"}
-            size={20}
-            color={isStarter ? colors.warning : colors.text.secondary}
-          />
-        </TouchableOpacity>
+          {numberError}
+        </Text>
       )}
-    </TouchableOpacity>
-
-    {/* Error message */}
-    {numberError && (
-      <Text style={styles.errorText}>{numberError}</Text>
-    )}
     </View>
   );
 };

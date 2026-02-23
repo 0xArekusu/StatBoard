@@ -10,6 +10,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { SLATE_COLORS, COMMON_COLORS, OPACITY } from "../../src/theme";
 import { MATCH_CREATION_BUTTON_LABELS } from "../../constants";
 import type { Player } from "../../models/Player";
+import { useResponsive } from "../../src/hooks/useResponsive";
 
 interface AddPlayerFormProps {
   /** Player name input value */
@@ -91,15 +92,16 @@ export const AddPlayerForm: React.FC<AddPlayerFormProps> = ({
   };
 
   const isValid = name && number;
+  const { sp, font, sizes } = useResponsive();
 
   return (
     <View
-      style={[styles.addPlayerSection, { borderTopColor: colors.borderColor }]}
+      style={[styles.addPlayerSection, { borderTopColor: colors.borderColor, paddingTop: sp.lg, marginTop: sp.lg }]}
     >
-      <Text style={[styles.addPlayerTitle, { color: colors.textPrimary }]}>
+      <Text style={[styles.addPlayerTitle, { color: colors.textPrimary, fontSize: font.md, marginBottom: sp.sm + sp.xs }]}>
         {MATCH_CREATION_BUTTON_LABELS.ADD_REINFORCEMENT}
       </Text>
-      <View style={styles.addPlayerForm}>
+      <View style={[styles.addPlayerForm, { gap: sp.sm }]}>
         <TextInput
           placeholder="Nom"
           placeholderTextColor={colors.textSecondary}
@@ -115,6 +117,9 @@ export const AddPlayerForm: React.FC<AddPlayerFormProps> = ({
               backgroundColor: colors.surfaceColor,
               borderColor: error ? "#ef4444" : colors.borderColor,
               color: colors.textPrimary,
+              padding: sp.sm + sp.xs,
+              borderRadius: sp.sm,
+              fontSize: font.md,
             },
           ]}
         />
@@ -132,6 +137,10 @@ export const AddPlayerForm: React.FC<AddPlayerFormProps> = ({
               backgroundColor: colors.surfaceColor,
               borderColor: error ? "#ef4444" : colors.borderColor,
               color: colors.textPrimary,
+              padding: sp.sm + sp.xs,
+              borderRadius: sp.sm,
+              fontSize: font.md,
+              width: sp.xxl * 2,
             },
           ]}
         />
@@ -143,17 +152,19 @@ export const AddPlayerForm: React.FC<AddPlayerFormProps> = ({
             {
               backgroundColor: isDark ? SLATE_COLORS[700] : SLATE_COLORS[900],
               opacity: isValid ? 1 : OPACITY.disabled,
+              width: sp.xxl * 1.5,
+              borderRadius: sp.sm,
             },
           ]}
         >
           <MaterialCommunityIcons
             name="plus"
-            size={20}
+            size={sizes.iconMd}
             color={COMMON_COLORS.white}
           />
         </TouchableOpacity>
       </View>
-      {error && <Text style={styles.errorText}>{error}</Text>}
+      {error && <Text style={[styles.errorText, { fontSize: font.sm, marginTop: sp.sm }]}>{error}</Text>}
     </View>
   );
 };

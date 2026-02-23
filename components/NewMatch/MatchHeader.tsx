@@ -9,6 +9,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { MATCH_CREATION_STEP_LABELS, type MatchCreationStep } from "../../constants";
 import { useTheme } from "../../src/contexts/ThemeContext";
+import { useResponsive } from "../../src/hooks/useResponsive";
 
 interface MatchHeaderProps {
   /** Current step in the match creation flow */
@@ -25,6 +26,7 @@ export const MatchHeader: React.FC<MatchHeaderProps> = ({
   onBack,
 }) => {
   const { colors } = useTheme();
+  const { sp, font, sizes } = useResponsive();
   return (
     <>
       {/* Header with title and navigation */}
@@ -34,20 +36,23 @@ export const MatchHeader: React.FC<MatchHeaderProps> = ({
           {
             backgroundColor: colors.surface,
             borderBottomColor: colors.border,
+            paddingHorizontal: sp.lg,
+            paddingTop: sp.lg,
+            paddingBottom: sp.md,
           },
         ]}
       >
-        <TouchableOpacity onPress={onBack} style={styles.backButton}>
+        <TouchableOpacity onPress={onBack} style={[styles.backButton, { padding: sp.xs }]}>
           <MaterialCommunityIcons
             name={step === 2 ? "arrow-left" : "close"}
-            size={24}
+            size={sizes.iconMd}
             color={colors.text.primary}
           />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.text.primary }]}>
+        <Text style={[styles.headerTitle, { color: colors.text.primary, fontSize: font.lg }]}>
           {MATCH_CREATION_STEP_LABELS[step]}
         </Text>
-        <View style={{ width: 24 }} />
+        <View style={{ width: sizes.iconMd }} />
       </View>
 
       {/* Progress Bar */}
@@ -57,16 +62,19 @@ export const MatchHeader: React.FC<MatchHeaderProps> = ({
           {
             backgroundColor: colors.surface,
             borderBottomColor: colors.border,
+            paddingHorizontal: sp.lg,
+            paddingVertical: sp.sm + sp.xs,
           },
         ]}
       >
-        <View style={styles.progressBar}>
+        <View style={[styles.progressBar, { gap: sp.sm }]}>
           <View
             style={[
               styles.progressStep,
               {
                 backgroundColor:
                   step >= 1 ? colors.primary : colors.border,
+                height: sp.xs,
               },
             ]}
           />
@@ -76,6 +84,7 @@ export const MatchHeader: React.FC<MatchHeaderProps> = ({
               {
                 backgroundColor:
                   step >= 2 ? colors.primary : colors.border,
+                height: sp.xs,
               },
             ]}
           />

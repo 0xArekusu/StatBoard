@@ -15,6 +15,7 @@ import {
 } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useTheme } from "../../src/contexts/ThemeContext";
+import { useResponsive } from "../../src/hooks/useResponsive";
 import {
   PlayerStats,
   SortBy,
@@ -39,6 +40,7 @@ export default function StatsTab({
   setViewPlayer,
 }: StatsTabProps) {
   const { colors, isDark } = useTheme();
+  const { sp, font, sizes } = useResponsive();
   const [showLegend, setShowLegend] = useState(false);
 
   // Define color variables using theme context
@@ -54,19 +56,26 @@ export default function StatsTab({
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={true}
-        contentContainerStyle={styles.scrollViewContent}
+        contentContainerStyle={[styles.scrollViewContent, { padding: sp.sm }]}
       >
         <View
           style={[
             styles.tableContainer,
-            { backgroundColor: surfaceColor, borderColor: borderColor },
+            {
+              backgroundColor: surfaceColor,
+              borderColor: borderColor,
+              borderRadius: sp.sm,
+            },
           ]}
         >
           {/* Table Header */}
           <View
             style={[
               styles.tableHeader,
-              { backgroundColor: colors.surfaceVariant },
+              {
+                backgroundColor: colors.surfaceVariant,
+                padding: sp.sm,
+              },
             ]}
           >
             <TouchableOpacity onPress={() => handleSort("name")}>
@@ -76,19 +85,22 @@ export default function StatsTab({
                   styles.playerCell,
                   {
                     color: sortBy === "name" ? colors.primary : textSecondary,
+                    fontSize: font.xs,
+                    paddingHorizontal: sp.sm,
                   },
                 ]}
               >
                 JOUEUR {sortBy === "name" && (sortOrder === "desc" ? "↓" : "↑")}
               </Text>
             </TouchableOpacity>
-            <View style={styles.numberCell}>
+            <View style={[styles.numberCell, { width: sizes.avatarSm }]}>
               <Text
                 style={[
                   styles.tableHeaderCell,
                   {
                     color: textTertiary,
                     textAlign: "center",
+                    fontSize: font.xs,
                   },
                 ]}
               >

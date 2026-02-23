@@ -65,7 +65,7 @@ export const ShootingBar: React.FC<ShootingBarProps> = ({
           style={[
             styles.shootingBarTrack,
             {
-              backgroundColor: isDark ? colors.surface : colors.surfaceVariant,
+              backgroundColor: colors.surfaceVariant,
             },
             isSmall && styles.shootingBarTrackCompact,
           ]}

@@ -12,6 +12,7 @@ import { MATCH_CREATION_INFO_MESSAGES, ROSTER_LIMITS } from "../../constants";
 import { PlayerRosterCard } from "./PlayerRosterCard";
 import { AddPlayerForm } from "./AddPlayerForm";
 import type { Player } from "../../models/Player";
+import { useResponsive } from "../../src/hooks/useResponsive";
 
 interface HomeRosterViewProps {
   /** All available players */

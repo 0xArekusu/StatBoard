@@ -15,6 +15,7 @@ import {
   useWindowDimensions,
 } from "react-native";
 import { useTheme } from "../../src/contexts/ThemeContext";
+import { useResponsive } from "../../src/hooks/useResponsive";
 import BasketballCourtSVG from "../BasketballCourtSVG";
 import { ActionType, ACTION_FILTER } from "../../constants";
 import {
@@ -64,6 +65,7 @@ export default function CourtTab({
   totalPeriods,
 }: CourtTabProps) {
   const { colors, isDark } = useTheme();
+  const { sp, font, sizes, isCompact } = useResponsive();
   const windowDimensions = useWindowDimensions();
   const [selectedPeriods, setSelectedPeriods] = React.useState<number[]>([]);
 
@@ -128,6 +130,17 @@ export default function CourtTab({
 
   const availableSpecifications = getAvailableSpecifications();
 
+  // Common responsive chip style
+  const chipStyle = {
+    paddingHorizontal: sp.md,
+    paddingVertical: sp.sm,
+    borderRadius: sp.lg,
+  };
+
+  const chipTextStyle = {
+    fontSize: font.sm,
+  };
+
   // Reset specifications when action type filter changes
   useEffect(() => {
     // Clear specifications if no action types selected or multiple selected
@@ -155,18 +168,18 @@ export default function CourtTab({
   };
 
   return (
-    <View style={styles.courtViewContainer}>
+    <View style={[styles.courtViewContainer, { marginBottom: sp.xxl * 2.5 }]}>
       {/* Period Filters */}
-      <View style={[styles.courtFiltersSection, { backgroundColor: bgColor }]}>
-        <Text style={[styles.courtFilterLabel, { color: textTertiary }]}>
+      <View style={[styles.courtFiltersSection, { backgroundColor: bgColor, paddingVertical: sp.sm }]}>
+        <Text style={[styles.courtFilterLabel, { color: textTertiary, fontSize: font.xs, marginBottom: sp.sm }]}>
           PÉRIODE
         </Text>
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          style={styles.courtFilterScroll}
+          style={[styles.courtFilterScroll, { marginHorizontal: -sp.md, paddingHorizontal: sp.md }]}
         >
-          <View style={styles.courtFilterButtonsRow}>
+          <View style={[styles.courtFilterButtonsRow, { gap: sp.sm }]}>
             <TouchableOpacity
               onPress={() => setSelectedPeriods([])}
               style={[
@@ -180,6 +193,7 @@ export default function CourtTab({
                       : colors.surfaceVariant,
                   borderColor:
                     selectedPeriods.length === 0 ? colors.primary : borderColor,
+                  ...chipStyle,
                 },
               ]}
             >
@@ -191,6 +205,7 @@ export default function CourtTab({
                       selectedPeriods.length === 0
                         ? colors.text.primary
                         : textPrimary,
+                    ...chipTextStyle,
                   },
                 ]}
               >
@@ -221,6 +236,7 @@ export default function CourtTab({
                     borderColor: selectedPeriods.includes(period)
                       ? colors.primary
                       : borderColor,
+                    ...chipStyle,
                   },
                 ]}
               >
@@ -231,6 +247,7 @@ export default function CourtTab({
                       color: selectedPeriods.includes(period)
                         ? colors.text.primary
                         : textPrimary,
+                      ...chipTextStyle,
                     },
                   ]}
                 >
@@ -243,16 +260,16 @@ export default function CourtTab({
       </View>
 
       {/* Action Type Filters */}
-      <View style={[styles.courtFiltersSection, { backgroundColor: bgColor }]}>
-        <Text style={[styles.courtFilterLabel, { color: textTertiary }]}>
+      <View style={[styles.courtFiltersSection, { backgroundColor: bgColor, paddingVertical: sp.sm }]}>
+        <Text style={[styles.courtFilterLabel, { color: textTertiary, fontSize: font.xs, marginBottom: sp.sm }]}>
           TYPE D'ACTION
         </Text>
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          style={styles.courtFilterScroll}
+          style={[styles.courtFilterScroll, { marginHorizontal: -sp.md, paddingHorizontal: sp.md }]}
         >
-          <View style={styles.courtFilterButtonsRow}>
+          <View style={[styles.courtFilterButtonsRow, { gap: sp.sm }]}>
             <TouchableOpacity
               onPress={() => setSelectedActionTypes([])}
               style={[
@@ -268,6 +285,7 @@ export default function CourtTab({
                     selectedActionTypes.length === 0
                       ? colors.primary
                       : borderColor,
+                  ...chipStyle,
                 },
               ]}
             >
@@ -279,6 +297,7 @@ export default function CourtTab({
                       selectedActionTypes.length === 0
                         ? colors.text.primary
                         : textPrimary,
+                    ...chipTextStyle,
                   },
                 ]}
               >
@@ -316,6 +335,7 @@ export default function CourtTab({
                   )
                     ? colors.primary
                     : borderColor,
+                  ...chipStyle,
                 },
               ]}
             >
@@ -326,6 +346,7 @@ export default function CourtTab({
                     color: selectedActionTypes.includes(ACTION_FILTER.SHOOTING)
                       ? colors.text.primary
                       : textPrimary,
+                    ...chipTextStyle,
                   },
                 ]}
               >
@@ -363,6 +384,7 @@ export default function CourtTab({
                   )
                     ? colors.primary
                     : borderColor,
+                  ...chipStyle,
                 },
               ]}
             >
@@ -373,6 +395,7 @@ export default function CourtTab({
                     color: selectedActionTypes.includes(ACTION_FILTER.REBOUNDS)
                       ? colors.text.primary
                       : textPrimary,
+                    ...chipTextStyle,
                   },
                 ]}
               >
@@ -410,6 +433,7 @@ export default function CourtTab({
                   )
                     ? colors.primary
                     : borderColor,
+                  ...chipStyle,
                 },
               ]}
             >
@@ -420,6 +444,7 @@ export default function CourtTab({
                     color: selectedActionTypes.includes(ACTION_FILTER.ASSISTS)
                       ? colors.text.primary
                       : textPrimary,
+                    ...chipTextStyle,
                   },
                 ]}
               >
@@ -457,6 +482,7 @@ export default function CourtTab({
                   )
                     ? colors.primary
                     : borderColor,
+                  ...chipStyle,
                 },
               ]}
             >
@@ -467,6 +493,7 @@ export default function CourtTab({
                     color: selectedActionTypes.includes(ACTION_FILTER.STEALS)
                       ? colors.text.primary
                       : textPrimary,
+                    ...chipTextStyle,
                   },
                 ]}
               >
@@ -504,6 +531,7 @@ export default function CourtTab({
                   )
                     ? colors.primary
                     : borderColor,
+                  ...chipStyle,
                 },
               ]}
             >
@@ -514,6 +542,7 @@ export default function CourtTab({
                     color: selectedActionTypes.includes(ACTION_FILTER.BLOCKS)
                       ? colors.text.primary
                       : textPrimary,
+                    ...chipTextStyle,
                   },
                 ]}
               >
@@ -551,6 +580,7 @@ export default function CourtTab({
                   )
                     ? colors.primary
                     : borderColor,
+                  ...chipStyle,
                 },
               ]}
             >
@@ -561,6 +591,7 @@ export default function CourtTab({
                     color: selectedActionTypes.includes(ACTION_FILTER.TURNOVERS)
                       ? colors.text.primary
                       : textPrimary,
+                    ...chipTextStyle,
                   },
                 ]}
               >
@@ -594,6 +625,7 @@ export default function CourtTab({
                   borderColor: selectedActionTypes.includes(ACTION_FILTER.FOULS)
                     ? colors.primary
                     : borderColor,
+                  ...chipStyle,
                 },
               ]}
             >
@@ -604,6 +636,7 @@ export default function CourtTab({
                     color: selectedActionTypes.includes(ACTION_FILTER.FOULS)
                       ? colors.text.primary
                       : textPrimary,
+                    ...chipTextStyle,
                   },
                 ]}
               >
@@ -641,6 +674,7 @@ export default function CourtTab({
                   )
                     ? colors.primary
                     : borderColor,
+                  ...chipStyle,
                 },
               ]}
             >
@@ -653,6 +687,7 @@ export default function CourtTab({
                     )
                       ? colors.text.primary
                       : textPrimary,
+                    ...chipTextStyle,
                   },
                 ]}
               >
@@ -666,17 +701,17 @@ export default function CourtTab({
       {/* Specification Filters - Only show if one action type is selected and it has specifications */}
       {availableSpecifications.length > 0 && (
         <View
-          style={[styles.courtFiltersSection, { backgroundColor: bgColor }]}
+          style={[styles.courtFiltersSection, { backgroundColor: bgColor, paddingVertical: sp.sm }]}
         >
-          <Text style={[styles.courtFilterLabel, { color: textTertiary }]}>
+          <Text style={[styles.courtFilterLabel, { color: textTertiary, fontSize: font.xs, marginBottom: sp.sm }]}>
             SPÉCIFICATIONS
           </Text>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            style={styles.courtFilterScroll}
+            style={[styles.courtFilterScroll, { marginHorizontal: -sp.md, paddingHorizontal: sp.md }]}
           >
-            <View style={styles.courtFilterButtonsRow}>
+            <View style={[styles.courtFilterButtonsRow, { gap: sp.sm }]}>
               {availableSpecifications.map((spec) => {
                 const isSelected = selectedSpecifications.includes(spec.id);
                 return (
@@ -702,6 +737,9 @@ export default function CourtTab({
                           : colors.surfaceVariant,
                         borderColor: isSelected ? spec.color : borderColor,
                         borderWidth: 2,
+                        paddingHorizontal: sp.md,
+                        paddingVertical: sp.sm,
+                        borderRadius: sp.lg,
                       },
                     ]}
                   >
@@ -710,6 +748,7 @@ export default function CourtTab({
                         styles.courtFilterChipText,
                         {
                           color: isSelected ? spec.color : textPrimary,
+                          fontSize: font.sm,
                         },
                       ]}
                     >
@@ -724,16 +763,16 @@ export default function CourtTab({
       )}
 
       {/* Player Filters */}
-      <View style={[styles.courtFiltersSection, { backgroundColor: bgColor }]}>
-        <Text style={[styles.courtFilterLabel, { color: textTertiary }]}>
+      <View style={[styles.courtFiltersSection, { backgroundColor: bgColor, paddingVertical: sp.sm }]}>
+        <Text style={[styles.courtFilterLabel, { color: textTertiary, fontSize: font.xs, marginBottom: sp.sm }]}>
           JOUEURS
         </Text>
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          style={styles.courtFilterScroll}
+          style={[styles.courtFilterScroll, { marginHorizontal: -sp.md, paddingHorizontal: sp.md }]}
         >
-          <View style={styles.courtPlayerButtonsRow}>
+          <View style={[styles.courtPlayerButtonsRow, { gap: sp.sm }]}>
             {stats.map((player) => {
               const isSelected = selectedPlayers.includes(player.playerNumber);
               return (
@@ -760,6 +799,10 @@ export default function CourtTab({
                         ? colors.surfaceVariant
                         : colors.surfaceVariant,
                       borderColor: isSelected ? colors.primary : borderColor,
+                      gap: sp.sm,
+                      paddingHorizontal: sp.sm + sp.xs,
+                      paddingVertical: sp.xs + 2,
+                      borderRadius: 999,
                     },
                   ]}
                 >
@@ -767,7 +810,7 @@ export default function CourtTab({
                     playerName={player.name}
                     playerNumber={player.playerNumber}
                     photoUrl={player.photoUrl}
-                    size={24}
+                    size={isCompact ? sizes.avatarXs : sizes.avatarSm}
                     borderColor={isSelected ? colors.primary : borderColor}
                     backgroundColor={isSelected ? colors.text.primary : bgColor}
                     textColor={isSelected ? colors.primary : textSecondary}
@@ -778,6 +821,7 @@ export default function CourtTab({
                       styles.courtPlayerName,
                       {
                         color: isSelected ? colors.text.primary : textPrimary,
+                        fontSize: font.sm,
                       },
                     ]}
                     numberOfLines={1}
@@ -792,8 +836,8 @@ export default function CourtTab({
       </View>
 
       {stats.length === 0 ? (
-        <View style={styles.emptyState}>
-          <Text style={[styles.emptyStateText, { color: textTertiary }]}>
+        <View style={[styles.emptyState, { paddingVertical: sp.xxl }]}>
+          <Text style={[styles.emptyStateText, { color: textTertiary, fontSize: font.sm }]}>
             Aucune statistique disponible
           </Text>
         </View>
@@ -806,8 +850,10 @@ export default function CourtTab({
               {
                 backgroundColor: surfaceColor,
                 width: "100%", // Court width + padding
-                height: courtHeight + 32, // Court height + padding
+                height: courtHeight + sp.xxl, // Court height + padding
                 alignSelf: "center",
+                padding: sp.md,
+                borderRadius: sp.md,
               },
             ]}
           >

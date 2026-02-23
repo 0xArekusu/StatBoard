@@ -9,12 +9,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import {
-  SLATE_COLORS,
-  BRAND_COLORS,
-  COMMON_COLORS,
-  STATUS_COLORS,
-} from "../src/theme";
+import { BRAND_COLORS, COMMON_COLORS, STATUS_COLORS } from "../src/theme";
 import { Player } from "../models/Player";
 import { MatchActionGrid, ActionData } from "./MatchActionGrid";
 import {
@@ -24,6 +19,7 @@ import {
   TeamFilterMode,
 } from "../constants/liveMatchConstants";
 import { useTheme } from "../src/contexts/ThemeContext";
+import { useResponsive } from "../src/hooks/useResponsive";
 import {
   ActionType,
   ShotSpecification,
@@ -46,7 +42,8 @@ export const HistoryModal: React.FC<HistoryModalProps> = ({
   onDeleteEvent,
   match,
 }) => {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
+  const { sp, font, sizes } = useResponsive();
   const surfaceColor = colors.surface;
   const textPrimary = colors.text.primary;
   const textSecondary = colors.text.secondary;
@@ -102,7 +99,7 @@ export const HistoryModal: React.FC<HistoryModalProps> = ({
     if (!eventToDelete) return "";
     const timeStr = formatGameTime(
       eventToDelete.period_number,
-      eventToDelete.time_in_period
+      eventToDelete.time_in_period,
     );
     const teamStr =
       eventToDelete.teamId === TeamId.HOME
@@ -123,27 +120,44 @@ export const HistoryModal: React.FC<HistoryModalProps> = ({
 
         {/* Bottom Sheet */}
         <View
-          style={[styles.filterBottomSheet, { backgroundColor: surfaceColor }]}
+          style={[
+            styles.filterBottomSheet,
+            {
+              backgroundColor: surfaceColor,
+              borderTopLeftRadius: sp.lg,
+              borderTopRightRadius: sp.lg,
+              padding: sp.md,
+            },
+          ]}
         >
           {/* Handle */}
           <View
             style={[
               styles.sheetHandle,
               {
-                backgroundColor: isDark ? SLATE_COLORS[700] : SLATE_COLORS[300],
+                backgroundColor: colors.border,
+                width: sizes.avatarSm,
+                height: sp.xs,
+                borderRadius: sp.xs,
+                marginBottom: sp.md,
               },
             ]}
           />
 
           {/* Header */}
-          <View style={styles.filterSheetHeader}>
-            <View style={styles.filterHeaderLeft}>
+          <View style={[styles.filterSheetHeader, { marginBottom: sp.md }]}>
+            <View style={[styles.filterHeaderLeft, { gap: sp.sm }]}>
               <MaterialCommunityIcons
                 name="format-list-bulleted"
-                size={24}
+                size={sizes.iconMd}
                 color={BRAND_COLORS[500]}
               />
-              <Text style={[styles.filterSheetTitle, { color: textPrimary }]}>
+              <Text
+                style={[
+                  styles.filterSheetTitle,
+                  { color: textPrimary, fontSize: font.xl },
+                ]}
+              >
                 Historique du match
               </Text>
             </View>
@@ -152,15 +166,16 @@ export const HistoryModal: React.FC<HistoryModalProps> = ({
               style={[
                 styles.filterCloseButton,
                 {
-                  backgroundColor: isDark
-                    ? SLATE_COLORS[800]
-                    : SLATE_COLORS[200],
+                  backgroundColor: colors.surfaceVariant,
+                  width: sizes.avatarSm,
+                  height: sizes.avatarSm,
+                  borderRadius: sizes.avatarSm / 2,
                 },
               ]}
             >
               <MaterialCommunityIcons
                 name="close"
-                size={20}
+                size={sizes.iconSm}
                 color={textSecondary}
               />
             </TouchableOpacity>
@@ -177,12 +192,11 @@ export const HistoryModal: React.FC<HistoryModalProps> = ({
                   style={[
                     styles.historyItem,
                     {
-                      backgroundColor: isDark
-                        ? SLATE_COLORS[800]
-                        : COMMON_COLORS.white,
-                      borderColor: isDark
-                        ? SLATE_COLORS[700]
-                        : SLATE_COLORS[100],
+                      backgroundColor: colors.surfaceVariant,
+                      borderColor: colors.border,
+                      padding: sp.md,
+                      borderRadius: sp.sm,
+                      marginBottom: sp.sm,
                     },
                   ]}
                 >
@@ -190,7 +204,7 @@ export const HistoryModal: React.FC<HistoryModalProps> = ({
                     <Text
                       style={[
                         styles.historyItemDescription,
-                        { color: textPrimary },
+                        { color: textPrimary, fontSize: font.md },
                       ]}
                     >
                       {evt.description}
@@ -311,6 +325,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
   onTeamFilterChange,
 }) => {
   const { colors } = useTheme();
+  const { sp, font, sizes } = useResponsive();
   const surfaceColor = colors.surface;
   const textPrimary = colors.text.primary;
   const textSecondary = colors.text.secondary;
@@ -334,7 +349,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
     if (teamFilter === TeamFilterMode.US) {
       // Remove opponent players from selection
       const filteredSelection = selectedPlayers.filter((id) =>
-        homePlayerIds.includes(id)
+        homePlayerIds.includes(id),
       );
       if (filteredSelection.length !== selectedPlayers.length) {
         onPlayerSelectionChange(filteredSelection);
@@ -342,7 +357,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
     } else if (teamFilter === TeamFilterMode.THEM) {
       // Remove home players from selection
       const filteredSelection = selectedPlayers.filter((id) =>
-        opponentPlayerIds.includes(id)
+        opponentPlayerIds.includes(id),
       );
       if (filteredSelection.length !== selectedPlayers.length) {
         onPlayerSelectionChange(filteredSelection);
@@ -362,7 +377,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
     // Start with regular periods (always show them)
     const regularPeriods = Array.from(
       { length: totalPeriods },
-      (_, i) => i + 1
+      (_, i) => i + 1,
     );
 
     // Find any overtime periods in actions
@@ -633,9 +648,9 @@ export const FilterModal: React.FC<FilterModalProps> = ({
           styles.playerFilterButton,
           {
             backgroundColor: isSelected
-              ? BRAND_COLORS[600]
+              ? colors.primary
               : colors.surfaceVariant,
-            borderColor: isSelected ? BRAND_COLORS[500] : borderColor,
+            borderColor: isSelected ? colors.borderFocus : borderColor,
           },
         ]}
       >
@@ -644,15 +659,18 @@ export const FilterModal: React.FC<FilterModalProps> = ({
             styles.playerFilterBadge,
             {
               backgroundColor: isSelected
-                ? COMMON_COLORS.white
-                : colors.surfaceVariant,
+                ? colors.onPrimary
+                : colors.surface,
             },
           ]}
         >
           <Text
             style={[
               styles.playerFilterBadgeText,
-              { color: isSelected ? BRAND_COLORS[600] : textSecondary },
+              {
+                color: isSelected ? colors.primary : textSecondary,
+                fontSize: font.sm,
+              },
             ]}
           >
             {player.jerseyNumber}
@@ -661,7 +679,10 @@ export const FilterModal: React.FC<FilterModalProps> = ({
         <Text
           style={[
             styles.playerFilterName,
-            { color: isSelected ? COMMON_COLORS.white : textPrimary },
+            {
+              color: isSelected ? colors.onPrimary : textPrimary,
+              fontSize: font.xs,
+            },
           ]}
           numberOfLines={1}
         >
@@ -683,7 +704,15 @@ export const FilterModal: React.FC<FilterModalProps> = ({
 
         {/* Bottom Sheet */}
         <View
-          style={[styles.filterBottomSheet, { backgroundColor: surfaceColor }]}
+          style={[
+            styles.filterBottomSheet,
+            {
+              backgroundColor: surfaceColor,
+              borderTopLeftRadius: sp.lg,
+              borderTopRightRadius: sp.lg,
+              padding: sp.md,
+            },
+          ]}
         >
           {/* Handle */}
           <View
@@ -691,6 +720,10 @@ export const FilterModal: React.FC<FilterModalProps> = ({
               styles.sheetHandle,
               {
                 backgroundColor: colors.border,
+                width: sizes.avatarSm,
+                height: sp.xs,
+                borderRadius: sp.xs,
+                marginBottom: sp.md,
               },
             ]}
           />
@@ -775,11 +808,11 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                     {
                       backgroundColor:
                         filterMode === FilterMode.ALL
-                          ? BRAND_COLORS[600]
+                          ? colors.primary
                           : colors.surfaceVariant,
                       borderColor:
                         filterMode === FilterMode.ALL
-                          ? BRAND_COLORS[500]
+                          ? colors.borderFocus
                           : borderColor,
                     },
                   ]}
@@ -790,7 +823,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                       {
                         color:
                           filterMode === FilterMode.ALL
-                            ? COMMON_COLORS.white
+                            ? colors.onPrimary
                             : textPrimary,
                       },
                     ]}
@@ -806,11 +839,11 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                     {
                       backgroundColor:
                         filterMode === FilterMode.SHOOTING
-                          ? BRAND_COLORS[600]
+                          ? colors.primary
                           : colors.surfaceVariant,
                       borderColor:
                         filterMode === FilterMode.SHOOTING
-                          ? BRAND_COLORS[500]
+                          ? colors.borderFocus
                           : borderColor,
                     },
                   ]}
@@ -821,7 +854,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                       {
                         color:
                           filterMode === FilterMode.SHOOTING
-                            ? COMMON_COLORS.white
+                            ? colors.onPrimary
                             : textPrimary,
                       },
                     ]}
@@ -837,11 +870,11 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                     {
                       backgroundColor:
                         filterMode === FilterMode.REBOUNDS
-                          ? BRAND_COLORS[600]
+                          ? colors.primary
                           : colors.surfaceVariant,
                       borderColor:
                         filterMode === FilterMode.REBOUNDS
-                          ? BRAND_COLORS[500]
+                          ? colors.borderFocus
                           : borderColor,
                     },
                   ]}
@@ -852,7 +885,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                       {
                         color:
                           filterMode === FilterMode.REBOUNDS
-                            ? COMMON_COLORS.white
+                            ? colors.onPrimary
                             : textPrimary,
                       },
                     ]}
@@ -868,11 +901,11 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                     {
                       backgroundColor:
                         filterMode === FilterMode.ASSISTS
-                          ? BRAND_COLORS[600]
+                          ? colors.primary
                           : colors.surfaceVariant,
                       borderColor:
                         filterMode === FilterMode.ASSISTS
-                          ? BRAND_COLORS[500]
+                          ? colors.borderFocus
                           : borderColor,
                     },
                   ]}
@@ -883,7 +916,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                       {
                         color:
                           filterMode === FilterMode.ASSISTS
-                            ? COMMON_COLORS.white
+                            ? colors.onPrimary
                             : textPrimary,
                       },
                     ]}
@@ -899,11 +932,11 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                     {
                       backgroundColor:
                         filterMode === FilterMode.FOULS
-                          ? BRAND_COLORS[600]
+                          ? colors.primary
                           : colors.surfaceVariant,
                       borderColor:
                         filterMode === FilterMode.FOULS
-                          ? BRAND_COLORS[500]
+                          ? colors.borderFocus
                           : borderColor,
                     },
                   ]}
@@ -914,7 +947,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                       {
                         color:
                           filterMode === FilterMode.FOULS
-                            ? COMMON_COLORS.white
+                            ? colors.onPrimary
                             : textPrimary,
                       },
                     ]}
@@ -930,11 +963,11 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                     {
                       backgroundColor:
                         filterMode === FilterMode.FOULS_DRAWN
-                          ? BRAND_COLORS[600]
+                          ? colors.primary
                           : colors.surfaceVariant,
                       borderColor:
                         filterMode === FilterMode.FOULS_DRAWN
-                          ? BRAND_COLORS[500]
+                          ? colors.borderFocus
                           : borderColor,
                     },
                   ]}
@@ -945,7 +978,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                       {
                         color:
                           filterMode === FilterMode.FOULS_DRAWN
-                            ? COMMON_COLORS.white
+                            ? colors.onPrimary
                             : textPrimary,
                       },
                     ]}
@@ -961,11 +994,11 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                     {
                       backgroundColor:
                         filterMode === FilterMode.TURNOVERS
-                          ? BRAND_COLORS[600]
+                          ? colors.primary
                           : colors.surfaceVariant,
                       borderColor:
                         filterMode === FilterMode.TURNOVERS
-                          ? BRAND_COLORS[500]
+                          ? colors.borderFocus
                           : borderColor,
                     },
                   ]}
@@ -976,7 +1009,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                       {
                         color:
                           filterMode === FilterMode.TURNOVERS
-                            ? COMMON_COLORS.white
+                            ? colors.onPrimary
                             : textPrimary,
                       },
                     ]}
@@ -992,11 +1025,11 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                     {
                       backgroundColor:
                         filterMode === FilterMode.BLOCKS
-                          ? BRAND_COLORS[600]
+                          ? colors.primary
                           : colors.surfaceVariant,
                       borderColor:
                         filterMode === FilterMode.BLOCKS
-                          ? BRAND_COLORS[500]
+                          ? colors.borderFocus
                           : borderColor,
                     },
                   ]}
@@ -1007,7 +1040,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                       {
                         color:
                           filterMode === FilterMode.BLOCKS
-                            ? COMMON_COLORS.white
+                            ? colors.onPrimary
                             : textPrimary,
                       },
                     ]}
@@ -1023,11 +1056,11 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                     {
                       backgroundColor:
                         filterMode === FilterMode.STEALS
-                          ? BRAND_COLORS[600]
+                          ? colors.primary
                           : colors.surfaceVariant,
                       borderColor:
                         filterMode === FilterMode.STEALS
-                          ? BRAND_COLORS[500]
+                          ? colors.borderFocus
                           : borderColor,
                     },
                   ]}
@@ -1038,7 +1071,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                       {
                         color:
                           filterMode === FilterMode.STEALS
-                            ? COMMON_COLORS.white
+                            ? colors.onPrimary
                             : textPrimary,
                       },
                     ]}
@@ -1074,11 +1107,11 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                       {
                         backgroundColor:
                           teamFilter === TeamFilterMode.ALL
-                            ? BRAND_COLORS[600]
+                            ? colors.primary
                             : colors.surfaceVariant,
                         borderColor:
                           teamFilter === TeamFilterMode.ALL
-                            ? BRAND_COLORS[500]
+                            ? colors.borderFocus
                             : borderColor,
                       },
                     ]}
@@ -1089,7 +1122,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                         {
                           color:
                             teamFilter === TeamFilterMode.ALL
-                              ? COMMON_COLORS.white
+                              ? colors.onPrimary
                               : textPrimary,
                         },
                       ]}
@@ -1108,11 +1141,11 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                       {
                         backgroundColor:
                           teamFilter === TeamFilterMode.US
-                            ? BRAND_COLORS[600]
+                            ? colors.primary
                             : colors.surfaceVariant,
                         borderColor:
                           teamFilter === TeamFilterMode.US
-                            ? BRAND_COLORS[500]
+                            ? colors.borderFocus
                             : borderColor,
                       },
                     ]}
@@ -1123,7 +1156,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                         {
                           color:
                             teamFilter === TeamFilterMode.US
-                              ? COMMON_COLORS.white
+                              ? colors.onPrimary
                               : textPrimary,
                         },
                       ]}
@@ -1142,11 +1175,11 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                       {
                         backgroundColor:
                           teamFilter === TeamFilterMode.THEM
-                            ? BRAND_COLORS[600]
+                            ? colors.primary
                             : colors.surfaceVariant,
                         borderColor:
                           teamFilter === TeamFilterMode.THEM
-                            ? BRAND_COLORS[500]
+                            ? colors.borderFocus
                             : borderColor,
                       },
                     ]}
@@ -1157,7 +1190,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                         {
                           color:
                             teamFilter === TeamFilterMode.THEM
-                              ? COMMON_COLORS.white
+                              ? colors.onPrimary
                               : textPrimary,
                         },
                       ]}
@@ -1191,11 +1224,11 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                       {
                         backgroundColor:
                           selectedPeriods.length === 0
-                            ? BRAND_COLORS[600]
+                            ? colors.primary
                             : colors.surfaceVariant,
                         borderColor:
                           selectedPeriods.length === 0
-                            ? BRAND_COLORS[500]
+                            ? colors.borderFocus
                             : borderColor,
                       },
                     ]}
@@ -1206,7 +1239,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                         {
                           color:
                             selectedPeriods.length === 0
-                              ? COMMON_COLORS.white
+                              ? colors.onPrimary
                               : textPrimary,
                         },
                       ]}
@@ -1225,10 +1258,10 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                           styles.filterPill,
                           {
                             backgroundColor: isSelected
-                              ? BRAND_COLORS[600]
+                              ? colors.primary
                               : colors.surfaceVariant,
                             borderColor: isSelected
-                              ? BRAND_COLORS[500]
+                              ? colors.borderFocus
                               : borderColor,
                           },
                         ]}
@@ -1616,7 +1649,8 @@ export const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
   playerSelectionTab,
   setPlayerSelectionTab,
 }) => {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
+  const { sp, font, sizes, isCompact } = useResponsive();
   const surfaceColor = colors.surface;
   const textPrimary = colors.text.primary;
   const textSecondary = colors.text.secondary;
@@ -1637,10 +1671,7 @@ export const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
                 QUI ?
               </Text>
               <Text
-                style={[
-                  styles.playerModalSubtitle,
-                  { color: BRAND_COLORS[600] },
-                ]}
+                style={[styles.playerModalSubtitle, { color: colors.primary }]}
               >
                 {pendingEvent?.type
                   ? `Validation : ${pendingEvent.type.replace("_", " ")}`
@@ -1652,9 +1683,7 @@ export const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
               style={[
                 styles.playerModalClose,
                 {
-                  backgroundColor: isDark
-                    ? SLATE_COLORS[800]
-                    : SLATE_COLORS[100],
+                  backgroundColor: colors.surfaceVariant,
                 },
               ]}
             >
@@ -1671,9 +1700,7 @@ export const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
               style={[
                 styles.playerTabs,
                 {
-                  backgroundColor: isDark
-                    ? SLATE_COLORS[800]
-                    : SLATE_COLORS[100],
+                  backgroundColor: colors.surfaceVariant,
                 },
               ]}
             >
@@ -1684,7 +1711,7 @@ export const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
                   {
                     backgroundColor:
                       playerSelectionTab === TeamId.HOME
-                        ? BRAND_COLORS[600]
+                        ? colors.primary
                         : "transparent",
                   },
                 ]}
@@ -1695,7 +1722,7 @@ export const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
                     {
                       color:
                         playerSelectionTab === TeamId.HOME
-                          ? COMMON_COLORS.white
+                          ? colors.onPrimary
                           : textSecondary,
                     },
                   ]}
@@ -1721,7 +1748,7 @@ export const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
                     {
                       color:
                         playerSelectionTab === TeamId.AWAY
-                          ? COMMON_COLORS.white
+                          ? colors.onPrimary
                           : textSecondary,
                     },
                   ]}
@@ -1745,24 +1772,11 @@ export const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
                   style={[
                     styles.playerCard,
                     {
-                      backgroundColor:
-                        match.trackOpponentStats &&
-                        playerSelectionTab === TeamId.AWAY
-                          ? isDark
-                            ? SLATE_COLORS[800]
-                            : SLATE_COLORS[50]
-                          : isDark
-                          ? SLATE_COLORS[800]
-                          : SLATE_COLORS[50],
-                      borderColor:
-                        match.trackOpponentStats &&
-                        playerSelectionTab === TeamId.AWAY
-                          ? isDark
-                            ? SLATE_COLORS[700]
-                            : SLATE_COLORS[200]
-                          : isDark
-                          ? SLATE_COLORS[700]
-                          : SLATE_COLORS[200],
+                      backgroundColor: colors.surfaceVariant,
+                      borderColor: colors.border,
+                      width: isCompact ? "25%" : "30%",
+                      padding: isCompact ? sp.sm : sp.md,
+                      borderRadius: isCompact ? sp.sm : sp.md,
                     },
                   ]}
                 >
@@ -1770,20 +1784,18 @@ export const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
                     style={[
                       styles.playerCardNumber,
                       {
-                        backgroundColor:
-                          match.trackOpponentStats &&
-                          playerSelectionTab === TeamId.AWAY
-                            ? isDark
-                              ? SLATE_COLORS[700]
-                              : COMMON_COLORS.white
-                            : isDark
-                            ? SLATE_COLORS[700]
-                            : COMMON_COLORS.white,
+                        backgroundColor: colors.surface,
                         borderColor:
                           match.trackOpponentStats &&
                           playerSelectionTab === TeamId.AWAY
                             ? "#ef4444"
-                            : SLATE_COLORS[200],
+                            : colors.text.primary,
+                        width: isCompact ? sizes.avatarSm : sizes.avatarSm,
+                        height: isCompact ? sizes.avatarSm : sizes.avatarSm,
+                        borderRadius: isCompact
+                          ? sizes.avatarSm / 2
+                          : sizes.avatarMd / 2,
+                        marginBottom: sp.xs,
                       },
                     ]}
                   >
@@ -1795,9 +1807,8 @@ export const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
                             match.trackOpponentStats &&
                             playerSelectionTab === TeamId.AWAY
                               ? "#ef4444"
-                              : isDark
-                              ? SLATE_COLORS[200]
-                              : SLATE_COLORS[700],
+                              : colors.text.primary,
+                          fontSize: isCompact ? font.md : font.lg,
                         },
                       ]}
                     >
@@ -1808,7 +1819,8 @@ export const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
                     style={[
                       styles.playerCardName,
                       {
-                        color: isDark ? SLATE_COLORS[200] : SLATE_COLORS[700],
+                        color: colors.text.primary,
+                        fontSize: isCompact ? font.xs : font.sm,
                       },
                     ]}
                     numberOfLines={1}
@@ -1836,7 +1848,7 @@ export const CourtActionModal: React.FC<CourtActionModalProps> = ({
   onClose,
   onActionSelect,
 }) => {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const surfaceColor = colors.surface;
   const textPrimary = colors.text.primary;
   const textSecondary = colors.text.secondary;
@@ -1867,9 +1879,7 @@ export const CourtActionModal: React.FC<CourtActionModalProps> = ({
               style={[
                 styles.courtActionClose,
                 {
-                  backgroundColor: isDark
-                    ? SLATE_COLORS[800]
-                    : SLATE_COLORS[100],
+                  backgroundColor: colors.surfaceVariant,
                 },
               ]}
             >
@@ -1916,7 +1926,8 @@ export const SubstitutionModal: React.FC<SubstitutionModalProps> = ({
   subTeamTab,
   setSubTeamTab,
 }) => {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
+  const { sp, font, sizes, isCompact } = useResponsive();
   const surfaceColor = colors.surface;
   const textPrimary = colors.text.primary;
   const textSecondary = colors.text.secondary;
@@ -1954,9 +1965,7 @@ export const SubstitutionModal: React.FC<SubstitutionModalProps> = ({
               style={[
                 styles.subClose,
                 {
-                  backgroundColor: isDark
-                    ? SLATE_COLORS[800]
-                    : SLATE_COLORS[100],
+                  backgroundColor: colors.surfaceVariant,
                 },
               ]}
             >
@@ -1973,9 +1982,7 @@ export const SubstitutionModal: React.FC<SubstitutionModalProps> = ({
               style={[
                 styles.subTabs,
                 {
-                  backgroundColor: isDark
-                    ? SLATE_COLORS[800]
-                    : SLATE_COLORS[100],
+                  backgroundColor: colors.surfaceVariant,
                 },
               ]}
             >
@@ -1986,7 +1993,7 @@ export const SubstitutionModal: React.FC<SubstitutionModalProps> = ({
                   {
                     backgroundColor:
                       subTeamTab === TeamId.HOME
-                        ? BRAND_COLORS[600]
+                        ? colors.primary
                         : "transparent",
                   },
                 ]}
@@ -1997,7 +2004,7 @@ export const SubstitutionModal: React.FC<SubstitutionModalProps> = ({
                     {
                       color:
                         subTeamTab === TeamId.HOME
-                          ? COMMON_COLORS.white
+                          ? colors.onPrimary
                           : textSecondary,
                     },
                   ]}
@@ -2021,7 +2028,7 @@ export const SubstitutionModal: React.FC<SubstitutionModalProps> = ({
                     {
                       color:
                         subTeamTab === TeamId.AWAY
-                          ? COMMON_COLORS.white
+                          ? colors.onPrimary
                           : textSecondary,
                     },
                   ]}
@@ -2038,9 +2045,7 @@ export const SubstitutionModal: React.FC<SubstitutionModalProps> = ({
               style={[
                 styles.subSection,
                 {
-                  backgroundColor: isDark
-                    ? `${SLATE_COLORS[950]}50`
-                    : SLATE_COLORS[50],
+                  backgroundColor: colors.surface,
                   borderColor,
                 },
               ]}
@@ -2066,14 +2071,12 @@ export const SubstitutionModal: React.FC<SubstitutionModalProps> = ({
                           styles.subPlayerCard,
                           {
                             backgroundColor: isOut
-                              ? isDark
-                                ? "#7f1d1d"
-                                : "#fee2e2"
-                              : isDark
-                              ? SLATE_COLORS[800]
-                              : COMMON_COLORS.white,
+                              ? colors.error + "20"
+                              : colors.background,
                             borderColor: isOut ? "#ef4444" : "transparent",
                             borderWidth: isOut ? 2 : 1,
+                            padding: isCompact ? sp.xs : sp.sm,
+                            borderRadius: isCompact ? sp.xs : sp.sm,
                           },
                         ]}
                       >
@@ -2083,9 +2086,17 @@ export const SubstitutionModal: React.FC<SubstitutionModalProps> = ({
                             {
                               backgroundColor: isOut
                                 ? "#ef4444"
-                                : isDark
-                                ? SLATE_COLORS[700]
-                                : SLATE_COLORS[100],
+                                : colors.surfaceVariant,
+                              width: isCompact
+                                ? sizes.avatarXs
+                                : sizes.avatarSm,
+                              height: isCompact
+                                ? sizes.avatarXs
+                                : sizes.avatarSm,
+                              borderRadius: isCompact
+                                ? sizes.avatarXs / 2
+                                : sizes.avatarSm / 2,
+                              marginBottom: sp.xs,
                             },
                           ]}
                         >
@@ -2094,10 +2105,9 @@ export const SubstitutionModal: React.FC<SubstitutionModalProps> = ({
                               styles.subPlayerNumberText,
                               {
                                 color: isOut
-                                  ? COMMON_COLORS.white
-                                  : isDark
-                                  ? SLATE_COLORS[200]
-                                  : SLATE_COLORS[900],
+                                  ? colors.onPrimary
+                                  : colors.text.primary,
+                                fontSize: isCompact ? font.xs : font.sm,
                               },
                             ]}
                           >
@@ -2108,9 +2118,8 @@ export const SubstitutionModal: React.FC<SubstitutionModalProps> = ({
                           style={[
                             styles.subPlayerName,
                             {
-                              color: isDark
-                                ? SLATE_COLORS[300]
-                                : SLATE_COLORS[700],
+                              color: colors.text.primary,
+                              fontSize: isCompact ? font.xxs : font.xs,
                             },
                           ]}
                           numberOfLines={1}
@@ -2122,7 +2131,7 @@ export const SubstitutionModal: React.FC<SubstitutionModalProps> = ({
                             <MaterialCommunityIcons
                               name="arrow-right"
                               size={10}
-                              color={COMMON_COLORS.white}
+                              color={colors.onPrimary}
                             />
                           </View>
                         )}
@@ -2137,9 +2146,7 @@ export const SubstitutionModal: React.FC<SubstitutionModalProps> = ({
               style={[
                 styles.subSection,
                 {
-                  backgroundColor: isDark
-                    ? `${SLATE_COLORS[950]}50`
-                    : SLATE_COLORS[50],
+                  backgroundColor: colors.surface,
                   borderColor,
                 },
               ]}
@@ -2165,16 +2172,14 @@ export const SubstitutionModal: React.FC<SubstitutionModalProps> = ({
                           styles.subPlayerCard,
                           {
                             backgroundColor: isIn
-                              ? isDark
-                                ? "#14532d"
-                                : "#dcfce7"
-                              : isDark
-                              ? SLATE_COLORS[800]
-                              : COMMON_COLORS.white,
+                              ? colors.success + "20"
+                              : colors.background,
                             borderColor: isIn
                               ? STATUS_COLORS.success
                               : "transparent",
                             borderWidth: isIn ? 2 : 1,
+                            padding: isCompact ? sp.xs : sp.sm,
+                            borderRadius: isCompact ? sp.xs : sp.sm,
                           },
                         ]}
                       >
@@ -2184,9 +2189,17 @@ export const SubstitutionModal: React.FC<SubstitutionModalProps> = ({
                             {
                               backgroundColor: isIn
                                 ? STATUS_COLORS.success
-                                : isDark
-                                ? SLATE_COLORS[700]
-                                : SLATE_COLORS[200],
+                                : colors.surfaceVariant,
+                              width: isCompact
+                                ? sizes.avatarXs
+                                : sizes.avatarSm,
+                              height: isCompact
+                                ? sizes.avatarXs
+                                : sizes.avatarSm,
+                              borderRadius: isCompact
+                                ? sizes.avatarXs / 2
+                                : sizes.avatarSm / 2,
+                              marginBottom: sp.xs,
                             },
                           ]}
                         >
@@ -2194,9 +2207,8 @@ export const SubstitutionModal: React.FC<SubstitutionModalProps> = ({
                             style={[
                               styles.subPlayerNumberText,
                               {
-                                color: isIn
-                                  ? COMMON_COLORS.white
-                                  : textSecondary,
+                                color: isIn ? colors.onPrimary : textSecondary,
+                                fontSize: isCompact ? font.xs : font.sm,
                               },
                             ]}
                           >
@@ -2206,7 +2218,10 @@ export const SubstitutionModal: React.FC<SubstitutionModalProps> = ({
                         <Text
                           style={[
                             styles.subPlayerName,
-                            { color: textSecondary },
+                            {
+                              color: textSecondary,
+                              fontSize: isCompact ? font.xxs : font.xs,
+                            },
                           ]}
                           numberOfLines={1}
                         >
@@ -2222,7 +2237,7 @@ export const SubstitutionModal: React.FC<SubstitutionModalProps> = ({
                             <MaterialCommunityIcons
                               name="arrow-right"
                               size={10}
-                              color={COMMON_COLORS.white}
+                              color={colors.onPrimary}
                             />
                           </View>
                         )}
@@ -2253,10 +2268,8 @@ export const SubstitutionModal: React.FC<SubstitutionModalProps> = ({
                   backgroundColor:
                     subSelection.in.length !== subSelection.out.length ||
                     subSelection.in.length === 0
-                      ? isDark
-                        ? SLATE_COLORS[800]
-                        : SLATE_COLORS[300]
-                      : BRAND_COLORS[600],
+                      ? colors.surfaceVariant
+                      : colors.primary,
                   opacity:
                     subSelection.in.length !== subSelection.out.length ||
                     subSelection.in.length === 0
@@ -2268,18 +2281,18 @@ export const SubstitutionModal: React.FC<SubstitutionModalProps> = ({
               <MaterialCommunityIcons
                 name="swap-horizontal"
                 size={20}
-                color={COMMON_COLORS.white}
+                color={colors.onPrimary}
               />
               <Text
                 style={[
                   styles.subCommitButtonText,
-                  { color: COMMON_COLORS.white },
+                  { color: colors.onPrimary },
                 ]}
               >
                 {subSelection.in.length > 0 &&
                 subSelection.in.length !== subSelection.out.length
                   ? `Sélectionnez ${Math.abs(
-                      subSelection.in.length - subSelection.out.length
+                      subSelection.in.length - subSelection.out.length,
                     )} autre(s)`
                   : "Valider les changements"}
               </Text>
@@ -2303,7 +2316,7 @@ export const EndMatchModal: React.FC<EndMatchModalProps> = ({
   onClose,
   onConfirm,
 }) => {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const surfaceColor = colors.surface;
   const textPrimary = colors.text.primary;
   const textSecondary = colors.text.secondary;
@@ -2341,9 +2354,7 @@ export const EndMatchModal: React.FC<EndMatchModalProps> = ({
               style={[
                 styles.endMatchCancelButton,
                 {
-                  backgroundColor: isDark
-                    ? SLATE_COLORS[800]
-                    : SLATE_COLORS[100],
+                  backgroundColor: colors.surfaceVariant,
                 },
               ]}
             >
@@ -2367,7 +2378,7 @@ export const EndMatchModal: React.FC<EndMatchModalProps> = ({
               <Text
                 style={[
                   styles.endMatchConfirmButtonText,
-                  { color: COMMON_COLORS.white },
+                  { color: colors.onPrimary },
                 ]}
               >
                 Terminer
@@ -2404,7 +2415,7 @@ export const OvertimeModal: React.FC<OvertimeModalProps> = ({
   overtimeDuration,
   setOvertimeDuration,
 }) => {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const surfaceColor = colors.surface;
   const textPrimary = colors.text.primary;
   const textSecondary = colors.text.secondary;
@@ -2436,7 +2447,7 @@ export const OvertimeModal: React.FC<OvertimeModalProps> = ({
             <MaterialCommunityIcons
               name="flag"
               size={32}
-              color={BRAND_COLORS[600]}
+              color={colors.primary}
             />
           </View>
 
@@ -2459,7 +2470,7 @@ export const OvertimeModal: React.FC<OvertimeModalProps> = ({
             style={[
               styles.overtimeDurationBox,
               {
-                backgroundColor: isDark ? SLATE_COLORS[800] : SLATE_COLORS[50],
+                backgroundColor: colors.surfaceVariant,
               },
             ]}
           >
@@ -2478,9 +2489,7 @@ export const OvertimeModal: React.FC<OvertimeModalProps> = ({
                 style={[
                   styles.overtimeDurationButton,
                   {
-                    backgroundColor: isDark
-                      ? SLATE_COLORS[700]
-                      : SLATE_COLORS[200],
+                    backgroundColor: colors.surfaceVariant,
                   },
                 ]}
               >
@@ -2511,9 +2520,7 @@ export const OvertimeModal: React.FC<OvertimeModalProps> = ({
                 style={[
                   styles.overtimeDurationButton,
                   {
-                    backgroundColor: isDark
-                      ? SLATE_COLORS[700]
-                      : SLATE_COLORS[200],
+                    backgroundColor: colors.surfaceVariant,
                   },
                 ]}
               >
@@ -2531,18 +2538,18 @@ export const OvertimeModal: React.FC<OvertimeModalProps> = ({
               onPress={onEndMatch}
               style={[
                 styles.overtimePrimaryButton,
-                { backgroundColor: BRAND_COLORS[600] },
+                { backgroundColor: colors.primary },
               ]}
             >
               <MaterialCommunityIcons
                 name="flag-checkered"
                 size={20}
-                color={COMMON_COLORS.white}
+                color={colors.onPrimary}
               />
               <Text
                 style={[
                   styles.overtimePrimaryButtonText,
-                  { color: COMMON_COLORS.white },
+                  { color: colors.onPrimary },
                 ]}
               >
                 Terminer le match
@@ -2600,7 +2607,7 @@ export const PeriodConfirmModal: React.FC<PeriodConfirmModalProps> = ({
   timer,
   formatTime,
 }) => {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const surfaceColor = colors.surface;
   const textPrimary = colors.text.primary;
   const textSecondary = colors.text.secondary;
@@ -2620,7 +2627,7 @@ export const PeriodConfirmModal: React.FC<PeriodConfirmModalProps> = ({
             style={[
               styles.periodConfirmCloseButton,
               {
-                backgroundColor: isDark ? SLATE_COLORS[800] : SLATE_COLORS[100],
+                backgroundColor: colors.surfaceVariant,
               },
             ]}
           >
@@ -2635,15 +2642,15 @@ export const PeriodConfirmModal: React.FC<PeriodConfirmModalProps> = ({
             style={[
               styles.periodConfirmIcon,
               {
-                backgroundColor: isDark ? "#78350f" : "#fef3c7",
-                borderColor: isDark ? "#78350f" : "#fcd34d",
+                backgroundColor: colors.warning + "30",
+                borderColor: colors.warning,
               },
             ]}
           >
             <MaterialCommunityIcons
               name="alert-circle"
               size={32}
-              color={isDark ? "#fbbf24" : "#f59e0b"}
+              color={colors.warning}
             />
           </View>
 
@@ -2674,7 +2681,7 @@ export const PeriodConfirmModal: React.FC<PeriodConfirmModalProps> = ({
               <Text
                 style={[
                   styles.periodConfirmForceButtonText,
-                  { color: COMMON_COLORS.white },
+                  { color: colors.onPrimary },
                 ]}
               >
                 Passer à la suivante
@@ -2686,10 +2693,8 @@ export const PeriodConfirmModal: React.FC<PeriodConfirmModalProps> = ({
               style={[
                 styles.periodConfirmCancelButton,
                 {
-                  backgroundColor: isDark
-                    ? SLATE_COLORS[800]
-                    : COMMON_COLORS.white,
-                  borderColor: isDark ? SLATE_COLORS[700] : SLATE_COLORS[200],
+                  backgroundColor: colors.background,
+                  borderColor: colors.border,
                 },
               ]}
             >
@@ -2697,7 +2702,7 @@ export const PeriodConfirmModal: React.FC<PeriodConfirmModalProps> = ({
                 style={[
                   styles.periodConfirmCancelButtonText,
                   {
-                    color: isDark ? SLATE_COLORS[300] : SLATE_COLORS[700],
+                    color: colors.text.primary,
                   },
                 ]}
               >
@@ -2725,7 +2730,7 @@ export const DeleteActionModal: React.FC<DeleteActionModalProps> = ({
   onConfirm,
   eventDescription,
 }) => {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const surfaceColor = colors.surface;
   const textPrimary = colors.text.primary;
   const textSecondary = colors.text.secondary;
@@ -2758,7 +2763,7 @@ export const DeleteActionModal: React.FC<DeleteActionModalProps> = ({
             style={[
               styles.deleteActionDetail,
               {
-                backgroundColor: isDark ? SLATE_COLORS[800] : SLATE_COLORS[50],
+                backgroundColor: colors.surfaceVariant,
                 borderColor,
               },
             ]}
@@ -2784,9 +2789,7 @@ export const DeleteActionModal: React.FC<DeleteActionModalProps> = ({
               style={[
                 styles.deleteActionCancelButton,
                 {
-                  backgroundColor: isDark
-                    ? SLATE_COLORS[800]
-                    : SLATE_COLORS[100],
+                  backgroundColor: colors.surfaceVariant,
                 },
               ]}
             >
@@ -2810,7 +2813,7 @@ export const DeleteActionModal: React.FC<DeleteActionModalProps> = ({
               <Text
                 style={[
                   styles.deleteActionConfirmButtonText,
-                  { color: COMMON_COLORS.white },
+                  { color: colors.onPrimary },
                 ]}
               >
                 Supprimer
@@ -3211,8 +3214,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   playerCardNumber: {
-    width: 48,
-    height: 48,
     borderRadius: 24,
     alignItems: "center",
     justifyContent: "center",

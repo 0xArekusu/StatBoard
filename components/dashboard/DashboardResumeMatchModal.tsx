@@ -4,6 +4,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { Match } from "../../src/models/types";
 import { SHADOW_COLOR, OPACITY, COMMON_COLORS } from "../../src/theme";
 import { ThemeColors } from "../../src/theme/colors";
+import { useResponsive } from "../../src/hooks/useResponsive";
 
 interface DashboardResumeMatchModalProps {
   visible: boolean;
@@ -35,6 +36,7 @@ export default function DashboardResumeMatchModal({
   onNewMatch,
   onClose,
 }: DashboardResumeMatchModalProps) {
+  const { sp, font, sizes } = useResponsive();
   if (!match) return null;
 
   return (

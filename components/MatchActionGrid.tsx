@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { FilterMode } from "../constants/liveMatchConstants";
 import { ActionType, ShotSpecification, getActionColor } from "../src/models/ActionTypes";
 import { useTheme } from "../src/contexts/ThemeContext";
+import { useResponsive } from "../src/hooks/useResponsive";
 
 export interface ActionData {
   action_type: string;
@@ -17,6 +18,7 @@ interface MatchActionGridProps {
 
 export const MatchActionGrid: React.FC<MatchActionGridProps> = ({ onAction, filterMode = FilterMode.ALL }) => {
   const { colors, isDark } = useTheme();
+  const { sp, font } = useResponsive();
   const shouldShowAction = (actionType: string): boolean => {
     if (filterMode === FilterMode.ALL) return true;
     if (filterMode === FilterMode.SHOOTING) return actionType === ActionType.SHOT;

@@ -3,6 +3,7 @@ import { Modal, View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../src/contexts/ThemeContext";
 import { STATUS_COLORS, COMMON_COLORS, SHADOW_COLOR } from "../src/theme";
+import { useResponsive } from "../src/hooks/useResponsive";
 
 interface MatchLimitModalProps {
   visible: boolean;
@@ -24,71 +25,72 @@ export default function MatchLimitModal({
   onUpgrade,
 }: MatchLimitModalProps) {
   const { colors } = useTheme();
+  const { sp, font, sizes } = useResponsive();
 
   const infoBoxColor = !isConnected ? STATUS_COLORS.info : STATUS_COLORS.warning;
 
   return (
     <Modal visible={visible} transparent animationType="fade">
-      <View style={[styles.overlay, { backgroundColor: colors.overlay }]}>
-        <View style={[styles.modal, { backgroundColor: colors.surface }]}>
-          <View style={[styles.iconContainer, { backgroundColor: STATUS_COLORS.warning + "20" }]}>
-            <Ionicons name="warning-outline" size={70} color={STATUS_COLORS.warning} />
+      <View style={[styles.overlay, { backgroundColor: colors.overlay, padding: sp.lg }]}>
+        <View style={[styles.modal, { backgroundColor: colors.surface, borderRadius: sp.lg, padding: sp.xxl }]}>
+          <View style={[styles.iconContainer, { backgroundColor: STATUS_COLORS.warning + "20", marginBottom: sp.lg, width: sp.xxl * 3.75, height: sp.xxl * 3.75, borderRadius: sp.xxl * 1.875 }]}>
+            <Ionicons name="warning-outline" size={sp.xxl * 2.2} color={STATUS_COLORS.warning} />
           </View>
 
-          <Text style={[styles.title, { color: colors.text.primary }]}>Limite atteinte</Text>
+          <Text style={[styles.title, { color: colors.text.primary, fontSize: font.xxl, marginBottom: sp.md }]}>Limite atteinte</Text>
 
-          <Text style={[styles.message, { color: colors.text.secondary }]}>
+          <Text style={[styles.message, { color: colors.text.secondary, fontSize: font.md, marginBottom: sp.lg }]}>
             Vous avez atteint la limite de <Text style={[styles.bold, { color: STATUS_COLORS.warning }]}>{maxCount} matchs</Text> en stockage local.
           </Text>
 
           {!isConnected ? (
-            <View style={[styles.infoBox, { backgroundColor: infoBoxColor + "20", borderColor: infoBoxColor }]}>
-              <Ionicons name="information-circle-outline" size={24} color={infoBoxColor} />
-              <Text style={[styles.infoText, { color: infoBoxColor }]}>
+            <View style={[styles.infoBox, { backgroundColor: infoBoxColor + "20", borderColor: infoBoxColor, borderRadius: sp.md, padding: sp.md, gap: sp.sm + sp.xs, marginBottom: sp.lg }]}>
+              <Ionicons name="information-circle-outline" size={sizes.iconMd} color={infoBoxColor} />
+              <Text style={[styles.infoText, { color: infoBoxColor, fontSize: font.md }]}>
                 Connectez-vous pour accéder à un stockage illimité sur le cloud avec un abonnement premium.
               </Text>
             </View>
           ) : (
-            <View style={[styles.infoBox, { backgroundColor: infoBoxColor + "20", borderColor: infoBoxColor }]}>
-              <Ionicons name="rocket-outline" size={24} color={infoBoxColor} />
-              <Text style={[styles.infoText, { color: infoBoxColor }]}>
+            <View style={[styles.infoBox, { backgroundColor: infoBoxColor + "20", borderColor: infoBoxColor, borderRadius: sp.md, padding: sp.md, gap: sp.sm + sp.xs, marginBottom: sp.lg }]}>
+              <Ionicons name="rocket-outline" size={sizes.iconMd} color={infoBoxColor} />
+              <Text style={[styles.infoText, { color: infoBoxColor, fontSize: font.md }]}>
                 Passez à un abonnement premium pour un stockage illimité sur le cloud.
               </Text>
             </View>
           )}
 
-          <View style={styles.actions}>
+          <View style={[styles.actions, { gap: sp.sm + sp.xs }]}>
             {!isConnected && onLogin && (
               <TouchableOpacity
-                style={[styles.button, styles.primaryButton, { backgroundColor: STATUS_COLORS.info }]}
+                style={[styles.button, styles.primaryButton, { backgroundColor: STATUS_COLORS.info, paddingVertical: sp.md, paddingHorizontal: sp.lg, borderRadius: sp.md }]}
                 onPress={() => {
                   onClose();
                   onLogin();
                 }}
               >
-                <Ionicons name="log-in-outline" size={18} color={COMMON_COLORS.white} style={styles.buttonIcon} />
-                <Text style={[styles.primaryButtonText, { color: COMMON_COLORS.white }]}>Se connecter</Text>
+                <Ionicons name="log-in-outline" size={sizes.iconMd * 0.75} color={COMMON_COLORS.white} style={[styles.buttonIcon, { marginRight: sp.sm }]} />
+                <Text style={[styles.primaryButtonText, { color: COMMON_COLORS.white, fontSize: font.md }]}>Se connecter</Text>
               </TouchableOpacity>
             )}
 
             {isConnected && onUpgrade && (
               <TouchableOpacity
-                style={[styles.button, styles.primaryButton, { backgroundColor: STATUS_COLORS.warning }]}
+                style={[styles.button, styles.primaryButton, { backgroundColor: STATUS_COLORS.warning, paddingVertical: sp.md, paddingHorizontal: sp.lg, borderRadius: sp.md }]}
                 onPress={() => {
                   onClose();
                   onUpgrade();
                 }}
               >
-                <Ionicons name="star" size={18} color={COMMON_COLORS.white} style={styles.buttonIcon} />
-                <Text style={[styles.primaryButtonText, { color: COMMON_COLORS.white }]}>Voir les abonnements</Text>
+                <Ionicons name="star" size={sizes.iconMd * 0.75} color={COMMON_COLORS.white} style={[styles.buttonIcon, { marginRight: sp.sm }]} />
+                <Text style={[styles.primaryButtonText, { color: COMMON_COLORS.white, fontSize: font.md }]}>Voir les abonnements</Text>
               </TouchableOpacity>
             )}
 
             <TouchableOpacity
-              style={[styles.button, styles.cancelButton, { backgroundColor: colors.surfaceVariant }]}
+              style={[styles.button, styles.cancelButton, { backgroundColor: colors.surfaceVariant, paddingVertical: sp.md, paddingHorizontal: sp.lg, borderRadius: sp.md }]}
               onPress={onClose}
             >
-              <Text style={[styles.cancelButtonText, { color: colors.text.secondary }]}>Fermer</Text>
+              <Text style={[styles.cancelButtonText, { color: colors.text.secondary, fontSize: font.md }]}>Fermer</Text>
             </TouchableOpacity>
           </View>
         </View>
