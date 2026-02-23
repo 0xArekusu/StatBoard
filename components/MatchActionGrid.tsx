@@ -1,9 +1,11 @@
 import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { FilterMode } from "../constants/liveMatchConstants";
+import { BREAKPOINTS } from "../constants/breakpoints";
 import { ActionType, ShotSpecification, getActionColor } from "../src/models/ActionTypes";
 import { useTheme } from "../src/contexts/ThemeContext";
 import { useResponsive } from "../src/hooks/useResponsive";
+import { Spacing, Typography } from "../src/theme";
 
 export interface ActionData {
   action_type: string;
@@ -17,8 +19,33 @@ interface MatchActionGridProps {
 }
 
 export const MatchActionGrid: React.FC<MatchActionGridProps> = ({ onAction, filterMode = FilterMode.ALL }) => {
-  const { colors, isDark } = useTheme();
-  const { sp, font } = useResponsive();
+  const { colors } = useTheme();
+  const { sp: spResponsive, font: fontResponsive, isPortrait, width } = useResponsive();
+
+  // Detect mobile landscape mode (not tablet)
+  const isMobileLandscape = !isPortrait && width < BREAKPOINTS.mobileLandscapeMaxWidth;
+
+  // Use normal (non-compact) values for tablets, compact values for mobile landscape
+  const sp = isMobileLandscape ? spResponsive : {
+    xs: Spacing.xs,
+    sm: Spacing.sm,
+    md: Spacing.md,
+    lg: Spacing.lg,
+    xl: Spacing.xl,
+    xxl: Spacing.xxl,
+  };
+
+  const font = isMobileLandscape ? fontResponsive : {
+    xxs: Typography.fontSize.xs,
+    xs: Typography.fontSize.xs,
+    sm: Typography.fontSize.sm,
+    md: Typography.fontSize.md,
+    lg: Typography.fontSize.lg,
+    xl: Typography.fontSize.xl,
+    xxl: Typography.fontSize.xxl,
+    xxxl: Typography.fontSize.xxxl,
+  };
+
   const shouldShowAction = (actionType: string): boolean => {
     if (filterMode === FilterMode.ALL) return true;
     if (filterMode === FilterMode.SHOOTING) return actionType === ActionType.SHOT;
@@ -30,41 +57,58 @@ export const MatchActionGrid: React.FC<MatchActionGridProps> = ({ onAction, filt
     return true;
   };
 
+  // Responsive row heights
+  const rowHeightLarge = isMobileLandscape ? sp.xxl + sp.lg : sp.xxl * 2 + sp.md;
+  const rowHeightMedium = isMobileLandscape ? sp.xxl + sp.xs : sp.xxl + sp.xl;
+  const rowHeightSmall = isMobileLandscape ? sp.xl + sp.sm : sp.xxl + sp.md;
+
   return (
-  <View style={styles.actionGrid}>
+  <View style={[styles.actionGrid, { padding: sp.sm, gap: sp.sm }]}>
     {/* Row 1: Scoring Positive */}
     {shouldShowAction(ActionType.SHOT) && (
-      <View style={styles.actionRow}>
+      <View style={[styles.actionRow, { height: rowHeightLarge, gap: sp.sm }]}>
         <ActionButton
           onPress={() => onAction({ action_type: ActionType.SHOT, specification: ShotSpecification.MADE, points: 1 })}
           label="+1"
           sub="Lancer"
           color={getActionColor(ActionType.SHOT, ShotSpecification.MADE, 1)}
+          isMobileLandscape={isMobileLandscape}
+          sp={sp}
+          font={font}
         />
         <ActionButton
           onPress={() => onAction({ action_type: ActionType.SHOT, specification: ShotSpecification.MADE, points: 2 })}
           label="+2"
           sub="Points"
           color={getActionColor(ActionType.SHOT, ShotSpecification.MADE, 2)}
+          isMobileLandscape={isMobileLandscape}
+          sp={sp}
+          font={font}
         />
         <ActionButton
           onPress={() => onAction({ action_type: ActionType.SHOT, specification: ShotSpecification.MADE, points: 3 })}
           label="+3"
           sub="Points"
           color={getActionColor(ActionType.SHOT, ShotSpecification.MADE, 3)}
+          isMobileLandscape={isMobileLandscape}
+          sp={sp}
+          font={font}
         />
       </View>
     )}
 
     {/* Row 2: Scoring Negative (Misses) */}
     {shouldShowAction(ActionType.SHOT) && (
-      <View style={[styles.actionRow, { height: 64 }]}>
+      <View style={[styles.actionRow, { height: rowHeightMedium, gap: sp.sm }]}>
         <ActionButton
           onPress={() => onAction({ action_type: ActionType.SHOT, specification: ShotSpecification.MISSED, points: 1 })}
           label="Raté"
           sub="Lancer"
           color={colors.surfaceVariant}
           textColor={getActionColor(ActionType.SHOT, ShotSpecification.MISSED, 1)}
+          isMobileLandscape={isMobileLandscape}
+          sp={sp}
+          font={font}
         />
         <ActionButton
           onPress={() => onAction({ action_type: ActionType.SHOT, specification: ShotSpecification.MISSED, points: 2 })}
@@ -72,6 +116,9 @@ export const MatchActionGrid: React.FC<MatchActionGridProps> = ({ onAction, filt
           sub="2 Pts"
           color={colors.surfaceVariant}
           textColor={getActionColor(ActionType.SHOT, ShotSpecification.MISSED, 2)}
+          isMobileLandscape={isMobileLandscape}
+          sp={sp}
+          font={font}
         />
         <ActionButton
           onPress={() => onAction({ action_type: ActionType.SHOT, specification: ShotSpecification.MISSED, points: 3 })}
@@ -79,36 +126,48 @@ export const MatchActionGrid: React.FC<MatchActionGridProps> = ({ onAction, filt
           sub="3 Pts"
           color={colors.surfaceVariant}
           textColor={getActionColor(ActionType.SHOT, ShotSpecification.MISSED, 3)}
+          isMobileLandscape={isMobileLandscape}
+          sp={sp}
+          font={font}
         />
       </View>
     )}
 
     {/* Row 3: Rebounds */}
     {shouldShowAction(ActionType.REBOUND) && (
-      <View style={[styles.actionRow, { height: 80 }]}>
+      <View style={[styles.actionRow, { height: rowHeightLarge, gap: sp.sm }]}>
         <ActionButton
           onPress={() => onAction({ action_type: ActionType.REBOUND, specification: "defensive" })}
           label="REB DEF"
           sub="Défensif"
           color={getActionColor(ActionType.REBOUND, "defensive")}
+          isMobileLandscape={isMobileLandscape}
+          sp={sp}
+          font={font}
         />
         <ActionButton
           onPress={() => onAction({ action_type: ActionType.REBOUND, specification: "offensive" })}
           label="REB OFF"
           sub="Offensif"
           color={getActionColor(ActionType.REBOUND, "offensive")}
+          isMobileLandscape={isMobileLandscape}
+          sp={sp}
+          font={font}
         />
       </View>
     )}
 
     {/* Row 4: Other Stats */}
-    <View style={styles.actionRow}>
+    <View style={[styles.actionRow, { height: rowHeightLarge, gap: sp.sm }]}>
       {shouldShowAction(ActionType.ASSIST) && (
         <ActionButton
           onPress={() => onAction({ action_type: ActionType.ASSIST })}
           label="PASSE D"
           sub="Assist"
           color={getActionColor(ActionType.ASSIST)}
+          isMobileLandscape={isMobileLandscape}
+          sp={sp}
+          font={font}
         />
       )}
       {shouldShowAction(ActionType.STEAL) && (
@@ -117,15 +176,21 @@ export const MatchActionGrid: React.FC<MatchActionGridProps> = ({ onAction, filt
           label="INTERC"
           sub="Vol"
           color={getActionColor(ActionType.STEAL)}
+          isMobileLandscape={isMobileLandscape}
+          sp={sp}
+          font={font}
         />
       )}
-      <View style={styles.miniColumn}>
+      <View style={[styles.miniColumn, { gap: sp.xs }]}>
         {shouldShowAction(ActionType.BLOCK) && (
           <ActionButton
             onPress={() => onAction({ action_type: ActionType.BLOCK })}
             label="CONTRE"
             color={getActionColor(ActionType.BLOCK)}
-            textSize={14}
+            textSize={isMobileLandscape ? font.xs : font.md}
+            isMobileLandscape={isMobileLandscape}
+            sp={sp}
+            font={font}
           />
         )}
         {shouldShowAction(ActionType.FOUL) && (
@@ -133,19 +198,25 @@ export const MatchActionGrid: React.FC<MatchActionGridProps> = ({ onAction, filt
             onPress={() => onAction({ action_type: ActionType.FOUL })}
             label="FAUTE"
             color={getActionColor(ActionType.FOUL)}
-            textSize={14}
+            textSize={isMobileLandscape ? font.xs : font.md}
+            isMobileLandscape={isMobileLandscape}
+            sp={sp}
+            font={font}
           />
         )}
       </View>
     </View>
 
     {/* Row 5: Turnover & Foul Drawn */}
-    <View style={[styles.actionRow, { height: 56 }]}>
+    <View style={[styles.actionRow, { height: rowHeightSmall, gap: sp.sm }]}>
       {shouldShowAction(ActionType.TURNOVER) && (
         <ActionButton
           onPress={() => onAction({ action_type: ActionType.TURNOVER })}
           label="BALLE PERDUE"
           color={getActionColor(ActionType.TURNOVER)}
+          isMobileLandscape={isMobileLandscape}
+          sp={sp}
+          font={font}
         />
       )}
       {shouldShowAction(ActionType.FOUL_DRAWN) && (
@@ -154,6 +225,9 @@ export const MatchActionGrid: React.FC<MatchActionGridProps> = ({ onAction, filt
           label="FTE PROV"
           sub="Faute provoquée"
           color={getActionColor(ActionType.FOUL_DRAWN)}
+          isMobileLandscape={isMobileLandscape}
+          sp={sp}
+          font={font}
         />
       )}
     </View>
@@ -167,6 +241,9 @@ interface ActionButtonProps {
   color: string;
   textColor?: string;
   textSize?: number;
+  isMobileLandscape?: boolean;
+  sp?: any;
+  font?: any;
 }
 
 const ActionButton: React.FC<ActionButtonProps> = ({
@@ -175,55 +252,62 @@ const ActionButton: React.FC<ActionButtonProps> = ({
   sub,
   color,
   textColor,
-  textSize = 16,
-}) => (
-  <TouchableOpacity
-    onPress={onPress}
-    style={[styles.actionButton, { backgroundColor: color }]}
-  >
-    <Text
-      style={[
-        styles.actionButtonLabel,
-        { color: textColor || "#fff", fontSize: textSize },
-      ]}
+  textSize,
+  isMobileLandscape = false,
+  sp,
+  font,
+}) => {
+  const finalTextSize = textSize || (isMobileLandscape ? font?.md || 12 : font?.lg || 16);
+  const subTextSize = isMobileLandscape ? font?.xxs || 8 : font?.xs || 10;
+  const padding = sp ? (isMobileLandscape ? sp.xs : sp.sm) : (isMobileLandscape ? 4 : 8);
+  const borderRadius = sp ? sp.sm : 12;
+
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      style={[styles.actionButton, { backgroundColor: color, padding, borderRadius }]}
     >
-      {label}
-    </Text>
-    {sub && (
-      <Text style={[styles.actionButtonSub, { color: textColor || "#fff" }]}>{sub}</Text>
-    )}
-  </TouchableOpacity>
-);
+      <Text
+        style={[
+          styles.actionButtonLabel,
+          { color: textColor || "#fff", fontSize: finalTextSize },
+        ]}
+      >
+        {label}
+      </Text>
+      {sub && (
+        <Text style={[styles.actionButtonSub, { color: textColor || "#fff", fontSize: subTextSize }]}>{sub}</Text>
+      )}
+    </TouchableOpacity>
+  );
+};
 
 const styles = StyleSheet.create({
   actionGrid: {
-    padding: 12,
-    gap: 12,
+    // padding and gap set dynamically
   },
   actionRow: {
     flexDirection: "row",
-    gap: 12,
-    height: 88,
+    // gap and height set dynamically
   },
   miniColumn: {
     flex: 1,
-    gap: 8,
+    // gap set dynamically
   },
   actionButton: {
     flex: 1,
-    borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
-    padding: 8,
+    // padding and borderRadius set dynamically
   },
   actionButtonLabel: {
-    fontSize: 16,
     fontWeight: "900",
     textAlign: "center",
+    // fontSize set dynamically
   },
   actionButtonSub: {
-    fontSize: 11,
     marginTop: 2,
     opacity: 0.8,
+    // fontSize set dynamically
   },
 });

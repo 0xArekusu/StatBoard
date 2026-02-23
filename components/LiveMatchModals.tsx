@@ -9,7 +9,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { BRAND_COLORS, COMMON_COLORS, STATUS_COLORS } from "../src/theme";
+import { BRAND_COLORS, COMMON_COLORS, STATUS_COLORS, Spacing, Typography } from "../src/theme";
 import { Player } from "../models/Player";
 import { MatchActionGrid, ActionData } from "./MatchActionGrid";
 import {
@@ -18,6 +18,7 @@ import {
   FilterMode,
   TeamFilterMode,
 } from "../constants/liveMatchConstants";
+import { BREAKPOINTS } from "../constants/breakpoints";
 import { useTheme } from "../src/contexts/ThemeContext";
 import { useResponsive } from "../src/hooks/useResponsive";
 import {
@@ -658,9 +659,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
           style={[
             styles.playerFilterBadge,
             {
-              backgroundColor: isSelected
-                ? colors.onPrimary
-                : colors.surface,
+              backgroundColor: isSelected ? colors.onPrimary : colors.surface,
             },
           ]}
         >
@@ -1849,10 +1848,35 @@ export const CourtActionModal: React.FC<CourtActionModalProps> = ({
   onActionSelect,
 }) => {
   const { colors } = useTheme();
+  const { sp: spResponsive, font: fontResponsive, sizes, isPortrait, width } = useResponsive();
   const surfaceColor = colors.surface;
   const textPrimary = colors.text.primary;
   const textSecondary = colors.text.secondary;
   const borderColor = colors.border;
+
+  // Detect mobile landscape mode (not tablet)
+  const isMobileLandscape = !isPortrait && width < BREAKPOINTS.mobileLandscapeMaxWidth;
+
+  // Use normal (non-compact) values for tablets, compact values for mobile landscape
+  const sp = isMobileLandscape ? spResponsive : {
+    xs: Spacing.xs,
+    sm: Spacing.sm,
+    md: Spacing.md,
+    lg: Spacing.lg,
+    xl: Spacing.xl,
+    xxl: Spacing.xxl,
+  };
+
+  const font = isMobileLandscape ? fontResponsive : {
+    xxs: Typography.fontSize.xs,
+    xs: Typography.fontSize.xs,
+    sm: Typography.fontSize.sm,
+    md: Typography.fontSize.md,
+    lg: Typography.fontSize.lg,
+    xl: Typography.fontSize.xl,
+    xxl: Typography.fontSize.xxl,
+    xxxl: Typography.fontSize.xxxl,
+  };
 
   return (
     <Modal visible={visible} transparent animationType="fade">
@@ -1860,16 +1884,42 @@ export const CourtActionModal: React.FC<CourtActionModalProps> = ({
         <View
           style={[
             styles.courtActionModal,
-            { backgroundColor: surfaceColor, borderColor },
+            {
+              backgroundColor: surfaceColor,
+              borderColor,
+              maxWidth: isMobileLandscape ? 450 : 400,
+              maxHeight: isMobileLandscape ? "100%" : "90%",
+              padding: isMobileLandscape ? sp.md : sp.md,
+              borderRadius: sp.md,
+            },
           ]}
         >
-          <View style={styles.courtActionHeader}>
+          <View
+            style={[
+              styles.courtActionHeader,
+              { marginBottom: isMobileLandscape ? sp.xs : sp.md },
+            ]}
+          >
             <View>
-              <Text style={[styles.courtActionTitle, { color: textPrimary }]}>
+              <Text
+                style={[
+                  styles.courtActionTitle,
+                  {
+                    color: textPrimary,
+                    fontSize: isMobileLandscape ? font.lg : font.xl,
+                  },
+                ]}
+              >
                 ACTION
               </Text>
               <Text
-                style={[styles.courtActionSubtitle, { color: textSecondary }]}
+                style={[
+                  styles.courtActionSubtitle,
+                  {
+                    color: textSecondary,
+                    fontSize: isMobileLandscape ? font.xs : font.sm,
+                  },
+                ]}
               >
                 Que s'est-il passé ici ?
               </Text>
@@ -1880,12 +1930,15 @@ export const CourtActionModal: React.FC<CourtActionModalProps> = ({
                 styles.courtActionClose,
                 {
                   backgroundColor: colors.surfaceVariant,
+                  width: sizes.avatarSm,
+                  height: sizes.avatarSm,
+                  borderRadius: sizes.avatarSm / 2,
                 },
               ]}
             >
               <MaterialCommunityIcons
                 name="close-circle"
-                size={20}
+                size={sizes.iconMd}
                 color={textSecondary}
               />
             </TouchableOpacity>
@@ -3232,10 +3285,6 @@ const styles = StyleSheet.create({
   // Court Action Modal
   courtActionModal: {
     width: "100%",
-    maxWidth: 400,
-    maxHeight: "90%",
-    borderRadius: 16,
-    padding: 16,
     borderWidth: 1,
   },
   courtActionHeader: {
