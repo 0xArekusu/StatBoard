@@ -2092,7 +2092,7 @@ export const SubstitutionModal: React.FC<SubstitutionModalProps> = ({
             </View>
           )}
 
-          <View style={styles.subContent}>
+          <ScrollView style={styles.subContent} contentContainerStyle={{ flexGrow: 1 }}>
             {/* On Court */}
             <View
               style={[
@@ -2299,7 +2299,7 @@ export const SubstitutionModal: React.FC<SubstitutionModalProps> = ({
                   })}
               </View>
             </View>
-          </View>
+          </ScrollView>
 
           <View
             style={[
