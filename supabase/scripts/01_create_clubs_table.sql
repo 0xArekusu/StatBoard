@@ -37,28 +37,32 @@ CREATE INDEX IF NOT EXISTS idx_clubs_owner ON clubs(owner_id);
 -- ====================================
 -- ROW LEVEL SECURITY
 -- ====================================
--- ALTER TABLE clubs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE clubs ENABLE ROW LEVEL SECURITY;
 
--- -- Policy: Only owners can view their clubs (members policy will be added after club_members table creation)
--- CREATE POLICY "Owners can view their clubs" ON clubs
---   FOR SELECT
---   USING (auth.uid() = owner_id);
+-- Policy: Owners and members can view their clubs
+-- Note: is_club_member() function is created in 02_create_club_member_table.sql
+CREATE POLICY "Owners and members can view their clubs" ON clubs
+  FOR SELECT
+  USING (
+    auth.uid() = owner_id
+    OR is_club_member(id)
+  );
 
--- -- Policy: Users can create clubs
--- CREATE POLICY "Users can create clubs" ON clubs
---   FOR INSERT
---   WITH CHECK (auth.uid() = owner_id);
+-- Policy: Authenticated users can create clubs
+CREATE POLICY "Users can create clubs" ON clubs
+  FOR INSERT
+  WITH CHECK (auth.uid() = owner_id);
 
--- -- Policy: Users can update own clubs
--- CREATE POLICY "Users can update own clubs" ON clubs
---   FOR UPDATE
---   USING (auth.uid() = owner_id)
---   WITH CHECK (auth.uid() = owner_id);
+-- Policy: Only owners can update their clubs
+CREATE POLICY "Owners can update their clubs" ON clubs
+  FOR UPDATE
+  USING (auth.uid() = owner_id)
+  WITH CHECK (auth.uid() = owner_id);
 
--- -- Policy: Users can delete own clubs
--- CREATE POLICY "Users can delete own clubs" ON clubs
---   FOR DELETE
---   USING (auth.uid() = owner_id);
+-- Policy: Only owners can delete their clubs
+CREATE POLICY "Owners can delete their clubs" ON clubs
+  FOR DELETE
+  USING (auth.uid() = owner_id);
 
 -- ====================================
 -- TRIGGERS

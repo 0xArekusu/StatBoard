@@ -4,14 +4,14 @@
  * Service for uploading and managing player photos in Supabase Storage.
  *
  * Features:
- * - Upload player photos from local device to cloud storage
- * - Generate unique filenames with timestamp to avoid collisions
- * - Retrieve public URLs for uploaded photos
+ * - Upload player photos from local device to cloud storage (PRIVATE bucket)
+ * - One photo per player (upsert replaces existing photo)
+ * - Generate signed URLs for secure access
  * - Delete photos from storage
  *
  * Storage:
- * - Bucket: "player-photos" (public bucket)
- * - Naming: {playerId}_{timestamp}.{ext}
+ * - Bucket: "player-photos" (PRIVATE bucket)
+ * - Naming: {clubId}/{playerId}.{ext} (NO TIMESTAMP)
  * - Formats: JPG, JPEG, PNG
  *
  * Used by:
@@ -30,24 +30,26 @@ export class PhotoUploadService {
   }
 
   /**
-   * Upload a player photo to Supabase Storage
-   * Generates unique filename with timestamp to prevent collisions
+   * Upload a player photo to Supabase Storage (PRIVATE bucket)
+   * One photo per player - upsert replaces existing photo
+   * Path format: {clubId}/{playerId}.{ext}
    *
    * @param uri Local URI of the image file
    * @param playerId Player ID used for filename generation
-   * @returns Public URL of uploaded image and error if any
+   * @param clubId Club ID for folder organization
+   * @returns Signed URL of uploaded image (expires in 1 year) and error if any
    */
   async uploadPlayerPhoto(
     uri: string,
-    playerId: string
+    playerId: string,
+    clubId: string
   ): Promise<{ url: string | null; error: string | null }> {
     try {
-      logInfo('PhotoUploadService', '📸 Starting photo upload', { playerId, uri });
+      logInfo('PhotoUploadService', '📸 Starting photo upload', { playerId, clubId, uri });
 
-      // 1. Generate unique filename with timestamp
-      const timestamp = Date.now();
+      // 1. Generate filename without timestamp (one photo per player)
       const fileExt = uri.split('.').pop() || 'jpg';
-      const fileName = `${playerId}_${timestamp}.${fileExt}`;
+      const fileName = `${clubId}/${playerId}.${fileExt}`;
 
       // 2. Create FormData for upload
       const formData = new FormData();
@@ -63,12 +65,12 @@ export class PhotoUploadService {
         contentType: `image/${fileExt === 'jpg' ? 'jpeg' : fileExt}`
       });
 
-      // 3. Upload to Supabase Storage with FormData
+      // 3. Upload to Supabase Storage (upsert=true replaces existing photo)
       const { data, error } = await this.supabase.storage
         .from(this.BUCKET_NAME)
         .upload(fileName, formData, {
           contentType: `image/${fileExt === 'jpg' ? 'jpeg' : fileExt}`,
-          upsert: false,
+          upsert: true,
         });
 
       if (error) {
@@ -79,20 +81,29 @@ export class PhotoUploadService {
         return { url: null, error: error.message };
       }
 
-      // 4. Get public URL
-      const {
-        data: { publicUrl },
-      } = this.supabase.storage.from(this.BUCKET_NAME).getPublicUrl(fileName);
+      // 4. Get signed URL (private bucket - expires in 1 year)
+      const { data: signedData, error: signedError } = await this.supabase.storage
+        .from(this.BUCKET_NAME)
+        .createSignedUrl(fileName, 60 * 60 * 24 * 365); // 1 year expiration
+
+      if (signedError) {
+        logError('PhotoUploadService', '❌ Failed to create signed URL', {
+          fileName,
+          error: signedError.message
+        });
+        return { url: null, error: signedError.message };
+      }
 
       logInfo('PhotoUploadService', '✅ Photo uploaded successfully', {
         fileName,
-        publicUrl
+        signedUrl: signedData.signedUrl
       });
-      return { url: publicUrl, error: null };
+      return { url: signedData.signedUrl, error: null };
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Unknown error";
       logError('PhotoUploadService', '❌ Exception during photo upload', {
         playerId,
+        clubId,
         error: errorMessage
       });
       return { url: null, error: errorMessage };
@@ -101,17 +112,20 @@ export class PhotoUploadService {
 
   /**
    * Delete a photo from Supabase Storage
-   * Extracts filename from public URL and removes file from bucket
+   * Extracts filename from signed URL and removes file from bucket
+   * Path format: {clubId}/{playerId}.{ext}
    *
-   * @param photoUrl Public URL of the photo to delete
+   * @param photoUrl Signed URL of the photo to delete
    * @returns true if deletion succeeded, false otherwise
    */
   async deletePhoto(photoUrl: string): Promise<boolean> {
     try {
-      // Extract filename from URL
-      const fileName = photoUrl.split("/").pop();
-      if (!fileName) {
-        logWarn('PhotoUploadService', '⚠️ Cannot delete photo - invalid URL', { photoUrl });
+      // Extract path: {clubId}/{playerId}.ext from signed URL
+      const urlParts = photoUrl.split("/");
+      const fileName = urlParts.slice(-2).join("/"); // Last 2 segments
+
+      if (!fileName || !fileName.includes('/')) {
+        logWarn('PhotoUploadService', '⚠️ Cannot delete photo - invalid URL format', { photoUrl });
         return false;
       }
 
