@@ -68,11 +68,7 @@ CREATE POLICY "Club members can view club matches"
   ON matches FOR SELECT
   USING (
     club_id IS NOT NULL
-    AND EXISTS (
-      SELECT 1 FROM club_members
-      WHERE club_members.club_id = matches.club_id
-      AND club_members.user_id = auth.uid()
-    )
+    AND is_club_member(matches.club_id)
   );
 
 -- Policy: Team owner can view their team matches

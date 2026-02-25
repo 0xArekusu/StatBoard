@@ -31,10 +31,9 @@ CREATE POLICY "Club members can view players of approved teams"
   USING (
     EXISTS (
       SELECT 1 FROM teams
-      JOIN club_members ON club_members.club_id = teams.club_id
       WHERE teams.id = players.team_id
       AND teams.status = 'approved'
-      AND club_members.user_id = auth.uid()
+      AND is_club_member(teams.club_id)
     )
   );
 

@@ -45,11 +45,7 @@ CREATE POLICY "Club members can view approved teams"
   ON teams FOR SELECT
   USING (
     (status = 'approved' AND is_deleted = false)
-    AND EXISTS (
-      SELECT 1 FROM club_members
-      WHERE club_members.club_id = teams.club_id
-      AND club_members.user_id = auth.uid()
-    )
+    AND is_club_member(teams.club_id)
   );
 
 -- Policy: Team owner can view their own team (even if pending)
@@ -73,11 +69,7 @@ CREATE POLICY "Club members can create teams"
   ON teams FOR INSERT
   WITH CHECK (
     auth.uid() = owner_id
-    AND EXISTS (
-      SELECT 1 FROM club_members
-      WHERE club_members.club_id = teams.club_id
-      AND club_members.user_id = auth.uid()
-    )
+    AND is_club_member(teams.club_id)
   );
 
 -- Policy: Team owner can update their own team (but not change status)
