@@ -19,6 +19,7 @@ import {
 import CourtPreview from "./CourtPreview";
 import ColorPickerModal from "./ColorPickerModal";
 import { COACH_ASSISTANT_LOGO_MARGIN } from "../../src/utils/logoHelper";
+import { useSignedUrl } from "../../hooks/useSignedUrl";
 
 interface CreateClubFormProps {
   formData: ClubFormData;
@@ -37,6 +38,9 @@ export default function CreateClubForm({
 }: CreateClubFormProps) {
   const { colors, isDark } = useTheme();
   const { sp, font, sizes } = useResponsive();
+
+  // Generate signed URL for logo (2h expiration) if it's a storage path
+  const logoUrl = useSignedUrl(formData.logoUri);
 
   const [showPrimaryPicker, setShowPrimaryPicker] = useState(false);
   const [showSecondaryPicker, setShowSecondaryPicker] = useState(false);
@@ -60,9 +64,9 @@ export default function CreateClubForm({
           ]}
           onPress={onPickImage}
         >
-          {formData.logoUri ? (
+          {logoUrl ? (
             <Image
-              source={{ uri: formData.logoUri }}
+              source={{ uri: logoUrl }}
               style={styles.logoImage}
             />
           ) : (
@@ -425,7 +429,7 @@ export default function CreateClubForm({
         <CourtPreview
           backgroundColor={formData.courtColor}
           lineColor={formData.courtLinesColor}
-          logoUri={formData.logoUri}
+          logoUri={logoUrl}
           width={320}
           height={180}
         />

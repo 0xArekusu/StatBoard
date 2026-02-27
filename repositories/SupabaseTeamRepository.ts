@@ -225,6 +225,18 @@ export class SupabaseTeamRepository implements ITeamRepository {
     if (data.status !== undefined) updateData.status = data.status;
     if (data.isActive !== undefined) updateData.is_active = data.isActive;
 
+    // Get current user and team info for debugging
+    const { data: { user } } = await this.supabase.auth.getUser();
+    const currentTeam = await this.findById(id);
+
+    console.log("🔄 Updating team:", {
+      teamId: id,
+      updateData,
+      currentUserId: user?.id,
+      teamOwnerId: currentTeam?.ownerId,
+      isOwnerMatch: user?.id === currentTeam?.ownerId
+    });
+
     const { data: team, error } = await this.supabase
       .from("teams")
       .update(updateData)
@@ -233,10 +245,22 @@ export class SupabaseTeamRepository implements ITeamRepository {
       .single();
 
     if (error) {
-      console.error("Error updating team:", error);
+      console.error("❌ Error updating team:", error);
+
+      // Try to verify if the update actually happened by doing a separate SELECT
+      console.log("🔍 Attempting separate SELECT to verify if update succeeded...");
+      const verifyTeam = await this.findById(id);
+      console.log("🔍 Verification result:", {
+        found: !!verifyTeam,
+        name: verifyTeam?.name,
+        category: verifyTeam?.category,
+        coachName: verifyTeam?.coachName
+      });
+
       return null;
     }
 
+    console.log("✅ Team updated successfully:", team);
     return this.mapToTeam(team);
   }
 

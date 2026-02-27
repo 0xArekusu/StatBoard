@@ -7,6 +7,7 @@
 import React, { useState } from 'react';
 import { View, Text, Image, StyleSheet, ViewStyle } from 'react-native';
 import { AvatarService } from '../src/services/AvatarService';
+import { useSignedUrl } from '../hooks/useSignedUrl';
 
 interface PlayerAvatarProps {
   playerName: string;
@@ -32,7 +33,10 @@ export default function PlayerAvatar({
   style,
 }: PlayerAvatarProps) {
   const [imageError, setImageError] = useState(false);
-  const avatarUrl = AvatarService.getAvatarUrl(playerName, photoUrl);
+
+  // Generate signed URL for photo (2h expiration)
+  const signedPhotoUrl = useSignedUrl(photoUrl);
+  const avatarUrl = AvatarService.getAvatarUrl(playerName, signedPhotoUrl);
 
   const containerStyle: ViewStyle = {
     width: size,

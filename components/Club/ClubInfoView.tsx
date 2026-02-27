@@ -18,11 +18,13 @@ import { ClubSubTab, CLUB_SUB_TAB } from "../../constants";
 import TeamCard from "./TeamCard";
 import { COACH_ASSISTANT_LOGO_MARGIN } from "../../src/utils/logoHelper";
 import { useResponsive } from "../../src/hooks/useResponsive";
+import { useSignedUrl } from "../../hooks/useSignedUrl";
 
 interface ClubInfoViewProps {
   club: Club;
   teams: Team[];
   isOwner: boolean;
+  currentUserId?: string;
   onEditClub: () => void;
   onToggleSubTab: () => void;
   subTab: ClubSubTab;
@@ -43,6 +45,7 @@ export default function ClubInfoView({
   club,
   teams,
   isOwner,
+  currentUserId,
   onEditClub,
   onToggleSubTab,
   subTab,
@@ -60,6 +63,9 @@ export default function ClubInfoView({
 }: ClubInfoViewProps) {
   const { colors } = useTheme();
   const { sp, font, sizes } = useResponsive();
+
+  // Generate signed URL for club logo (2h expiration)
+  const clubLogoUrl = useSignedUrl(club.logoUrl);
 
   const handleCopyCode = async () => {
     try {
@@ -155,9 +161,9 @@ export default function ClubInfoView({
                   },
                 ]}
               >
-                {club.logoUrl ? (
+                {clubLogoUrl ? (
                   <Image
-                    source={{ uri: club.logoUrl }}
+                    source={{ uri: clubLogoUrl }}
                     style={styles.clubLogoImage}
                   />
                 ) : (
@@ -302,6 +308,7 @@ export default function ClubInfoView({
                     navigation={navigation}
                     clubId={club?.id}
                     isOwner={isOwner}
+                    currentUserId={currentUserId}
                     onApprove={() => onApproveTeam(team.id)}
                     onReject={() => onRejectTeam(team.id)}
                     onDelete={() => onDeleteTeam(team.id)}

@@ -13,6 +13,7 @@ import * as ImagePicker from "expo-image-picker";
 import type { Player, PlayerPosition } from "../models/Player";
 import { useTheme } from "../src/contexts/ThemeContext";
 import { useResponsive } from "../src/hooks/useResponsive";
+import { useSignedUrl } from "../hooks/useSignedUrl";
 
 interface PlayerCardProps {
   player?: Player;
@@ -65,6 +66,9 @@ export default function PlayerCard({
   );
   const [isStarter, setIsStarter] = useState(player?.isStarter || false);
   const [isEditing, setIsEditing] = useState(!player);
+
+  // Generate signed URL for photo (2h expiration)
+  const signedPhotoUrl = useSignedUrl(photoUrl);
 
   // Sync with player prop changes
   useEffect(() => {
@@ -187,8 +191,8 @@ export default function PlayerCard({
         onPress={canEdit && isEditing ? pickImage : undefined}
         disabled={!canEdit || !isEditing}
       >
-        {photoUrl ? (
-          <Image source={{ uri: photoUrl }} style={[styles.photo, { width: sizes.avatarLg, height: sizes.avatarLg, borderRadius: sizes.avatarLg / 2 }]} />
+        {signedPhotoUrl ? (
+          <Image source={{ uri: signedPhotoUrl }} style={[styles.photo, { width: sizes.avatarLg, height: sizes.avatarLg, borderRadius: sizes.avatarLg / 2 }]} />
         ) : (
           <View style={[
             styles.photoPlaceholder,

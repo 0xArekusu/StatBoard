@@ -20,6 +20,7 @@ import { useTheme } from "../src/contexts/ThemeContext";
 import { useResponsive } from "../src/hooks/useResponsive";
 import { useAuth } from "../src/contexts/AuthContext";
 import { useClub } from "../src/contexts/ClubContext";
+import { useSignedUrl } from "../hooks/useSignedUrl";
 import { ServiceFactory } from "../services/ServiceFactory";
 import { shareLogs, logInfo, logError, logWarn } from "../utils/logger";
 import { Match, MatchStatus } from "../src/models/types";
@@ -27,6 +28,32 @@ import { Club } from "../models/Club";
 import { Team, TeamStatus } from "../models/Team";
 import { supabase } from "../src/config/supabase";
 import JerseyIconSimple from "../components/icons/JerseySimpleIcon";
+
+/**
+ * ClubLogoImage - Helper component to display club logo with signed URL
+ * Handles signed URL generation for private bucket access
+ */
+interface ClubLogoImageProps {
+  logoUrl?: string | null;
+  style: any;
+  placeholderStyle: any;
+  iconColor: string;
+  placeholderBgColor: string;
+}
+
+function ClubLogoImage({ logoUrl, style, placeholderStyle, iconColor, placeholderBgColor }: ClubLogoImageProps) {
+  const signedUrl = useSignedUrl(logoUrl);
+
+  if (signedUrl) {
+    return <Image source={{ uri: signedUrl }} style={style} />;
+  }
+
+  return (
+    <View style={[placeholderStyle, { backgroundColor: placeholderBgColor }]}>
+      <MaterialCommunityIcons name="shield-outline" size={24} color={iconColor} />
+    </View>
+  );
+}
 import DashboardStatsCards from "../components/dashboard/DashboardStatsCards";
 import DashboardResumeMatchModal from "../components/dashboard/DashboardResumeMatchModal";
 import DashboardRecentMatches from "../components/dashboard/DashboardRecentMatches";
@@ -86,6 +113,9 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
   const isGuest = !user;
   const userName =
     user?.user_metadata?.full_name || user?.email?.split("@")[0] || "Invité";
+
+  // Generate signed URL for club logo (2h expiration)
+  const clubLogoUrl = useSignedUrl(currentClub?.logoUrl);
 
   // Check admin status on mount and user change
   useEffect(() => {
@@ -827,25 +857,13 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
                   onPress={() => handleSwitchClub(userClub.id)}
                 >
                   <View style={styles.clubSwitcherItemLeft}>
-                    {userClub.logoUrl ? (
-                      <Image
-                        source={{ uri: userClub.logoUrl }}
-                        style={styles.clubSwitcherLogo}
-                      />
-                    ) : (
-                      <View
-                        style={[
-                          styles.clubSwitcherLogoPlaceholder,
-                          { backgroundColor: colors.surfaceVariant },
-                        ]}
-                      >
-                        <MaterialCommunityIcons
-                          name="shield-outline"
-                          size={24}
-                          color={colors.text.secondary}
-                        />
-                      </View>
-                    )}
+                    <ClubLogoImage
+                      logoUrl={userClub.logoUrl}
+                      style={styles.clubSwitcherLogo}
+                      placeholderStyle={styles.clubSwitcherLogoPlaceholder}
+                      iconColor={colors.text.secondary}
+                      placeholderBgColor={colors.surfaceVariant}
+                    />
                     <View>
                       <Text
                         style={[
@@ -965,9 +983,9 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
                   },
                 ]}
               >
-                {currentClub && currentClub.logoUrl ? (
+                {clubLogoUrl ? (
                   <Image
-                    source={{ uri: currentClub.logoUrl }}
+                    source={{ uri: clubLogoUrl }}
                     style={styles.clubLogoImage}
                   />
                 ) : (

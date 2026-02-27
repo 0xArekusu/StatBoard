@@ -16,7 +16,7 @@ import { useClub } from "../../src/contexts/ClubContext";
 import { useResponsive } from "../../src/hooks/useResponsive";
 import { ServiceFactory } from "../../services/ServiceFactory";
 import { supabase } from "../../src/config/supabase";
-import { PhotoUploadService } from "../../services/PhotoUploadService";
+import { ClubStorageService } from "../../services/ClubStorageService";
 import { Team, TeamStatus } from "../../models/Team";
 import { SubscriptionTier, SUBSCRIPTION_LIMITS, SUBSCRIPTION_TIER } from "../../models/Subscription";
 import {
@@ -315,11 +315,10 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
 
         // Upload new logo if it's a local file (starts with file://)
         if (formData.logoUri && formData.logoUri.startsWith('file://')) {
-          const photoService = new PhotoUploadService(supabase);
-          const clubLogoId = `club-${currentClub.id}`;
-          const { url, error } = await photoService.uploadPlayerPhoto(
+          const clubStorageService = new ClubStorageService(supabase);
+          const { path, error } = await clubStorageService.uploadClubLogo(
             formData.logoUri,
-            clubLogoId,
+            currentClub.id,
           );
 
           if (error) {
@@ -327,8 +326,10 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
             return;
           }
 
-          uploadedLogoUrl = url;
+          uploadedLogoUrl = path;
         }
+
+        console.log('[ClubScreen] Uploading club with logoUrl:', uploadedLogoUrl);
 
         const clubService = ServiceFactory.getClubService(supabase);
         await clubService.updateClub(currentClub.id, {
@@ -340,6 +341,9 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
         });
         await refreshClubs();
         await loadClubData();
+
+        console.log('[ClubScreen] Club updated, new logoUrl:', currentClub.logoUrl);
+
         setIsEditingClub(false);
         Alert.alert("Succès", "Club modifié avec succès !");
       } catch (error) {
@@ -359,11 +363,12 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
 
         // Upload logo if selected (local file)
         if (formData.logoUri && formData.logoUri.startsWith('file://')) {
-          const photoService = new PhotoUploadService(supabase);
-          const clubLogoId = `club-${Date.now()}`;
-          const { url, error } = await photoService.uploadPlayerPhoto(
+          // Use temporary ID until club is created
+          const tempClubId = `temp-${Date.now()}`;
+          const clubStorageService = new ClubStorageService(supabase);
+          const { path, error } = await clubStorageService.uploadClubLogo(
             formData.logoUri,
-            clubLogoId,
+            tempClubId,
           );
 
           if (error) {
@@ -371,8 +376,8 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
             return;
           }
 
-          uploadedLogoUrl = url || undefined;
-          console.log('📸 Logo uploaded:', uploadedLogoUrl);
+          uploadedLogoUrl = path || undefined;
+          console.log('📸 Logo uploaded (path):', uploadedLogoUrl);
         }
 
         const clubService = ServiceFactory.getClubService(supabase);
@@ -553,6 +558,7 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
             club={currentClub}
             teams={teams}
             isOwner={isOwner}
+            currentUserId={user?.id}
             onEditClub={handleEditClub}
             onToggleSubTab={handleToggleSubTab}
             subTab={subTab}

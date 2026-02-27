@@ -54,6 +54,7 @@ import { PDFExportService } from "../src/services/export/PDFExportService";
 import { Alert } from "react-native";
 import { ServiceFactory } from "../services/ServiceFactory";
 import { supabase } from "../src/config/supabase";
+import { getSignedUrl } from "../utils/storageHelper";
 import { StatsTab, CardsTab, CourtTab, EvolutionTab, PlayerDetailModal } from "../components/MatchDetails";
 import type { PlayerStats, Tab, TeamFilter, ActionFilterType, SortBy, SortOrder } from "../constants/matchDetailsConstants";
 import { TAB, ACTION_FILTER } from "../constants";
@@ -246,6 +247,12 @@ export default function MatchDetailsScreen() {
 
       console.log('[MatchDetailsScreen] 🏀 trackOpponentStats:', trackOpponentStats);
 
+      // Generate signed URL for club logo if available (for PDF embedding)
+      let clubLogoUrl: string | undefined = undefined;
+      if (club?.logoUrl) {
+        clubLogoUrl = (await getSignedUrl(supabase, club.logoUrl)) || undefined;
+      }
+
       const pdfOptions = {
         myTeamName: match.my_team_name || "Notre équipe",
         opponentName: match.opponent_name || "Adversaire",
@@ -259,7 +266,7 @@ export default function MatchDetailsScreen() {
         matchDate: match.created_at ? new Date(match.created_at) : new Date(),
         isHome: match.is_home ?? true, // Pass whether my team is playing at home
         overtimePeriods: match.overtime_periods || 0, // Number of overtime periods played
-        clubLogoUrl: club?.logoUrl, // Use club logo if configured
+        clubLogoUrl, // Signed URL for PDF (valid 2h) or undefined if offline/error
         courtBackgroundColor: club?.courtBackgroundColor, // Use club court background color if configured
         courtLineColor: club?.courtLineColor, // Use club court line color if configured
       };

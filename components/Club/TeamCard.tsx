@@ -1,9 +1,9 @@
 import React from "react";
-import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, Alert } from "react-native";
 import { MaterialCommunityIcons, Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../../src/contexts/ThemeContext";
 import { useResponsive } from "../../src/hooks/useResponsive";
-import { Team, TeamStatus, TeamGender, TEAM_GENDER_LABELS } from "../../models/Team";
+import { Team, TeamStatus, TEAM_GENDER_LABELS } from "../../models/Team";
 import { ROUTES } from "../../constants/routes";
 import JerseyIconSimple from "../icons/JerseySimpleIcon";
 
@@ -12,6 +12,7 @@ interface TeamCardProps {
   navigation: any;
   clubId?: string;
   isOwner: boolean;
+  currentUserId?: string;
   onApprove?: () => void;
   onReject?: () => void;
   onDelete?: () => void;
@@ -22,6 +23,7 @@ export default function TeamCard({
   navigation,
   clubId,
   isOwner,
+  currentUserId,
   onApprove,
   onReject,
   onDelete,
@@ -29,6 +31,7 @@ export default function TeamCard({
   const { colors, isDark } = useTheme();
   const { sp, font, sizes } = useResponsive();
   const isClickable = team.status === TeamStatus.APPROVED && team.isActive;
+  const canEdit = team.ownerId === currentUserId;
 
   return (
     <TouchableOpacity
@@ -37,12 +40,21 @@ export default function TeamCard({
         {
           backgroundColor: colors.surface,
           borderColor: colors.border,
-          opacity: team.status === TeamStatus.APPROVED && team.isActive ? 1 : 0.6,
+          opacity:
+            team.status === TeamStatus.APPROVED && team.isActive ? 1 : 0.6,
           padding: sp.md,
         },
       ]}
       onPress={() => {
         if (isClickable) {
+          if (!canEdit) {
+            Alert.alert(
+              "Accès refusé",
+              "Seul le propriétaire du club ou le coach de l'équipe peut la modifier.",
+              [{ text: "OK" }],
+            );
+            return;
+          }
           navigation.navigate(ROUTES.TEAM_INFO, { teamId: team.id, clubId });
         }
       }}
@@ -72,7 +84,11 @@ export default function TeamCard({
         <View
           style={[
             styles.teamIcon,
-            { backgroundColor: colors.surfaceVariant, width: sizes.avatarMd, height: sizes.avatarMd },
+            {
+              backgroundColor: colors.surfaceVariant,
+              width: sizes.avatarMd,
+              height: sizes.avatarMd,
+            },
           ]}
         >
           <JerseyIconSimple />
@@ -94,13 +110,31 @@ export default function TeamCard({
           >
             {team.name}
           </Text>
-          <Text style={[styles.teamCategory, { color: colors.text.secondary, fontSize: font.sm, marginTop: sp.xs }]}>
-            {team.gender ? TEAM_GENDER_LABELS[team.gender] : "N/A"}{" "}
-            • {team.playerCount ?? 0} Joueur
+          <Text
+            style={[
+              styles.teamCategory,
+              {
+                color: colors.text.secondary,
+                fontSize: font.sm,
+                marginTop: sp.xs,
+              },
+            ]}
+          >
+            {team.gender ? TEAM_GENDER_LABELS[team.gender] : "N/A"} •{" "}
+            {team.playerCount ?? 0} Joueur
             {(team.playerCount ?? 0) > 1 ? "s" : ""}
           </Text>
           {team.coachName && (
-            <Text style={[styles.teamCoach, { color: colors.text.secondary, fontSize: font.xs, marginTop: sp.xs }]}>
+            <Text
+              style={[
+                styles.teamCoach,
+                {
+                  color: colors.text.secondary,
+                  fontSize: font.xs,
+                  marginTop: sp.xs,
+                },
+              ]}
+            >
               {team.coachName}
             </Text>
           )}
@@ -108,36 +142,51 @@ export default function TeamCard({
       </View>
 
       <View style={styles.teamCardRight}>
-        {team.status === TeamStatus.PENDING && isOwner ? (
-          <View style={styles.actionButtons}>
-            <TouchableOpacity
-              onPress={(e) => {
-                e.stopPropagation();
-                onReject?.();
-              }}
-              style={[styles.actionButton, styles.rejectButton]}
-            >
-              <Ionicons name="close-circle" size={20} color="#dc2626" />
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={(e) => {
-                e.stopPropagation();
-                onApprove?.();
-              }}
-              style={[styles.actionButton, styles.approveButton]}
-            >
-              <Ionicons name="checkmark-circle" size={20} color="#16a34a" />
-            </TouchableOpacity>
-          </View>
-        ) : (
-          team.status === TeamStatus.APPROVED && (
-            <MaterialCommunityIcons
-              name="chevron-right"
-              size={18}
-              color={colors.text.secondary}
-            />
-          )
-        )}
+        <View style={styles.actionButtons}>
+          {team.status === TeamStatus.PENDING && isOwner ? (
+            <>
+              <TouchableOpacity
+                onPress={(e) => {
+                  e.stopPropagation();
+                  onReject?.();
+                }}
+                style={[styles.actionButton, styles.rejectButton]}
+              >
+                <Ionicons name="close-circle" size={20} color="#dc2626" />
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={(e) => {
+                  e.stopPropagation();
+                  onApprove?.();
+                }}
+                style={[styles.actionButton, styles.approveButton]}
+              >
+                <Ionicons name="checkmark-circle" size={20} color="#16a34a" />
+              </TouchableOpacity>
+            </>
+          ) : (
+            <>
+              {isOwner && (
+                <TouchableOpacity
+                  onPress={(e) => {
+                    e.stopPropagation();
+                    onDelete?.();
+                  }}
+                  style={styles.deleteButton}
+                >
+                  <Ionicons name="trash-outline" size={20} color="#dc2626" />
+                </TouchableOpacity>
+              )}
+              {team.status === TeamStatus.APPROVED && (
+                <MaterialCommunityIcons
+                  name="chevron-right"
+                  size={18}
+                  color={colors.text.secondary}
+                />
+              )}
+            </>
+          )}
+        </View>
       </View>
     </TouchableOpacity>
   );
@@ -225,5 +274,8 @@ const styles = StyleSheet.create({
   },
   rejectButton: {
     backgroundColor: "#fee2e2",
+  },
+  deleteButton: {
+    padding: 4,
   },
 });

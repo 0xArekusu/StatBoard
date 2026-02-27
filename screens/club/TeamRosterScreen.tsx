@@ -23,9 +23,10 @@ import { useAuth } from "../../src/contexts/AuthContext";
 import { useTheme } from "../../src/contexts/ThemeContext";
 import { CommonStyles } from "../../src/theme";
 import { useResponsive } from "../../src/hooks/useResponsive";
+import { useSignedUrl } from "../../hooks/useSignedUrl";
 import { ServiceFactory } from "../../services/ServiceFactory";
 import { supabase } from "../../src/config/supabase";
-import { PhotoUploadService } from "../../services/PhotoUploadService";
+import { ClubStorageService } from "../../services/ClubStorageService";
 import { RootStackParamList, RootNavigationProp } from "../../types/navigation";
 import PlayerAvatar from "../../components/PlayerAvatar";
 
@@ -41,6 +42,70 @@ interface Player {
 }
 
 type TeamRosterRouteProp = RouteProp<RootStackParamList, "TeamRoster">;
+
+/**
+ * PlayerPhotoPreview - Component for displaying player photo in edit mode
+ * Handles signed URL generation for private bucket access
+ */
+interface PlayerPhotoPreviewProps {
+  photoUrl?: string;
+  editingPlayerPhoto: string;
+  onPress: () => void;
+  size: number;
+  borderColor: string;
+  backgroundColor: string;
+  textColor: string;
+}
+
+function PlayerPhotoPreview({
+  photoUrl,
+  editingPlayerPhoto,
+  onPress,
+  size,
+  borderColor,
+  backgroundColor,
+  textColor,
+}: PlayerPhotoPreviewProps) {
+  const [imageError, setImageError] = React.useState(false);
+  const signedPhotoUrl = useSignedUrl(photoUrl);
+
+  // Reset error state when photo changes
+  React.useEffect(() => {
+    setImageError(false);
+  }, [photoUrl, editingPlayerPhoto]);
+
+  // Determine which URL to use
+  const imageUrl = editingPlayerPhoto || signedPhotoUrl;
+
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      style={[
+        {
+          width: size,
+          height: size,
+          borderRadius: size / 2,
+          borderWidth: 1,
+          backgroundColor,
+          borderColor,
+          alignItems: "center",
+          justifyContent: "center",
+          overflow: "hidden",
+        },
+      ]}
+    >
+      {imageUrl && !imageError ? (
+        <Image
+          source={{ uri: imageUrl }}
+          style={{ width: "100%", height: "100%", resizeMode: "cover" }}
+          onError={() => setImageError(true)}
+        />
+      ) : (
+        <Ionicons name="person" size={20} color={textColor} />
+      )}
+    </TouchableOpacity>
+  );
+}
 
 /**
  * TeamRosterScreen - Staff and roster management screen
@@ -82,6 +147,9 @@ export default function TeamRosterScreen() {
   const bgColor = colors.background;
   const surfaceColor = colors.surface;
 
+  // Generate signed URL for coach photo
+  const signedCoachPhotoUrl = useSignedUrl(coachPhotoUrl);
+
   // Load existing team data if editing
   useEffect(() => {
     if (teamId) {
@@ -109,6 +177,7 @@ export default function TeamRosterScreen() {
   /**
    * Load existing team data in edit mode
    * Fetches coach info and player list
+   * Checks if user is team owner
    */
   const loadTeamData = async () => {
     try {
@@ -125,6 +194,11 @@ export default function TeamRosterScreen() {
       }
     } catch (error) {
       console.error("Error loading team data:", error);
+      Alert.alert(
+        "Erreur",
+        "Impossible de charger les données de l'équipe.",
+        [{ text: "OK", onPress: () => navigation.goBack() }]
+      );
     }
   };
 
@@ -227,7 +301,7 @@ export default function TeamRosterScreen() {
       setEditingPlayerId(playerId);
       setEditingPlayerName(player.name);
       setEditingPlayerNumber(player.jerseyNumber.toString());
-      setEditingPlayerPhoto(player.photoUrl || "");
+      setEditingPlayerPhoto(""); // Don't set existing photo - let component show it via signedUrl
       setEditPlayerError(null);
     }
   };
@@ -353,16 +427,16 @@ export default function TeamRosterScreen() {
     setIsSubmitting(true);
 
     try {
-      const photoService = new PhotoUploadService(supabase);
+      const clubStorageService = new ClubStorageService(supabase);
       const teamService = ServiceFactory.getTeamService(supabase);
 
       // Upload coach photo if it's a local file
       let uploadedCoachPhotoUrl: string | undefined = coachPhotoUrl;
       if (coachPhotoUrl && coachPhotoUrl.startsWith("file://")) {
-        const coachPhotoId = `coach-${Date.now()}`;
-        const { url, error } = await photoService.uploadPlayerPhoto(
+        const { path, error } = await clubStorageService.uploadCoachPhoto(
           coachPhotoUrl,
-          coachPhotoId,
+          teamId || `temp-${Date.now()}`,
+          clubId,
         );
 
         if (error) {
@@ -371,12 +445,12 @@ export default function TeamRosterScreen() {
           return;
         }
 
-        uploadedCoachPhotoUrl = url ?? undefined;
+        uploadedCoachPhotoUrl = path ?? undefined;
       }
 
       if (teamId) {
         // Update existing team
-        await teamService.updateTeam(
+        const updateResult = await teamService.updateTeam(
           teamId,
           {
             name: teamData.name,
@@ -388,43 +462,77 @@ export default function TeamRosterScreen() {
           user!.id,
         );
 
+        if (!updateResult.success) {
+          setIsSubmitting(false);
+          Alert.alert(
+            "Erreur de modification",
+            updateResult.error || "Impossible de modifier l'équipe. Vous n'avez peut-être pas les permissions nécessaires."
+          );
+          return;
+        }
+
         // Update players intelligently
         const playerService = ServiceFactory.getPlayerService(supabase);
         const existingPlayers = await playerService.getTeamPlayers(teamId);
 
         // 1. Update or create players from roster
         for (const player of roster) {
-          // Upload player photo if it's a local file
-          let uploadedPlayerPhotoUrl = player.photoUrl;
-          if (player.photoUrl && player.photoUrl.startsWith("file://")) {
-            const playerPhotoId = `player-${Date.now()}-${player.id}`;
-            const { url, error } = await photoService.uploadPlayerPhoto(
-              player.photoUrl,
-              playerPhotoId,
-            );
-
-            if (error) {
-              console.error(
-                `Error uploading photo for player ${player.name}:`,
-                error,
-              );
-              // Continue without photo if upload fails
-              uploadedPlayerPhotoUrl = undefined;
-            } else {
-              uploadedPlayerPhotoUrl = url || undefined;
-            }
-          }
-
           if (player.id.startsWith("temp-")) {
-            // New player - create it
-            await playerService.createPlayer({
+            // New player - CREATE first to get real ID
+            const newPlayer = await playerService.createPlayer({
               teamId,
               name: player.name,
               jerseyNumber: player.jerseyNumber,
-              photoUrl: uploadedPlayerPhotoUrl,
+              photoUrl: null, // Will be updated after upload
             });
+
+            // Upload player photo if it's a local file (now with real ID)
+            if (player.photoUrl && player.photoUrl.startsWith("file://")) {
+              const { path, error } = await clubStorageService.uploadPlayerPhoto(
+                player.photoUrl,
+                newPlayer.id, // ← Use real player ID
+                teamId,
+                clubId,
+              );
+
+              if (error) {
+                console.error(
+                  `Error uploading photo for player ${player.name}:`,
+                  error,
+                );
+                // Continue without photo if upload fails
+              } else if (path) {
+                // Update player with photo path
+                await playerService.updatePlayer(newPlayer.id, {
+                  photoUrl: path,
+                });
+              }
+            }
           } else {
             // Existing player - update it
+            let uploadedPlayerPhotoUrl = player.photoUrl;
+
+            // Upload new photo if it's a local file
+            if (player.photoUrl && player.photoUrl.startsWith("file://")) {
+              const { path, error } = await clubStorageService.uploadPlayerPhoto(
+                player.photoUrl,
+                player.id, // ← Use existing player ID
+                teamId,
+                clubId,
+              );
+
+              if (error) {
+                console.error(
+                  `Error uploading photo for player ${player.name}:`,
+                  error,
+                );
+                // Continue without photo if upload fails
+                uploadedPlayerPhotoUrl = undefined;
+              } else {
+                uploadedPlayerPhotoUrl = path || undefined;
+              }
+            }
+
             await playerService.updatePlayer(player.id, {
               name: player.name,
               jerseyNumber: player.jerseyNumber,
@@ -478,13 +586,21 @@ export default function TeamRosterScreen() {
         // Create players with uploaded photos
         const playerService = ServiceFactory.getPlayerService(supabase);
         for (const player of roster) {
-          // Upload player photo if it's a local file
-          let uploadedPlayerPhotoUrl = player.photoUrl;
+          // Step 1: CREATE player first to get real ID
+          const newPlayer = await playerService.createPlayer({
+            teamId: result.team.id,
+            name: player.name,
+            jerseyNumber: player.jerseyNumber,
+            photoUrl: null, // Will be updated after upload
+          });
+
+          // Step 2: UPLOAD photo if it's a local file (now with real player ID)
           if (player.photoUrl && player.photoUrl.startsWith("file://")) {
-            const playerPhotoId = `player-${Date.now()}-${player.id}`;
-            const { url, error } = await photoService.uploadPlayerPhoto(
+            const { path, error } = await clubStorageService.uploadPlayerPhoto(
               player.photoUrl,
-              playerPhotoId,
+              newPlayer.id, // ← Use real player ID
+              result.team.id,
+              clubId,
             );
 
             if (error) {
@@ -493,18 +609,13 @@ export default function TeamRosterScreen() {
                 error,
               );
               // Continue without photo if upload fails
-              uploadedPlayerPhotoUrl = undefined;
-            } else {
-              uploadedPlayerPhotoUrl = url || undefined;
+            } else if (path) {
+              // Step 3: UPDATE player with photo path
+              await playerService.updatePlayer(newPlayer.id, {
+                photoUrl: path,
+              });
             }
           }
-
-          await playerService.createPlayer({
-            teamId: result.team.id,
-            name: player.name,
-            jerseyNumber: player.jerseyNumber,
-            photoUrl: uploadedPlayerPhotoUrl,
-          });
         }
 
         setIsSubmitting(false);
@@ -636,9 +747,9 @@ export default function TeamRosterScreen() {
                       },
                     ]}
                   >
-                    {coachPhotoUrl ? (
+                    {signedCoachPhotoUrl ? (
                       <Image
-                        source={{ uri: coachPhotoUrl }}
+                        source={{ uri: signedCoachPhotoUrl }}
                         style={styles.photoImage}
                       />
                     ) : (
@@ -685,9 +796,9 @@ export default function TeamRosterScreen() {
                   <View
                     style={[styles.coachPhoto, { borderColor: colors.border }]}
                   >
-                    {coachPhotoUrl ? (
+                    {signedCoachPhotoUrl ? (
                       <Image
-                        source={{ uri: coachPhotoUrl }}
+                        source={{ uri: signedCoachPhotoUrl }}
                         style={styles.photoImage}
                       />
                     ) : (
@@ -972,40 +1083,15 @@ export default function TeamRosterScreen() {
                     {isEditing ? (
                       // Edit mode
                       <View style={[styles.playerEditForm, { gap: sp.sm }]}>
-                        <TouchableOpacity
+                        <PlayerPhotoPreview
+                          photoUrl={player.photoUrl}
+                          editingPlayerPhoto={editingPlayerPhoto}
                           onPress={() => handlePickPlayerPhoto(true)}
-                          style={[
-                            styles.playerPhotoPreview,
-                            {
-                              backgroundColor: colors.surface,
-                              borderColor: colors.border,
-                              width: isCompact
-                                ? sizes.avatarSm
-                                : sizes.avatarMd,
-                              height: isCompact
-                                ? sizes.avatarSm
-                                : sizes.avatarMd,
-                              borderRadius: isCompact
-                                ? sizes.avatarSm / 2
-                                : sizes.avatarMd / 2,
-                            },
-                          ]}
-                        >
-                          {editingPlayerPhoto || player.photoUrl ? (
-                            <Image
-                              source={{
-                                uri: editingPlayerPhoto || player.photoUrl,
-                              }}
-                              style={styles.photoImage}
-                            />
-                          ) : (
-                            <Ionicons
-                              name="person"
-                              size={20}
-                              color={colors.text.tertiary}
-                            />
-                          )}
-                        </TouchableOpacity>
+                          size={isCompact ? sizes.avatarSm : sizes.avatarMd}
+                          borderColor={colors.border}
+                          backgroundColor={colors.surface}
+                          textColor={colors.text.tertiary}
+                        />
                         <View style={[styles.playerEditInputs, { gap: sp.sm }]}>
                           <TextInput
                             style={[

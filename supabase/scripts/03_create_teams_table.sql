@@ -72,10 +72,9 @@ CREATE POLICY "Club members can create teams"
     AND is_club_member(teams.club_id)
   );
 
--- Policy: Team owner can update their own team (but not change status)
+-- Policy: Team owner can update their own team
 CREATE POLICY "Team owner can update their team"
   ON teams FOR UPDATE
-  USING (auth.uid() = owner_id)
   WITH CHECK (auth.uid() = owner_id);
 
 -- Policy: Team owner can delete their own team
@@ -87,6 +86,13 @@ CREATE POLICY "Team owner can delete their team"
 CREATE POLICY "Club owner can manage all teams"
   ON teams FOR ALL
   USING (
+    EXISTS (
+      SELECT 1 FROM clubs
+      WHERE clubs.id = teams.club_id
+      AND clubs.owner_id = auth.uid()
+    )
+  )
+  WITH CHECK (
     EXISTS (
       SELECT 1 FROM clubs
       WHERE clubs.id = teams.club_id

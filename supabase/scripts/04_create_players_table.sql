@@ -48,26 +48,71 @@ CREATE POLICY "Team owner can view their players"
     )
   );
 
--- Policy: Team owner can manage their players
-CREATE POLICY "Team owner can manage players"
-  ON players FOR ALL
-  USING (
+-- Policy: Team owner and club owner can insert players
+CREATE POLICY "Team and club owners can insert players"
+  ON players FOR INSERT
+  WITH CHECK (
     EXISTS (
       SELECT 1 FROM teams
       WHERE teams.id = players.team_id
-      AND teams.owner_id = auth.uid()
+      AND (
+        teams.owner_id = auth.uid()
+        OR EXISTS (
+          SELECT 1 FROM clubs
+          WHERE clubs.id = teams.club_id
+          AND clubs.owner_id = auth.uid()
+        )
+      )
     )
   );
 
--- Policy: Club owner can view all players in their club
-CREATE POLICY "Club owner can view club players"
-  ON players FOR SELECT
+-- Policy: Team owner and club owner can update players
+CREATE POLICY "Team and club owners can update players"
+  ON players FOR UPDATE
   USING (
     EXISTS (
       SELECT 1 FROM teams
-      JOIN clubs ON clubs.id = teams.club_id
       WHERE teams.id = players.team_id
-      AND clubs.owner_id = auth.uid()
+      AND (
+        teams.owner_id = auth.uid()
+        OR EXISTS (
+          SELECT 1 FROM clubs
+          WHERE clubs.id = teams.club_id
+          AND clubs.owner_id = auth.uid()
+        )
+      )
+    )
+  )
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM teams
+      WHERE teams.id = players.team_id
+      AND (
+        teams.owner_id = auth.uid()
+        OR EXISTS (
+          SELECT 1 FROM clubs
+          WHERE clubs.id = teams.club_id
+          AND clubs.owner_id = auth.uid()
+        )
+      )
+    )
+  );
+
+-- Policy: Team owner and club owner can delete players
+CREATE POLICY "Team and club owners can delete players"
+  ON players FOR DELETE
+  USING (
+    EXISTS (
+      SELECT 1 FROM teams
+      WHERE teams.id = players.team_id
+      AND (
+        teams.owner_id = auth.uid()
+        OR EXISTS (
+          SELECT 1 FROM clubs
+          WHERE clubs.id = teams.club_id
+          AND clubs.owner_id = auth.uid()
+        )
+      )
     )
   );
 

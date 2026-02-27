@@ -81,8 +81,9 @@ export class TeamService {
   }
 
   /**
-   * Update a team (owner only)
+   * Update a team (team owner or club owner)
    * Status changes must use updateTeamStatus instead
+   * Permissions are enforced by RLS policies
    *
    * @param id - ID of the team to update
    * @param data - Team update data (name, etc.)
@@ -95,11 +96,9 @@ export class TeamService {
       return { success: false, error: "Équipe introuvable" };
     }
 
-    // Only team owner can update (status changes are handled separately)
-    if (team.ownerId !== userId) {
-      return { success: false, error: "Vous n'avez pas la permission de modifier cette équipe" };
-    }
-
+    // Permissions are enforced by RLS:
+    // - Team owner can update their team
+    // - Club owner can update all teams in their club
     const updatedTeam = await this.teamRepository.update(id, data);
     if (!updatedTeam) {
       return { success: false, error: "Erreur lors de la modification de l'équipe" };

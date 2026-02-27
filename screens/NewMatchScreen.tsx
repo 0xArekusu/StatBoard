@@ -14,6 +14,7 @@ import { useResponsive } from "../src/hooks/useResponsive";
 import { useAuth } from "../src/contexts/AuthContext";
 import { useClub } from "../src/contexts/ClubContext";
 import { DEFAULT_COURT_COLORS, DEFAULT_CLUB_COLORS } from "../src/theme";
+import { getSignedUrl } from "../utils/storageHelper";
 import {
   MATCH_VALIDATION_MESSAGES,
   ROSTER_LIMITS,
@@ -498,7 +499,7 @@ export default function NewMatchScreen() {
   /**
    * Validate rosters and navigate to live match
    */
-  const handleStart = () => {
+  const handleStart = async () => {
     // Validate home team
     if (selectedHomePlayers.length < ROSTER_LIMITS.MIN_PLAYERS) {
       Alert.alert("Erreur", MATCH_VALIDATION_MESSAGES.MIN_PLAYERS);
@@ -598,6 +599,13 @@ export default function NewMatchScreen() {
     // Create match object
     // created_at is set NOW when user clicks "Start Match" (coup d'envoi)
     const createdAt = new Date().toISOString();
+
+    // Generate signed URL for club logo if online (2h expiration)
+    let clubLogoUrl: string | null = null;
+    if (club?.logoUrl) {
+      clubLogoUrl = await getSignedUrl(supabase, club.logoUrl);
+    }
+
     const matchData = {
       id: Date.now().toString(),
       clubId: club.id,
@@ -612,7 +620,7 @@ export default function NewMatchScreen() {
       opponentPlayers: trackOpponentStats ? serializePlayers(opponentRoster) : [], // OPPONENT roster (regardless of home/away)
       opponentStarters: trackOpponentStats ? opponentStarters : [],
       teamName: finalTeamName,
-      clubLogoUrl: club?.logoUrl || null,
+      clubLogoUrl, // Signed URL (valid 2h) or null if offline/error
       courtBackgroundColor: club?.courtBackgroundColor || DEFAULT_COURT_COLORS.background,
       courtLineColor: club?.courtLineColor || DEFAULT_COURT_COLORS.line,
       createdAt, // Timestamp when user configured match and clicked "Start Match"
