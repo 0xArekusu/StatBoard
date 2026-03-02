@@ -19,6 +19,7 @@ import { TeamGender, TEAM_GENDER_LABELS } from "../../models/Team";
 import { ServiceFactory } from "../../services/ServiceFactory";
 import { supabase } from "../../src/config/supabase";
 import { RootStackParamList, RootNavigationProp } from "../../types/navigation";
+import { showErrorAlert } from "../../utils/errorAlert";
 
 type TeamInfoRouteProp = RouteProp<RootStackParamList, "TeamInfo">;
 
@@ -76,6 +77,13 @@ export default function TeamInfoScreen() {
       }
     } catch (error) {
       console.error("Error loading team data:", error);
+      showErrorAlert({
+        action: "charger les informations de l'équipe",
+        error,
+        context: "TeamInfoScreen",
+        showRetry: true,
+        onRetry: () => loadTeam(),
+      });
     }
   };
 
@@ -131,10 +139,11 @@ export default function TeamInfoScreen() {
               ]);
             } catch (error) {
               console.error("Error deleting team:", error);
-              Alert.alert(
-                "Erreur",
-                `Impossible de supprimer l'équipe: ${error instanceof Error ? error.message : 'Erreur inconnue'}`
-              );
+              showErrorAlert({
+                action: "supprimer l'équipe",
+                error,
+                context: "TeamInfoScreen",
+              });
             }
           },
         },

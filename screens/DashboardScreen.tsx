@@ -63,6 +63,7 @@ import { ROUTES } from "../constants/routes";
 import { COACH_ASSISTANT_LOGO_MARGIN } from "../src/utils/logoHelper";
 import { SUBSCRIPTION_LIMITS, NOT_CONNECTED_LIMITS } from "../models/Subscription";
 import { AdminService } from "../services/AdminService";
+import { showErrorAlert } from "../utils/errorAlert";
 
 /**
  * DashboardScreen navigation prop type
@@ -357,6 +358,13 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
       setMatches(allMatches);
     } catch (error) {
       logError("DashboardScreen", "❌ Error loading dashboard data", { error });
+      showErrorAlert({
+        action: "charger les données du tableau de bord",
+        error,
+        context: "DashboardScreen",
+        showRetry: true,
+        onRetry: () => loadDashboardData(),
+      });
     } finally {
       setLoading(false);
     }

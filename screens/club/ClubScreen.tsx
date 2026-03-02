@@ -26,6 +26,7 @@ import {
   CreateClubForm,
 } from "../../components/Club";
 import { ROUTES } from "../../constants/routes";
+import { showErrorAlert } from "../../utils/errorAlert";
 import {
   CLUB_SUB_TAB,
   ClubSubTab,
@@ -114,6 +115,13 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
       }
     } catch (error) {
       console.error("Error loading club data:", error);
+      showErrorAlert({
+        action: "charger les données du club",
+        error,
+        context: "ClubScreen",
+        showRetry: true,
+        onRetry: () => loadClubData(),
+      });
     } finally {
       setLoading(false);
     }
@@ -183,7 +191,11 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
               Alert.alert("Succès", "Équipe validée");
             } catch (error) {
               console.error("Error approving team:", error);
-              Alert.alert("Erreur", "Impossible de valider l'équipe");
+              showErrorAlert({
+                action: "valider l'équipe",
+                error,
+                context: "ClubScreen",
+              });
             }
           },
         },
@@ -221,7 +233,11 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
               Alert.alert("Équipe refusée");
             } catch (error) {
               console.error("Error rejecting team:", error);
-              Alert.alert("Erreur", "Impossible de refuser l'équipe");
+              showErrorAlert({
+                action: "refuser l'équipe",
+                error,
+                context: "ClubScreen",
+              });
             }
           },
         },
@@ -255,7 +271,11 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
               Alert.alert("Équipe supprimée");
             } catch (error) {
               console.error("Error deleting team:", error);
-              Alert.alert("Erreur", "Impossible de supprimer l'équipe");
+              showErrorAlert({
+                action: "supprimer l'équipe",
+                error,
+                context: "ClubScreen",
+              });
             }
           },
         },
@@ -348,7 +368,11 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
         Alert.alert("Succès", "Club modifié avec succès !");
       } catch (error) {
         console.error("Error updating club:", error);
-        Alert.alert("Erreur", "Impossible de modifier le club");
+        showErrorAlert({
+          action: "modifier le club",
+          error,
+          context: "ClubScreen",
+        });
       }
     } else if (activeTab === CLUB_TAB.CREATE || isCreatingNewClub) {
       // CREATE MODE - Validation
@@ -422,7 +446,11 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
         Alert.alert("Succès", "Club créé avec succès !");
       } catch (error) {
         console.error("Error creating club:", error);
-        Alert.alert("Erreur", "Impossible de créer le club");
+        showErrorAlert({
+          action: "créer le club",
+          error,
+          context: "ClubScreen",
+        });
       }
     } else {
       // Join logic - Validation

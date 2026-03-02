@@ -23,6 +23,7 @@ import { OPACITY } from "../src/theme";
 import { Club } from "../models/Club";
 import { TeamStatus } from "../models/Team";
 import SyncErrorModal from "../components/SyncErrorModal";
+import { showErrorAlert } from "../utils/errorAlert";
 
 interface HistoryScreenProps {
   navigation: any;
@@ -144,6 +145,13 @@ export default function HistoryScreen({ navigation }: HistoryScreenProps) {
       setMatches(allMatches);
     } catch (error) {
       console.error("Error loading history data:", error);
+      showErrorAlert({
+        action: "charger l'historique des matchs",
+        error,
+        context: "HistoryScreen",
+        showRetry: true,
+        onRetry: () => loadHistoryData(),
+      });
     } finally {
       setLoading(false);
     }

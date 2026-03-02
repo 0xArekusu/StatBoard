@@ -43,6 +43,7 @@ import {
   MatchFooter,
 } from "../components/NewMatch";
 import { RootStackParamList, RootNavigationProp } from "../types/navigation";
+import { showErrorAlert } from "../utils/errorAlert";
 
 type NewMatchRouteProp = RouteProp<RootStackParamList, "NewMatch">;
 type RosterTab = "HOME" | "AWAY";
@@ -273,6 +274,13 @@ export default function NewMatchScreen() {
       }
     } catch (error) {
       console.error("Error loading teams:", error);
+      showErrorAlert({
+        action: "charger les équipes",
+        error,
+        context: "NewMatchScreen",
+        showRetry: true,
+        onRetry: () => loadTeams(),
+      });
     } finally {
       setLoading(false);
     }
@@ -296,6 +304,13 @@ export default function NewMatchScreen() {
       setStarters(roster.slice(0, ROSTER_LIMITS.STARTERS).map((p) => p.id));
     } catch (error) {
       console.error("Error loading team roster:", error);
+      showErrorAlert({
+        action: "charger les joueurs de l'équipe",
+        error,
+        context: "NewMatchScreen",
+        showRetry: true,
+        onRetry: () => loadTeamRoster(teamId),
+      });
     }
   };
 

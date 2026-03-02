@@ -29,6 +29,7 @@ import { supabase } from "../../src/config/supabase";
 import { ClubStorageService } from "../../services/ClubStorageService";
 import { RootStackParamList, RootNavigationProp } from "../../types/navigation";
 import PlayerAvatar from "../../components/PlayerAvatar";
+import { showErrorAlert } from "../../utils/errorAlert";
 
 /**
  * Local player interface for this screen
@@ -194,11 +195,12 @@ export default function TeamRosterScreen() {
       }
     } catch (error) {
       console.error("Error loading team data:", error);
-      Alert.alert(
-        "Erreur",
-        "Impossible de charger les données de l'équipe.",
-        [{ text: "OK", onPress: () => navigation.goBack() }]
-      );
+      showErrorAlert({
+        action: "charger les données de l'équipe",
+        error,
+        context: "TeamRosterScreen",
+        onCancel: () => navigation.goBack(),
+      });
     }
   };
 
@@ -633,7 +635,11 @@ export default function TeamRosterScreen() {
     } catch (error) {
       console.error("Error saving team:", error);
       setIsSubmitting(false);
-      Alert.alert("Erreur", "Impossible de sauvegarder l'équipe");
+      showErrorAlert({
+        action: "sauvegarder l'équipe",
+        error,
+        context: "TeamRosterScreen",
+      });
     }
   };
 
