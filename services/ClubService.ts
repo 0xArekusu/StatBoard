@@ -1,6 +1,6 @@
 import { Club, CreateClubData, UpdateClubData } from "../models/Club";
 import { IClubRepository } from "../repositories/IClubRepository";
-import { canUseMultiClub } from "../src/config/devConfig";
+import { AdminService } from "./AdminService";
 import { SubscriptionTier } from "../models/Subscription";
 
 /**
@@ -44,8 +44,11 @@ export class ClubService {
       return { success: false, error: "Club acronym must be 5 characters or less" };
     }
 
-    // Check if user already has a club (unless multi-club is enabled for this user)
-    if (!canUseMultiClub(userId)) {
+    // Check if user already has a club (admins can create multiple clubs)
+    const adminService = AdminService.getInstance();
+    const isAdmin = await adminService.isAdmin();
+
+    if (!isAdmin) {
       console.log('🔍 [ClubService] Checking existing clubs for user:', userId);
       const existingClubs = await this.clubRepository.findByOwnerId(userId);
       console.log('📊 [ClubService] Existing clubs count:', existingClubs.length);
@@ -53,6 +56,8 @@ export class ClubService {
         console.log('❌ [ClubService] User already has a club');
         return { success: false, error: "Vous avez déjà créé un club" };
       }
+    } else {
+      console.log('✅ [ClubService] User is admin, can create multiple clubs');
     }
 
     // Create club
