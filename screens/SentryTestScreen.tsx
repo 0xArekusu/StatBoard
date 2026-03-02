@@ -33,16 +33,38 @@ export default function SentryTestScreen({ navigation }: SentryTestScreenProps) 
 
   const testError = () => {
     try {
+      console.log("🧪 [SENTRY TEST] Début test erreur capturée");
+      console.log("🔍 [SENTRY TEST] DSN configuré:", process.env.EXPO_PUBLIC_SENTRY_DSN?.substring(0, 30) + "...");
+      console.log("🔍 [SENTRY TEST] Environnement:", __DEV__ ? "development" : "production");
+
       throw new Error("Test erreur capturée manuellement");
     } catch (error) {
-      Sentry.captureException(error);
-      Alert.alert("Erreur envoyée", "L'erreur a été envoyée à Sentry !");
+      console.log("📤 [SENTRY TEST] Envoi de l'erreur à Sentry...");
+      const eventId = Sentry.captureException(error);
+      console.log("✅ [SENTRY TEST] Event ID retourné:", eventId);
+
+      Alert.alert(
+        "Erreur envoyée",
+        `L'erreur a été envoyée à Sentry !\n\nEvent ID: ${eventId}\n\nVérifiez la console pour les détails.`
+      );
     }
   };
 
   const testMessage = () => {
-    Sentry.captureMessage("Test message depuis SentryTestScreen", "info");
-    Alert.alert("Message envoyé", "Le message a été envoyé à Sentry !");
+    console.log("🧪 [SENTRY TEST] Début test message");
+    console.log("🔍 [SENTRY TEST] DSN configuré:", process.env.EXPO_PUBLIC_SENTRY_DSN?.substring(0, 30) + "...");
+    console.log("🔍 [SENTRY TEST] Variables d'environnement Sentry:");
+    console.log("  - EXPO_PUBLIC_SENTRY_DSN:", process.env.EXPO_PUBLIC_SENTRY_DSN ? "✓ Défini" : "✗ Non défini");
+    console.log("  - EXPO_PUBLIC_SENTRY_ORG:", process.env.EXPO_PUBLIC_SENTRY_ORG || "Non défini");
+    console.log("  - EXPO_PUBLIC_SENTRY_PROJECT:", process.env.EXPO_PUBLIC_SENTRY_PROJECT || "Non défini");
+
+    const eventId = Sentry.captureMessage("Test message depuis SentryTestScreen", "info");
+    console.log("✅ [SENTRY TEST] Message envoyé, Event ID:", eventId);
+
+    Alert.alert(
+      "Message envoyé",
+      `Le message a été envoyé à Sentry !\n\nEvent ID: ${eventId}\n\nVérifiez la console pour les détails.`
+    );
   };
 
   const testBreadcrumb = () => {
@@ -52,6 +74,31 @@ export default function SentryTestScreen({ navigation }: SentryTestScreenProps) 
       level: "info",
     });
     Alert.alert("Breadcrumb ajouté", "Un breadcrumb a été ajouté pour le contexte des erreurs futures");
+  };
+
+  const showSentryConfig = () => {
+    const dsn = process.env.EXPO_PUBLIC_SENTRY_DSN;
+    const org = process.env.EXPO_PUBLIC_SENTRY_ORG;
+    const project = process.env.EXPO_PUBLIC_SENTRY_PROJECT;
+    const env = __DEV__ ? "development" : "production";
+
+    console.log("📋 [SENTRY CONFIG] Configuration complète:");
+    console.log("  - DSN:", dsn || "❌ NON DÉFINI");
+    console.log("  - Organisation:", org || "❌ NON DÉFINI");
+    console.log("  - Projet:", project || "❌ NON DÉFINI");
+    console.log("  - Environnement:", env);
+    console.log("  - Mode Debug:", __DEV__ ? "OUI" : "NON");
+
+    Alert.alert(
+      "Configuration Sentry",
+      `DSN: ${dsn ? "✓ Défini" : "✗ NON DÉFINI"}\n` +
+      `Org: ${org || "Non défini"}\n` +
+      `Projet: ${project || "Non défini"}\n` +
+      `Env: ${env}\n` +
+      `Debug: ${__DEV__ ? "OUI" : "NON"}\n\n` +
+      `${!dsn ? "⚠️ ATTENTION: Le DSN n'est pas configuré!\nLes events ne seront pas envoyés." : "✅ Configuration OK"}\n\n` +
+      `Voir la console pour plus de détails.`
+    );
   };
 
   return (
@@ -72,6 +119,14 @@ export default function SentryTestScreen({ navigation }: SentryTestScreenProps) 
         </View>
 
         <View style={[styles.buttonContainer, { gap: sp.md }]}>
+          <TouchableOpacity
+            style={[styles.button, { backgroundColor: "#2ECC71", padding: sp.md, borderRadius: sp.md }]}
+            onPress={showSentryConfig}
+          >
+            <Text style={[styles.buttonText, { fontSize: font.lg, marginBottom: sp.xs }]}>📋 Config Sentry</Text>
+            <Text style={[styles.buttonSubtext, { fontSize: font.sm }]}>Afficher la configuration</Text>
+          </TouchableOpacity>
+
           <TouchableOpacity
             style={[styles.button, { backgroundColor: "#E74C3C", padding: sp.md, borderRadius: sp.md }]}
             onPress={testCrash}
