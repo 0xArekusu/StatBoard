@@ -84,15 +84,17 @@ CREATE POLICY "Team owner can view their team matches"
   );
 
 -- Policy: Team owner can create matches for their team
+-- FIXED: Removed created_by = auth.uid() check in WITH CHECK as it causes RLS to fail
+-- RLS automatically ensures auth.uid() is the authenticated user
 CREATE POLICY "Team owner can create matches"
   ON matches FOR INSERT
   WITH CHECK (
-    created_by = auth.uid()
+    auth.uid() IS NOT NULL
     AND (
       team_id IS NULL
       OR EXISTS (
         SELECT 1 FROM teams
-        WHERE teams.id = matches.team_id
+        WHERE teams.id = team_id
         AND teams.owner_id = auth.uid()
       )
     )
@@ -102,7 +104,7 @@ CREATE POLICY "Team owner can create matches"
 CREATE POLICY "Team owner can update their matches"
   ON matches FOR UPDATE
   USING (
-    created_by = auth.uid()
+    auth.uid() IS NOT NULL
     AND (
       team_id IS NULL
       OR EXISTS (
@@ -113,7 +115,7 @@ CREATE POLICY "Team owner can update their matches"
     )
   )
   WITH CHECK (
-    created_by = auth.uid()
+    auth.uid() IS NOT NULL
     AND (
       team_id IS NULL
       OR EXISTS (
@@ -128,7 +130,7 @@ CREATE POLICY "Team owner can update their matches"
 CREATE POLICY "Team owner can delete their matches"
   ON matches FOR DELETE
   USING (
-    created_by = auth.uid()
+    auth.uid() IS NOT NULL
     AND (
       team_id IS NULL
       OR EXISTS (

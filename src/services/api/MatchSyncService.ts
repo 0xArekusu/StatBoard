@@ -237,52 +237,6 @@ export class MatchSyncService {
       const matchPlayers =
         await this.matchPlayerRepository.getPlayersForMatch(matchId);
 
-      // Upload photos for club players with local URIs
-      const { PhotoUploadService } = await import('../../../services/PhotoUploadService');
-      const photoService = new PhotoUploadService(this.supabase);
-
-      let photosUploaded = 0;
-      for (const player of matchPlayers) {
-        if (player.photo_url && (player.photo_url.startsWith('file://') || player.photo_url.startsWith('content://'))) {
-          logInfo('MatchSyncService', '📸 Uploading player photo', {
-            matchId,
-            playerName: player.player_name,
-            playerId: player.id
-          });
-
-          const { url, error } = await photoService.uploadPlayerPhoto(
-            player.photo_url,
-            player.player_id || `player-${player.id}`
-          );
-
-          if (!error && url) {
-            // Update the player's photo_url with the uploaded URL
-            player.photo_url = url;
-            await this.matchPlayerRepository.updatePhotoUrl(player.id, url);
-            photosUploaded++;
-
-            logInfo('MatchSyncService', '✅ Player photo uploaded', {
-              matchId,
-              playerName: player.player_name,
-              photoUrl: url
-            });
-          } else {
-            logError('MatchSyncService', '❌ Failed to upload player photo', {
-              matchId,
-              playerName: player.player_name,
-              error
-            });
-          }
-        }
-      }
-
-      if (photosUploaded > 0) {
-        logInfo('MatchSyncService', `📸 ${photosUploaded} player photos uploaded`, {
-          matchId,
-          totalPlayers: matchPlayers.length
-        });
-      }
-
       // Transform data to Supabase format
       const syncData = this.transformMatchForSync(
         match,
@@ -544,9 +498,22 @@ export class MatchSyncService {
       if (matchError) {
         logError('MatchSyncService', '❌ Error inserting match to Supabase', {
           error: matchError.message,
-          match: syncData.match
+          code: matchError.code,
+          details: matchError.details,
+          hint: matchError.hint,
+          matchData: {
+            clubId: syncData.match.club_id,
+            teamId: syncData.match.team_id,
+            myTeamName: syncData.match.my_team_name,
+            opponentName: syncData.match.opponent_name,
+          }
         });
         throw new Error(`Erreur lors de la création du match: ${matchError.message}`);
+      }
+
+      if (!matchData) {
+        logError('MatchSyncService', '❌ No data returned from Supabase insert');
+        throw new Error('Aucune donnée retournée par Supabase');
       }
 
       const matchId = matchData.id;

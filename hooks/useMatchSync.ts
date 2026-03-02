@@ -6,6 +6,7 @@
 
 import { useState } from "react";
 import { useNavigation } from "@react-navigation/native";
+import { Alert } from "react-native";
 import { SupabaseClient } from "@supabase/supabase-js";
 import { RootNavigationProp } from "../types/navigation";
 import { MatchManager } from "../src/services/match/MatchManager";
@@ -45,7 +46,10 @@ export function useMatchSync({
 
   const endMatchAndSync = async (onComplete?: () => void) => {
     try {
-      if (!currentMatchId) return;
+      if (!currentMatchId) {
+        logError("useMatchSync", "❌ No currentMatchId found");
+        return;
+      }
 
       // Save current match state before ending
       await saveMatchState();
@@ -138,16 +142,34 @@ export function useMatchSync({
               matchId: currentMatchId,
               error: syncResult.error,
             });
-            navigateToDashboard();
+
+            setIsSyncing(false);
+
+            // Show error alert to user and navigate to local match details
+            Alert.alert(
+              "Erreur de synchronisation",
+              `Impossible de synchroniser le match avec le serveur.\n\n${syncResult.error || "Erreur inconnue"}\n\nVotre match a été sauvegardé localement.`,
+              [
+                {
+                  text: "OK",
+                  onPress: () => fetchAndNavigateToLocalMatch(),
+                },
+              ],
+              {
+                onDismiss: () => fetchAndNavigateToLocalMatch(),
+              }
+            );
           }
         } else {
-          logInfo("useMatchSync", "ℹ️ Match not synced", {
-            matchId: currentMatchId,
+          logInfo("useMatchSync", "ℹ️ Match not eligible for sync", {
             reason: eligibility.reason,
           });
 
           // For guest users, navigate to match details with local data
           if (!user) {
+            logInfo("useMatchSync", "👤 Guest user - navigating to local match", {
+              matchId: currentMatchId,
+            });
             await fetchAndNavigateToLocalMatch();
           } else {
             setIsSyncing(false);
@@ -161,7 +183,21 @@ export function useMatchSync({
         });
 
         setIsSyncing(false);
-        navigateToDashboard();
+
+        // Show error alert to user and navigate to local match details
+        Alert.alert(
+          "Erreur de synchronisation",
+          `Une erreur inattendue s'est produite lors de la synchronisation.\n\n${syncError instanceof Error ? syncError.message : "Erreur inconnue"}\n\nVotre match a été sauvegardé localement.`,
+          [
+            {
+              text: "OK",
+              onPress: () => fetchAndNavigateToLocalMatch(),
+            },
+          ],
+          {
+            onDismiss: () => fetchAndNavigateToLocalMatch(),
+          }
+        );
       }
 
       onComplete?.();
@@ -181,7 +217,12 @@ export function useMatchSync({
         .eq("id", matchId)
         .single();
 
-      if (matchError) throw matchError;
+      if (matchError) {
+        logError("useMatchSync", "❌ Error fetching synced match", {
+          error: matchError.message,
+        });
+        throw matchError;
+      }
 
       // Extract players from matches.players JSONB array
       const playersArray = supabaseMatch?.players || [];
@@ -235,12 +276,6 @@ export function useMatchSync({
 
         actionDataList.push(...convertedActions);
       }
-
-      logInfo("useMatchSync", "✅ Synced match data fetched", {
-        matchId,
-        playersCount: players.length,
-        actionsCount: actionDataList.length,
-      });
 
       setTimeout(() => {
         navigation.navigate(ROUTES.MATCH_DETAILS, {
@@ -303,18 +338,9 @@ export function useMatchSync({
         },
       }));
 
-      logInfo("useMatchSync", "✅ Local match data fetched for guest", {
-        matchId: currentMatchId,
-        playersCount: players.length,
-        actionsCount: actions.length,
-      });
-
       setIsSyncing(false);
 
       if (!localMatch) {
-        logError("useMatchSync", "❌ Local match not found", {
-          matchId: currentMatchId,
-        });
         navigateToDashboard();
         return;
       }
