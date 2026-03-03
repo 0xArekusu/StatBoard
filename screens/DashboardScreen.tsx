@@ -22,7 +22,7 @@ import { useAuth } from "../src/contexts/AuthContext";
 import { useClub } from "../src/contexts/ClubContext";
 import { useSignedUrl } from "../hooks/useSignedUrl";
 import { ServiceFactory } from "../services/ServiceFactory";
-import { shareLogs, logInfo, logError, logWarn } from "../utils/logger";
+import { shareLogs, sendLogsToSentry, logInfo, logError, logWarn } from "../utils/logger";
 import { Match, MatchStatus } from "../src/models/types";
 import { Club } from "../models/Club";
 import { Team, TeamStatus } from "../models/Team";
@@ -577,43 +577,42 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
   };
 
   /**
-   * Export logs for debugging
+   * Export logs for debugging - sends last 2000 log lines to Sentry
    */
   const handleExportLogs = async () => {
     try {
       setShowProfileMenu(false);
 
-      const message = Platform.OS === "ios"
-        ? "Les logs de l'application vont être partagés via la feuille de partage iOS."
-        : "Les logs de l'application vont être sauvegardés. Choisissez un emplacement.";
-
       Alert.alert(
         "Exporter les logs",
-        message,
+        "Les 2000 derniers messages de log vont être envoyés à Sentry pour analyse.",
         [
           {
             text: "Annuler",
             style: "cancel",
           },
           {
-            text: "Exporter",
+            text: "Envoyer",
             onPress: async () => {
               try {
-                const result = await shareLogs();
+                const result = await sendLogsToSentry(2000);
 
                 if (result && result.success) {
-                  Alert.alert("Succès", result.message);
+                  Alert.alert(
+                    "Succès",
+                    `${result.message}\n\nEvent ID: ${result.eventId}`
+                  );
                 } else {
                   Alert.alert(
                     "Erreur",
-                    result?.message || "Impossible d'exporter les logs. Veuillez réessayer."
+                    result?.message || "Impossible d'envoyer les logs. Veuillez réessayer."
                   );
                 }
               } catch (error) {
-                logError("DashboardScreen", "❌ Error exporting logs", { error });
+                logError("DashboardScreen", "❌ Error sending logs to Sentry", { error });
                 Alert.alert(
                   "Erreur",
-                  "Impossible d'exporter les logs. Veuillez réessayer."
+                  "Impossible d'envoyer les logs. Veuillez réessayer."
                 );
               }
             },

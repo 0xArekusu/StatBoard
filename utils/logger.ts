@@ -63,6 +63,11 @@ export const clearLogs = () => loggerService.clearLogs();
 export const shareLogs = () => loggerService.shareLogs();
 
 /**
+ * Send logs to Sentry
+ */
+export const sendLogsToSentry = (lineCount?: number) => loggerService.sendLogsToSentry(lineCount);
+
+/**
  * Enable/disable logging
  */
 export const setLoggingEnabled = (enabled: boolean) => loggerService.setEnabled(enabled);

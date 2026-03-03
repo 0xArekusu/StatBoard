@@ -334,6 +334,46 @@ class LoggerService {
       return `Error reading logs: ${error}`;
     }
   }
+
+  /**
+   * Send last N lines of logs to Sentry
+   * Used for user-initiated log export to help with debugging
+   */
+  async sendLogsToSentry(lineCount: number = 2000): Promise<{ success: boolean; message: string; eventId?: string }> {
+    try {
+      const logs = await this.getLastLines(lineCount);
+
+      if (logs === "No logs available" || logs.startsWith("Error reading logs")) {
+        return { success: false, message: "Aucun log disponible à envoyer" };
+      }
+
+      // Send logs as a message to Sentry with context
+      const eventId = Sentry.captureMessage("User-initiated log export", {
+        level: "info",
+        contexts: {
+          logs: {
+            content: logs,
+            lineCount: lineCount,
+            timestamp: new Date().toISOString(),
+            platform: Platform.OS,
+          },
+        },
+      });
+
+      console.log("[LoggerService] ✅ Logs sent to Sentry, Event ID:", eventId);
+      return {
+        success: true,
+        message: `Logs envoyés à Sentry avec succès`,
+        eventId: eventId
+      };
+    } catch (error) {
+      console.error("[LoggerService] ❌ Error sending logs to Sentry:", error);
+      return {
+        success: false,
+        message: `Erreur lors de l'envoi: ${error instanceof Error ? error.message : 'Erreur inconnue'}`
+      };
+    }
+  }
 }
 
 // Export singleton instance
