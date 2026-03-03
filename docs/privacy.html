@@ -3,30 +3,97 @@
   <head>
     <meta charset="UTF-8" />
     <title>Politique de confidentialité - Coach Assistant</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <style>
       body {
-        font-family: Arial, sans-serif;
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        margin: 0;
+        background: #f8fafc;
+        color: #0f172a;
+        line-height: 1.6;
+      }
+
+      nav {
+        background: #f97316;
+        padding: 15px 20px;
+      }
+
+      nav a {
+        color: white;
+        text-decoration: none;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      nav a:hover {
+        opacity: 0.9;
+      }
+
+      .container {
         max-width: 900px;
         margin: 40px auto;
-        line-height: 1.6;
-        padding: 20px;
+        background: #ffffff;
+        padding: 40px;
+        border-radius: 12px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        border: 1px solid #e2e8f0;
       }
-      h1,
+
+      h1 {
+        margin-top: 0;
+        color: #0f172a;
+      }
+
       h2 {
-        color: #111;
+        color: #0f172a;
+        margin-top: 30px;
       }
+
+      a {
+        color: #f97316;
+      }
+
       footer {
-        margin-top: 40px;
+        text-align: center;
+        padding: 30px;
         font-size: 14px;
-        color: #666;
+        color: #64748b;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        body {
+          background: #020617;
+          color: #ffffff;
+        }
+
+        .container {
+          background: #0f172a;
+          border-color: #1e293b;
+        }
+
+        h1, h2 {
+          color: #ffffff;
+        }
+
+        footer {
+          color: #94a3b8;
+        }
       }
     </style>
   </head>
 
   <body>
-    <h1>Politique de confidentialité</h1>
+    <nav>
+      <a href="index.html">← Retour</a>
+    </nav>
 
-    <h2>1. Présentation</h2>
+    <div class="container">
+      <h1>Politique de confidentialité</h1>
+
+      <h2>1. Présentation</h2>
 
     La présente politique décrit la manière dont l'application Coach Assistant
     collecte et traite les données personnelles des utilisateurs.
@@ -68,17 +135,18 @@
 
     Conformément au RGPD, les utilisateurs disposent des droits suivants : -
     Droit d'accès - Droit de rectification - Droit à l'effacement - Droit à la
-    limitation du traitement Toute demande peut être adressée à :
-    contact.coachassistant@gmail.com
+      limitation du traitement Toute demande peut être adressée à :
+      contact.coachassistant@gmail.com
 
-    <h2>9. Sécurité</h2>
+      <h2>9. Sécurité</h2>
 
-    Des mesures techniques raisonnables sont mises en œuvre pour protéger les
-    données.
+      Des mesures techniques raisonnables sont mises en œuvre pour protéger les
+      données.
 
-    <h2>10. Modification</h2>
+      <h2>10. Modification</h2>
 
-    La présente politique peut être modifiée à tout moment.
+      La présente politique peut être modifiée à tout moment.
+    </div>
 
     <footer>Dernière mise à jour : 2026</footer>
   </body>
