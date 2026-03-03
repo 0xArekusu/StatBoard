@@ -1,8 +1,17 @@
 import React from "react";
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
+  Alert,
+} from "react-native";
 import * as Sentry from "@sentry/react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../src/contexts/ThemeContext";
 import { useResponsive } from "../src/hooks/useResponsive";
+import { STATUS_COLORS, COMMON_COLORS } from "../src/theme";
 
 interface SentryTestScreenProps {
   navigation: {
@@ -10,8 +19,10 @@ interface SentryTestScreenProps {
   };
 }
 
-export default function SentryTestScreen({ navigation }: SentryTestScreenProps) {
-  const { colors } = useTheme();
+export default function SentryTestScreen({
+  navigation,
+}: SentryTestScreenProps) {
+  const { colors, isDark } = useTheme();
   const { sp, font, sizes } = useResponsive();
 
   const testCrash = () => {
@@ -27,15 +38,21 @@ export default function SentryTestScreen({ navigation }: SentryTestScreenProps) 
             throw new Error("Test crash depuis SentryTestScreen");
           },
         },
-      ]
+      ],
     );
   };
 
   const testError = () => {
     try {
       console.log("🧪 [SENTRY TEST] Début test erreur capturée");
-      console.log("🔍 [SENTRY TEST] DSN configuré:", process.env.EXPO_PUBLIC_SENTRY_DSN?.substring(0, 30) + "...");
-      console.log("🔍 [SENTRY TEST] Environnement:", __DEV__ ? "development" : "production");
+      console.log(
+        "🔍 [SENTRY TEST] DSN configuré:",
+        process.env.EXPO_PUBLIC_SENTRY_DSN?.substring(0, 30) + "...",
+      );
+      console.log(
+        "🔍 [SENTRY TEST] Environnement:",
+        __DEV__ ? "development" : "production",
+      );
 
       throw new Error("Test erreur capturée manuellement");
     } catch (error) {
@@ -45,25 +62,40 @@ export default function SentryTestScreen({ navigation }: SentryTestScreenProps) 
 
       Alert.alert(
         "Erreur envoyée",
-        `L'erreur a été envoyée à Sentry !\n\nEvent ID: ${eventId}\n\nVérifiez la console pour les détails.`
+        `L'erreur a été envoyée à Sentry !\n\nEvent ID: ${eventId}\n\nVérifiez la console pour les détails.`,
       );
     }
   };
 
   const testMessage = () => {
     console.log("🧪 [SENTRY TEST] Début test message");
-    console.log("🔍 [SENTRY TEST] DSN configuré:", process.env.EXPO_PUBLIC_SENTRY_DSN?.substring(0, 30) + "...");
+    console.log(
+      "🔍 [SENTRY TEST] DSN configuré:",
+      process.env.EXPO_PUBLIC_SENTRY_DSN?.substring(0, 30) + "...",
+    );
     console.log("🔍 [SENTRY TEST] Variables d'environnement Sentry:");
-    console.log("  - EXPO_PUBLIC_SENTRY_DSN:", process.env.EXPO_PUBLIC_SENTRY_DSN ? "✓ Défini" : "✗ Non défini");
-    console.log("  - EXPO_PUBLIC_SENTRY_ORG:", process.env.EXPO_PUBLIC_SENTRY_ORG || "Non défini");
-    console.log("  - EXPO_PUBLIC_SENTRY_PROJECT:", process.env.EXPO_PUBLIC_SENTRY_PROJECT || "Non défini");
+    console.log(
+      "  - EXPO_PUBLIC_SENTRY_DSN:",
+      process.env.EXPO_PUBLIC_SENTRY_DSN ? "✓ Défini" : "✗ Non défini",
+    );
+    console.log(
+      "  - EXPO_PUBLIC_SENTRY_ORG:",
+      process.env.EXPO_PUBLIC_SENTRY_ORG || "Non défini",
+    );
+    console.log(
+      "  - EXPO_PUBLIC_SENTRY_PROJECT:",
+      process.env.EXPO_PUBLIC_SENTRY_PROJECT || "Non défini",
+    );
 
-    const eventId = Sentry.captureMessage("Test message depuis SentryTestScreen", "info");
+    const eventId = Sentry.captureMessage(
+      "Test message depuis SentryTestScreen",
+      "info",
+    );
     console.log("✅ [SENTRY TEST] Message envoyé, Event ID:", eventId);
 
     Alert.alert(
       "Message envoyé",
-      `Le message a été envoyé à Sentry !\n\nEvent ID: ${eventId}\n\nVérifiez la console pour les détails.`
+      `Le message a été envoyé à Sentry !\n\nEvent ID: ${eventId}\n\nVérifiez la console pour les détails.`,
     );
   };
 
@@ -73,7 +105,10 @@ export default function SentryTestScreen({ navigation }: SentryTestScreenProps) 
       message: "Test breadcrumb ajouté",
       level: "info",
     });
-    Alert.alert("Breadcrumb ajouté", "Un breadcrumb a été ajouté pour le contexte des erreurs futures");
+    Alert.alert(
+      "Breadcrumb ajouté",
+      "Un breadcrumb a été ajouté pour le contexte des erreurs futures",
+    );
   };
 
   const showSentryConfig = () => {
@@ -92,77 +127,371 @@ export default function SentryTestScreen({ navigation }: SentryTestScreenProps) 
     Alert.alert(
       "Configuration Sentry",
       `DSN: ${dsn ? "✓ Défini" : "✗ NON DÉFINI"}\n` +
-      `Org: ${org || "Non défini"}\n` +
-      `Projet: ${project || "Non défini"}\n` +
-      `Env: ${env}\n` +
-      `Debug: ${__DEV__ ? "OUI" : "NON"}\n\n` +
-      `${!dsn ? "⚠️ ATTENTION: Le DSN n'est pas configuré!\nLes events ne seront pas envoyés." : "✅ Configuration OK"}\n\n` +
-      `Voir la console pour plus de détails.`
+        `Org: ${org || "Non défini"}\n` +
+        `Projet: ${project || "Non défini"}\n` +
+        `Env: ${env}\n` +
+        `Debug: ${__DEV__ ? "OUI" : "NON"}\n\n` +
+        `${!dsn ? "⚠️ ATTENTION: Le DSN n'est pas configuré!\nLes events ne seront pas envoyés." : "✅ Configuration OK"}\n\n` +
+        `Voir la console pour plus de détails.`,
     );
   };
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={[styles.header, { backgroundColor: colors.primary, padding: sp.lg, paddingTop: sp.xxl * 1.5 }]}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={[styles.backButton, { marginBottom: sp.sm }]}>
-          <Text style={[styles.backButtonText, { fontSize: font.md }]}>← Retour</Text>
-        </TouchableOpacity>
-        <Text style={[styles.headerTitle, { fontSize: font.xxl }]}>Test Sentry</Text>
-      </View>
+      <ScrollView style={styles.content}>
+        {/* Header */}
+        <View
+          style={[
+            styles.header,
+            {
+              paddingTop: sp.lg,
+              paddingBottom: sp.md,
+              paddingHorizontal: sp.lg,
+              flexDirection: "row",
+              alignItems: "center",
+            },
+          ]}
+        >
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            style={styles.backButton}
+            activeOpacity={0.7}
+          >
+            <Ionicons
+              name="arrow-back"
+              size={sizes.iconMd}
+              color={colors.text.primary}
+            />
+          </TouchableOpacity>
 
-      <ScrollView style={[styles.content, { padding: sp.lg }]}>
-        <View style={[styles.section, { marginBottom: sp.xl }]}>
-          <Text style={[styles.title, { color: colors.text, fontSize: font.xl, marginBottom: sp.sm }]}>Tester l'intégration Sentry</Text>
-          <Text style={[styles.description, { color: colors.textSecondary, fontSize: font.md }]}>
-            Utilisez ces boutons pour vérifier que Sentry capture correctement les erreurs et événements.
+          <View style={styles.headerCenter}>
+            <Text
+              style={[
+                styles.headerTitle,
+                { fontSize: font.xxl, color: colors.text.primary },
+              ]}
+            >
+              Test Sentry
+            </Text>
+          </View>
+
+          <View
+            style={[
+              styles.iconContainer,
+              {
+                backgroundColor: STATUS_COLORS.error + "20",
+                width: sizes.avatarSm,
+                height: sizes.avatarSm,
+                borderRadius: sp.sm,
+              },
+            ]}
+          >
+            <Ionicons
+              name="bug"
+              size={sizes.iconSm}
+              color={STATUS_COLORS.error}
+            />
+          </View>
+        </View>
+        {/* Description Section */}
+        <View
+          style={[
+            styles.section,
+            {
+              padding: sp.lg,
+              backgroundColor: colors.surface,
+              marginBottom: sp.md,
+            },
+          ]}
+        >
+          <Text
+            style={[
+              styles.sectionTitle,
+              {
+                color: colors.text.primary,
+                fontSize: font.xl,
+                marginBottom: sp.sm,
+              },
+            ]}
+          >
+            Tester l'intégration Sentry
+          </Text>
+          <Text
+            style={[
+              styles.description,
+              {
+                color: colors.text.secondary,
+                fontSize: font.md,
+                lineHeight: font.md * 1.5,
+              },
+            ]}
+          >
+            Utilisez ces boutons pour vérifier que Sentry capture correctement
+            les erreurs et événements.
           </Text>
         </View>
 
-        <View style={[styles.buttonContainer, { gap: sp.md }]}>
+        {/* Buttons Section */}
+        <View
+          style={[
+            styles.buttonContainer,
+            { paddingHorizontal: sp.lg, gap: sp.md, marginBottom: sp.xl },
+          ]}
+        >
+          {/* Config Button */}
           <TouchableOpacity
-            style={[styles.button, { backgroundColor: "#2ECC71", padding: sp.md, borderRadius: sp.md }]}
+            style={[
+              styles.button,
+              {
+                backgroundColor: STATUS_COLORS.success,
+                padding: sp.lg,
+                borderRadius: sp.md,
+              },
+            ]}
             onPress={showSentryConfig}
+            activeOpacity={0.8}
           >
-            <Text style={[styles.buttonText, { fontSize: font.lg, marginBottom: sp.xs }]}>📋 Config Sentry</Text>
-            <Text style={[styles.buttonSubtext, { fontSize: font.sm }]}>Afficher la configuration</Text>
+            <View style={styles.buttonContent}>
+              <Ionicons
+                name="settings"
+                size={sizes.iconMd}
+                color={COMMON_COLORS.white}
+              />
+              <View style={styles.buttonTextContainer}>
+                <Text
+                  style={[
+                    styles.buttonText,
+                    { fontSize: font.lg, color: COMMON_COLORS.white },
+                  ]}
+                >
+                  Configuration Sentry
+                </Text>
+                <Text
+                  style={[
+                    styles.buttonSubtext,
+                    { fontSize: font.sm, color: COMMON_COLORS.white },
+                  ]}
+                >
+                  Afficher la configuration
+                </Text>
+              </View>
+            </View>
           </TouchableOpacity>
 
+          {/* Crash Button */}
           <TouchableOpacity
-            style={[styles.button, { backgroundColor: "#E74C3C", padding: sp.md, borderRadius: sp.md }]}
+            style={[
+              styles.button,
+              {
+                backgroundColor: STATUS_COLORS.error,
+                padding: sp.lg,
+                borderRadius: sp.md,
+              },
+            ]}
             onPress={testCrash}
+            activeOpacity={0.8}
           >
-            <Text style={[styles.buttonText, { fontSize: font.lg, marginBottom: sp.xs }]}>🔥 Crash l'app</Text>
-            <Text style={[styles.buttonSubtext, { fontSize: font.sm }]}>Force un crash complet</Text>
+            <View style={styles.buttonContent}>
+              <Ionicons
+                name="flame"
+                size={sizes.iconMd}
+                color={COMMON_COLORS.white}
+              />
+              <View style={styles.buttonTextContainer}>
+                <Text
+                  style={[
+                    styles.buttonText,
+                    { fontSize: font.lg, color: COMMON_COLORS.white },
+                  ]}
+                >
+                  Crash l'app
+                </Text>
+                <Text
+                  style={[
+                    styles.buttonSubtext,
+                    { fontSize: font.sm, color: COMMON_COLORS.white },
+                  ]}
+                >
+                  Force un crash complet
+                </Text>
+              </View>
+            </View>
           </TouchableOpacity>
 
+          {/* Error Button */}
           <TouchableOpacity
-            style={[styles.button, { backgroundColor: "#E67E22" }]}
+            style={[
+              styles.button,
+              {
+                backgroundColor: STATUS_COLORS.warning,
+                padding: sp.lg,
+                borderRadius: sp.md,
+              },
+            ]}
             onPress={testError}
+            activeOpacity={0.8}
           >
-            <Text style={styles.buttonText}>⚠️ Erreur capturée</Text>
-            <Text style={styles.buttonSubtext}>Capture une exception</Text>
+            <View style={styles.buttonContent}>
+              <Ionicons
+                name="warning"
+                size={sizes.iconMd}
+                color={COMMON_COLORS.white}
+              />
+              <View style={styles.buttonTextContainer}>
+                <Text
+                  style={[
+                    styles.buttonText,
+                    { fontSize: font.lg, color: COMMON_COLORS.white },
+                  ]}
+                >
+                  Erreur capturée
+                </Text>
+                <Text
+                  style={[
+                    styles.buttonSubtext,
+                    { fontSize: font.sm, color: COMMON_COLORS.white },
+                  ]}
+                >
+                  Capture une exception
+                </Text>
+              </View>
+            </View>
           </TouchableOpacity>
 
+          {/* Message Button */}
           <TouchableOpacity
-            style={[styles.button, { backgroundColor: "#3498DB" }]}
+            style={[
+              styles.button,
+              {
+                backgroundColor: STATUS_COLORS.info,
+                padding: sp.lg,
+                borderRadius: sp.md,
+              },
+            ]}
             onPress={testMessage}
+            activeOpacity={0.8}
           >
-            <Text style={styles.buttonText}>💬 Message</Text>
-            <Text style={styles.buttonSubtext}>Envoie un message d'info</Text>
+            <View style={styles.buttonContent}>
+              <Ionicons
+                name="chatbox"
+                size={sizes.iconMd}
+                color={COMMON_COLORS.white}
+              />
+              <View style={styles.buttonTextContainer}>
+                <Text
+                  style={[
+                    styles.buttonText,
+                    { fontSize: font.lg, color: COMMON_COLORS.white },
+                  ]}
+                >
+                  Message
+                </Text>
+                <Text
+                  style={[
+                    styles.buttonSubtext,
+                    { fontSize: font.sm, color: COMMON_COLORS.white },
+                  ]}
+                >
+                  Envoie un message d'info
+                </Text>
+              </View>
+            </View>
           </TouchableOpacity>
 
+          {/* Breadcrumb Button */}
           <TouchableOpacity
-            style={[styles.button, { backgroundColor: "#9B59B6" }]}
+            style={[
+              styles.button,
+              {
+                backgroundColor: colors.surfaceVariant,
+                padding: sp.lg,
+                borderRadius: sp.md,
+                borderWidth: 1,
+                borderColor: colors.border,
+              },
+            ]}
             onPress={testBreadcrumb}
+            activeOpacity={0.8}
           >
-            <Text style={styles.buttonText}>🍞 Breadcrumb</Text>
-            <Text style={styles.buttonSubtext}>Ajoute du contexte</Text>
+            <View style={styles.buttonContent}>
+              <Ionicons
+                name="trail-sign"
+                size={sizes.iconMd}
+                color={colors.text.primary}
+              />
+              <View style={styles.buttonTextContainer}>
+                <Text
+                  style={[
+                    styles.buttonText,
+                    { fontSize: font.lg, color: colors.text.primary },
+                  ]}
+                >
+                  Breadcrumb
+                </Text>
+                <Text
+                  style={[
+                    styles.buttonSubtext,
+                    { fontSize: font.sm, color: colors.text.secondary },
+                  ]}
+                >
+                  Ajoute du contexte
+                </Text>
+              </View>
+            </View>
           </TouchableOpacity>
         </View>
 
-        <View style={styles.infoBox}>
-          <Text style={[styles.infoTitle, { color: colors.text }]}>Comment vérifier ?</Text>
-          <Text style={[styles.infoText, { color: colors.textSecondary }]}>
+        {/* Info Box */}
+        <View
+          style={[
+            styles.infoBox,
+            {
+              marginHorizontal: sp.lg,
+              marginBottom: sp.xxl,
+              padding: sp.lg,
+              backgroundColor: STATUS_COLORS.info + "10",
+              borderRadius: sp.md,
+              borderLeftWidth: 4,
+              borderLeftColor: STATUS_COLORS.info,
+            },
+          ]}
+        >
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              gap: sp.sm,
+              marginBottom: sp.md,
+            }}
+          >
+            <Ionicons
+              name="information-circle"
+              size={sizes.iconMd}
+              color={STATUS_COLORS.info}
+            />
+            <Text
+              style={[
+                styles.infoTitle,
+                {
+                  color: colors.text.primary,
+                  fontSize: font.lg,
+                  fontWeight: "600",
+                },
+              ]}
+            >
+              Comment vérifier ?
+            </Text>
+          </View>
+          <Text
+            style={[
+              styles.infoText,
+              {
+                color: colors.text.secondary,
+                fontSize: font.md,
+                lineHeight: font.md * 1.6,
+              },
+            ]}
+          >
             1. Cliquez sur un bouton de test{"\n"}
             2. Allez sur https://sentry.io{"\n"}
             3. Vérifiez que l'erreur/message apparaît dans Issues ou Performance
@@ -177,73 +506,58 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  header: {
-    paddingTop: 50,
-    paddingBottom: 20,
-    paddingHorizontal: 20,
-  },
+  header: {},
   backButton: {
-    marginBottom: 10,
+    flexDirection: "row",
+    alignItems: "center",
   },
   backButtonText: {
-    color: "#FFFFFF",
-    fontSize: 16,
+    fontWeight: "600",
+  },
+  headerCenter: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  iconContainer: {
+    justifyContent: "center",
+    alignItems: "center",
   },
   headerTitle: {
-    fontSize: 28,
     fontWeight: "bold",
-    color: "#FFFFFF",
   },
   content: {
     flex: 1,
-    padding: 20,
   },
-  section: {
-    marginBottom: 30,
-  },
-  title: {
-    fontSize: 24,
+  section: {},
+  sectionTitle: {
     fontWeight: "bold",
-    marginBottom: 10,
   },
-  description: {
-    fontSize: 16,
-    lineHeight: 24,
-  },
-  buttonContainer: {
-    gap: 15,
-  },
+  description: {},
+  buttonContainer: {},
   button: {
-    padding: 20,
-    borderRadius: 12,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  buttonContent: {
+    flexDirection: "row",
     alignItems: "center",
+    gap: 12,
+  },
+  buttonTextContainer: {
+    flex: 1,
   },
   buttonText: {
-    color: "#FFFFFF",
-    fontSize: 18,
     fontWeight: "bold",
-    marginBottom: 5,
+    marginBottom: 4,
   },
   buttonSubtext: {
-    color: "#FFFFFF",
-    fontSize: 14,
     opacity: 0.9,
   },
-  infoBox: {
-    marginTop: 30,
-    padding: 20,
-    backgroundColor: "rgba(52, 152, 219, 0.1)",
-    borderRadius: 12,
-    borderLeftWidth: 4,
-    borderLeftColor: "#3498DB",
-  },
-  infoTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    marginBottom: 10,
-  },
-  infoText: {
-    fontSize: 14,
-    lineHeight: 22,
-  },
+  infoBox: {},
+  infoTitle: {},
+  infoText: {},
 });
