@@ -19,6 +19,7 @@ import { SHADOW_COLOR, OPACITY, PASSWORD_VALIDATION } from '../../src/theme';
 import GoogleLogo from '../../components/icons/GoogleLogo';
 import FacebookLogo from '../../components/icons/FacebookLogo';
 import { useResponsive } from '../../src/hooks/useResponsive';
+import PolicyBottomSheet from '../../components/PolicyBottomSheet';
 
 /**
  * RegisterScreen - Registration form with email/password
@@ -35,6 +36,9 @@ export default function RegisterScreen({ navigation }: any) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [policyUrl, setPolicyUrl] = useState<string | null>(null);
+  const [policyTitle, setPolicyTitle] = useState('');
   const [loading, setLoading] = useState(false);
   const { signUp, signInWithGoogle } = useAuth();
   const { colors } = useTheme();
@@ -59,6 +63,14 @@ export default function RegisterScreen({ navigation }: any) {
       Alert.alert(
         'Erreur',
         `Le mot de passe doit contenir au moins ${PASSWORD_VALIDATION.minLength} caractères`
+      );
+      return;
+    }
+
+    if (!termsAccepted) {
+      Alert.alert(
+        'Erreur',
+        'Vous devez accepter les conditions d\'utilisation et la politique de confidentialité pour créer un compte'
       );
       return;
     }
@@ -275,6 +287,56 @@ export default function RegisterScreen({ navigation }: any) {
                 />
               </View>
             </View>
+
+            {/* Terms and Conditions Checkbox */}
+            <TouchableOpacity
+              style={[styles.checkboxContainer, { gap: sp.sm }]}
+              onPress={() => setTermsAccepted(!termsAccepted)}
+              activeOpacity={OPACITY.interaction.high}
+              disabled={loading}
+            >
+              <View
+                style={[
+                  styles.checkbox,
+                  {
+                    borderColor: colors.input.border,
+                    backgroundColor: termsAccepted ? colors.primary : colors.input.background,
+                  },
+                ]}
+              >
+                {termsAccepted && (
+                  <MaterialCommunityIcons
+                    name="check"
+                    size={sizes.iconSm}
+                    color={colors.onPrimary}
+                  />
+                )}
+              </View>
+              <Text style={[styles.checkboxText, { color: colors.text.secondary, fontSize: font.sm, flex: 1 }]}>
+                J'accepte les{' '}
+                <Text
+                  style={{ color: colors.primary, fontWeight: '600' }}
+                  onPress={(e) => {
+                    e.stopPropagation();
+                    setPolicyUrl('https://coachassistant.fr/terms.html');
+                    setPolicyTitle('Conditions d\'utilisation');
+                  }}
+                >
+                  Conditions d'utilisation
+                </Text>
+                {' '}et la{' '}
+                <Text
+                  style={{ color: colors.primary, fontWeight: '600' }}
+                  onPress={(e) => {
+                    e.stopPropagation();
+                    setPolicyUrl('https://coachassistant.fr/privacy.html');
+                    setPolicyTitle('Politique de confidentialité');
+                  }}
+                >
+                  Politique de confidentialité
+                </Text>
+              </Text>
+            </TouchableOpacity>
           </View>
 
           {/* Submit Button */}
@@ -389,6 +451,14 @@ export default function RegisterScreen({ navigation }: any) {
           </TouchableOpacity>
         </View>
       </ScrollView>
+
+      {/* Policy Bottom Sheet */}
+      <PolicyBottomSheet
+        isVisible={policyUrl !== null}
+        url={policyUrl || ''}
+        title={policyTitle}
+        onClose={() => setPolicyUrl(null)}
+      />
     </KeyboardAvoidingView>
   );
 }
@@ -486,4 +556,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   linkText: {},
+  checkboxContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  checkbox: {
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    borderWidth: 2,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  checkboxText: {
+    lineHeight: 20,
+  },
 });

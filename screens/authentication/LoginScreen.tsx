@@ -41,6 +41,28 @@ export default function LoginScreen({ navigation, route }: any) {
   const { sp, font, sizes, isCompact } = useResponsive();
 
   /**
+   * Translates common Supabase error messages to French
+   */
+  const translateError = (errorMessage: string): string => {
+    const errorMap: { [key: string]: string } = {
+      'Invalid login credentials': 'Email ou mot de passe incorrect',
+      'Invalid credentials': 'Email ou mot de passe incorrect',
+      'Email not confirmed': 'Veuillez confirmer votre email avant de vous connecter',
+      'User not found': 'Aucun compte associé à cet email',
+    };
+
+    // Check if the error message matches any known error
+    for (const [key, value] of Object.entries(errorMap)) {
+      if (errorMessage.includes(key)) {
+        return value;
+      }
+    }
+
+    // Return original message if no translation found
+    return errorMessage;
+  };
+
+  /**
    * Handles email/password login with validation
    */
   const handleLogin = async () => {
@@ -54,7 +76,8 @@ export default function LoginScreen({ navigation, route }: any) {
     setLoading(false);
 
     if (error) {
-      Alert.alert('Erreur de connexion', error.message);
+      const translatedError = translateError(error.message);
+      Alert.alert('Erreur de connexion', translatedError);
     } else {
       navigation.navigate(ROUTES.MAIN_TABS);
     }

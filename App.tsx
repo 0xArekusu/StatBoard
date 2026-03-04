@@ -9,6 +9,7 @@ import { useState, useEffect, useRef } from "react";
 import { NavigationContainer, createNavigationContainerRef } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { AppState, AppStateStatus, Linking } from "react-native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import * as Sentry from "@sentry/react-native";
 import AuthScreen from "./screens/authentication/AuthScreen";
 import LoginScreen from "./screens/authentication/LoginScreen";
@@ -324,17 +325,19 @@ function App() {
   }, []);
 
   return (
-    <SafeAreaProvider>
-      <SafeAreaView style={{ flex: 1 }}>
-        <ThemeProvider>
-          <AuthProvider>
-            <ClubProvider>
-              <Navigation />
-            </ClubProvider>
-          </AuthProvider>
-        </ThemeProvider>
-      </SafeAreaView>
-    </SafeAreaProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <SafeAreaView style={{ flex: 1 }}>
+          <ThemeProvider>
+            <AuthProvider>
+              <ClubProvider>
+                <Navigation />
+              </ClubProvider>
+            </AuthProvider>
+          </ThemeProvider>
+        </SafeAreaView>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }
 
