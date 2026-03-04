@@ -28,6 +28,7 @@ interface AuthContextType {
   resetPassword: (email: string) => Promise<{ error: any }>;
   updatePassword: (newPassword: string) => Promise<{ error: any }>;
   createSessionFromUrl: (url: string) => Promise<{ error: any }>;
+  resendConfirmationEmail: (email: string) => Promise<{ error: any }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -127,6 +128,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       fullName,
     });
 
+    logInfo("AuthProvider", "📧 SignUp options configured", {
+      emailRedirectTo: 'com.coachassistant.basketball://auth/callback',
+      hasFullName: !!fullName,
+      metadata: fullName ? { full_name: fullName } : undefined,
+    });
+
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -140,19 +147,64 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       },
     });
 
+    logInfo("AuthProvider", "📦 SignUp response received", {
+      hasData: !!data,
+      hasError: !!error,
+      hasUser: !!data?.user,
+      hasSession: !!data?.session,
+      userConfirmedAt: data?.user?.confirmed_at,
+      userEmailConfirmedAt: data?.user?.email_confirmed_at,
+      identities: data?.user?.identities?.length || 0,
+    });
+
     if (error) {
       logError("AuthProvider", "❌ Sign up failed", {
         email,
         error: error.message,
         errorCode: error.status,
+        errorName: error.name,
+        fullError: JSON.stringify(error),
       });
+
+      // Traduire les erreurs de rate limiting de Supabase
+      if (error.message && error.message.toLowerCase().includes('security purposes')) {
+        // Extraire le nombre de secondes si possible
+        const match = error.message.match(/after (\d+) seconds?/);
+        const seconds = match ? parseInt(match[1]) : 60;
+
+        return {
+          error: {
+            ...error,
+            message: `Pour des raisons de sécurité, vous devez attendre ${seconds} secondes avant de pouvoir vous inscrire à nouveau.`,
+          }
+        };
+      }
     } else {
       logInfo("AuthProvider", "✅ Sign up successful", {
         email,
         fullName,
         userId: data.user?.id,
         needsEmailConfirmation: !data.session,
+        userEmail: data.user?.email,
+        userCreatedAt: data.user?.created_at,
+        userRole: data.user?.role,
+        identitiesCount: data.user?.identities?.length,
       });
+
+      // Log détaillé si aucune session n'est créée (email de confirmation requis)
+      if (!data.session) {
+        logInfo("AuthProvider", "📧 Email confirmation required - email sent", {
+          userId: data.user?.id,
+          userEmail: data.user?.email,
+          emailConfirmedAt: data.user?.email_confirmed_at,
+          confirmationSentAt: data.user?.confirmation_sent_at,
+        });
+      } else {
+        logWarn("AuthProvider", "⚠️ Session created immediately - email confirmation may be disabled", {
+          userId: data.user?.id,
+          sessionExpiry: data.session?.expires_at,
+        });
+      }
     }
 
     return { error };
@@ -382,6 +434,56 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  /**
+   * Resend confirmation email to an unconfirmed user
+   * Uses the same signUp endpoint - Supabase will resend the email if the user exists but is unconfirmed
+   * @param email - User's email address
+   * @returns Object with error if resend failed
+   */
+  const resendConfirmationEmail = async (email: string) => {
+    logInfo("AuthProvider", "📧 Attempting to resend confirmation email", { email });
+
+    // Supabase doesn't have a dedicated "resend" endpoint, but calling signUp again
+    // with an existing unconfirmed user will trigger a new confirmation email
+    // We use a dummy password since it won't be used anyway (user already exists)
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password: 'dummy-password-for-resend', // Won't be used for existing users
+      options: {
+        emailRedirectTo: 'com.coachassistant.basketball://auth/callback',
+      },
+    });
+
+    if (error) {
+      logError("AuthProvider", "❌ Failed to resend confirmation email", {
+        email,
+        error: error.message,
+        errorCode: error.status,
+      });
+
+      // Traduire les erreurs de rate limiting de Supabase
+      if (error.message && error.message.toLowerCase().includes('security purposes')) {
+        // Extraire le nombre de secondes si possible
+        const match = error.message.match(/after (\d+) seconds?/);
+        const seconds = match ? parseInt(match[1]) : 60;
+
+        return {
+          error: {
+            ...error,
+            message: `Pour des raisons de sécurité, vous devez attendre ${seconds} secondes avant de pouvoir renvoyer un email.`,
+          }
+        };
+      }
+    } else {
+      logInfo("AuthProvider", "✅ Confirmation email resent successfully", {
+        email,
+        userId: data.user?.id,
+      });
+    }
+
+    return { error };
+  };
+
   const value = {
     session,
     user,
@@ -393,6 +495,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     resetPassword,
     updatePassword,
     createSessionFromUrl,
+    resendConfirmationEmail,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -20,6 +20,7 @@ import GoogleLogo from '../../components/icons/GoogleLogo';
 import FacebookLogo from '../../components/icons/FacebookLogo';
 import { useResponsive } from '../../src/hooks/useResponsive';
 import PolicyBottomSheet from '../../components/PolicyBottomSheet';
+import { logInfo, logError } from '../../utils/logger';
 
 /**
  * RegisterScreen - Registration form with email/password
@@ -40,7 +41,7 @@ export default function RegisterScreen({ navigation }: any) {
   const [policyUrl, setPolicyUrl] = useState<string | null>(null);
   const [policyTitle, setPolicyTitle] = useState('');
   const [loading, setLoading] = useState(false);
-  const { signUp, signInWithGoogle } = useAuth();
+  const { signUp, signInWithGoogle, resendConfirmationEmail } = useAuth();
   const { colors } = useTheme();
   const { sp, font, sizes } = useResponsive();
 
@@ -49,17 +50,36 @@ export default function RegisterScreen({ navigation }: any) {
    * Validates password length and confirmation match
    */
   const handleRegister = async () => {
+    logInfo('RegisterScreen', '🚀 Starting registration process', {
+      hasFullName: !!fullName,
+      hasEmail: !!email,
+      hasPassword: !!password,
+      hasConfirmPassword: !!confirmPassword,
+      termsAccepted,
+    });
+
     if (!fullName || !email || !password || !confirmPassword) {
+      logError('RegisterScreen', '❌ Validation failed: Missing fields', {
+        hasFullName: !!fullName,
+        hasEmail: !!email,
+        hasPassword: !!password,
+        hasConfirmPassword: !!confirmPassword,
+      });
       Alert.alert('Erreur', 'Veuillez remplir tous les champs');
       return;
     }
 
     if (password !== confirmPassword) {
+      logError('RegisterScreen', '❌ Validation failed: Passwords do not match');
       Alert.alert('Erreur', 'Les mots de passe ne correspondent pas');
       return;
     }
 
     if (password.length < PASSWORD_VALIDATION.minLength) {
+      logError('RegisterScreen', '❌ Validation failed: Password too short', {
+        passwordLength: password.length,
+        minLength: PASSWORD_VALIDATION.minLength,
+      });
       Alert.alert(
         'Erreur',
         `Le mot de passe doit contenir au moins ${PASSWORD_VALIDATION.minLength} caractères`
@@ -68,6 +88,7 @@ export default function RegisterScreen({ navigation }: any) {
     }
 
     if (!termsAccepted) {
+      logError('RegisterScreen', '❌ Validation failed: Terms not accepted');
       Alert.alert(
         'Erreur',
         'Vous devez accepter les conditions d\'utilisation et la politique de confidentialité pour créer un compte'
@@ -75,16 +96,88 @@ export default function RegisterScreen({ navigation }: any) {
       return;
     }
 
+    logInfo('RegisterScreen', '✅ All validations passed, calling signUp', {
+      email,
+      fullName,
+    });
+
     setLoading(true);
     const { error } = await signUp(email, password, fullName);
     setLoading(false);
 
+    logInfo('RegisterScreen', '📬 SignUp completed', {
+      hasError: !!error,
+      errorMessage: error?.message,
+    });
+
     if (error) {
-      Alert.alert('Erreur d\'inscription', error.message);
+      logError('RegisterScreen', '❌ Registration failed', {
+        error: error.message,
+        email,
+      });
+
+      // Détecter si c'est une erreur de rate limiting (email existant non confirmé qui tente de se réinscrire)
+      if (error.message && error.message.toLowerCase().includes('sécurité')) {
+        // C'est probablement un compte non confirmé existant
+        Alert.alert(
+          'Compte non confirmé',
+          'Un compte existe déjà avec cet email mais n\'a pas été confirmé.\n\n⚠️ Note importante : Le mot de passe pris en compte sera celui que vous avez défini la première fois, utilisez "Mot de passe oublié" après confirmation de l\'email si besoin.',
+          [
+            {
+              text: 'Renvoyer l\'email',
+              onPress: () => handleResendConfirmation(email),
+            },
+            {
+              text: 'Retour à la connexion',
+              onPress: () => navigation.navigate(ROUTES.LOGIN),
+              style: 'cancel',
+            },
+          ]
+        );
+      } else {
+        Alert.alert('Erreur d\'inscription', error.message);
+      }
     } else {
+      logInfo('RegisterScreen', '✅ Registration successful - showing confirmation dialog', {
+        email,
+      });
       Alert.alert(
         'Inscription réussie',
-        'Un email de confirmation a été envoyé à votre adresse. Veuillez vérifier votre boîte de réception et cliquer sur le lien de confirmation avant de vous connecter.',
+        'Un email de confirmation a été envoyé à votre adresse. Veuillez vérifier votre boîte de réception (et les spams) et cliquer sur le lien de confirmation depuis cet appareil avant de vous connecter.',
+        [
+          {
+            text: 'OK',
+            onPress: () => {
+              logInfo('RegisterScreen', '🔄 Navigating to login screen');
+              navigation.navigate(ROUTES.LOGIN);
+            },
+          },
+        ]
+      );
+    }
+  };
+
+  /**
+   * Handles resending confirmation email
+   * Rate limiting is handled by Supabase server-side
+   */
+  const handleResendConfirmation = async (emailToResend: string) => {
+    logInfo('RegisterScreen', '📧 Resending confirmation email', { email: emailToResend });
+
+    setLoading(true);
+    const { error } = await resendConfirmationEmail(emailToResend);
+    setLoading(false);
+
+    if (error) {
+      logError('RegisterScreen', '❌ Failed to resend confirmation email', {
+        error: error.message,
+      });
+      Alert.alert('Erreur', error.message || 'Impossible de renvoyer l\'email. Veuillez réessayer plus tard.');
+    } else {
+      logInfo('RegisterScreen', '✅ Confirmation email resent successfully');
+      Alert.alert(
+        'Email envoyé',
+        'Un nouvel email de confirmation a été envoyé. Veuillez vérifier votre boîte de réception et vos spams.',
         [
           {
             text: 'OK',
