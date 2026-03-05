@@ -24,14 +24,14 @@ export class ClubMemberService {
    * @param email - Email of the user
    * @returns Success result with member data or error message
    */
-  async joinClub(clubId: string, userId: string, email: string) {
+  async joinClub(clubId: string, userId: string, email: string, displayName?: string) {
     // Check if user is already a member
     const existingMembership = await this.clubMemberRepository.findByClubAndUser(clubId, userId);
     if (existingMembership) {
       return { success: false, error: "Vous êtes déjà membre de ce club" };
     }
 
-    const member = await this.clubMemberRepository.create({ clubId, userId, email });
+    const member = await this.clubMemberRepository.create({ clubId, userId, email, displayName });
     if (!member) {
       return { success: false, error: "Erreur lors de l'inscription au club" };
     }

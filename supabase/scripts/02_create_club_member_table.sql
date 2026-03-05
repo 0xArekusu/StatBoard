@@ -42,6 +42,11 @@ COMMENT ON FUNCTION is_club_member IS 'Check if current user is a member of the 
 -- ====================================
 ALTER TABLE club_members ENABLE ROW LEVEL SECURITY;
 
+-- Policy: Users can view their own membership (needed for insert().select() to work)
+CREATE POLICY "Users can view their own membership" ON club_members
+  FOR SELECT
+  USING (auth.uid() = user_id);
+
 -- Policy: Club owners and members can view club members
 CREATE POLICY "Club owners and members can view club members"
   ON club_members FOR SELECT

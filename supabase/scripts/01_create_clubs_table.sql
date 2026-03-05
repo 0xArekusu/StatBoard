@@ -48,6 +48,11 @@ CREATE POLICY "Owners and members can view their clubs" ON clubs
     OR is_club_member(id)
   );
 
+-- Policy: Authenticated users can find a club by its code (to join it)
+CREATE POLICY "Authenticated users can find clubs by code" ON clubs
+  FOR SELECT
+  USING (auth.uid() IS NOT NULL);
+
 -- Policy: Authenticated users can create clubs
 CREATE POLICY "Users can create clubs" ON clubs
   FOR INSERT

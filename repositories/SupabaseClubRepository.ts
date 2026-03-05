@@ -152,7 +152,7 @@ export class SupabaseClubRepository implements IClubRepository {
         .from(this.tableName)
         .select("*")
         .eq("code", code)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
 

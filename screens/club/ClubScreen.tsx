@@ -476,6 +476,7 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
           clubToJoin.id,
           user.id,
           user.email!,
+          user.user_metadata?.full_name,
         );
 
         if (!result.success) {
