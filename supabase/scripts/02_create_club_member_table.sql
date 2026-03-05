@@ -11,7 +11,6 @@ CREATE TABLE IF NOT EXISTS club_members (
   email TEXT,
   display_name TEXT,
   joined_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  terms_accepted_at TIMESTAMP WITH TIME ZONE,
   UNIQUE(club_id, user_id)
 );
 

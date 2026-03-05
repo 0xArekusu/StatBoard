@@ -20,6 +20,7 @@ import GoogleLogo from '../../components/icons/GoogleLogo';
 import FacebookLogo from '../../components/icons/FacebookLogo';
 import { useResponsive } from '../../src/hooks/useResponsive';
 import PolicyBottomSheet from '../../components/PolicyBottomSheet';
+import TermsAcceptanceModal from '../../components/TermsAcceptanceModal';
 import { logInfo, logError } from '../../utils/logger';
 
 /**
@@ -41,7 +42,8 @@ export default function RegisterScreen({ navigation }: any) {
   const [policyUrl, setPolicyUrl] = useState<string | null>(null);
   const [policyTitle, setPolicyTitle] = useState('');
   const [loading, setLoading] = useState(false);
-  const { signUp, signInWithGoogle, resendConfirmationEmail } = useAuth();
+  const [showTermsModal, setShowTermsModal] = useState(false);
+  const { signUp, signInWithGoogle, acceptTerms, signOut, resendConfirmationEmail } = useAuth();
   const { colors } = useTheme();
   const { sp, font, sizes } = useResponsive();
 
@@ -193,14 +195,27 @@ export default function RegisterScreen({ navigation }: any) {
    */
   const handleGoogleSignIn = async () => {
     setLoading(true);
-    const { error } = await signInWithGoogle();
+    const { error, needsTermsAcceptance } = await signInWithGoogle();
     setLoading(false);
 
     if (error) {
       Alert.alert('Erreur de connexion Google', error.message);
+    } else if (needsTermsAcceptance) {
+      setShowTermsModal(true);
     } else {
       navigation.navigate(ROUTES.MAIN_TABS);
     }
+  };
+
+  const handleTermsAccept = async () => {
+    await acceptTerms();
+    setShowTermsModal(false);
+    navigation.navigate(ROUTES.MAIN_TABS);
+  };
+
+  const handleTermsRefuse = async () => {
+    setShowTermsModal(false);
+    await signOut();
   };
 
   /**
@@ -544,6 +559,13 @@ export default function RegisterScreen({ navigation }: any) {
           </TouchableOpacity>
         </View>
       </ScrollView>
+
+      {/* Terms Acceptance Modal (Google sign-in) */}
+      <TermsAcceptanceModal
+        isVisible={showTermsModal}
+        onAccept={handleTermsAccept}
+        onRefuse={handleTermsRefuse}
+      />
 
       {/* Policy Bottom Sheet */}
       <PolicyBottomSheet

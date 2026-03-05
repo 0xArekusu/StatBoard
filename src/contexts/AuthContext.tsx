@@ -23,7 +23,8 @@ interface AuthContextType {
     fullName?: string
   ) => Promise<{ error: any }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
-  signInWithGoogle: () => Promise<{ error: any }>;
+  signInWithGoogle: () => Promise<{ error: any; needsTermsAcceptance?: boolean }>;
+  acceptTerms: () => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: any }>;
   updatePassword: (newPassword: string) => Promise<{ error: any }>;
@@ -139,11 +140,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       password,
       options: {
         emailRedirectTo: 'com.coachassistant.basketball://auth/callback',
-        data: fullName
-          ? {
-              full_name: fullName,
-            }
-          : undefined,
+        data: {
+        ...(fullName ? { full_name: fullName } : {}),
+        terms_accepted_at: new Date().toISOString(),
+      },
       },
     });
 
@@ -273,14 +273,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             error: error.message,
             errorCode: error.status,
           });
-        } else {
-          logInfo("AuthProvider", "✅ Google sign in successful", {
-            email: userInfo.data.user.email,
-            userId: data.user?.id,
-          });
+          return { error };
         }
 
-        return { error };
+        logInfo("AuthProvider", "✅ Google sign in successful", {
+          email: userInfo.data.user.email,
+          userId: data.user?.id,
+        });
+
+        const needsTermsAcceptance = !data.user?.user_metadata?.terms_accepted_at;
+        return { error: null, needsTermsAcceptance };
       }
 
       logError(
@@ -294,6 +296,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
       return { error };
     }
+  };
+
+  /**
+   * Persist terms acceptance in user metadata
+   * Called after Google sign-in when the user accepts the CGU modal
+   */
+  const acceptTerms = async () => {
+    logInfo("AuthProvider", "✅ User accepted terms");
+    const { error } = await supabase.auth.updateUser({
+      data: { terms_accepted_at: new Date().toISOString() },
+    });
+    if (error) {
+      logError("AuthProvider", "❌ Failed to persist terms acceptance", { error: error.message });
+    }
+    return { error };
   };
 
   /**
@@ -491,6 +508,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signUp,
     signIn,
     signInWithGoogle,
+    acceptTerms,
     signOut,
     resetPassword,
     updatePassword,

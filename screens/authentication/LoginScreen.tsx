@@ -19,6 +19,7 @@ import { SHADOW_COLOR, OPACITY, STATUS_COLORS } from '../../src/theme';
 import GoogleLogo from '../../components/icons/GoogleLogo';
 import FacebookLogo from '../../components/icons/FacebookLogo';
 import { useResponsive } from '../../src/hooks/useResponsive';
+import TermsAcceptanceModal from '../../components/TermsAcceptanceModal';
 
 /**
  * LoginScreen - Email/password login form
@@ -33,10 +34,11 @@ export default function LoginScreen({ navigation, route }: any) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
   const emailConfirmed = route?.params?.emailConfirmed === true;
   const emailError = route?.params?.emailError === true;
   const passwordReset = route?.params?.passwordReset === true;
-  const { signIn, signInWithGoogle, resetPassword } = useAuth();
+  const { signIn, signInWithGoogle, acceptTerms, signOut, resetPassword } = useAuth();
   const { colors } = useTheme();
   const { sp, font, sizes, isCompact } = useResponsive();
 
@@ -88,14 +90,27 @@ export default function LoginScreen({ navigation, route }: any) {
    */
   const handleGoogleSignIn = async () => {
     setLoading(true);
-    const { error } = await signInWithGoogle();
+    const { error, needsTermsAcceptance } = await signInWithGoogle();
     setLoading(false);
 
     if (error) {
       Alert.alert('Erreur de connexion Google', error.message);
+    } else if (needsTermsAcceptance) {
+      setShowTermsModal(true);
     } else {
       navigation.navigate(ROUTES.MAIN_TABS);
     }
+  };
+
+  const handleTermsAccept = async () => {
+    await acceptTerms();
+    setShowTermsModal(false);
+    navigation.navigate(ROUTES.MAIN_TABS);
+  };
+
+  const handleTermsRefuse = async () => {
+    setShowTermsModal(false);
+    await signOut();
   };
 
   /**
@@ -393,6 +408,13 @@ export default function LoginScreen({ navigation, route }: any) {
           </TouchableOpacity>
         </View>
       </ScrollView>
+
+      {/* Terms Acceptance Modal (Google sign-in) */}
+      <TermsAcceptanceModal
+        isVisible={showTermsModal}
+        onAccept={handleTermsAccept}
+        onRefuse={handleTermsRefuse}
+      />
     </KeyboardAvoidingView>
   );
 }
