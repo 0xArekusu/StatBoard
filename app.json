@@ -3,6 +3,12 @@
     "name": "Coach Assistant",
     "slug": "coach-assistant",
     "version": "1.0.0",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/08fca518-2c9b-4f82-aef4-73878002f947"
+    },
     "orientation": "default",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
