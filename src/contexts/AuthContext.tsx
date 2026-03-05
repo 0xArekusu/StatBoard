@@ -9,6 +9,7 @@
 import React, { createContext, useState, useEffect, useContext } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "../config/supabase";
+import { CURRENT_TERMS_VERSION } from "../config/terms";
 import { GoogleSignin } from "@react-native-google-signin/google-signin";
 import { logInfo, logError, logWarn } from "../../utils/logger";
 import * as Sentry from "@sentry/react-native";
@@ -22,7 +23,7 @@ interface AuthContextType {
     password: string,
     fullName?: string
   ) => Promise<{ error: any }>;
-  signIn: (email: string, password: string) => Promise<{ error: any }>;
+  signIn: (email: string, password: string) => Promise<{ error: any; needsTermsAcceptance?: boolean }>;
   signInWithGoogle: () => Promise<{ error: any; needsTermsAcceptance?: boolean }>;
   acceptTerms: () => Promise<{ error: any }>;
   signOut: () => Promise<void>;
@@ -143,6 +144,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         data: {
         ...(fullName ? { full_name: fullName } : {}),
         terms_accepted_at: new Date().toISOString(),
+        terms_version: CURRENT_TERMS_VERSION,
       },
       },
     });
@@ -230,15 +232,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         error: error.message,
         errorCode: error.status,
       });
-    } else {
-      logInfo("AuthProvider", "✅ Sign in successful", {
-        email,
-        userId: data.user?.id,
-        hasSession: !!data.session,
-      });
+      return { error };
     }
 
-    return { error };
+    logInfo("AuthProvider", "✅ Sign in successful", {
+      email,
+      userId: data.user?.id,
+      hasSession: !!data.session,
+    });
+
+    const needsTermsAcceptance = data.user?.user_metadata?.terms_version !== CURRENT_TERMS_VERSION;
+
+    return { error: null, needsTermsAcceptance };
   };
 
   /**
@@ -281,7 +286,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           userId: data.user?.id,
         });
 
-        const needsTermsAcceptance = !data.user?.user_metadata?.terms_accepted_at;
+        const needsTermsAcceptance = data.user?.user_metadata?.terms_version !== CURRENT_TERMS_VERSION;
         return { error: null, needsTermsAcceptance };
       }
 
@@ -305,7 +310,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const acceptTerms = async () => {
     logInfo("AuthProvider", "✅ User accepted terms");
     const { error } = await supabase.auth.updateUser({
-      data: { terms_accepted_at: new Date().toISOString() },
+      data: { terms_accepted_at: new Date().toISOString(), terms_version: CURRENT_TERMS_VERSION },
     });
     if (error) {
       logError("AuthProvider", "❌ Failed to persist terms acceptance", { error: error.message });

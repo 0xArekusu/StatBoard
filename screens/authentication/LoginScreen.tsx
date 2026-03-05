@@ -74,12 +74,14 @@ export default function LoginScreen({ navigation, route }: any) {
     }
 
     setLoading(true);
-    const { error } = await signIn(email, password);
+    const { error, needsTermsAcceptance } = await signIn(email, password);
     setLoading(false);
 
     if (error) {
       const translatedError = translateError(error.message);
       Alert.alert('Erreur de connexion', translatedError);
+    } else if (needsTermsAcceptance) {
+      setShowTermsModal(true);
     } else {
       navigation.navigate(ROUTES.MAIN_TABS);
     }
