@@ -383,43 +383,13 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
       if (!user) return;
 
       try {
-        let uploadedLogoUrl = undefined;
-
-        // Upload logo if selected (local file)
-        if (formData.logoUri && formData.logoUri.startsWith('file://')) {
-          // Use temporary ID until club is created
-          const tempClubId = `temp-${Date.now()}`;
-          const clubStorageService = new ClubStorageService(supabase);
-          const { path, error } = await clubStorageService.uploadClubLogo(
-            formData.logoUri,
-            tempClubId,
-          );
-
-          if (error) {
-            Alert.alert("Erreur", "Impossible d'uploader le logo");
-            return;
-          }
-
-          uploadedLogoUrl = path || undefined;
-          console.log('📸 Logo uploaded (path):', uploadedLogoUrl);
-        }
-
         const clubService = ServiceFactory.getClubService(supabase);
-        const code = (
-          formData.name.substring(0, 3) + Math.floor(Math.random() * 1000)
-        ).toUpperCase();
 
-        console.log('📝 Creating club with data:', {
-          name: formData.name,
-          acronym: formData.acronym,
-          logoUrl: uploadedLogoUrl,
-        });
-
+        // Create club first (without logo) so we have a real clubId for storage RLS
         const result = await clubService.createClub(
           {
             name: formData.name,
             acronym: formData.acronym,
-            logoUrl: uploadedLogoUrl,
             primaryColor: formData.primaryColor,
             secondaryColor: formData.secondaryColor,
             courtBackgroundColor: formData.courtColor,
@@ -430,9 +400,25 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
 
         console.log('🏀 Club creation result:', result);
 
-        if (!result.success) {
+        if (!result.success || !result.club) {
           Alert.alert("Erreur", result.error || "Impossible de créer le club");
           return;
+        }
+
+        // Upload logo now that the club exists in DB (RLS will pass)
+        if (formData.logoUri && formData.logoUri.startsWith('file://')) {
+          const clubStorageService = new ClubStorageService(supabase);
+          const { path, error } = await clubStorageService.uploadClubLogo(
+            formData.logoUri,
+            result.club.id,
+          );
+
+          if (error) {
+            Alert.alert("Erreur", "Club créé mais impossible d'uploader le logo");
+          } else if (path) {
+            console.log('📸 Logo uploaded (path):', path);
+            await clubService.updateClub(result.club.id, { logoUrl: path });
+          }
         }
 
         // Refresh clubs to get the newly created club

@@ -432,25 +432,26 @@ export default function TeamRosterScreen() {
       const clubStorageService = new ClubStorageService(supabase);
       const teamService = ServiceFactory.getTeamService(supabase);
 
-      // Upload coach photo if it's a local file
       let uploadedCoachPhotoUrl: string | undefined = coachPhotoUrl;
-      if (coachPhotoUrl && coachPhotoUrl.startsWith("file://")) {
-        const { path, error } = await clubStorageService.uploadCoachPhoto(
-          coachPhotoUrl,
-          teamId || `temp-${Date.now()}`,
-          clubId,
-        );
-
-        if (error) {
-          setIsSubmitting(false);
-          Alert.alert("Erreur", "Impossible d'uploader la photo du coach");
-          return;
-        }
-
-        uploadedCoachPhotoUrl = path ?? undefined;
-      }
 
       if (teamId) {
+        // Upload coach photo for existing team (teamId is known, RLS passes)
+        if (coachPhotoUrl && coachPhotoUrl.startsWith("file://")) {
+          const { path, error } = await clubStorageService.uploadCoachPhoto(
+            coachPhotoUrl,
+            teamId,
+            clubId,
+          );
+
+          if (error) {
+            setIsSubmitting(false);
+            Alert.alert("Erreur", "Impossible d'uploader la photo du coach");
+            return;
+          }
+
+          uploadedCoachPhotoUrl = path ?? undefined;
+        }
+
         // Update existing team
         const updateResult = await teamService.updateTeam(
           teamId,
@@ -566,7 +567,7 @@ export default function TeamRosterScreen() {
           },
         ]);
       } else {
-        // Create new team
+        // Create new team first (without coach photo) so teamId exists for RLS
         const result = await teamService.createTeam(
           {
             clubId,
@@ -574,7 +575,6 @@ export default function TeamRosterScreen() {
             category: teamData.category,
             gender: teamData.gender,
             coachName: coachName.trim(),
-            coachPhotoUrl: uploadedCoachPhotoUrl || undefined,
           },
           user!.id,
         );
@@ -583,6 +583,22 @@ export default function TeamRosterScreen() {
           setIsSubmitting(false);
           Alert.alert("Erreur", result.error || "Impossible de créer l'équipe");
           return;
+        }
+
+        // Upload coach photo now that the team exists in DB (RLS will pass)
+        if (coachPhotoUrl && coachPhotoUrl.startsWith("file://")) {
+          const { path, error } = await clubStorageService.uploadCoachPhoto(
+            coachPhotoUrl,
+            result.team.id,
+            clubId,
+          );
+
+          if (error) {
+            console.error("Error uploading coach photo:", error);
+            // Continue without photo if upload fails
+          } else if (path) {
+            await teamService.updateTeam(result.team.id, { coachPhotoUrl: path }, user!.id);
+          }
         }
 
         // Create players with uploaded photos
