@@ -39,14 +39,8 @@ CREATE INDEX IF NOT EXISTS idx_clubs_owner ON clubs(owner_id);
 -- ====================================
 ALTER TABLE clubs ENABLE ROW LEVEL SECURITY;
 
--- Policy: Owners and members can view their clubs
--- Note: is_club_member() function is created in 02_create_club_member_table.sql
-CREATE POLICY "Owners and members can view their clubs" ON clubs
-  FOR SELECT
-  USING (
-    auth.uid() = owner_id
-    OR is_club_member(id)
-  );
+-- Note: "Owners and members can view their clubs" policy is added in 02_create_club_member_table.sql
+-- after is_club_member() function is defined, to avoid circular dependency.
 
 -- Policy: Authenticated users can find a club by its code (to join it)
 CREATE POLICY "Authenticated users can find clubs by code" ON clubs

@@ -107,6 +107,12 @@ CREATE TRIGGER after_club_insert
   EXECUTE FUNCTION auto_add_club_owner_as_member();
 
 -- ====================================
--- NOTE: Policy for members to view clubs is now in 01_create_clubs_table.sql
--- It uses the is_club_member() function defined above
+-- Policy on clubs table that requires is_club_member()
+-- Added here (after function definition) to avoid circular dependency with 01_create_clubs_table.sql
 -- ====================================
+CREATE POLICY "Owners and members can view their clubs" ON clubs
+  FOR SELECT
+  USING (
+    auth.uid() = owner_id
+    OR is_club_member(id)
+  );
