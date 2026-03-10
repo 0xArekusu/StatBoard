@@ -33,13 +33,6 @@ import { logInfo, logWarn, logError, logger } from "./utils/logger";
 import DebugCourtClick from "./DebugCourtClick";
 
 // Initialize Sentry
-console.log("🚀 [SENTRY INIT] Initialisation de Sentry...");
-console.log("🔍 [SENTRY INIT] Variables d'environnement:");
-console.log("  - EXPO_PUBLIC_SENTRY_DSN:", process.env.EXPO_PUBLIC_SENTRY_DSN ? `✓ Défini (${process.env.EXPO_PUBLIC_SENTRY_DSN.substring(0, 30)}...)` : "✗ NON DÉFINI");
-console.log("  - EXPO_PUBLIC_SENTRY_ORG:", process.env.EXPO_PUBLIC_SENTRY_ORG || "Non défini");
-console.log("  - EXPO_PUBLIC_SENTRY_PROJECT:", process.env.EXPO_PUBLIC_SENTRY_PROJECT || "Non défini");
-console.log("  - Environnement:", __DEV__ ? "development" : "production");
-
 try {
   Sentry.init({
     dsn: process.env.EXPO_PUBLIC_SENTRY_DSN,
@@ -48,12 +41,8 @@ try {
     enableNativeFramesTracking: true,
     tracesSampleRate: 1.0,
     environment: __DEV__ ? "development" : "production",
-    debug: true, // Active les logs de debug Sentry
+    debug: false,
     beforeSend: async (event, hint) => {
-      console.log("📤 [SENTRY] beforeSend appelé pour l'event:", event.event_id);
-      console.log("📤 [SENTRY] Type d'event:", event.type || "error");
-      console.log("📤 [SENTRY] Message:", event.message);
-
       // Attach last 2000 lines of logs to the error
       try {
         const logContent = await logger.getLastLines(2000);
@@ -62,24 +51,16 @@ try {
           event.contexts.logs = {
             last_2000_lines: logContent,
           };
-          console.log("📎 [SENTRY] Logs attachés à l'event");
         }
       } catch (error) {
-        console.error("❌ [SENTRY] Échec de l'attachement des logs:", error);
+        // Silently ignore log attachment failures
       }
 
-      console.log("✅ [SENTRY] Event prêt à être envoyé");
       return event;
     },
-    beforeSendTransaction: (transaction) => {
-      console.log("📊 [SENTRY] Transaction prête à être envoyée:", transaction.transaction);
-      return transaction;
-    },
   });
-  console.log("✅ [SENTRY INIT] Sentry initialisé avec succès");
 } catch (error) {
-  console.error("❌ [SENTRY INIT] Erreur lors de l'initialisation de Sentry:", error);
-  console.error("❌ [SENTRY INIT] Détails de l'erreur:", JSON.stringify(error, null, 2));
+  // Silently ignore Sentry initialization errors
 }
 
 const Stack = createNativeStackNavigator();
