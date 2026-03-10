@@ -24,6 +24,7 @@ import { Team } from "../../models/Team";
 import { ServiceFactory } from "../../services/ServiceFactory";
 import { supabase } from "../../src/config/supabase";
 import TeamSelectionModal from "./TeamSelectionModal";
+import { showErrorAlert } from "../../utils/errorAlert";
 
 /** Props for the main SubscriptionView component */
 interface SubscriptionViewProps {
@@ -292,11 +293,19 @@ export default function SubscriptionView({
               Alert.alert("Succès", message);
               onClose();
             } else {
-              Alert.alert("Erreur", result.error || "Échec de la mise à jour de l'abonnement");
+              showErrorAlert({
+                action: "mettre à jour l'abonnement",
+                error: new Error(result.error || "Échec de la mise à jour de l'abonnement"),
+                context: "SubscriptionView",
+              });
             }
           } catch (error) {
             console.error("Error updating subscription:", error);
-            Alert.alert("Erreur", "Une erreur est survenue lors de la mise à jour");
+            showErrorAlert({
+              action: "mettre à jour l'abonnement",
+              error,
+              context: "SubscriptionView",
+            });
           } finally {
             setLoading(false);
           }

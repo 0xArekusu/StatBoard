@@ -52,6 +52,7 @@ import { Colors } from "../src/theme/colors";
 import BasketballCourtSVG from "../components/BasketballCourtSVG";
 import { PDFExportService } from "../src/services/export/PDFExportService";
 import { Alert } from "react-native";
+import { showErrorAlert } from "../utils/errorAlert";
 import { ServiceFactory } from "../services/ServiceFactory";
 import { supabase } from "../src/config/supabase";
 import { getSignedUrl } from "../utils/storageHelper";
@@ -282,7 +283,11 @@ export default function MatchDetailsScreen() {
       Alert.alert("Succès", "Le PDF a été généré et partagé avec succès");
     } catch (error) {
       console.error("Error exporting PDF:", error);
-      Alert.alert("Erreur", "Impossible de générer le PDF");
+      showErrorAlert({
+        action: "générer le PDF",
+        error,
+        context: "MatchDetailsScreen",
+      });
     }
   };
 

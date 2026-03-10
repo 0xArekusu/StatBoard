@@ -5,6 +5,7 @@
  */
 
 import { Alert } from "react-native";
+import * as Sentry from "@sentry/react-native";
 import { logError } from "./logger";
 
 export interface ErrorAlertOptions {
@@ -51,6 +52,11 @@ export function showErrorAlert({
   // Log the error
   logError(context, `Failed to ${action}`, {
     error: error instanceof Error ? error.message : error,
+  });
+
+  // Capture in Sentry
+  Sentry.captureException(error instanceof Error ? error : new Error(String(error)), {
+    tags: { context, action },
   });
 
   // Extract error message

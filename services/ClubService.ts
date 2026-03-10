@@ -67,7 +67,7 @@ export class ClubService {
 
     if (!club) {
       console.log('❌ [ClubService] Failed to create club - repository returned null');
-      return { success: false, error: "Failed to create club" };
+      return { success: false, error: "Impossible de créer le club. Veuillez réessayer." };
     }
 
     return { success: true, club };

@@ -445,7 +445,11 @@ export default function TeamRosterScreen() {
 
           if (error) {
             setIsSubmitting(false);
-            Alert.alert("Erreur", "Impossible d'uploader la photo du coach");
+            showErrorAlert({
+              action: "uploader la photo du coach",
+              error: new Error("Impossible d'uploader la photo du coach"),
+              context: "TeamRosterScreen",
+            });
             return;
           }
 
@@ -581,7 +585,11 @@ export default function TeamRosterScreen() {
 
         if (!result.success || !result.team) {
           setIsSubmitting(false);
-          Alert.alert("Erreur", result.error || "Impossible de créer l'équipe");
+          showErrorAlert({
+            action: "créer l'équipe",
+            error: new Error(result.error || "Impossible de créer l'équipe"),
+            context: "TeamRosterScreen",
+          });
           return;
         }
 

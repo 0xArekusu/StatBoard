@@ -21,6 +21,7 @@ import type { TeamGender } from "../../models/Team";
 import { RootStackParamList, RootNavigationProp } from "../../types/navigation";
 import { ROUTES } from "../../constants/routes";
 import PlayerAvatar from "../../components/PlayerAvatar";
+import { showErrorAlert } from "../../utils/errorAlert";
 
 /**
  * Local player interface for this screen
@@ -181,14 +182,22 @@ export default function TeamStartersScreen() {
         );
 
         if (!result.success) {
-          Alert.alert("Erreur", result.error || "Impossible de créer l'équipe");
+          showErrorAlert({
+            action: "créer l'équipe",
+            error: new Error(result.error || "Impossible de créer l'équipe"),
+            context: "TeamStartersScreen",
+          });
           setSaving(false);
           return;
         }
 
         const newTeamId = result.team?.id;
         if (!newTeamId) {
-          Alert.alert("Erreur", "Impossible de récupérer l'ID de l'équipe");
+          showErrorAlert({
+            action: "créer l'équipe",
+            error: new Error("Impossible de récupérer l'ID de l'équipe"),
+            context: "TeamStartersScreen",
+          });
           setSaving(false);
           return;
         }
@@ -219,7 +228,11 @@ export default function TeamStartersScreen() {
       }
     } catch (error) {
       console.error("Error saving team:", error);
-      Alert.alert("Erreur", "Une erreur est survenue");
+      showErrorAlert({
+        action: "sauvegarder l'équipe",
+        error,
+        context: "TeamStartersScreen",
+      });
     } finally {
       setSaving(false);
     }

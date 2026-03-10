@@ -342,7 +342,11 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
           );
 
           if (error) {
-            Alert.alert("Erreur", "Impossible d'uploader le logo");
+            showErrorAlert({
+              action: "uploader le logo",
+              error: new Error("Impossible d'uploader le logo"),
+              context: "ClubScreen",
+            });
             return;
           }
 
@@ -401,7 +405,11 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
         console.log('🏀 Club creation result:', result);
 
         if (!result.success || !result.club) {
-          Alert.alert("Erreur", result.error || "Impossible de créer le club");
+          showErrorAlert({
+            action: "créer le club",
+            error: new Error(result.error || "Impossible de créer le club"),
+            context: "ClubScreen",
+          });
           return;
         }
 
@@ -414,7 +422,11 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
           );
 
           if (error) {
-            Alert.alert("Erreur", "Club créé mais impossible d'uploader le logo");
+            showErrorAlert({
+              action: "uploader le logo du club",
+              error: new Error("Club créé mais impossible d'uploader le logo"),
+              context: "ClubScreen",
+            });
           } else if (path) {
             console.log('📸 Logo uploaded (path):', path);
             await clubService.updateClub(result.club.id, { logoUrl: path });
