@@ -45,3 +45,5 @@ yarn-error.*
 *.env.Development
 *.env.Production
 *.env.example
+
+*coach-assistant-basketball-f47fe8da214f.json
