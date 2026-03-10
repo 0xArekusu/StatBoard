@@ -99,7 +99,7 @@ BEGIN
   ON CONFLICT (club_id, user_id) DO NOTHING;
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
 CREATE TRIGGER after_club_insert
   AFTER INSERT ON clubs
