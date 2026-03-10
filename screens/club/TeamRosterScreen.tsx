@@ -486,12 +486,19 @@ export default function TeamRosterScreen() {
         for (const player of roster) {
           if (player.id.startsWith("temp-")) {
             // New player - CREATE first to get real ID
-            const newPlayer = await playerService.createPlayer({
+            const createResult = await playerService.createPlayer({
               teamId,
               name: player.name,
               jerseyNumber: player.jerseyNumber,
               photoUrl: null, // Will be updated after upload
             });
+
+            if (!createResult.success || !createResult.player) {
+              console.error(`Error creating player ${player.name}:`, createResult.error);
+              continue;
+            }
+
+            const newPlayer = createResult.player;
 
             // Upload player photo if it's a local file (now with real ID)
             if (player.photoUrl && player.photoUrl.startsWith("file://")) {
@@ -613,12 +620,19 @@ export default function TeamRosterScreen() {
         const playerService = ServiceFactory.getPlayerService(supabase);
         for (const player of roster) {
           // Step 1: CREATE player first to get real ID
-          const newPlayer = await playerService.createPlayer({
+          const createResult = await playerService.createPlayer({
             teamId: result.team.id,
             name: player.name,
             jerseyNumber: player.jerseyNumber,
             photoUrl: null, // Will be updated after upload
           });
+
+          if (!createResult.success || !createResult.player) {
+            console.error(`Error creating player ${player.name}:`, createResult.error);
+            continue;
+          }
+
+          const newPlayer = createResult.player;
 
           // Step 2: UPLOAD photo if it's a local file (now with real player ID)
           if (player.photoUrl && player.photoUrl.startsWith("file://")) {
