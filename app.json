@@ -29,6 +29,7 @@
         "backgroundColor": "#ffffff"
       },
       "package": "com.coachassistant.basketball",
+      "googleServicesFile": "./google-services.json",
       "edgeToEdgeEnabled": true
     },
     "web": {
