@@ -8,6 +8,7 @@ import {
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import Constants from "expo-constants";
 import { useNavigation } from "@react-navigation/native";
 import { useTheme } from "../../src/contexts/ThemeContext";
 import { OPACITY, SHADOW_COLOR } from "../../src/theme";
@@ -94,8 +95,9 @@ export default function AuthScreen() {
           </View>
 
           {/* Buttons Section */}
+          <View style={styles.bottomSection}>
           <View
-            style={[styles.buttonSection, { gap: sp.md, marginBottom: sp.sm }]}
+            style={[styles.buttonSection, { gap: sp.md, marginBottom: sp.lg }]}
           >
             <TouchableOpacity
               style={[
@@ -166,6 +168,17 @@ export default function AuthScreen() {
               </Text>
             </TouchableOpacity>
           </View>
+
+          {/* Version */}
+          <Text
+            style={[
+              styles.versionText,
+              { color: colors.text.tertiary, fontSize: font.xs },
+            ]}
+          >
+            v{Constants.expoConfig?.version ?? "1.0.0"}
+          </Text>
+          </View>
         </View>
       </LinearGradient>
     </ImageBackground>
@@ -223,5 +236,12 @@ const styles = StyleSheet.create({
   guestButtonText: {
     fontWeight: "500",
     textAlign: "center",
+  },
+  bottomSection: {
+    width: "100%",
+  },
+  versionText: {
+    textAlign: "center",
+    opacity: 0.5,
   },
 });
