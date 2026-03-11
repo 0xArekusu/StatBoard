@@ -13,6 +13,7 @@ interface TeamCardProps {
   clubId?: string;
   isOwner: boolean;
   currentUserId?: string;
+  isLimitReached?: boolean;
   onApprove?: () => void;
   onReject?: () => void;
   onDelete?: () => void;
@@ -24,6 +25,7 @@ export default function TeamCard({
   clubId,
   isOwner,
   currentUserId,
+  isLimitReached,
   onApprove,
   onReject,
   onDelete,
@@ -146,7 +148,7 @@ export default function TeamCard({
 
       <View style={styles.teamCardRight}>
         <View style={styles.actionButtons}>
-          {team.status === TeamStatus.PENDING && isOwner ? (
+          {team.status === TeamStatus.PENDING && isOwner && !isLimitReached ? (
             <>
               <TouchableOpacity
                 onPress={(e) => {
@@ -169,7 +171,7 @@ export default function TeamCard({
             </>
           ) : (
             <>
-              {isOwner && (
+              {isOwner && team.status !== TeamStatus.PENDING && !(team.status === TeamStatus.APPROVED && !team.isActive) && (
                 <TouchableOpacity
                   onPress={(e) => {
                     e.stopPropagation();

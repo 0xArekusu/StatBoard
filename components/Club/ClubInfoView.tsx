@@ -309,6 +309,7 @@ export default function ClubInfoView({
                     clubId={club?.id}
                     isOwner={isOwner}
                     currentUserId={currentUserId}
+                    isLimitReached={isLimitReached}
                     onApprove={() => onApproveTeam(team.id)}
                     onReject={() => onRejectTeam(team.id)}
                     onDelete={() => onDeleteTeam(team.id)}
