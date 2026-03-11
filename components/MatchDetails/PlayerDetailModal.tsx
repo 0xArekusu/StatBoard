@@ -19,6 +19,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../../src/contexts/ThemeContext";
 import { useResponsive } from "../../src/hooks/useResponsive";
+import { useSignedUrl } from "../../hooks/useSignedUrl";
 import { PlayerStats } from "../../constants/matchDetailsConstants";
 import { ShootingBar, StatBox, MarkerType } from "./SharedComponents";
 import { Team } from "../../src/models/types";
@@ -106,10 +107,11 @@ export default function PlayerDetailModal({
       });
   }, [playerActions]);
 
-  // Court colors
+  // Court colors and logo
   const courtBackgroundColor =
     club?.courtBackgroundColor || colors.court.background;
   const courtLineColor = club?.courtLineColor || colors.court.line;
+  const clubLogoUri = useSignedUrl(club?.logoUrl);
 
   if (!player) return null;
 
@@ -494,7 +496,7 @@ export default function PlayerDetailModal({
                     backgroundColor={courtBackgroundColor}
                     lineColor={courtLineColor}
                     markers={courtMarkers}
-                    logoUri={club?.logoUrl || null}
+                    logoUri={clubLogoUri}
                   />
                 </View>
               </View>
