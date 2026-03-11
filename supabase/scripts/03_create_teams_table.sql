@@ -75,6 +75,7 @@ CREATE POLICY "Club members can create teams"
 -- Policy: Team owner can update their own team
 CREATE POLICY "Team owner can update their team"
   ON teams FOR UPDATE
+  USING (auth.uid() = owner_id)
   WITH CHECK (auth.uid() = owner_id);
 
 -- Policy: Team owner can delete their own team
