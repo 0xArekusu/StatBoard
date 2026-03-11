@@ -21,19 +21,8 @@ export function useSignedUrl(path: string | null | undefined): string | null {
     let isMounted = true;
 
     const generateUrl = async () => {
-      // If path is already a full URL (http/https) or local file URI (file://), use it as-is
-      if (path && (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('file://'))) {
-        if (isMounted) setSignedUrl(path);
-        return;
-      }
-
-      // If path is a storage path, generate signed URL
-      if (path) {
-        const url = await getSignedUrl(supabase, path);
-        if (isMounted) setSignedUrl(url);
-      } else {
-        if (isMounted) setSignedUrl(null);
-      }
+      const url = await getSignedUrl(supabase, path);
+      if (isMounted) setSignedUrl(url);
     };
 
     generateUrl();

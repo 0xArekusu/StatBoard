@@ -22,6 +22,11 @@ export async function getSignedUrl(
 ): Promise<string | null> {
   if (!path) return null;
 
+  // If already a full URL (http/https) or local file URI, use as-is (same behavior as useSignedUrl hook)
+  if (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('file://')) {
+    return path;
+  }
+
   try {
     const { data, error } = await supabase.storage
       .from(BUCKET_NAME)
