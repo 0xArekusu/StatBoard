@@ -36,11 +36,11 @@ ON CONFLICT (tier) DO UPDATE SET
 -- ====================================
 ALTER TABLE subscription_plans ENABLE ROW LEVEL SECURITY;
 
--- Policy: Only authenticated users can read subscription plans
-CREATE POLICY "Authenticated users can view subscription plans"
+-- Policy: Anyone (including guests) can read subscription plans (public data)
+CREATE POLICY "Anyone can view subscription plans"
   ON subscription_plans
   FOR SELECT
-  TO authenticated
+  TO anon, authenticated
   USING (true);
 
 -- ====================================

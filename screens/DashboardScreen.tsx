@@ -61,7 +61,7 @@ import GuestWelcomeModal from "../components/GuestWelcomeModal";
 import MatchLimitModal from "../components/MatchLimitModal";
 import { ROUTES } from "../constants/routes";
 import { COACH_ASSISTANT_LOGO_MARGIN } from "../src/utils/logoHelper";
-import { SUBSCRIPTION_LIMITS, NOT_CONNECTED_LIMITS } from "../models/Subscription";
+import { SUBSCRIPTION_LIMITS, NOT_CONNECTED_LIMITS, SUBSCRIPTION_TIER } from "../models/Subscription";
 import { AdminService } from "../services/AdminService";
 import { showErrorAlert } from "../utils/errorAlert";
 
@@ -110,6 +110,7 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
   const [showClubSwitcher, setShowClubSwitcher] = useState(false);
   const [showMatchLimitModal, setShowMatchLimitModal] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [guestMaxLocalMatches, setGuestMaxLocalMatches] = useState(NOT_CONNECTED_LIMITS.maxLocalMatches);
 
   const isGuest = !user;
   const userName =
@@ -132,7 +133,23 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
     checkAdminStatus();
   }, [user]);
 
-  // Block hardware back button to prevent going back to auth screen
+  // Fetch guest match limit from DB (free tier)
+  useEffect(() => {
+    if (!isGuest) return;
+    const fetchGuestLimit = async () => {
+      try {
+        const subscriptionService = ServiceFactory.getSubscriptionService(supabase);
+        const limits = await subscriptionService.getLimitsForTier(SUBSCRIPTION_TIER.FREE);
+        logInfo('DashboardScreen', '📦 Guest limits fetched from DB', { maxLocalMatches: limits.maxLocalMatches });
+        setGuestMaxLocalMatches(limits.maxLocalMatches);
+      } catch (error) {
+        logWarn('DashboardScreen', '⚠️ Failed to fetch guest limits from DB, using fallback', { error });
+      }
+    };
+    fetchGuestLimit();
+  }, [isGuest]);
+
+    // Block hardware back button to prevent going back to auth screen
   useEffect(() => {
     const backHandler = BackHandler.addEventListener(
       "hardwareBackPress",
@@ -175,7 +192,10 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
               // Clear the flag anyway so it won't show later
               await AsyncStorage.removeItem(SHOW_ONCE_KEY);
             } else {
-              logInfo("DashboardScreen", "✅ Showing guest welcome modal");
+              logInfo("DashboardScreen", "✅ Showing guest welcome modal", {
+                guestMaxLocalMatches_fromDB: guestMaxLocalMatches,
+                source: "hardcoded static object — DB NOT fetched for guest",
+              });
               setShowGuestWelcome(true);
               // Clear the flag so it won't show again on next focus
               await AsyncStorage.removeItem(SHOW_ONCE_KEY);
@@ -442,7 +462,7 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
    */
   const handleNewMatchClick = async () => {
     // Check match limit for guest and freemium users
-    const limits = isGuest ? NOT_CONNECTED_LIMITS : (currentClub?.subscriptionTier ? SUBSCRIPTION_LIMITS[currentClub.subscriptionTier] : NOT_CONNECTED_LIMITS);
+    const limits = isGuest ? { ...NOT_CONNECTED_LIMITS, maxLocalMatches: guestMaxLocalMatches } : (currentClub?.subscriptionTier ? SUBSCRIPTION_LIMITS[currentClub.subscriptionTier] : { ...NOT_CONNECTED_LIMITS, maxLocalMatches: guestMaxLocalMatches });
     const currentMatchCount = matches.length;
 
     logInfo("DashboardScreen", "🔍 Checking match limit", {
@@ -709,6 +729,9 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
       <GuestWelcomeModal
         visible={showGuestWelcome}
         onClose={handleCloseGuestWelcome}
+        maxLocalMatches={guestMaxLocalMatches}
+
+
       />
 
       {/* Match Limit Modal */}
@@ -716,7 +739,7 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
         visible={showMatchLimitModal}
         isConnected={!isGuest}
         currentCount={matches.length}
-        maxCount={isGuest ? NOT_CONNECTED_LIMITS.maxLocalMatches : (currentClub?.subscriptionTier ? SUBSCRIPTION_LIMITS[currentClub.subscriptionTier].maxLocalMatches : NOT_CONNECTED_LIMITS.maxLocalMatches)}
+        maxCount={isGuest ? guestMaxLocalMatches : (currentClub?.subscriptionTier ? SUBSCRIPTION_LIMITS[currentClub.subscriptionTier].maxLocalMatches : guestMaxLocalMatches)}
         onClose={() => setShowMatchLimitModal(false)}
         onLogin={() => navigation.navigate(ROUTES.LOGIN)}
         onUpgrade={() => {

@@ -7,11 +7,13 @@ import { useResponsive } from "../src/hooks/useResponsive";
 interface GuestWelcomeModalProps {
   visible: boolean;
   onClose: () => void;
+  maxLocalMatches: number;
 }
 
 export default function GuestWelcomeModal({
   visible,
   onClose,
+  maxLocalMatches,
 }: GuestWelcomeModalProps) {
   const { colors, isDark } = useTheme();
   const { sp, font, sizes } = useResponsive();
@@ -72,7 +74,7 @@ export default function GuestWelcomeModal({
           ]}>
             <Ionicons name="shield-checkmark-outline" size={font.lg} color={colors.text.secondary} style={[styles.infoIcon, { marginRight: sp.sm }]} />
             <Text style={[styles.infoText, { color: colors.text.secondary, fontSize: font.sm }]}>
-              Vous pouvez créer jusqu'à <Text style={[styles.bold, { color: colors.text.primary }]}>1 match</Text> gratuitement. Pour en faire plus, créez un compte !
+              Vous pouvez créer jusqu'à <Text style={[styles.bold, { color: colors.text.primary }]}>{maxLocalMatches} match{maxLocalMatches > 1 ? "s" : ""}</Text> gratuitement. Pour en faire plus, créez un compte !
             </Text>
           </View>
 
