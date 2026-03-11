@@ -316,20 +316,33 @@ class LoggerService {
   }
 
   /**
-   * Get last N lines from current log file
+   * Get last N lines from all log files (sorted chronologically)
    * Used for attaching to Sentry errors
    */
   async getLastLines(lineCount: number = 2000): Promise<string> {
     try {
-      const fileInfo = await FileSystem.getInfoAsync(this.logFilePath);
-      if (!fileInfo.exists) {
+      const dirInfo = await FileSystem.readDirectoryAsync(
+        FileSystem.documentDirectory || ""
+      );
+      const logFiles = dirInfo
+        .filter((file) => file.startsWith("app-logs-"))
+        .sort();
+
+      if (logFiles.length === 0) {
         return "No logs available";
       }
 
-      const content = await FileSystem.readAsStringAsync(this.logFilePath);
-      const lines = content.split("\n");
-      const lastLines = lines.slice(-lineCount);
-      return lastLines.join("\n");
+      let allLines: string[] = [];
+      for (const file of logFiles) {
+        const filePath = `${FileSystem.documentDirectory}${file}`;
+        const fileInfo = await FileSystem.getInfoAsync(filePath);
+        if (fileInfo.exists) {
+          const content = await FileSystem.readAsStringAsync(filePath);
+          allLines = allLines.concat(content.split("\n"));
+        }
+      }
+
+      return allLines.slice(-lineCount).join("\n");
     } catch (error) {
       return `Error reading logs: ${error}`;
     }
