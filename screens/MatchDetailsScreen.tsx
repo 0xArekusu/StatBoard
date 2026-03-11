@@ -56,6 +56,7 @@ import { showErrorAlert } from "../utils/errorAlert";
 import { ServiceFactory } from "../services/ServiceFactory";
 import { supabase } from "../src/config/supabase";
 import { getSignedUrl } from "../utils/storageHelper";
+import { useSignedUrl } from "../hooks/useSignedUrl";
 import { StatsTab, CardsTab, CourtTab, EvolutionTab, PlayerDetailModal } from "../components/MatchDetails";
 import type { PlayerStats, Tab, TeamFilter, ActionFilterType, SortBy, SortOrder } from "../constants/matchDetailsConstants";
 import { TAB, ACTION_FILTER } from "../constants";
@@ -593,7 +594,7 @@ export default function MatchDetailsScreen() {
   // Court colors and logo (from club or default values)
   const courtBackgroundColor = club?.courtBackgroundColor || colors.court.background;
   const courtLineColor = club?.courtLineColor || colors.court.line;
-  const logoUri = club?.logoUrl;
+  const logoUri = useSignedUrl(club?.logoUrl);
 
   // ========================================
   // LOADING SCREEN
