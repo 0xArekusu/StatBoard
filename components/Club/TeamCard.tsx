@@ -29,7 +29,7 @@ export default function TeamCard({
   onDelete,
 }: TeamCardProps) {
   const { colors, isDark } = useTheme();
-  const { sp, font, sizes } = useResponsive();
+  const { sp, font, sizes, isCompact } = useResponsive();
   const isClickable = team.status === TeamStatus.APPROVED && team.isActive;
   const canEdit = team.ownerId === currentUserId;
 
@@ -41,7 +41,10 @@ export default function TeamCard({
           backgroundColor: colors.surface,
           borderColor: colors.border,
           opacity:
-            team.status === TeamStatus.APPROVED && team.isActive ? 1 : 0.6,
+            team.status === TeamStatus.REJECTED ||
+            (team.status === TeamStatus.APPROVED && !team.isActive)
+              ? 0.6
+              : 1,
           padding: sp.md,
         },
       ]}
@@ -150,7 +153,7 @@ export default function TeamCard({
                   e.stopPropagation();
                   onReject?.();
                 }}
-                style={[styles.actionButton, styles.rejectButton]}
+                style={[styles.actionButton, styles.rejectButton, { padding: sp.sm, marginTop: sp.lg }]}
               >
                 <Ionicons name="close-circle" size={20} color="#dc2626" />
               </TouchableOpacity>
@@ -159,9 +162,9 @@ export default function TeamCard({
                   e.stopPropagation();
                   onApprove?.();
                 }}
-                style={[styles.actionButton, styles.approveButton]}
+                style={[styles.actionButton, styles.approveButton, { padding: sp.sm, marginTop: sp.lg }]}
               >
-                <Ionicons name="checkmark-circle" size={20} color="#16a34a" />
+                <Ionicons name="checkmark-circle" size={ 20} color="#16a34a" />
               </TouchableOpacity>
             </>
           ) : (
@@ -182,6 +185,7 @@ export default function TeamCard({
                   name="chevron-right"
                   size={18}
                   color={colors.text.secondary}
+                  style={{marginTop: sp.md}}
                 />
               )}
             </>
@@ -263,7 +267,7 @@ const styles = StyleSheet.create({
   },
   actionButtons: {
     flexDirection: "row",
-    gap: 4,
+    gap: 8,
   },
   actionButton: {
     padding: 8,
