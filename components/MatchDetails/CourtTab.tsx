@@ -64,7 +64,7 @@ export default function CourtTab({
   activeTeamFilter,
   totalPeriods,
 }: CourtTabProps) {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const { sp, font, sizes, isCompact } = useResponsive();
   const windowDimensions = useWindowDimensions();
   const [selectedPeriods, setSelectedPeriods] = React.useState<number[]>([]);
@@ -188,8 +188,6 @@ export default function CourtTab({
                   backgroundColor:
                     selectedPeriods.length === 0
                       ? colors.primary
-                      : isDark
-                      ? colors.surfaceVariant
                       : colors.surfaceVariant,
                   borderColor:
                     selectedPeriods.length === 0 ? colors.primary : borderColor,
@@ -230,8 +228,6 @@ export default function CourtTab({
                   {
                     backgroundColor: selectedPeriods.includes(period)
                       ? colors.primary
-                      : isDark
-                      ? colors.surfaceVariant
                       : colors.surfaceVariant,
                     borderColor: selectedPeriods.includes(period)
                       ? colors.primary
@@ -278,8 +274,6 @@ export default function CourtTab({
                   backgroundColor:
                     selectedActionTypes.length === 0
                       ? colors.primary
-                      : isDark
-                      ? colors.surfaceVariant
                       : colors.surfaceVariant,
                   borderColor:
                     selectedActionTypes.length === 0
@@ -327,8 +321,6 @@ export default function CourtTab({
                     ACTION_FILTER.SHOOTING
                   )
                     ? colors.primary
-                    : isDark
-                    ? colors.surfaceVariant
                     : colors.surfaceVariant,
                   borderColor: selectedActionTypes.includes(
                     ACTION_FILTER.SHOOTING
@@ -376,8 +368,6 @@ export default function CourtTab({
                     ACTION_FILTER.REBOUNDS
                   )
                     ? colors.primary
-                    : isDark
-                    ? colors.surfaceVariant
                     : colors.surfaceVariant,
                   borderColor: selectedActionTypes.includes(
                     ACTION_FILTER.REBOUNDS
@@ -425,8 +415,6 @@ export default function CourtTab({
                     ACTION_FILTER.ASSISTS
                   )
                     ? colors.primary
-                    : isDark
-                    ? colors.surfaceVariant
                     : colors.surfaceVariant,
                   borderColor: selectedActionTypes.includes(
                     ACTION_FILTER.ASSISTS
@@ -474,8 +462,6 @@ export default function CourtTab({
                     ACTION_FILTER.STEALS
                   )
                     ? colors.primary
-                    : isDark
-                    ? colors.surfaceVariant
                     : colors.surfaceVariant,
                   borderColor: selectedActionTypes.includes(
                     ACTION_FILTER.STEALS
@@ -523,8 +509,6 @@ export default function CourtTab({
                     ACTION_FILTER.BLOCKS
                   )
                     ? colors.primary
-                    : isDark
-                    ? colors.surfaceVariant
                     : colors.surfaceVariant,
                   borderColor: selectedActionTypes.includes(
                     ACTION_FILTER.BLOCKS
@@ -572,8 +556,6 @@ export default function CourtTab({
                     ACTION_FILTER.TURNOVERS
                   )
                     ? colors.primary
-                    : isDark
-                    ? colors.surfaceVariant
                     : colors.surfaceVariant,
                   borderColor: selectedActionTypes.includes(
                     ACTION_FILTER.TURNOVERS
@@ -619,8 +601,6 @@ export default function CourtTab({
                     ACTION_FILTER.FOULS
                   )
                     ? colors.primary
-                    : isDark
-                    ? colors.surfaceVariant
                     : colors.surfaceVariant,
                   borderColor: selectedActionTypes.includes(ACTION_FILTER.FOULS)
                     ? colors.primary
@@ -666,8 +646,6 @@ export default function CourtTab({
                     ACTION_FILTER.FOUL_DRAWN
                   )
                     ? colors.primary
-                    : isDark
-                    ? colors.surfaceVariant
                     : colors.surfaceVariant,
                   borderColor: selectedActionTypes.includes(
                     ACTION_FILTER.FOUL_DRAWN
@@ -795,8 +773,6 @@ export default function CourtTab({
                     {
                       backgroundColor: isSelected
                         ? colors.primary
-                        : isDark
-                        ? colors.surfaceVariant
                         : colors.surfaceVariant,
                       borderColor: isSelected ? colors.primary : borderColor,
                       gap: sp.sm,
@@ -810,7 +786,7 @@ export default function CourtTab({
                     playerName={player.name}
                     playerNumber={player.playerNumber}
                     photoUrl={player.photoUrl}
-                    size={isCompact ? sizes.avatarXs : sizes.avatarSm}
+                    size={sizes.avatarXs}
                     borderColor={isSelected ? colors.primary : borderColor}
                     backgroundColor={isSelected ? colors.text.primary : bgColor}
                     textColor={isSelected ? colors.primary : textSecondary}
