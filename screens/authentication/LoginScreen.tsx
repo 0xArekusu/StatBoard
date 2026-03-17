@@ -17,7 +17,7 @@ import { ROUTES, PlatformOS } from '../../constants';
 import { useTheme } from '../../src/contexts/ThemeContext';
 import { SHADOW_COLOR, OPACITY, STATUS_COLORS } from '../../src/theme';
 import GoogleLogo from '../../components/icons/GoogleLogo';
-import FacebookLogo from '../../components/icons/FacebookLogo';
+import AppleLogo from '../../components/icons/AppleLogo';
 import { useResponsive } from '../../src/hooks/useResponsive';
 import TermsAcceptanceModal from '../../components/TermsAcceptanceModal';
 
@@ -38,7 +38,7 @@ export default function LoginScreen({ navigation, route }: any) {
   const emailConfirmed = route?.params?.emailConfirmed === true;
   const emailError = route?.params?.emailError === true;
   const passwordReset = route?.params?.passwordReset === true;
-  const { signIn, signInWithGoogle, acceptTerms, signOut, resetPassword } = useAuth();
+  const { signIn, signInWithGoogle, signInWithApple, acceptTerms, signOut, resetPassword } = useAuth();
   const { colors } = useTheme();
   const { sp, font, sizes, isCompact } = useResponsive();
 
@@ -116,13 +116,20 @@ export default function LoginScreen({ navigation, route }: any) {
   };
 
   /**
-   * Handles Facebook OAuth sign-in (placeholder - not yet implemented)
+   * Handles Apple Sign-In (iOS only)
    */
-  const handleFacebookSignIn = () => {
-    Alert.alert(
-      'Bientôt disponible',
-      'La connexion avec Facebook sera bientôt disponible'
-    );
+  const handleAppleSignIn = async () => {
+    setLoading(true);
+    const { error, needsTermsAcceptance } = await signInWithApple();
+    setLoading(false);
+
+    if (error) {
+      Alert.alert('Erreur de connexion Apple', error.message);
+    } else if (needsTermsAcceptance) {
+      setShowTermsModal(true);
+    } else if (error === null) {
+      navigation.navigate(ROUTES.MAIN_TABS);
+    }
   };
 
   /**
@@ -373,26 +380,36 @@ export default function LoginScreen({ navigation, route }: any) {
               )}
             </TouchableOpacity>
 
-            {/* Facebook button - temporarily hidden
-            <TouchableOpacity
-              style={[
-                styles.socialButton,
-                {
-                  backgroundColor: colors.input.background,
-                  borderColor: colors.input.border,
-                },
-                loading && styles.submitButtonDisabled,
-              ]}
-              onPress={handleFacebookSignIn}
-              activeOpacity={OPACITY.interaction.high}
-              disabled={loading}
-            >
-              <FacebookLogo />
-              <Text style={[styles.socialButtonText, { color: colors.text.primary }]}>
-                Facebook
-              </Text>
-            </TouchableOpacity>
-            */}
+            {Platform.OS === 'ios' && (
+              <TouchableOpacity
+                style={[
+                  styles.socialButton,
+                  {
+                    backgroundColor: colors.input.background,
+                    borderColor: colors.input.border,
+                    paddingVertical: sp.sm,
+                    paddingHorizontal: sp.md,
+                    borderRadius: 12,
+                    gap: sp.md,
+                  },
+                  loading && styles.submitButtonDisabled,
+                ]}
+                onPress={handleAppleSignIn}
+                activeOpacity={OPACITY.interaction.high}
+                disabled={loading}
+              >
+                {loading ? (
+                  <ActivityIndicator size="small" color={colors.text.primary} />
+                ) : (
+                  <>
+                    <AppleLogo color={colors.text.primary} />
+                    <Text style={[styles.socialButtonText, { color: colors.text.primary, fontSize: font.md }]}>
+                      Apple
+                    </Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            )}
           </View>
 
           {/* Link to Register */}

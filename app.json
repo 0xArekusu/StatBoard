@@ -54,6 +54,7 @@
           "cameraPermission": "Cette application a besoin d'accéder à votre caméra pour prendre des photos de joueurs."
         }
       ],
+      "expo-apple-authentication",
       "expo-font",
       "expo-sqlite",
       [

@@ -11,6 +11,7 @@ import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "../config/supabase";
 import { CURRENT_TERMS_VERSION } from "../config/terms";
 import { GoogleSignin } from "@react-native-google-signin/google-signin";
+import * as AppleAuthentication from "expo-apple-authentication";
 import { logInfo, logError, logWarn } from "../../utils/logger";
 import * as Sentry from "@sentry/react-native";
 
@@ -25,6 +26,7 @@ interface AuthContextType {
   ) => Promise<{ error: any }>;
   signIn: (email: string, password: string) => Promise<{ error: any; needsTermsAcceptance?: boolean }>;
   signInWithGoogle: () => Promise<{ error: any; needsTermsAcceptance?: boolean }>;
+  signInWithApple: () => Promise<{ error: any; needsTermsAcceptance?: boolean }>;
   acceptTerms: () => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: any }>;
@@ -304,6 +306,55 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   /**
+   * Sign in with Apple
+   * Uses expo-apple-authentication to get identity token, then authenticates with Supabase
+   */
+  const signInWithApple = async () => {
+    try {
+      logInfo("AuthProvider", "🍎 Initiating Apple Sign-In flow");
+      const credential = await AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ],
+      });
+
+      if (credential.identityToken) {
+        logInfo("AuthProvider", "🎫 Apple identity token obtained, authenticating with Supabase");
+
+        const { data, error } = await supabase.auth.signInWithIdToken({
+          provider: "apple",
+          token: credential.identityToken,
+        });
+
+        if (error) {
+          logError("AuthProvider", "❌ Apple sign in failed at Supabase", {
+            error: error.message,
+          });
+          return { error };
+        }
+
+        logInfo("AuthProvider", "✅ Apple sign in successful", {
+          userId: data.user?.id,
+        });
+
+        const needsTermsAcceptance = data.user?.user_metadata?.terms_version !== CURRENT_TERMS_VERSION;
+        return { error: null, needsTermsAcceptance };
+      }
+
+      logError("AuthProvider", "❌ No identity token present in Apple Sign-In response");
+      return { error: new Error("No identity token present!") };
+    } catch (error: any) {
+      if (error.code === "ERR_REQUEST_CANCELED") {
+        logInfo("AuthProvider", "ℹ️ Apple sign in cancelled by user");
+        return { error: null, needsTermsAcceptance: false };
+      }
+      logError("AuthProvider", "❌ Apple sign in error", { error: error.message || error });
+      return { error };
+    }
+  };
+
+  /**
    * Persist terms acceptance in user metadata
    * Called after Google sign-in when the user accepts the CGU modal
    */
@@ -513,6 +564,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signUp,
     signIn,
     signInWithGoogle,
+    signInWithApple,
     acceptTerms,
     signOut,
     resetPassword,
