@@ -2,7 +2,7 @@
   "expo": {
     "name": "Coach Assistant",
     "slug": "coach-assistant",
-    "version": "1.0.3",
+    "version": "1.0.4",
     "runtimeVersion": {
       "policy": "appVersion"
     },
