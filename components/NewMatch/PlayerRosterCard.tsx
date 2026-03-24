@@ -156,19 +156,20 @@ export const PlayerRosterCard: React.FC<PlayerRosterCardProps> = ({
 
           {/* Player Name and Number */}
           <View style={styles.playerNameContainer}>
-            <Text
-              style={[
-                styles.playerName,
-                {
-                  color: isSelected
-                    ? colors.text.primary
-                    : colors.text.secondary,
-                  fontSize: font.md,
-                },
-              ]}
-            >
-              {player.name}
-            </Text>
+            <View style={styles.playerNameRow}>
+              <Text
+                style={[
+                  styles.playerName,
+                  {
+                    color: isSelected
+                      ? colors.text.primary
+                      : colors.text.secondary,
+                    fontSize: font.md,
+                  },
+                ]}
+              >
+                {player.name}
+              </Text>
 
             {/* Editable Number */}
             {isEditingNumber ? (
@@ -236,6 +237,24 @@ export const PlayerRosterCard: React.FC<PlayerRosterCardProps> = ({
                 )}
               </TouchableOpacity>
             )}
+            </View>
+
+            {/* License Number (read-only) */}
+            {player.licenseNumber ? (
+              <Text
+                style={[
+                  styles.playerNumber,
+                  {
+                    color: isSelected
+                      ? colors.text.secondary
+                      : colors.text.tertiary,
+                    fontSize: font.sm,
+                  },
+                ]}
+              >
+                {player.licenseNumber}
+              </Text>
+            ) : null}
           </View>
         </View>
 
@@ -306,9 +325,12 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   playerNameContainer: {
+    flexDirection: "column",
+    flex: 1,
+  },
+  playerNameRow: {
     flexDirection: "row",
     alignItems: "center",
-    flex: 1,
   },
   playerName: {
     fontSize: 14,

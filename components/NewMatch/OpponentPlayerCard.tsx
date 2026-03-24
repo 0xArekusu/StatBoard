@@ -72,13 +72,23 @@ export const OpponentPlayerCard: React.FC<OpponentPlayerCardProps> = ({
           </Text>
         </View>
 
-        {/* Player Name */}
-        <Text
-          style={[styles.opponentName, { color: colors.textPrimary, fontSize: font.md }]}
-          numberOfLines={1}
-        >
-          {player.name}
-        </Text>
+        {/* Player Name + License */}
+        <View style={styles.opponentNameContainer}>
+          <Text
+            style={[styles.opponentName, { color: colors.textPrimary, fontSize: font.md }]}
+            numberOfLines={1}
+          >
+            {player.name}
+          </Text>
+          {player.licenseNumber ? (
+            <Text
+              style={[styles.opponentNumberText, { color: colors.textSecondary, fontSize: font.sm }]}
+              numberOfLines={1}
+            >
+              {player.licenseNumber}
+            </Text>
+          ) : null}
+        </View>
       </View>
 
       <View style={[styles.opponentCardRight, { gap: sp.sm }]}>
@@ -141,10 +151,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "bold",
   },
+  opponentNameContainer: {
+    flex: 1,
+  },
   opponentName: {
     fontSize: 14,
     fontWeight: "500",
-    flex: 1,
   },
   opponentCardRight: {
     flexDirection: "row",

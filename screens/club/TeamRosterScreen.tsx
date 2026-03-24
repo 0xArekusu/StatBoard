@@ -40,6 +40,7 @@ interface Player {
   name: string;
   jerseyNumber: number;
   photoUrl?: string | undefined;
+  licenseNumber?: string | undefined;
 }
 
 type TeamRosterRouteProp = RouteProp<RootStackParamList, "TeamRoster">;
@@ -134,6 +135,7 @@ export default function TeamRosterScreen() {
   const [newPlayerName, setNewPlayerName] = useState("");
   const [newPlayerNumber, setNewPlayerNumber] = useState("");
   const [newPlayerPhoto, setNewPlayerPhoto] = useState("");
+  const [newPlayerLicense, setNewPlayerLicense] = useState("");
   const [addPlayerError, setAddPlayerError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -142,6 +144,7 @@ export default function TeamRosterScreen() {
   const [editingPlayerName, setEditingPlayerName] = useState("");
   const [editingPlayerNumber, setEditingPlayerNumber] = useState("");
   const [editingPlayerPhoto, setEditingPlayerPhoto] = useState("");
+  const [editingPlayerLicense, setEditingPlayerLicense] = useState("");
   const [editPlayerError, setEditPlayerError] = useState<string | null>(null);
 
   // Theme colors
@@ -258,12 +261,14 @@ export default function TeamRosterScreen() {
       name: trimmedName,
       jerseyNumber: numValue,
       photoUrl: newPlayerPhoto || undefined,
+      licenseNumber: newPlayerLicense.trim() || undefined,
     };
 
     setRoster([...roster, newPlayer]);
     setNewPlayerName("");
     setNewPlayerNumber("");
     setNewPlayerPhoto("");
+    setNewPlayerLicense("");
   };
 
   /**
@@ -304,6 +309,7 @@ export default function TeamRosterScreen() {
       setEditingPlayerName(player.name);
       setEditingPlayerNumber(player.jerseyNumber.toString());
       setEditingPlayerPhoto(""); // Don't set existing photo - let component show it via signedUrl
+      setEditingPlayerLicense(player.licenseNumber || "");
       setEditPlayerError(null);
     }
   };
@@ -356,12 +362,14 @@ export default function TeamRosterScreen() {
               name: trimmedName,
               jerseyNumber: numValue,
               photoUrl: editingPlayerPhoto || p.photoUrl,
+              licenseNumber: editingPlayerLicense.trim() || undefined,
             }
           : p,
       ),
     );
     setEditingPlayerId(null);
     setEditingPlayerPhoto("");
+    setEditingPlayerLicense("");
     setEditPlayerError(null);
   };
 
@@ -491,6 +499,7 @@ export default function TeamRosterScreen() {
               name: player.name,
               jerseyNumber: player.jerseyNumber,
               photoUrl: null, // Will be updated after upload
+              licenseNumber: player.licenseNumber,
             });
 
             if (!createResult.success || !createResult.player) {
@@ -551,6 +560,7 @@ export default function TeamRosterScreen() {
               name: player.name,
               jerseyNumber: player.jerseyNumber,
               photoUrl: uploadedPlayerPhotoUrl,
+              licenseNumber: player.licenseNumber,
             });
           }
         }
@@ -625,6 +635,7 @@ export default function TeamRosterScreen() {
             name: player.name,
             jerseyNumber: player.jerseyNumber,
             photoUrl: null, // Will be updated after upload
+            licenseNumber: player.licenseNumber,
           });
 
           if (!createResult.success || !createResult.player) {
@@ -1029,6 +1040,23 @@ export default function TeamRosterScreen() {
                     setAddPlayerError(null);
                   }}
                 />
+                <TextInput
+                  style={[
+                    styles.playerInput,
+                    {
+                      backgroundColor: colors.surface,
+                      borderColor: colors.border,
+                      color: colors.text.primary,
+                      padding: sp.sm,
+                      fontSize: font.md,
+                    },
+                  ]}
+                  placeholder="VTXXXXXX"
+                  placeholderTextColor={colors.text.tertiary}
+                  value={newPlayerLicense}
+                  onChangeText={setNewPlayerLicense}
+                  autoCapitalize="characters"
+                />
                 <View style={[styles.numberRow, { gap: sp.sm }]}>
                   <TextInput
                     style={[
@@ -1156,6 +1184,23 @@ export default function TeamRosterScreen() {
                               setEditPlayerError(null);
                             }}
                           />
+                          <TextInput
+                            style={[
+                              styles.playerInput,
+                              {
+                                backgroundColor: colors.surface,
+                                borderColor: colors.border,
+                                color: colors.text.primary,
+                                padding: sp.sm,
+                                fontSize: font.md,
+                              },
+                            ]}
+                            placeholder="VTXXXXXX"
+                            placeholderTextColor={colors.text.tertiary}
+                            value={editingPlayerLicense}
+                            onChangeText={setEditingPlayerLicense}
+                            autoCapitalize="characters"
+                          />
                           <View
                             style={[styles.playerEditActions, { gap: sp.sm }]}
                           >
@@ -1198,6 +1243,7 @@ export default function TeamRosterScreen() {
                               onPress={() => {
                                 setEditingPlayerId(null);
                                 setEditingPlayerPhoto("");
+                                setEditingPlayerLicense("");
                                 setEditPlayerError(null);
                               }}
                               style={[
@@ -1259,6 +1305,7 @@ export default function TeamRosterScreen() {
                               ]}
                             >
                               #{player.jerseyNumber}
+                              {player.licenseNumber ? ` · ${player.licenseNumber}` : ""}
                             </Text>
                           </View>
                         </View>

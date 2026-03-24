@@ -28,10 +28,14 @@ interface OpponentRosterViewProps {
   newPlayerName: string;
   /** New opponent player number input */
   newPlayerNumber: string;
+  /** New opponent player license input */
+  newPlayerLicense: string;
   /** Callback when new player name changes */
   onNewNameChange: (text: string) => void;
   /** Callback when new player number changes */
   onNewNumberChange: (text: string) => void;
+  /** Callback when new player license changes */
+  onNewLicenseChange: (text: string) => void;
   /** Callback to add opponent player */
   onAddPlayer: () => void;
   /** Callback to generate multiple players */
@@ -62,8 +66,10 @@ export const OpponentRosterView: React.FC<OpponentRosterViewProps> = ({
   opponentStarters,
   newPlayerName,
   newPlayerNumber,
+  newPlayerLicense,
   onNewNameChange,
   onNewNumberChange,
+  onNewLicenseChange,
   onAddPlayer,
   onGeneratePlayers,
   onToggleStarter,
@@ -175,58 +181,75 @@ export const OpponentRosterView: React.FC<OpponentRosterViewProps> = ({
       </View> */}
 
       {/* Add Opponent Form */}
-      <View style={styles.addOpponentForm}>
-        <TextInput
-          placeholder="Nom (Optionnel)"
-          placeholderTextColor={colors.textSecondary}
-          value={newPlayerName}
-          onChangeText={onNewNameChange}
-          style={[
-            styles.addOpponentInput,
-            styles.addOpponentInputName,
-            {
-              backgroundColor: colors.surfaceColor,
-              borderColor: colors.borderColor,
-              color: colors.textPrimary,
-            },
-          ]}
-        />
-        <TextInput
-          placeholder="#"
-          placeholderTextColor={colors.textSecondary}
-          value={newPlayerNumber}
-          onChangeText={onNewNumberChange}
-          keyboardType="number-pad"
-          style={[
-            styles.addOpponentInput,
-            styles.addOpponentInputNumber,
-            {
-              backgroundColor: colors.surfaceColor,
-              borderColor: colors.borderColor,
-              color: colors.textPrimary,
-            },
-          ]}
-        />
-        <TouchableOpacity
-          onPress={onAddPlayer}
-          disabled={!newPlayerNumber}
-          style={[
-            styles.addOpponentButton,
-            {
-              backgroundColor: BRAND_COLORS[600],
-              opacity: newPlayerNumber ? 1 : OPACITY.disabled,
-            },
-          ]}
-        >
-          <Text
+      <View style={styles.addOpponentFormWrapper}>
+        <View style={styles.addOpponentForm}>
+          <TextInput
+            placeholder="Nom (Optionnel)"
+            placeholderTextColor={colors.textSecondary}
+            value={newPlayerName}
+            onChangeText={onNewNameChange}
             style={[
-              styles.addOpponentButtonText,
-              { color: COMMON_COLORS.white },
+              styles.addOpponentInput,
+              styles.addOpponentInputName,
+              {
+                backgroundColor: colors.surfaceColor,
+                borderColor: colors.borderColor,
+                color: colors.textPrimary,
+              },
+            ]}
+          />
+          <TextInput
+            placeholder="#"
+            placeholderTextColor={colors.textSecondary}
+            value={newPlayerNumber}
+            onChangeText={onNewNumberChange}
+            keyboardType="number-pad"
+            style={[
+              styles.addOpponentInput,
+              styles.addOpponentInputNumber,
+              {
+                backgroundColor: colors.surfaceColor,
+                borderColor: colors.borderColor,
+                color: colors.textPrimary,
+              },
+            ]}
+          />
+          <TouchableOpacity
+            onPress={onAddPlayer}
+            disabled={!newPlayerNumber}
+            style={[
+              styles.addOpponentButton,
+              {
+                backgroundColor: BRAND_COLORS[600],
+                opacity: newPlayerNumber ? 1 : OPACITY.disabled,
+              },
             ]}
           >
-            OK
-          </Text>
-        </TouchableOpacity>
+            <Text
+              style={[
+                styles.addOpponentButtonText,
+                { color: COMMON_COLORS.white },
+              ]}
+            >
+              OK
+            </Text>
+          </TouchableOpacity>
+        </View>
+        <TextInput
+          placeholder="VTXXXXXX"
+          placeholderTextColor={colors.textSecondary}
+          value={newPlayerLicense}
+          onChangeText={onNewLicenseChange}
+          autoCapitalize="characters"
+          style={[
+            styles.addOpponentInput,
+            {
+              backgroundColor: colors.surfaceColor,
+              borderColor: colors.borderColor,
+              color: colors.textPrimary,
+            },
+          ]}
+        />
       </View>
 
       {/* Opponent List */}
@@ -305,10 +328,13 @@ const styles = StyleSheet.create({
   //   fontSize: 12,
   //   fontWeight: "bold",
   // },
+  addOpponentFormWrapper: {
+    gap: 8,
+    marginBottom: 24,
+  },
   addOpponentForm: {
     flexDirection: "row",
     gap: 8,
-    marginBottom: 24,
   },
   addOpponentInput: {
     padding: 12,

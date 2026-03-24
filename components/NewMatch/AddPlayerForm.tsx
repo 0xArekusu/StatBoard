@@ -17,10 +17,14 @@ interface AddPlayerFormProps {
   name: string;
   /** Player number input value */
   number: string;
+  /** Player license number input value */
+  license: string;
   /** Callback when name changes */
   onNameChange: (text: string) => void;
   /** Callback when number changes */
   onNumberChange: (text: string) => void;
+  /** Callback when license changes */
+  onLicenseChange: (text: string) => void;
   /** Callback when add button is pressed */
   onAdd: () => void;
   /** All players to check for duplicates */
@@ -42,8 +46,10 @@ interface AddPlayerFormProps {
 export const AddPlayerForm: React.FC<AddPlayerFormProps> = ({
   name,
   number,
+  license,
   onNameChange,
   onNumberChange,
+  onLicenseChange,
   onAdd,
   allPlayers = [],
   isDark,
@@ -164,6 +170,25 @@ export const AddPlayerForm: React.FC<AddPlayerFormProps> = ({
           />
         </TouchableOpacity>
       </View>
+      <TextInput
+        placeholder="VTXXXXXX"
+        placeholderTextColor={colors.textSecondary}
+        value={license}
+        onChangeText={onLicenseChange}
+        autoCapitalize="characters"
+        style={[
+          styles.addPlayerInput,
+          {
+            backgroundColor: colors.surfaceColor,
+            borderColor: colors.borderColor,
+            color: colors.textPrimary,
+            padding: sp.sm + sp.xs,
+            borderRadius: sp.sm,
+            fontSize: font.md,
+            marginTop: sp.xs,
+          },
+        ]}
+      />
       {error && <Text style={[styles.errorText, { fontSize: font.sm, marginTop: sp.sm }]}>{error}</Text>}
     </View>
   );

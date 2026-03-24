@@ -25,6 +25,8 @@ interface HomeRosterViewProps {
   tempPlayerName: string;
   /** Temp player number input */
   tempPlayerNumber: string;
+  /** Temp player license number input */
+  tempPlayerLicense: string;
   /** Callback when player selection toggles */
   onTogglePlayer: (player: Player) => void;
   /** Callback when starter status toggles */
@@ -33,6 +35,8 @@ interface HomeRosterViewProps {
   onTempNameChange: (text: string) => void;
   /** Callback when temp player number changes */
   onTempNumberChange: (text: string) => void;
+  /** Callback when temp player license changes */
+  onTempLicenseChange: (text: string) => void;
   /** Callback to add temp player */
   onAddTempPlayer: () => void;
   /** Callback when jersey number changes */
@@ -59,10 +63,12 @@ export const HomeRosterView: React.FC<HomeRosterViewProps> = ({
   starters,
   tempPlayerName,
   tempPlayerNumber,
+  tempPlayerLicense,
   onTogglePlayer,
   onToggleStarter,
   onTempNameChange,
   onTempNumberChange,
+  onTempLicenseChange,
   onAddTempPlayer,
   onPlayerNumberChange,
   onNumberError,
@@ -149,8 +155,10 @@ export const HomeRosterView: React.FC<HomeRosterViewProps> = ({
       <AddPlayerForm
         name={tempPlayerName}
         number={tempPlayerNumber}
+        license={tempPlayerLicense}
         onNameChange={onTempNameChange}
         onNumberChange={onTempNumberChange}
+        onLicenseChange={onTempLicenseChange}
         onAdd={onAddTempPlayer}
         allPlayers={availablePlayers}
         isDark={isDark}

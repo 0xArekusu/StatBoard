@@ -92,6 +92,7 @@ export default function NewMatchScreen() {
   const [starters, setStarters] = useState<string[]>([]);
   const [tempHomePlayerName, setTempHomePlayerName] = useState("");
   const [tempHomePlayerNumber, setTempHomePlayerNumber] = useState("");
+  const [tempHomePlayerLicense, setTempHomePlayerLicense] = useState("");
   const [playerNumberErrors, setPlayerNumberErrors] = useState<Set<string>>(new Set());
 
   // Opponent Management
@@ -99,6 +100,7 @@ export default function NewMatchScreen() {
   const [opponentStarters, setOpponentStarters] = useState<string[]>([]);
   const [newOppPlayerName, setNewOppPlayerName] = useState("");
   const [newOppPlayerNumber, setNewOppPlayerNumber] = useState("");
+  const [newOppPlayerLicense, setNewOppPlayerLicense] = useState("");
 
   // ===========================
   // EFFECTS
@@ -428,6 +430,7 @@ export default function NewMatchScreen() {
       name: tempHomePlayerName,
       jerseyNumber: parseInt(tempHomePlayerNumber, 10),
       teamId: selectedTeamId,
+      licenseNumber: tempHomePlayerLicense.trim() || undefined,
       createdAt: now,
       updatedAt: now,
     };
@@ -443,6 +446,7 @@ export default function NewMatchScreen() {
 
     setTempHomePlayerName("");
     setTempHomePlayerNumber("");
+    setTempHomePlayerLicense("");
   };
 
   // ===========================
@@ -461,6 +465,7 @@ export default function NewMatchScreen() {
       name: newOppPlayerName || getDefaultOpponentPlayerName(parseInt(newOppPlayerNumber, 10)),
       jerseyNumber: parseInt(newOppPlayerNumber, 10),
       teamId: "",
+      licenseNumber: newOppPlayerLicense.trim() || undefined,
       createdAt: now,
       updatedAt: now,
     };
@@ -468,6 +473,7 @@ export default function NewMatchScreen() {
     setOpponentRoster([...opponentRoster, newPlayer]);
     setNewOppPlayerName("");
     setNewOppPlayerNumber("");
+    setNewOppPlayerLicense("");
   };
 
   /**
@@ -787,10 +793,12 @@ export default function NewMatchScreen() {
                 starters={starters}
                 tempPlayerName={tempHomePlayerName}
                 tempPlayerNumber={tempHomePlayerNumber}
+                tempPlayerLicense={tempHomePlayerLicense}
                 onTogglePlayer={toggleHomePlayer}
                 onToggleStarter={toggleStarter}
                 onTempNameChange={setTempHomePlayerName}
                 onTempNumberChange={setTempHomePlayerNumber}
+                onTempLicenseChange={setTempHomePlayerLicense}
                 onAddTempPlayer={addTempHomePlayer}
                 onPlayerNumberChange={handlePlayerNumberChange}
                 onNumberError={handlePlayerNumberError}
@@ -804,8 +812,10 @@ export default function NewMatchScreen() {
                 opponentStarters={opponentStarters}
                 newPlayerName={newOppPlayerName}
                 newPlayerNumber={newOppPlayerNumber}
+                newPlayerLicense={newOppPlayerLicense}
                 onNewNameChange={setNewOppPlayerName}
                 onNewNumberChange={setNewOppPlayerNumber}
+                onNewLicenseChange={setNewOppPlayerLicense}
                 onAddPlayer={addOpponentPlayer}
                 onGeneratePlayers={generateOpponentRoster}
                 onToggleStarter={toggleOpponentStarter}
