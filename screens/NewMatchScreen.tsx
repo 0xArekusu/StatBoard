@@ -24,6 +24,7 @@ import {
   type MatchCreationStep,
   ROUTES,
 } from "../constants";
+import { useInterstitialAd } from "../hooks/useInterstitialAd";
 import { ServiceFactory } from "../services/ServiceFactory";
 import { supabase } from "../src/config/supabase";
 import { Club } from "../models/Club";
@@ -61,6 +62,7 @@ export default function NewMatchScreen() {
   const { sp, font, sizes } = useResponsive();
   const { user } = useAuth();
   const { currentClub } = useClub();
+  const { showIfReady: showInterstitial } = useInterstitialAd();
 
   // ===========================
   // STATE
@@ -640,6 +642,9 @@ export default function NewMatchScreen() {
       courtLineColor: club?.courtLineColor || DEFAULT_COURT_COLORS.line,
       createdAt, // Timestamp when user configured match and clicked "Start Match"
     };
+
+    // Show interstitial ad at the natural transition point (roster → live match)
+    await showInterstitial();
 
     // Navigate to LiveMatch screen
     console.log("🚀 [NewMatchScreen] Navigating with matchData:", JSON.stringify({
