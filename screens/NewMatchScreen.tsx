@@ -7,7 +7,7 @@
  */
 
 import React, { useState, useEffect } from "react";
-import { View, StyleSheet, ScrollView, Alert, ActivityIndicator } from "react-native";
+import { View, StyleSheet, ScrollView, Alert, ActivityIndicator, KeyboardAvoidingView, Platform } from "react-native";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { useTheme } from "../src/contexts/ThemeContext";
 import { useResponsive } from "../src/hooks/useResponsive";
@@ -23,6 +23,7 @@ import {
   DEFAULT_MATCH_PRESET,
   type MatchCreationStep,
   ROUTES,
+  PlatformOS,
 } from "../constants";
 import { useInterstitialAd } from "../hooks/useInterstitialAd";
 import { ServiceFactory } from "../services/ServiceFactory";
@@ -59,7 +60,7 @@ export default function NewMatchScreen() {
   const navigation = useNavigation<RootNavigationProp>();
   const route = useRoute<NewMatchRouteProp>();
   const { colors, isDark } = useTheme();
-  const { sp, font, sizes } = useResponsive();
+  const { sp } = useResponsive();
   const { user } = useAuth();
   const { currentClub } = useClub();
   const { showIfReady: showInterstitial } = useInterstitialAd();
@@ -283,7 +284,7 @@ export default function NewMatchScreen() {
         error,
         context: "NewMatchScreen",
         showRetry: true,
-        onRetry: () => loadTeams(),
+        onRetry: () => loadClubData(),
       });
     } finally {
       setLoading(false);
@@ -710,7 +711,7 @@ export default function NewMatchScreen() {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header with Progress Bar */}
-      <MatchHeader step={step} onBack={handleBack} colors={themeColors} sp={sp} font={font} sizes={sizes} />
+      <MatchHeader step={step} onBack={handleBack} />
 
       {/* STEP 1: CONFIGURATION */}
       {step === 1 && (
@@ -725,17 +726,12 @@ export default function NewMatchScreen() {
             onMyTeamNameChange={setMyTeamName}
             isGuest={!user}
             colors={themeColors}
-            sp={sp}
-            font={font}
-            sizes={sizes}
           />
 
           <OpponentInput
             value={opponent}
             onChangeText={setOpponent}
             colors={themeColors}
-            sp={sp}
-            font={font}
           />
 
           <MatchFormatSelector
@@ -745,16 +741,12 @@ export default function NewMatchScreen() {
             onPeriodDurationChange={setPeriodDuration}
             isDark={isDark}
             colors={themeColors}
-            sp={sp}
-            font={font}
           />
 
           <LocationSelector
             isHome={isHome}
             onLocationChange={setIsHome}
             colors={themeColors}
-            sp={sp}
-            font={font}
           />
 
           <OpponentStatsToggle
@@ -762,15 +754,17 @@ export default function NewMatchScreen() {
             onToggle={() => setTrackOpponentStats(!trackOpponentStats)}
             isDark={isDark}
             colors={themeColors}
-            sp={sp}
-            font={font}
           />
         </ScrollView>
       )}
 
       {/* STEP 2: ROSTERS */}
       {step === 2 && (
-        <View style={styles.rosterContainer}>
+        <KeyboardAvoidingView
+          style={styles.rosterContainer}
+          behavior={Platform.OS === PlatformOS.IOS ? "padding" : "height"}
+          keyboardVerticalOffset={80}
+        >
           <RosterTabSwitch
             activeTab={rosterTab}
             onTabChange={setRosterTab}
@@ -778,13 +772,12 @@ export default function NewMatchScreen() {
             opponentCount={opponentRoster.length}
             isDark={isDark}
             colors={themeColors}
-            sp={sp}
-            font={font}
           />
 
           <ScrollView
             style={styles.rosterContent}
             contentContainerStyle={[styles.rosterScrollContent, { padding: sp.md }]}
+            keyboardShouldPersistTaps="handled"
           >
             {rosterTab === "HOME" ? (
               <HomeRosterView
@@ -826,7 +819,7 @@ export default function NewMatchScreen() {
               />
             )}
           </ScrollView>
-        </View>
+        </KeyboardAvoidingView>
       )}
 
       {/* Footer with Action Button */}
@@ -836,8 +829,6 @@ export default function NewMatchScreen() {
         onPress={step === 1 ? handleNextStep : handleStart}
         isDark={isDark}
         colors={themeColors}
-        sp={sp}
-        font={font}
       />
     </View>
   );

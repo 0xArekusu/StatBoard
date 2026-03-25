@@ -10,7 +10,10 @@ import {
   Image,
   ActivityIndicator,
   BackHandler,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
+import { PlatformOS } from "../../constants";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import {
@@ -498,7 +501,7 @@ export default function TeamRosterScreen() {
               teamId,
               name: player.name,
               jerseyNumber: player.jerseyNumber,
-              photoUrl: null, // Will be updated after upload
+              photoUrl: undefined, // Will be updated after upload
               licenseNumber: player.licenseNumber,
             });
 
@@ -634,7 +637,7 @@ export default function TeamRosterScreen() {
             teamId: result.team.id,
             name: player.name,
             jerseyNumber: player.jerseyNumber,
-            photoUrl: null, // Will be updated after upload
+            photoUrl: undefined, // Will be updated after upload
             licenseNumber: player.licenseNumber,
           });
 
@@ -730,7 +733,15 @@ export default function TeamRosterScreen() {
         />
       </View>
 
-      <ScrollView style={[styles.content, { padding: sp.lg }]}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === PlatformOS.IOS ? "padding" : "height"}
+        keyboardVerticalOffset={80}
+      >
+        <ScrollView
+          style={[styles.content, { padding: sp.lg }]}
+          keyboardShouldPersistTaps="handled"
+        >
         <Text
           style={[
             styles.title,
@@ -1347,6 +1358,7 @@ export default function TeamRosterScreen() {
           )}
         </View>
       </ScrollView>
+      </KeyboardAvoidingView>
 
       {/* Footer */}
       <View

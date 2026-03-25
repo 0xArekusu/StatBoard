@@ -8,7 +8,17 @@
 import { NavigationProp } from '@react-navigation/native';
 import { TeamGender } from '../models/Team';
 import { Match } from '../src/models/types';
-import { Player } from '../models/Player';
+
+type SerializedPlayer = {
+  id: string;
+  name: string;
+  jerseyNumber: number;
+  teamId: string;
+  photoUrl?: string;
+  licenseNumber?: string;
+  createdAt: string;
+  updatedAt: string;
+};
 
 /**
  * Root Stack Parameter List
@@ -65,7 +75,7 @@ export type RootStackParamList = {
   };
 
   // Match screens
-  NewMatch: undefined;
+  NewMatch: { teamId?: string } | undefined;
   LiveMatch: {
     matchId?: string;
     matchData?: {
@@ -78,8 +88,8 @@ export type RootStackParamList = {
       trackOpponentStats: boolean;
       periodCount: number;
       periodDuration: number;
-      myTeamPlayers: Player[];
-      opponentPlayers: Player[];
+      myTeamPlayers: SerializedPlayer[];
+      opponentPlayers: SerializedPlayer[];
       starters: string[];
       opponentStarters: string[];
       clubLogoUrl?: string | null;
