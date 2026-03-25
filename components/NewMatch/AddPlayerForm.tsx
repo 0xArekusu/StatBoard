@@ -27,8 +27,10 @@ interface AddPlayerFormProps {
   onLicenseChange: (text: string) => void;
   /** Callback when add button is pressed */
   onAdd: () => void;
-  /** All players to check for duplicates */
+  /** All available players (unused for duplicate check) */
   allPlayers?: Player[];
+  /** Selected players only — used for duplicate number check */
+  selectedPlayers?: Player[];
   /** Whether dark mode is enabled */
   isDark: boolean;
   /** Theme colors */
@@ -52,6 +54,7 @@ export const AddPlayerForm: React.FC<AddPlayerFormProps> = ({
   onLicenseChange,
   onAdd,
   allPlayers = [],
+  selectedPlayers,
   isDark,
   colors,
 }) => {
@@ -73,8 +76,9 @@ export const AddPlayerForm: React.FC<AddPlayerFormProps> = ({
       return;
     }
 
-    // Check for duplicate number
-    const isDuplicateNumber = allPlayers.some(
+    // Check for duplicate number only among selected players
+    const playersToCheck = selectedPlayers ?? allPlayers;
+    const isDuplicateNumber = playersToCheck.some(
       (p) => p.jerseyNumber === numValue
     );
 

@@ -372,6 +372,17 @@ export default function NewMatchScreen() {
       );
       setStarters(starters.filter((id) => id !== player.id));
     } else {
+      // Check for duplicate jersey number before re-selecting
+      const conflict = selectedHomePlayers.find(
+        (p) => p.jerseyNumber === player.jerseyNumber
+      );
+      if (conflict) {
+        Alert.alert(
+          "Numéro en double",
+          `Le joueur ${player.name} porte le #${player.jerseyNumber}, déjà utilisé par ${conflict.name}. Modifiez l'un des numéros avant de sélectionner ce joueur.`
+        );
+        return;
+      }
       setSelectedHomePlayers([...selectedHomePlayers, player]);
     }
   };
@@ -703,10 +714,14 @@ export default function NewMatchScreen() {
   const selectedTeam = teams.find((t) => t.id === selectedTeamId) || null;
   // For guests, validate myTeamName; for authenticated users, validate selectedTeamId
   const isStep1Valid = opponent && (user ? selectedTeamId : myTeamName);
+  const selectedHomePlayerIds = new Set(selectedHomePlayers.map((p) => p.id));
+  const selectedPlayerNumberErrors = [...playerNumberErrors].filter((id) =>
+    selectedHomePlayerIds.has(id)
+  );
   const isStep2Valid =
     selectedHomePlayers.length >= ROSTER_LIMITS.MIN_PLAYERS &&
     starters.length === Math.min(ROSTER_LIMITS.STARTERS, selectedHomePlayers.length) &&
-    playerNumberErrors.size === 0; // Block if there are number errors
+    selectedPlayerNumberErrors.length === 0; // Block only if selected players have number errors
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>

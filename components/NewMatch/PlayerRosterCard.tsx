@@ -31,8 +31,10 @@ interface PlayerRosterCardProps {
   onToggleStarter: () => void;
   /** Callback when jersey number changes */
   onNumberChange?: (playerId: string, newNumber: number) => void;
-  /** All players in the roster to check for duplicates */
+  /** All players in the roster (available) — unused for duplicate check */
   allPlayers?: Player[];
+  /** Selected players only — used for duplicate number check */
+  selectedPlayers?: Player[];
   /** Callback when number error state changes */
   onNumberError?: (playerId: string, hasError: boolean) => void;
 }
@@ -48,6 +50,7 @@ export const PlayerRosterCard: React.FC<PlayerRosterCardProps> = ({
   onToggleStarter,
   onNumberChange,
   allPlayers = [],
+  selectedPlayers,
   onNumberError,
 }) => {
   const { colors, isDark } = useTheme();
@@ -74,8 +77,9 @@ export const PlayerRosterCard: React.FC<PlayerRosterCardProps> = ({
       return;
     }
 
-    // Check for duplicate number
-    const isDuplicateNumber = allPlayers.some(
+    // Check for duplicate number only among selected players
+    const playersToCheck = selectedPlayers ?? allPlayers;
+    const isDuplicateNumber = playersToCheck.some(
       (p) => p.id !== player.id && p.jerseyNumber === newNumber,
     );
 

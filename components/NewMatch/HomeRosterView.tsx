@@ -17,7 +17,7 @@ import { useResponsive } from "../../src/hooks/useResponsive";
 interface HomeRosterViewProps {
   /** All available players */
   availablePlayers: Player[];
-  /** Selected players for the match */
+  /** Selected players for the match (also used for duplicate number checks) */
   selectedPlayers: Player[];
   /** Starting lineup player IDs */
   starters: string[];
@@ -146,6 +146,7 @@ export const HomeRosterView: React.FC<HomeRosterViewProps> = ({
               onNumberChange={onPlayerNumberChange}
               onNumberError={onNumberError}
               allPlayers={availablePlayers}
+              selectedPlayers={selectedPlayers}
             />
           );
         })}
@@ -161,6 +162,7 @@ export const HomeRosterView: React.FC<HomeRosterViewProps> = ({
         onLicenseChange={onTempLicenseChange}
         onAdd={onAddTempPlayer}
         allPlayers={availablePlayers}
+        selectedPlayers={selectedPlayers}
         isDark={isDark}
         colors={colors}
       />
