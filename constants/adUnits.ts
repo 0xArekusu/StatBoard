@@ -15,7 +15,7 @@
 import { Platform } from "react-native";
 import { TestIds } from "react-native-google-mobile-ads";
 
-const IS_PRODUCTION = process.env.NODE_ENV === "production";
+const IS_PRODUCTION = !__DEV__;
 
 // ---------------------------------------------------------------------------
 // Banner
