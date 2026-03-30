@@ -58,17 +58,6 @@ export const getActionDescription = (
       if (points === 1) return `${prefix}${playerName} Raté (LF)`;
     }
 
-    // Support ancien format pour compatibilité
-    if (action.specification === "THREE_POINT_MADE")
-      return `${prefix}${playerName} (+3)`;
-    if (action.specification === "TWO_POINT_MADE") return `${prefix}${playerName} (+2)`;
-    if (action.specification === "FREE_THROW_MADE") return `${prefix}${playerName} (+1)`;
-    if (action.specification === "THREE_POINT_MISSED")
-      return `${prefix}${playerName} Raté (3pts)`;
-    if (action.specification === "TWO_POINT_MISSED")
-      return `${prefix}${playerName} Raté (2pts)`;
-    if (action.specification === "FREE_THROW_MISSED")
-      return `${prefix}${playerName} Raté (LF)`;
   } else if (action.action_type === ActionType.REBOUND) {
     if (
       action.specification === ReboundSpecification.DEFENSIVE ||
