@@ -7,6 +7,7 @@
 import { useState } from "react";
 import { useNavigation } from "@react-navigation/native";
 import { Alert } from "react-native";
+import { useInterstitialAd } from "./useInterstitialAd";
 import { SupabaseClient } from "@supabase/supabase-js";
 import { RootNavigationProp } from "../types/navigation";
 import { MatchManager } from "../src/services/match/MatchManager";
@@ -16,6 +17,7 @@ import { ActionRepository } from "../src/services/database/ActionRepository";
 import { logInfo, logError, logWarn } from "../utils/logger";
 import { ROUTES } from "../constants/routes";
 import { TeamId } from "../constants/liveMatchConstants";
+import { MatchSyncService } from "../src/services/api/MatchSyncService";
 
 interface UseMatchSyncProps {
   currentMatchId: string | null;
@@ -43,6 +45,7 @@ export function useMatchSync({
   const navigation = useNavigation<RootNavigationProp>();
   const [isSyncing, setIsSyncing] = useState(false);
   const [showLocalSaveWarning, setShowLocalSaveWarning] = useState(false);
+  const { showIfReady: showInterstitial } = useInterstitialAd();
 
   const endMatchAndSync = async (onComplete?: () => void) => {
     try {
@@ -108,9 +111,6 @@ export function useMatchSync({
       try {
         setIsSyncing(true);
 
-        const { MatchSyncService } = await import(
-          "../src/services/api/MatchSyncService"
-        );
         const syncService = new MatchSyncService(supabase);
 
         logInfo("useMatchSync", "🔄 Checking sync eligibility", {
@@ -277,14 +277,14 @@ export function useMatchSync({
         actionDataList.push(...convertedActions);
       }
 
-      setTimeout(() => {
-        navigation.navigate(ROUTES.MATCH_DETAILS, {
-          match: supabaseMatch,
-          actions: actionDataList,
-          players: players,
-          fromLiveMatch: true,
-        });
-      }, 300);
+      // Show interstitial at the natural transition point (end of match → details)
+      await showInterstitial();
+      navigation.navigate(ROUTES.MATCH_DETAILS, {
+        match: supabaseMatch,
+        actions: actionDataList,
+        players: players,
+        fromLiveMatch: true,
+      });
     } catch (fetchError) {
       logError("useMatchSync", "❌ Failed to fetch synced match", {
         matchId,
@@ -345,15 +345,15 @@ export function useMatchSync({
         return;
       }
 
-      setTimeout(() => {
-        navigation.navigate(ROUTES.MATCH_DETAILS, {
-          match: localMatch,
-          actions: actions,
-          players: players,
-          fromLiveMatch: true,
-          isLocalMatch: true,
-        });
-      }, 300);
+      // Show interstitial at the natural transition point (end of match → details)
+      await showInterstitial();
+      navigation.navigate(ROUTES.MATCH_DETAILS, {
+        match: localMatch,
+        actions: actions,
+        players: players,
+        fromLiveMatch: true,
+        isLocalMatch: true,
+      });
     } catch (fetchError) {
       logError("useMatchSync", "❌ Failed to fetch local match data", {
         matchId: currentMatchId,

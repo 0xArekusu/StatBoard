@@ -34,6 +34,7 @@ export class SupabasePlayerRepository implements IPlayerRepository {
       name: row.name,
       jerseyNumber: row.jersey_number,
       photoUrl: row.photo_url,
+      licenseNumber: row.license_number ?? undefined,
       createdAt: new Date(row.created_at),
       updatedAt: new Date(row.updated_at),
     };
@@ -53,6 +54,7 @@ export class SupabasePlayerRepository implements IPlayerRepository {
         name: data.name,
         jersey_number: data.jerseyNumber,
         photo_url: data.photoUrl,
+        license_number: data.licenseNumber ?? null,
       })
       .select()
       .single();
@@ -78,6 +80,7 @@ export class SupabasePlayerRepository implements IPlayerRepository {
     if (data.name !== undefined) updateData.name = data.name;
     if (data.jerseyNumber !== undefined) updateData.jersey_number = data.jerseyNumber;
     if (data.photoUrl !== undefined) updateData.photo_url = data.photoUrl;
+    if (data.licenseNumber !== undefined) updateData.license_number = data.licenseNumber || null;
 
     const { data: player, error } = await this.supabase
       .from("players")

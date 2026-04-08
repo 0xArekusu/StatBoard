@@ -28,6 +28,7 @@ import { Club } from "../models/Club";
 import { Team, TeamStatus } from "../models/Team";
 import { supabase } from "../src/config/supabase";
 import JerseyIconSimple from "../components/icons/JerseySimpleIcon";
+import { BannerAdView } from "../components/ads/BannerAdView";
 
 /**
  * ClubLogoImage - Helper component to display club logo with signed URL
@@ -1215,6 +1216,7 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
           )}
         </View>
       </ScrollView>
+      <BannerAdView />
     </>
   );
 }

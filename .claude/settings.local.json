@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dir \"c:\\Users\\scott\\Dev\\react-native\\StatBoard\\components\\LiveMatch\"\")",
+      "WebFetch(domain:github.com)",
+      "WebSearch",
+      "Bash(npx expo:*)",
+      "Bash(npm install:*)",
+      "Bash(npx jest:*)",
+      "Bash(node -e \"console.log\\(require\\(''/Users/ascotte/Dev/coach-assistant/node_modules/jest/package.json''\\).version\\)\")"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

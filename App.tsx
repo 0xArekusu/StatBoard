@@ -28,6 +28,7 @@ import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { AuthProvider, useAuth } from "./src/contexts/AuthContext";
 import { ClubProvider } from "./src/contexts/ClubContext";
 import { ThemeProvider } from "./src/contexts/ThemeContext";
+import { AdProvider } from "./src/contexts/AdContext";
 import { ROUTES } from "./constants/routes";
 import { logInfo, logWarn, logError, logger } from "./utils/logger";
 import DebugCourtClick from "./DebugCourtClick";
@@ -312,7 +313,9 @@ function App() {
           <ThemeProvider>
             <AuthProvider>
               <ClubProvider>
-                <Navigation />
+                <AdProvider>
+                  <Navigation />
+                </AdProvider>
               </ClubProvider>
             </AuthProvider>
           </ThemeProvider>

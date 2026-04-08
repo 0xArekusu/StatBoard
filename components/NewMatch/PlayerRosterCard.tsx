@@ -31,8 +31,10 @@ interface PlayerRosterCardProps {
   onToggleStarter: () => void;
   /** Callback when jersey number changes */
   onNumberChange?: (playerId: string, newNumber: number) => void;
-  /** All players in the roster to check for duplicates */
+  /** All players in the roster (available) — unused for duplicate check */
   allPlayers?: Player[];
+  /** Selected players only — used for duplicate number check */
+  selectedPlayers?: Player[];
   /** Callback when number error state changes */
   onNumberError?: (playerId: string, hasError: boolean) => void;
 }
@@ -48,6 +50,7 @@ export const PlayerRosterCard: React.FC<PlayerRosterCardProps> = ({
   onToggleStarter,
   onNumberChange,
   allPlayers = [],
+  selectedPlayers,
   onNumberError,
 }) => {
   const { colors, isDark } = useTheme();
@@ -74,8 +77,9 @@ export const PlayerRosterCard: React.FC<PlayerRosterCardProps> = ({
       return;
     }
 
-    // Check for duplicate number
-    const isDuplicateNumber = allPlayers.some(
+    // Check for duplicate number only among selected players
+    const playersToCheck = selectedPlayers ?? allPlayers;
+    const isDuplicateNumber = playersToCheck.some(
       (p) => p.id !== player.id && p.jerseyNumber === newNumber,
     );
 
@@ -156,19 +160,20 @@ export const PlayerRosterCard: React.FC<PlayerRosterCardProps> = ({
 
           {/* Player Name and Number */}
           <View style={styles.playerNameContainer}>
-            <Text
-              style={[
-                styles.playerName,
-                {
-                  color: isSelected
-                    ? colors.text.primary
-                    : colors.text.secondary,
-                  fontSize: font.md,
-                },
-              ]}
-            >
-              {player.name}
-            </Text>
+            <View style={styles.playerNameRow}>
+              <Text
+                style={[
+                  styles.playerName,
+                  {
+                    color: isSelected
+                      ? colors.text.primary
+                      : colors.text.secondary,
+                    fontSize: font.md,
+                  },
+                ]}
+              >
+                {player.name}
+              </Text>
 
             {/* Editable Number */}
             {isEditingNumber ? (
@@ -236,6 +241,24 @@ export const PlayerRosterCard: React.FC<PlayerRosterCardProps> = ({
                 )}
               </TouchableOpacity>
             )}
+            </View>
+
+            {/* License Number (read-only) */}
+            {player.licenseNumber ? (
+              <Text
+                style={[
+                  styles.playerNumber,
+                  {
+                    color: isSelected
+                      ? colors.text.secondary
+                      : colors.text.tertiary,
+                    fontSize: font.sm,
+                  },
+                ]}
+              >
+                {player.licenseNumber}
+              </Text>
+            ) : null}
           </View>
         </View>
 
@@ -306,9 +329,12 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   playerNameContainer: {
+    flexDirection: "column",
+    flex: 1,
+  },
+  playerNameRow: {
     flexDirection: "row",
     alignItems: "center",
-    flex: 1,
   },
   playerName: {
     fontSize: 14,

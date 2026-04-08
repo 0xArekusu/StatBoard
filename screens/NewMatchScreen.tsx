@@ -7,7 +7,7 @@
  */
 
 import React, { useState, useEffect } from "react";
-import { View, StyleSheet, ScrollView, Alert, ActivityIndicator } from "react-native";
+import { View, StyleSheet, ScrollView, Alert, ActivityIndicator, KeyboardAvoidingView, Platform } from "react-native";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { useTheme } from "../src/contexts/ThemeContext";
 import { useResponsive } from "../src/hooks/useResponsive";
@@ -23,7 +23,9 @@ import {
   DEFAULT_MATCH_PRESET,
   type MatchCreationStep,
   ROUTES,
+  PlatformOS,
 } from "../constants";
+import { useInterstitialAd } from "../hooks/useInterstitialAd";
 import { ServiceFactory } from "../services/ServiceFactory";
 import { supabase } from "../src/config/supabase";
 import { Club } from "../models/Club";
@@ -58,9 +60,10 @@ export default function NewMatchScreen() {
   const navigation = useNavigation<RootNavigationProp>();
   const route = useRoute<NewMatchRouteProp>();
   const { colors, isDark } = useTheme();
-  const { sp, font, sizes } = useResponsive();
+  const { sp } = useResponsive();
   const { user } = useAuth();
   const { currentClub } = useClub();
+  const { showIfReady: showInterstitial } = useInterstitialAd();
 
   // ===========================
   // STATE
@@ -90,6 +93,7 @@ export default function NewMatchScreen() {
   const [starters, setStarters] = useState<string[]>([]);
   const [tempHomePlayerName, setTempHomePlayerName] = useState("");
   const [tempHomePlayerNumber, setTempHomePlayerNumber] = useState("");
+  const [tempHomePlayerLicense, setTempHomePlayerLicense] = useState("");
   const [playerNumberErrors, setPlayerNumberErrors] = useState<Set<string>>(new Set());
 
   // Opponent Management
@@ -97,6 +101,7 @@ export default function NewMatchScreen() {
   const [opponentStarters, setOpponentStarters] = useState<string[]>([]);
   const [newOppPlayerName, setNewOppPlayerName] = useState("");
   const [newOppPlayerNumber, setNewOppPlayerNumber] = useState("");
+  const [newOppPlayerLicense, setNewOppPlayerLicense] = useState("");
 
   // ===========================
   // EFFECTS
@@ -279,7 +284,7 @@ export default function NewMatchScreen() {
         error,
         context: "NewMatchScreen",
         showRetry: true,
-        onRetry: () => loadTeams(),
+        onRetry: () => loadClubData(),
       });
     } finally {
       setLoading(false);
@@ -367,6 +372,17 @@ export default function NewMatchScreen() {
       );
       setStarters(starters.filter((id) => id !== player.id));
     } else {
+      // Check for duplicate jersey number before re-selecting
+      const conflict = selectedHomePlayers.find(
+        (p) => p.jerseyNumber === player.jerseyNumber
+      );
+      if (conflict) {
+        Alert.alert(
+          "Numéro en double",
+          `Le joueur ${player.name} porte le #${player.jerseyNumber}, déjà utilisé par ${conflict.name}. Modifiez l'un des numéros avant de sélectionner ce joueur.`
+        );
+        return;
+      }
       setSelectedHomePlayers([...selectedHomePlayers, player]);
     }
   };
@@ -426,6 +442,7 @@ export default function NewMatchScreen() {
       name: tempHomePlayerName,
       jerseyNumber: parseInt(tempHomePlayerNumber, 10),
       teamId: selectedTeamId,
+      licenseNumber: tempHomePlayerLicense.trim() || undefined,
       createdAt: now,
       updatedAt: now,
     };
@@ -441,6 +458,7 @@ export default function NewMatchScreen() {
 
     setTempHomePlayerName("");
     setTempHomePlayerNumber("");
+    setTempHomePlayerLicense("");
   };
 
   // ===========================
@@ -459,6 +477,7 @@ export default function NewMatchScreen() {
       name: newOppPlayerName || getDefaultOpponentPlayerName(parseInt(newOppPlayerNumber, 10)),
       jerseyNumber: parseInt(newOppPlayerNumber, 10),
       teamId: "",
+      licenseNumber: newOppPlayerLicense.trim() || undefined,
       createdAt: now,
       updatedAt: now,
     };
@@ -466,6 +485,7 @@ export default function NewMatchScreen() {
     setOpponentRoster([...opponentRoster, newPlayer]);
     setNewOppPlayerName("");
     setNewOppPlayerNumber("");
+    setNewOppPlayerLicense("");
   };
 
   /**
@@ -641,6 +661,9 @@ export default function NewMatchScreen() {
       createdAt, // Timestamp when user configured match and clicked "Start Match"
     };
 
+    // Show interstitial ad at the natural transition point (roster → live match)
+    await showInterstitial();
+
     // Navigate to LiveMatch screen
     console.log("🚀 [NewMatchScreen] Navigating with matchData:", JSON.stringify({
       clubId: matchData.clubId,
@@ -691,15 +714,19 @@ export default function NewMatchScreen() {
   const selectedTeam = teams.find((t) => t.id === selectedTeamId) || null;
   // For guests, validate myTeamName; for authenticated users, validate selectedTeamId
   const isStep1Valid = opponent && (user ? selectedTeamId : myTeamName);
+  const selectedHomePlayerIds = new Set(selectedHomePlayers.map((p) => p.id));
+  const selectedPlayerNumberErrors = [...playerNumberErrors].filter((id) =>
+    selectedHomePlayerIds.has(id)
+  );
   const isStep2Valid =
     selectedHomePlayers.length >= ROSTER_LIMITS.MIN_PLAYERS &&
     starters.length === Math.min(ROSTER_LIMITS.STARTERS, selectedHomePlayers.length) &&
-    playerNumberErrors.size === 0; // Block if there are number errors
+    selectedPlayerNumberErrors.length === 0; // Block only if selected players have number errors
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header with Progress Bar */}
-      <MatchHeader step={step} onBack={handleBack} colors={themeColors} sp={sp} font={font} sizes={sizes} />
+      <MatchHeader step={step} onBack={handleBack} />
 
       {/* STEP 1: CONFIGURATION */}
       {step === 1 && (
@@ -714,17 +741,12 @@ export default function NewMatchScreen() {
             onMyTeamNameChange={setMyTeamName}
             isGuest={!user}
             colors={themeColors}
-            sp={sp}
-            font={font}
-            sizes={sizes}
           />
 
           <OpponentInput
             value={opponent}
             onChangeText={setOpponent}
             colors={themeColors}
-            sp={sp}
-            font={font}
           />
 
           <MatchFormatSelector
@@ -734,16 +756,12 @@ export default function NewMatchScreen() {
             onPeriodDurationChange={setPeriodDuration}
             isDark={isDark}
             colors={themeColors}
-            sp={sp}
-            font={font}
           />
 
           <LocationSelector
             isHome={isHome}
             onLocationChange={setIsHome}
             colors={themeColors}
-            sp={sp}
-            font={font}
           />
 
           <OpponentStatsToggle
@@ -751,15 +769,17 @@ export default function NewMatchScreen() {
             onToggle={() => setTrackOpponentStats(!trackOpponentStats)}
             isDark={isDark}
             colors={themeColors}
-            sp={sp}
-            font={font}
           />
         </ScrollView>
       )}
 
       {/* STEP 2: ROSTERS */}
       {step === 2 && (
-        <View style={styles.rosterContainer}>
+        <KeyboardAvoidingView
+          style={styles.rosterContainer}
+          behavior={Platform.OS === PlatformOS.IOS ? "padding" : "height"}
+          keyboardVerticalOffset={80}
+        >
           <RosterTabSwitch
             activeTab={rosterTab}
             onTabChange={setRosterTab}
@@ -767,13 +787,12 @@ export default function NewMatchScreen() {
             opponentCount={opponentRoster.length}
             isDark={isDark}
             colors={themeColors}
-            sp={sp}
-            font={font}
           />
 
           <ScrollView
             style={styles.rosterContent}
             contentContainerStyle={[styles.rosterScrollContent, { padding: sp.md }]}
+            keyboardShouldPersistTaps="handled"
           >
             {rosterTab === "HOME" ? (
               <HomeRosterView
@@ -782,10 +801,12 @@ export default function NewMatchScreen() {
                 starters={starters}
                 tempPlayerName={tempHomePlayerName}
                 tempPlayerNumber={tempHomePlayerNumber}
+                tempPlayerLicense={tempHomePlayerLicense}
                 onTogglePlayer={toggleHomePlayer}
                 onToggleStarter={toggleStarter}
                 onTempNameChange={setTempHomePlayerName}
                 onTempNumberChange={setTempHomePlayerNumber}
+                onTempLicenseChange={setTempHomePlayerLicense}
                 onAddTempPlayer={addTempHomePlayer}
                 onPlayerNumberChange={handlePlayerNumberChange}
                 onNumberError={handlePlayerNumberError}
@@ -799,8 +820,10 @@ export default function NewMatchScreen() {
                 opponentStarters={opponentStarters}
                 newPlayerName={newOppPlayerName}
                 newPlayerNumber={newOppPlayerNumber}
+                newPlayerLicense={newOppPlayerLicense}
                 onNewNameChange={setNewOppPlayerName}
                 onNewNumberChange={setNewOppPlayerNumber}
+                onNewLicenseChange={setNewOppPlayerLicense}
                 onAddPlayer={addOpponentPlayer}
                 onGeneratePlayers={generateOpponentRoster}
                 onToggleStarter={toggleOpponentStarter}
@@ -811,7 +834,7 @@ export default function NewMatchScreen() {
               />
             )}
           </ScrollView>
-        </View>
+        </KeyboardAvoidingView>
       )}
 
       {/* Footer with Action Button */}
@@ -821,8 +844,6 @@ export default function NewMatchScreen() {
         onPress={step === 1 ? handleNextStep : handleStart}
         isDark={isDark}
         colors={themeColors}
-        sp={sp}
-        font={font}
       />
     </View>
   );

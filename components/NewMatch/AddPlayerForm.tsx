@@ -17,14 +17,20 @@ interface AddPlayerFormProps {
   name: string;
   /** Player number input value */
   number: string;
+  /** Player license number input value */
+  license: string;
   /** Callback when name changes */
   onNameChange: (text: string) => void;
   /** Callback when number changes */
   onNumberChange: (text: string) => void;
+  /** Callback when license changes */
+  onLicenseChange: (text: string) => void;
   /** Callback when add button is pressed */
   onAdd: () => void;
-  /** All players to check for duplicates */
+  /** All available players (unused for duplicate check) */
   allPlayers?: Player[];
+  /** Selected players only — used for duplicate number check */
+  selectedPlayers?: Player[];
   /** Whether dark mode is enabled */
   isDark: boolean;
   /** Theme colors */
@@ -42,10 +48,13 @@ interface AddPlayerFormProps {
 export const AddPlayerForm: React.FC<AddPlayerFormProps> = ({
   name,
   number,
+  license,
   onNameChange,
   onNumberChange,
+  onLicenseChange,
   onAdd,
   allPlayers = [],
+  selectedPlayers,
   isDark,
   colors,
 }) => {
@@ -67,8 +76,9 @@ export const AddPlayerForm: React.FC<AddPlayerFormProps> = ({
       return;
     }
 
-    // Check for duplicate number
-    const isDuplicateNumber = allPlayers.some(
+    // Check for duplicate number only among selected players
+    const playersToCheck = selectedPlayers ?? allPlayers;
+    const isDuplicateNumber = playersToCheck.some(
       (p) => p.jerseyNumber === numValue
     );
 
@@ -164,6 +174,25 @@ export const AddPlayerForm: React.FC<AddPlayerFormProps> = ({
           />
         </TouchableOpacity>
       </View>
+      <TextInput
+        placeholder="VTXXXXXX"
+        placeholderTextColor={colors.textSecondary}
+        value={license}
+        onChangeText={onLicenseChange}
+        autoCapitalize="characters"
+        style={[
+          styles.addPlayerInput,
+          {
+            backgroundColor: colors.surfaceColor,
+            borderColor: colors.borderColor,
+            color: colors.textPrimary,
+            padding: sp.sm + sp.xs,
+            borderRadius: sp.sm,
+            fontSize: font.md,
+            marginTop: sp.xs,
+          },
+        ]}
+      />
       {error && <Text style={[styles.errorText, { fontSize: font.sm, marginTop: sp.sm }]}>{error}</Text>}
     </View>
   );

@@ -23,6 +23,7 @@ import { OPACITY } from "../src/theme";
 import { Club } from "../models/Club";
 import { TeamStatus } from "../models/Team";
 import SyncErrorModal from "../components/SyncErrorModal";
+import { BannerAdView } from "../components/ads/BannerAdView";
 import { showErrorAlert } from "../utils/errorAlert";
 
 interface HistoryScreenProps {
@@ -491,6 +492,7 @@ export default function HistoryScreen({ navigation }: HistoryScreenProps) {
           )}
         </View>
       </ScrollView>
+      <BannerAdView />
 
       {/* Sync Error Modal */}
       <SyncErrorModal

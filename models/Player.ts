@@ -4,6 +4,7 @@ export interface Player {
   name: string;
   jerseyNumber: number;
   photoUrl?: string;
+  licenseNumber?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -13,10 +14,12 @@ export interface CreatePlayerData {
   name: string;
   jerseyNumber: number;
   photoUrl?: string;
+  licenseNumber?: string;
 }
 
 export interface UpdatePlayerData {
   name?: string;
   jerseyNumber?: number;
   photoUrl?: string;
+  licenseNumber?: string;
 }

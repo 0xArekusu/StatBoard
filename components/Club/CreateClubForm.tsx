@@ -15,6 +15,7 @@ import {
   ClubFormData,
   CLUB_COLOR_PALETTE,
   COURT_COLOR_PALETTE,
+  CLUB_VALIDATION,
 } from "../../constants/clubConstants";
 import CourtPreview from "./CourtPreview";
 import ColorPickerModal from "./ColorPickerModal";
@@ -94,6 +95,7 @@ export default function CreateClubForm({
             placeholderTextColor={colors.text.secondary}
             value={formData.name}
             onChangeText={(value) => setFormData({ ...formData, name: value })}
+            maxLength={CLUB_VALIDATION.NAME_MAX_LENGTH}
             style={[
               styles.formInput,
               {
