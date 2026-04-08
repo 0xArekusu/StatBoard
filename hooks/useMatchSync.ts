@@ -17,6 +17,7 @@ import { ActionRepository } from "../src/services/database/ActionRepository";
 import { logInfo, logError, logWarn } from "../utils/logger";
 import { ROUTES } from "../constants/routes";
 import { TeamId } from "../constants/liveMatchConstants";
+import { MatchSyncService } from "../src/services/api/MatchSyncService";
 
 interface UseMatchSyncProps {
   currentMatchId: string | null;
@@ -110,9 +111,6 @@ export function useMatchSync({
       try {
         setIsSyncing(true);
 
-        const { MatchSyncService } = await import(
-          "../src/services/api/MatchSyncService"
-        );
         const syncService = new MatchSyncService(supabase);
 
         logInfo("useMatchSync", "🔄 Checking sync eligibility", {
