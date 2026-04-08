@@ -16,6 +16,7 @@ import { CommonStyles } from "../../src/theme";
 import { useResponsive } from "../../src/hooks/useResponsive";
 import { ROUTES } from "../../constants/routes";
 import { TeamGender, TEAM_GENDER_LABELS } from "../../models/Team";
+import { CLUB_VALIDATION } from "../../constants/clubConstants";
 import { ServiceFactory } from "../../services/ServiceFactory";
 import { supabase } from "../../src/config/supabase";
 import { RootStackParamList, RootNavigationProp } from "../../types/navigation";
@@ -210,7 +211,7 @@ export default function TeamInfoScreen() {
             placeholderTextColor={colors.text.tertiary}
             value={name}
             onChangeText={setName}
-            maxLength={50}
+            maxLength={CLUB_VALIDATION.NAME_MAX_LENGTH}
           />
         </View>
 

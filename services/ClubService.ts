@@ -2,6 +2,7 @@ import { Club, CreateClubData, UpdateClubData } from "../models/Club";
 import { IClubRepository } from "../repositories/IClubRepository";
 import { AdminService } from "./AdminService";
 import { SubscriptionTier } from "../models/Subscription";
+import { CLUB_VALIDATION } from "../constants/clubConstants";
 
 /**
  * Service Layer Pattern
@@ -29,9 +30,9 @@ export class ClubService {
       return { success: false, error: "Club name is required" };
     }
 
-    if (data.name.length > 30) {
+    if (data.name.length > CLUB_VALIDATION.NAME_MAX_LENGTH) {
       console.log('❌ [ClubService] Validation failed: Club name too long');
-      return { success: false, error: "Club name must be 30 characters or less" };
+      return { success: false, error: `Le nom du club ne peut pas dépasser ${CLUB_VALIDATION.NAME_MAX_LENGTH} caractères` };
     }
 
     if (!data.acronym.trim()) {
@@ -39,9 +40,9 @@ export class ClubService {
       return { success: false, error: "Club acronym is required" };
     }
 
-    if (data.acronym.length > 5) {
+    if (data.acronym.length > CLUB_VALIDATION.ACRONYM_MAX_LENGTH) {
       console.log('❌ [ClubService] Validation failed: Club acronym too long');
-      return { success: false, error: "Club acronym must be 5 characters or less" };
+      return { success: false, error: `Le sigle ne peut pas dépasser ${CLUB_VALIDATION.ACRONYM_MAX_LENGTH} caractères` };
     }
 
     // Check if user already has a club (admins can create multiple clubs)
@@ -113,16 +114,16 @@ export class ClubService {
       return { success: false, error: "Club name cannot be empty" };
     }
 
-    if (data.name !== undefined && data.name.length > 30) {
-      return { success: false, error: "Club name must be 30 characters or less" };
+    if (data.name !== undefined && data.name.length > CLUB_VALIDATION.NAME_MAX_LENGTH) {
+      return { success: false, error: `Le nom du club ne peut pas dépasser ${CLUB_VALIDATION.NAME_MAX_LENGTH} caractères` };
     }
 
     if (data.acronym !== undefined && !data.acronym.trim()) {
       return { success: false, error: "Club acronym cannot be empty" };
     }
 
-    if (data.acronym !== undefined && data.acronym.length > 5) {
-      return { success: false, error: "Club acronym must be 5 characters or less" };
+    if (data.acronym !== undefined && data.acronym.length > CLUB_VALIDATION.ACRONYM_MAX_LENGTH) {
+      return { success: false, error: `Le sigle ne peut pas dépasser ${CLUB_VALIDATION.ACRONYM_MAX_LENGTH} caractères` };
     }
 
     // Update club
