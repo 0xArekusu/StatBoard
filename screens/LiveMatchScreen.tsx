@@ -63,7 +63,10 @@ import {
   ViewMode,
   FilterMode,
   TeamFilterMode,
+  ChainContext,
+  ChainSuggestion,
 } from "../constants/liveMatchConstants";
+import { getChainContext } from "../utils/actionChainRules";
 import {
   COURT_SVG_WIDTH_PORTRAIT,
   COURT_SVG_HEIGHT_PORTRAIT,
@@ -71,7 +74,7 @@ import {
 import { DEFAULT_COURT_COLORS } from "../src/theme/colors";
 import { supabase } from "../src/config/supabase";
 import { MatchActionGrid, ActionData } from "../components/MatchActionGrid";
-import { CourtView, MatchHeader, MatchToolbar } from "../components/LiveMatch";
+import { CourtView, MatchHeader, MatchToolbar, ActionChainModal } from "../components/LiveMatch";
 import { useMatchSync } from "../hooks/useMatchSync";
 import { useResponsive } from "../src/hooks/useResponsive";
 import { BREAKPOINTS } from "../constants/breakpoints";
@@ -291,6 +294,7 @@ export default function LiveMatchScreen() {
     coords?: { x: number; y: number };
     playerId?: string;
   }>({});
+  const [chainContext, setChainContext] = useState<ChainContext | null>(null);
 
   // ========================================
   // ADMIN STATUS CHECK
@@ -1315,6 +1319,41 @@ export default function LiveMatchScreen() {
 
     setMatch(updatedMatch);
 
+    // Vérifier si une action chaînée doit être suggérée
+    const chain = getChainContext(
+      newEvent,
+      match.trackOpponentStats,
+      match.location,
+      match.myTeamName,
+      match.opponent,
+    );
+    if (chain) {
+      setChainContext(chain);
+      setWorkflowStep(WorkflowStep.SUGGEST_CHAIN);
+      setPendingEvent({});
+    } else {
+      closeWorkflow();
+    }
+  };
+
+  const handleChainPlayerSelect = (suggestion: ChainSuggestion, player: Player) => {
+    const coords = chainContext?.inheritCoords
+      ? {
+          x: chainContext.inheritCoords.x * COURT_SVG_WIDTH_PORTRAIT,
+          y: chainContext.inheritCoords.y * COURT_SVG_HEIGHT_PORTRAIT,
+        }
+      : undefined;
+    finalizeEvent(
+      suggestion.action_type,
+      suggestion.specification,
+      0,
+      player.id,
+      coords,
+    );
+  };
+
+  const handleChainIgnore = () => {
+    setChainContext(null);
     closeWorkflow();
   };
 
@@ -1694,6 +1733,16 @@ export default function LiveMatchScreen() {
         opponentPlayersOnCourt={opponentPlayersOnCourt}
         playerSelectionTab={playerSelectionTab}
         setPlayerSelectionTab={setPlayerSelectionTab}
+      />
+
+      <ActionChainModal
+        visible={workflowStep === WorkflowStep.SUGGEST_CHAIN}
+        chainContext={chainContext}
+        playersOnCourt={playersOnCourt}
+        opponentPlayersOnCourt={opponentPlayersOnCourt}
+        myTeamId={match.location}
+        onPlayerSelect={handleChainPlayerSelect}
+        onIgnore={handleChainIgnore}
       />
 
       <CourtActionModal

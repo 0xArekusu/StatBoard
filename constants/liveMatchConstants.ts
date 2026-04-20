@@ -22,6 +22,7 @@ export enum WorkflowStep {
   SELECT_PLAYER = "SELECT_PLAYER",
   SELECT_ACTION_FROM_COURT = "SELECT_ACTION_FROM_COURT",
   SUBSTITUTION = "SUBSTITUTION",
+  SUGGEST_CHAIN = "SUGGEST_CHAIN",
 }
 
 // ===========================
@@ -124,6 +125,34 @@ export enum TeamFilterMode {
   ALL = "all",
   US = "us",
   THEM = "them",
+}
+
+// ===========================
+// UI DISPLAY SETTINGS
+// ===========================
+
+// ===========================
+// ACTION CHAIN
+// ===========================
+
+/**
+ * A single suggestion proposed after an action is finalized
+ */
+export interface ChainSuggestion {
+  label: string;
+  action_type: string;
+  specification?: string;
+  teamTab: TeamId;
+  teamLabel: string;
+}
+
+/**
+ * Context passed to the ActionChainModal after an action is finalized
+ */
+export interface ChainContext {
+  triggerDescription: string;
+  suggestions: ChainSuggestion[];
+  inheritCoords?: { x: number; y: number };
 }
 
 // ===========================
