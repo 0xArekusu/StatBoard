@@ -9,8 +9,8 @@ import {
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useTheme } from "../../src/contexts/ThemeContext";
 import { useResponsive } from "../../src/hooks/useResponsive";
-import { ACTION_COLORS, STATUS_COLORS } from "../../src/theme/colors";
-import { ReboundSpecification } from "../../src/models/ActionTypes";
+import { STATUS_COLORS } from "../../src/theme/colors";
+import { getActionColor } from "../../src/models/ActionTypes";
 import {
   ChainContext,
   ChainSuggestion,
@@ -68,12 +68,8 @@ export const ActionChainModal: React.FC<ActionChainModalProps> = ({
 
   const activeSuggestion =
     selectedIndex !== null ? chainContext.suggestions[selectedIndex] : null;
-  const isDefensiveActive =
-    activeSuggestion?.specification === ReboundSpecification.DEFENSIVE;
   const confirmColor = activeSuggestion
-    ? isDefensiveActive
-      ? ACTION_COLORS.rebound.defensive
-      : ACTION_COLORS.rebound.offensive
+    ? getActionColor(activeSuggestion.action_type, activeSuggestion.specification)
     : STATUS_COLORS.success;
 
   return (
@@ -101,13 +97,11 @@ export const ActionChainModal: React.FC<ActionChainModalProps> = ({
           <View style={{ gap: sp.lg }}>
             {chainContext.suggestions.map((suggestion, index) => {
               const isSelected = selectedIndex === index;
-              const isDefensive = suggestion.specification === ReboundSpecification.DEFENSIVE;
-              const accentColor = isDefensive
-                ? ACTION_COLORS.rebound.defensive
-                : ACTION_COLORS.rebound.offensive;
-              const players = suggestion.teamTab === myTeamId
+              const accentColor = getActionColor(suggestion.action_type, suggestion.specification);
+              const players = (suggestion.teamTab === myTeamId
                 ? playersOnCourt
-                : opponentPlayersOnCourt;
+                : opponentPlayersOnCourt
+              ).filter((p) => !suggestion.excludePlayerIds?.includes(p.id));
 
               return (
                 <View key={index}>

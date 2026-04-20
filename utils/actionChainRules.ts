@@ -2,8 +2,8 @@
  * Action Chain Rules
  *
  * Defines which actions trigger a "next action" suggestion after being finalized.
- * Only the first step (tir raté → rebond) is implemented here.
- * Further chains (assist, foul drawn, turnover) will be added incrementally.
+ * Implemented chains: missed shot → rebound, made shot (2/3pts) → assist.
+ * Further chains (foul drawn, turnover) will be added incrementally.
  */
 
 import {
@@ -32,20 +32,20 @@ export function getChainContext(
   const opponentTeamId =
     myTeamId === TeamId.HOME ? TeamId.AWAY : TeamId.HOME;
 
-  // ── Tir raté → Rebond ──────────────────────────────────────────────────────
+  // ── Missed shot → Rebound ─────────────────────────────────────────────────
   if (
     event.action_type === ActionType.SHOT &&
     event.specification === ShotSpecification.MISSED
   ) {
     const playerLabel = event.playerNumber
       ? `#${event.playerNumber}`
-      : "joueur";
+      : "player";
     const isMyTeam = event.teamId === myTeamId;
 
     const suggestions: ChainSuggestion[] = [];
 
     if (isMyTeam) {
-      // Mon équipe a raté → Reb. Défensif (adverse) en premier, puis Offensif
+      // My team missed → defensive rebound (opponent) first, then offensive
       if (trackOpponentStats) {
         suggestions.push({
           label: "Reb. Défensif",
@@ -63,7 +63,7 @@ export function getChainContext(
         teamLabel: myTeamName,
       });
     } else {
-      // Adversaire a raté → Reb. Défensif (mon équipe) en premier, puis Offensif
+      // Opponent missed → defensive rebound (my team) first, then offensive
       suggestions.push({
         label: "Reb. Défensif",
         action_type: ActionType.REBOUND,
@@ -85,6 +85,38 @@ export function getChainContext(
     return {
       triggerDescription: `Tir raté — ${playerLabel}`,
       suggestions,
+      inheritCoords: event.coordinates,
+    };
+  }
+
+  // ── Made shot (2 or 3pts) → Assist ────────────────────────────────────────
+  if (
+    event.action_type === ActionType.SHOT &&
+    event.specification === ShotSpecification.MADE &&
+    event.points !== undefined &&
+    event.points >= 2
+  ) {
+    const isMyTeam = event.teamId === myTeamId;
+
+    // Opponent scored but opponent stats not tracked → no suggestion
+    if (!isMyTeam && !trackOpponentStats) return null;
+
+    const teamTab = event.teamId as TeamId;
+    const teamLabel = isMyTeam ? myTeamName : opponentName;
+    const playerLabel = event.playerNumber ? `#${event.playerNumber}` : "player";
+
+    return {
+      triggerDescription: `Panier — ${playerLabel} (${event.points} pts)`,
+      suggestions: [
+        {
+          label: "Passe décisive",
+          action_type: ActionType.ASSIST,
+          specification: undefined,
+          teamTab,
+          teamLabel,
+          excludePlayerIds: event.playerId ? [event.playerId] : [],
+        },
+      ],
       inheritCoords: event.coordinates,
     };
   }

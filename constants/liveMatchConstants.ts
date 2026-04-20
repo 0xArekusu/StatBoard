@@ -144,6 +144,7 @@ export interface ChainSuggestion {
   specification?: string;
   teamTab: TeamId;
   teamLabel: string;
+  excludePlayerIds?: string[];
 }
 
 /**
