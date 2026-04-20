@@ -1215,6 +1215,7 @@ export default function LiveMatchScreen() {
     points: number,
     playerId: string,
     coords?: { x: number; y: number },
+    fromChainActionType?: string,
   ) => {
     // Set started_at on first action if not already set
     if (currentMatchId) {
@@ -1326,6 +1327,7 @@ export default function LiveMatchScreen() {
       match.location,
       match.myTeamName,
       match.opponent,
+      fromChainActionType,
     );
     if (chain) {
       setChainContext(chain);
@@ -1349,6 +1351,7 @@ export default function LiveMatchScreen() {
       0,
       player.id,
       coords,
+      chainContext?.triggerActionType,
     );
   };
 

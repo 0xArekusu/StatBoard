@@ -28,6 +28,7 @@ export function getChainContext(
   myTeamId: TeamId,
   myTeamName: string,
   opponentName: string,
+  fromChainActionType?: string,
 ): ChainContext | null {
   const opponentTeamId =
     myTeamId === TeamId.HOME ? TeamId.AWAY : TeamId.HOME;
@@ -115,6 +116,66 @@ export function getChainContext(
           teamTab,
           teamLabel,
           excludePlayerIds: event.playerId ? [event.playerId] : [],
+        },
+      ],
+      inheritCoords: event.coordinates,
+    };
+  }
+
+  // ── Turnover → Steal ──────────────────────────────────────────────────────
+  if (event.action_type === ActionType.TURNOVER) {
+    // Break cycle: don't suggest steal if this turnover was already chained from a steal
+    if (fromChainActionType === ActionType.STEAL) return null;
+
+    const isMyTeam = event.teamId === myTeamId;
+
+    // My team turned it over but opponent stats not tracked → no suggestion
+    if (isMyTeam && !trackOpponentStats) return null;
+
+    const stealTeamTab = isMyTeam ? opponentTeamId : myTeamId;
+    const stealTeamLabel = isMyTeam ? opponentName : myTeamName;
+    const playerLabel = event.playerNumber ? `#${event.playerNumber}` : "player";
+
+    return {
+      triggerDescription: `Balle perdue — ${playerLabel}`,
+      triggerActionType: ActionType.TURNOVER,
+      suggestions: [
+        {
+          label: "Interception",
+          action_type: ActionType.STEAL,
+          specification: undefined,
+          teamTab: stealTeamTab,
+          teamLabel: stealTeamLabel,
+        },
+      ],
+      inheritCoords: event.coordinates,
+    };
+  }
+
+  // ── Steal → Turnover ──────────────────────────────────────────────────────
+  if (event.action_type === ActionType.STEAL) {
+    // Break cycle: don't suggest turnover if this steal was already chained from a turnover
+    if (fromChainActionType === ActionType.TURNOVER) return null;
+
+    const isMyTeam = event.teamId === myTeamId;
+
+    // Opponent stole but opponent stats not tracked → no suggestion
+    if (!isMyTeam && !trackOpponentStats) return null;
+
+    const turnoverTeamTab = isMyTeam ? opponentTeamId : myTeamId;
+    const turnoverTeamLabel = isMyTeam ? opponentName : myTeamName;
+    const playerLabel = event.playerNumber ? `#${event.playerNumber}` : "player";
+
+    return {
+      triggerDescription: `Interception — ${playerLabel}`,
+      triggerActionType: ActionType.STEAL,
+      suggestions: [
+        {
+          label: "Balle perdue",
+          action_type: ActionType.TURNOVER,
+          specification: undefined,
+          teamTab: turnoverTeamTab,
+          teamLabel: turnoverTeamLabel,
         },
       ],
       inheritCoords: event.coordinates,

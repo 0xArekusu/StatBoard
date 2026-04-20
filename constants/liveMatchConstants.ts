@@ -152,6 +152,7 @@ export interface ChainSuggestion {
  */
 export interface ChainContext {
   triggerDescription: string;
+  triggerActionType?: string;
   suggestions: ChainSuggestion[];
   inheritCoords?: { x: number; y: number };
 }
