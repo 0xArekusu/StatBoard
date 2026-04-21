@@ -1336,22 +1336,19 @@ export default function LiveMatchScreen() {
       return;
     }
 
-    // FOUL by our team triggers foul chain modal — ask who drew the foul
+    // FOUL triggers foul chain modal — ask who drew the foul (either team)
     if (action_type === ActionType.FOUL && match.trackOpponentStats) {
-      const isMyTeamFoul = teamId === match.location;
-      if (isMyTeamFoul) {
-        setFoulChainContext({
-          foulDrawnPlayerId: playerId,
-          foulDrawnPlayerNumber: player?.jerseyNumber || 0,
-          foulDrawnPlayerName: player?.name || "",
-          foulDrawnTeamId: teamId,
-          coords,
-          mode: "foul_committed",
-        });
-        setWorkflowStep(WorkflowStep.FOUL_CHAIN);
-        setPendingEvent({});
-        return;
-      }
+      setFoulChainContext({
+        foulDrawnPlayerId: playerId,
+        foulDrawnPlayerNumber: player?.jerseyNumber || 0,
+        foulDrawnPlayerName: player?.name || "",
+        foulDrawnTeamId: teamId,
+        coords,
+        mode: "foul_committed",
+      });
+      setWorkflowStep(WorkflowStep.FOUL_CHAIN);
+      setPendingEvent({});
+      return;
     }
 
     // Standard action chain check
