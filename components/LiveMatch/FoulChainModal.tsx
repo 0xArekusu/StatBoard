@@ -11,7 +11,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useTheme } from "../../src/contexts/ThemeContext";
 import { useResponsive } from "../../src/hooks/useResponsive";
 import { ACTION_COLORS, STATUS_COLORS } from "../../src/theme/colors";
-import { FoulChainContext } from "../../constants/liveMatchConstants";
+import { FoulChainContext, TeamId } from "../../constants/liveMatchConstants";
 import { Player } from "../../models/Player";
 
 export interface FoulChainResult {
@@ -23,7 +23,9 @@ export interface FoulChainResult {
 interface FoulChainModalProps {
   visible: boolean;
   context: FoulChainContext | null;
+  playersOnCourt: Player[];
   opponentPlayersOnCourt: Player[];
+  myTeamId: TeamId;
   trackOpponentStats: boolean;
   onComplete: (result: FoulChainResult) => void;
   onIgnore: () => void;
@@ -32,7 +34,9 @@ interface FoulChainModalProps {
 export const FoulChainModal: React.FC<FoulChainModalProps> = ({
   visible,
   context,
+  playersOnCourt,
   opponentPlayersOnCourt,
+  myTeamId,
   trackOpponentStats,
   onComplete,
   onIgnore,
@@ -103,6 +107,12 @@ export const FoulChainModal: React.FC<FoulChainModalProps> = ({
 
   if (!context) return null;
 
+  // If the player who drew the foul is on our team → opponent committed → show opponents
+  // If the player who drew the foul is on the opponent team → our player committed → show our players
+  const foulPlayerList = context.foulDrawnTeamId === myTeamId
+    ? opponentPlayersOnCourt
+    : playersOnCourt;
+
   const foulColor = ACTION_COLORS.foul.base;
   const accentColor = ACTION_COLORS.foulDrawn;
 
@@ -138,7 +148,7 @@ export const FoulChainModal: React.FC<FoulChainModalProps> = ({
                   {isFoulCommitted ? "Qui a provoqué la faute ?" : "Qui a commis la faute ?"}
                 </Text>
                 <View style={[styles.playerRow, { gap: sp.xs }]}>
-                  {opponentPlayersOnCourt
+                  {foulPlayerList
                     .slice()
                     .sort((a, b) => a.jerseyNumber - b.jerseyNumber)
                     .map((player) => {

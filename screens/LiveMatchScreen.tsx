@@ -2036,7 +2036,9 @@ export default function LiveMatchScreen() {
       <FoulChainModal
         visible={workflowStep === WorkflowStep.FOUL_CHAIN}
         context={foulChainContext}
+        playersOnCourt={playersOnCourt}
         opponentPlayersOnCourt={opponentPlayersOnCourt}
+        myTeamId={match.location}
         trackOpponentStats={match.trackOpponentStats}
         onComplete={handleFoulChainComplete}
         onIgnore={handleFoulChainIgnore}
