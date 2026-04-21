@@ -66,6 +66,7 @@ import {
   ChainContext,
   ChainSuggestion,
   FoulChainContext,
+  ShotChainContext,
 } from "../constants/liveMatchConstants";
 import { getChainContext } from "../utils/actionChainRules";
 import {
@@ -75,7 +76,7 @@ import {
 import { DEFAULT_COURT_COLORS } from "../src/theme/colors";
 import { supabase } from "../src/config/supabase";
 import { MatchActionGrid, ActionData } from "../components/MatchActionGrid";
-import { CourtView, MatchHeader, MatchToolbar, ActionChainModal, FoulChainModal, FoulChainResult } from "../components/LiveMatch";
+import { CourtView, MatchHeader, MatchToolbar, ActionChainModal, FoulChainModal, FoulChainResult, ShotChainModal, ShotChainResult } from "../components/LiveMatch";
 import { useMatchSync } from "../hooks/useMatchSync";
 import { useResponsive } from "../src/hooks/useResponsive";
 import { BREAKPOINTS } from "../constants/breakpoints";
@@ -297,6 +298,7 @@ export default function LiveMatchScreen() {
   }>({});
   const [chainContext, setChainContext] = useState<ChainContext | null>(null);
   const [foulChainContext, setFoulChainContext] = useState<FoulChainContext | null>(null);
+  const [shotChainContext, setShotChainContext] = useState<ShotChainContext | null>(null);
 
   // ========================================
   // ADMIN STATUS CHECK
@@ -1351,6 +1353,19 @@ export default function LiveMatchScreen() {
       return;
     }
 
+    // SHOT.MISSED triggers ShotChainModal (block + rebound)
+    if (action_type === ActionType.SHOT && specification === ShotSpecification.MISSED) {
+      setShotChainContext({
+        shotPlayerId: playerId,
+        shotPlayerNumber: player?.jerseyNumber || 0,
+        shotTeamId: teamId,
+        coords,
+      });
+      setWorkflowStep(WorkflowStep.SHOT_CHAIN);
+      setPendingEvent({});
+      return;
+    }
+
     // Standard action chain check
     const chain = getChainContext(
       newEvent,
@@ -1393,6 +1408,109 @@ export default function LiveMatchScreen() {
 
   const handleFoulChainIgnore = () => {
     setFoulChainContext(null);
+    closeWorkflow();
+  };
+
+  const handleShotChainIgnore = () => {
+    setShotChainContext(null);
+    closeWorkflow();
+  };
+
+  const handleShotChainComplete = async (result: ShotChainResult) => {
+    if (!shotChainContext) return;
+
+    const { shotPlayerId, shotPlayerNumber, shotTeamId, coords } = shotChainContext;
+    const isMyTeamShot = shotTeamId === match.location;
+    const shotTeam = isMyTeamShot ? Team.MY_TEAM : Team.OPPONENT;
+    const opponentTeamId = shotTeamId === TeamId.HOME ? TeamId.AWAY : TeamId.HOME;
+    const normalizedCoords = coords
+      ? { x: coords.x / COURT_SVG_WIDTH_PORTRAIT, y: coords.y / COURT_SVG_HEIGHT_PORTRAIT }
+      : undefined;
+
+    const updatedMatch = { ...match, events: [...(match.events || [])] };
+
+    // 1. Save BLOCK if blocked
+    if (result.blockerPlayer) {
+      const blockerTeam = isMyTeamShot ? Team.OPPONENT : Team.MY_TEAM;
+      const blockerTeamId = opponentTeamId;
+      const blockId = await saveActionToDatabase(
+        ActionType.BLOCK, undefined, 0,
+        result.blockerPlayer.jerseyNumber, blockerTeam, coords,
+      );
+      updatedMatch.events = [{
+        id: blockId || `temp-${Date.now()}`,
+        action_type: ActionType.BLOCK,
+        specification: undefined,
+        points: 0,
+        playerId: result.blockerPlayer.id,
+        playerNumber: result.blockerPlayer.jerseyNumber,
+        teamId: blockerTeamId,
+        timestamp: Date.now(),
+        description: `Contre — #${result.blockerPlayer.jerseyNumber}`,
+        coordinates: normalizedCoords,
+        period_number: quarter,
+        time_in_period: periodDurationMin * 60 - timer,
+      }, ...updatedMatch.events];
+    }
+
+    // 2. Save REBOUND if selected
+    if (result.reboundSpec && result.reboundPlayer) {
+      const isDefensive = result.reboundSpec === "defensive";
+      // Defensive rebound: opponents of shooting team. Offensive: shooting team.
+      const reboundTeam = isDefensive
+        ? (isMyTeamShot ? Team.OPPONENT : Team.MY_TEAM)
+        : shotTeam;
+      const reboundTeamId = isDefensive ? opponentTeamId : shotTeamId;
+      const reboundId = await saveActionToDatabase(
+        ActionType.REBOUND, result.reboundSpec, 0,
+        result.reboundPlayer.jerseyNumber, reboundTeam, coords,
+      );
+      updatedMatch.events = [{
+        id: reboundId || `temp-${Date.now()}`,
+        action_type: ActionType.REBOUND,
+        specification: result.reboundSpec,
+        points: 0,
+        playerId: result.reboundPlayer.id,
+        playerNumber: result.reboundPlayer.jerseyNumber,
+        teamId: reboundTeamId,
+        timestamp: Date.now(),
+        description: `Rebond ${isDefensive ? "Défensif" : "Offensif"} — #${result.reboundPlayer.jerseyNumber}`,
+        coordinates: normalizedCoords,
+        period_number: quarter,
+        time_in_period: periodDurationMin * 60 - timer,
+      }, ...updatedMatch.events];
+    }
+
+    setMatch(updatedMatch);
+    setShotChainContext(null);
+
+    // 3. If offensive rebound → suggest a new shot chain via ActionChainModal
+    if (result.reboundSpec === "offensive" && result.reboundPlayer) {
+      const syntheticEvent: MatchEvent = {
+        id: "reb-chain",
+        action_type: ActionType.REBOUND,
+        specification: "offensive",
+        points: 0,
+        playerId: result.reboundPlayer.id,
+        playerNumber: result.reboundPlayer.jerseyNumber,
+        teamId: isMyTeamShot ? shotTeamId : opponentTeamId,
+        timestamp: Date.now(),
+        description: "",
+        coordinates: normalizedCoords,
+        period_number: quarter,
+        time_in_period: periodDurationMin * 60 - timer,
+      };
+      const chain = getChainContext(
+        syntheticEvent, match.trackOpponentStats, match.location,
+        match.myTeamName, match.opponent, undefined,
+      );
+      if (chain) {
+        setChainContext(chain);
+        setWorkflowStep(WorkflowStep.SUGGEST_CHAIN);
+        return;
+      }
+    }
+
     closeWorkflow();
   };
 
@@ -2028,6 +2146,17 @@ export default function LiveMatchScreen() {
         myTeamId={match.location}
         onPlayerSelect={handleChainPlayerSelect}
         onIgnore={handleChainIgnore}
+      />
+
+      <ShotChainModal
+        visible={workflowStep === WorkflowStep.SHOT_CHAIN}
+        context={shotChainContext}
+        playersOnCourt={playersOnCourt}
+        opponentPlayersOnCourt={opponentPlayersOnCourt}
+        myTeamId={match.location}
+        trackOpponentStats={match.trackOpponentStats}
+        onComplete={handleShotChainComplete}
+        onIgnore={handleShotChainIgnore}
       />
 
       <FoulChainModal

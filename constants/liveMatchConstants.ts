@@ -24,6 +24,7 @@ export enum WorkflowStep {
   SUBSTITUTION = "SUBSTITUTION",
   SUGGEST_CHAIN = "SUGGEST_CHAIN",
   FOUL_CHAIN = "FOUL_CHAIN",
+  SHOT_CHAIN = "SHOT_CHAIN",
 }
 
 // ===========================
@@ -139,6 +140,16 @@ export enum TeamFilterMode {
 // ===========================
 // FOUL CHAIN
 // ===========================
+
+/**
+ * Context passed to ShotChainModal after a missed shot is finalized
+ */
+export interface ShotChainContext {
+  shotPlayerId: string;
+  shotPlayerNumber: number;
+  shotTeamId: TeamId;
+  coords?: { x: number; y: number };
+}
 
 /**
  * Context passed to FoulChainModal after a FOUL_DRAWN action is finalized
