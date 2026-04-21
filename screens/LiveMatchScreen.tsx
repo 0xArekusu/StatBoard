@@ -36,7 +36,7 @@ import {
   CreateActionData,
   Team,
 } from "../src/models/types";
-import { ActionType, ShotSpecification } from "../src/models/ActionTypes";
+import { ActionType, ShotSpecification, FoulSpecification } from "../src/models/ActionTypes";
 import { Player } from "../models/Player";
 import { useAuth } from "../src/contexts/AuthContext";
 import { MatchManager } from "../src/services/match/MatchManager";
@@ -65,6 +65,7 @@ import {
   TeamFilterMode,
   ChainContext,
   ChainSuggestion,
+  FoulChainContext,
 } from "../constants/liveMatchConstants";
 import { getChainContext } from "../utils/actionChainRules";
 import {
@@ -74,7 +75,7 @@ import {
 import { DEFAULT_COURT_COLORS } from "../src/theme/colors";
 import { supabase } from "../src/config/supabase";
 import { MatchActionGrid, ActionData } from "../components/MatchActionGrid";
-import { CourtView, MatchHeader, MatchToolbar, ActionChainModal } from "../components/LiveMatch";
+import { CourtView, MatchHeader, MatchToolbar, ActionChainModal, FoulChainModal, FoulChainResult } from "../components/LiveMatch";
 import { useMatchSync } from "../hooks/useMatchSync";
 import { useResponsive } from "../src/hooks/useResponsive";
 import { BREAKPOINTS } from "../constants/breakpoints";
@@ -221,7 +222,7 @@ export default function LiveMatchScreen() {
     }
     // Otherwise use first 5 players from myTeamPlayers roster
     if (matchData?.myTeamPlayers && matchData.myTeamPlayers.length > 0) {
-      return matchData.myTeamPlayers.slice(0, 5).map((p: Player) => p.id);
+      return matchData.myTeamPlayers.slice(0, 5).map((p) => p.id);
     }
     // Fallback to mock players
     return ["p1", "p2", "p3", "p4", "p5"];
@@ -237,7 +238,7 @@ export default function LiveMatchScreen() {
         return matchData.opponentStarters;
       }
       if (matchData?.opponentPlayers && matchData.opponentPlayers.length > 0) {
-        return matchData.opponentPlayers.slice(0, 5).map((p: Player) => p.id);
+        return matchData.opponentPlayers.slice(0, 5).map((p) => p.id);
       }
       // Fallback to mock opponent players
       return ["adv1", "adv2", "adv3", "adv4", "adv5"];
@@ -295,6 +296,7 @@ export default function LiveMatchScreen() {
     playerId?: string;
   }>({});
   const [chainContext, setChainContext] = useState<ChainContext | null>(null);
+  const [foulChainContext, setFoulChainContext] = useState<FoulChainContext | null>(null);
 
   // ========================================
   // ADMIN STATUS CHECK
@@ -1320,7 +1322,21 @@ export default function LiveMatchScreen() {
 
     setMatch(updatedMatch);
 
-    // Vérifier si une action chaînée doit être suggérée
+    // FOUL_DRAWN triggers its own dedicated chain modal
+    if (action_type === ActionType.FOUL_DRAWN && !fromChainActionType) {
+      setFoulChainContext({
+        foulDrawnPlayerId: playerId,
+        foulDrawnPlayerNumber: player?.jerseyNumber || 0,
+        foulDrawnPlayerName: player?.name || "",
+        foulDrawnTeamId: teamId,
+        coords,
+      });
+      setWorkflowStep(WorkflowStep.FOUL_CHAIN);
+      setPendingEvent({});
+      return;
+    }
+
+    // Standard action chain check
     const chain = getChainContext(
       newEvent,
       match.trackOpponentStats,
@@ -1358,6 +1374,141 @@ export default function LiveMatchScreen() {
   const handleChainIgnore = () => {
     setChainContext(null);
     closeWorkflow();
+  };
+
+  const handleFoulChainIgnore = () => {
+    setFoulChainContext(null);
+    closeWorkflow();
+  };
+
+  const handleFoulChainComplete = async (result: FoulChainResult) => {
+    if (!foulChainContext) return;
+
+    const { foulDrawnPlayerId, foulDrawnPlayerNumber, foulDrawnTeamId, coords } = foulChainContext;
+    const isMyTeamPlayer = homeRoster.some((p: Player) => p.id === foulDrawnPlayerId);
+    const foulDrawnTeam = isMyTeamPlayer ? Team.MY_TEAM : Team.OPPONENT;
+    const opponentTeamId = foulDrawnTeamId === TeamId.HOME ? TeamId.AWAY : TeamId.HOME;
+
+    // Build everything in one pass — avoids stale closure overwrite from finalizeEvent
+    const updatedMatch = { ...match, events: [...(match.events || [])] };
+    const normalizedCoords = coords
+      ? { x: coords.x / COURT_SVG_WIDTH_PORTRAIT, y: coords.y / COURT_SVG_HEIGHT_PORTRAIT }
+      : undefined;
+
+    // 1. Save Foul for the opponent player who committed it
+    if (result.foulPlayer) {
+      const opponentTeam = isMyTeamPlayer ? Team.OPPONENT : Team.MY_TEAM;
+      const actionId = await saveActionToDatabase(
+        ActionType.FOUL, FoulSpecification.PERSONAL, 0,
+        result.foulPlayer.jerseyNumber, opponentTeam, coords,
+      );
+      updatedMatch.events = [{
+        id: actionId || `temp-${Date.now()}`,
+        action_type: ActionType.FOUL,
+        specification: FoulSpecification.PERSONAL,
+        points: 0,
+        playerId: result.foulPlayer.id,
+        playerNumber: result.foulPlayer.jerseyNumber,
+        teamId: opponentTeamId,
+        timestamp: Date.now(),
+        description: `Faute — #${result.foulPlayer.jerseyNumber}`,
+        coordinates: normalizedCoords,
+        period_number: quarter,
+        time_in_period: periodDurationMin * 60 - timer,
+      }, ...updatedMatch.events];
+    }
+
+    // 2. Save basket if panier marqué (And One)
+    if (result.basketPoints) {
+      const actionId = await saveActionToDatabase(
+        ActionType.SHOT, ShotSpecification.MADE, result.basketPoints,
+        foulDrawnPlayerNumber, foulDrawnTeam, coords,
+      );
+      updatedMatch.events = [{
+        id: actionId || `temp-${Date.now()}`,
+        action_type: ActionType.SHOT,
+        specification: ShotSpecification.MADE,
+        points: result.basketPoints,
+        playerId: foulDrawnPlayerId,
+        playerNumber: foulDrawnPlayerNumber,
+        teamId: foulDrawnTeamId,
+        timestamp: Date.now(),
+        description: `${foulDrawnPlayerNumber} - Panier marqué (+${result.basketPoints})`,
+        coordinates: normalizedCoords,
+        period_number: quarter,
+        time_in_period: periodDurationMin * 60 - timer,
+      }, ...updatedMatch.events];
+      if (foulDrawnTeamId === TeamId.HOME) updatedMatch.scoreHome += result.basketPoints;
+      else updatedMatch.scoreAway += result.basketPoints;
+    }
+
+    // 3. Save all free throws
+    const fts = result.freethrows;
+    let lastLFSpec: ShotSpecification | null = null;
+
+    for (let i = 0; i < fts.length; i++) {
+      const spec = fts[i] === "made" ? ShotSpecification.MADE : ShotSpecification.MISSED;
+      if (i === fts.length - 1) lastLFSpec = spec;
+      const actionId = await saveActionToDatabase(
+        ActionType.SHOT, spec, 1, foulDrawnPlayerNumber, foulDrawnTeam, undefined,
+      );
+      updatedMatch.events = [{
+        id: actionId || `temp-${Date.now()}`,
+        action_type: ActionType.SHOT,
+        specification: spec,
+        points: 1,
+        playerId: foulDrawnPlayerId,
+        playerNumber: foulDrawnPlayerNumber,
+        teamId: foulDrawnTeamId,
+        timestamp: Date.now(),
+        description: spec === ShotSpecification.MADE
+          ? `${foulDrawnPlayerNumber} - LF (+1)`
+          : `${foulDrawnPlayerNumber} - LF Raté`,
+        period_number: quarter,
+        time_in_period: periodDurationMin * 60 - timer,
+      }, ...updatedMatch.events];
+      if (spec === ShotSpecification.MADE) {
+        if (foulDrawnTeamId === TeamId.HOME) updatedMatch.scoreHome += 1;
+        else updatedMatch.scoreAway += 1;
+      }
+    }
+
+    setMatch(updatedMatch);
+    setFoulChainContext(null);
+
+    // 4. Trigger rebound chain if last LF was missed
+    if (lastLFSpec === ShotSpecification.MISSED) {
+      const syntheticEvent: MatchEvent = {
+        id: "lf-chain",
+        action_type: ActionType.SHOT,
+        specification: ShotSpecification.MISSED,
+        points: 1,
+        playerId: foulDrawnPlayerId,
+        playerNumber: foulDrawnPlayerNumber,
+        teamId: foulDrawnTeamId,
+        timestamp: Date.now(),
+        description: "",
+        coordinates: normalizedCoords,
+        period_number: quarter,
+        time_in_period: periodDurationMin * 60 - timer,
+      };
+      const chain = getChainContext(
+        syntheticEvent,
+        match.trackOpponentStats,
+        match.location,
+        match.myTeamName,
+        match.opponent,
+        ActionType.FOUL_DRAWN,
+      );
+      if (chain) {
+        setChainContext(chain);
+        setWorkflowStep(WorkflowStep.SUGGEST_CHAIN);
+      } else {
+        closeWorkflow();
+      }
+    } else {
+      closeWorkflow();
+    }
   };
 
   // Helper function to save action to database
@@ -1746,6 +1897,15 @@ export default function LiveMatchScreen() {
         myTeamId={match.location}
         onPlayerSelect={handleChainPlayerSelect}
         onIgnore={handleChainIgnore}
+      />
+
+      <FoulChainModal
+        visible={workflowStep === WorkflowStep.FOUL_CHAIN}
+        context={foulChainContext}
+        opponentPlayersOnCourt={opponentPlayersOnCourt}
+        trackOpponentStats={match.trackOpponentStats}
+        onComplete={handleFoulChainComplete}
+        onIgnore={handleFoulChainIgnore}
       />
 
       <CourtActionModal

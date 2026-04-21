@@ -23,6 +23,7 @@ export enum WorkflowStep {
   SELECT_ACTION_FROM_COURT = "SELECT_ACTION_FROM_COURT",
   SUBSTITUTION = "SUBSTITUTION",
   SUGGEST_CHAIN = "SUGGEST_CHAIN",
+  FOUL_CHAIN = "FOUL_CHAIN",
 }
 
 // ===========================
@@ -134,6 +135,21 @@ export enum TeamFilterMode {
 // ===========================
 // ACTION CHAIN
 // ===========================
+
+// ===========================
+// FOUL CHAIN
+// ===========================
+
+/**
+ * Context passed to FoulChainModal after a FOUL_DRAWN action is finalized
+ */
+export interface FoulChainContext {
+  foulDrawnPlayerId: string;
+  foulDrawnPlayerNumber: number;
+  foulDrawnPlayerName: string;
+  foulDrawnTeamId: TeamId;
+  coords?: { x: number; y: number }; // raw SVG coords from court click
+}
 
 /**
  * A single suggestion proposed after an action is finalized
