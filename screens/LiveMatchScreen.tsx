@@ -1336,6 +1336,24 @@ export default function LiveMatchScreen() {
       return;
     }
 
+    // FOUL by our team triggers foul chain modal — ask who drew the foul
+    if (action_type === ActionType.FOUL && match.trackOpponentStats) {
+      const isMyTeamFoul = teamId === match.location;
+      if (isMyTeamFoul) {
+        setFoulChainContext({
+          foulDrawnPlayerId: playerId,
+          foulDrawnPlayerNumber: player?.jerseyNumber || 0,
+          foulDrawnPlayerName: player?.name || "",
+          foulDrawnTeamId: teamId,
+          coords,
+          mode: "foul_committed",
+        });
+        setWorkflowStep(WorkflowStep.FOUL_CHAIN);
+        setPendingEvent({});
+        return;
+      }
+    }
+
     // Standard action chain check
     const chain = getChainContext(
       newEvent,
@@ -1395,6 +1413,122 @@ export default function LiveMatchScreen() {
       ? { x: coords.x / COURT_SVG_WIDTH_PORTRAIT, y: coords.y / COURT_SVG_HEIGHT_PORTRAIT }
       : undefined;
 
+    // ── foul_committed mode: result.foulPlayer drew the foul, pts/LF go to them ─────
+    if (foulChainContext.mode === "foul_committed" && result.foulPlayer) {
+      const drawnPlayer = result.foulPlayer;
+      const drawnTeam = isMyTeamPlayer ? Team.OPPONENT : Team.MY_TEAM;
+      const drawnTeamId = opponentTeamId;
+
+      // 1. Save FOUL_DRAWN for the player who drew the foul
+      const foulDrawnId = await saveActionToDatabase(
+        ActionType.FOUL_DRAWN, undefined, 0,
+        drawnPlayer.jerseyNumber, drawnTeam, coords,
+      );
+      updatedMatch.events = [{
+        id: foulDrawnId || `temp-${Date.now()}`,
+        action_type: ActionType.FOUL_DRAWN,
+        specification: undefined,
+        points: 0,
+        playerId: drawnPlayer.id,
+        playerNumber: drawnPlayer.jerseyNumber,
+        teamId: drawnTeamId,
+        timestamp: Date.now(),
+        description: `Faute provoquée — #${drawnPlayer.jerseyNumber}`,
+        coordinates: normalizedCoords,
+        period_number: quarter,
+        time_in_period: periodDurationMin * 60 - timer,
+      }, ...updatedMatch.events];
+
+      // 2. Save basket if and-one (attributed to drawn player)
+      if (result.basketPoints) {
+        const shotId = await saveActionToDatabase(
+          ActionType.SHOT, ShotSpecification.MADE, result.basketPoints,
+          drawnPlayer.jerseyNumber, drawnTeam, coords,
+        );
+        updatedMatch.events = [{
+          id: shotId || `temp-${Date.now()}`,
+          action_type: ActionType.SHOT,
+          specification: ShotSpecification.MADE,
+          points: result.basketPoints,
+          playerId: drawnPlayer.id,
+          playerNumber: drawnPlayer.jerseyNumber,
+          teamId: drawnTeamId,
+          timestamp: Date.now(),
+          description: `${drawnPlayer.jerseyNumber} - Panier marqué (+${result.basketPoints})`,
+          coordinates: normalizedCoords,
+          period_number: quarter,
+          time_in_period: periodDurationMin * 60 - timer,
+        }, ...updatedMatch.events];
+        if (drawnTeamId === TeamId.HOME) updatedMatch.scoreHome += result.basketPoints;
+        else updatedMatch.scoreAway += result.basketPoints;
+      }
+
+      // 3. Save all free throws (attributed to drawn player)
+      const ftsCommitted = result.freethrows;
+      let lastLFSpecCommitted: ShotSpecification | null = null;
+      for (let i = 0; i < ftsCommitted.length; i++) {
+        const spec = ftsCommitted[i] === "made" ? ShotSpecification.MADE : ShotSpecification.MISSED;
+        if (i === ftsCommitted.length - 1) lastLFSpecCommitted = spec;
+        const lfId = await saveActionToDatabase(
+          ActionType.SHOT, spec, 1, drawnPlayer.jerseyNumber, drawnTeam, undefined,
+        );
+        updatedMatch.events = [{
+          id: lfId || `temp-${Date.now()}`,
+          action_type: ActionType.SHOT,
+          specification: spec,
+          points: 1,
+          playerId: drawnPlayer.id,
+          playerNumber: drawnPlayer.jerseyNumber,
+          teamId: drawnTeamId,
+          timestamp: Date.now(),
+          description: spec === ShotSpecification.MADE
+            ? `${drawnPlayer.jerseyNumber} - LF (+1)`
+            : `${drawnPlayer.jerseyNumber} - LF Raté`,
+          period_number: quarter,
+          time_in_period: periodDurationMin * 60 - timer,
+        }, ...updatedMatch.events];
+        if (spec === ShotSpecification.MADE) {
+          if (drawnTeamId === TeamId.HOME) updatedMatch.scoreHome += 1;
+          else updatedMatch.scoreAway += 1;
+        }
+      }
+
+      setMatch(updatedMatch);
+      setFoulChainContext(null);
+
+      // 4. Rebound chain if last LF was missed
+      if (lastLFSpecCommitted === ShotSpecification.MISSED) {
+        const syntheticEvent: MatchEvent = {
+          id: "lf-chain",
+          action_type: ActionType.SHOT,
+          specification: ShotSpecification.MISSED,
+          points: 1,
+          playerId: drawnPlayer.id,
+          playerNumber: drawnPlayer.jerseyNumber,
+          teamId: drawnTeamId,
+          timestamp: Date.now(),
+          description: "",
+          coordinates: normalizedCoords,
+          period_number: quarter,
+          time_in_period: periodDurationMin * 60 - timer,
+        };
+        const chain = getChainContext(
+          syntheticEvent, match.trackOpponentStats, match.location,
+          match.myTeamName, match.opponent, ActionType.FOUL_DRAWN,
+        );
+        if (chain) {
+          setChainContext(chain);
+          setWorkflowStep(WorkflowStep.SUGGEST_CHAIN);
+        } else {
+          closeWorkflow();
+        }
+      } else {
+        closeWorkflow();
+      }
+      return;
+    }
+
+    // ── foul_drawn mode (original): result.foulPlayer committed the foul ────────
     // 1. Save Foul for the opponent player who committed it
     if (result.foulPlayer) {
       const opponentTeam = isMyTeamPlayer ? Team.OPPONENT : Team.MY_TEAM;

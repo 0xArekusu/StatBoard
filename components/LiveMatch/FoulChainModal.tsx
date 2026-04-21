@@ -85,6 +85,8 @@ export const FoulChainModal: React.FC<FoulChainModalProps> = ({
     });
   };
 
+  const isFoulCommitted = context?.mode === "foul_committed";
+
   const isValid =
     (!trackOpponentStats || selectedFoulPlayer !== null) &&
     (!basketMarked || basketPoints !== null) &&
@@ -124,14 +126,16 @@ export const FoulChainModal: React.FC<FoulChainModalProps> = ({
           >
             {/* Header */}
             <Text style={[styles.header, { color: colors.text.secondary, fontSize: font.sm }]}>
-              Faute provoquée — #{context.foulDrawnPlayerNumber}
+              {isFoulCommitted
+                ? `Faute commise — #${context.foulDrawnPlayerNumber}`
+                : `Faute provoquée — #${context.foulDrawnPlayerNumber}`}
             </Text>
 
             {/* Foul player selection */}
             {trackOpponentStats && (
               <View style={{ gap: sp.sm }}>
                 <Text style={[styles.sectionLabel, { color: colors.text.primary, fontSize: font.md }]}>
-                  Qui a commis la faute ?
+                  {isFoulCommitted ? "Qui a provoqué la faute ?" : "Qui a commis la faute ?"}
                 </Text>
                 <View style={[styles.playerRow, { gap: sp.xs }]}>
                   {opponentPlayersOnCourt

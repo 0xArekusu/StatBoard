@@ -149,6 +149,7 @@ export interface FoulChainContext {
   foulDrawnPlayerName: string;
   foulDrawnTeamId: TeamId;
   coords?: { x: number; y: number }; // raw SVG coords from court click
+  mode?: "foul_drawn" | "foul_committed";
 }
 
 /**
