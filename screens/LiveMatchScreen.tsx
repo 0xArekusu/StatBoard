@@ -36,7 +36,7 @@ import {
   CreateActionData,
   Team,
 } from "../src/models/types";
-import { ActionType, ShotSpecification, FoulSpecification } from "../src/models/ActionTypes";
+import { ActionType, ShotSpecification } from "../src/models/ActionTypes";
 import { Player } from "../models/Player";
 import { useAuth } from "../src/contexts/AuthContext";
 import { MatchManager } from "../src/services/match/MatchManager";
@@ -1399,13 +1399,13 @@ export default function LiveMatchScreen() {
     if (result.foulPlayer) {
       const opponentTeam = isMyTeamPlayer ? Team.OPPONENT : Team.MY_TEAM;
       const actionId = await saveActionToDatabase(
-        ActionType.FOUL, FoulSpecification.PERSONAL, 0,
+        ActionType.FOUL, undefined, 0,
         result.foulPlayer.jerseyNumber, opponentTeam, coords,
       );
       updatedMatch.events = [{
         id: actionId || `temp-${Date.now()}`,
         action_type: ActionType.FOUL,
-        specification: FoulSpecification.PERSONAL,
+        specification: undefined,
         points: 0,
         playerId: result.foulPlayer.id,
         playerNumber: result.foulPlayer.jerseyNumber,
