@@ -182,5 +182,59 @@ export function getChainContext(
     };
   }
 
+  // ── Block → Rebound ───────────────────────────────────────────────────────
+  if (event.action_type === ActionType.BLOCK) {
+    const playerLabel = event.playerNumber
+      ? `#${event.playerNumber}`
+      : "player";
+    const isMyTeam = event.teamId === myTeamId;
+
+    const suggestions: ChainSuggestion[] = [];
+
+    if (isMyTeam) {
+      // My team blocked → defensive rebound (my team) first, then offensive (opponent)
+      suggestions.push({
+        label: "Reb. Défensif",
+        action_type: ActionType.REBOUND,
+        specification: ReboundSpecification.DEFENSIVE,
+        teamTab: myTeamId,
+        teamLabel: myTeamName,
+      });
+      if (trackOpponentStats) {
+        suggestions.push({
+          label: "Reb. Offensif",
+          action_type: ActionType.REBOUND,
+          specification: ReboundSpecification.OFFENSIVE,
+          teamTab: opponentTeamId,
+          teamLabel: opponentName,
+        });
+      }
+    } else {
+      // Opponent blocked → defensive rebound (opponent) first, then offensive (my team)
+      if (trackOpponentStats) {
+        suggestions.push({
+          label: "Reb. Défensif",
+          action_type: ActionType.REBOUND,
+          specification: ReboundSpecification.DEFENSIVE,
+          teamTab: opponentTeamId,
+          teamLabel: opponentName,
+        });
+      }
+      suggestions.push({
+        label: "Reb. Offensif",
+        action_type: ActionType.REBOUND,
+        specification: ReboundSpecification.OFFENSIVE,
+        teamTab: myTeamId,
+        teamLabel: myTeamName,
+      });
+    }
+
+    return {
+      triggerDescription: `Contre — ${playerLabel}`,
+      suggestions,
+      inheritCoords: event.coordinates,
+    };
+  }
+
   return null;
 }
