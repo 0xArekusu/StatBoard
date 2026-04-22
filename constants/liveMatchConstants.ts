@@ -173,6 +173,8 @@ export interface ChainSuggestion {
   teamTab: TeamId;
   teamLabel: string;
   excludePlayerIds?: string[];
+  teamOnly?: boolean;
+  autoTeamId?: TeamId; // when set, skip team selection and auto-assign to this team
 }
 
 /**

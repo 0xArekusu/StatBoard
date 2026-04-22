@@ -36,7 +36,7 @@ import {
   CreateActionData,
   Team,
 } from "../src/models/types";
-import { ActionType, ShotSpecification } from "../src/models/ActionTypes";
+import { ActionType, ShotSpecification, ReboundSpecification } from "../src/models/ActionTypes";
 import { Player } from "../models/Player";
 import { useAuth } from "../src/contexts/AuthContext";
 import { MatchManager } from "../src/services/match/MatchManager";
@@ -1384,13 +1384,43 @@ export default function LiveMatchScreen() {
     }
   };
 
-  const handleChainPlayerSelect = (suggestion: ChainSuggestion, player: Player) => {
+  const handleChainPlayerSelect = async (suggestion: ChainSuggestion, player: Player | null, teamId?: TeamId) => {
     const coords = chainContext?.inheritCoords
       ? {
           x: chainContext.inheritCoords.x * COURT_SVG_WIDTH_PORTRAIT,
           y: chainContext.inheritCoords.y * COURT_SVG_HEIGHT_PORTRAIT,
         }
       : undefined;
+
+    if (suggestion.teamOnly && teamId !== undefined) {
+      const reboundTeam = teamId === match.location ? Team.MY_TEAM : Team.OPPONENT;
+      const normalizedCoords = chainContext?.inheritCoords;
+      const reboundId = await saveActionToDatabase(
+        suggestion.action_type, suggestion.specification, 0,
+        -1, reboundTeam, coords,
+      );
+      const updatedMatch = { ...match, events: [...(match.events || [])] };
+      updatedMatch.events = [{
+        id: reboundId || `temp-${Date.now()}`,
+        action_type: suggestion.action_type,
+        specification: suggestion.specification,
+        points: 0,
+        playerId: undefined,
+        playerNumber: -1,
+        teamId,
+        timestamp: Date.now(),
+        description: "Rebond Équipe",
+        coordinates: normalizedCoords,
+        period_number: quarter,
+        time_in_period: periodDurationMin * 60 - timer,
+      }, ...updatedMatch.events];
+      setMatch(updatedMatch);
+      setChainContext(null);
+      closeWorkflow();
+      return;
+    }
+
+    if (!player) return;
     finalizeEvent(
       suggestion.action_type,
       suggestion.specification,
@@ -1454,7 +1484,27 @@ export default function LiveMatchScreen() {
     }
 
     // 2. Save REBOUND if selected
-    if (result.reboundSpec && result.reboundPlayer) {
+    if (result.reboundSpec === ReboundSpecification.TEAM && result.reboundTeamId) {
+      const reboundTeam = result.reboundTeamId === match.location ? Team.MY_TEAM : Team.OPPONENT;
+      const reboundId = await saveActionToDatabase(
+        ActionType.REBOUND, result.reboundSpec, 0,
+        -1, reboundTeam, coords,
+      );
+      updatedMatch.events = [{
+        id: reboundId || `temp-${Date.now()}`,
+        action_type: ActionType.REBOUND,
+        specification: result.reboundSpec,
+        points: 0,
+        playerId: undefined,
+        playerNumber: -1,
+        teamId: result.reboundTeamId,
+        timestamp: Date.now(),
+        description: "Rebond Équipe",
+        coordinates: normalizedCoords,
+        period_number: quarter,
+        time_in_period: periodDurationMin * 60 - timer,
+      }, ...updatedMatch.events];
+    } else if (result.reboundSpec && result.reboundPlayer) {
       const isDefensive = result.reboundSpec === "defensive";
       // Defensive rebound: opponents of shooting team. Offensive: shooting team.
       const reboundTeam = isDefensive

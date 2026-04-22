@@ -9,7 +9,7 @@ import {
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useTheme } from "../../src/contexts/ThemeContext";
 import { useResponsive } from "../../src/hooks/useResponsive";
-import { STATUS_COLORS } from "../../src/theme/colors";
+import { ACTION_COLORS, STATUS_COLORS } from "../../src/theme/colors";
 import { getActionColor } from "../../src/models/ActionTypes";
 import {
   ChainContext,
@@ -24,7 +24,7 @@ interface ActionChainModalProps {
   playersOnCourt: Player[];
   opponentPlayersOnCourt: Player[];
   myTeamId: TeamId;
-  onPlayerSelect: (suggestion: ChainSuggestion, player: Player) => void;
+  onPlayerSelect: (suggestion: ChainSuggestion, player: Player | null, teamId?: TeamId) => void;
   onIgnore: () => void;
 }
 
@@ -41,11 +41,13 @@ export const ActionChainModal: React.FC<ActionChainModalProps> = ({
   const { sp, font, sizes } = useResponsive();
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
+  const [selectedTeamId, setSelectedTeamId] = useState<TeamId | null>(null);
 
   useEffect(() => {
     if (!visible) {
       setSelectedIndex(null);
       setSelectedPlayer(null);
+      setSelectedTeamId(null);
     }
   }, [visible]);
 
@@ -53,15 +55,25 @@ export const ActionChainModal: React.FC<ActionChainModalProps> = ({
     if (selectedIndex === index) {
       setSelectedIndex(null);
       setSelectedPlayer(null);
+      setSelectedTeamId(null);
     } else {
+      const suggestion = chainContext?.suggestions[index];
       setSelectedIndex(index);
       setSelectedPlayer(null);
+      setSelectedTeamId(suggestion?.autoTeamId ?? null);
     }
   };
 
   const handleConfirm = () => {
-    if (selectedIndex === null || !selectedPlayer || !chainContext) return;
-    onPlayerSelect(chainContext.suggestions[selectedIndex], selectedPlayer);
+    if (selectedIndex === null || !chainContext) return;
+    const suggestion = chainContext.suggestions[selectedIndex];
+    if (suggestion.teamOnly) {
+      if (!selectedTeamId) return;
+      onPlayerSelect(suggestion, null, selectedTeamId);
+    } else {
+      if (!selectedPlayer) return;
+      onPlayerSelect(suggestion, selectedPlayer);
+    }
   };
 
   if (!chainContext) return null;
@@ -71,6 +83,9 @@ export const ActionChainModal: React.FC<ActionChainModalProps> = ({
   const confirmColor = activeSuggestion
     ? getActionColor(activeSuggestion.action_type, activeSuggestion.specification)
     : STATUS_COLORS.success;
+  const isConfirmReady = activeSuggestion?.teamOnly
+    ? selectedTeamId !== null
+    : selectedPlayer !== null;
 
   return (
     <Modal visible={visible} transparent animationType="fade">
@@ -128,7 +143,42 @@ export const ActionChainModal: React.FC<ActionChainModalProps> = ({
                     </Text>
                   </TouchableOpacity>
 
-                  {isSelected && (
+                  {isSelected && suggestion.teamOnly && !suggestion.autoTeamId && (
+                    <View style={[styles.playerRow, { marginTop: sp.xs, gap: sp.xs }]}>
+                      {([
+                        { label: "Mon équipe", teamId: myTeamId },
+                        { label: "Adversaire", teamId: myTeamId === TeamId.HOME ? TeamId.AWAY : TeamId.HOME },
+                      ] as const).map(({ label, teamId }) => {
+                        const isTeamSelected = selectedTeamId === teamId;
+                        const color = ACTION_COLORS.rebound.base;
+                        return (
+                          <TouchableOpacity
+                            key={teamId}
+                            style={[
+                              styles.playerCard,
+                              {
+                                backgroundColor: isTeamSelected ? color : color + "15",
+                                borderColor: color,
+                                borderWidth: 1,
+                                padding: sp.sm,
+                                paddingVertical: sp.sm,
+                                borderRadius: sp.xs,
+                                justifyContent: "center",
+                              },
+                            ]}
+                            onPress={() => setSelectedTeamId(isTeamSelected ? null : teamId)}
+                            activeOpacity={0.7}
+                          >
+                            <Text style={[styles.playerNumber, { color: isTeamSelected ? "#fff" : color, fontSize: font.md, textAlign: "center" }]}>
+                              {label}
+                            </Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+                  )}
+
+                  {isSelected && !suggestion.teamOnly && (
                     <View style={[styles.playerRow, { marginTop: sp.xs, gap: sp.xs }]}>
                       {players
                         .slice()
@@ -174,8 +224,8 @@ export const ActionChainModal: React.FC<ActionChainModalProps> = ({
             })}
           </View>
 
-          {/* Valider — visible uniquement quand un joueur est sélectionné */}
-          {selectedPlayer && (
+          {/* Valider — visible quand joueur sélectionné (ou équipe pour teamOnly) */}
+          {isConfirmReady && (
             <TouchableOpacity
               style={[
                 styles.confirmBtn,
@@ -198,7 +248,7 @@ export const ActionChainModal: React.FC<ActionChainModalProps> = ({
 
           <TouchableOpacity
             onPress={onIgnore}
-            style={[styles.ignoreBtn, { marginTop: selectedPlayer ? 0 : sp.xs }]}
+            style={[styles.ignoreBtn, { marginTop: isConfirmReady ? 0 : sp.xs }]}
             activeOpacity={0.6}
           >
             <Text style={[styles.ignoreText, { color: colors.text.tertiary, fontSize: font.sm }]}>

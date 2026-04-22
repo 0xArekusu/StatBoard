@@ -69,6 +69,11 @@ export const getActionDescription = (
       action.specification === "OFFENSIVE"
     )
       return `${prefix}${playerName} Rebond Off`;
+    if (
+      action.specification === ReboundSpecification.TEAM ||
+      action.specification === "TEAM"
+    )
+      return `${prefix}Équipe Rebond`;
   } else if (action.action_type === ActionType.FOUL) {
     return `${prefix}Faute ${playerName}`;
   } else if (action.action_type === ActionType.ASSIST) {

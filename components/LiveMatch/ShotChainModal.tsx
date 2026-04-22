@@ -19,6 +19,7 @@ export interface ShotChainResult {
   blockerPlayer?: Player;
   reboundSpec?: ReboundSpecification;
   reboundPlayer?: Player;
+  reboundTeamId?: TeamId;
 }
 
 interface ShotChainModalProps {
@@ -49,6 +50,7 @@ export const ShotChainModal: React.FC<ShotChainModalProps> = ({
   const [blockerPlayer, setBlockerPlayer] = useState<Player | null>(null);
   const [reboundSpec, setReboundSpec] = useState<ReboundSpecification | null>(null);
   const [reboundPlayer, setReboundPlayer] = useState<Player | null>(null);
+  const [reboundTeamId, setReboundTeamId] = useState<TeamId | null>(null);
 
   useEffect(() => {
     if (visible) {
@@ -56,6 +58,7 @@ export const ShotChainModal: React.FC<ShotChainModalProps> = ({
       setBlockerPlayer(null);
       setReboundSpec(null);
       setReboundPlayer(null);
+      setReboundTeamId(null);
     }
   }, [visible]);
 
@@ -92,14 +95,20 @@ export const ShotChainModal: React.FC<ShotChainModalProps> = ({
     if (reboundSpec === spec) {
       setReboundSpec(null);
       setReboundPlayer(null);
+      setReboundTeamId(null);
     } else {
       setReboundSpec(spec);
       setReboundPlayer(null);
+      setReboundTeamId(spec === ReboundSpecification.TEAM && !trackOpponentStats ? myTeamId : null);
     }
   };
 
-  // Validation: if blocked → blocker required. Rebound always optional.
-  const isValid = !blocked || blockerPlayer !== null;
+  const isValid =
+    (!blocked || blockerPlayer !== null) &&
+    reboundSpec !== null &&
+    (reboundSpec === ReboundSpecification.TEAM
+      ? reboundTeamId !== null
+      : reboundPlayer !== null);
 
   // Show rebound section if trackOpponentStats (both teams) or if shot is by my team
   const showReboundSection = trackOpponentStats || isShotByMyTeam;
@@ -130,8 +139,8 @@ export const ShotChainModal: React.FC<ShotChainModalProps> = ({
               Tir raté — #{context.shotPlayerNumber}
             </Text>
 
-            {/* Tir contré ? */}
-            <View style={{ gap: sp.md }}>
+            {/* Tir contré ? — caché si stats adverses non trackées (bloqueur = adverse) */}
+            {trackOpponentStats && <View style={{ gap: sp.md }}>
               <View style={styles.toggleRow}>
                 <Text style={[styles.sectionLabel, { color: colors.text.primary, fontSize: font.md }]}>
                   Tir contré ?
@@ -198,7 +207,7 @@ export const ShotChainModal: React.FC<ShotChainModalProps> = ({
                     })}
                 </View>
               )}
-            </View>
+            </View>}
 
             {/* Separator */}
             <View style={{ height: 1, backgroundColor: colors.border }} />
@@ -210,12 +219,15 @@ export const ShotChainModal: React.FC<ShotChainModalProps> = ({
                   Rebond
                 </Text>
 
-                {/* Défensif / Offensif */}
+                {/* Défensif / Offensif / Équipe — Offensif caché si stats adverses non trackées */}
                 <View style={[styles.toggleBtns, { gap: sp.sm }]}>
                   {([
                     { spec: ReboundSpecification.DEFENSIVE, label: "Défensif", color: ACTION_COLORS.rebound.defensive },
                     { spec: ReboundSpecification.OFFENSIVE, label: "Offensif", color: ACTION_COLORS.rebound.offensive },
-                  ] as const).map(({ spec, label, color }) => {
+                    { spec: ReboundSpecification.TEAM, label: "Équipe", color: ACTION_COLORS.rebound.base },
+                  ] as const).filter(({ spec }) =>
+                    trackOpponentStats || spec !== ReboundSpecification.DEFENSIVE
+                  ).map(({ spec, label, color }) => {
                     const isActive = reboundSpec === spec;
                     return (
                       <TouchableOpacity
@@ -241,8 +253,42 @@ export const ShotChainModal: React.FC<ShotChainModalProps> = ({
                   })}
                 </View>
 
-                {/* Player list for rebound */}
-                {reboundSpec !== null && (
+                {/* Team toggle for TEAM rebound — caché si stats adverses non trackées (auto = mon équipe) */}
+                {reboundSpec === ReboundSpecification.TEAM && trackOpponentStats && (
+                  <View style={[styles.toggleBtns, { gap: sp.sm }]}>
+                    {([
+                      { label: "Mon équipe", teamId: myTeamId },
+                      { label: "Adversaire", teamId: myTeamId === TeamId.HOME ? TeamId.AWAY : TeamId.HOME },
+                    ] as const).map(({ label, teamId }) => {
+                      const isActive = reboundTeamId === teamId;
+                      const color = ACTION_COLORS.rebound.base;
+                      return (
+                        <TouchableOpacity
+                          key={teamId}
+                          style={[
+                            styles.reboundBtn,
+                            {
+                              backgroundColor: isActive ? color : color + "15",
+                              borderColor: color,
+                              flex: 1,
+                              paddingVertical: sp.sm,
+                              borderRadius: sp.xs,
+                            },
+                          ]}
+                          onPress={() => setReboundTeamId(isActive ? null : teamId)}
+                          activeOpacity={0.7}
+                        >
+                          <Text style={{ color: isActive ? "#fff" : color, fontSize: font.md, fontWeight: "700", textAlign: "center" }}>
+                            {label}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                )}
+
+                {/* Player list for individual rebound */}
+                {reboundSpec !== null && reboundSpec !== ReboundSpecification.TEAM && (
                   <View style={[styles.playerRow, { gap: sp.xs }]}>
                     {currentReboundList
                       .slice()
@@ -297,6 +343,7 @@ export const ShotChainModal: React.FC<ShotChainModalProps> = ({
                   blockerPlayer: blocked ? (blockerPlayer ?? undefined) : undefined,
                   reboundSpec: reboundSpec ?? undefined,
                   reboundPlayer: reboundPlayer ?? undefined,
+                  reboundTeamId: reboundTeamId ?? undefined,
                 });
               }}
               activeOpacity={isValid ? 0.8 : 1}

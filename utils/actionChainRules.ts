@@ -82,6 +82,15 @@ export function getChainContext(
         });
       }
     }
+    suggestions.push({
+      label: "Reb. Équipe",
+      action_type: ActionType.REBOUND,
+      specification: ReboundSpecification.TEAM,
+      teamTab: myTeamId,
+      teamLabel: "",
+      teamOnly: true,
+      autoTeamId: !trackOpponentStats ? myTeamId : undefined,
+    });
 
     return {
       triggerDescription: `Tir raté — ${playerLabel}`,
@@ -159,8 +168,8 @@ export function getChainContext(
 
     const isMyTeam = event.teamId === myTeamId;
 
-    // Opponent stole but opponent stats not tracked → no suggestion
-    if (!isMyTeam && !trackOpponentStats) return null;
+    // Turnover always goes to the other team — skip if opponent stats not tracked
+    if (!trackOpponentStats) return null;
 
     const turnoverTeamTab = isMyTeam ? opponentTeamId : myTeamId;
     const turnoverTeamLabel = isMyTeam ? opponentName : myTeamName;
@@ -228,6 +237,15 @@ export function getChainContext(
         teamLabel: myTeamName,
       });
     }
+    suggestions.push({
+      label: "Reb. Équipe",
+      action_type: ActionType.REBOUND,
+      specification: ReboundSpecification.TEAM,
+      teamTab: myTeamId,
+      teamLabel: "",
+      teamOnly: true,
+      autoTeamId: !trackOpponentStats ? myTeamId : undefined,
+    });
 
     return {
       triggerDescription: `Contre — ${playerLabel}`,

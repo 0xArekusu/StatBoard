@@ -408,8 +408,8 @@ export default function MatchDetailsScreen() {
           // Handle both data formats (player_number from database, player from app)
           const playerNum = action.player_number || action.player;
 
-          // Skip invalid player numbers (9999 = generic opponent player)
-          if (!playerNum || playerNum === 9999) {
+          // Skip invalid player numbers (9999 = generic opponent, -1 = team rebound)
+          if (!playerNum || playerNum === 9999 || playerNum === -1) {
             return;
           }
 

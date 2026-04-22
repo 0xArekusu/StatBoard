@@ -249,9 +249,10 @@ export function useMatchSync({
 
       // Iterate through player_stats: { [player_id]: { actions: [...] } }
       for (const [playerId, stats] of Object.entries(playerStatsObject)) {
-        const playerNumber = playerMap.get(playerId);
+        const isTeamRebound = playerId.startsWith('team-rebound-');
+        const playerNumber = isTeamRebound ? -1 : playerMap.get(playerId);
 
-        if (!playerNumber) {
+        if (!isTeamRebound && !playerNumber) {
           console.warn(`Player number not found for player_id: ${playerId}`);
           continue;
         }

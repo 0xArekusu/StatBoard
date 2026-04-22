@@ -309,6 +309,15 @@ export class MatchSyncService {
 
     // Group actions by player_id
     for (const action of actions) {
+      if (action.player_number === -1) {
+        const teamReboundKey = `team-rebound-${action.team}`;
+        if (!actionsByPlayerId[teamReboundKey]) {
+          actionsByPlayerId[teamReboundKey] = [];
+        }
+        actionsByPlayerId[teamReboundKey].push(action);
+        continue;
+      }
+
       const key = `${action.team}-${action.player_number}`;
       const playerId = playerIdMap.get(key);
 
@@ -360,6 +369,25 @@ export class MatchSyncService {
         playerId,
         actionCount: actionsJson.length
       });
+    }
+
+    // Add team rebound entries to playerStatsObject
+    for (const [key, teamActions] of Object.entries(actionsByPlayerId)) {
+      if (!key.startsWith('team-rebound-')) continue;
+      playerStatsObject[key] = {
+        actions: teamActions.map((action) => ({
+          team: action.team,
+          action_type: action.action_type,
+          specification: action.specification,
+          points: action.points || undefined,
+          semantic_x: action.semantic_x,
+          semantic_y: action.semantic_y,
+          action_order: action.action_order,
+          period_number: action.period_number,
+          time_in_period: action.time_in_period,
+          timestamp: action.timestamp,
+        })),
+      };
     }
 
     // Create match insert data with embedded players and stats

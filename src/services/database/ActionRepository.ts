@@ -236,14 +236,18 @@ export class ActionRepository implements IActionRepository {
 
           // Iterate through player_stats: { [player_id]: { actions: [...] } }
           for (const [playerId, stats] of Object.entries(playerStats)) {
-            const playerInfo = playerMap.get(playerId);
+            // Special key for team rebounds (player_number = -1)
+            const isTeamRebound = playerId.startsWith('team-rebound-');
 
-            if (!playerInfo) {
-              logWarn('ActionRepository', '⚠️ Player info not found for player_id', {
-                matchId,
-                playerId
-              });
-              continue;
+            if (!isTeamRebound) {
+              const playerInfo = playerMap.get(playerId);
+              if (!playerInfo) {
+                logWarn('ActionRepository', '⚠️ Player info not found for player_id', {
+                  matchId,
+                  playerId
+                });
+                continue;
+              }
             }
 
             if (stats && (stats as any).actions) {
@@ -251,11 +255,12 @@ export class ActionRepository implements IActionRepository {
                 const playerActions = (stats as any).actions;
 
                 for (const action of playerActions) {
+                  const playerNumber = isTeamRebound ? -1 : playerMap.get(playerId)!.player_number;
                   allActions.push({
                     id: String(actionIdCounter++),
                     match_id: matchId,
                     team: action.team,
-                    player_number: playerInfo.player_number,
+                    player_number: playerNumber,
                     action_type: action.action_type,
                     specification: action.specification,
                     points: action.points,
@@ -474,6 +479,27 @@ export class ActionRepository implements IActionRepository {
       const actionsByPlayerId: Record<string, any[]> = {};
 
       for (const action of actions) {
+        // Team rebounds (player_number = -1) have no real player — store under a dedicated key
+        if (action.player_number === -1) {
+          const teamReboundKey = `team-rebound-${action.team}`;
+          if (!actionsByPlayerId[teamReboundKey]) {
+            actionsByPlayerId[teamReboundKey] = [];
+          }
+          actionsByPlayerId[teamReboundKey].push({
+            team: action.team,
+            action_type: action.action_type,
+            specification: action.specification,
+            points: action.points || null,
+            semantic_x: action.semantic_x,
+            semantic_y: action.semantic_y,
+            action_order: action.action_order,
+            period_number: action.period_number,
+            time_in_period: action.time_in_period,
+            timestamp: action.timestamp,
+          });
+          continue;
+        }
+
         const playerKey = `${action.team}-${action.player_number}`;
         const playerId = playerIdMap.get(playerKey);
 
