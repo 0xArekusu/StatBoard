@@ -30,6 +30,7 @@ interface StatsTabProps {
   sortOrder: SortOrder;
   handleSort: (column: SortBy) => void;
   setViewPlayer: (player: PlayerStats) => void;
+  teamRebounds: number;
 }
 
 export default function StatsTab({
@@ -38,6 +39,7 @@ export default function StatsTab({
   sortOrder,
   handleSort,
   setViewPlayer,
+  teamRebounds,
 }: StatsTabProps) {
   const { colors, isDark } = useTheme();
   const { sp, font, sizes } = useResponsive();
@@ -226,6 +228,9 @@ export default function StatsTab({
                 RD {sortBy === "reb_def" && (sortOrder === "desc" ? "↓" : "↑")}
               </Text>
             </TouchableOpacity>
+            <Text style={[styles.tableHeaderCell, styles.statCell, { color: textSecondary }]}>
+              RE
+            </Text>
             <TouchableOpacity onPress={() => handleSort("ast")}>
               <Text
                 style={[
@@ -345,7 +350,7 @@ export default function StatsTab({
                   style={[styles.playerNameText, { color: textPrimary }]}
                   numberOfLines={1}
                 >
-                  {player.name}
+                  {player.name}{!player.isSubstitute ? " ★" : ""}
                 </Text>
               </View>
               <Text
@@ -439,6 +444,7 @@ export default function StatsTab({
               >
                 {player.reb_def}
               </Text>
+              <Text style={[styles.tableCell, styles.statCell, { color: textPrimary }]} />
               <Text
                 style={[
                   styles.tableCell,
@@ -505,6 +511,89 @@ export default function StatsTab({
               </Text>
             </TouchableOpacity>
           ))}
+
+          {/* Starters / Bench subtotal rows */}
+          {stats.length > 0 && (() => {
+            const starters = stats.filter((p) => !p.isSubstitute);
+            const bench = stats.filter((p) => p.isSubstitute);
+            const sumRow = (group: typeof stats) => ({
+              pts: group.reduce((s, p) => s + p.pts, 0),
+              fgm: group.reduce((s, p) => s + p.fgm, 0),
+              fga: group.reduce((s, p) => s + p.fga, 0),
+              fg2m: group.reduce((s, p) => s + p.fg2m, 0),
+              fg2a: group.reduce((s, p) => s + p.fg2a, 0),
+              fg3m: group.reduce((s, p) => s + p.fg3m, 0),
+              fg3a: group.reduce((s, p) => s + p.fg3a, 0),
+              ftm: group.reduce((s, p) => s + p.ftm, 0),
+              fta: group.reduce((s, p) => s + p.fta, 0),
+              reb: group.reduce((s, p) => s + p.reb, 0),
+              reb_off: group.reduce((s, p) => s + p.reb_off, 0),
+              reb_def: group.reduce((s, p) => s + p.reb_def, 0),
+              ast: group.reduce((s, p) => s + p.ast, 0),
+              stl: group.reduce((s, p) => s + p.stl, 0),
+              blk: group.reduce((s, p) => s + p.blk, 0),
+              to: group.reduce((s, p) => s + p.to, 0),
+              pf: group.reduce((s, p) => s + p.pf, 0),
+              fd: group.reduce((s, p) => s + p.fd, 0),
+              eff: group.reduce((s, p) => s + p.eff, 0),
+            });
+            const s = sumRow(starters);
+            const b = sumRow(bench);
+            const subtotalStyle = [styles.tableRow, { backgroundColor: colors.surfaceVariant + "88", borderBottomColor: borderColor }];
+            const labelStyle = [styles.playerNameText, styles.totalText, { color: textSecondary, fontSize: font.xs }];
+            const cellStyle = (bold?: boolean) => [styles.tableCell, styles.statCell, bold ? styles.statCellBold : null, { color: textSecondary }];
+            const wideStyle = [styles.tableCell, styles.statCellWide, { color: textSecondary }];
+            return (
+              <>
+                {starters.length > 0 && (
+                  <View style={subtotalStyle}>
+                    <View style={styles.playerCell}><Text style={labelStyle}>5 DÉPART</Text></View>
+                    <Text style={[styles.tableCell, styles.numberCell, { color: textTertiary }]}>-</Text>
+                    <Text style={[styles.tableCell, styles.minCell, { color: textTertiary }]}>-</Text>
+                    <Text style={cellStyle(true)}>{s.pts}</Text>
+                    <Text style={wideStyle}>{s.fgm}/{s.fga}</Text>
+                    <Text style={wideStyle}>{s.fg2m}/{s.fg2a}</Text>
+                    <Text style={wideStyle}>{s.fg3m}/{s.fg3a}</Text>
+                    <Text style={wideStyle}>{s.ftm}/{s.fta}</Text>
+                    <Text style={cellStyle()}>{s.reb}</Text>
+                    <Text style={cellStyle()}>{s.reb_off}</Text>
+                    <Text style={cellStyle()}>{s.reb_def}</Text>
+                    <Text style={cellStyle()}>-</Text>
+                    <Text style={cellStyle()}>{s.ast}</Text>
+                    <Text style={cellStyle()}>{s.stl}</Text>
+                    <Text style={cellStyle()}>{s.blk}</Text>
+                    <Text style={cellStyle()}>{s.to}</Text>
+                    <Text style={cellStyle()}>{s.pf}</Text>
+                    <Text style={cellStyle()}>{s.fd}</Text>
+                    <Text style={[styles.tableCell, styles.statCell, styles.statCellBold, { color: textSecondary }]}>{s.eff}</Text>
+                  </View>
+                )}
+                {bench.length > 0 && (
+                  <View style={subtotalStyle}>
+                    <View style={styles.playerCell}><Text style={labelStyle}>BANC</Text></View>
+                    <Text style={[styles.tableCell, styles.numberCell, { color: textTertiary }]}>-</Text>
+                    <Text style={[styles.tableCell, styles.minCell, { color: textTertiary }]}>-</Text>
+                    <Text style={cellStyle(true)}>{b.pts}</Text>
+                    <Text style={wideStyle}>{b.fgm}/{b.fga}</Text>
+                    <Text style={wideStyle}>{b.fg2m}/{b.fg2a}</Text>
+                    <Text style={wideStyle}>{b.fg3m}/{b.fg3a}</Text>
+                    <Text style={wideStyle}>{b.ftm}/{b.fta}</Text>
+                    <Text style={cellStyle()}>{b.reb}</Text>
+                    <Text style={cellStyle()}>{b.reb_off}</Text>
+                    <Text style={cellStyle()}>{b.reb_def}</Text>
+                    <Text style={cellStyle()}>-</Text>
+                    <Text style={cellStyle()}>{b.ast}</Text>
+                    <Text style={cellStyle()}>{b.stl}</Text>
+                    <Text style={cellStyle()}>{b.blk}</Text>
+                    <Text style={cellStyle()}>{b.to}</Text>
+                    <Text style={cellStyle()}>{b.pf}</Text>
+                    <Text style={cellStyle()}>{b.fd}</Text>
+                    <Text style={[styles.tableCell, styles.statCell, styles.statCellBold, { color: textSecondary }]}>{b.eff}</Text>
+                  </View>
+                )}
+              </>
+            );
+          })()}
 
           {/* Total Row */}
           {stats.length > 0 && (
@@ -604,7 +693,7 @@ export default function StatsTab({
                   { color: textPrimary },
                 ]}
               >
-                {stats.reduce((sum, p) => sum + p.reb, 0)}
+                {stats.reduce((sum, p) => sum + p.reb, 0) + teamRebounds}
               </Text>
               <Text
                 style={[
@@ -623,6 +712,15 @@ export default function StatsTab({
                 ]}
               >
                 {stats.reduce((sum, p) => sum + p.reb_def, 0)}
+              </Text>
+              <Text
+                style={[
+                  styles.tableCell,
+                  styles.statCell,
+                  { color: textPrimary },
+                ]}
+              >
+                {teamRebounds}
               </Text>
               <Text
                 style={[

@@ -376,6 +376,7 @@ export default function MatchDetailsScreen() {
             name: playerName,
             team: player.team,
             photoUrl: player.photoUrl || player.photo_url || undefined,
+            isSubstitute: player.isSubstitute ?? false,
             pts: 0,
             reb: 0,
             reb_off: 0,
@@ -426,6 +427,7 @@ export default function MatchDetailsScreen() {
               name: playerName,
               team: action.team,
               photoUrl: undefined,
+              isSubstitute: false,
               pts: 0,
               reb: 0,
               reb_off: 0,
@@ -950,6 +952,11 @@ export default function MatchDetailsScreen() {
             sortOrder={sortOrder}
             handleSort={handleSort}
             setViewPlayer={setViewPlayer}
+            teamRebounds={(actions || []).filter((a) => {
+              const num = a.player_number ?? a.player;
+              const type = (a.action_type || a.type || "").toUpperCase();
+              return a.team === activeTeamFilter && num === -1 && type === "REBOUND";
+            }).length}
           />
         )}
 

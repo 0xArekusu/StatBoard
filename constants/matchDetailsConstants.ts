@@ -77,6 +77,7 @@ export interface PlayerStats {
   name: string;
   team: "MyTeam" | "Opponent";
   photoUrl?: string;
+  isSubstitute: boolean;
   pts: number;
   reb: number;
   reb_off: number;
