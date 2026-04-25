@@ -1824,7 +1824,7 @@ export const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
                     ]}
                     numberOfLines={1}
                   >
-                    {player.name?.split(" ").pop() || ""}
+                    {player.name || ""}
                   </Text>
                 </TouchableOpacity>
               ))}
@@ -2177,7 +2177,7 @@ export const SubstitutionModal: React.FC<SubstitutionModalProps> = ({
                           ]}
                           numberOfLines={1}
                         >
-                          {player.name.split(" ").pop()}
+                          {player.name}
                         </Text>
                         {isOut && (
                           <View style={styles.subPlayerBadge}>
@@ -2278,7 +2278,7 @@ export const SubstitutionModal: React.FC<SubstitutionModalProps> = ({
                           ]}
                           numberOfLines={1}
                         >
-                          {player.name.split(" ").pop()}
+                          {player.name}
                         </Text>
                         {isIn && (
                           <View
