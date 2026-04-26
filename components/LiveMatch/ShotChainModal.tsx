@@ -76,8 +76,7 @@ export const ShotChainModal: React.FC<ShotChainModalProps> = ({
   const defensiveReboundList = isShotByMyTeam
     ? opponentPlayersOnCourt
     : playersOnCourt;
-  const offensiveReboundList = (isShotByMyTeam ? playersOnCourt : opponentPlayersOnCourt)
-    .filter((p) => p.id !== context.shotPlayerId);
+  const offensiveReboundList = isShotByMyTeam ? playersOnCourt : opponentPlayersOnCourt;
 
   const currentReboundList =
     reboundSpec === ReboundSpecification.DEFENSIVE
