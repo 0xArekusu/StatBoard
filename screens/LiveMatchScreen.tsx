@@ -1160,9 +1160,10 @@ export default function LiveMatchScreen() {
     );
     const newActivePlayers = [...remainingPlayers, ...subSelection.in];
 
-    const subDescription = `Changements (${isHome ? "Nous" : "Eux"}): ${
-      subSelection.in.length
-    } joueur(s)`;
+    const amIHome = match.location === TeamId.HOME;
+    const isOurTeam = isHome === amIHome;
+    const subTeamName = isOurTeam ? (match.myTeamName || "Nous") : (match.opponent || "Eux");
+    const subDescription = `Changements (${subTeamName}): ${subSelection.in.length} joueur(s)`;
 
     const newEvent: MatchEvent = {
       id: `evt-${Date.now()}`,
@@ -2169,6 +2170,8 @@ export default function LiveMatchScreen() {
         selectedPeriods={selectedPeriodIds}
         onPeriodSelectionChange={setSelectedPeriodIds}
         isHome={match.location === TeamId.HOME}
+        myTeamName={match.myTeamName}
+        opponentName={match.opponent}
         selectedTeamFilter={selectedTeamFilter}
         onTeamFilterChange={setSelectedTeamFilter}
       />
@@ -2194,6 +2197,8 @@ export default function LiveMatchScreen() {
         playersOnCourt={playersOnCourt}
         opponentPlayersOnCourt={opponentPlayersOnCourt}
         myTeamId={match.location}
+        myTeamName={match.myTeamName}
+        opponentName={match.opponent}
         onPlayerSelect={handleChainPlayerSelect}
         onIgnore={handleChainIgnore}
       />
@@ -2204,6 +2209,8 @@ export default function LiveMatchScreen() {
         playersOnCourt={playersOnCourt}
         opponentPlayersOnCourt={opponentPlayersOnCourt}
         myTeamId={match.location}
+        myTeamName={match.myTeamName}
+        opponentName={match.opponent}
         trackOpponentStats={match.trackOpponentStats}
         onComplete={handleShotChainComplete}
         onIgnore={handleShotChainIgnore}

@@ -24,6 +24,8 @@ interface ActionChainModalProps {
   playersOnCourt: Player[];
   opponentPlayersOnCourt: Player[];
   myTeamId: TeamId;
+  myTeamName?: string;
+  opponentName?: string;
   onPlayerSelect: (suggestion: ChainSuggestion, player: Player | null, teamId?: TeamId) => void;
   onIgnore: () => void;
 }
@@ -34,6 +36,8 @@ export const ActionChainModal: React.FC<ActionChainModalProps> = ({
   playersOnCourt,
   opponentPlayersOnCourt,
   myTeamId,
+  myTeamName,
+  opponentName,
   onPlayerSelect,
   onIgnore,
 }) => {
@@ -146,8 +150,8 @@ export const ActionChainModal: React.FC<ActionChainModalProps> = ({
                   {isSelected && suggestion.teamOnly && !suggestion.autoTeamId && (
                     <View style={[styles.playerRow, { marginTop: sp.xs, gap: sp.xs }]}>
                       {([
-                        { label: "Mon équipe", teamId: myTeamId },
-                        { label: "Adversaire", teamId: myTeamId === TeamId.HOME ? TeamId.AWAY : TeamId.HOME },
+                        { label: myTeamName || "Mon équipe", teamId: myTeamId },
+                        { label: opponentName || "Adversaire", teamId: myTeamId === TeamId.HOME ? TeamId.AWAY : TeamId.HOME },
                       ] as const).map(({ label, teamId }) => {
                         const isTeamSelected = selectedTeamId === teamId;
                         const color = ACTION_COLORS.rebound.base;

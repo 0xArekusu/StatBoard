@@ -274,6 +274,9 @@ interface FilterModalProps {
   onPeriodSelectionChange?: (periods: number[]) => void;
   // Match location for team filtering
   isHome?: boolean;
+  // Team names for filter labels
+  myTeamName?: string;
+  opponentName?: string;
   // Team filter
   selectedTeamFilter?: TeamFilterMode;
   onTeamFilterChange?: (filter: TeamFilterMode) => void;
@@ -322,6 +325,8 @@ export const FilterModal: React.FC<FilterModalProps> = ({
   selectedPeriods = [],
   onPeriodSelectionChange,
   isHome = true,
+  myTeamName,
+  opponentName,
   selectedTeamFilter = TeamFilterMode.ALL,
   onTeamFilterChange,
 }) => {
@@ -1160,7 +1165,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                         },
                       ]}
                     >
-                      Nous
+                      {myTeamName || "Nous"}
                     </Text>
                   </TouchableOpacity>
 
@@ -1194,7 +1199,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                         },
                       ]}
                     >
-                      Eux
+                      {opponentName || "Eux"}
                     </Text>
                   </TouchableOpacity>
                 </View>
@@ -1752,7 +1757,7 @@ export const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
                     },
                   ]}
                 >
-                  EUX
+                  {String(match?.opponent || "EUX").toUpperCase()}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -2086,7 +2091,7 @@ export const SubstitutionModal: React.FC<SubstitutionModalProps> = ({
                     },
                   ]}
                 >
-                  EUX
+                  {String(match.opponent || "EUX").toUpperCase()}
                 </Text>
               </TouchableOpacity>
             </View>

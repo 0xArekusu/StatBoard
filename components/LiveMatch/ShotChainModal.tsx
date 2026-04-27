@@ -28,6 +28,8 @@ interface ShotChainModalProps {
   playersOnCourt: Player[];
   opponentPlayersOnCourt: Player[];
   myTeamId: TeamId;
+  myTeamName?: string;
+  opponentName?: string;
   trackOpponentStats: boolean;
   onComplete: (result: ShotChainResult) => void;
   onIgnore: () => void;
@@ -39,6 +41,8 @@ export const ShotChainModal: React.FC<ShotChainModalProps> = ({
   playersOnCourt,
   opponentPlayersOnCourt,
   myTeamId,
+  myTeamName,
+  opponentName,
   trackOpponentStats,
   onComplete,
   onIgnore,
@@ -256,8 +260,8 @@ export const ShotChainModal: React.FC<ShotChainModalProps> = ({
                 {reboundSpec === ReboundSpecification.TEAM && trackOpponentStats && (
                   <View style={[styles.toggleBtns, { gap: sp.sm }]}>
                     {([
-                      { label: "Mon équipe", teamId: myTeamId },
-                      { label: "Adversaire", teamId: myTeamId === TeamId.HOME ? TeamId.AWAY : TeamId.HOME },
+                      { label: myTeamName || "Mon équipe", teamId: myTeamId },
+                      { label: opponentName || "Adversaire", teamId: myTeamId === TeamId.HOME ? TeamId.AWAY : TeamId.HOME },
                     ] as const).map(({ label, teamId }) => {
                       const isActive = reboundTeamId === teamId;
                       const color = ACTION_COLORS.rebound.base;
