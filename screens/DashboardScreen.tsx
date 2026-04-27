@@ -96,7 +96,7 @@ interface DashboardScreenProps {
 export default function DashboardScreen({ navigation }: DashboardScreenProps) {
   const { colors, isDark, setThemeMode } = useTheme();
   const { isCompact, sp, font } = useResponsive();
-  const { user, signOut } = useAuth();
+  const { user, signOut, deleteAccount } = useAuth();
   const { currentClub, allClubs, setCurrentClub: setGlobalCurrentClub, activeTeamId, setActiveTeamId } = useClub();
 
   const [loading, setLoading] = useState(true);
@@ -110,6 +110,7 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
   const [showGuestWelcome, setShowGuestWelcome] = useState(false);
   const [showClubSwitcher, setShowClubSwitcher] = useState(false);
   const [showMatchLimitModal, setShowMatchLimitModal] = useState(false);
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [guestMaxLocalMatches, setGuestMaxLocalMatches] = useState(NOT_CONNECTED_LIMITS.maxLocalMatches);
 
@@ -397,6 +398,57 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
   const handleSignOut = async () => {
     await signOut();
     navigation.navigate("Auth");
+  };
+
+  const handleDeleteAccount = () => {
+    setShowProfileMenu(false);
+    Alert.alert(
+      "Supprimer mon compte",
+      "Toutes vos données personnelles seront définitivement supprimées. Cette action est irréversible.",
+      [
+        { text: "Annuler", style: "cancel" },
+        {
+          text: "Continuer",
+          style: "destructive",
+          onPress: () => {
+            Alert.alert(
+              "Confirmer la suppression",
+              "Êtes-vous sûr de vouloir supprimer définitivement votre compte ?",
+              [
+                { text: "Annuler", style: "cancel" },
+                {
+                  text: "Supprimer définitivement",
+                  style: "destructive",
+                  onPress: async () => {
+                    setIsDeletingAccount(true);
+                    const { error, errorCode } = await deleteAccount();
+                    setIsDeletingAccount(false);
+
+                    if (error) {
+                      if (errorCode === "club_owner") {
+                        Alert.alert(
+                          "Suppression impossible",
+                          "Vous êtes propriétaire d'un club. Supprimez d'abord votre club depuis l'application avant de supprimer votre compte."
+                        );
+                      } else {
+                        Alert.alert(
+                          "Erreur",
+                          "Une erreur est survenue. Veuillez réessayer."
+                        );
+                      }
+                      return;
+                    }
+
+                    await signOut();
+                    navigation.navigate("Auth");
+                  },
+                },
+              ]
+            );
+          },
+        },
+      ]
+    );
   };
 
   /**
@@ -833,6 +885,26 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
                     Changer de club
                   </Text>
                 </TouchableOpacity>
+              )}
+
+              {!isGuest && (
+                <>
+                  <View style={[styles.profileMenuSeparator, { backgroundColor: colors.border }]} />
+                  <TouchableOpacity
+                    style={styles.profileMenuItem}
+                    onPress={handleDeleteAccount}
+                    disabled={isDeletingAccount}
+                  >
+                    <MaterialCommunityIcons
+                      name="account-remove-outline"
+                      size={20}
+                      color="#E53935"
+                    />
+                    <Text style={[styles.profileMenuItemText, { color: "#E53935" }]}>
+                      {isDeletingAccount ? "Suppression..." : "Supprimer mon compte"}
+                    </Text>
+                  </TouchableOpacity>
+                </>
               )}
             </View>
           </View>
@@ -1401,6 +1473,10 @@ const styles = StyleSheet.create({
   profileMenuItemText: {
     fontSize: 16,
     fontWeight: "500",
+  },
+  profileMenuSeparator: {
+    height: 1,
+    marginHorizontal: 16,
   },
   clubSwitcherOverlay: {
     flex: 1,
