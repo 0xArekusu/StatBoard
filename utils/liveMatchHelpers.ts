@@ -33,7 +33,11 @@ export const getActionDescription = (
   playerName: string,
 ): string => {
   const playerNumber = action.player_number;
-  const prefix = playerNumber !== undefined && playerNumber !== null ? `${playerNumber} - ` : '';
+  const isGenericOpponent = playerNumber === 9999 && action.team === Team.OPPONENT;
+  const prefix =
+    isGenericOpponent || playerNumber === undefined || playerNumber === null
+      ? `${playerName} — `
+      : `#${playerNumber} ${playerName} — `;
 
   if (action.action_type === ActionType.SHOT) {
     const isMade =
@@ -43,19 +47,13 @@ export const getActionDescription = (
     const points = action.points || 0;
 
     if (isMade) {
-      // Use "+X" format for generic opponent (9999), "(+X)" for specific players
-      const isGenericOpponent =
-        action.player_number === 9999 && action.team === Team.OPPONENT;
-      if (points === 3)
-        return isGenericOpponent ? `${playerName} +3` : `${prefix}${playerName} (+3)`;
-      if (points === 2)
-        return isGenericOpponent ? `${playerName} +2` : `${prefix}${playerName} (+2)`;
-      if (points === 1)
-        return isGenericOpponent ? `${playerName} +1` : `${prefix}${playerName} (+1)`;
+      if (points === 3) return `${prefix}Tir (+3)`;
+      if (points === 2) return `${prefix}Tir (+2)`;
+      if (points === 1) return `${prefix}LF (+1)`;
     } else {
-      if (points === 3) return `${prefix}${playerName} Raté (3pts)`;
-      if (points === 2) return `${prefix}${playerName} Raté (2pts)`;
-      if (points === 1) return `${prefix}${playerName} Raté (LF)`;
+      if (points === 3) return `${prefix}Tir raté (3pts)`;
+      if (points === 2) return `${prefix}Tir raté (2pts)`;
+      if (points === 1) return `${prefix}LF raté`;
     }
 
   } else if (action.action_type === ActionType.REBOUND) {
@@ -63,29 +61,31 @@ export const getActionDescription = (
       action.specification === ReboundSpecification.DEFENSIVE ||
       action.specification === "DEFENSIVE"
     )
-      return `${prefix}${playerName} Rebond Déf`;
+      return `${prefix}Rebond défensif`;
     if (
       action.specification === ReboundSpecification.OFFENSIVE ||
       action.specification === "OFFENSIVE"
     )
-      return `${prefix}${playerName} Rebond Off`;
+      return `${prefix}Rebond offensif`;
     if (
       action.specification === ReboundSpecification.TEAM ||
       action.specification === "TEAM"
     )
-      return `${prefix}Équipe Rebond`;
+      return `Équipe — Rebond`;
   } else if (action.action_type === ActionType.FOUL) {
-    return `${prefix}Faute ${playerName}`;
+    return `${prefix}Faute`;
+  } else if (action.action_type === ActionType.FOUL_DRAWN) {
+    return `${prefix}Faute provoquée`;
   } else if (action.action_type === ActionType.ASSIST) {
-    return `${prefix}${playerName} Passe décisive`;
+    return `${prefix}Passe décisive`;
   } else if (action.action_type === ActionType.STEAL) {
-    return `${prefix}${playerName} Interception`;
+    return `${prefix}Interception`;
   } else if (action.action_type === ActionType.BLOCK) {
-    return `${prefix}${playerName} Contre`;
+    return `${prefix}Contre`;
   } else if (action.action_type === ActionType.TURNOVER) {
-    return `${prefix}${playerName} Perte de balle`;
+    return `${prefix}Perte de balle`;
   }
-  return `${prefix}${playerName} - ${action.action_type}`;
+  return `${prefix}${action.action_type}`;
 };
 
 /**
