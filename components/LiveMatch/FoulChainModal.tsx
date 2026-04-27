@@ -172,7 +172,7 @@ export const FoulChainModal: React.FC<FoulChainModalProps> = ({
                             {player.jerseyNumber}
                           </Text>
                           <Text style={[styles.playerName, { color: isSelected ? "#fff" : colors.text.secondary, fontSize: font.xs }]} numberOfLines={1}>
-                            {player.name.split(" ").pop()}
+                            {player.name}
                           </Text>
                         </TouchableOpacity>
                       );

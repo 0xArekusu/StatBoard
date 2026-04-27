@@ -212,7 +212,7 @@ export const ActionChainModal: React.FC<ActionChainModalProps> = ({
                                 style={[styles.playerName, { color: isPlayerSelected ? "#fff" : colors.text.secondary, fontSize: font.xs }]}
                                 numberOfLines={1}
                               >
-                                {player.name.split(" ").pop()}
+                                {player.name}
                               </Text>
                             </TouchableOpacity>
                           );

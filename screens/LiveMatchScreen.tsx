@@ -1252,7 +1252,7 @@ export default function LiveMatchScreen() {
       ? TeamId.AWAY
       : TeamId.HOME;
 
-    const pName = player?.name.split(" ").pop() || "Joueur";
+    const pName = player?.name || "Joueur";
 
     // Create temporary action object for description
     // When we are home (match.location === TeamId.HOME):
@@ -1409,7 +1409,7 @@ export default function LiveMatchScreen() {
         playerNumber: -1,
         teamId,
         timestamp: Date.now(),
-        description: "Rebond Équipe",
+        description: "Équipe — Rebond",
         coordinates: normalizedCoords,
         period_number: quarter,
         time_in_period: periodDurationMin * 60 - timer,
@@ -1476,7 +1476,7 @@ export default function LiveMatchScreen() {
         playerNumber: result.blockerPlayer.jerseyNumber,
         teamId: blockerTeamId,
         timestamp: Date.now(),
-        description: `Contre — #${result.blockerPlayer.jerseyNumber}`,
+        description: `#${result.blockerPlayer.jerseyNumber} ${result.blockerPlayer.name} — Contre`,
         coordinates: normalizedCoords,
         period_number: quarter,
         time_in_period: periodDurationMin * 60 - timer,
@@ -1499,7 +1499,7 @@ export default function LiveMatchScreen() {
         playerNumber: -1,
         teamId: result.reboundTeamId,
         timestamp: Date.now(),
-        description: "Rebond Équipe",
+        description: "Équipe — Rebond",
         coordinates: normalizedCoords,
         period_number: quarter,
         time_in_period: periodDurationMin * 60 - timer,
@@ -1524,7 +1524,7 @@ export default function LiveMatchScreen() {
         playerNumber: result.reboundPlayer.jerseyNumber,
         teamId: reboundTeamId,
         timestamp: Date.now(),
-        description: `Rebond ${isDefensive ? "Défensif" : "Offensif"} — #${result.reboundPlayer.jerseyNumber}`,
+        description: `#${result.reboundPlayer.jerseyNumber} ${result.reboundPlayer.name} — Rebond ${isDefensive ? "défensif" : "offensif"}`,
         coordinates: normalizedCoords,
         period_number: quarter,
         time_in_period: periodDurationMin * 60 - timer,
@@ -1567,7 +1567,7 @@ export default function LiveMatchScreen() {
   const handleFoulChainComplete = async (result: FoulChainResult) => {
     if (!foulChainContext) return;
 
-    const { foulDrawnPlayerId, foulDrawnPlayerNumber, foulDrawnTeamId, coords } = foulChainContext;
+    const { foulDrawnPlayerId, foulDrawnPlayerNumber, foulDrawnPlayerName, foulDrawnTeamId, coords } = foulChainContext;
     const isMyTeamPlayer = homeRoster.some((p: Player) => p.id === foulDrawnPlayerId);
     const foulDrawnTeam = isMyTeamPlayer ? Team.MY_TEAM : Team.OPPONENT;
     const opponentTeamId = foulDrawnTeamId === TeamId.HOME ? TeamId.AWAY : TeamId.HOME;
@@ -1598,7 +1598,7 @@ export default function LiveMatchScreen() {
         playerNumber: drawnPlayer.jerseyNumber,
         teamId: drawnTeamId,
         timestamp: Date.now(),
-        description: `Faute provoquée — #${drawnPlayer.jerseyNumber}`,
+        description: `#${drawnPlayer.jerseyNumber} ${drawnPlayer.name} — Faute provoquée`,
         coordinates: normalizedCoords,
         period_number: quarter,
         time_in_period: periodDurationMin * 60 - timer,
@@ -1619,7 +1619,7 @@ export default function LiveMatchScreen() {
           playerNumber: drawnPlayer.jerseyNumber,
           teamId: drawnTeamId,
           timestamp: Date.now(),
-          description: `${drawnPlayer.jerseyNumber} - Panier marqué (+${result.basketPoints})`,
+          description: `#${drawnPlayer.jerseyNumber} ${drawnPlayer.name} — Tir (+${result.basketPoints})`,
           coordinates: normalizedCoords,
           period_number: quarter,
           time_in_period: periodDurationMin * 60 - timer,
@@ -1647,8 +1647,8 @@ export default function LiveMatchScreen() {
           teamId: drawnTeamId,
           timestamp: Date.now(),
           description: spec === ShotSpecification.MADE
-            ? `${drawnPlayer.jerseyNumber} - LF (+1)`
-            : `${drawnPlayer.jerseyNumber} - LF Raté`,
+            ? `#${drawnPlayer.jerseyNumber} ${drawnPlayer.name} — LF (+1)`
+            : `#${drawnPlayer.jerseyNumber} ${drawnPlayer.name} — LF raté`,
           period_number: quarter,
           time_in_period: periodDurationMin * 60 - timer,
         }, ...updatedMatch.events];
@@ -1710,7 +1710,7 @@ export default function LiveMatchScreen() {
         playerNumber: result.foulPlayer.jerseyNumber,
         teamId: opponentTeamId,
         timestamp: Date.now(),
-        description: `Faute — #${result.foulPlayer.jerseyNumber}`,
+        description: `#${result.foulPlayer.jerseyNumber} ${result.foulPlayer.name} — Faute`,
         coordinates: normalizedCoords,
         period_number: quarter,
         time_in_period: periodDurationMin * 60 - timer,
@@ -1732,7 +1732,7 @@ export default function LiveMatchScreen() {
         playerNumber: foulDrawnPlayerNumber,
         teamId: foulDrawnTeamId,
         timestamp: Date.now(),
-        description: `${foulDrawnPlayerNumber} - Panier marqué (+${result.basketPoints})`,
+        description: `#${foulDrawnPlayerNumber} ${foulDrawnPlayerName} — Tir (+${result.basketPoints})`,
         coordinates: normalizedCoords,
         period_number: quarter,
         time_in_period: periodDurationMin * 60 - timer,
@@ -1761,8 +1761,8 @@ export default function LiveMatchScreen() {
         teamId: foulDrawnTeamId,
         timestamp: Date.now(),
         description: spec === ShotSpecification.MADE
-          ? `${foulDrawnPlayerNumber} - LF (+1)`
-          : `${foulDrawnPlayerNumber} - LF Raté`,
+          ? `#${foulDrawnPlayerNumber} ${foulDrawnPlayerName} — LF (+1)`
+          : `#${foulDrawnPlayerNumber} ${foulDrawnPlayerName} — LF raté`,
         period_number: quarter,
         time_in_period: periodDurationMin * 60 - timer,
       }, ...updatedMatch.events];
