@@ -274,6 +274,8 @@ interface FilterModalProps {
   onPeriodSelectionChange?: (periods: number[]) => void;
   // Match location for team filtering
   isHome?: boolean;
+  // Starters for pts split
+  starters?: string[];
   // Team names for filter labels
   myTeamName?: string;
   opponentName?: string;
@@ -284,18 +286,22 @@ interface FilterModalProps {
 
 interface FilteredSummary {
   pts: number;
+  ptsStarters: number;
+  ptsBench: number;
   reb: number;
   rebOff: number;
   rebDef: number;
+  rebTeam: number;
   ast: number;
   stl: number;
   blk: number;
   pf: number;
-  fd: number; // Fouls drawn
+  fd: number;
   to: number;
   fgm: number;
   fga: number;
   fgPct: number;
+  globalPct: number;
   // Free throws
   ftm: number;
   fta: number;
@@ -325,6 +331,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
   selectedPeriods = [],
   onPeriodSelectionChange,
   isHome = true,
+  starters = [],
   myTeamName,
   opponentName,
   selectedTeamFilter = TeamFilterMode.ALL,
@@ -555,9 +562,12 @@ export const FilterModal: React.FC<FilterModalProps> = ({
     // Calculate stats from filtered actions
     const summary: FilteredSummary = {
       pts: 0,
+      ptsStarters: 0,
+      ptsBench: 0,
       reb: 0,
       rebOff: 0,
       rebDef: 0,
+      rebTeam: 0,
       ast: 0,
       stl: 0,
       blk: 0,
@@ -567,6 +577,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
       fgm: 0,
       fga: 0,
       fgPct: 0,
+      globalPct: 0,
       ftm: 0,
       fta: 0,
       ftPct: 0,
@@ -586,28 +597,36 @@ export const FilterModal: React.FC<FilterModalProps> = ({
           const points = action.points || 0;
 
           // Track by shot type
+          let scoredPoints = 0;
           if (points === 1) {
-            // Free throw
             summary.fta += 1;
             if (isMade) {
               summary.ftm += 1;
               summary.pts += 1;
+              scoredPoints = 1;
             }
           } else if (points === 2) {
-            // Two-pointer
             summary.twoA += 1;
             if (isMade) {
               summary.twoM += 1;
               summary.pts += 2;
               summary.fgm += 1;
+              scoredPoints = 2;
             }
           } else if (points === 3) {
-            // Three-pointer
             summary.threeA += 1;
             if (isMade) {
               summary.threeM += 1;
               summary.pts += 3;
               summary.fgm += 1;
+              scoredPoints = 3;
+            }
+          }
+          if (scoredPoints > 0 && action.playerId) {
+            if (starters.includes(action.playerId)) {
+              summary.ptsStarters += scoredPoints;
+            } else {
+              summary.ptsBench += scoredPoints;
             }
           }
           break;
@@ -617,6 +636,8 @@ export const FilterModal: React.FC<FilterModalProps> = ({
             summary.rebOff += 1;
           } else if (action.specification === ReboundSpecification.DEFENSIVE) {
             summary.rebDef += 1;
+          } else if (action.specification === ReboundSpecification.TEAM) {
+            summary.rebTeam += 1;
           }
           break;
         case ActionType.ASSIST:
@@ -661,6 +682,12 @@ export const FilterModal: React.FC<FilterModalProps> = ({
       summary.threeA > 0
         ? Math.round((summary.threeM / summary.threeA) * 100)
         : 0;
+
+    // Calculate global accuracy (all shots including FT)
+    const totalAttempts = summary.twoA + summary.threeA + summary.fta;
+    const totalMade = summary.twoM + summary.threeM + summary.ftm;
+    summary.globalPct =
+      totalAttempts > 0 ? Math.round((totalMade / totalAttempts) * 100) : 0;
 
     return summary;
   };
@@ -1425,184 +1452,117 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                   </Text>
                 </View>
 
-                {/* Row 1: Points and Shooting */}
+                {/* Row 1: Points total | 5 Maj. | Banc */}
                 <View style={styles.filterSummaryRow}>
                   <View style={styles.filterSummaryItemFlex}>
-                    <Text
-                      style={[
-                        styles.filterSummaryValue,
-                        { color: textPrimary },
-                      ]}
-                    >
+                    <Text style={[styles.filterSummaryValue, { color: textPrimary }]}>
                       {filteredSummary.pts}
                     </Text>
-                    <Text
-                      style={[
-                        styles.filterSummaryLabel,
-                        { color: textSecondary },
-                      ]}
-                    >
+                    <Text style={[styles.filterSummaryLabel, { color: textSecondary }]}>
                       Points
                     </Text>
                   </View>
                   <View style={styles.filterSummaryItemFlex}>
-                    <View style={styles.filterSummaryValueRow}>
-                      <Text
-                        style={[
-                          styles.filterSummaryValue,
-                          { color: textPrimary },
-                        ]}
-                      >
-                        {filteredSummary.ftm}/{filteredSummary.fta}
-                      </Text>
-                      <Text
-                        style={[
-                          styles.filterSummaryPercentage,
-                          { color: textSecondary },
-                        ]}
-                      >
-                        {filteredSummary.ftPct}%
-                      </Text>
-                    </View>
-                    <Text
-                      style={[
-                        styles.filterSummaryLabel,
-                        { color: textSecondary },
-                      ]}
-                    >
-                      LF
+                    <Text style={[styles.filterSummaryValue, { color: textPrimary }]}>
+                      {filteredSummary.ptsStarters}
+                    </Text>
+                    <Text style={[styles.filterSummaryLabel, { color: textSecondary }]}>
+                      5 Maj.
+                    </Text>
+                  </View>
+                  <View style={styles.filterSummaryItemFlex}>
+                    <Text style={[styles.filterSummaryValue, { color: textPrimary }]}>
+                      {filteredSummary.ptsBench}
+                    </Text>
+                    <Text style={[styles.filterSummaryLabel, { color: textSecondary }]}>
+                      Banc
+                    </Text>
+                  </View>
+                </View>
+
+                {/* Row 2: Shooting — Global % first, then 2pts, 3pts, LF */}
+                <View style={[styles.filterSummaryRow, { marginTop: 12 }]}>
+                  <View style={styles.filterSummaryItemFlex}>
+                    <Text style={[styles.filterSummaryValue, { color: textPrimary }]}>
+                      {filteredSummary.globalPct}%
+                    </Text>
+                    <Text style={[styles.filterSummaryLabel, { color: textSecondary }]}>
+                      Global
                     </Text>
                   </View>
                   <View style={styles.filterSummaryItemFlex}>
                     <View style={styles.filterSummaryValueRow}>
-                      <Text
-                        style={[
-                          styles.filterSummaryValue,
-                          { color: textPrimary },
-                        ]}
-                      >
+                      <Text style={[styles.filterSummaryValue, { color: textPrimary }]}>
                         {filteredSummary.twoM}/{filteredSummary.twoA}
                       </Text>
-                      <Text
-                        style={[
-                          styles.filterSummaryPercentage,
-                          { color: textSecondary },
-                        ]}
-                      >
+                      <Text style={[styles.filterSummaryPercentage, { color: textSecondary }]}>
                         {filteredSummary.twoPct}%
                       </Text>
                     </View>
-                    <Text
-                      style={[
-                        styles.filterSummaryLabel,
-                        { color: textSecondary },
-                      ]}
-                    >
+                    <Text style={[styles.filterSummaryLabel, { color: textSecondary }]}>
                       2pts
                     </Text>
                   </View>
                   <View style={styles.filterSummaryItemFlex}>
                     <View style={styles.filterSummaryValueRow}>
-                      <Text
-                        style={[
-                          styles.filterSummaryValue,
-                          { color: textPrimary },
-                        ]}
-                      >
+                      <Text style={[styles.filterSummaryValue, { color: textPrimary }]}>
                         {filteredSummary.threeM}/{filteredSummary.threeA}
                       </Text>
-                      <Text
-                        style={[
-                          styles.filterSummaryPercentage,
-                          { color: textSecondary },
-                        ]}
-                      >
+                      <Text style={[styles.filterSummaryPercentage, { color: textSecondary }]}>
                         {filteredSummary.threePct}%
                       </Text>
                     </View>
-                    <Text
-                      style={[
-                        styles.filterSummaryLabel,
-                        { color: textSecondary },
-                      ]}
-                    >
+                    <Text style={[styles.filterSummaryLabel, { color: textSecondary }]}>
                       3pts
+                    </Text>
+                  </View>
+                  <View style={styles.filterSummaryItemFlex}>
+                    <View style={styles.filterSummaryValueRow}>
+                      <Text style={[styles.filterSummaryValue, { color: textPrimary }]}>
+                        {filteredSummary.ftm}/{filteredSummary.fta}
+                      </Text>
+                      <Text style={[styles.filterSummaryPercentage, { color: textSecondary }]}>
+                        {filteredSummary.ftPct}%
+                      </Text>
+                    </View>
+                    <Text style={[styles.filterSummaryLabel, { color: textSecondary }]}>
+                      LF
                     </Text>
                   </View>
                 </View>
 
-                {/* Row 2: Rebounds and Assists */}
+                {/* Row 3: Rebounds — total, team, off, def */}
                 <View style={[styles.filterSummaryRow, { marginTop: 12 }]}>
                   <View style={styles.filterSummaryItemFlex}>
-                    <Text
-                      style={[
-                        styles.filterSummaryValue,
-                        { color: textPrimary },
-                      ]}
-                    >
+                    <Text style={[styles.filterSummaryValue, { color: textPrimary }]}>
                       {filteredSummary.reb}
                     </Text>
-                    <Text
-                      style={[
-                        styles.filterSummaryLabel,
-                        { color: textSecondary },
-                      ]}
-                    >
+                    <Text style={[styles.filterSummaryLabel, { color: textSecondary }]}>
                       Rebonds
                     </Text>
                   </View>
                   <View style={styles.filterSummaryItemFlex}>
-                    <Text
-                      style={[
-                        styles.filterSummaryValue,
-                        { color: textPrimary },
-                      ]}
-                    >
+                    <Text style={[styles.filterSummaryValue, { color: textPrimary }]}>
+                      {filteredSummary.rebTeam}
+                    </Text>
+                    <Text style={[styles.filterSummaryLabel, { color: textSecondary }]}>
+                      Reb. Éq.
+                    </Text>
+                  </View>
+                  <View style={styles.filterSummaryItemFlex}>
+                    <Text style={[styles.filterSummaryValue, { color: textPrimary }]}>
                       {filteredSummary.rebOff}
                     </Text>
-                    <Text
-                      style={[
-                        styles.filterSummaryLabel,
-                        { color: textSecondary },
-                      ]}
-                    >
+                    <Text style={[styles.filterSummaryLabel, { color: textSecondary }]}>
                       Reb. Off.
                     </Text>
                   </View>
                   <View style={styles.filterSummaryItemFlex}>
-                    <Text
-                      style={[
-                        styles.filterSummaryValue,
-                        { color: textPrimary },
-                      ]}
-                    >
+                    <Text style={[styles.filterSummaryValue, { color: textPrimary }]}>
                       {filteredSummary.rebDef}
                     </Text>
-                    <Text
-                      style={[
-                        styles.filterSummaryLabel,
-                        { color: textSecondary },
-                      ]}
-                    >
-                      Reb. Def.
-                    </Text>
-                  </View>
-                  <View style={styles.filterSummaryItemFlex}>
-                    <Text
-                      style={[
-                        styles.filterSummaryValue,
-                        { color: textPrimary },
-                      ]}
-                    >
-                      {filteredSummary.ast}
-                    </Text>
-                    <Text
-                      style={[
-                        styles.filterSummaryLabel,
-                        { color: textSecondary },
-                      ]}
-                    >
-                      Passes
+                    <Text style={[styles.filterSummaryLabel, { color: textSecondary }]}>
+                      Reb. Déf.
                     </Text>
                   </View>
                 </View>

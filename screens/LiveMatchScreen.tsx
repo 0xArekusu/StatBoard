@@ -2170,6 +2170,7 @@ export default function LiveMatchScreen() {
         selectedPeriods={selectedPeriodIds}
         onPeriodSelectionChange={setSelectedPeriodIds}
         isHome={match.location === TeamId.HOME}
+        starters={match.starters}
         myTeamName={match.myTeamName}
         opponentName={match.opponent}
         selectedTeamFilter={selectedTeamFilter}
