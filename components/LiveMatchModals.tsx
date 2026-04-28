@@ -1478,6 +1478,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                       Banc
                     </Text>
                   </View>
+                  <View style={styles.filterSummaryItemFlex} />
                 </View>
 
                 {/* Row 2: Shooting — Global % first, then 2pts, 3pts, LF */}
