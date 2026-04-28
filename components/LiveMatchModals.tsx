@@ -452,6 +452,29 @@ export const FilterModal: React.FC<FilterModalProps> = ({
     }
   };
 
+  // Calculate score for selected periods
+  const periodScore = React.useMemo(() => {
+    if (!actions || actions.length === 0) return null;
+
+    const periodsToFilter = selectedPeriods.length > 0 ? selectedPeriods : null;
+    let homeScore = 0;
+    let awayScore = 0;
+
+    actions.forEach((action: any) => {
+      if (action.action_type === ActionType.SHOT && action.points > 0) {
+        if (periodsToFilter === null || periodsToFilter.includes(action.period_number)) {
+          if (action.teamId === TeamId.HOME) homeScore += action.points;
+          else if (action.teamId === TeamId.AWAY) awayScore += action.points;
+        }
+      }
+    });
+
+    return {
+      myScore: isHome ? homeScore : awayScore,
+      theirScore: isHome ? awayScore : homeScore,
+    };
+  }, [actions, selectedPeriods, isHome]);
+
   // Calculate filtered summary
   const calculateFilteredSummary = (): FilteredSummary | null => {
     if (!actions || actions.length === 0) return null;
@@ -788,6 +811,45 @@ export const FilterModal: React.FC<FilterModalProps> = ({
               </TouchableOpacity>
             </View>
           </View>
+
+          {/* Period Score Banner */}
+          {periodScore !== null && (
+            <View
+              style={[
+                styles.periodScoreBanner,
+                { borderColor, backgroundColor: colors.surfaceVariant },
+              ]}
+            >
+              <Text style={[styles.periodScoreLabel, { color: textSecondary }]}>
+                {selectedPeriods.length > 0
+                  ? selectedPeriods.map(getPeriodLabel).join(" + ")
+                  : "Tout le match"}
+              </Text>
+              <View style={styles.periodScoreRow}>
+                <Text
+                  style={[styles.periodScoreTeam, { color: textSecondary }]}
+                  numberOfLines={1}
+                >
+                  {myTeamName || "Nous"}
+                </Text>
+                <Text style={[styles.periodScoreValue, { color: textPrimary }]}>
+                  {periodScore.myScore}
+                </Text>
+                <Text style={[styles.periodScoreDash, { color: textSecondary }]}>
+                  —
+                </Text>
+                <Text style={[styles.periodScoreValue, { color: textPrimary }]}>
+                  {periodScore.theirScore}
+                </Text>
+                <Text
+                  style={[styles.periodScoreTeam, { color: textSecondary }]}
+                  numberOfLines={1}
+                >
+                  {opponentName || "Eux"}
+                </Text>
+              </View>
+            </View>
+          )}
 
           {/* Filter Options */}
           <ScrollView
@@ -3162,6 +3224,45 @@ const styles = StyleSheet.create({
   playerFilterName: {
     fontSize: 12,
     fontWeight: "700",
+  },
+  // Period Score Banner
+  periodScoreBanner: {
+    marginBottom: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: "center",
+    gap: 4,
+  },
+  periodScoreLabel: {
+    fontSize: 10,
+    fontWeight: "700",
+    letterSpacing: 1,
+    textTransform: "uppercase",
+  },
+  periodScoreRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    width: "100%",
+    justifyContent: "center",
+    gap: 8,
+  },
+  periodScoreTeam: {
+    fontSize: 13,
+    fontWeight: "600",
+    flex: 1,
+    textAlign: "center",
+  },
+  periodScoreValue: {
+    fontSize: 30,
+    fontWeight: "900",
+    minWidth: 36,
+    textAlign: "center",
+  },
+  periodScoreDash: {
+    fontSize: 22,
+    fontWeight: "300",
   },
   // Filter Summary
   filterSummary: {
