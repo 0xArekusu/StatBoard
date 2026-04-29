@@ -710,7 +710,7 @@ const styles = StyleSheet.create({
     flex: 2,
     minWidth: 0,
     paddingVertical: 10,
-    paddingHorizontal: 10,
+    paddingHorizontal: 8,
     justifyContent: "center",
     alignItems: "flex-start",
     borderRightWidth: 1,
