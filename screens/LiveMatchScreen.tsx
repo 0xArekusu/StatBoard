@@ -128,8 +128,14 @@ export default function LiveMatchScreen() {
         myTeamName: matchData.teamName || "Mon Équipe",
         opponent: matchData.opponent || "Adversaire",
         location: matchData.isHome ? TeamId.HOME : TeamId.AWAY,
-        scoreHome: 0,
-        scoreAway: 0,
+        scoreHome: matchData.isHome
+          ? (matchData.myTeamHandicap || 0)
+          : (matchData.opponentHandicap || 0),
+        scoreAway: matchData.isHome
+          ? (matchData.opponentHandicap || 0)
+          : (matchData.myTeamHandicap || 0),
+        myTeamHandicap: matchData.myTeamHandicap || 0,
+        opponentHandicap: matchData.opponentHandicap || 0,
         status: "in_progress" as MatchStatus,
         trackOpponentStats: matchData.trackOpponentStats || false,
         roster: matchData.myTeamPlayers || [],
@@ -358,10 +364,14 @@ export default function LiveMatchScreen() {
 
           // Calculate scores from actions (using the new action type system)
           const isHome = existingMatch.is_home;
-          const { scoreHome, scoreAway } = calculateScoresFromActions(
+          const { scoreHome: actionsScoreHome, scoreAway: actionsScoreAway } = calculateScoresFromActions(
             actions,
             isHome,
           );
+          const myTeamHandicap = existingMatch.my_team_handicap || 0;
+          const opponentHandicap = existingMatch.opponent_handicap || 0;
+          const scoreHome = actionsScoreHome + (isHome ? myTeamHandicap : opponentHandicap);
+          const scoreAway = actionsScoreAway + (isHome ? opponentHandicap : myTeamHandicap);
 
           // Separate players by team
           const myTeamPlayersFromDB = players.filter(
@@ -423,6 +433,8 @@ export default function LiveMatchScreen() {
             opponent: existingMatch.opponent_name || "Adversaire",
             location: existingMatch.is_home ? TeamId.HOME : TeamId.AWAY,
             trackOpponentStats: existingMatch.track_opponent_stats,
+            myTeamHandicap: existingMatch.my_team_handicap || 0,
+            opponentHandicap: existingMatch.opponent_handicap || 0,
             scoreHome,
             scoreAway,
             roster: myTeamRosterLoaded,
@@ -510,6 +522,8 @@ export default function LiveMatchScreen() {
             club_logo_url: match.clubLogoUrl || null,
             court_background_color: match.courtBackgroundColor || null,
             court_line_color: match.courtLineColor || null,
+            my_team_handicap: match.myTeamHandicap || 0,
+            opponent_handicap: match.opponentHandicap || 0,
             created_at: match.createdAt || new Date().toISOString(), // Use timestamp from NewMatchScreen
           };
 
@@ -2173,6 +2187,8 @@ export default function LiveMatchScreen() {
         starters={match.starters}
         myTeamName={match.myTeamName}
         opponentName={match.opponent}
+        myTeamHandicap={match.myTeamHandicap || 0}
+        opponentHandicap={match.opponentHandicap || 0}
         selectedTeamFilter={selectedTeamFilter}
         onTeamFilterChange={setSelectedTeamFilter}
       />

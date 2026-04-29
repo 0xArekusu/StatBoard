@@ -96,6 +96,8 @@ export type RootStackParamList = {
       courtBackgroundColor?: string;
       courtLineColor?: string;
       createdAt: string;
+      myTeamHandicap?: number;
+      opponentHandicap?: number;
     };
   };
   MatchDetails: {

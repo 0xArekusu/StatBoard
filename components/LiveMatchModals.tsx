@@ -240,6 +240,45 @@ export const HistoryModal: React.FC<HistoryModalProps> = ({
                 </Text>
               </View>
             )}
+
+            {/* Handicap entry — non-deletable, always at the bottom */}
+            {((match.myTeamHandicap || 0) > 0 || (match.opponentHandicap || 0) > 0) && (
+              <View
+                style={[
+                  styles.historyItem,
+                  {
+                    backgroundColor: colors.surfaceVariant,
+                    borderColor: colors.primary + "44",
+                    borderWidth: 1,
+                    padding: sp.md,
+                    borderRadius: sp.sm,
+                    marginBottom: sp.sm,
+                    opacity: 0.8,
+                  },
+                ]}
+              >
+                <View style={styles.historyItemLeft}>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                    <MaterialCommunityIcons name="flag-checkered" size={13} color={colors.primary} />
+                    <Text
+                      style={[
+                        styles.historyItemDescription,
+                        { color: textPrimary, fontSize: font.md },
+                      ]}
+                    >
+                      Handicap de départ
+                    </Text>
+                  </View>
+                  <Text style={[styles.historyItemMeta, { color: textSecondary }]}>
+                    {[
+                      (match.myTeamHandicap || 0) > 0 && `${match.myTeamName || "Nous"} +${match.myTeamHandicap}`,
+                      (match.opponentHandicap || 0) > 0 && `${match.opponent || "Adversaire"} +${match.opponentHandicap}`,
+                    ].filter(Boolean).join("  •  ")}
+                  </Text>
+                </View>
+                <MaterialCommunityIcons name="lock-outline" size={18} color={textSecondary} />
+              </View>
+            )}
           </ScrollView>
         </View>
       </View>
@@ -279,6 +318,9 @@ interface FilterModalProps {
   // Team names for filter labels
   myTeamName?: string;
   opponentName?: string;
+  // Handicap badges
+  myTeamHandicap?: number;
+  opponentHandicap?: number;
   // Team filter
   selectedTeamFilter?: TeamFilterMode;
   onTeamFilterChange?: (filter: TeamFilterMode) => void;
@@ -334,6 +376,8 @@ export const FilterModal: React.FC<FilterModalProps> = ({
   starters = [],
   myTeamName,
   opponentName,
+  myTeamHandicap = 0,
+  opponentHandicap = 0,
   selectedTeamFilter = TeamFilterMode.ALL,
   onTeamFilterChange,
 }) => {
@@ -461,20 +505,20 @@ export const FilterModal: React.FC<FilterModalProps> = ({
 
   // Calculate score for selected periods
   const periodScore = React.useMemo(() => {
-    if (!actions || actions.length === 0) return null;
-
     const periodsToFilter = selectedPeriods.length > 0 ? selectedPeriods : null;
     let homeScore = 0;
     let awayScore = 0;
 
-    actions.forEach((action: any) => {
-      if (action.action_type === ActionType.SHOT && action.points > 0) {
-        if (periodsToFilter === null || periodsToFilter.includes(action.period_number)) {
-          if (action.teamId === TeamId.HOME) homeScore += action.points;
-          else if (action.teamId === TeamId.AWAY) awayScore += action.points;
+    if (actions && actions.length > 0) {
+      actions.forEach((action: any) => {
+        if (action.action_type === ActionType.SHOT && action.points > 0) {
+          if (periodsToFilter === null || periodsToFilter.includes(action.period_number)) {
+            if (action.teamId === TeamId.HOME) homeScore += action.points;
+            else if (action.teamId === TeamId.AWAY) awayScore += action.points;
+          }
         }
-      }
-    });
+      });
+    }
 
     return {
       myScore: isHome ? homeScore : awayScore,
@@ -483,9 +527,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
   }, [actions, selectedPeriods, isHome]);
 
   // Calculate filtered summary
-  const calculateFilteredSummary = (): FilteredSummary | null => {
-    if (!actions || actions.length === 0) return null;
-
+  const calculateFilteredSummary = (): FilteredSummary => {
     // Always show summary (no need to check for active filters)
     // Filter actions based on current filter settings
     const filteredActions = actions.filter((action: any) => {
@@ -840,43 +882,59 @@ export const FilterModal: React.FC<FilterModalProps> = ({
           </View>
 
           {/* Period Score Banner */}
-          {periodScore !== null && (
-            <View
-              style={[
-                styles.periodScoreBanner,
-                { borderColor, backgroundColor: colors.surfaceVariant },
-              ]}
-            >
-              <Text style={[styles.periodScoreLabel, { color: textSecondary }]}>
-                {selectedPeriods.length > 0
-                  ? selectedPeriods.map(getPeriodLabel).join(" + ")
-                  : "Tout le match"}
-              </Text>
-              <View style={styles.periodScoreRow}>
+          <View
+            style={[
+              styles.periodScoreBanner,
+              { borderColor, backgroundColor: colors.surfaceVariant },
+            ]}
+          >
+            <Text style={[styles.periodScoreLabel, { color: textSecondary }]}>
+              {selectedPeriods.length > 0
+                ? selectedPeriods.map(getPeriodLabel).join(" + ")
+                : "Tout le match"}
+            </Text>
+            <View style={styles.periodScoreRow}>
+              <View style={styles.periodScoreTeamCol}>
                 <Text
                   style={[styles.periodScoreTeam, { color: textSecondary }]}
                   numberOfLines={1}
                 >
                   {myTeamName || "Nous"}
                 </Text>
-                <Text style={[styles.periodScoreValue, { color: textPrimary }]}>
-                  {periodScore.myScore}
-                </Text>
-                <Text style={[styles.periodScoreDash, { color: textSecondary }]}>
-                  —
-                </Text>
-                <Text style={[styles.periodScoreValue, { color: textPrimary }]}>
-                  {periodScore.theirScore}
-                </Text>
+                {myTeamHandicap > 0 && (
+                  <View style={[styles.filterHcpBadge, { backgroundColor: colors.primary + "22", borderColor: colors.primary + "55" }]}>
+                    <Text style={[styles.filterHcpBadgeText, { color: colors.primary }]}>
+                      +{myTeamHandicap} HCP
+                    </Text>
+                  </View>
+                )}
+              </View>
+              <Text style={[styles.periodScoreValue, { color: textPrimary }]}>
+                {periodScore.myScore}
+              </Text>
+              <Text style={[styles.periodScoreDash, { color: textSecondary }]}>
+                —
+              </Text>
+              <Text style={[styles.periodScoreValue, { color: textPrimary }]}>
+                {periodScore.theirScore}
+              </Text>
+              <View style={styles.periodScoreTeamCol}>
                 <Text
                   style={[styles.periodScoreTeam, { color: textSecondary }]}
                   numberOfLines={1}
                 >
                   {opponentName || "Eux"}
                 </Text>
+                {opponentHandicap > 0 && (
+                  <View style={[styles.filterHcpBadge, { backgroundColor: colors.primary + "22", borderColor: colors.primary + "55" }]}>
+                    <Text style={[styles.filterHcpBadgeText, { color: colors.primary }]}>
+                      +{opponentHandicap} HCP
+                    </Text>
+                  </View>
+                )}
               </View>
             </View>
-          )}
+          </View>
 
           {/* Filter Options */}
           <ScrollView
@@ -1426,16 +1484,15 @@ export const FilterModal: React.FC<FilterModalProps> = ({
             )}
 
             {/* Filtered Summary */}
-            {filteredSummary && (
-              <View
-                style={[
-                  styles.filterSummary,
-                  {
-                    backgroundColor: colors.surfaceVariant,
-                    borderColor: colors.border,
-                  },
-                ]}
-              >
+            <View
+              style={[
+                styles.filterSummary,
+                {
+                  backgroundColor: colors.surfaceVariant,
+                  borderColor: colors.border,
+                },
+              ]}
+            >
                 <View style={styles.filterSummaryHeader}>
                   <MaterialCommunityIcons
                     name="trending-up"
@@ -1644,7 +1701,6 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                   </View>
                 </View>
               </View>
-            )}
           </ScrollView>
         </View>
       </View>
@@ -3209,11 +3265,26 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 8,
   },
+  periodScoreTeamCol: {
+    flex: 1,
+    alignItems: "center",
+    gap: 4,
+  },
   periodScoreTeam: {
     fontSize: 13,
     fontWeight: "600",
-    flex: 1,
     textAlign: "center",
+  },
+  filterHcpBadge: {
+    borderWidth: 1,
+    borderRadius: 4,
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+  },
+  filterHcpBadgeText: {
+    fontSize: 9,
+    fontWeight: "900",
+    letterSpacing: 0.5,
   },
   periodScoreValue: {
     fontSize: 30,

@@ -46,6 +46,8 @@ export interface SupabaseMatch {
   // Final scores
   my_team_score: number;
   opponent_score: number;
+  my_team_handicap: number;
+  opponent_handicap: number;
   status: 'in_progress' | 'completed' | 'cancelled';
 
   // Embedded player data
@@ -75,6 +77,8 @@ export interface SupabaseMatchInsert {
   overtime_periods: number;
   my_team_score: number;
   opponent_score: number;
+  my_team_handicap?: number;
+  opponent_handicap?: number;
   status: 'in_progress' | 'completed' | 'cancelled';
   created_by?: string | null;
 

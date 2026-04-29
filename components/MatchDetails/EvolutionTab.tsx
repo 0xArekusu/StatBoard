@@ -70,7 +70,11 @@ export default function EvolutionTab({
   // Calculate period scores and graph points
   const evolution = useMemo(() => {
     const periods: PeriodScore[] = [];
-    const graphPoints: GraphPoint[] = [{ myTeam: 0, opponent: 0, period: 0, actionIndex: -1, xPosition: 0 }];
+    const myTeamHandicap = match.my_team_handicap || 0;
+    const opponentHandicap = match.opponent_handicap || 0;
+    const initMyTeam = myTeamHandicap;
+    const initOpponent = opponentHandicap;
+    const graphPoints: GraphPoint[] = [{ myTeam: initMyTeam, opponent: initOpponent, period: 0, actionIndex: -1, xPosition: 0 }];
 
     // Group actions by period
     const totalPeriods = match.total_periods || 4;
@@ -111,7 +115,7 @@ export default function EvolutionTab({
 
     // Build graph points from all scoring actions
     // Always use myTeam/opponent regardless of home/away
-    let currentScore = { myTeam: 0, opponent: 0 };
+    let currentScore = { myTeam: initMyTeam, opponent: initOpponent };
     scoringActions.forEach((action, index) => {
       const points = action.points || 0;
       const isMyTeamAction = action.team === Team.MY_TEAM;
@@ -172,7 +176,7 @@ export default function EvolutionTab({
     }
 
     return { periods, graphPoints, totalPeriods, overtimePeriods, scoringActions };
-  }, [actions, match.total_periods, match.overtime_periods, match.is_home]);
+  }, [actions, match.total_periods, match.overtime_periods, match.is_home, match.my_team_handicap, match.opponent_handicap]);
 
   // Calculate maxScore from actual graph data points for accurate scaling
   const maxScore = useMemo(() => {
@@ -184,6 +188,10 @@ export default function EvolutionTab({
     const scoreWithPadding = Math.max(maxFromGraph * 1.1, 20);
     return scoreWithPadding;
   }, [evolution.graphPoints]);
+
+  const hasHandicap = (match.my_team_handicap || 0) > 0 || (match.opponent_handicap || 0) > 0;
+  const homeHandicap = match.is_home ? (match.my_team_handicap || 0) : (match.opponent_handicap || 0);
+  const awayHandicap = match.is_home ? (match.opponent_handicap || 0) : (match.my_team_handicap || 0);
 
   return (
     <ScrollView
@@ -281,19 +289,26 @@ export default function EvolutionTab({
 
           {/* Home Team Row (First row - always the team playing at home) */}
           <View style={[styles.tableRow, { borderBottomColor: colors.border }]}>
-            <Text
+            <View
               style={[
                 styles.tableCell,
                 styles.teamCell,
                 {
-                  color: match.is_home ? colors.text.primary : colors.text.secondary,
                   borderRightWidth: 1,
                   borderRightColor: colors.border,
+                  alignItems: "flex-start",
                 },
               ]}
             >
-              {match.is_home ? (match.my_team_name || "Mon Équipe") : (match.opponent_name || "Adversaire")}
-            </Text>
+              <Text style={{ color: match.is_home ? colors.text.primary : colors.text.secondary, fontSize: font.sm, fontWeight: "700" }}>
+                {match.is_home ? (match.my_team_name || "Mon Équipe") : (match.opponent_name || "Adversaire")}
+              </Text>
+              {homeHandicap > 0 && (
+                <View style={[styles.hcpBadge, { backgroundColor: colors.primary + "22", borderColor: colors.primary + "55" }]}>
+                  <Text style={[styles.hcpBadgeText, { color: colors.primary }]}>+{homeHandicap} HCP</Text>
+                </View>
+              )}
+            </View>
             {evolution.periods.map((p, i) => {
               const isWinning = p.home > p.away;
               const isMyTeam = match.is_home;
@@ -333,19 +348,26 @@ export default function EvolutionTab({
 
           {/* Away Team Row (Second row - always the team playing away) */}
           <View style={styles.tableRow}>
-            <Text
+            <View
               style={[
                 styles.tableCell,
                 styles.teamCell,
                 {
-                  color: match.is_home ? colors.text.secondary : colors.text.primary,
                   borderRightWidth: 1,
                   borderRightColor: colors.border,
+                  alignItems: "flex-start",
                 },
               ]}
             >
-              {match.is_home ? (match.opponent_name || "Adversaire") : (match.my_team_name || "Mon Équipe")}
-            </Text>
+              <Text style={{ color: match.is_home ? colors.text.secondary : colors.text.primary, fontSize: font.sm, fontWeight: "700" }}>
+                {match.is_home ? (match.opponent_name || "Adversaire") : (match.my_team_name || "Mon Équipe")}
+              </Text>
+              {awayHandicap > 0 && (
+                <View style={[styles.hcpBadge, { backgroundColor: colors.primary + "22", borderColor: colors.primary + "55" }]}>
+                  <Text style={[styles.hcpBadgeText, { color: colors.primary }]}>+{awayHandicap} HCP</Text>
+                </View>
+              )}
+            </View>
             {evolution.periods.map((p, i) => {
               const isWinning = p.away > p.home;
               const isMyTeam = !match.is_home;
@@ -661,6 +683,21 @@ export default function EvolutionTab({
               {match.opponent_name || "ADVERSAIRE"}
             </Text>
           </View>
+          {hasHandicap && (
+            <View style={styles.legendItem}>
+              <View
+                style={[
+                  styles.legendDot,
+                  { backgroundColor: colors.primary, opacity: 0.4 },
+                ]}
+              />
+              <Text
+                style={[styles.legendText, { color: colors.text.secondary }]}
+              >
+                HCP = Handicap de départ
+              </Text>
+            </View>
+          )}
         </View>
       </View>
     </ScrollView>
@@ -729,6 +766,18 @@ const styles = StyleSheet.create({
   },
   totalValue: {
     fontWeight: "900",
+  },
+  hcpBadge: {
+    borderWidth: 1,
+    borderRadius: 4,
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    marginTop: 3,
+  },
+  hcpBadgeText: {
+    fontSize: 9,
+    fontWeight: "900",
+    letterSpacing: 0.5,
   },
   graphHeader: {
     flexDirection: "row",

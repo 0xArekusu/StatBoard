@@ -403,6 +403,8 @@ export class MatchSyncService {
       overtime_periods: match.overtime_periods || 0,
       my_team_score: match.my_team_score || 0,
       opponent_score: match.opponent_score || 0,
+      my_team_handicap: match.my_team_handicap || 0,
+      opponent_handicap: match.opponent_handicap || 0,
       status: 'completed', // Match is completed when syncing
       created_by: userId,
       created_at: match.created_at, // Preserve creation timestamp from local database

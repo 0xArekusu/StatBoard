@@ -39,6 +39,7 @@ import {
   MatchFormatSelector,
   LocationSelector,
   OpponentStatsToggle,
+  HandicapSelector,
   RosterTabSwitch,
   HomeRosterView,
   OpponentRosterView,
@@ -83,6 +84,19 @@ export default function NewMatchScreen() {
   // Match Format Settings
   const [periodCount, setPeriodCount] = useState<number>(DEFAULT_MATCH_PRESET.totalPeriods);
   const [periodDuration, setPeriodDuration] = useState<number>(DEFAULT_MATCH_PRESET.periodDuration);
+
+  // Handicap
+  const [showHandicap, setShowHandicap] = useState(false);
+  const [myTeamHandicap, setMyTeamHandicap] = useState(0);
+  const [opponentHandicap, setOpponentHandicap] = useState(0);
+
+  const handleHandicapToggle = () => {
+    if (showHandicap) {
+      setMyTeamHandicap(0);
+      setOpponentHandicap(0);
+    }
+    setShowHandicap(!showHandicap);
+  };
 
   // Step 2: Rosters
   const [rosterTab, setRosterTab] = useState<RosterTab>("HOME");
@@ -659,6 +673,8 @@ export default function NewMatchScreen() {
       courtBackgroundColor: club?.courtBackgroundColor || DEFAULT_COURT_COLORS.background,
       courtLineColor: club?.courtLineColor || DEFAULT_COURT_COLORS.line,
       createdAt, // Timestamp when user configured match and clicked "Start Match"
+      myTeamHandicap,
+      opponentHandicap,
     };
 
     // Show interstitial ad at the natural transition point (roster → live match)
@@ -767,6 +783,19 @@ export default function NewMatchScreen() {
           <OpponentStatsToggle
             enabled={trackOpponentStats}
             onToggle={() => setTrackOpponentStats(!trackOpponentStats)}
+            isDark={isDark}
+            colors={themeColors}
+          />
+
+          <HandicapSelector
+            enabled={showHandicap}
+            onToggle={handleHandicapToggle}
+            myTeamName={!user ? myTeamName : (teams.find(t => t.id === selectedTeamId)?.name || "Mon équipe")}
+            opponentName={opponent || "Adversaire"}
+            myTeamHandicap={myTeamHandicap}
+            opponentHandicap={opponentHandicap}
+            onMyTeamHandicapChange={setMyTeamHandicap}
+            onOpponentHandicapChange={setOpponentHandicap}
             isDark={isDark}
             colors={themeColors}
           />
