@@ -90,6 +90,8 @@ export class MatchListService {
             time_elapsed: 0,
             my_team_score: sm.my_team_score,
             opponent_score: sm.opponent_score,
+            my_team_handicap: sm.my_team_handicap || 0,
+            opponent_handicap: sm.opponent_handicap || 0,
             synced_to_server: 1,
             created_at: sm.created_at,
             started_at: sm.started_at,

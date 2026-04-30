@@ -268,6 +268,8 @@ export default function MatchDetailsScreen() {
         matchDate: match.created_at ? new Date(match.created_at) : new Date(),
         isHome: match.is_home ?? true, // Pass whether my team is playing at home
         overtimePeriods: match.overtime_periods || 0, // Number of overtime periods played
+        myTeamHandicap: match.my_team_handicap || 0,
+        opponentHandicap: match.opponent_handicap || 0,
         clubLogoUrl, // Signed URL for PDF (valid 2h) or undefined if offline/error
         courtBackgroundColor: club?.courtBackgroundColor, // Use club court background color if configured
         courtLineColor: club?.courtLineColor, // Use club court line color if configured
@@ -952,6 +954,7 @@ export default function MatchDetailsScreen() {
             sortOrder={sortOrder}
             handleSort={handleSort}
             setViewPlayer={setViewPlayer}
+            handicap={activeTeamFilter === Team.MY_TEAM ? (match.my_team_handicap || 0) : (match.opponent_handicap || 0)}
             teamRebounds={(actions || []).filter((a) => {
               const num = a.player_number ?? a.player;
               const type = (a.action_type || a.type || "").toUpperCase();

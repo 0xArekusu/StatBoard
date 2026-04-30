@@ -31,6 +31,7 @@ interface StatsTabProps {
   handleSort: (column: SortBy) => void;
   setViewPlayer: (player: PlayerStats) => void;
   teamRebounds: number;
+  handicap?: number;
 }
 
 export default function StatsTab({
@@ -40,6 +41,7 @@ export default function StatsTab({
   handleSort,
   setViewPlayer,
   teamRebounds,
+  handicap = 0,
 }: StatsTabProps) {
   const { colors, isDark } = useTheme();
   const { sp, font, sizes } = useResponsive();
@@ -607,7 +609,7 @@ export default function StatsTab({
                 },
               ]}
             >
-              <View style={styles.playerCell}>
+              <View style={[styles.playerCell, { flexDirection: "row", alignItems: "center", gap: 6 }]}>
                 <Text
                   style={[
                     styles.playerNameText,
@@ -617,6 +619,11 @@ export default function StatsTab({
                 >
                   TOTAL
                 </Text>
+                {handicap > 0 && (
+                  <View style={[styles.hcpBadge, { backgroundColor: colors.primary + "22", borderColor: colors.primary + "55" }]}>
+                    <Text style={[styles.hcpBadgeText, { color: colors.primary }]}>+{handicap} HCP</Text>
+                  </View>
+                )}
               </View>
               <Text
                 style={[
@@ -901,6 +908,17 @@ const styles = StyleSheet.create({
     fontWeight: "900",
   },
   totalRow: {},
+  hcpBadge: {
+    borderWidth: 1,
+    borderRadius: 4,
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+  },
+  hcpBadgeText: {
+    fontSize: 9,
+    fontWeight: "900",
+    letterSpacing: 0.5,
+  },
   totalText: {
     fontSize: 10,
     fontWeight: "700",

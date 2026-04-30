@@ -624,21 +624,6 @@ export default function EvolutionTab({
               {match.opponent_name || "ADVERSAIRE"}
             </Text>
           </View>
-          {hasHandicap && (
-            <View style={styles.legendItem}>
-              <View
-                style={[
-                  styles.legendDot,
-                  { backgroundColor: colors.primary, opacity: 0.4 },
-                ]}
-              />
-              <Text
-                style={[styles.legendText, { color: colors.text.secondary }]}
-              >
-                HCP = Handicap de départ
-              </Text>
-            </View>
-          )}
         </View>
       </View>
     </ScrollView>

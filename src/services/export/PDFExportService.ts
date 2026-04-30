@@ -49,6 +49,8 @@ interface PDFExportOptions {
   courtLineColor?: string;
   isHome?: boolean; // Whether my team is playing at home
   overtimePeriods?: number; // Number of overtime periods played
+  myTeamHandicap?: number;
+  opponentHandicap?: number;
 }
 
 export class PDFExportService {
@@ -200,6 +202,8 @@ export class PDFExportService {
       courtLineColor = PDF_COLORS.court.line,
       isHome = true,
       overtimePeriods = 0,
+      myTeamHandicap = 0,
+      opponentHandicap = 0,
     } = options;
 
     console.log("[PDF Export] 🚀 Début generateMatchPDF");
@@ -237,6 +241,8 @@ export class PDFExportService {
     const awayTeamName = isHome ? opponentName : myTeamName;
     const homeTeamScore = isHome ? myTeamScore : opponentScore;
     const awayTeamScore = isHome ? opponentScore : myTeamScore;
+    const homeTeamHandicap = isHome ? myTeamHandicap : opponentHandicap;
+    const awayTeamHandicap = isHome ? opponentHandicap : myTeamHandicap;
 
     // Convert player photos to base64 for PDF embedding
     const playersWithBase64Photos = await Promise.all(
@@ -290,7 +296,7 @@ export class PDFExportService {
 
     // Calculate action-by-action evolution for chart
     const { evolutionMyTeam, evolutionOpponent, evolutionPeriods } =
-      this.calculateActionByActionEvolution(actions, totalPeriodsPlayed);
+      this.calculateActionByActionEvolution(actions, totalPeriodsPlayed, myTeamHandicap, opponentHandicap);
 
     // Calculate player stats - always include MY_TEAM, include OPPONENT only if tracking
     console.log(
@@ -377,6 +383,10 @@ export class PDFExportService {
       players: playersWithBase64Photos,
       matchFormat,
       periodDuration: options.periodDuration,
+      homeTeamHandicap,
+      awayTeamHandicap,
+      myTeamHandicap,
+      opponentHandicap,
     });
 
     // Generate PDF using expo-print
@@ -454,7 +464,9 @@ export class PDFExportService {
    */
   private static calculateActionByActionEvolution(
     actions: any[],
-    totalPeriods: number
+    totalPeriods: number,
+    myTeamHandicap: number = 0,
+    opponentHandicap: number = 0
   ) {
     // Filter and sort scoring actions
     const scoringActions = actions
@@ -484,13 +496,13 @@ export class PDFExportService {
         return 0;
       });
 
-    // Build evolution arrays - start with 0-0
-    const evolutionMyTeam: number[] = [0];
-    const evolutionOpponent: number[] = [0];
+    // Build evolution arrays - start with handicap values (or 0-0 if no handicap)
+    const evolutionMyTeam: number[] = [myTeamHandicap];
+    const evolutionOpponent: number[] = [opponentHandicap];
     const evolutionPeriods: number[] = [0]; // Period number for each point (0 = start)
 
-    let currentMyTeam = 0;
-    let currentOpponent = 0;
+    let currentMyTeam = myTeamHandicap;
+    let currentOpponent = opponentHandicap;
 
     scoringActions.forEach((action) => {
       const points = action.points || 0;
@@ -757,11 +769,33 @@ export class PDFExportService {
   private static generateTeamStatsTable(
     teamName: string,
     stats: any[],
-    teamClass: "team-a" | "team-b"
+    teamClass: "team-a" | "team-b",
+    teamActions: any[] = [],
+    handicap: number = 0
   ): string {
     if (stats.length === 0) return "";
 
+    const normalizeActionType = (a: any) => (a.type || a.action_type || "").toLowerCase();
+    const normalizeSpecification = (a: any) => (a.specification || "").toLowerCase();
+
+    const teamReboundActions = teamActions.filter(
+      (a) => (a.player_number ?? a.player) === -1 && normalizeActionType(a) === ActionType.REBOUND
+    );
+    const teamOrbCount = teamReboundActions.filter(
+      (a) => normalizeSpecification(a) === ReboundSpecification.OFFENSIVE
+    ).length;
+    const teamDrbCount = teamReboundActions.filter(
+      (a) => normalizeSpecification(a) === ReboundSpecification.DEFENSIVE
+    ).length;
+    const teamTrbCount = teamOrbCount + teamDrbCount;
+
     const totals = this.calculateTeamTotals(stats);
+    const totalsWithTeamReb = {
+      ...totals,
+      orb: totals.orb + teamOrbCount,
+      drb: totals.drb + teamDrbCount,
+      trb: totals.trb + teamTrbCount,
+    };
 
     return `
   <div class="stats-section ${teamClass}">
@@ -849,28 +883,47 @@ export class PDFExportService {
         `;
           })
           .join("")}
-        <tr class="totals-row">
-          <td colspan="2">TOTAL</td>
+        ${teamTrbCount > 0 ? `
+        <tr class="team-rebound-row">
+          <td colspan="2" style="text-align:left; font-style:italic; padding-left:8px;">Rebonds d'équipe</td>
           <td>-</td>
-          <td><strong>${totals.points}</strong></td>
-          <td>${totals.fgm}/${totals.fga}</td>
-          <td>${totals.twopm}/${totals.twopa}</td>
-          <td>${totals.threepm}/${totals.threepa}</td>
-          <td>${totals.ftm}/${totals.fta}</td>
-          <td>${totals.trb}</td>
-          <td>${totals.orb}</td>
-          <td>${totals.drb}</td>
-          <td>${totals.ast}</td>
-          <td>${totals.stl}</td>
-          <td>${totals.blk}</td>
-          <td>${totals.tov}</td>
-          <td>${totals.fouls}</td>
-          <td><strong>${totals.eff}</strong></td>
+          <td>-</td>
+          <td>-</td>
+          <td>-</td>
+          <td>-</td>
+          <td>-</td>
+          <td>${teamTrbCount}</td>
+          <td>${teamOrbCount}</td>
+          <td>${teamDrbCount}</td>
+          <td>-</td>
+          <td>-</td>
+          <td>-</td>
+          <td>-</td>
+          <td>-</td>
+          <td>-</td>
+        </tr>` : ''}
+        <tr class="totals-row">
+          <td colspan="2">TOTAL${handicap > 0 ? ` <span class="hcp-badge">+${handicap} HCP</span>` : ''}</td>
+          <td>-</td>
+          <td><strong>${totalsWithTeamReb.points}</strong></td>
+          <td>${totalsWithTeamReb.fgm}/${totalsWithTeamReb.fga}</td>
+          <td>${totalsWithTeamReb.twopm}/${totalsWithTeamReb.twopa}</td>
+          <td>${totalsWithTeamReb.threepm}/${totalsWithTeamReb.threepa}</td>
+          <td>${totalsWithTeamReb.ftm}/${totalsWithTeamReb.fta}</td>
+          <td>${totalsWithTeamReb.trb}</td>
+          <td>${totalsWithTeamReb.orb}</td>
+          <td>${totalsWithTeamReb.drb}</td>
+          <td>${totalsWithTeamReb.ast}</td>
+          <td>${totalsWithTeamReb.stl}</td>
+          <td>${totalsWithTeamReb.blk}</td>
+          <td>${totalsWithTeamReb.tov}</td>
+          <td>${totalsWithTeamReb.fouls}</td>
+          <td><strong>${totalsWithTeamReb.eff}</strong></td>
         </tr>
       </tbody>
     </table>
     <div class="legend">
-      ${this.STATS_LEGEND}
+      ${this.STATS_LEGEND}${handicap > 0 ? `<br>HCP: Handicap de départ (+${handicap} pts inclus dans le score final)` : ''}
     </div>
   </div>
   `;
@@ -1549,6 +1602,10 @@ export class PDFExportService {
     players: Player[];
     matchFormat: "2_halves" | "4_quarters";
     periodDuration: number;
+    homeTeamHandicap?: number;
+    awayTeamHandicap?: number;
+    myTeamHandicap?: number;
+    opponentHandicap?: number;
   }): string {
     const {
       myTeamName,
@@ -1582,6 +1639,10 @@ export class PDFExportService {
       players,
       matchFormat,
       periodDuration,
+      homeTeamHandicap = 0,
+      awayTeamHandicap = 0,
+      myTeamHandicap = 0,
+      opponentHandicap = 0,
     } = data;
 
     // Generate the score chart SVG with action-by-action evolution
@@ -1707,6 +1768,24 @@ export class PDFExportService {
     .period-scores .team-name {
       text-align: left;
       font-weight: bold;
+    }
+    .hcp-badge {
+      display: inline-block;
+      font-size: 8px;
+      font-weight: 900;
+      color: ${PDF_COLORS.team.myTeam};
+      background-color: ${PDF_COLORS.team.myTeam}22;
+      border: 1px solid ${PDF_COLORS.team.myTeam}55;
+      border-radius: 3px;
+      padding: 1px 4px;
+      margin-left: 6px;
+      vertical-align: middle;
+      letter-spacing: 0.3px;
+    }
+    .team-rebound-row td {
+      background-color: ${PDF_COLORS.table.headerBg};
+      font-size: 8px;
+      color: ${PDF_COLORS.table.textSecondary};
     }
     .stats-section {
       margin-top: 30px;
@@ -2063,6 +2142,12 @@ export class PDFExportService {
   <div class="score-summary">
     <div>SCORE FINAL</div>
     <div class="final-score">${homeTeamScore} - ${awayTeamScore}</div>
+    ${(homeTeamHandicap > 0 || awayTeamHandicap > 0) ? `
+    <div style="font-size:10px; color:${PDF_COLORS.table.textSecondary}; margin-top:4px;">
+      ${homeTeamHandicap > 0 ? `${homeTeamName} <span class="hcp-badge">+${homeTeamHandicap} HCP</span>` : ''}
+      ${homeTeamHandicap > 0 && awayTeamHandicap > 0 ? '&nbsp;&nbsp;' : ''}
+      ${awayTeamHandicap > 0 ? `${awayTeamName} <span class="hcp-badge">+${awayTeamHandicap} HCP</span>` : ''}
+    </div>` : ''}
   </div>
 
   <!-- Period Scores -->
@@ -2082,13 +2167,13 @@ export class PDFExportService {
     <tbody>
       <!-- Home Team (always shown first) -->
       <tr>
-        <td class="team-name">${homeTeamName}</td>
+        <td class="team-name">${homeTeamName}${homeTeamHandicap > 0 ? ` <span class="hcp-badge">+${homeTeamHandicap} HCP</span>` : ''}</td>
         ${periodScoresHome.map((score) => `<td>${score}</td>`).join("")}
         <td><strong>${homeTeamScore}</strong></td>
       </tr>
       <!-- Away Team (always shown second) -->
       <tr>
-        <td class="team-name">${awayTeamName}</td>
+        <td class="team-name">${awayTeamName}${awayTeamHandicap > 0 ? ` <span class="hcp-badge">+${awayTeamHandicap} HCP</span>` : ''}</td>
         ${periodScoresAway.map((score) => `<td>${score}</td>`).join("")}
         <td><strong>${awayTeamScore}</strong></td>
       </tr>
@@ -2101,11 +2186,11 @@ export class PDFExportService {
     ${chartSVG}
   </div>
 
-  ${this.generateTeamStatsTable(myTeamName, statsMyTeam, "team-a")}
+  ${this.generateTeamStatsTable(myTeamName, statsMyTeam, "team-a", actions.filter(a => a.team === Team.MY_TEAM), myTeamHandicap)}
 
   ${
     trackOpponentStats
-      ? this.generateTeamStatsTable(opponentName, statsOpponent, "team-b")
+      ? this.generateTeamStatsTable(opponentName, statsOpponent, "team-b", actions.filter(a => a.team === Team.OPPONENT), opponentHandicap)
       : ""
   }
 
