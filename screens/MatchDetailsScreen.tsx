@@ -814,7 +814,7 @@ export default function MatchDetailsScreen() {
                     },
                   ]}
                 >
-                  NOUS
+                  {match.my_team_name || "Mon équipe"}
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
@@ -843,7 +843,7 @@ export default function MatchDetailsScreen() {
                     },
                   ]}
                 >
-                  EUX
+                  {match.opponent_name || "Adversaire"}
                 </Text>
               </TouchableOpacity>
             </View>

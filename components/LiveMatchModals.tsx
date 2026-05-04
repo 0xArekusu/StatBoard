@@ -104,7 +104,7 @@ export const HistoryModal: React.FC<HistoryModalProps> = ({
     );
     const teamStr =
       eventToDelete.teamId === TeamId.HOME
-        ? match.myTeamName || "Nous"
+        ? match.myTeamName || "Mon équipe"
         : match.opponent || "Adversaire";
     return `${eventToDelete.description}\n${timeStr} • ${teamStr}`;
   };
@@ -215,7 +215,7 @@ export const HistoryModal: React.FC<HistoryModalProps> = ({
                     >
                       {formatGameTime(evt.period_number, evt.time_in_period)} •{" "}
                       {evt.teamId === TeamId.HOME
-                        ? match.myTeamName || "Nous"
+                        ? match.myTeamName || "Mon équipe"
                         : match.opponent || "Adversaire"}
                     </Text>
                   </View>
@@ -271,7 +271,7 @@ export const HistoryModal: React.FC<HistoryModalProps> = ({
                   </View>
                   <Text style={[styles.historyItemMeta, { color: textSecondary }]}>
                     {[
-                      (match.myTeamHandicap || 0) > 0 && `${match.myTeamName || "Nous"} +${match.myTeamHandicap}`,
+                      (match.myTeamHandicap || 0) > 0 && `${match.myTeamName || "Mon équipe"} +${match.myTeamHandicap}`,
                       (match.opponentHandicap || 0) > 0 && `${match.opponent || "Adversaire"} +${match.opponentHandicap}`,
                     ].filter(Boolean).join("  •  ")}
                   </Text>
@@ -899,7 +899,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                   style={[styles.periodScoreTeam, { color: textSecondary }]}
                   numberOfLines={1}
                 >
-                  {myTeamName || "Nous"}
+                  {myTeamName || "Mon équipe"}
                 </Text>
                 {myTeamHandicap > 0 && (
                   <View style={[styles.filterHcpBadge, { backgroundColor: colors.primary + "22", borderColor: colors.primary + "55" }]}>
@@ -923,7 +923,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                   style={[styles.periodScoreTeam, { color: textSecondary }]}
                   numberOfLines={1}
                 >
-                  {opponentName || "Eux"}
+                  {opponentName || "Adversaire"}
                 </Text>
                 {opponentHandicap > 0 && (
                   <View style={[styles.filterHcpBadge, { backgroundColor: colors.primary + "22", borderColor: colors.primary + "55" }]}>
@@ -1312,7 +1312,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                         },
                       ]}
                     >
-                      {myTeamName || "Nous"}
+                      {myTeamName || "Mon équipe"}
                     </Text>
                   </TouchableOpacity>
 
@@ -1346,7 +1346,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                         },
                       ]}
                     >
-                      {opponentName || "Eux"}
+                      {opponentName || "Adversaire"}
                     </Text>
                   </TouchableOpacity>
                 </View>

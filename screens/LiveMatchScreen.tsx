@@ -1176,7 +1176,7 @@ export default function LiveMatchScreen() {
 
     const amIHome = match.location === TeamId.HOME;
     const isOurTeam = isHome === amIHome;
-    const subTeamName = isOurTeam ? (match.myTeamName || "Nous") : (match.opponent || "Eux");
+    const subTeamName = isOurTeam ? (match.myTeamName || "Mon équipe") : (match.opponent || "Adversaire");
     const subDescription = `Changements (${subTeamName}): ${subSelection.in.length} joueur(s)`;
 
     const newEvent: MatchEvent = {

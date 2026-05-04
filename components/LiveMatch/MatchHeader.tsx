@@ -61,7 +61,7 @@ export function MatchHeader({
       : match.scoreHome;
 
     const teamName = isMyTeam
-      ? match.myTeamName || "Nous"
+      ? match.myTeamName || "Mon équipe"
       : match.opponent || "Adversaire";
 
     const handicap = isMyTeam
