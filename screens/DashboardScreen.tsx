@@ -17,6 +17,7 @@ import { Picker } from "@react-native-picker/picker";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useTheme } from "../src/contexts/ThemeContext";
+import { STATUS_COLORS } from "../src/theme";
 import { useResponsive } from "../src/hooks/useResponsive";
 import { useAuth } from "../src/contexts/AuthContext";
 import { useClub } from "../src/contexts/ClubContext";
@@ -898,7 +899,7 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
                     <MaterialCommunityIcons
                       name="account-remove-outline"
                       size={20}
-                      color="#E53935"
+                      color={STATUS_COLORS.error}
                     />
                     <Text style={[styles.profileMenuItemText, { color: "#E53935" }]}>
                       {isDeletingAccount ? "Suppression..." : "Supprimer mon compte"}

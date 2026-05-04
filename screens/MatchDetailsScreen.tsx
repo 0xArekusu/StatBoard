@@ -222,6 +222,8 @@ export default function MatchDetailsScreen() {
   const [sortBy, setSortBy] = useState<SortBy>("pts");
   // Sort order (ascending or descending)
   const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
+  // PDF export loading state
+  const [isExportingPDF, setIsExportingPDF] = useState(false);
 
   // ========================================
   // HANDLER - EXPORT PDF
@@ -237,6 +239,7 @@ export default function MatchDetailsScreen() {
    */
   const handleExportPDF = async () => {
     try {
+      setIsExportingPDF(true);
       console.log('[MatchDetailsScreen] 📤 handleExportPDF - Début export');
       console.log('[MatchDetailsScreen] 📊 État players actuel:', players.length);
       console.log('[MatchDetailsScreen] 🎬 État actions actuel:', actions.length);
@@ -283,8 +286,10 @@ export default function MatchDetailsScreen() {
       })));
 
       await PDFExportService.generateMatchPDF(pdfOptions);
+      setIsExportingPDF(false);
       Alert.alert("Succès", "Le PDF a été généré et partagé avec succès");
     } catch (error) {
+      setIsExportingPDF(false);
       console.error("Error exporting PDF:", error);
       showErrorAlert({
         action: "générer le PDF",
@@ -629,6 +634,18 @@ export default function MatchDetailsScreen() {
         actions={actions}
         club={club}
       />
+
+      {/* PDF EXPORT LOADER MODAL */}
+      <Modal visible={isExportingPDF} transparent animationType="fade">
+        <View style={styles.pdfLoaderOverlay}>
+          <View style={[styles.pdfLoaderBox, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <ActivityIndicator size="large" color={colors.primary} />
+            <Text style={[styles.pdfLoaderText, { color: colors.text.primary }]}>
+              Génération du PDF…
+            </Text>
+          </View>
+        </View>
+      </Modal>
 
       {/* HEADER */}
       <View
@@ -1391,5 +1408,28 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "700",
     maxWidth: 80,
+  },
+  pdfLoaderOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  pdfLoaderBox: {
+    borderRadius: 16,
+    borderWidth: 1,
+    paddingVertical: 32,
+    paddingHorizontal: 40,
+    alignItems: "center",
+    gap: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  pdfLoaderText: {
+    fontSize: 16,
+    fontWeight: "600",
   },
 });
