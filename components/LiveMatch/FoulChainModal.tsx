@@ -298,7 +298,7 @@ export const FoulChainModal: React.FC<FoulChainModalProps> = ({
                   {/* LF count — hidden when basket marked (forced to 1) */}
                   {!basketMarked && (
                     <View style={[styles.toggleBtns, { gap: sp.sm }]}>
-                      {([1, 2, 3] as const).map((count) => {
+                      {([2, 3] as const).map((count) => {
                         const isActive = lfCount === count;
                         return (
                           <TouchableOpacity
