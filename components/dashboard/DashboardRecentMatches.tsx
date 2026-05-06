@@ -53,8 +53,8 @@ export default function DashboardRecentMatches({
             // Home team always on the left
             const leftScore = match.is_home ? scoreA : scoreB;
             const rightScore = match.is_home ? scoreB : scoreA;
-            const leftTeam = match.is_home ? (match.my_team_name || "Nous") : match.opponent_name;
-            const rightTeam = match.is_home ? match.opponent_name : (match.my_team_name || "Nous");
+            const leftTeam = match.is_home ? (match.my_team_name || "Mon équipe") : match.opponent_name;
+            const rightTeam = match.is_home ? match.opponent_name : (match.my_team_name || "Mon équipe");
 
             return (
               <TouchableOpacity

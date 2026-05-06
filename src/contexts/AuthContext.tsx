@@ -33,6 +33,7 @@ interface AuthContextType {
   updatePassword: (newPassword: string) => Promise<{ error: any }>;
   createSessionFromUrl: (url: string) => Promise<{ error: any }>;
   resendConfirmationEmail: (email: string) => Promise<{ error: any }>;
+  deleteAccount: () => Promise<{ error: any; errorCode?: string }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -557,6 +558,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { error };
   };
 
+  const deleteAccount = async (): Promise<{ error: any; errorCode?: string }> => {
+    logInfo("AuthProvider", "🗑️ Deleting account", { userId: user?.id });
+
+    try {
+      const { data, error } = await supabase.functions.invoke("delete-account", {
+        method: "POST",
+      });
+
+      if (error) {
+        let errorCode: string | undefined;
+        try {
+          const body = await (error as any).context?.json?.();
+          errorCode = body?.error;
+        } catch (_) {}
+        logError("AuthProvider", "❌ Delete account failed", { error: error.message, errorCode });
+        return { error, errorCode };
+      }
+
+      logInfo("AuthProvider", "✅ Account deleted successfully");
+      return { error: null };
+    } catch (err) {
+      logError("AuthProvider", "❌ Delete account error", { error: err });
+      return { error: err };
+    }
+  };
+
   const value = {
     session,
     user,
@@ -571,6 +598,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     updatePassword,
     createSessionFromUrl,
     resendConfirmationEmail,
+    deleteAccount,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

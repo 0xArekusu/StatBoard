@@ -89,9 +89,11 @@ export class MatchRepository implements IMatchRepository {
         court_background_color,
         court_line_color,
         track_opponent_stats,
+        my_team_handicap,
+        opponent_handicap,
         created_at
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, 0, 0, 0, 'in_progress', ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, 0, 0, 0, 'in_progress', ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
     try {
@@ -124,6 +126,8 @@ export class MatchRepository implements IMatchRepository {
         data.court_background_color || null,
         data.court_line_color || null,
         data.track_opponent_stats ? 1 : 0,
+        data.my_team_handicap || 0,
+        data.opponent_handicap || 0,
         createdAt
       ]);
 

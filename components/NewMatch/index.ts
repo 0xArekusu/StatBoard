@@ -11,6 +11,7 @@ export { OpponentInput } from "./OpponentInput";
 export { MatchFormatSelector } from "./MatchFormatSelector";
 export { LocationSelector } from "./LocationSelector";
 export { OpponentStatsToggle } from "./OpponentStatsToggle";
+export { HandicapSelector } from "./HandicapSelector";
 
 // Step 2: Rosters
 export { RosterTabSwitch } from "./RosterTabSwitch";

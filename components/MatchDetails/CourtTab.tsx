@@ -919,15 +919,18 @@ export default function CourtTab({
                       }
                     }
 
-                    // Filter by player
+                    // Filter by player (team rebounds with player -1 always pass)
                     if (selectedPlayers.length > 0) {
-                      const playerNum = action.player_number || action.player;
-                      if (!selectedPlayers.includes(playerNum)) return false;
+                      const playerNum = action.player_number ?? action.player;
+                      if (playerNum !== -1 && !selectedPlayers.includes(playerNum)) return false;
                     }
 
                     return true;
                   })
-                  .filter((action: any) => action.semanticPosition) // Only actions with position
+                  .filter((action: any) =>
+                    action.semanticPosition &&
+                    action.semanticPosition.xNormalized !== -999
+                  )
                   .map((action: any, index: number) => {
                     // Convert normalized coordinates to SVG coordinates
                     const svgX =

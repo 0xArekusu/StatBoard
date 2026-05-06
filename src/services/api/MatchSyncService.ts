@@ -309,6 +309,15 @@ export class MatchSyncService {
 
     // Group actions by player_id
     for (const action of actions) {
+      if (action.player_number === -1) {
+        const teamReboundKey = `team-rebound-${action.team}`;
+        if (!actionsByPlayerId[teamReboundKey]) {
+          actionsByPlayerId[teamReboundKey] = [];
+        }
+        actionsByPlayerId[teamReboundKey].push(action);
+        continue;
+      }
+
       const key = `${action.team}-${action.player_number}`;
       const playerId = playerIdMap.get(key);
 
@@ -362,6 +371,25 @@ export class MatchSyncService {
       });
     }
 
+    // Add team rebound entries to playerStatsObject
+    for (const [key, teamActions] of Object.entries(actionsByPlayerId)) {
+      if (!key.startsWith('team-rebound-')) continue;
+      playerStatsObject[key] = {
+        actions: teamActions.map((action) => ({
+          team: action.team,
+          action_type: action.action_type,
+          specification: action.specification,
+          points: action.points || undefined,
+          semantic_x: action.semantic_x,
+          semantic_y: action.semantic_y,
+          action_order: action.action_order,
+          period_number: action.period_number,
+          time_in_period: action.time_in_period,
+          timestamp: action.timestamp,
+        })),
+      };
+    }
+
     // Create match insert data with embedded players and stats
     const matchInsert: SupabaseMatchInsert = {
       club_id: match.club_id || null,
@@ -375,6 +403,8 @@ export class MatchSyncService {
       overtime_periods: match.overtime_periods || 0,
       my_team_score: match.my_team_score || 0,
       opponent_score: match.opponent_score || 0,
+      my_team_handicap: match.my_team_handicap || 0,
+      opponent_handicap: match.opponent_handicap || 0,
       status: 'completed', // Match is completed when syncing
       created_by: userId,
       created_at: match.created_at, // Preserve creation timestamp from local database

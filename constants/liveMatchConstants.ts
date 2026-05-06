@@ -22,6 +22,9 @@ export enum WorkflowStep {
   SELECT_PLAYER = "SELECT_PLAYER",
   SELECT_ACTION_FROM_COURT = "SELECT_ACTION_FROM_COURT",
   SUBSTITUTION = "SUBSTITUTION",
+  SUGGEST_CHAIN = "SUGGEST_CHAIN",
+  FOUL_CHAIN = "FOUL_CHAIN",
+  SHOT_CHAIN = "SHOT_CHAIN",
 }
 
 // ===========================
@@ -124,6 +127,64 @@ export enum TeamFilterMode {
   ALL = "all",
   US = "us",
   THEM = "them",
+}
+
+// ===========================
+// UI DISPLAY SETTINGS
+// ===========================
+
+// ===========================
+// ACTION CHAIN
+// ===========================
+
+// ===========================
+// FOUL CHAIN
+// ===========================
+
+/**
+ * Context passed to ShotChainModal after a missed shot is finalized
+ */
+export interface ShotChainContext {
+  shotPlayerId: string;
+  shotPlayerNumber: number;
+  shotTeamId: TeamId;
+  coords?: { x: number; y: number };
+}
+
+/**
+ * Context passed to FoulChainModal after a FOUL_DRAWN action is finalized
+ */
+export interface FoulChainContext {
+  foulDrawnPlayerId: string;
+  foulDrawnPlayerNumber: number;
+  foulDrawnPlayerName: string;
+  foulDrawnTeamId: TeamId;
+  coords?: { x: number; y: number }; // raw SVG coords from court click
+  mode?: "foul_drawn" | "foul_committed";
+}
+
+/**
+ * A single suggestion proposed after an action is finalized
+ */
+export interface ChainSuggestion {
+  label: string;
+  action_type: string;
+  specification?: string;
+  teamTab: TeamId;
+  teamLabel: string;
+  excludePlayerIds?: string[];
+  teamOnly?: boolean;
+  autoTeamId?: TeamId; // when set, skip team selection and auto-assign to this team
+}
+
+/**
+ * Context passed to the ActionChainModal after an action is finalized
+ */
+export interface ChainContext {
+  triggerDescription: string;
+  triggerActionType?: string;
+  suggestions: ChainSuggestion[];
+  inheritCoords?: { x: number; y: number };
 }
 
 // ===========================

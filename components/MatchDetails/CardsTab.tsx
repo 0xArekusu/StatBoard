@@ -722,7 +722,7 @@ const styles = StyleSheet.create({
   cardStatsGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 8,
+    gap: 4,
     borderTopWidth: 1,
     paddingTop: 16,
   },

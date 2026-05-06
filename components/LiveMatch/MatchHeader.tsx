@@ -16,6 +16,8 @@ interface MatchHeaderProps {
     scoreAway: number;
     location: TeamId;
     trackOpponentStats?: boolean;
+    myTeamHandicap?: number;
+    opponentHandicap?: number;
   };
   timer: number;
   quarter: number;
@@ -59,8 +61,12 @@ export function MatchHeader({
       : match.scoreHome;
 
     const teamName = isMyTeam
-      ? match.myTeamName || "Nous"
+      ? match.myTeamName || "Mon équipe"
       : match.opponent || "Adversaire";
+
+    const handicap = isMyTeam
+      ? (match.myTeamHandicap || 0)
+      : (match.opponentHandicap || 0);
 
     return (
       <View style={styles.teamSection}>
@@ -75,6 +81,13 @@ export function MatchHeader({
         >
           {score}
         </Text>
+        {handicap > 0 && (
+          <View style={[styles.hcpBadge, { backgroundColor: colors.primary + "22", borderColor: colors.primary + "55" }]}>
+            <Text style={[styles.hcpBadgeText, { color: colors.primary }]}>
+              +{handicap} HCP
+            </Text>
+          </View>
+        )}
         <Text
           style={[
             styles.teamName,
@@ -248,6 +261,18 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
     marginTop: 4,
     textAlign: "center",
+  },
+  hcpBadge: {
+    borderWidth: 1,
+    borderRadius: 4,
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    marginTop: 3,
+  },
+  hcpBadgeText: {
+    fontSize: 9,
+    fontWeight: "900",
+    letterSpacing: 0.5,
   },
   subButton: {
     flexDirection: "row",

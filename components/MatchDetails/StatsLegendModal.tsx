@@ -236,6 +236,22 @@ export default function StatsLegendModal({
             </View>
             <View style={styles.legendItem}>
               <Text style={[styles.legendLabel, { color: textSecondary }]}>
+                RE
+              </Text>
+              <Text style={[styles.legendValue, { color: textPrimary }]}>
+                Rebonds d'équipe
+              </Text>
+              {renderMarker(
+                MarkerType.TRIANGLE,
+                getActionColor(
+                  ActionType.REBOUND,
+                  ReboundSpecification.TEAM,
+                  0
+                )
+              )}
+            </View>
+            <View style={styles.legendItem}>
+              <Text style={[styles.legendLabel, { color: textSecondary }]}>
                 AST
               </Text>
               <Text style={[styles.legendValue, { color: textPrimary }]}>

@@ -70,7 +70,11 @@ export default function EvolutionTab({
   // Calculate period scores and graph points
   const evolution = useMemo(() => {
     const periods: PeriodScore[] = [];
-    const graphPoints: GraphPoint[] = [{ myTeam: 0, opponent: 0, period: 0, actionIndex: -1, xPosition: 0 }];
+    const myTeamHandicap = match.my_team_handicap || 0;
+    const opponentHandicap = match.opponent_handicap || 0;
+    const initMyTeam = myTeamHandicap;
+    const initOpponent = opponentHandicap;
+    const graphPoints: GraphPoint[] = [{ myTeam: initMyTeam, opponent: initOpponent, period: 0, actionIndex: -1, xPosition: 0 }];
 
     // Group actions by period
     const totalPeriods = match.total_periods || 4;
@@ -111,7 +115,7 @@ export default function EvolutionTab({
 
     // Build graph points from all scoring actions
     // Always use myTeam/opponent regardless of home/away
-    let currentScore = { myTeam: 0, opponent: 0 };
+    let currentScore = { myTeam: initMyTeam, opponent: initOpponent };
     scoringActions.forEach((action, index) => {
       const points = action.points || 0;
       const isMyTeamAction = action.team === Team.MY_TEAM;
@@ -172,7 +176,7 @@ export default function EvolutionTab({
     }
 
     return { periods, graphPoints, totalPeriods, overtimePeriods, scoringActions };
-  }, [actions, match.total_periods, match.overtime_periods, match.is_home]);
+  }, [actions, match.total_periods, match.overtime_periods, match.is_home, match.my_team_handicap, match.opponent_handicap]);
 
   // Calculate maxScore from actual graph data points for accurate scaling
   const maxScore = useMemo(() => {
@@ -184,6 +188,10 @@ export default function EvolutionTab({
     const scoreWithPadding = Math.max(maxFromGraph * 1.1, 20);
     return scoreWithPadding;
   }, [evolution.graphPoints]);
+
+  const hasHandicap = (match.my_team_handicap || 0) > 0 || (match.opponent_handicap || 0) > 0;
+  const homeHandicap = match.is_home ? (match.my_team_handicap || 0) : (match.opponent_handicap || 0);
+  const awayHandicap = match.is_home ? (match.opponent_handicap || 0) : (match.my_team_handicap || 0);
 
   return (
     <ScrollView
@@ -226,74 +234,36 @@ export default function EvolutionTab({
 
         <View style={styles.tableContainer}>
           {/* Table Header */}
-          <View style={[styles.tableRow, { borderBottomColor: colors.border }]}>
-            <Text
-              style={[
-                styles.tableHeaderCell,
-                styles.teamCell,
-                {
-                  color: colors.text.secondary,
-                  borderRightWidth: 1,
-                  borderRightColor: colors.border,
-                  fontSize: font.xs,
-                  padding: sp.xs,
-                },
-              ]}
-            >
+          <View style={[styles.tableRow, styles.tableHeaderRow, { borderBottomColor: colors.border }]}>
+            <Text style={[styles.tableHeaderCell, styles.teamCell, { color: colors.text.secondary, borderRightColor: colors.border }]}>
               Équipe
             </Text>
             {evolution.periods.map((_, i) => {
               const periodNumber = i + 1;
               const label = getPeriodLabel(periodNumber, evolution.totalPeriods);
               return (
-                <Text
-                  key={i}
-                  style={[
-                    styles.tableHeaderCell,
-                    {
-                      color: colors.text.secondary,
-                      borderRightWidth: 1,
-                      borderRightColor: colors.border,
-                      fontSize: font.xs,
-                      padding: sp.xs,
-                    }
-                  ]}
-                >
+                <Text key={i} style={[styles.tableHeaderCell, { color: colors.text.secondary, borderRightColor: colors.border }]}>
                   {label}
                 </Text>
               );
             })}
-            <Text
-              style={[
-                styles.tableHeaderCell,
-                styles.totalCell,
-                {
-                  color: colors.text.secondary,
-                  backgroundColor: colors.surface,
-                  fontSize: font.xs,
-                  padding: sp.xs,
-                },
-              ]}
-            >
+            <Text style={[styles.tableHeaderCell, styles.totalCell, { color: colors.text.secondary }]}>
               TOT
             </Text>
           </View>
 
-          {/* Home Team Row (First row - always the team playing at home) */}
+          {/* Home Team Row */}
           <View style={[styles.tableRow, { borderBottomColor: colors.border }]}>
-            <Text
-              style={[
-                styles.tableCell,
-                styles.teamCell,
-                {
-                  color: match.is_home ? colors.text.primary : colors.text.secondary,
-                  borderRightWidth: 1,
-                  borderRightColor: colors.border,
-                },
-              ]}
-            >
-              {match.is_home ? (match.my_team_name || "Mon Équipe") : (match.opponent_name || "Adversaire")}
-            </Text>
+            <View style={[styles.teamNameCell, { borderRightColor: colors.border }]}>
+              <Text style={[styles.teamNameText, { color: match.is_home ? colors.text.primary : colors.text.secondary }]}>
+                {match.is_home ? (match.my_team_name || "Mon Équipe") : (match.opponent_name || "Adversaire")}
+              </Text>
+              {homeHandicap > 0 && (
+                <View style={[styles.hcpBadge, { backgroundColor: colors.primary + "22", borderColor: colors.primary + "55" }]}>
+                  <Text style={[styles.hcpBadgeText, { color: colors.primary }]}>+{homeHandicap} HCP</Text>
+                </View>
+              )}
+            </View>
             {evolution.periods.map((p, i) => {
               const isWinning = p.home > p.away;
               const isMyTeam = match.is_home;
@@ -303,9 +273,8 @@ export default function EvolutionTab({
                   style={[
                     styles.tableCell,
                     {
-                      color: isWinning ? (isMyTeam ? colors.primary : colors.primary) : (isMyTeam ? colors.text.primary : colors.text.secondary),
+                      color: isWinning ? colors.primary : (isMyTeam ? colors.text.primary : colors.text.secondary),
                       fontWeight: isWinning ? "900" : "700",
-                      borderRightWidth: 1,
                       borderRightColor: colors.border,
                     },
                   ]}
@@ -323,7 +292,6 @@ export default function EvolutionTab({
                   color: match.is_home
                     ? ((match.my_team_score || 0) > (match.opponent_score || 0) ? colors.primary : colors.text.primary)
                     : ((match.opponent_score || 0) > (match.my_team_score || 0) ? colors.primary : colors.text.secondary),
-                  backgroundColor: colors.surface,
                 },
               ]}
             >
@@ -331,21 +299,18 @@ export default function EvolutionTab({
             </Text>
           </View>
 
-          {/* Away Team Row (Second row - always the team playing away) */}
+          {/* Away Team Row */}
           <View style={styles.tableRow}>
-            <Text
-              style={[
-                styles.tableCell,
-                styles.teamCell,
-                {
-                  color: match.is_home ? colors.text.secondary : colors.text.primary,
-                  borderRightWidth: 1,
-                  borderRightColor: colors.border,
-                },
-              ]}
-            >
-              {match.is_home ? (match.opponent_name || "Adversaire") : (match.my_team_name || "Mon Équipe")}
-            </Text>
+            <View style={[styles.teamNameCell, { borderRightColor: colors.border }]}>
+              <Text style={[styles.teamNameText, { color: match.is_home ? colors.text.secondary : colors.text.primary }]}>
+                {match.is_home ? (match.opponent_name || "Adversaire") : (match.my_team_name || "Mon Équipe")}
+              </Text>
+              {awayHandicap > 0 && (
+                <View style={[styles.hcpBadge, { backgroundColor: colors.primary + "22", borderColor: colors.primary + "55" }]}>
+                  <Text style={[styles.hcpBadgeText, { color: colors.primary }]}>+{awayHandicap} HCP</Text>
+                </View>
+              )}
+            </View>
             {evolution.periods.map((p, i) => {
               const isWinning = p.away > p.home;
               const isMyTeam = !match.is_home;
@@ -355,9 +320,8 @@ export default function EvolutionTab({
                   style={[
                     styles.tableCell,
                     {
-                      color: isWinning ? (isMyTeam ? colors.primary : colors.primary) : (isMyTeam ? colors.text.primary : colors.text.secondary),
+                      color: isWinning ? colors.primary : (isMyTeam ? colors.text.primary : colors.text.secondary),
                       fontWeight: isWinning ? "900" : "700",
-                      borderRightWidth: 1,
                       borderRightColor: colors.border,
                     },
                   ]}
@@ -375,7 +339,6 @@ export default function EvolutionTab({
                   color: match.is_home
                     ? ((match.opponent_score || 0) > (match.my_team_score || 0) ? colors.primary : colors.text.secondary)
                     : ((match.my_team_score || 0) > (match.opponent_score || 0) ? colors.primary : colors.text.primary),
-                  backgroundColor: colors.surface,
                 },
               ]}
             >
@@ -703,22 +666,44 @@ const styles = StyleSheet.create({
   },
   tableRow: {
     flexDirection: "row",
+    alignItems: "stretch",
     borderBottomWidth: 1,
+  },
+  tableHeaderRow: {
+    backgroundColor: "transparent",
   },
   tableHeaderCell: {
     flex: 1,
-    padding: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 8,
     fontSize: 10,
     fontWeight: "900",
     textAlign: "center",
     letterSpacing: 0.5,
+    borderRightWidth: 1,
   },
   tableCell: {
     flex: 1,
-    padding: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 8,
     fontSize: 13,
     fontWeight: "700",
     textAlign: "center",
+    borderRightWidth: 1,
+  },
+  teamNameCell: {
+    flex: 2,
+    minWidth: 0,
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    justifyContent: "center",
+    alignItems: "flex-start",
+    borderRightWidth: 1,
+  },
+  teamNameText: {
+    fontSize: 13,
+    fontWeight: "700",
+    flexShrink: 1,
   },
   teamCell: {
     flex: 2,
@@ -726,9 +711,22 @@ const styles = StyleSheet.create({
   },
   totalCell: {
     flex: 1,
+    borderRightWidth: 0,
   },
   totalValue: {
     fontWeight: "900",
+  },
+  hcpBadge: {
+    borderWidth: 1,
+    borderRadius: 4,
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    marginTop: 3,
+  },
+  hcpBadgeText: {
+    fontSize: 9,
+    fontWeight: "900",
+    letterSpacing: 0.5,
   },
   graphHeader: {
     flexDirection: "row",

@@ -189,7 +189,7 @@ export default function BasketballCourtSVG({
               stroke={color}
               strokeWidth="5"
             />
-            {marker.playerNumber !== undefined && (
+            {marker.playerNumber !== undefined && marker.playerNumber !== -1 && (
               <Text
                 x={pos.x}
                 y={pos.y + size + 12}
@@ -229,7 +229,7 @@ export default function BasketballCourtSVG({
               strokeWidth="5"
               strokeLinecap="round"
             />
-            {marker.playerNumber !== undefined && (
+            {marker.playerNumber !== undefined && marker.playerNumber !== -1 && (
               <Text
                 x={pos.x}
                 y={pos.y + size + 12}
@@ -259,7 +259,7 @@ export default function BasketballCourtSVG({
               stroke="#FFFFFF"
               strokeWidth="1"
             />
-            {marker.playerNumber !== undefined && (
+            {marker.playerNumber !== undefined && marker.playerNumber !== -1 && (
               <Text
                 x={pos.x}
                 y={pos.y + height + 12}
@@ -288,7 +288,7 @@ export default function BasketballCourtSVG({
               stroke="#FFFFFF"
               strokeWidth="2"
             />
-            {marker.playerNumber !== undefined && (
+            {marker.playerNumber !== undefined && marker.playerNumber !== -1 && (
               <Text
                 x={pos.x}
                 y={pos.y + diamondSize + 12}
@@ -327,7 +327,7 @@ export default function BasketballCourtSVG({
             stroke="#FFFFFF"
             strokeWidth="2"
           />
-          {marker.playerNumber !== undefined && (
+          {marker.playerNumber !== undefined && marker.playerNumber !== -1 && (
             <Text
               x={pos.x}
               y={pos.y + size + 12}

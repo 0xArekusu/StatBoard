@@ -64,6 +64,10 @@ export interface Match {
   opponent_score: number;
   score_manually_adjusted?: boolean;
 
+  // Handicap (points attribués avant le match, sans joueur)
+  my_team_handicap?: number;
+  opponent_handicap?: number;
+
   // Match State (pour SQLite local uniquement)
   status: MatchStatus | string; // string for backward compatibility
   current_period?: number; // Période en cours (local uniquement)
@@ -106,6 +110,10 @@ export interface CreateMatchData {
   total_periods: number;
   period_duration: number;
   overtime_duration?: number;
+
+  // Handicap
+  my_team_handicap?: number;
+  opponent_handicap?: number;
 
   // Court Customization
   club_logo_url?: string | null;

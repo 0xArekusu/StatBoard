@@ -35,6 +35,7 @@ export enum ShotSpecification {
 export enum ReboundSpecification {
   OFFENSIVE = "offensive",
   DEFENSIVE = "defensive",
+  TEAM = "team",
 }
 
 /**
@@ -69,6 +70,7 @@ export const SHOT_SPECIFICATION_FR: Record<ShotSpecification, string> = {
 export const REBOUND_SPECIFICATION_FR: Record<ReboundSpecification, string> = {
   [ReboundSpecification.OFFENSIVE]: "Offensif",
   [ReboundSpecification.DEFENSIVE]: "Défensif",
+  [ReboundSpecification.TEAM]: "Équipe",
 };
 
 export const FOUL_SPECIFICATION_FR: Record<FoulSpecification, string> = {
@@ -170,6 +172,11 @@ export const ACTION_CONFIG: Record<string, ActionConfig> = {
         id: ReboundSpecification.DEFENSIVE,
         label: "Défensif",
         color: ACTION_COLORS.rebound.defensive,
+      },
+      {
+        id: ReboundSpecification.TEAM,
+        label: "Équipe",
+        color: ACTION_COLORS.rebound.base,
       },
     ],
   },

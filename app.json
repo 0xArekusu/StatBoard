@@ -2,7 +2,7 @@
   "expo": {
     "name": "Coach Assistant",
     "slug": "coach-assistant",
-    "version": "1.0.6",
+    "version": "1.0.7",
     "runtimeVersion": {
       "policy": "appVersion"
     },
@@ -68,7 +68,7 @@
         "react-native-google-mobile-ads",
         {
           "androidAppId": "ca-app-pub-5211468835188047~3444352413",
-          "iosAppId": "ca-app-pub-3940256099942544~1458002511",
+          "iosAppId": "ca-app-pub-5211468835188047~1528541997",
           "userTrackingUsageDescription": "Cet identifiant sera utilisé pour vous proposer des publicités personnalisées."
         }
       ]

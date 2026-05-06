@@ -104,7 +104,7 @@ export const HistoryModal: React.FC<HistoryModalProps> = ({
     );
     const teamStr =
       eventToDelete.teamId === TeamId.HOME
-        ? match.myTeamName || "Nous"
+        ? match.myTeamName || "Mon équipe"
         : match.opponent || "Adversaire";
     return `${eventToDelete.description}\n${timeStr} • ${teamStr}`;
   };
@@ -215,7 +215,7 @@ export const HistoryModal: React.FC<HistoryModalProps> = ({
                     >
                       {formatGameTime(evt.period_number, evt.time_in_period)} •{" "}
                       {evt.teamId === TeamId.HOME
-                        ? match.myTeamName || "Nous"
+                        ? match.myTeamName || "Mon équipe"
                         : match.opponent || "Adversaire"}
                     </Text>
                   </View>
@@ -238,6 +238,45 @@ export const HistoryModal: React.FC<HistoryModalProps> = ({
                 >
                   Aucun événement enregistré.
                 </Text>
+              </View>
+            )}
+
+            {/* Handicap entry — non-deletable, always at the bottom */}
+            {((match.myTeamHandicap || 0) > 0 || (match.opponentHandicap || 0) > 0) && (
+              <View
+                style={[
+                  styles.historyItem,
+                  {
+                    backgroundColor: colors.surfaceVariant,
+                    borderColor: colors.primary + "44",
+                    borderWidth: 1,
+                    padding: sp.md,
+                    borderRadius: sp.sm,
+                    marginBottom: sp.sm,
+                    opacity: 0.8,
+                  },
+                ]}
+              >
+                <View style={styles.historyItemLeft}>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                    <MaterialCommunityIcons name="flag-checkered" size={13} color={colors.primary} />
+                    <Text
+                      style={[
+                        styles.historyItemDescription,
+                        { color: textPrimary, fontSize: font.md },
+                      ]}
+                    >
+                      Handicap de départ
+                    </Text>
+                  </View>
+                  <Text style={[styles.historyItemMeta, { color: textSecondary }]}>
+                    {[
+                      (match.myTeamHandicap || 0) > 0 && `${match.myTeamName || "Mon équipe"} +${match.myTeamHandicap}`,
+                      (match.opponentHandicap || 0) > 0 && `${match.opponent || "Adversaire"} +${match.opponentHandicap}`,
+                    ].filter(Boolean).join("  •  ")}
+                  </Text>
+                </View>
+                <MaterialCommunityIcons name="lock-outline" size={18} color={textSecondary} />
               </View>
             )}
           </ScrollView>
@@ -274,6 +313,14 @@ interface FilterModalProps {
   onPeriodSelectionChange?: (periods: number[]) => void;
   // Match location for team filtering
   isHome?: boolean;
+  // Starters for pts split
+  starters?: string[];
+  // Team names for filter labels
+  myTeamName?: string;
+  opponentName?: string;
+  // Handicap badges
+  myTeamHandicap?: number;
+  opponentHandicap?: number;
   // Team filter
   selectedTeamFilter?: TeamFilterMode;
   onTeamFilterChange?: (filter: TeamFilterMode) => void;
@@ -281,18 +328,22 @@ interface FilterModalProps {
 
 interface FilteredSummary {
   pts: number;
+  ptsStarters: number;
+  ptsBench: number;
   reb: number;
   rebOff: number;
   rebDef: number;
+  rebTeam: number;
   ast: number;
   stl: number;
   blk: number;
   pf: number;
-  fd: number; // Fouls drawn
+  fd: number;
   to: number;
   fgm: number;
   fga: number;
   fgPct: number;
+  globalPct: number;
   // Free throws
   ftm: number;
   fta: number;
@@ -322,6 +373,11 @@ export const FilterModal: React.FC<FilterModalProps> = ({
   selectedPeriods = [],
   onPeriodSelectionChange,
   isHome = true,
+  starters = [],
+  myTeamName,
+  opponentName,
+  myTeamHandicap = 0,
+  opponentHandicap = 0,
   selectedTeamFilter = TeamFilterMode.ALL,
   onTeamFilterChange,
 }) => {
@@ -447,10 +503,31 @@ export const FilterModal: React.FC<FilterModalProps> = ({
     }
   };
 
-  // Calculate filtered summary
-  const calculateFilteredSummary = (): FilteredSummary | null => {
-    if (!actions || actions.length === 0) return null;
+  // Calculate score for selected periods
+  const periodScore = React.useMemo(() => {
+    const periodsToFilter = selectedPeriods.length > 0 ? selectedPeriods : null;
+    let homeScore = 0;
+    let awayScore = 0;
 
+    if (actions && actions.length > 0) {
+      actions.forEach((action: any) => {
+        if (action.action_type === ActionType.SHOT && action.points > 0) {
+          if (periodsToFilter === null || periodsToFilter.includes(action.period_number)) {
+            if (action.teamId === TeamId.HOME) homeScore += action.points;
+            else if (action.teamId === TeamId.AWAY) awayScore += action.points;
+          }
+        }
+      });
+    }
+
+    return {
+      myScore: isHome ? homeScore : awayScore,
+      theirScore: isHome ? awayScore : homeScore,
+    };
+  }, [actions, selectedPeriods, isHome]);
+
+  // Calculate filtered summary
+  const calculateFilteredSummary = (): FilteredSummary => {
     // Always show summary (no need to check for active filters)
     // Filter actions based on current filter settings
     const filteredActions = actions.filter((action: any) => {
@@ -527,9 +604,12 @@ export const FilterModal: React.FC<FilterModalProps> = ({
     // Calculate stats from filtered actions
     const summary: FilteredSummary = {
       pts: 0,
+      ptsStarters: 0,
+      ptsBench: 0,
       reb: 0,
       rebOff: 0,
       rebDef: 0,
+      rebTeam: 0,
       ast: 0,
       stl: 0,
       blk: 0,
@@ -539,6 +619,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
       fgm: 0,
       fga: 0,
       fgPct: 0,
+      globalPct: 0,
       ftm: 0,
       fta: 0,
       ftPct: 0,
@@ -558,28 +639,36 @@ export const FilterModal: React.FC<FilterModalProps> = ({
           const points = action.points || 0;
 
           // Track by shot type
+          let scoredPoints = 0;
           if (points === 1) {
-            // Free throw
             summary.fta += 1;
             if (isMade) {
               summary.ftm += 1;
               summary.pts += 1;
+              scoredPoints = 1;
             }
           } else if (points === 2) {
-            // Two-pointer
             summary.twoA += 1;
             if (isMade) {
               summary.twoM += 1;
               summary.pts += 2;
               summary.fgm += 1;
+              scoredPoints = 2;
             }
           } else if (points === 3) {
-            // Three-pointer
             summary.threeA += 1;
             if (isMade) {
               summary.threeM += 1;
               summary.pts += 3;
               summary.fgm += 1;
+              scoredPoints = 3;
+            }
+          }
+          if (scoredPoints > 0 && action.playerId) {
+            if (starters.includes(action.playerId)) {
+              summary.ptsStarters += scoredPoints;
+            } else {
+              summary.ptsBench += scoredPoints;
             }
           }
           break;
@@ -589,6 +678,8 @@ export const FilterModal: React.FC<FilterModalProps> = ({
             summary.rebOff += 1;
           } else if (action.specification === ReboundSpecification.DEFENSIVE) {
             summary.rebDef += 1;
+          } else if (action.specification === ReboundSpecification.TEAM) {
+            summary.rebTeam += 1;
           }
           break;
         case ActionType.ASSIST:
@@ -633,6 +724,12 @@ export const FilterModal: React.FC<FilterModalProps> = ({
       summary.threeA > 0
         ? Math.round((summary.threeM / summary.threeA) * 100)
         : 0;
+
+    // Calculate global accuracy (all shots including FT)
+    const totalAttempts = summary.twoA + summary.threeA + summary.fta;
+    const totalMade = summary.twoM + summary.threeM + summary.ftm;
+    summary.globalPct =
+      totalAttempts > 0 ? Math.round((totalMade / totalAttempts) * 100) : 0;
 
     return summary;
   };
@@ -781,6 +878,61 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                   color={textSecondary}
                 />
               </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Period Score Banner */}
+          <View
+            style={[
+              styles.periodScoreBanner,
+              { borderColor, backgroundColor: colors.surfaceVariant },
+            ]}
+          >
+            <Text style={[styles.periodScoreLabel, { color: textSecondary }]}>
+              {selectedPeriods.length > 0
+                ? selectedPeriods.map(getPeriodLabel).join(" + ")
+                : "Tout le match"}
+            </Text>
+            <View style={styles.periodScoreRow}>
+              <View style={styles.periodScoreTeamCol}>
+                <Text
+                  style={[styles.periodScoreTeam, { color: textSecondary }]}
+                  numberOfLines={1}
+                >
+                  {myTeamName || "Mon équipe"}
+                </Text>
+                {myTeamHandicap > 0 && (
+                  <View style={[styles.filterHcpBadge, { backgroundColor: colors.primary + "22", borderColor: colors.primary + "55" }]}>
+                    <Text style={[styles.filterHcpBadgeText, { color: colors.primary }]}>
+                      +{myTeamHandicap} HCP
+                    </Text>
+                  </View>
+                )}
+              </View>
+              <Text style={[styles.periodScoreValue, { color: textPrimary }]}>
+                {periodScore.myScore}
+              </Text>
+              <Text style={[styles.periodScoreDash, { color: textSecondary }]}>
+                —
+              </Text>
+              <Text style={[styles.periodScoreValue, { color: textPrimary }]}>
+                {periodScore.theirScore}
+              </Text>
+              <View style={styles.periodScoreTeamCol}>
+                <Text
+                  style={[styles.periodScoreTeam, { color: textSecondary }]}
+                  numberOfLines={1}
+                >
+                  {opponentName || "Adversaire"}
+                </Text>
+                {opponentHandicap > 0 && (
+                  <View style={[styles.filterHcpBadge, { backgroundColor: colors.primary + "22", borderColor: colors.primary + "55" }]}>
+                    <Text style={[styles.filterHcpBadgeText, { color: colors.primary }]}>
+                      +{opponentHandicap} HCP
+                    </Text>
+                  </View>
+                )}
+              </View>
             </View>
           </View>
 
@@ -1160,7 +1312,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                         },
                       ]}
                     >
-                      Nous
+                      {myTeamName || "Mon équipe"}
                     </Text>
                   </TouchableOpacity>
 
@@ -1194,7 +1346,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                         },
                       ]}
                     >
-                      Eux
+                      {opponentName || "Adversaire"}
                     </Text>
                   </TouchableOpacity>
                 </View>
@@ -1332,16 +1484,15 @@ export const FilterModal: React.FC<FilterModalProps> = ({
             )}
 
             {/* Filtered Summary */}
-            {filteredSummary && (
-              <View
-                style={[
-                  styles.filterSummary,
-                  {
-                    backgroundColor: colors.surfaceVariant,
-                    borderColor: colors.border,
-                  },
-                ]}
-              >
+            <View
+              style={[
+                styles.filterSummary,
+                {
+                  backgroundColor: colors.surfaceVariant,
+                  borderColor: colors.border,
+                },
+              ]}
+            >
                 <View style={styles.filterSummaryHeader}>
                   <MaterialCommunityIcons
                     name="trending-up"
@@ -1358,184 +1509,118 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                   </Text>
                 </View>
 
-                {/* Row 1: Points and Shooting */}
+                {/* Row 1: Points total | 5 Maj. | Banc */}
                 <View style={styles.filterSummaryRow}>
                   <View style={styles.filterSummaryItemFlex}>
-                    <Text
-                      style={[
-                        styles.filterSummaryValue,
-                        { color: textPrimary },
-                      ]}
-                    >
+                    <Text style={[styles.filterSummaryValue, { color: textPrimary }]}>
                       {filteredSummary.pts}
                     </Text>
-                    <Text
-                      style={[
-                        styles.filterSummaryLabel,
-                        { color: textSecondary },
-                      ]}
-                    >
+                    <Text style={[styles.filterSummaryLabel, { color: textSecondary }]}>
                       Points
                     </Text>
                   </View>
                   <View style={styles.filterSummaryItemFlex}>
-                    <View style={styles.filterSummaryValueRow}>
-                      <Text
-                        style={[
-                          styles.filterSummaryValue,
-                          { color: textPrimary },
-                        ]}
-                      >
-                        {filteredSummary.ftm}/{filteredSummary.fta}
-                      </Text>
-                      <Text
-                        style={[
-                          styles.filterSummaryPercentage,
-                          { color: textSecondary },
-                        ]}
-                      >
-                        {filteredSummary.ftPct}%
-                      </Text>
-                    </View>
-                    <Text
-                      style={[
-                        styles.filterSummaryLabel,
-                        { color: textSecondary },
-                      ]}
-                    >
-                      LF
+                    <Text style={[styles.filterSummaryValue, { color: textPrimary }]}>
+                      {filteredSummary.ptsStarters}
+                    </Text>
+                    <Text style={[styles.filterSummaryLabel, { color: textSecondary }]}>
+                      5 Maj.
+                    </Text>
+                  </View>
+                  <View style={styles.filterSummaryItemFlex}>
+                    <Text style={[styles.filterSummaryValue, { color: textPrimary }]}>
+                      {filteredSummary.ptsBench}
+                    </Text>
+                    <Text style={[styles.filterSummaryLabel, { color: textSecondary }]}>
+                      Banc
+                    </Text>
+                  </View>
+                  <View style={styles.filterSummaryItemFlex} />
+                </View>
+
+                {/* Row 2: Shooting — Global % first, then 2pts, 3pts, LF */}
+                <View style={[styles.filterSummaryRow, { marginTop: 12 }]}>
+                  <View style={styles.filterSummaryItemFlex}>
+                    <Text style={[styles.filterSummaryValue, { color: textPrimary }]}>
+                      {filteredSummary.globalPct}%
+                    </Text>
+                    <Text style={[styles.filterSummaryLabel, { color: textSecondary }]}>
+                      Global
                     </Text>
                   </View>
                   <View style={styles.filterSummaryItemFlex}>
                     <View style={styles.filterSummaryValueRow}>
-                      <Text
-                        style={[
-                          styles.filterSummaryValue,
-                          { color: textPrimary },
-                        ]}
-                      >
+                      <Text style={[styles.filterSummaryValue, { color: textPrimary }]}>
                         {filteredSummary.twoM}/{filteredSummary.twoA}
                       </Text>
-                      <Text
-                        style={[
-                          styles.filterSummaryPercentage,
-                          { color: textSecondary },
-                        ]}
-                      >
+                      <Text style={[styles.filterSummaryPercentage, { color: textSecondary }]}>
                         {filteredSummary.twoPct}%
                       </Text>
                     </View>
-                    <Text
-                      style={[
-                        styles.filterSummaryLabel,
-                        { color: textSecondary },
-                      ]}
-                    >
+                    <Text style={[styles.filterSummaryLabel, { color: textSecondary }]}>
                       2pts
                     </Text>
                   </View>
                   <View style={styles.filterSummaryItemFlex}>
                     <View style={styles.filterSummaryValueRow}>
-                      <Text
-                        style={[
-                          styles.filterSummaryValue,
-                          { color: textPrimary },
-                        ]}
-                      >
+                      <Text style={[styles.filterSummaryValue, { color: textPrimary }]}>
                         {filteredSummary.threeM}/{filteredSummary.threeA}
                       </Text>
-                      <Text
-                        style={[
-                          styles.filterSummaryPercentage,
-                          { color: textSecondary },
-                        ]}
-                      >
+                      <Text style={[styles.filterSummaryPercentage, { color: textSecondary }]}>
                         {filteredSummary.threePct}%
                       </Text>
                     </View>
-                    <Text
-                      style={[
-                        styles.filterSummaryLabel,
-                        { color: textSecondary },
-                      ]}
-                    >
+                    <Text style={[styles.filterSummaryLabel, { color: textSecondary }]}>
                       3pts
+                    </Text>
+                  </View>
+                  <View style={styles.filterSummaryItemFlex}>
+                    <View style={styles.filterSummaryValueRow}>
+                      <Text style={[styles.filterSummaryValue, { color: textPrimary }]}>
+                        {filteredSummary.ftm}/{filteredSummary.fta}
+                      </Text>
+                      <Text style={[styles.filterSummaryPercentage, { color: textSecondary }]}>
+                        {filteredSummary.ftPct}%
+                      </Text>
+                    </View>
+                    <Text style={[styles.filterSummaryLabel, { color: textSecondary }]}>
+                      LF
                     </Text>
                   </View>
                 </View>
 
-                {/* Row 2: Rebounds and Assists */}
+                {/* Row 3: Rebounds — total, team, off, def */}
                 <View style={[styles.filterSummaryRow, { marginTop: 12 }]}>
                   <View style={styles.filterSummaryItemFlex}>
-                    <Text
-                      style={[
-                        styles.filterSummaryValue,
-                        { color: textPrimary },
-                      ]}
-                    >
+                    <Text style={[styles.filterSummaryValue, { color: textPrimary }]}>
                       {filteredSummary.reb}
                     </Text>
-                    <Text
-                      style={[
-                        styles.filterSummaryLabel,
-                        { color: textSecondary },
-                      ]}
-                    >
+                    <Text style={[styles.filterSummaryLabel, { color: textSecondary }]}>
                       Rebonds
                     </Text>
                   </View>
                   <View style={styles.filterSummaryItemFlex}>
-                    <Text
-                      style={[
-                        styles.filterSummaryValue,
-                        { color: textPrimary },
-                      ]}
-                    >
+                    <Text style={[styles.filterSummaryValue, { color: textPrimary }]}>
+                      {filteredSummary.rebTeam}
+                    </Text>
+                    <Text style={[styles.filterSummaryLabel, { color: textSecondary }]}>
+                      Reb. Éq.
+                    </Text>
+                  </View>
+                  <View style={styles.filterSummaryItemFlex}>
+                    <Text style={[styles.filterSummaryValue, { color: textPrimary }]}>
                       {filteredSummary.rebOff}
                     </Text>
-                    <Text
-                      style={[
-                        styles.filterSummaryLabel,
-                        { color: textSecondary },
-                      ]}
-                    >
+                    <Text style={[styles.filterSummaryLabel, { color: textSecondary }]}>
                       Reb. Off.
                     </Text>
                   </View>
                   <View style={styles.filterSummaryItemFlex}>
-                    <Text
-                      style={[
-                        styles.filterSummaryValue,
-                        { color: textPrimary },
-                      ]}
-                    >
+                    <Text style={[styles.filterSummaryValue, { color: textPrimary }]}>
                       {filteredSummary.rebDef}
                     </Text>
-                    <Text
-                      style={[
-                        styles.filterSummaryLabel,
-                        { color: textSecondary },
-                      ]}
-                    >
-                      Reb. Def.
-                    </Text>
-                  </View>
-                  <View style={styles.filterSummaryItemFlex}>
-                    <Text
-                      style={[
-                        styles.filterSummaryValue,
-                        { color: textPrimary },
-                      ]}
-                    >
-                      {filteredSummary.ast}
-                    </Text>
-                    <Text
-                      style={[
-                        styles.filterSummaryLabel,
-                        { color: textSecondary },
-                      ]}
-                    >
-                      Passes
+                    <Text style={[styles.filterSummaryLabel, { color: textSecondary }]}>
+                      Reb. Déf.
                     </Text>
                   </View>
                 </View>
@@ -1616,7 +1701,6 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                   </View>
                 </View>
               </View>
-            )}
           </ScrollView>
         </View>
       </View>
@@ -1752,7 +1836,7 @@ export const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
                     },
                   ]}
                 >
-                  EUX
+                  {String(match?.opponent || "EUX").toUpperCase()}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -1824,7 +1908,7 @@ export const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
                     ]}
                     numberOfLines={1}
                   >
-                    {player.name?.split(" ").pop() || ""}
+                    {player.name || ""}
                   </Text>
                 </TouchableOpacity>
               ))}
@@ -2086,7 +2170,7 @@ export const SubstitutionModal: React.FC<SubstitutionModalProps> = ({
                     },
                   ]}
                 >
-                  EUX
+                  {String(match.opponent || "EUX").toUpperCase()}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -2177,7 +2261,7 @@ export const SubstitutionModal: React.FC<SubstitutionModalProps> = ({
                           ]}
                           numberOfLines={1}
                         >
-                          {player.name.split(" ").pop()}
+                          {player.name}
                         </Text>
                         {isOut && (
                           <View style={styles.subPlayerBadge}>
@@ -2278,7 +2362,7 @@ export const SubstitutionModal: React.FC<SubstitutionModalProps> = ({
                           ]}
                           numberOfLines={1}
                         >
-                          {player.name.split(" ").pop()}
+                          {player.name}
                         </Text>
                         {isIn && (
                           <View
@@ -3157,6 +3241,60 @@ const styles = StyleSheet.create({
   playerFilterName: {
     fontSize: 12,
     fontWeight: "700",
+  },
+  // Period Score Banner
+  periodScoreBanner: {
+    marginBottom: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: "center",
+    gap: 4,
+  },
+  periodScoreLabel: {
+    fontSize: 10,
+    fontWeight: "700",
+    letterSpacing: 1,
+    textTransform: "uppercase",
+  },
+  periodScoreRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    width: "100%",
+    justifyContent: "center",
+    gap: 8,
+  },
+  periodScoreTeamCol: {
+    flex: 1,
+    alignItems: "center",
+    gap: 4,
+  },
+  periodScoreTeam: {
+    fontSize: 13,
+    fontWeight: "600",
+    textAlign: "center",
+  },
+  filterHcpBadge: {
+    borderWidth: 1,
+    borderRadius: 4,
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+  },
+  filterHcpBadgeText: {
+    fontSize: 9,
+    fontWeight: "900",
+    letterSpacing: 0.5,
+  },
+  periodScoreValue: {
+    fontSize: 30,
+    fontWeight: "900",
+    minWidth: 36,
+    textAlign: "center",
+  },
+  periodScoreDash: {
+    fontSize: 22,
+    fontWeight: "300",
   },
   // Filter Summary
   filterSummary: {

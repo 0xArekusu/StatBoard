@@ -92,6 +92,10 @@ export class SQLiteAdapter implements IStorageAdapter {
       );
     `);
 
+    // Migrations: add handicap columns if they don't exist yet
+    try { this.db.execSync(`ALTER TABLE matches ADD COLUMN my_team_handicap INTEGER NOT NULL DEFAULT 0`); } catch (_) {}
+    try { this.db.execSync(`ALTER TABLE matches ADD COLUMN opponent_handicap INTEGER NOT NULL DEFAULT 0`); } catch (_) {}
+
     // Create indexes
     this.db.execSync(`
       CREATE INDEX IF NOT EXISTS idx_match_actions_match_id ON match_actions(match_id);
