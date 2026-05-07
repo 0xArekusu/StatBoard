@@ -6,6 +6,15 @@
  */
 
 // ===========================
+// GUEST IDS
+// ===========================
+
+export const GUEST_IDS = {
+  CLUB: "guest-club",
+  TEAM: "guest-team",
+} as const;
+
+// ===========================
 // MATCH FORMATS
 // ===========================
 

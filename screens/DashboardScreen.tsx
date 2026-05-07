@@ -23,9 +23,8 @@ import { useAuth } from "../src/contexts/AuthContext";
 import { useClub } from "../src/contexts/ClubContext";
 import { useSignedUrl } from "../hooks/useSignedUrl";
 import { ServiceFactory } from "../services/ServiceFactory";
-import { shareLogs, sendLogsToSentry, logInfo, logError, logWarn } from "../utils/logger";
+import { sendLogsToSentry, logInfo, logError, logWarn } from "../utils/logger";
 import { Match, MatchStatus } from "../src/models/types";
-import { Club } from "../models/Club";
 import { Team, TeamStatus } from "../models/Team";
 import { supabase } from "../src/config/supabase";
 import JerseyIconSimple from "../components/icons/JerseySimpleIcon";
@@ -62,6 +61,7 @@ import DashboardRecentMatches from "../components/dashboard/DashboardRecentMatch
 import GuestWelcomeModal from "../components/GuestWelcomeModal";
 import MatchLimitModal from "../components/MatchLimitModal";
 import { ROUTES } from "../constants/routes";
+import { GUEST_IDS } from "../constants/matchConstants";
 import { COACH_ASSISTANT_LOGO_MARGIN } from "../src/utils/logoHelper";
 import { SUBSCRIPTION_LIMITS, NOT_CONNECTED_LIMITS, SUBSCRIPTION_TIER } from "../models/Subscription";
 import { AdminService } from "../services/AdminService";
@@ -188,7 +188,7 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
           if (shouldShow) {
             // Check if there's an active match - if yes, don't show guest welcome
             const matchListService = ServiceFactory.getMatchListService(supabase);
-            const activeMatch = await matchListService.findActiveMatch();
+            const activeMatch = await matchListService.findActiveMatch(GUEST_IDS.CLUB);
 
             if (activeMatch) {
               logInfo("DashboardScreen", "⏭️ Skipping guest welcome - active match found");
@@ -245,17 +245,11 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
     }, [user?.id, isGuest, currentClub?.id, activeTeamId])
   );
 
-  // Check for active match and reload matches when team changes
+  // Reload matches when team changes
   useEffect(() => {
     const reloadTeamData = async () => {
       if (activeTeamId && user && currentClub) {
         const matchListService = ServiceFactory.getMatchListService(supabase);
-
-        // Check for active match
-        const activeMatch = await matchListService.findActiveMatch();
-        if (activeMatch && activeMatch.team_id === activeTeamId) {
-          setLiveMatchToResume(activeMatch);
-        }
 
         // Reload matches for the selected team
         logInfo("DashboardScreen", "🔄 Reloading matches for team change", {
@@ -293,22 +287,10 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
       // Use MatchListService to load matches
       const matchListService = ServiceFactory.getMatchListService(supabase);
 
-      // Check for active match to resume (skip if we just abandoned one)
-      if (!skipActiveMatchCheck) {
-        const activeMatch = await matchListService.findActiveMatch();
-        if (activeMatch) {
-          logInfo("DashboardScreen", "🎮 Active match found", {
-            matchId: activeMatch.id,
-            opponent: activeMatch.opponent_name,
-          });
-          setLiveMatchToResume(activeMatch);
-        }
-      }
-
       let clubId: string | null = null;
       let teamId: string | null = null;
 
-      // Use current club from context
+      // Load teams FIRST so teamId is validated before checking for an active match
       if (user && currentClub) {
         clubId = currentClub.id;
 
@@ -363,6 +345,23 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
           }
         } catch (error) {
           logError("DashboardScreen", "❌ Error loading teams", { error });
+        }
+      }
+
+      // Check for active match to resume AFTER teams are validated
+      // For authenticated users, only check if the user has a valid team — prevents showing
+      // another team's match when activeTeamId is stale or the user has no team
+      if (!skipActiveMatchCheck && (isGuest || teamId)) {
+        const activeMatch = await matchListService.findActiveMatch(
+          isGuest ? GUEST_IDS.CLUB : clubId ?? undefined,
+          isGuest ? undefined : teamId ?? undefined
+        );
+        if (activeMatch) {
+          logInfo("DashboardScreen", "🎮 Active match found", {
+            matchId: activeMatch.id,
+            opponent: activeMatch.opponent_name,
+          });
+          setLiveMatchToResume(activeMatch);
         }
       }
 
@@ -536,18 +535,21 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
       return;
     }
 
-    // Check if there's an active match
+    // Check if there's an active match for the current context
     const matchListService = ServiceFactory.getMatchListService(supabase);
-    const activeMatch = await matchListService.findActiveMatch();
+    const activeMatch = await matchListService.findActiveMatch(
+      isGuest ? GUEST_IDS.CLUB : currentClub?.id,
+      isGuest ? undefined : activeTeamId ?? undefined
+    );
 
     if (activeMatch) {
       // Show popup with live match (from "Nouveau match" button)
       setIsNewMatchFlow(true);
       setLiveMatchToResume(activeMatch);
-    } else {
-      // No active match, proceed to new match screen
-      navigation.navigate("NewMatch", { teamId: activeTeamId });
+      return;
     }
+    // No active match, proceed to new match screen
+    navigation.navigate("NewMatch", { teamId: activeTeamId });
   };
 
   /**

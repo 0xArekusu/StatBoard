@@ -24,6 +24,7 @@ import {
   type MatchCreationStep,
   ROUTES,
   PlatformOS,
+  GUEST_IDS,
 } from "../constants";
 import { useInterstitialAd } from "../hooks/useInterstitialAd";
 import { ServiceFactory } from "../services/ServiceFactory";
@@ -196,9 +197,9 @@ export default function NewMatchScreen() {
     if (!user) {
       // Guest mode: create temporary local team
       const guestTeam: Team = {
-        id: "guest-team",
+        id: GUEST_IDS.TEAM,
         name: "Mon Équipe",
-        clubId: "guest-club",
+        clubId: GUEST_IDS.CLUB,
         ownerId: "guest",
         status: TeamStatus.APPROVED,
         isActive: true,
@@ -213,13 +214,13 @@ export default function NewMatchScreen() {
         id: `guest-player-${i + 1}`,
         name: `Joueur ${i + 1}`,
         jerseyNumber: i + 1,
-        teamId: "guest-team",
+        teamId: GUEST_IDS.TEAM,
         createdAt: now,
         updatedAt: now,
       }));
 
       setTeams([guestTeam]);
-      setSelectedTeamId("guest-team");
+      setSelectedTeamId(GUEST_IDS.TEAM);
       setMyTeamName("Mon Équipe"); // Default team name for guests
 
       // Set default players as available and selected
@@ -310,7 +311,7 @@ export default function NewMatchScreen() {
    */
   const loadTeamRoster = async (teamId: string) => {
     // Skip for guest users
-    if (!user || teamId === "guest-team") {
+    if (!user || teamId === GUEST_IDS.TEAM) {
       return;
     }
 
@@ -604,7 +605,7 @@ export default function NewMatchScreen() {
 
     // Get club (from context for authenticated users, or create guest club)
     const club = user && currentClub ? currentClub : {
-      id: "guest-club",
+      id: GUEST_IDS.CLUB,
       name: "Club Local",
       acronym: "CL",
       code: "guest",

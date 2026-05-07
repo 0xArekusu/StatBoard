@@ -26,7 +26,7 @@ import { generateUUID } from '../../utils/uuid';
 export interface IMatchRepository {
   create(data: CreateMatchData): Promise<Match>;
   findById(id: string): Promise<Match | null>;
-  findActiveMatch(): Promise<Match | null>;
+  findActiveMatch(clubId?: string, teamId?: string): Promise<Match | null>;
   getAllMatches(): Promise<Match[]>;
   getMatchesByTeamId(teamId: string): Promise<Match[]>;
   updateStatus(id: string, status: MatchStatus, endedAt?: Date): Promise<void>;
@@ -198,13 +198,17 @@ export class MatchRepository implements IMatchRepository {
    * Find the most recent active (in_progress) match
    * Used for match resume functionality
    */
-  async findActiveMatch(): Promise<Match | null> {
+  async findActiveMatch(clubId?: string, teamId?: string): Promise<Match | null> {
     try {
-      logInfo('MatchRepository', '🔍 Searching for active match');
+      logInfo('MatchRepository', '🔍 Searching for active match', { clubId, teamId });
 
-      const matches = await this.db.query(
-        "SELECT * FROM matches WHERE status = 'in_progress' ORDER BY created_at DESC LIMIT 1"
-      );
+      const conditions: string[] = ["status = 'in_progress'"];
+      const params: string[] = [];
+      if (clubId) { conditions.push('club_id = ?'); params.push(clubId); }
+      if (teamId) { conditions.push('team_id = ?'); params.push(teamId); }
+
+      const sql = `SELECT * FROM matches WHERE ${conditions.join(' AND ')} ORDER BY created_at DESC LIMIT 1`;
+      const matches = await this.db.query(sql, params.length > 0 ? params : undefined);
 
       const match = matches.length > 0 ? this.normalizeMatch(matches[0]) : null;
 

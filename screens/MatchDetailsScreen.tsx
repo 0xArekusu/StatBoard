@@ -46,6 +46,7 @@ import {
   ShotSpecification,
   ReboundSpecification,
 } from "../src/models/ActionTypes";
+import { GUEST_IDS } from "../constants/matchConstants";
 import { useTheme } from "../src/contexts/ThemeContext";
 import { useResponsive } from "../src/hooks/useResponsive";
 import { Colors } from "../src/theme/colors";
@@ -146,7 +147,7 @@ export default function MatchDetailsScreen() {
   useEffect(() => {
     const loadClub = async () => {
       // Skip loading for guest mode (offline matches)
-      if (!match.club_id || match.club_id === "guest-club") {
+      if (!match.club_id || match.club_id === GUEST_IDS.CLUB) {
         return;
       }
 
