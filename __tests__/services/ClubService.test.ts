@@ -63,14 +63,14 @@ describe("ClubService", () => {
       expect(result).toEqual({ success: false, error: "Club name is required" });
     });
 
-    it("échoue si le nom dépasse 30 caractères", async () => {
+    it("échoue si le nom dépasse 60 caractères", async () => {
       const result = await service.createClub(
-        { name: "A".repeat(31), acronym: "MC" } as any,
+        { name: "A".repeat(61), acronym: "MC" } as any,
         "u"
       );
       expect(result).toEqual({
         success: false,
-        error: "Club name must be 30 characters or less",
+        error: "Le nom du club ne peut pas dépasser 60 caractères",
       });
     });
 
@@ -79,14 +79,14 @@ describe("ClubService", () => {
       expect(result).toEqual({ success: false, error: "Club acronym is required" });
     });
 
-    it("échoue si l'acronyme dépasse 5 caractères", async () => {
+    it("échoue si l'acronyme dépasse 6 caractères", async () => {
       const result = await service.createClub(
         { name: "Mon Club", acronym: "TOOLONG" } as any,
         "u"
       );
       expect(result).toEqual({
         success: false,
-        error: "Club acronym must be 5 characters or less",
+        error: "Le sigle ne peut pas dépasser 6 caractères",
       });
     });
   });
