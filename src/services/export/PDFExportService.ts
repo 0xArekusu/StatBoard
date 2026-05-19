@@ -20,7 +20,7 @@ import {
   COURT_SVG_WIDTH_LANDSCAPE,
   COURT_SVG_HEIGHT_LANDSCAPE,
 } from "../../../constants/courtConstants";
-import { calculateEfficiencyFromDB } from "../../utils/statsCalculator";
+import { calculateEfficiencyFromDB, calculatePlusMinus } from "../../utils/statsCalculator";
 import { AvatarService } from "../AvatarService";
 
 interface Player {
@@ -327,11 +327,20 @@ export class PDFExportService {
       playersOpponent.length
     );
 
+    // Compute +/- for all players
+    const allPlayersForPm = [...playersMyTeam, ...playersOpponent].map((p) => ({
+      player_number: p.num,
+      team: p.team as "MyTeam" | "Opponent",
+      is_starter: !p.isSubstitute,
+    }));
+    const pmMap = calculatePlusMinus(actions, allPlayersForPm);
+
     const statsMyTeam = playersMyTeam.map((player) => {
       console.log(
         `[PDF Export] ⚡ Calcul stats pour joueur MY_TEAM - ID: ${player.id}, Num: ${player.num}, Nom: ${player.name}`
       );
       const stats = this.calculatePlayerStats(player.id, actions);
+      stats.pm = pmMap.get(`${player.team}-${player.num}`) || 0;
       console.log(`[PDF Export] 📊 Stats calculées:`, stats);
       return {
         ...player,
@@ -344,6 +353,7 @@ export class PDFExportService {
         `[PDF Export] ⚡ Calcul stats pour joueur OPPONENT - ID: ${player.id}, Num: ${player.num}, Nom: ${player.name}`
       );
       const stats = this.calculatePlayerStats(player.id, actions);
+      stats.pm = pmMap.get(`${player.team}-${player.num}`) || 0;
       console.log(`[PDF Export] 📊 Stats calculées:`, stats);
       return {
         ...player,
@@ -683,7 +693,7 @@ export class PDFExportService {
    */
   private static readonly STATS_LEGEND = `MIN: Minutes jouées | PTS: Points | TIRS: Tirs totaux (marqués/tentés) | 2PTS: 2 points (marqués/tentés) | 3PTS: 3 points (marqués/tentés) | LF: Lancers francs (marqués/tentés)<br>
       REB: Rebonds totaux | RO: Rebonds offensifs | RD: Rebonds défensifs<br>
-      AST: Passes décisives | INT: Interceptions | CTR: Contres | BP: Balles perdues | FT: Fautes totales | FP: Fautes provoquées | EVAL: Evaluation`;
+      AST: Passes décisives | INT: Interceptions | CTR: Contres | BP: Balles perdues | FT: Fautes totales | FP: Fautes provoquées | +/-: Différentiel de points sur le terrain | EVAL: Evaluation`;
 
   /**
    * Get playing time formatted as MM:SS from actual tracked time
@@ -717,6 +727,7 @@ export class PDFExportService {
     const blk = stats.reduce((sum, p) => sum + p.stats.blk, 0);
     const tov = stats.reduce((sum, p) => sum + p.stats.tov, 0);
     const fd = stats.reduce((sum, p) => sum + (p.stats.fd || 0), 0);
+    const pm = stats.reduce((sum, p) => sum + (p.stats.pm || 0), 0);
     const fouls = stats.reduce(
       (sum, p) => sum + this.calculateTotalFouls(p.stats),
       0
@@ -761,6 +772,7 @@ export class PDFExportService {
       tov,
       fouls,
       fd,
+      pm,
       eff,
     };
   }
@@ -822,6 +834,7 @@ export class PDFExportService {
           <th>BP</th>
           <th>FT</th>
           <th>FP</th>
+          <th>+/-</th>
           <th>EVAL</th>
         </tr>
       </thead>
@@ -882,6 +895,7 @@ export class PDFExportService {
           <td>${player.stats.tov}</td>
           <td>${totalFouls}</td>
           <td>${player.stats.fd}</td>
+          <td><strong style="color:${player.stats.pm > 0 ? '#4CAF50' : player.stats.pm < 0 ? '#F44336' : 'inherit'}">${player.stats.pm > 0 ? '+' + player.stats.pm : player.stats.pm}</strong></td>
           <td><strong>${efficiency}</strong></td>
         </tr>
         `;
@@ -908,6 +922,7 @@ export class PDFExportService {
           <td>${tot.tov}</td>
           <td>${tot.fouls}</td>
           <td>${tot.fd}</td>
+          <td>${tot.pm > 0 ? '+' + tot.pm : tot.pm}</td>
           <td><strong>${tot.eff}</strong></td>
         </tr>`;
           return [
@@ -934,6 +949,7 @@ export class PDFExportService {
           <td>-</td>
           <td>-</td>
           <td>-</td>
+          <td>-</td>
         </tr>` : ''}
         <tr class="totals-row">
           <td colspan="2">TOTAL${handicap > 0 ? ` <span class="hcp-badge">+${handicap} HCP</span>` : ''}</td>
@@ -952,6 +968,7 @@ export class PDFExportService {
           <td>${totalsWithTeamReb.tov}</td>
           <td>${totalsWithTeamReb.fouls}</td>
           <td>${totalsWithTeamReb.fd}</td>
+          <td>${totalsWithTeamReb.pm > 0 ? '+' + totalsWithTeamReb.pm : totalsWithTeamReb.pm}</td>
           <td><strong>${totalsWithTeamReb.eff}</strong></td>
         </tr>
       </tbody>
@@ -2078,7 +2095,7 @@ export class PDFExportService {
     }
     .stats-grid {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(5, 1fr);
       gap: 6px;
     }
     .stat-box {
@@ -2249,7 +2266,12 @@ export class PDFExportService {
 
   <!-- Individual Player Stats Section -->
   <div class="individual-stats-section">
-    ${players
+    ${(() => {
+      const pmLookup = new Map<string, number>();
+      [...statsMyTeam, ...statsOpponent].forEach((p: any) => {
+        pmLookup.set(`${p.team}-${p.num}`, p.stats.pm || 0);
+      });
+      return players
       .filter(
         (p) =>
           p.team === Team.MY_TEAM ||
@@ -2261,6 +2283,7 @@ export class PDFExportService {
       })
       .map((player) => {
         const playerStats = this.calculatePlayerStats(player.id, actions);
+        const playerPm = pmLookup.get(`${player.team}-${player.num}`) || 0;
         const allActionsCourtSVG = this.generatePlayerAllActionsCourt(
           actions,
           player.id,
@@ -2456,6 +2479,12 @@ export class PDFExportService {
               <svg width="16" height="16" viewBox="0 0 16 16" style="flex-shrink:0"><polygon points="8,2 14,8 8,14 2,8" fill="${getActionColor(ActionType.FOUL_DRAWN)}" stroke="#FFFFFF" stroke-width="2"/></svg>
             </div>
           </div>
+          <div class="stat-box">
+            <div class="stat-box-label">+/-</div>
+            <div class="stat-box-value-row">
+              <div class="stat-box-value" style="color:${playerPm > 0 ? '#4CAF50' : playerPm < 0 ? '#F44336' : 'inherit'}">${playerPm > 0 ? '+' + playerPm : playerPm}</div>
+            </div>
+          </div>
           <div class="stat-box highlight">
             <div class="stat-box-label">ÉVAL</div>
             <div class="stat-box-value-row">
@@ -2483,7 +2512,8 @@ export class PDFExportService {
     </div>
         `;
       })
-      .join("")}
+      .join("");
+    })()}
   </div>
 </body>
 </html>
