@@ -62,7 +62,7 @@ import { StatsTab, CardsTab, CourtTab, EvolutionTab, PlayerDetailModal } from ".
 import type { PlayerStats, Tab, TeamFilter, ActionFilterType, SortBy, SortOrder } from "../constants/matchDetailsConstants";
 import { TAB, ACTION_FILTER } from "../constants";
 import { RootStackParamList, RootNavigationProp } from "../types/navigation";
-import { calculateEfficiency } from "../src/utils/statsCalculator";
+import { calculateEfficiency, calculatePlusMinus } from "../src/utils/statsCalculator";
 
 type MatchDetailsRouteProp = RouteProp<RootStackParamList, "MatchDetails">;
 
@@ -404,6 +404,7 @@ export default function MatchDetailsScreen() {
             fg3m: 0,
             fg3a: 0,
             eff: 0,
+            pm: 0,
             min: "0:00",
           });
         });
@@ -455,6 +456,7 @@ export default function MatchDetailsScreen() {
               fg3m: 0,
               fg3a: 0,
               eff: 0,
+              pm: 0,
               min: "0:00",
             });
           }
@@ -523,6 +525,24 @@ export default function MatchDetailsScreen() {
       stats.min = formatPlayingTime(playingTimeSeconds);
     });
   }
+
+    // STEP 4: Calculate +/- for all players in the map
+    const allPlayersForPm = (players || [])
+      .filter((p) => {
+        const num = p.num || p.player_number;
+        return num && num !== 9999 && num !== -1;
+      })
+      .map((p) => ({
+        player_number: p.num || p.player_number,
+        team: p.team as "MyTeam" | "Opponent",
+        is_starter: !p.isSubstitute,
+      }));
+
+    const pmMap = calculatePlusMinus(actions || [], allPlayersForPm);
+
+    playerStatsMap.forEach((stats, key) => {
+      stats.pm = pmMap.get(key) || 0;
+    });
 
     // Convert map to array and sort by points (default sort)
     const playersList = Array.from(playerStatsMap.values()).sort(

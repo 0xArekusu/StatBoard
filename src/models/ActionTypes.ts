@@ -19,6 +19,7 @@ export enum ActionType {
   STEAL = "steal",
   BLOCK = "block",
   TURNOVER = "turnover",
+  SUBSTITUTION = "substitution",
 }
 
 /**
@@ -79,6 +80,14 @@ export const FOUL_SPECIFICATION_FR: Record<FoulSpecification, string> = {
   [FoulSpecification.PENALITY]: "Antisportive",
   [FoulSpecification.DISQUALIFICATION]: "Disqualifiante",
 };
+
+/**
+ * Substitution specifications
+ */
+export enum SubstitutionSpecification {
+  IN = "in",
+  OUT = "out",
+}
 
 /**
  * Generic action specification for simple actions

@@ -29,6 +29,8 @@ import {
   getActionColor,
   ActionType,
   ReboundSpecification,
+  ShotSpecification,
+  FoulSpecification,
 } from "../../src/models/ActionTypes";
 import {
   COACH_ASSISTANT_LOGO_NO_BG,
@@ -270,6 +272,30 @@ export default function PlayerDetailModal({
                   styles.statCard,
                   {
                     backgroundColor: colors.surfaceVariant,
+                    padding: sp.md,
+                  },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.statCardValue,
+                    {
+                      color: player.pm > 0 ? "#4CAF50" : player.pm < 0 ? "#F44336" : textPrimary,
+                      fontSize: isCompact ? font.xl : 28,
+                    },
+                  ]}
+                >
+                  {player.pm > 0 ? `+${player.pm}` : player.pm}
+                </Text>
+                <Text style={[styles.statCardLabel, { color: textSecondary }]}>
+                  +/-
+                </Text>
+              </View>
+              <View
+                style={[
+                  styles.statCard,
+                  {
+                    backgroundColor: colors.surfaceVariant,
                     borderWidth: 2,
                     borderColor: colors.primary,
                     padding: sp.md,
@@ -499,6 +525,35 @@ export default function PlayerDetailModal({
                     logoUri={clubLogoUri}
                   />
                 </View>
+                {/* Court legend */}
+                <View style={styles.courtLegend}>
+                  {[
+                    { shape: "circle-outline", color: getActionColor(ActionType.SHOT, ShotSpecification.MADE), label: "Tir réussi" },
+                    { shape: "cross",          color: getActionColor(ActionType.SHOT, ShotSpecification.MISSED), label: "Tir raté" },
+                    { shape: "triangle",       color: getActionColor(ActionType.REBOUND, ReboundSpecification.DEFENSIVE), label: "Rebond" },
+                    { shape: "diamond",        color: getActionColor(ActionType.FOUL, FoulSpecification.PERSONAL), label: "Faute" },
+                    { shape: "circle",         color: getActionColor(ActionType.ASSIST), label: "Autre" },
+                  ].map(({ shape, color, label }) => (
+                    <View key={label} style={styles.courtLegendItem}>
+                      {shape === "circle-outline" && (
+                        <View style={[styles.legendCircleOutline, { borderColor: color }]} />
+                      )}
+                      {shape === "cross" && (
+                        <Text style={[styles.legendCross, { color }]}>✕</Text>
+                      )}
+                      {shape === "triangle" && (
+                        <Text style={[styles.legendShape, { color }]}>▲</Text>
+                      )}
+                      {shape === "diamond" && (
+                        <Text style={[styles.legendShape, { color }]}>◆</Text>
+                      )}
+                      {shape === "circle" && (
+                        <View style={[styles.legendCircleFill, { backgroundColor: color }]} />
+                      )}
+                      <Text style={[styles.courtLegendLabel, { color: textTertiary }]}>{label}</Text>
+                    </View>
+                  ))}
+                </View>
               </View>
             )}
           </ScrollView>
@@ -653,6 +708,42 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   courtSection: {},
+  courtLegend: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
+    marginTop: 10,
+    justifyContent: "center",
+  },
+  courtLegendItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  courtLegendLabel: {
+    fontSize: 10,
+    fontWeight: "600",
+  },
+  legendCircleOutline: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    borderWidth: 2,
+  },
+  legendCircleFill: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
+  legendCross: {
+    fontSize: 11,
+    fontWeight: "900",
+    lineHeight: 13,
+  },
+  legendShape: {
+    fontSize: 10,
+    lineHeight: 13,
+  },
   courtContainer: {
     alignItems: "center",
     justifyContent: "center",

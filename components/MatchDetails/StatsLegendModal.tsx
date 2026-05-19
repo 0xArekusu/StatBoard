@@ -324,6 +324,14 @@ export default function StatsLegendModal({
             </View>
             <View style={styles.legendItem}>
               <Text style={[styles.legendLabel, { color: textSecondary }]}>
+                +/-
+              </Text>
+              <Text style={[styles.legendValue, { color: textPrimary }]}>
+                Différentiel de points quand le joueur est sur le terrain
+              </Text>
+            </View>
+            <View style={styles.legendItem}>
+              <Text style={[styles.legendLabel, { color: textSecondary }]}>
                 EVAL
               </Text>
               <Text style={[styles.legendValue, { color: textPrimary }]}>

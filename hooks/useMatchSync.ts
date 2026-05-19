@@ -261,9 +261,12 @@ export function useMatchSync({
 
         const convertedActions = playerActions.map((action: any) => ({
           type: action.action_type,
+          action_type: action.action_type,
           specification: action.specification,
           points: action.points,
           player: playerNumber,
+          player_number: playerNumber,
+          action_order: action.action_order,
           team: action.team,
           timestamp: new Date(action.timestamp),
           period_number: action.period_number,
@@ -325,9 +328,12 @@ export function useMatchSync({
       // Convert actions to expected format (same as Supabase conversion)
       const actions = localActionsRaw.map((action: any) => ({
         type: action.action_type,
+        action_type: action.action_type,
         specification: action.specification,
         points: action.points,
         player: action.player_number,
+        player_number: action.player_number,
+        action_order: action.action_order,
         team: action.team,
         timestamp: new Date(action.timestamp),
         period_number: action.period_number,

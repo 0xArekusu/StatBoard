@@ -36,7 +36,7 @@ import {
   CreateActionData,
   Team,
 } from "../src/models/types";
-import { ActionType, ShotSpecification, ReboundSpecification } from "../src/models/ActionTypes";
+import { ActionType, ShotSpecification, ReboundSpecification, SubstitutionSpecification } from "../src/models/ActionTypes";
 import { Player } from "../models/Player";
 import { useAuth } from "../src/contexts/AuthContext";
 import { MatchManager } from "../src/services/match/MatchManager";
@@ -1220,6 +1220,53 @@ export default function LiveMatchScreen() {
           subSelection.in,
           true,
         );
+      }
+
+      // Record substitution events for +/- calculation
+      const actionRepo = new ActionRepository();
+      const subTeam = isOurTeam ? "MyTeam" : ("Opponent" as "MyTeam" | "Opponent");
+      const subRoster = isOurTeam ? homeRoster : opponentRoster;
+      const timeInPeriod = periodDurationMin * 60 - timer;
+      let orderOffset = 0;
+
+      for (const playerId of subSelection.out) {
+        const player = subRoster.find((p) => p.id === playerId);
+        if (!player) continue;
+        await actionRepo.create({
+          match_id: currentMatchId,
+          team: subTeam,
+          player_number: player.jerseyNumber,
+          action_type: ActionType.SUBSTITUTION,
+          specification: SubstitutionSpecification.OUT,
+          semantic_x: 50,
+          semantic_y: 50,
+          action_order: actionCounter + orderOffset,
+          period_number: quarter,
+          time_in_period: timeInPeriod,
+        });
+        orderOffset++;
+      }
+
+      for (const playerId of subSelection.in) {
+        const player = subRoster.find((p) => p.id === playerId);
+        if (!player) continue;
+        await actionRepo.create({
+          match_id: currentMatchId,
+          team: subTeam,
+          player_number: player.jerseyNumber,
+          action_type: ActionType.SUBSTITUTION,
+          specification: SubstitutionSpecification.IN,
+          semantic_x: 50,
+          semantic_y: 50,
+          action_order: actionCounter + orderOffset,
+          period_number: quarter,
+          time_in_period: timeInPeriod,
+        });
+        orderOffset++;
+      }
+
+      if (orderOffset > 0) {
+        setActionCounter((prev) => prev + orderOffset);
       }
     }
 

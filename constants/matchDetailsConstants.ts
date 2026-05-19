@@ -57,6 +57,7 @@ export type SortBy =
   | "pf"
   | "fd"
   | "eff"
+  | "pm"
   | "fgm"
   | "fga"
   | "fg2m"
@@ -97,6 +98,7 @@ export interface PlayerStats {
   fgm: number;
   fga: number;
   eff: number;
+  pm: number;
   min: string; // Format "MM:SS"
 }
 

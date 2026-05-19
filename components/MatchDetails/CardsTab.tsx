@@ -263,6 +263,38 @@ export default function CardsTab({
             </TouchableOpacity>
 
             <TouchableOpacity
+              onPress={() => handleSort("pm")}
+              style={[
+                styles.courtFilterChip,
+                {
+                  backgroundColor:
+                    sortBy === "pm"
+                      ? colors.primary
+                      : isDark
+                      ? colors.surfaceVariant
+                      : colors.surfaceVariant,
+                  borderColor:
+                    sortBy === "pm" ? colors.primary : borderColor,
+                },
+              ]}
+            >
+              <Text
+                style={[
+                  styles.courtFilterChipText,
+                  {
+                    color:
+                      sortBy === "pm"
+                        ? colors.text.primary
+                        : textPrimary,
+                  },
+                ]}
+              >
+                +/-{" "}
+                {sortBy === "pm" && (sortOrder === "desc" ? "↓" : "↑")}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
               onPress={() => handleSort("eff")}
               style={[
                 styles.courtFilterChip,
@@ -520,114 +552,46 @@ export default function CardsTab({
           </View>
 
           {/* Stats Grid */}
-          <View
-            style={[
-              styles.cardStatsGrid,
-              { borderTopColor: borderColor },
-            ]}
-          >
-            <View style={[styles.cardStatItem, { backgroundColor: isDark ? colors.surfaceVariant : colors.surface }]}>
-              <Text
-                style={[styles.cardStatLabel, { color: textTertiary }]}
-              >
-                MIN
-              </Text>
-              <Text
-                style={[styles.cardStatValue, { color: textPrimary }]}
-              >
-                {player.min}
-              </Text>
+          <View style={[styles.cardStatsGrid, { borderTopColor: borderColor }]}>
+            {/* Ligne 1 */}
+            <View style={styles.cardStatsRow}>
+              {[
+                { label: "MIN",         value: player.min },
+                { label: "REB OFF/DEF", value: `${player.reb_off}/${player.reb_def}` },
+                { label: "AST",         value: player.ast },
+                { label: "INT",         value: player.stl },
+                { label: "CTR",         value: player.blk },
+              ].map(({ label, value }) => (
+                <View key={label} style={[styles.cardStatItem, { backgroundColor: isDark ? colors.surfaceVariant : colors.surface }]}>
+                  <Text style={[styles.cardStatLabel, { color: textTertiary }]}>{label}</Text>
+                  <Text style={[styles.cardStatValue, { color: textPrimary }]}>{value}</Text>
+                </View>
+              ))}
             </View>
-            <View style={[styles.cardStatItem, { backgroundColor: isDark ? colors.surfaceVariant : colors.surface }]}>
-              <Text
-                style={[styles.cardStatLabel, { color: textTertiary }]}
-              >
-                REB OFF/DEF
-              </Text>
-              <Text
-                style={[styles.cardStatValue, { color: textPrimary }]}
-              >
-                {player.reb_off}/{player.reb_def}
-              </Text>
-            </View>
-            <View style={[styles.cardStatItem, { backgroundColor: isDark ? colors.surfaceVariant : colors.surface }]}>
-              <Text
-                style={[styles.cardStatLabel, { color: textTertiary }]}
-              >
-                AST
-              </Text>
-              <Text
-                style={[styles.cardStatValue, { color: textPrimary }]}
-              >
-                {player.ast}
-              </Text>
-            </View>
-            <View style={[styles.cardStatItem, { backgroundColor: isDark ? colors.surfaceVariant : colors.surface }]}>
-              <Text
-                style={[styles.cardStatLabel, { color: textTertiary }]}
-              >
-                INT
-              </Text>
-              <Text
-                style={[styles.cardStatValue, { color: textPrimary }]}
-              >
-                {player.stl}
-              </Text>
-            </View>
-            <View style={[styles.cardStatItem, { backgroundColor: isDark ? colors.surfaceVariant : colors.surface }]}>
-              <Text
-                style={[styles.cardStatLabel, { color: textTertiary }]}
-              >
-                CTR
-              </Text>
-              <Text
-                style={[styles.cardStatValue, { color: textPrimary }]}
-              >
-                {player.blk}
-              </Text>
-            </View>
-            <View style={[styles.cardStatItem, { backgroundColor: isDark ? colors.surfaceVariant : colors.surface }]}>
-              <Text
-                style={[styles.cardStatLabel, { color: textTertiary }]}
-              >
-                BP
-              </Text>
-              <Text
-                style={[styles.cardStatValue, { color: textPrimary }]}
-              >
-                {player.to}
-              </Text>
-            </View>
-            <View style={[styles.cardStatItem, { backgroundColor: isDark ? colors.surfaceVariant : colors.surface }]}>
-              <Text
-                style={[styles.cardStatLabel, { color: textTertiary }]}
-              >
-                FT
-              </Text>
-              <Text
-                style={[styles.cardStatValue, { color: textPrimary }]}
-              >
-                {player.pf}
-              </Text>
-            </View>
-            <View
-              style={[styles.cardStatItem, { backgroundColor: isDark ? colors.surfaceVariant : colors.surface }]}
-            >
-              <Text
-                style={[styles.cardStatLabel, { color: textTertiary }]}
-              >
-                ÉVAL
-              </Text>
-              <Text
-                style={[
-                  styles.cardStatValue,
-                  {
-                    color: colors.primary,
-                  },
-                ]}
-              >
-                {player.eff}
-              </Text>
+            {/* Ligne 2 */}
+            <View style={styles.cardStatsRow}>
+              <View style={[styles.cardStatItem, { backgroundColor: isDark ? colors.surfaceVariant : colors.surface }]}>
+                <Text style={[styles.cardStatLabel, { color: textTertiary }]}>BP</Text>
+                <Text style={[styles.cardStatValue, { color: textPrimary }]}>{player.to}</Text>
+              </View>
+              <View style={[styles.cardStatItem, { backgroundColor: isDark ? colors.surfaceVariant : colors.surface }]}>
+                <Text style={[styles.cardStatLabel, { color: textTertiary }]}>FT</Text>
+                <Text style={[styles.cardStatValue, { color: textPrimary }]}>{player.pf}</Text>
+              </View>
+              <View style={[styles.cardStatItem, { backgroundColor: isDark ? colors.surfaceVariant : colors.surface }]}>
+                <Text style={[styles.cardStatLabel, { color: textTertiary }]}>FP</Text>
+                <Text style={[styles.cardStatValue, { color: textPrimary }]}>{player.fd}</Text>
+              </View>
+              <View style={[styles.cardStatItem, { backgroundColor: isDark ? colors.surfaceVariant : colors.surface }]}>
+                <Text style={[styles.cardStatLabel, { color: textTertiary }]}>+/-</Text>
+                <Text style={[styles.cardStatValue, { color: player.pm > 0 ? "#4CAF50" : player.pm < 0 ? "#F44336" : textPrimary }]}>
+                  {player.pm > 0 ? `+${player.pm}` : player.pm}
+                </Text>
+              </View>
+              <View style={[styles.cardStatItem, { backgroundColor: isDark ? colors.surfaceVariant : colors.surface }]}>
+                <Text style={[styles.cardStatLabel, { color: textTertiary }]}>ÉVAL</Text>
+                <Text style={[styles.cardStatValue, { color: colors.primary }]}>{player.eff}</Text>
+              </View>
             </View>
           </View>
         </TouchableOpacity>
@@ -720,14 +684,17 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   cardStatsGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
+    flexDirection: "column",
     gap: 4,
     borderTopWidth: 1,
     paddingTop: 16,
   },
+  cardStatsRow: {
+    flexDirection: "row",
+    gap: 4,
+  },
   cardStatItem: {
-    width: "23%",
+    flex: 1,
     alignItems: "center",
     paddingVertical: 8,
     borderRadius: 4,
