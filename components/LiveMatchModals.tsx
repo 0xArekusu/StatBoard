@@ -315,8 +315,10 @@ interface FilterModalProps {
   onPeriodSelectionChange?: (periods: number[]) => void;
   // Match location for team filtering
   isHome?: boolean;
-  // Starters for pts split
+  // Starters for 5 Maj./Banc pts split
   starters?: string[];
+  // Current on-court players (for deriving initial lineup in +/- calc)
+  activePlayers?: string[];
   // Team names for filter labels
   myTeamName?: string;
   opponentName?: string;
@@ -376,6 +378,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
   onPeriodSelectionChange,
   isHome = true,
   starters = [],
+  activePlayers,
   myTeamName,
   opponentName,
   myTeamHandicap = 0,
@@ -535,7 +538,6 @@ export const FilterModal: React.FC<FilterModalProps> = ({
     if (!actions || actions.length === 0) return map;
 
     const ourTeamId = isHome ? TeamId.HOME : TeamId.AWAY;
-    const onCourt = new Set<string>(starters);
 
     const sorted = [...actions].sort((a: any, b: any) => {
       const pd = (a.period_number || 0) - (b.period_number || 0);
@@ -543,10 +545,38 @@ export const FilterModal: React.FC<FilterModalProps> = ({
       return (a.timestamp || 0) - (b.timestamp || 0);
     });
 
+    // Derive initial on-court lineup for +/- calculation.
+    // If activePlayers (current end-state) is available, reverse-apply subs to get tip-off lineup.
+    // Otherwise fall back to starters (less accurate if starters list diverges from reality).
+    let onCourt: Set<string>;
+    if (activePlayers) {
+      onCourt = new Set<string>(activePlayers);
+      // Walk subs in reverse: undo each sub to reconstruct tip-off state
+      const subEvents = sorted.filter((a: any) => a.action_type === ActionType.SUBSTITUTION).reverse();
+      subEvents.forEach((action: any) => {
+        if (action.playerId && !action.subPlayersOut && !action.subPlayersIn) {
+          // DB format
+          if (action.specification === 'in') onCourt.delete(action.playerId);
+          if (action.specification === 'out') onCourt.add(action.playerId);
+        } else {
+          // In-memory format
+          (action.subPlayersIn || []).forEach((id: string) => onCourt.delete(id));
+          (action.subPlayersOut || []).forEach((id: string) => onCourt.add(id));
+        }
+      });
+    } else {
+      onCourt = new Set<string>(starters);
+    }
+
     sorted.forEach((action: any) => {
       if (action.action_type === ActionType.SUBSTITUTION) {
-        (action.subPlayersOut || []).forEach((id: string) => onCourt.delete(id));
-        (action.subPlayersIn || []).forEach((id: string) => onCourt.add(id));
+        if (action.playerId && !action.subPlayersOut && !action.subPlayersIn) {
+          if (action.specification === 'out') onCourt.delete(action.playerId);
+          if (action.specification === 'in') onCourt.add(action.playerId);
+        } else {
+          (action.subPlayersOut || []).forEach((id: string) => onCourt.delete(id));
+          (action.subPlayersIn || []).forEach((id: string) => onCourt.add(id));
+        }
         return;
       }
       if (
@@ -564,7 +594,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
     });
 
     return map;
-  }, [actions, homeRoster, starters, isHome, selectedPeriods]);
+  }, [actions, homeRoster, starters, activePlayers, isHome, selectedPeriods]);
 
   // Average +/- for our team (global, starters, bench) respecting player filter
   const pmSummary = React.useMemo(() => {

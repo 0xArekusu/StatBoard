@@ -2234,6 +2234,7 @@ export default function LiveMatchScreen() {
         onPeriodSelectionChange={setSelectedPeriodIds}
         isHome={match.location === TeamId.HOME}
         starters={match.starters}
+        activePlayers={activePlayers}
         myTeamName={match.myTeamName}
         opponentName={match.opponent}
         myTeamHandicap={match.myTeamHandicap || 0}
