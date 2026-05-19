@@ -1187,6 +1187,8 @@ export default function LiveMatchScreen() {
       teamId: isHome ? TeamId.HOME : TeamId.AWAY,
       period_number: quarter,
       time_in_period: periodDurationMin * 60 - timer,
+      subPlayersOut: subSelection.out,
+      subPlayersIn: subSelection.in,
     };
 
     const updatedMatch = { ...match };

@@ -47,6 +47,8 @@ export interface MatchEvent {
   coordinates?: { x: number; y: number };
   period_number?: number;
   time_in_period?: number;
+  subPlayersOut?: string[];
+  subPlayersIn?: string[];
 }
 
 /**

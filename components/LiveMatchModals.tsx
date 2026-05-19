@@ -219,16 +219,18 @@ export const HistoryModal: React.FC<HistoryModalProps> = ({
                         : match.opponent || "Adversaire"}
                     </Text>
                   </View>
-                  <TouchableOpacity
-                    onPress={() => handleDeleteAction(evt)}
-                    style={styles.historyDeleteButton}
-                  >
-                    <MaterialCommunityIcons
-                      name="delete"
-                      size={18}
-                      color="#ef4444"
-                    />
-                  </TouchableOpacity>
+                  {evt.action_type !== ActionType.SUBSTITUTION && (
+                    <TouchableOpacity
+                      onPress={() => handleDeleteAction(evt)}
+                      style={styles.historyDeleteButton}
+                    >
+                      <MaterialCommunityIcons
+                        name="delete"
+                        size={18}
+                        color="#ef4444"
+                      />
+                    </TouchableOpacity>
+                  )}
                 </View>
               ))
             ) : (
@@ -526,6 +528,62 @@ export const FilterModal: React.FC<FilterModalProps> = ({
     };
   }, [actions, selectedPeriods, isHome]);
 
+  // Per-player +/- map (keyed by player ID, home team only)
+  const playerPmMap = React.useMemo(() => {
+    const map = new Map<string, number>();
+    homeRoster.forEach(p => map.set(p.id, 0));
+    if (!actions || actions.length === 0) return map;
+
+    const ourTeamId = isHome ? TeamId.HOME : TeamId.AWAY;
+    const onCourt = new Set<string>(starters);
+
+    const sorted = [...actions].sort((a: any, b: any) => {
+      const pd = (a.period_number || 0) - (b.period_number || 0);
+      if (pd !== 0) return pd;
+      return (a.timestamp || 0) - (b.timestamp || 0);
+    });
+
+    sorted.forEach((action: any) => {
+      if (action.action_type === ActionType.SUBSTITUTION) {
+        (action.subPlayersOut || []).forEach((id: string) => onCourt.delete(id));
+        (action.subPlayersIn || []).forEach((id: string) => onCourt.add(id));
+        return;
+      }
+      if (
+        action.action_type === ActionType.SHOT &&
+        action.specification === ShotSpecification.MADE &&
+        (action.points || 0) > 0
+      ) {
+        if (selectedPeriods.length > 0 && !selectedPeriods.includes(action.period_number)) return;
+        const pts: number = action.points;
+        const sign = action.teamId === ourTeamId ? 1 : -1;
+        onCourt.forEach(pid => {
+          if (map.has(pid)) map.set(pid, (map.get(pid) || 0) + sign * pts);
+        });
+      }
+    });
+
+    return map;
+  }, [actions, homeRoster, starters, isHome, selectedPeriods]);
+
+  // Average +/- for our team (global, starters, bench) respecting player filter
+  const pmSummary = React.useMemo(() => {
+    if (teamFilter === TeamFilterMode.THEM) return { pmAvg: null, pmAvgStarters: null, pmAvgBench: null };
+    let sum = 0, count = 0, sumS = 0, countS = 0, sumB = 0, countB = 0;
+    homeRoster.forEach(player => {
+      if (selectedPlayers.length > 0 && !selectedPlayers.includes(player.id)) return;
+      const val = playerPmMap.get(player.id) || 0;
+      sum += val; count++;
+      if (starters.includes(player.id)) { sumS += val; countS++; }
+      else { sumB += val; countB++; }
+    });
+    return {
+      pmAvg: count > 0 ? sum / count : null,
+      pmAvgStarters: countS > 0 ? sumS / countS : null,
+      pmAvgBench: countB > 0 ? sumB / countB : null,
+    };
+  }, [playerPmMap, homeRoster, selectedPlayers, starters, teamFilter]);
+
   // Calculate filtered summary
   const calculateFilteredSummary = (): FilteredSummary => {
     // Always show summary (no need to check for active filters)
@@ -738,6 +796,9 @@ export const FilterModal: React.FC<FilterModalProps> = ({
 
   const renderPlayerButton = (player: Player) => {
     const isSelected = selectedPlayers.includes(player.id);
+    const pm = playerPmMap.get(player.id) ?? 0;
+    const pmLabel = pm > 0 ? `+${pm}` : `${pm}`;
+    const pmColor = pm > 0 ? '#4CAF50' : pm < 0 ? '#F44336' : (isSelected ? colors.onPrimary + '99' : textSecondary);
     return (
       <TouchableOpacity
         key={player.id}
@@ -772,18 +833,23 @@ export const FilterModal: React.FC<FilterModalProps> = ({
             {player.jerseyNumber}
           </Text>
         </View>
-        <Text
-          style={[
-            styles.playerFilterName,
-            {
-              color: isSelected ? colors.onPrimary : textPrimary,
-              fontSize: font.xs,
-            },
-          ]}
-          numberOfLines={1}
-        >
-          {player.name}
-        </Text>
+        <View style={{ flexDirection: 'column', flexShrink: 1 }}>
+          <Text
+            style={[
+              styles.playerFilterName,
+              {
+                color: isSelected ? colors.onPrimary : textPrimary,
+                fontSize: font.xs,
+              },
+            ]}
+            numberOfLines={1}
+          >
+            {player.name}
+          </Text>
+          <Text style={{ color: pmColor, fontSize: font.xs - 1, fontWeight: '700' }}>
+            +/- {pmLabel}
+          </Text>
+        </View>
       </TouchableOpacity>
     );
   };
@@ -1537,6 +1603,36 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                   </View>
                   <View style={styles.filterSummaryItemFlex} />
                 </View>
+
+                {/* Row: Moy. +/- global, 5 Maj., Banc */}
+                {teamFilter !== TeamFilterMode.THEM && (() => {
+                  const fmt = (v: number | null) => {
+                    if (v === null) return '—';
+                    const r = Math.round(v * 10) / 10;
+                    return r > 0 ? `+${r.toFixed(1)}` : r.toFixed(1);
+                  };
+                  const col = (v: number | null) =>
+                    v === null ? textSecondary : v > 0 ? '#4CAF50' : v < 0 ? '#F44336' : textPrimary;
+                  return (
+                    <View style={[styles.filterSummaryRow, { marginTop: 8 }]}>
+                      {[
+                        { value: pmSummary.pmAvg, label: 'Moy. +/-' },
+                        { value: pmSummary.pmAvgStarters, label: '5 Maj.' },
+                        { value: pmSummary.pmAvgBench, label: 'Banc' },
+                      ].map(({ value, label }) => (
+                        <View key={label} style={styles.filterSummaryItemFlex}>
+                          <Text style={[styles.filterSummaryValue, { color: col(value) }]}>
+                            {fmt(value)}
+                          </Text>
+                          <Text style={[styles.filterSummaryLabel, { color: textSecondary }]}>
+                            {label}
+                          </Text>
+                        </View>
+                      ))}
+                      <View style={styles.filterSummaryItemFlex} />
+                    </View>
+                  );
+                })()}
 
                 {/* Row 2: Shooting — Global % first, then 2pts, 3pts, LF */}
                 <View style={[styles.filterSummaryRow, { marginTop: 12 }]}>
