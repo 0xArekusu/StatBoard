@@ -17,7 +17,7 @@ import { useResponsive } from "../../src/hooks/useResponsive";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const CENTER_COL_W = 80;
+const CENTER_COL_W = 50;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -249,7 +249,7 @@ export default function TimelineTab({ actions, match, playerNamesMap }: Timeline
     <View style={{ flex: 1 }}>
       {/* ── Sticky header ── */}
       <View style={[styles.stickyHeader, { backgroundColor: bgColor, borderBottomColor: borderColor }]}>
-        {/* Chips centrés */}
+        {/* Period filter chips */}
         <View style={styles.chipsRow}>
           {[null, ...availablePeriods].map((p) => {
             const active = selectedPeriod === p;
@@ -275,13 +275,13 @@ export default function TimelineTab({ actions, match, playerNamesMap }: Timeline
           })}
         </View>
 
-        {/* Noms d'équipes */}
+        {/* Team names */}
         <View style={[styles.columnHeaders, { paddingHorizontal: sp.md }]}>
-          <Text style={{ color: myTeamColor, flex: 1, textAlign: "left", fontSize: font.xs, fontWeight: "700" }} numberOfLines={1}>
+          <Text style={{ color: myTeamColor, flex: 1, textAlign: "right", fontSize: font.xs, fontWeight: "700" }} numberOfLines={1}>
             {match.my_team_name || "Mon équipe"}
           </Text>
           <View style={{ width: CENTER_COL_W }} />
-          <Text style={{ color: opponentColor, flex: 1, textAlign: "right", fontSize: font.xs, fontWeight: "700" }} numberOfLines={1}>
+          <Text style={{ color: opponentColor, flex: 1, textAlign: "left", fontSize: font.xs, fontWeight: "700" }} numberOfLines={1}>
             {match.opponent_name || "Adversaire"}
           </Text>
         </View>
@@ -334,33 +334,32 @@ export default function TimelineTab({ actions, match, playerNamesMap }: Timeline
 
           // ── Action row ──
           const { isMyTeam, isScoring, score, description, playerName, playerNum, periodLabel, timeStr, actionColor } = row;
-
           return (
             <View key={row.action.id || `r_${idx}`} style={styles.actionRow}>
-              {/* ── Left (MyTeam) ── */}
-              <View style={styles.teamSide}>
+              {/* ── Left (MyTeam) — card near center, connector toward outer edge ── */}
+              <View style={[styles.teamSide, { justifyContent: "flex-end" }]}>
                 {isMyTeam && (
-                  <View style={[styles.leftCard, {
-                    borderColor,
-                    borderLeftColor: myTeamColor,
-                  }]}>
-                    <PlayerBadge num={playerNum} teamAbbr={myTeamAbbr} textColor={textPrimary} borderColor={textTertiary} />
-                    <View style={styles.cardText}>
-                      <Text style={[styles.playerName, { color: textPrimary }]} numberOfLines={1}>
-                        {playerName}
-                      </Text>
-                      <Text style={[styles.actionText, { color: actionColor }]} numberOfLines={1}>
-                        {description}
-                      </Text>
+                  <>
+                    <View style={[styles.leftCard, { borderColor, borderLeftColor: myTeamColor }]}>
+                      <PlayerBadge num={playerNum} teamAbbr={myTeamAbbr} textColor={textPrimary} borderColor={textTertiary} />
+                      <View style={styles.cardTextRight}>
+                        <Text style={[styles.playerName, { color: textPrimary, textAlign: "right" }]} numberOfLines={1}>
+                          {playerName}
+                        </Text>
+                        <Text style={[styles.actionText, { color: actionColor, textAlign: "right" }]} numberOfLines={1}>
+                          {description}
+                        </Text>
+                      </View>
                     </View>
-                  </View>
+                    <View style={[styles.connector, { backgroundColor: borderColor }]} />
+                  </>
                 )}
               </View>
 
-              {/* ── Center: line + time badge ── */}
+              {/* ── Center: vertical line + time/score badge ── */}
               <View style={styles.centerCol}>
                 <View style={[styles.verticalLine, { backgroundColor: lineColor }]} />
-                <View style={[styles.timeBadge, { backgroundColor: bgColor }]}>
+                <View style={[styles.timeBadge, { backgroundColor: bgColor, borderColor }]}>
                   <Text style={[styles.periodText, { color: textTertiary }]}>{periodLabel}</Text>
                   <Text style={[styles.timeText, { color: textSecondary }]}>{timeStr}</Text>
                   {isScoring && (
@@ -371,23 +370,23 @@ export default function TimelineTab({ actions, match, playerNamesMap }: Timeline
                 </View>
               </View>
 
-              {/* ── Right (Opponent) ── */}
-              <View style={styles.teamSide}>
+              {/* ── Right (Opponent) — card near center, connector toward outer edge ── */}
+              <View style={[styles.teamSide, { justifyContent: "flex-start" }]}>
                 {!isMyTeam && (
-                  <View style={[styles.rightCard, {
-                    borderColor,
-                    borderRightColor: opponentColor,
-                  }]}>
-                    <View style={styles.cardText}>
-                      <Text style={[styles.playerName, { color: textPrimary }]} numberOfLines={1}>
-                        {playerName}
-                      </Text>
-                      <Text style={[styles.actionText, { color: actionColor }]} numberOfLines={1}>
-                        {description}
-                      </Text>
+                  <>
+                    <View style={[styles.connector, { backgroundColor: borderColor }]} />
+                    <View style={[styles.rightCard, { borderColor, borderRightColor: opponentColor }]}>
+                      <View style={styles.cardText}>
+                        <Text style={[styles.playerName, { color: textPrimary }]} numberOfLines={1}>
+                          {playerName}
+                        </Text>
+                        <Text style={[styles.actionText, { color: actionColor }]} numberOfLines={1}>
+                          {description}
+                        </Text>
+                      </View>
+                      <PlayerBadge num={playerNum} teamAbbr={opponentAbbr} textColor={textPrimary} borderColor={textTertiary} />
                     </View>
-                    <PlayerBadge num={playerNum} teamAbbr={opponentAbbr} textColor={textPrimary} borderColor={textTertiary} />
-                  </View>
+                  </>
                 )}
               </View>
             </View>
@@ -431,7 +430,8 @@ const styles = StyleSheet.create({
   },
   teamSide: {
     flex: 1,
-    justifyContent: "center",
+    flexDirection: "row",
+    alignItems: "center",
   },
   leftCard: {
     flexDirection: "row",
@@ -456,8 +456,17 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   cardText: {
-    flex: 1,
+    flexShrink: 1,
     minWidth: 0,
+  },
+  cardTextRight: {
+    flexShrink: 1,
+    minWidth: 0,
+    alignItems: "flex-end",
+  },
+  connector: {
+    width: 25,
+    height: 1,
   },
   playerName: {
     fontSize: 12,
@@ -468,7 +477,6 @@ const styles = StyleSheet.create({
   },
   // ── Center column ──
   centerCol: {
-    width: CENTER_COL_W,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -477,13 +485,14 @@ const styles = StyleSheet.create({
     top: 0,
     bottom: 0,
     width: 1,
-    left: CENTER_COL_W / 2 - 0.5,
+    height: 80,
   },
   timeBadge: {
     alignItems: "center",
     paddingHorizontal: 6,
     paddingVertical: 4,
-    borderRadius: 4,
+    borderRadius: 2,
+    borderWidth: 1,
   },
   periodText: {
     fontSize: 9,
