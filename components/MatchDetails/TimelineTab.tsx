@@ -148,7 +148,6 @@ export default function TimelineTab({ actions, match, playerNamesMap }: Timeline
   const textPrimary: string = colors.text.primary;
   const textSecondary: string = colors.text.secondary;
   const textTertiary: string = colors.text.tertiary;
-  const highlightBg: string = isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)";
   const lineColor: string = isDark ? "rgba(255,255,255,0.18)" : "rgba(0,0,0,0.14)";
   const periodEndBg: string = isDark ? "#1e293b" : "#0f172a";
 
@@ -247,59 +246,37 @@ export default function TimelineTab({ actions, match, playerNamesMap }: Timeline
   }, [sortedWithScores, selectedPeriod, totalPeriods, playerNamesMap, match]);
 
   return (
-    <View>
-      {/* ── Period filter chips ── */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={{ marginBottom: sp.md }}
-        contentContainerStyle={{ gap: sp.xs }}
-      >
-        <TouchableOpacity
-          activeOpacity={0.7}
-          onPress={() => setSelectedPeriod(null)}
-          style={[styles.chip, {
-            backgroundColor: selectedPeriod === null ? colors.primary : surfaceColor,
-            borderColor,
-            paddingHorizontal: sp.sm,
-            paddingVertical: sp.xs,
-            borderRadius: sp.sm,
-          }]}
-        >
-          <Text style={{ color: selectedPeriod === null ? colors.text.primary : textSecondary, fontSize: font.xs, fontWeight: "600" }}>
-            Tout
-          </Text>
-        </TouchableOpacity>
-        {availablePeriods.map((p) => (
-          <TouchableOpacity
-            key={p}
-            activeOpacity={0.7}
-            onPress={() => setSelectedPeriod(p)}
-            style={[styles.chip, {
-              backgroundColor: selectedPeriod === p ? colors.primary : surfaceColor,
-              borderColor,
-              paddingHorizontal: sp.sm,
-              paddingVertical: sp.xs,
-              borderRadius: sp.sm,
-            }]}
-          >
-            <Text style={{ color: selectedPeriod === p ? colors.text.primary : textSecondary, fontSize: font.xs, fontWeight: "600" }}>
-              {getPeriodLabel(p, totalPeriods)}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
+    <View style={{ flex: 1 }}>
+      {/* ── Sticky header ── */}
+      <View style={[styles.stickyHeader, { backgroundColor: bgColor, borderBottomColor: borderColor }]}>
+        {/* Chips centrés */}
+        <View style={styles.chipsRow}>
+          {[null, ...availablePeriods].map((p) => {
+            const active = selectedPeriod === p;
+            const label = p === null ? "Tout" : getPeriodLabel(p, totalPeriods);
+            return (
+              <TouchableOpacity
+                key={p ?? "all"}
+                activeOpacity={0.7}
+                onPress={() => setSelectedPeriod(p)}
+                style={[styles.chip, {
+                  backgroundColor: active ? colors.primary : surfaceColor,
+                  borderColor,
+                  paddingHorizontal: sp.sm,
+                  paddingVertical: sp.xs,
+                  borderRadius: sp.sm,
+                }]}
+              >
+                <Text style={{ color: active ? colors.text.primary : textSecondary, fontSize: font.xs, fontWeight: "600" }}>
+                  {label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
 
-      {/* ── Empty state ── */}
-      {rows.length === 0 && (
-        <Text style={{ color: textTertiary, textAlign: "center", marginTop: sp.xl, fontSize: font.sm }}>
-          Aucune action enregistrée
-        </Text>
-      )}
-
-      {/* ── Column headers ── */}
-      {rows.length > 0 && (
-        <View style={[styles.columnHeaders, { marginBottom: sp.sm }]}>
+        {/* Noms d'équipes */}
+        <View style={[styles.columnHeaders, { paddingHorizontal: sp.md }]}>
           <Text style={{ color: myTeamColor, flex: 1, textAlign: "left", fontSize: font.xs, fontWeight: "700" }} numberOfLines={1}>
             {match.my_team_name || "Mon équipe"}
           </Text>
@@ -308,108 +285,115 @@ export default function TimelineTab({ actions, match, playerNamesMap }: Timeline
             {match.opponent_name || "Adversaire"}
           </Text>
         </View>
-      )}
+      </View>
 
-      {/* ── Timeline rows ── */}
-      {rows.map((row, idx) => {
-        // ── Period end banner ──
-        if (row.rowType === "period_end") {
-          return (
-            <View key={`end_${row.periodNumber}`} style={{ marginVertical: 2 }}>
-              {/* line stub above banner */}
-              <View style={styles.lineStub}>
-                <View style={{ flex: 1 }} />
-                <View style={{ width: CENTER_COL_W, alignItems: "center" }}>
-                  <View style={{ width: 1, height: 8, backgroundColor: lineColor }} />
-                </View>
-                <View style={{ flex: 1 }} />
-              </View>
-              {/* banner */}
-              <View style={styles.periodEndRow}>
-                <View style={{ flex: 1, height: StyleSheet.hairlineWidth, backgroundColor: borderColor }} />
-                <View style={[styles.periodEndBanner, { backgroundColor: periodEndBg }]}>
-                  <Text style={styles.periodEndLabel}>FIN {row.periodLabel}</Text>
-                  <View style={[styles.periodEndSep, { backgroundColor: "rgba(255,255,255,0.25)" }]} />
-                  <Text style={styles.periodEndScore}>{row.score.myTeam} – {row.score.opponent}</Text>
-                </View>
-                <View style={{ flex: 1, height: StyleSheet.hairlineWidth, backgroundColor: borderColor }} />
-              </View>
-              {/* line stub below banner */}
-              <View style={styles.lineStub}>
-                <View style={{ flex: 1 }} />
-                <View style={{ width: CENTER_COL_W, alignItems: "center" }}>
-                  <View style={{ width: 1, height: 8, backgroundColor: lineColor }} />
-                </View>
-                <View style={{ flex: 1 }} />
-              </View>
-            </View>
-          );
-        }
+      {/* ── Scrollable timeline ── */}
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ paddingHorizontal: sp.md, paddingBottom: 80 }}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Empty state */}
+        {rows.length === 0 && (
+          <Text style={{ color: textTertiary, textAlign: "center", marginTop: sp.xl, fontSize: font.sm }}>
+            Aucune action enregistrée
+          </Text>
+        )}
 
-        // ── Action row ──
-        const { isMyTeam, isScoring, score, description, playerName, playerNum, periodLabel, timeStr, actionColor } = row;
-        const rowBg = isScoring ? highlightBg : "transparent";
-        const timeBadgeBg = isScoring ? highlightBg : bgColor;
-
-        return (
-          <View
-            key={row.action.id || `r_${idx}`}
-            style={[styles.actionRow, { backgroundColor: rowBg }]}
-          >
-            {/* ── Left (MyTeam) ── */}
-            <View style={styles.teamSide}>
-              {isMyTeam && (
-                <View style={[styles.leftCard, { borderLeftColor: myTeamColor }]}>
-                  <PlayerBadge num={playerNum} teamAbbr={myTeamAbbr} textColor={textPrimary} borderColor={textTertiary} />
-                  <View style={styles.cardText}>
-                    <Text style={[styles.playerName, { color: textPrimary }]} numberOfLines={1}>
-                      {playerName}
-                    </Text>
-                    <Text style={[styles.actionText, { color: actionColor }]} numberOfLines={1}>
-                      {description}
-                    </Text>
+        {rows.map((row, idx) => {
+          // ── Period end banner ──
+          if (row.rowType === "period_end") {
+            return (
+              <View key={`end_${row.periodNumber}`} style={{ marginVertical: 2 }}>
+                <View style={styles.lineStub}>
+                  <View style={{ flex: 1 }} />
+                  <View style={{ width: CENTER_COL_W, alignItems: "center" }}>
+                    <View style={{ width: 1, height: 8, backgroundColor: lineColor }} />
                   </View>
+                  <View style={{ flex: 1 }} />
                 </View>
-              )}
-            </View>
+                <View style={styles.periodEndRow}>
+                  <View style={{ flex: 1, height: StyleSheet.hairlineWidth, backgroundColor: borderColor }} />
+                  <View style={[styles.periodEndBanner, { backgroundColor: periodEndBg }]}>
+                    <Text style={styles.periodEndLabel}>FIN {row.periodLabel}</Text>
+                    <View style={[styles.periodEndSep, { backgroundColor: "rgba(255,255,255,0.25)" }]} />
+                    <Text style={styles.periodEndScore}>{row.score.myTeam} – {row.score.opponent}</Text>
+                  </View>
+                  <View style={{ flex: 1, height: StyleSheet.hairlineWidth, backgroundColor: borderColor }} />
+                </View>
+                <View style={styles.lineStub}>
+                  <View style={{ flex: 1 }} />
+                  <View style={{ width: CENTER_COL_W, alignItems: "center" }}>
+                    <View style={{ width: 1, height: 8, backgroundColor: lineColor }} />
+                  </View>
+                  <View style={{ flex: 1 }} />
+                </View>
+              </View>
+            );
+          }
 
-            {/* ── Center: continuous line + time badge ── */}
-            <View style={styles.centerCol}>
-              {/* line (rendered first = behind badge) */}
-              <View style={[styles.verticalLine, { backgroundColor: lineColor }]} />
-              {/* time badge (rendered second = in front of line) */}
-              <View style={[styles.timeBadge, { backgroundColor: timeBadgeBg }]}>
-                <Text style={[styles.periodText, { color: textTertiary }]}>{periodLabel}</Text>
-                <Text style={[styles.timeText, { color: textSecondary }]}>{timeStr}</Text>
-                {isScoring && (
-                  <Text style={[styles.scoreBadge, { color: textPrimary }]}>
-                    {score.myTeam}–{score.opponent}
-                  </Text>
+          // ── Action row ──
+          const { isMyTeam, isScoring, score, description, playerName, playerNum, periodLabel, timeStr, actionColor } = row;
+
+          return (
+            <View key={row.action.id || `r_${idx}`} style={styles.actionRow}>
+              {/* ── Left (MyTeam) ── */}
+              <View style={styles.teamSide}>
+                {isMyTeam && (
+                  <View style={[styles.leftCard, {
+                    borderColor,
+                    borderLeftColor: myTeamColor,
+                  }]}>
+                    <PlayerBadge num={playerNum} teamAbbr={myTeamAbbr} textColor={textPrimary} borderColor={textTertiary} />
+                    <View style={styles.cardText}>
+                      <Text style={[styles.playerName, { color: textPrimary }]} numberOfLines={1}>
+                        {playerName}
+                      </Text>
+                      <Text style={[styles.actionText, { color: actionColor }]} numberOfLines={1}>
+                        {description}
+                      </Text>
+                    </View>
+                  </View>
+                )}
+              </View>
+
+              {/* ── Center: line + time badge ── */}
+              <View style={styles.centerCol}>
+                <View style={[styles.verticalLine, { backgroundColor: lineColor }]} />
+                <View style={[styles.timeBadge, { backgroundColor: bgColor }]}>
+                  <Text style={[styles.periodText, { color: textTertiary }]}>{periodLabel}</Text>
+                  <Text style={[styles.timeText, { color: textSecondary }]}>{timeStr}</Text>
+                  {isScoring && (
+                    <Text style={[styles.scoreBadge, { color: textPrimary }]}>
+                      {score.myTeam}–{score.opponent}
+                    </Text>
+                  )}
+                </View>
+              </View>
+
+              {/* ── Right (Opponent) ── */}
+              <View style={styles.teamSide}>
+                {!isMyTeam && (
+                  <View style={[styles.rightCard, {
+                    borderColor,
+                    borderRightColor: opponentColor,
+                  }]}>
+                    <View style={styles.cardText}>
+                      <Text style={[styles.playerName, { color: textPrimary }]} numberOfLines={1}>
+                        {playerName}
+                      </Text>
+                      <Text style={[styles.actionText, { color: actionColor }]} numberOfLines={1}>
+                        {description}
+                      </Text>
+                    </View>
+                    <PlayerBadge num={playerNum} teamAbbr={opponentAbbr} textColor={textPrimary} borderColor={textTertiary} />
+                  </View>
                 )}
               </View>
             </View>
-
-            {/* ── Right (Opponent) ── */}
-            <View style={styles.teamSide}>
-              {!isMyTeam && (
-                <View style={[styles.rightCard, { borderRightColor: opponentColor }]}>
-                  <View style={styles.cardText}>
-                    <Text style={[styles.playerName, { color: textPrimary }]} numberOfLines={1}>
-                      {playerName}
-                    </Text>
-                    <Text style={[styles.actionText, { color: actionColor }]} numberOfLines={1}>
-                      {description}
-                    </Text>
-                  </View>
-                  <PlayerBadge num={playerNum} teamAbbr={opponentAbbr} textColor={textPrimary} borderColor={textTertiary} />
-                </View>
-              )}
-            </View>
-          </View>
-        );
-      })}
-
-      <View style={{ height: 80 }} />
+          );
+        })}
+      </ScrollView>
     </View>
   );
 }
@@ -417,6 +401,20 @@ export default function TimelineTab({ actions, match, playerNamesMap }: Timeline
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
+  // ── Sticky header ──
+  stickyHeader: {
+    paddingTop: 10,
+    paddingBottom: 8,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  chipsRow: {
+    flexDirection: "row",
+    justifyContent: "center",
+    flexWrap: "wrap",
+    gap: 6,
+    marginBottom: 8,
+    paddingHorizontal: 12,
+  },
   chip: {
     borderWidth: 1,
   },
@@ -429,6 +427,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "stretch",
     minHeight: 52,
+    paddingVertical: 3,
   },
   teamSide: {
     flex: 1,
@@ -439,18 +438,22 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 8,
     paddingLeft: 8,
-    paddingRight: 6,
+    paddingRight: 8,
     paddingVertical: 8,
+    borderWidth: 1,
     borderLeftWidth: 3,
+    borderRadius: 6,
   },
   rightCard: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    paddingLeft: 6,
+    paddingLeft: 8,
     paddingRight: 8,
     paddingVertical: 8,
+    borderWidth: 1,
     borderRightWidth: 3,
+    borderRadius: 6,
   },
   cardText: {
     flex: 1,

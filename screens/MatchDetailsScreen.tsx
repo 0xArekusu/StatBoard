@@ -992,9 +992,19 @@ export default function MatchDetailsScreen() {
         </View>
       </View>
 
-      {/* CONTENT */}
+      {/* TIMELINE — gère son propre scroll avec header sticky */}
+      {activeTab === TAB.TIMELINE && (
+        <TimelineTab
+          actions={actions}
+          match={match}
+          playerNamesMap={playerNamesMap}
+        />
+      )}
+
+      {/* CONTENT (tous les autres onglets) */}
+      {activeTab !== TAB.TIMELINE && (
       <ScrollView style={[styles.content, { padding: sp.md }]} showsVerticalScrollIndicator={false}>
-        
+
           {/* EVOLUTION VIEW */}
           {activeTab === TAB.EVOLUTION && (
           <EvolutionTab
@@ -1051,15 +1061,8 @@ export default function MatchDetailsScreen() {
           />
         )}
 
-        {/* TIMELINE VIEW */}
-        {activeTab === TAB.TIMELINE && (
-          <TimelineTab
-            actions={actions}
-            match={match}
-            playerNamesMap={playerNamesMap}
-          />
-        )}
       </ScrollView>
+      )}
     </SafeAreaView>
   );
 }
