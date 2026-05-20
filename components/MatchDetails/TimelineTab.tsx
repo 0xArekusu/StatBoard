@@ -1,10 +1,11 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  ActivityIndicator,
 } from "react-native";
 import {
   ActionType,
@@ -137,6 +138,11 @@ export default function TimelineTab({ actions, match, playerNamesMap }: Timeline
   const { sp, font } = useResponsive();
 
   const [selectedPeriod, setSelectedPeriod] = useState<number | null>(null);
+  const [isReady, setIsReady] = useState(false);
+
+  useEffect(() => {
+    setIsReady(true);
+  }, []);
 
   const totalPeriods: number = match.total_periods || 4;
 
@@ -244,6 +250,17 @@ export default function TimelineTab({ actions, match, playerNamesMap }: Timeline
 
     return result;
   }, [sortedWithScores, selectedPeriod, totalPeriods, playerNamesMap, match]);
+
+  if (!isReady) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: bgColor }}>
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={{ color: textSecondary, fontSize: font.sm, marginTop: sp.md }}>
+          Chargement de la timeline…
+        </Text>
+      </View>
+    );
+  }
 
   return (
     <View style={{ flex: 1 }}>
