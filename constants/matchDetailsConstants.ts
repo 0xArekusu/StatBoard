@@ -13,6 +13,7 @@ export const TAB = {
   STATS: "STATS",
   CARDS: "CARDS",
   COURT: "COURT",
+  TIMELINE: "TIMELINE",
 } as const;
 
 export type Tab = typeof TAB[keyof typeof TAB];

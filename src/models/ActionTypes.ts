@@ -61,6 +61,7 @@ export const ACTION_TYPE_FR: Record<ActionType, string> = {
   [ActionType.STEAL]: "Interception",
   [ActionType.BLOCK]: "Contre",
   [ActionType.TURNOVER]: "Balle perdue",
+  [ActionType.SUBSTITUTION]: "Changement",
 };
 
 export const SHOT_SPECIFICATION_FR: Record<ShotSpecification, string> = {
@@ -251,6 +252,16 @@ export const ACTION_CONFIG: Record<string, ActionConfig> = {
     color: ACTION_COLORS.foulDrawn,
     description: "Faute provoquée",
     specifications: [],
+  },
+  [ActionType.SUBSTITUTION]: {
+    id: ActionType.SUBSTITUTION,
+    label: "Changement",
+    color: "#26A69A",
+    description: "Changement de joueur",
+    specifications: [
+      { id: SubstitutionSpecification.IN, label: "Entre", color: "#4CAF50" },
+      { id: SubstitutionSpecification.OUT, label: "Sort", color: "#FF7043" },
+    ],
   },
 };
 

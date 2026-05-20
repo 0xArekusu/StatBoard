@@ -58,7 +58,7 @@ import { ServiceFactory } from "../services/ServiceFactory";
 import { supabase } from "../src/config/supabase";
 import { getSignedUrl } from "../utils/storageHelper";
 import { useSignedUrl } from "../hooks/useSignedUrl";
-import { StatsTab, CardsTab, CourtTab, EvolutionTab, PlayerDetailModal } from "../components/MatchDetails";
+import { StatsTab, CardsTab, CourtTab, EvolutionTab, TimelineTab, PlayerDetailModal } from "../components/MatchDetails";
 import type { PlayerStats, Tab, TeamFilter, ActionFilterType, SortBy, SortOrder } from "../constants/matchDetailsConstants";
 import { TAB, ACTION_FILTER } from "../constants";
 import { RootStackParamList, RootNavigationProp } from "../types/navigation";
@@ -969,6 +969,26 @@ export default function MatchDetailsScreen() {
               color={activeTab === TAB.COURT ? colors.text.primary : textTertiary}
             />
           </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => setActiveTab(TAB.TIMELINE)}
+            style={[
+              styles.tabButton,
+              {
+                backgroundColor:
+                  activeTab === TAB.TIMELINE ? colors.primary : surfaceColor,
+                borderColor: borderColor,
+                width: sizes.avatarSm,
+                height: sizes.avatarSm,
+                borderRadius: sp.sm,
+              },
+            ]}
+          >
+            <Ionicons
+              name="time-outline"
+              size={sizes.iconSm}
+              color={activeTab === TAB.TIMELINE ? colors.text.primary : textTertiary}
+            />
+          </TouchableOpacity>
         </View>
       </View>
 
@@ -1028,6 +1048,15 @@ export default function MatchDetailsScreen() {
             logoUri={logoUri}
             activeTeamFilter={activeTeamFilter}
             totalPeriods={match.total_periods || 4}
+          />
+        )}
+
+        {/* TIMELINE VIEW */}
+        {activeTab === TAB.TIMELINE && (
+          <TimelineTab
+            actions={actions}
+            match={match}
+            playerNamesMap={playerNamesMap}
           />
         )}
       </ScrollView>
