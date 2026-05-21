@@ -1,12 +1,15 @@
-import React from "react";
+import React, { useState } from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useTheme } from "../../src/contexts/ThemeContext";
 import { SLATE_COLORS } from "../../src/theme/colors";
 import { formatTime, getPeriodLabel } from "../../utils/liveMatchHelpers";
-import { TeamId } from "../../constants/liveMatchConstants";
+import { TeamId, MatchEvent } from "../../constants/liveMatchConstants";
 import { BREAKPOINTS } from "../../constants/breakpoints";
 import { useResponsive } from "../../src/hooks/useResponsive";
+import { Player } from "../../models/Player";
+import { ActionType } from "../../src/models/ActionTypes";
+import { TeamFoulDrawer } from "./TeamFoulDrawer";
 
 interface MatchHeaderProps {
   match: {
@@ -23,6 +26,9 @@ interface MatchHeaderProps {
   quarter: number;
   maxPeriods: number;
   isRunning: boolean;
+  events?: MatchEvent[];
+  myTeamRoster?: Player[];
+  opponentRoster?: Player[];
   onToggleTimer: () => void;
   onNextQuarter: () => void;
   onOpenSubstitution: () => void;
@@ -35,6 +41,9 @@ export function MatchHeader({
   quarter,
   maxPeriods,
   isRunning,
+  events = [],
+  myTeamRoster = [],
+  opponentRoster = [],
   onToggleTimer,
   onNextQuarter,
   onOpenSubstitution,
@@ -44,6 +53,24 @@ export function MatchHeader({
   const { isCompact, isPortrait, sp, font, width } = useResponsive();
   const isNarrow = isPortrait && width < BREAKPOINTS.narrowPortraitMaxWidth;
   const amIHome = match.location === TeamId.HOME;
+
+  const [foulDrawerVisible, setFoulDrawerVisible] = useState(false);
+
+  const myTeamId = match.location as "HOME" | "AWAY";
+  const opponentTeamId = myTeamId === "HOME" ? "AWAY" : "HOME";
+
+  const getTeamFouls = (teamId: "HOME" | "AWAY") =>
+    events.filter(
+      (e) =>
+        e.action_type === ActionType.FOUL &&
+        e.teamId === teamId &&
+        e.period_number === quarter
+    ).length;
+
+  const myFouls = getTeamFouls(myTeamId);
+  const opponentFouls = getTeamFouls(opponentTeamId);
+  const myFoulAlert = myFouls >= 5;
+  const opponentFoulAlert = opponentFouls >= 5;
 
   const bgColor = colors.background;
   const surfaceColor = colors.surface;
@@ -144,6 +171,7 @@ export function MatchHeader({
             ))}
           </View>
         ) : null}
+
       </View>
     );
   };
@@ -192,21 +220,65 @@ export function MatchHeader({
               />
             </TouchableOpacity>
           </View>
-          <View
-            style={[
-              styles.timerDisplay,
-              { width: isNarrow ? 110 : isCompact ? 130 : 170 },
-            ]}
-          >
-            <Text
+
+          <View style={styles.timerRow}>
+            {/* Badge gauche = équipe HOME */}
+            {(amIHome || match.trackOpponentStats) ? (
+              <TouchableOpacity
+                onPress={() => setFoulDrawerVisible(true)}
+                style={[
+                  styles.foulBadge,
+                  { borderColor: (amIHome ? myFoulAlert : opponentFoulAlert) ? "#dc2626" : borderColor },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.foulBadgeText,
+                    { color: (amIHome ? myFoulAlert : opponentFoulAlert) ? "#dc2626" : textSecondary },
+                  ]}
+                >
+                  {amIHome ? myFouls : opponentFouls}F
+                </Text>
+              </TouchableOpacity>
+            ) : <View style={styles.foulBadgePlaceholder} />}
+
+            <View
               style={[
-                styles.timerText,
-                { fontSize: isNarrow ? 22 : isCompact ? 22 : 32 },
+                styles.timerDisplay,
+                { width: isNarrow ? 110 : isCompact ? 130 : 170 },
               ]}
             >
-              {formatTime(timer)}
-            </Text>
+              <Text
+                style={[
+                  styles.timerText,
+                  { fontSize: isNarrow ? 22 : isCompact ? 22 : 32 },
+                ]}
+              >
+                {formatTime(timer)}
+              </Text>
+            </View>
+
+            {/* Badge droite = équipe AWAY */}
+            {(!amIHome || match.trackOpponentStats) ? (
+              <TouchableOpacity
+                onPress={() => setFoulDrawerVisible(true)}
+                style={[
+                  styles.foulBadge,
+                  { borderColor: (!amIHome ? myFoulAlert : opponentFoulAlert) ? "#dc2626" : borderColor },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.foulBadgeText,
+                    { color: (!amIHome ? myFoulAlert : opponentFoulAlert) ? "#dc2626" : textSecondary },
+                  ]}
+                >
+                  {!amIHome ? myFouls : opponentFouls}F
+                </Text>
+              </TouchableOpacity>
+            ) : <View style={styles.foulBadgePlaceholder} />}
           </View>
+
           <TouchableOpacity
             onPress={onToggleTimer}
             style={[
@@ -233,6 +305,19 @@ export function MatchHeader({
         {/* RIGHT SIDE - Opponent when home, my team when away */}
         {renderTeamSection(!amIHome, false)}
       </View>
+
+      <TeamFoulDrawer
+        visible={foulDrawerVisible}
+        onClose={() => setFoulDrawerVisible(false)}
+        events={events}
+        myTeamRoster={myTeamRoster}
+        opponentRoster={opponentRoster}
+        trackOpponentStats={match.trackOpponentStats ?? false}
+        myTeamId={myTeamId}
+        currentPeriod={quarter}
+        myTeamName={match.myTeamName || "Mon équipe"}
+        opponentName={match.opponent || "Adversaire"}
+      />
     </View>
   );
 }
@@ -301,10 +386,31 @@ const styles = StyleSheet.create({
   quickScoreButtonText: {
     fontWeight: "bold",
   },
+  foulBadge: {
+    backgroundColor: "#000",
+    borderWidth: 1,
+    borderRadius: 4,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+  },
+  foulBadgePlaceholder: {
+    width: 32,
+  },
+  foulBadgeText: {
+    fontFamily: "monospace",
+    fontSize: 12,
+    fontWeight: "900",
+    letterSpacing: 1,
+  },
   timerSection: {
     flex: 1,
     alignItems: "center",
     marginHorizontal: 8,
+  },
+  timerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
   },
   periodRow: {
     flexDirection: "row",

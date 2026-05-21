@@ -2054,6 +2054,9 @@ export default function LiveMatchScreen() {
         quarter={quarter}
         maxPeriods={maxPeriods}
         isRunning={isRunning}
+        events={match.events || []}
+        myTeamRoster={homeRoster}
+        opponentRoster={opponentRoster}
         onToggleTimer={toggleTimer}
         onNextQuarter={handleNextQuarter}
         onOpenSubstitution={openSubstitution}
