@@ -20,6 +20,7 @@ export enum ActionType {
   BLOCK = "block",
   TURNOVER = "turnover",
   SUBSTITUTION = "substitution",
+  TIMEOUT = "timeout",
 }
 
 /**
@@ -62,6 +63,7 @@ export const ACTION_TYPE_FR: Record<ActionType, string> = {
   [ActionType.BLOCK]: "Contre",
   [ActionType.TURNOVER]: "Balle perdue",
   [ActionType.SUBSTITUTION]: "Changement",
+  [ActionType.TIMEOUT]: "Temps mort",
 };
 
 export const SHOT_SPECIFICATION_FR: Record<ShotSpecification, string> = {

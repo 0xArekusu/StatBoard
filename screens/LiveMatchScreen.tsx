@@ -1977,6 +1977,32 @@ export default function LiveMatchScreen() {
     setMatch(updatedMatch);
   };
 
+  const handleTimeout = async (teamId: "HOME" | "AWAY") => {
+    const team = teamId === match.location ? Team.MY_TEAM : Team.OPPONENT;
+    const actionId = await saveActionToDatabase(
+      ActionType.TIMEOUT,
+      undefined,
+      0,
+      -1,
+      team,
+    );
+
+    const newEvent: MatchEvent = {
+      id: actionId || `temp-${Date.now()}`,
+      action_type: ActionType.TIMEOUT,
+      teamId,
+      timestamp: Date.now(),
+      description: "Temps mort",
+      period_number: quarter,
+      time_in_period: periodDurationMin * 60 - timer,
+    };
+
+    const updatedMatch = { ...match };
+    if (!updatedMatch.events) updatedMatch.events = [];
+    updatedMatch.events = [newEvent, ...updatedMatch.events];
+    setMatch(updatedMatch);
+  };
+
   const confirmEndMatch = async () => {
     setShowEndConfirm(false);
     await endMatchAndSync(() => {
@@ -2061,6 +2087,7 @@ export default function LiveMatchScreen() {
         onNextQuarter={handleNextQuarter}
         onOpenSubstitution={openSubstitution}
         onOpponentScoreSimple={handleOpponentScoreSimple}
+        onTimeout={handleTimeout}
       />
 
       {/* View Mode Toggle */}
