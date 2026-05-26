@@ -16,6 +16,7 @@ import LoginScreen from "./screens/authentication/LoginScreen";
 import RegisterScreen from "./screens/authentication/RegisterScreen";
 import ResetPasswordScreen from "./screens/authentication/ResetPasswordScreen";
 import MatchDetailsScreen from "./screens/MatchDetailsScreen";
+import PlayerProfileScreen from "./screens/PlayerProfileScreen";
 import SplashScreen from "./screens/SplashScreen";
 import TeamInfoScreen from "./screens/club/TeamInfoScreen";
 import TeamRosterScreen from "./screens/club/TeamRosterScreen";
@@ -224,6 +225,7 @@ function Navigation() {
         />
         <Stack.Screen name={ROUTES.NEW_MATCH} component={NewMatchScreen} />
         <Stack.Screen name={ROUTES.LIVE_MATCH} component={LiveMatchScreen} />
+        <Stack.Screen name={ROUTES.PLAYER_PROFILE} component={PlayerProfileScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

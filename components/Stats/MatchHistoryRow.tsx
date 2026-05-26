@@ -1,0 +1,126 @@
+import React from 'react';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useTheme } from '../../src/contexts/ThemeContext';
+import { useResponsive } from '../../src/hooks/useResponsive';
+import { MatchHistoryEntry } from '../../src/services/seasonStats';
+interface MatchHistoryRowProps {
+  entry: MatchHistoryEntry;
+  onPress: () => void;
+}
+
+export default function MatchHistoryRow({ entry, onPress }: MatchHistoryRowProps) {
+  const { colors } = useTheme();
+  const { sp, font, sizes } = useResponsive();
+  const { match, played, pts, reb, ast } = entry;
+
+  const isWin = match.my_team_score > match.opponent_score;
+  const resultColor = played
+    ? isWin ? colors.success : colors.error
+    : colors.text.disabled;
+
+  const date = match.created_at
+    ? new Date(match.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })
+    : '—';
+
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      style={[
+        styles.row,
+        {
+          backgroundColor: colors.surface,
+          paddingHorizontal: sp.md,
+          paddingVertical: sp.sm,
+          borderRadius: sp.sm,
+          gap: sp.sm,
+          opacity: played ? 1 : 0.4,
+        },
+      ]}
+    >
+      {/* Result indicator */}
+      <View
+        style={[
+          styles.resultDot,
+          { backgroundColor: resultColor, width: 8, height: 8, borderRadius: 4 },
+        ]}
+      />
+
+      {/* Date */}
+      <Text style={[styles.date, { fontSize: font.xs, color: colors.text.tertiary, width: 32 }]}>
+        {date}
+      </Text>
+
+      {/* Home/Away icon */}
+      <MaterialCommunityIcons
+        name={match.is_home ? 'home' : 'airplane-takeoff'}
+        size={sizes.iconSm}
+        color={colors.text.tertiary}
+      />
+
+      {/* Opponent */}
+      <Text
+        style={[
+          styles.opponent,
+          { fontSize: font.sm, color: played ? colors.text.primary : colors.text.disabled },
+        ]}
+        numberOfLines={1}
+      >
+        {match.opponent_name}
+      </Text>
+
+      {/* Score */}
+      <Text style={[styles.score, { fontSize: font.sm, color: resultColor, fontWeight: '700' }]}>
+        {match.my_team_score} – {match.opponent_score}
+      </Text>
+
+      {/* Stats (only if played) */}
+      {played ? (
+        <View style={[styles.stats, { gap: sp.sm }]}>
+          <Text style={[styles.stat, { fontSize: font.xs, color: colors.text.secondary }]}>
+            <Text style={{ fontWeight: '700', color: colors.text.primary }}>{pts}</Text>pts
+          </Text>
+          <Text style={[styles.stat, { fontSize: font.xs, color: colors.text.secondary }]}>
+            <Text style={{ fontWeight: '700', color: colors.text.primary }}>{reb}</Text>reb
+          </Text>
+          <Text style={[styles.stat, { fontSize: font.xs, color: colors.text.secondary }]}>
+            <Text style={{ fontWeight: '700', color: colors.text.primary }}>{ast}</Text>ast
+          </Text>
+        </View>
+      ) : (
+        <Text style={[styles.didNotPlay, { fontSize: font.xs, color: colors.text.disabled }]}>
+          N'a pas joué
+        </Text>
+      )}
+
+      <MaterialCommunityIcons
+        name="chevron-right"
+        size={sizes.iconSm}
+        color={colors.text.tertiary}
+      />
+    </TouchableOpacity>
+  );
+}
+
+const styles = StyleSheet.create({
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  resultDot: {},
+  date: {
+    fontWeight: '500',
+  },
+  opponent: {
+    flex: 1,
+    fontWeight: '500',
+  },
+  score: {},
+  stats: {
+    flexDirection: 'row',
+  },
+  stat: {},
+  didNotPlay: {
+    fontStyle: 'italic',
+  },
+});

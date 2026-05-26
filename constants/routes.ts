@@ -23,6 +23,8 @@ export const ROUTES = {
   NEW_MATCH: "NewMatch",
   LIVE_MATCH: "LiveMatch",
   RESET_PASSWORD: "ResetPassword",
+  STATS: "Stats",
+  PLAYER_PROFILE: "PlayerProfile",
 } as const;
 
 // Type for route names
