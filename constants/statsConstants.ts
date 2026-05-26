@@ -52,6 +52,12 @@ export const LEADER_CATEGORY_LABELS: Record<LeaderCategory, string> = {
   [LEADER_CATEGORY.FT_PCT]: '% LF',
 };
 
+export const LEADER_CATEGORY_LEGEND: Partial<Record<LeaderCategory, string>> = {
+  [LEADER_CATEGORY.REB]: 'Rebonds offensifs + défensifs combinés',
+  [LEADER_CATEGORY.DEF]: 'Interceptions (INT) + contres (CTR) combinés',
+  [LEADER_CATEGORY.FG_PCT]: '% de réussite sur tous les tirs (2pts, 3pts et LF)',
+};
+
 export const LEADER_CATEGORY_SUBLABELS: Record<LeaderCategory, string> = {
   [LEADER_CATEGORY.EFF]: 'éval / match',
   [LEADER_CATEGORY.PTS]: 'pts / match',

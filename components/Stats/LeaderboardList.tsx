@@ -75,7 +75,10 @@ export default function LeaderboardList({
     );
   }
 
-  const visible = showRenforts ? players : players.filter((p) => p.playerId !== null);
+  const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const visible = showRenforts
+    ? players
+    : players.filter((p) => p.playerId !== null && UUID_REGEX.test(p.playerId));
 
   if (visible.length === 0) {
     return (

@@ -15,7 +15,7 @@ import {
   PlayerSeasonData,
   MatchWithDetails,
 } from '../src/services/seasonStats';
-import { StatPeriod, LeaderCategory, STAT_PERIOD, LEADER_CATEGORY } from '../constants/statsConstants';
+import { StatPeriod, LeaderCategory, STAT_PERIOD, LEADER_CATEGORY, LEADER_CATEGORY_LEGEND } from '../constants/statsConstants';
 import { ROUTES } from '../constants/routes';
 import { RootNavigationProp } from '../types/navigation';
 import { logInfo, logError } from '../utils/logger';
@@ -35,7 +35,7 @@ export default function StatsScreen() {
   const [loading, setLoading] = useState(true);
   const [players, setPlayers] = useState<PlayerSeasonData[]>([]);
   const [matchCount, setMatchCount] = useState(0);
-  const [showRenforts, setShowRenforts] = useState(true);
+  const [showRenforts, setShowRenforts] = useState(false);
 
   const allDetailsRef = useRef<MatchWithDetails[]>([]);
 
@@ -109,29 +109,31 @@ export default function StatsScreen() {
           Stats Équipe
         </Text>
 
-        {/* Period filter + renfort toggle on the same row */}
-        <View style={[styles.filterRow, { gap: sp.sm }]}>
-          <View style={styles.periodWrap}>
-            <PeriodFilter selected={period} onChange={handlePeriodChange} />
-          </View>
-          <TouchableOpacity
-            onPress={() => setShowRenforts((v) => !v)}
-            style={[styles.renfortToggle, { gap: sp.xs }]}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          >
-            <MaterialCommunityIcons
-              name={showRenforts ? 'checkbox-marked' : 'checkbox-blank-outline'}
-              size={16}
-              color={showRenforts ? colors.primary : colors.text.tertiary}
-            />
-            <Text style={[styles.renfortLabel, { fontSize: font.xs, color: showRenforts ? colors.text.secondary : colors.text.tertiary }]}>
-              Renforts
-            </Text>
-          </TouchableOpacity>
-        </View>
+        <PeriodFilter selected={period} onChange={handlePeriodChange} />
 
         <CategoryTabs selected={category} onChange={setCategory} />
-        <View style={[styles.divider, { backgroundColor: colors.border }]} />
+        {LEADER_CATEGORY_LEGEND[category] ? (
+          <Text style={[styles.legend, { fontSize: font.xs, color: colors.text.tertiary, paddingHorizontal: sp.md, paddingTop: sp.xs }]}>
+            ℹ︎ {LEADER_CATEGORY_LEGEND[category]}
+          </Text>
+        ) : null}
+
+        <TouchableOpacity
+          onPress={() => setShowRenforts((v) => !v)}
+          style={[styles.renfortToggle, { gap: sp.xs }]}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        >
+          <MaterialCommunityIcons
+            name={showRenforts ? 'checkbox-marked' : 'checkbox-blank-outline'}
+            size={16}
+            color={showRenforts ? colors.primary : colors.text.tertiary}
+          />
+          <Text style={[styles.renfortLabel, { fontSize: font.xs, color: showRenforts ? colors.text.secondary : colors.text.tertiary }]}>
+            Afficher les renforts
+          </Text>
+        </TouchableOpacity>
+
+        <View style={[styles.divider, { backgroundColor: colors.border, marginTop: sp.sm }]} />
       </View>
 
       {/* Scrollable leaderboard */}
@@ -157,10 +159,9 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   header: {},
   title: { fontWeight: '800' },
-  filterRow: { flexDirection: 'row', alignItems: 'center' },
-  periodWrap: { flex: 1 },
-  renfortToggle: { flexDirection: 'row', alignItems: 'center' },
+  renfortToggle: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-end' },
   renfortLabel: { fontWeight: '500' },
+  legend: { fontStyle: 'italic' },
   divider: { height: 1 },
   locked: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40 },
   lockedText: { textAlign: 'center', lineHeight: 22 },
