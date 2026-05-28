@@ -83,7 +83,7 @@ export default function PlayerSeasonStats({ player }: PlayerSeasonStatsProps) {
         <View
           style={[
             styles.shootingCard,
-            { backgroundColor: colors.surfaceVariant, padding: sp.lg, borderRadius: sp.sm },
+            { backgroundColor: colors.surface, padding: sp.lg, borderRadius: sp.sm },
           ]}
         >
           <ShootingBar label="3 Points" made={player.fg3m} attempted={player.fg3a} color="#6366f1" />

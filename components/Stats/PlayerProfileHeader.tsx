@@ -4,6 +4,7 @@ import { useTheme } from '../../src/contexts/ThemeContext';
 import { useResponsive } from '../../src/hooks/useResponsive';
 import { PlayerSeasonData } from '../../src/services/seasonStats';
 import PlayerAvatar from '../PlayerAvatar';
+import RadarChart from './RadarChart';
 
 interface PlayerProfileHeaderProps {
   player: PlayerSeasonData;
@@ -12,51 +13,59 @@ interface PlayerProfileHeaderProps {
 
 export default function PlayerProfileHeader({ player, matchesInPeriod }: PlayerProfileHeaderProps) {
   const { colors } = useTheme();
-  const { sp, font, sizes } = useResponsive();
+  const { sp, font, sizes, isCompact } = useResponsive();
+
+  const radarSize = isCompact ? 130 : 160;
 
   return (
     <View style={[styles.wrapper, { backgroundColor: colors.surfaceVariant }]}>
-      <View style={[styles.inner, { paddingVertical: sp.xl, gap: sp.sm }]}>
-        <PlayerAvatar
-          playerName={player.playerName}
-          playerNumber={player.playerNumber}
-          photoUrl={player.photoUrl}
-          size={sizes.avatarMd}
-          backgroundColor={colors.surface}
-          textColor={colors.text.secondary}
-          borderColor={colors.border}
-          borderWidth={2}
-        />
-        <View style={styles.textBlock}>
-          <View style={[styles.nameRow, { gap: sp.sm }]}>
-            <Text
-              style={[styles.name, { fontSize: font.xxl, color: colors.text.primary }]}
-              numberOfLines={1}
-            >
-              {player.playerName}
-            </Text>
-            <View
-              style={[
-                styles.numberBadge,
-                {
-                  backgroundColor: colors.primary,
-                  paddingHorizontal: sp.sm,
-                  paddingVertical: sp.xs,
-                  borderRadius: sp.xs,
-                },
-              ]}
-            >
+      <View style={[styles.inner, { paddingVertical: sp.sm, paddingHorizontal: sp.lg, gap: sp.lg }]}>
+        <View style={[styles.playerInfo, { gap: sp.sm, flex: 1 }]}>
+          <PlayerAvatar
+            playerName={player.playerName}
+            playerNumber={player.playerNumber}
+            photoUrl={player.photoUrl}
+            size={sizes.avatarMd}
+            backgroundColor={colors.surface}
+            textColor={colors.text.secondary}
+            borderColor={colors.border}
+            borderWidth={2}
+          />
+          <View style={[styles.textBlock, { gap: sp.xs }]}>
+            <View style={[styles.nameRow, { gap: sp.sm }]}>
               <Text
-                style={[styles.numberText, { fontSize: font.md, color: colors.onPrimary }]}
+                style={[styles.name, { fontSize: font.xxl, color: colors.text.primary }]}
+                numberOfLines={1}
               >
-                #{player.playerNumber}
+                {player.playerName}
               </Text>
+              <View
+                style={[
+                  styles.numberBadge,
+                  {
+                    backgroundColor: colors.surfaceVariant,
+                    paddingHorizontal: sp.sm,
+                    paddingVertical: sp.xs,
+                    borderRadius: sp.xs,
+                    borderWidth: 2,
+                    borderColor: colors.primary,
+                  },
+                ]}
+              >
+                <Text style={[styles.numberText, { fontSize: font.md, color: colors.primary }]}>
+                  #{player.playerNumber}
+                </Text>
+              </View>
             </View>
+            <Text style={[styles.meta, { fontSize: font.sm, color: colors.text.secondary }]}>
+              {player.matchesPlayed} match{player.matchesPlayed > 1 ? 's' : ''} joué{player.matchesPlayed > 1 ? 's' : ''}
+              {matchesInPeriod > player.matchesPlayed ? ` sur ${matchesInPeriod}` : ''}
+            </Text>
           </View>
-          <Text style={[styles.meta, { fontSize: font.sm, color: colors.text.secondary }]}>
-            {player.matchesPlayed} match{player.matchesPlayed > 1 ? 's' : ''} joué{player.matchesPlayed > 1 ? 's' : ''}
-            {matchesInPeriod > player.matchesPlayed ? ` sur ${matchesInPeriod}` : ''}
-          </Text>
+        </View>
+
+        <View style={styles.radarCol}>
+          <RadarChart player={player} size={radarSize} />
         </View>
       </View>
     </View>
@@ -64,15 +73,17 @@ export default function PlayerProfileHeader({ player, matchesInPeriod }: PlayerP
 }
 
 const styles = StyleSheet.create({
-  wrapper: {
-    alignItems: 'center',
-  },
+  wrapper: {},
   inner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  playerInfo: {
     alignItems: 'center',
   },
   textBlock: {
     alignItems: 'center',
-    gap: 4,
   },
   nameRow: {
     flexDirection: 'row',
@@ -87,5 +98,9 @@ const styles = StyleSheet.create({
   },
   meta: {
     fontWeight: '500',
+  },
+  radarCol: {
+    flex: 1,
+    alignItems: 'center',
   },
 });
