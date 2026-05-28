@@ -36,7 +36,7 @@ export default function RadarChart({ player, size = 140 }: RadarChartProps) {
   const r = size * 0.50;
   const lr = size * 0.62;
   const fs = Math.max(7, Math.round(size * 0.065));
-  const pad = Math.round(size * 0.15);
+  const pad = Math.round(size * 0.22);
   const vb = `${-pad} ${-pad} ${size + 2 * pad} ${size + 2 * pad}`;
 
   function ang(i: number) {

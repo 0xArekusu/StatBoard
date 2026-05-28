@@ -31,7 +31,7 @@ export default function StatsScreen() {
   const navigation = useNavigation<RootNavigationProp>();
 
   const [period, setPeriod] = useState<StatPeriod>(STAT_PERIOD.SEASON);
-  const [category, setCategory] = useState<LeaderCategory>(LEADER_CATEGORY.PTS);
+  const [category, setCategory] = useState<LeaderCategory>(LEADER_CATEGORY.EFF);
   const [loading, setLoading] = useState(true);
   const [players, setPlayers] = useState<PlayerSeasonData[]>([]);
   const [matchCount, setMatchCount] = useState(0);
