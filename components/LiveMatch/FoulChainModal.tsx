@@ -17,6 +17,7 @@ import { Player } from "../../models/Player";
 export interface FoulChainResult {
   foulPlayer?: Player;
   basketPoints?: 2 | 3;
+  assistPlayer?: Player;
   freethrows: Array<"made" | "missed">;
 }
 
@@ -46,6 +47,8 @@ export const FoulChainModal: React.FC<FoulChainModalProps> = ({
   const [selectedFoulPlayer, setSelectedFoulPlayer] = useState<Player | null>(null);
   const [basketMarked, setBasketMarked] = useState(false);
   const [basketPoints, setBasketPoints] = useState<2 | 3 | null>(null);
+  const [assistEnabled, setAssistEnabled] = useState(false);
+  const [selectedAssistPlayer, setSelectedAssistPlayer] = useState<Player | null>(null);
   const [lfsEnabled, setLfsEnabled] = useState(false);
   const [lfCount, setLfCount] = useState(2);
   const [lfResults, setLfResults] = useState<Array<"made" | "missed" | null>>([null, null]);
@@ -55,6 +58,8 @@ export const FoulChainModal: React.FC<FoulChainModalProps> = ({
       setSelectedFoulPlayer(null);
       setBasketMarked(false);
       setBasketPoints(null);
+      setAssistEnabled(false);
+      setSelectedAssistPlayer(null);
       setLfsEnabled(false);
       setLfCount(2);
       setLfResults([null, null]);
@@ -70,6 +75,8 @@ export const FoulChainModal: React.FC<FoulChainModalProps> = ({
       setLfResults([null]);
     } else {
       setBasketPoints(null);
+      setAssistEnabled(false);
+      setSelectedAssistPlayer(null);
       // Keep lfsEnabled as-is, just reset LF count back to 2
       setLfCount(2);
       setLfResults([null, null]);
@@ -94,6 +101,7 @@ export const FoulChainModal: React.FC<FoulChainModalProps> = ({
   const isValid =
     (!trackOpponentStats || selectedFoulPlayer !== null) &&
     (!basketMarked || basketPoints !== null) &&
+    (!assistEnabled || selectedAssistPlayer !== null) &&
     (!lfsEnabled || lfResults.every((r) => r !== null));
 
   const handleConfirm = () => {
@@ -101,6 +109,7 @@ export const FoulChainModal: React.FC<FoulChainModalProps> = ({
     onComplete({
       foulPlayer: selectedFoulPlayer ?? undefined,
       basketPoints: basketMarked && basketPoints ? basketPoints : undefined,
+      assistPlayer: assistEnabled && selectedAssistPlayer ? selectedAssistPlayer : undefined,
       freethrows: lfsEnabled ? (lfResults as Array<"made" | "missed">) : [],
     });
   };
@@ -165,7 +174,10 @@ export const FoulChainModal: React.FC<FoulChainModalProps> = ({
                               borderRadius: sp.xs,
                             },
                           ]}
-                          onPress={() => setSelectedFoulPlayer(isSelected ? null : player)}
+                          onPress={() => {
+                            setSelectedFoulPlayer(isSelected ? null : player);
+                            if (isFoulCommitted) setSelectedAssistPlayer(null);
+                          }}
                           activeOpacity={0.7}
                         >
                           <Text style={[styles.playerNumber, { color: isSelected ? "#fff" : foulColor, fontSize: font.lg }]}>
@@ -244,6 +256,84 @@ export const FoulChainModal: React.FC<FoulChainModalProps> = ({
                       </TouchableOpacity>
                     );
                   })}
+                </View>
+              )}
+
+              {/* Passeur décisif — only when basket is marked */}
+              {basketMarked && (
+                <View style={{ gap: sp.sm }}>
+                  <View style={styles.toggleRow}>
+                    <Text style={[styles.sectionLabel, { color: colors.text.primary, fontSize: font.md }]}>
+                      Passeur décisif ?
+                    </Text>
+                    <View style={[styles.toggleBtns, { gap: sp.xs }]}>
+                      {(["Non", "Oui"] as const).map((label) => {
+                        const isOn = label === "Oui";
+                        const isActive = assistEnabled === isOn;
+                        return (
+                          <TouchableOpacity
+                            key={label}
+                            style={[
+                              styles.toggleBtn,
+                              {
+                                backgroundColor: isActive ? ACTION_COLORS.assist : ACTION_COLORS.assist + "15",
+                                borderColor: ACTION_COLORS.assist,
+                                paddingHorizontal: sp.md,
+                                paddingVertical: sp.xs,
+                                borderRadius: sp.xs,
+                              },
+                            ]}
+                            onPress={() => {
+                              setAssistEnabled(isOn);
+                              if (!isOn) setSelectedAssistPlayer(null);
+                            }}
+                            activeOpacity={0.7}
+                          >
+                            <Text style={{ color: isActive ? "#fff" : ACTION_COLORS.assist, fontSize: font.sm, fontWeight: "700" }}>
+                              {label}
+                            </Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+                  </View>
+
+                  {assistEnabled && (
+                    <View style={[styles.playerRow, { gap: sp.xs }]}>
+                      {(isFoulCommitted
+                        ? opponentPlayersOnCourt.filter((p) => p.id !== selectedFoulPlayer?.id)
+                        : playersOnCourt.filter((p) => p.id !== context.foulDrawnPlayerId)
+                      )
+                        .slice()
+                        .sort((a, b) => a.jerseyNumber - b.jerseyNumber)
+                        .map((player) => {
+                          const isSelected = selectedAssistPlayer?.id === player.id;
+                          return (
+                            <TouchableOpacity
+                              key={player.id}
+                              style={[
+                                styles.playerCard,
+                                {
+                                  backgroundColor: isSelected ? ACTION_COLORS.assist : ACTION_COLORS.assist + "15",
+                                  borderColor: ACTION_COLORS.assist,
+                                  padding: sp.xs,
+                                  borderRadius: sp.xs,
+                                },
+                              ]}
+                              onPress={() => setSelectedAssistPlayer(isSelected ? null : player)}
+                              activeOpacity={0.7}
+                            >
+                              <Text style={[styles.playerNumber, { color: isSelected ? "#fff" : ACTION_COLORS.assist, fontSize: font.lg }]}>
+                                {player.jerseyNumber}
+                              </Text>
+                              <Text style={[styles.playerName, { color: isSelected ? "#fff" : colors.text.secondary, fontSize: font.xs }]} numberOfLines={1}>
+                                {player.name}
+                              </Text>
+                            </TouchableOpacity>
+                          );
+                        })}
+                    </View>
+                  )}
                 </View>
               )}
             </View>

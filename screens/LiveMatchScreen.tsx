@@ -1690,6 +1690,27 @@ export default function LiveMatchScreen() {
         }, ...updatedMatch.events];
         if (drawnTeamId === TeamId.HOME) updatedMatch.scoreHome += result.basketPoints;
         else updatedMatch.scoreAway += result.basketPoints;
+
+        if (result.assistPlayer) {
+          const assistId = await saveActionToDatabase(
+            ActionType.ASSIST, undefined, 0,
+            result.assistPlayer.jerseyNumber, drawnTeam, coords,
+          );
+          updatedMatch.events = [{
+            id: assistId || `temp-${Date.now()}`,
+            action_type: ActionType.ASSIST,
+            specification: undefined,
+            points: 0,
+            playerId: result.assistPlayer.id,
+            playerNumber: result.assistPlayer.jerseyNumber,
+            teamId: drawnTeamId,
+            timestamp: Date.now(),
+            description: `#${result.assistPlayer.jerseyNumber} ${result.assistPlayer.name} — Passe décisive`,
+            coordinates: normalizedCoords,
+            period_number: quarter,
+            time_in_period: periodDurationMin * 60 - timer,
+          }, ...updatedMatch.events];
+        }
       }
 
       // 3. Save all free throws (attributed to drawn player)
@@ -1803,6 +1824,27 @@ export default function LiveMatchScreen() {
       }, ...updatedMatch.events];
       if (foulDrawnTeamId === TeamId.HOME) updatedMatch.scoreHome += result.basketPoints;
       else updatedMatch.scoreAway += result.basketPoints;
+
+      if (result.assistPlayer) {
+        const assistId = await saveActionToDatabase(
+          ActionType.ASSIST, undefined, 0,
+          result.assistPlayer.jerseyNumber, foulDrawnTeam, coords,
+        );
+        updatedMatch.events = [{
+          id: assistId || `temp-${Date.now()}`,
+          action_type: ActionType.ASSIST,
+          specification: undefined,
+          points: 0,
+          playerId: result.assistPlayer.id,
+          playerNumber: result.assistPlayer.jerseyNumber,
+          teamId: foulDrawnTeamId,
+          timestamp: Date.now(),
+          description: `#${result.assistPlayer.jerseyNumber} ${result.assistPlayer.name} — Passe décisive`,
+          coordinates: normalizedCoords,
+          period_number: quarter,
+          time_in_period: periodDurationMin * 60 - timer,
+        }, ...updatedMatch.events];
+      }
     }
 
     // 3. Save all free throws
