@@ -29,8 +29,6 @@ import {
   getActionColor,
   ActionType,
   ReboundSpecification,
-  ShotSpecification,
-  FoulSpecification,
 } from "../../src/models/ActionTypes";
 import {
   COACH_ASSISTANT_LOGO_NO_BG,
@@ -524,35 +522,6 @@ export default function PlayerDetailModal({
                     markers={courtMarkers}
                     logoUri={clubLogoUri}
                   />
-                </View>
-                {/* Court legend */}
-                <View style={styles.courtLegend}>
-                  {[
-                    { shape: "circle-outline", color: getActionColor(ActionType.SHOT, ShotSpecification.MADE), label: "Tir réussi" },
-                    { shape: "cross",          color: getActionColor(ActionType.SHOT, ShotSpecification.MISSED), label: "Tir raté" },
-                    { shape: "triangle",       color: getActionColor(ActionType.REBOUND, ReboundSpecification.DEFENSIVE), label: "Rebond" },
-                    { shape: "diamond",        color: getActionColor(ActionType.FOUL, FoulSpecification.PERSONAL), label: "Faute" },
-                    { shape: "circle",         color: getActionColor(ActionType.ASSIST), label: "Autre" },
-                  ].map(({ shape, color, label }) => (
-                    <View key={label} style={styles.courtLegendItem}>
-                      {shape === "circle-outline" && (
-                        <View style={[styles.legendCircleOutline, { borderColor: color }]} />
-                      )}
-                      {shape === "cross" && (
-                        <Text style={[styles.legendCross, { color }]}>✕</Text>
-                      )}
-                      {shape === "triangle" && (
-                        <Text style={[styles.legendShape, { color }]}>▲</Text>
-                      )}
-                      {shape === "diamond" && (
-                        <Text style={[styles.legendShape, { color }]}>◆</Text>
-                      )}
-                      {shape === "circle" && (
-                        <View style={[styles.legendCircleFill, { backgroundColor: color }]} />
-                      )}
-                      <Text style={[styles.courtLegendLabel, { color: textTertiary }]}>{label}</Text>
-                    </View>
-                  ))}
                 </View>
               </View>
             )}
