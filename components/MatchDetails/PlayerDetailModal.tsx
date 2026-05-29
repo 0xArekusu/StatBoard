@@ -338,7 +338,7 @@ export default function PlayerDetailModal({
                 style={[
                   styles.shootingCard,
                   {
-                    backgroundColor: colors.surfaceVariant,
+                    backgroundColor: colors.surface,
                     borderColor: colors.border,
                     padding: sp.lg,
                   },
