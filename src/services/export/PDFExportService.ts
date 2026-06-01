@@ -55,6 +55,20 @@ interface PDFExportOptions {
 }
 
 export class PDFExportService {
+  private static sanitizeFileName(name: string): string {
+    return name
+      .normalize("NFD").replace(/[̀-ͯ]/g, "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, "_")
+      .replace(/_+/g, "_")
+      .replace(/^_|_$/g, "");
+  }
+
+  private static formatDateFile(date: Date): string {
+    const d = date.toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric" });
+    return d.replace(/\//g, "-");
+  }
+
   /**
    * Generate App logo SVG with readable formatting
    */
@@ -401,7 +415,8 @@ export class PDFExportService {
     });
 
     // Generate PDF using expo-print
-    const { uri } = await Print.printToFileAsync({ html });
+    const matchFileName = `${this.sanitizeFileName(homeTeamName)}_${this.sanitizeFileName(awayTeamName)}_all_stats_${this.formatDateFile(matchDate)}`;
+    const { uri } = await Print.printToFileAsync({ html, fileName: matchFileName });
 
     // Share the PDF with platform-specific options
     if (await Sharing.isAvailableAsync()) {
@@ -2518,5 +2533,590 @@ export class PDFExportService {
 </body>
 </html>
     `;
+  }
+
+  /**
+   * Generate a standalone PDF for a single player's stats
+   */
+  static async generatePlayerPDF(options: {
+    player: {
+      playerNumber: number;
+      name: string;
+      team: "MyTeam" | "Opponent";
+      photoUrl?: string;
+      isSubstitute: boolean;
+      pts: number;
+      reb_off: number;
+      reb_def: number;
+      ast: number;
+      stl: number;
+      blk: number;
+      to: number;
+      pf: number;
+      fd: number;
+      ftm: number;
+      fta: number;
+      fg2m: number;
+      fg2a: number;
+      fg3m: number;
+      fg3a: number;
+      fgm: number;
+      fga: number;
+      eff: number;
+      pm: number | null;
+      min: string;
+    };
+    actions: any[];
+    myTeamName: string;
+    opponentName: string;
+    clubLogoUrl?: string;
+    courtBackgroundColor?: string;
+    courtLineColor?: string;
+    matchDate?: Date;
+    watermark?: boolean;
+    headerTitle?: string;
+    radarSVG?: string;
+    hideStarterBadge?: boolean;
+    fileName?: string;
+  }): Promise<string> {
+    const {
+      player,
+      actions,
+      myTeamName,
+      opponentName,
+      clubLogoUrl,
+      courtBackgroundColor = PDF_COLORS.court.background,
+      courtLineColor = PDF_COLORS.court.line,
+      matchDate = new Date(),
+      watermark = false,
+      headerTitle,
+      radarSVG,
+      hideStarterBadge = false,
+      fileName,
+    } = options;
+
+    let playerPhotoBase64: string | null = null;
+    if (player.photoUrl && player.photoUrl.startsWith("http")) {
+      playerPhotoBase64 = await this.imageUrlToBase64(player.photoUrl);
+    }
+
+    // Header logo: only the club logo if provided
+    let logoBase64: string | undefined;
+    if (clubLogoUrl && clubLogoUrl.startsWith("http")) {
+      logoBase64 = (await this.imageUrlToBase64(clubLogoUrl)) || clubLogoUrl;
+    }
+
+    // Court logo: club logo if available, otherwise default app logo
+    const courtLogoBase64 = logoBase64 ?? ((await this.loadDefaultLogo()) || undefined);
+
+    const AppLogoSVG = this.generateAppLogoSVG();
+
+    const playerActions = actions.filter((a) => {
+      const num = a.player_number ?? a.player;
+      return num === player.playerNumber && a.team === player.team;
+    });
+
+    const hasPositionedActions = playerActions.some((a) => a.semanticPosition);
+    const courtSVG = hasPositionedActions
+      ? (() => {
+          const markers: CourtMarker[] = playerActions
+            .filter((a) => a.semanticPosition)
+            .map((a, i) => ({
+              id: `marker-${i}`,
+              svgX: a.semanticPosition.xNormalized * COURT_SVG_WIDTH_PORTRAIT,
+              svgY: a.semanticPosition.yNormalized * COURT_SVG_HEIGHT_PORTRAIT,
+              color: getActionColor(
+                a.action_type || a.type,
+                a.specification,
+                a.points
+              ),
+              actionType: a.action_type || a.type,
+              specification: a.specification,
+            }));
+          return this.generateBasketballCourtSVG(
+            465,
+            250,
+            courtBackgroundColor,
+            courtLineColor,
+            markers,
+            courtLogoBase64
+          );
+        })()
+      : null;
+
+    const teamLabel =
+      player.team === Team.MY_TEAM ? myTeamName : opponentName;
+
+    const dateStr = matchDate.toLocaleDateString("fr-FR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+
+    const threePtPct = player.fg3a > 0 ? Math.round((player.fg3m / player.fg3a) * 100) : 0;
+    const twoPtPct = player.fg2a > 0 ? Math.round((player.fg2m / player.fg2a) * 100) : 0;
+    const ftPct = player.fta > 0 ? Math.round((player.ftm / player.fta) * 100) : 0;
+    const totalFgPct = player.fga > 0 ? Math.round((player.fgm / player.fga) * 100) : 0;
+    const pmDisplay = player.pm === null ? "—" : player.pm > 0 ? `+${player.pm}` : `${player.pm}`;
+    const pmColor = player.pm === null
+      ? PDF_COLORS.card.textSecondary
+      : player.pm > 0 ? "#4CAF50" : player.pm < 0 ? "#F44336" : PDF_COLORS.card.text;
+
+    const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: Arial, sans-serif;
+      padding: 24px;
+      font-size: 10px;
+      background: white;
+      color: ${PDF_COLORS.card.text};
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+    .content-wrapper { flex: 1; }
+    ${watermark ? `
+    body::before {
+      content: 'PREVIEW';
+      position: fixed; top: 50%; left: 50%;
+      transform: translate(-50%, -50%) rotate(-45deg);
+      font-size: 120px; font-weight: bold;
+      color: rgba(255, 107, 53, 0.15);
+      z-index: 9999; pointer-events: none; white-space: nowrap;
+    }` : ""}
+    .page-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding-bottom: 14px;
+      border-bottom: 2px solid ${PDF_COLORS.table.border};
+      margin-bottom: 20px;
+      min-height: 80px;
+    }
+    .page-header-logo-left { height: 64px; width: auto; }
+    .page-header-logo-right { height: 72px; width: auto; }
+    .page-header-center { text-align: center; flex: 1; }
+    .page-header-match { font-size: 13px; font-weight: 700; color: ${PDF_COLORS.card.text}; }
+    .page-header-date { font-size: 11px; color: ${PDF_COLORS.card.textSecondary}; margin-top: 4px; }
+    .player-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 18px; padding-bottom: 14px;
+      border-bottom: 1px solid ${PDF_COLORS.card.border};
+    }
+    .player-info-left { display: flex; align-items: center; gap: 14px; }
+    .player-avatar-img { width: 56px; height: 56px; border-radius: 50%; border: 3px solid ${PDF_COLORS.card.border}; object-fit: cover; }
+    .player-avatar {
+      width: 56px; height: 56px; border-radius: 50%;
+      background: ${PDF_COLORS.card.headerBg};
+      border: 3px solid ${PDF_COLORS.card.border};
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px; font-weight: 700; color: ${PDF_COLORS.card.text};
+    }
+    .player-name { font-size: 20px; font-weight: 900; color: ${PDF_COLORS.card.text}; line-height: 1.2; }
+    .player-sub { font-size: 12px; color: ${PDF_COLORS.card.textSecondary}; margin-top: 3px; }
+    .starter-badge {
+      display: inline-block; font-size: 9px; font-weight: 700;
+      color: ${PDF_COLORS.card.accent}; background: ${PDF_COLORS.card.highlightBg};
+      border: 1px solid ${PDF_COLORS.card.highlightBorder};
+      border-radius: 4px; padding: 2px 6px; margin-top: 4px;
+    }
+    .player-points-badge {
+      border: 2px solid ${PDF_COLORS.card.highlightBorder};
+      border-radius: 12px; padding: 10px 20px;
+      display: inline-flex; flex-direction: column; align-items: center; gap: 2px;
+    }
+    .player-points-value { font-size: 28px; font-weight: 900; color: ${PDF_COLORS.card.accent}; line-height: 1; }
+    .player-points-label { font-size: 10px; font-weight: 700; color: ${PDF_COLORS.card.accent}; text-transform: uppercase; }
+    .main-stats-grid {
+      display: grid; grid-template-columns: repeat(4, 1fr);
+      gap: 10px; margin-bottom: 20px;
+    }
+    .main-stat-card {
+      text-align: center; padding: 14px 10px;
+      background: ${PDF_COLORS.card.headerBg};
+      border: 1px solid ${PDF_COLORS.card.border};
+      border-radius: 12px;
+    }
+    .main-stat-card.highlight {
+      border: 2px solid ${PDF_COLORS.card.highlightBorder};
+      background: ${PDF_COLORS.card.highlightBg};
+    }
+    .main-stat-value { font-size: 26px; font-weight: 900; color: ${PDF_COLORS.card.text}; line-height: 1; }
+    .main-stat-value.highlight { color: ${PDF_COLORS.card.accent}; }
+    .main-stat-label { font-size: 9px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: ${PDF_COLORS.card.textSecondary}; margin-top: 5px; }
+    .section-title { font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: ${PDF_COLORS.card.text}; margin-bottom: 10px; }
+    .shooting-section { margin-bottom: 20px; }
+    .shooting-card { border: 1px solid ${PDF_COLORS.card.border}; border-radius: 12px; padding: 16px; }
+    .shooting-bars { display: flex; flex-direction: column; gap: 12px; margin-bottom: 12px; }
+    .shooting-bar { display: flex; align-items: center; gap: 12px; }
+    .shooting-bar-label { font-size: 11px; font-weight: 600; color: ${PDF_COLORS.card.textSecondary}; min-width: 55px; text-transform: uppercase; }
+    .shooting-bar-track { flex: 1; height: 12px; }
+    .shooting-bar-value { font-size: 12px; color: ${PDF_COLORS.card.text}; min-width: 100px; text-align: right; }
+    .shooting-bar-value-bold { font-weight: 700; }
+    .shooting-bar-pct { color: ${PDF_COLORS.card.textSecondary}; }
+    .shooting-summary { display: flex; border-top: 1px solid ${PDF_COLORS.card.border}; padding-top: 10px; }
+    .shooting-summary-item { flex: 1; text-align: center; }
+    .shooting-summary-value { font-size: 20px; font-weight: 900; color: ${PDF_COLORS.card.text}; }
+    .shooting-summary-label { font-size: 8px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; color: ${PDF_COLORS.card.textSecondary}; margin-top: 2px; }
+    .details-section { margin-bottom: 20px; }
+    .stats-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+    .stat-box {
+      display: flex; flex-direction: column; align-items: center; gap: 4px;
+      padding: 12px 8px; background: ${PDF_COLORS.card.background};
+      border: 1px solid ${PDF_COLORS.card.border}; border-radius: 8px; text-align: center;
+    }
+    .stat-box-label { font-size: 10px; font-weight: 600; color: ${PDF_COLORS.card.textSecondary}; text-transform: uppercase; line-height: 1; }
+    .stat-box-value { font-size: 20px; font-weight: 700; color: ${PDF_COLORS.card.text}; line-height: 1; }
+    .stat-box-value-row { display: flex; align-items: center; justify-content: center; gap: 4px; }
+    .court-section { margin-top: 20px; }
+    .court-wrapper { text-align: center; border-radius: 12px; overflow: hidden; }
+    .footer { margin-top: 24px; text-align: center; font-size: 9px; color: ${PDF_COLORS.table.textTertiary}; border-top: 1px solid ${PDF_COLORS.table.border}; padding-top: 10px; }
+  </style>
+</head>
+<body>
+<div class="content-wrapper">
+  <div class="page-header">
+    ${logoBase64 ? `<img src="${logoBase64}" class="page-header-logo-left" alt="Logo" />` : ""}
+    <div class="page-header-center">
+      <div class="page-header-match">${headerTitle ?? `${myTeamName} vs ${opponentName}`}</div>
+      <div class="page-header-date">${dateStr}</div>
+    </div>
+    <img src="${AppLogoSVG}" class="page-header-logo-right" alt="App" />
+  </div>
+
+  <div class="player-header">
+    <div class="player-info-left">
+      ${playerPhotoBase64
+        ? `<img src="${playerPhotoBase64}" class="player-avatar-img" alt="${player.name}" />`
+        : `<div class="player-avatar">${player.playerNumber}</div>`
+      }
+      <div>
+        <div class="player-name">${player.name} <span style="font-size:14px;font-weight:700;color:${PDF_COLORS.card.textSecondary}">- #${player.playerNumber}</span></div>
+        <div class="player-sub">${teamLabel}</div>
+        ${!player.isSubstitute && !hideStarterBadge ? `<span class="starter-badge">★ TITULAIRE</span>` : ""}
+      </div>
+    </div>
+    <div class="player-points-badge">
+      <div class="player-points-value">${player.pts}</div>
+      <div class="player-points-label">Points</div>
+    </div>
+  </div>
+
+  <div class="main-stats-grid">
+    <div class="main-stat-card">
+      <div class="main-stat-value">${player.min}</div>
+      <div class="main-stat-label">Temps</div>
+    </div>
+    <div class="main-stat-card">
+      <div class="main-stat-value">${player.pts}</div>
+      <div class="main-stat-label">Points</div>
+    </div>
+    <div class="main-stat-card">
+      <div class="main-stat-value" style="color:${pmColor}">${pmDisplay}</div>
+      <div class="main-stat-label">+/-</div>
+    </div>
+    <div class="main-stat-card highlight">
+      <div class="main-stat-value highlight">${player.eff}</div>
+      <div class="main-stat-label">Éval</div>
+    </div>
+  </div>
+
+  <div class="shooting-section">
+    <div class="section-title">Performance aux tirs</div>
+    <div class="shooting-card">
+      <div class="shooting-bars">
+        <div class="shooting-bar">
+          <div class="shooting-bar-label">3 Points</div>
+          <div class="shooting-bar-track">
+            <svg width="100%" height="12" style="display:block;">
+              <rect x="0" y="0" width="100%" height="12" fill="${PDF_COLORS.card.border}" rx="6"/>
+              <rect x="0" y="0" width="${threePtPct}%" height="12" fill="${PDF_COLORS.shooting.threePoint}" rx="6"/>
+            </svg>
+          </div>
+          <div class="shooting-bar-value">
+            <span class="shooting-bar-value-bold">${player.fg3m}/${player.fg3a}</span>
+            <span class="shooting-bar-pct"> (${threePtPct}%)</span>
+          </div>
+        </div>
+        <div class="shooting-bar">
+          <div class="shooting-bar-label">2 Points</div>
+          <div class="shooting-bar-track">
+            <svg width="100%" height="12" style="display:block;">
+              <rect x="0" y="0" width="100%" height="12" fill="${PDF_COLORS.card.border}" rx="6"/>
+              <rect x="0" y="0" width="${twoPtPct}%" height="12" fill="${PDF_COLORS.shooting.twoPoint}" rx="6"/>
+            </svg>
+          </div>
+          <div class="shooting-bar-value">
+            <span class="shooting-bar-value-bold">${player.fg2m}/${player.fg2a}</span>
+            <span class="shooting-bar-pct"> (${twoPtPct}%)</span>
+          </div>
+        </div>
+        <div class="shooting-bar">
+          <div class="shooting-bar-label">Lancers</div>
+          <div class="shooting-bar-track">
+            <svg width="100%" height="12" style="display:block;">
+              <rect x="0" y="0" width="100%" height="12" fill="${PDF_COLORS.card.border}" rx="6"/>
+              <rect x="0" y="0" width="${ftPct}%" height="12" fill="${PDF_COLORS.shooting.freeThrow}" rx="6"/>
+            </svg>
+          </div>
+          <div class="shooting-bar-value">
+            <span class="shooting-bar-value-bold">${player.ftm}/${player.fta}</span>
+            <span class="shooting-bar-pct"> (${ftPct}%)</span>
+          </div>
+        </div>
+      </div>
+      <div class="shooting-summary">
+        <div class="shooting-summary-item">
+          <div class="shooting-summary-value">${player.fgm}/${player.fga}</div>
+          <div class="shooting-summary-label">Total tirs</div>
+        </div>
+        <div class="shooting-summary-item">
+          <div class="shooting-summary-value">${totalFgPct}%</div>
+          <div class="shooting-summary-label">Réussite</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="details-section">
+    <div class="section-title">Détails</div>
+    <div class="stats-grid">
+      <div class="stat-box">
+        <div class="stat-box-label">REB OFF/DEF</div>
+        <div class="stat-box-value-row">
+          <svg width="14" height="14" viewBox="0 0 16 16"><polygon points="8,2 14,14 2,14" fill="${getActionColor(ActionType.REBOUND, ReboundSpecification.OFFENSIVE)}" stroke="#FFFFFF" stroke-width="1"/></svg>
+          <div class="stat-box-value">${player.reb_off}/${player.reb_def}</div>
+          <svg width="14" height="14" viewBox="0 0 16 16"><polygon points="8,2 14,14 2,14" fill="${getActionColor(ActionType.REBOUND, ReboundSpecification.DEFENSIVE)}" stroke="#FFFFFF" stroke-width="1"/></svg>
+        </div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-box-label">AST</div>
+        <div class="stat-box-value-row">
+          <div class="stat-box-value">${player.ast}</div>
+          <svg width="14" height="14" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" fill="${getActionColor(ActionType.ASSIST)}" stroke="#FFFFFF" stroke-width="2"/></svg>
+        </div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-box-label">INT</div>
+        <div class="stat-box-value-row">
+          <div class="stat-box-value">${player.stl}</div>
+          <svg width="14" height="14" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" fill="${getActionColor(ActionType.STEAL)}" stroke="#FFFFFF" stroke-width="2"/></svg>
+        </div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-box-label">CTR</div>
+        <div class="stat-box-value-row">
+          <div class="stat-box-value">${player.blk}</div>
+          <svg width="14" height="14" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" fill="${getActionColor(ActionType.BLOCK)}" stroke="#FFFFFF" stroke-width="2"/></svg>
+        </div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-box-label">BP</div>
+        <div class="stat-box-value-row">
+          <div class="stat-box-value">${player.to}</div>
+          <svg width="14" height="14" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" fill="${getActionColor(ActionType.TURNOVER)}" stroke="#FFFFFF" stroke-width="2"/></svg>
+        </div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-box-label">FTE</div>
+        <div class="stat-box-value-row">
+          <div class="stat-box-value">${player.pf}</div>
+          <svg width="14" height="14" viewBox="0 0 16 16"><polygon points="8,2 14,8 8,14 2,8" fill="${getActionColor(ActionType.FOUL)}" stroke="#FFFFFF" stroke-width="2"/></svg>
+        </div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-box-label">FP</div>
+        <div class="stat-box-value-row">
+          <div class="stat-box-value">${player.fd}</div>
+          <svg width="14" height="14" viewBox="0 0 16 16"><polygon points="8,2 14,8 8,14 2,8" fill="${getActionColor(ActionType.FOUL_DRAWN)}" stroke="#FFFFFF" stroke-width="2"/></svg>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  ${radarSVG ? `
+  <div style="margin-top:20px;">
+    <div class="section-title">Vue d'ensemble</div>
+    <div style="text-align:center;margin-top:10px;">${radarSVG}</div>
+  </div>
+  ` : ""}
+
+  ${courtSVG ? `
+  <div class="court-section">
+    <div class="section-title">Carte des actions</div>
+    <div class="court-wrapper">${courtSVG}</div>
+  </div>
+  ` : ""}
+</div>
+
+  <div class="footer">Généré par Coach Assistant • ${dateStr}</div>
+</body>
+</html>`;
+
+    const computedFileName = fileName ?? `${this.sanitizeFileName(myTeamName)}_${this.sanitizeFileName(opponentName)}_${this.sanitizeFileName(player.name)}_stats_${this.formatDateFile(matchDate)}`;
+    const { uri } = await Print.printToFileAsync({ html, fileName: computedFileName });
+
+    if (await Sharing.isAvailableAsync()) {
+      const sharingOptions: Record<string, any> = {};
+      if (Platform.OS === PlatformOS.IOS) {
+        sharingOptions.UTI = "com.adobe.pdf";
+        sharingOptions.mimeType = "application/pdf";
+      } else if (Platform.OS === PlatformOS.ANDROID) {
+        sharingOptions.mimeType = "application/pdf";
+      }
+      await Sharing.shareAsync(uri, sharingOptions);
+    }
+
+    return uri;
+  }
+
+  private static generateRadarSVG(data: {
+    avgPts: number; avgReb: number; avgAst: number; avgEff: number;
+    stl: number; blk: number; fgm: number; fga: number; matchesPlayed: number;
+  }, size: number = 220): string {
+    const AXES = ["PTS", "REB", "AST", "INT", "CTR", "ÉVAL", "%TIR"];
+    const N = AXES.length;
+    const REFS = [30, 10, 10, 10, 10, 20, 1.0];
+    const GRID_LEVELS = [0.2, 0.4, 0.6, 0.8, 1.0];
+    const primary = PDF_COLORS.card.accent;
+    const grid = PDF_COLORS.table.textSecondary;
+
+    const n = data.matchesPlayed || 1;
+    const fgPct = data.fga > 0 ? data.fgm / data.fga : 0;
+    const values = [
+      Math.max(0, Math.min(data.avgPts / REFS[0], 1)),
+      Math.max(0, Math.min(data.avgReb / REFS[1], 1)),
+      Math.max(0, Math.min(data.avgAst / REFS[2], 1)),
+      Math.max(0, Math.min((data.stl / n) / REFS[3], 1)),
+      Math.max(0, Math.min((data.blk / n) / REFS[4], 1)),
+      Math.max(0, Math.min(data.avgEff / REFS[5], 1)),
+      Math.max(0, Math.min(fgPct / REFS[6], 1)),
+    ];
+
+    const cx = size / 2, cy = size / 2;
+    const r = size * 0.38;
+    const lr = size * 0.50;
+    const fs = Math.max(9, Math.round(size * 0.065));
+    const pad = Math.round(size * 0.22);
+    const vbSize = size + 2 * pad;
+
+    const ang = (i: number) => (i / N) * 2 * Math.PI - Math.PI / 2;
+    const pt = (i: number, t: number) => ({
+      x: cx + r * t * Math.cos(ang(i)),
+      y: cy + r * t * Math.sin(ang(i)),
+    });
+    const poly = (vals: number[]) =>
+      vals.map((v, i) => { const p = pt(i, v); return `${p.x.toFixed(2)},${p.y.toFixed(2)}`; }).join(" ");
+
+    const rings = GRID_LEVELS.map((t) =>
+      `<polygon points="${poly(Array(N).fill(t))}" fill="none" stroke="${grid}" stroke-width="${t === 1.0 ? 1.2 : 0.6}" stroke-opacity="${t === 1.0 ? 0.4 : 0.2}"/>`
+    ).join("");
+
+    const spokes = Array.from({ length: N }, (_, i) => {
+      const p = pt(i, 1);
+      return `<line x1="${cx}" y1="${cy}" x2="${p.x.toFixed(2)}" y2="${p.y.toFixed(2)}" stroke="${grid}" stroke-width="0.6" stroke-opacity="0.2"/>`;
+    }).join("");
+
+    const playerPoly = `<polygon points="${poly(values)}" fill="${primary}33" stroke="${primary}" stroke-width="1.5"/>`;
+
+    const dots = values.map((v, i) => {
+      const p = pt(i, v);
+      return `<circle cx="${p.x.toFixed(2)}" cy="${p.y.toFixed(2)}" r="3" fill="${primary}"/>`;
+    }).join("");
+
+    const labels = AXES.map((label, i) => {
+      const a = ang(i);
+      const lx = (cx + lr * Math.cos(a)).toFixed(2);
+      const ly = (cy + lr * Math.sin(a) + fs * 0.38).toFixed(2);
+      return `<text x="${lx}" y="${ly}" text-anchor="middle" font-size="${fs}" font-weight="600" fill="${grid}" font-family="Arial,sans-serif">${label}</text>`;
+    }).join("");
+
+    return `<svg width="${size}" height="${size}" viewBox="${-pad} ${-pad} ${vbSize} ${vbSize}" xmlns="http://www.w3.org/2000/svg">${rings}${spokes}${playerPoly}${dots}${labels}</svg>`;
+  }
+
+  /**
+   * Export PDF for a player's season averages — adapter over generatePlayerPDF
+   */
+  static async generatePlayerSeasonPDF(options: {
+    player: {
+      playerNumber: number;
+      playerName: string;
+      photoUrl?: string;
+      matchesPlayed: number;
+      avgPts: number;
+      avgEff: number;
+      totalPlayingTimeSeconds: number;
+      reb_off: number; reb_def: number;
+      ast: number; stl: number; blk: number;
+      to: number; pf: number; fd: number;
+      ftm: number; fta: number;
+      fg2m: number; fg2a: number;
+      fg3m: number; fg3a: number;
+      fgm: number; fga: number;
+    };
+    clubLogoUrl?: string;
+    courtBackgroundColor?: string;
+    courtLineColor?: string;
+    watermark?: boolean;
+    period?: string;
+  }): Promise<string> {
+    const { player, period, ...rest } = options;
+    const n = player.matchesPlayed || 1;
+
+    const avgSec = Math.round(player.totalPlayingTimeSeconds / n);
+    const avgMin = `${Math.floor(avgSec / 60)}:${String(avgSec % 60).padStart(2, "0")}`;
+
+    const round1 = (v: number) => Math.round(v * 10) / 10;
+
+    const periodSuffix: Record<string, string> = {
+      season: "all",
+      "3_months": "3months",
+      last_5: "5games",
+    };
+    const periodTag = period ? (periodSuffix[period] ?? period) : "all";
+    const seasonFileName = `${this.sanitizeFileName(player.playerName)}_mean_stats_${periodTag}`;
+
+    const radarSVG = this.generateRadarSVG(player, 240);
+
+    return this.generatePlayerPDF({
+      player: {
+        playerNumber: player.playerNumber,
+        name: player.playerName,
+        team: Team.MY_TEAM,
+        photoUrl: player.photoUrl,
+        isSubstitute: false,
+        pts: round1(player.avgPts),
+        reb_off: round1(player.reb_off / n),
+        reb_def: round1(player.reb_def / n),
+        ast: round1(player.ast / n),
+        stl: round1(player.stl / n),
+        blk: round1(player.blk / n),
+        to: round1(player.to / n),
+        pf: round1(player.pf / n),
+        fd: round1(player.fd / n),
+        ftm: player.ftm,
+        fta: player.fta,
+        fg2m: player.fg2m,
+        fg2a: player.fg2a,
+        fg3m: player.fg3m,
+        fg3a: player.fg3a,
+        fgm: player.fgm,
+        fga: player.fga,
+        eff: round1(player.avgEff),
+        pm: null,
+        min: avgMin,
+      },
+      actions: [],
+      myTeamName: "",
+      opponentName: "",
+      headerTitle: `Statistiques moyennes • ${player.matchesPlayed} match${player.matchesPlayed > 1 ? "s" : ""}`,
+      radarSVG,
+      hideStarterBadge: true,
+      fileName: seasonFileName,
+      ...rest,
+    });
   }
 }

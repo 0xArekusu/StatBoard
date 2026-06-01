@@ -541,7 +541,7 @@ export default function MatchDetailsScreen() {
     const pmMap = calculatePlusMinus(actions || [], allPlayersForPm);
 
     playerStatsMap.forEach((stats, key) => {
-      stats.pm = pmMap.get(key) || 0;
+      stats.pm = match.has_sub_tracking ? (pmMap.get(key) ?? null) : null;
     });
 
     // Convert map to array and sort by points (default sort)
@@ -654,6 +654,7 @@ export default function MatchDetailsScreen() {
         opponentName={match.opponent_name}
         actions={actions}
         club={club}
+        matchDate={match.created_at ? new Date(match.created_at) : undefined}
       />
 
       {/* PDF EXPORT LOADER MODAL */}

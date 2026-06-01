@@ -584,8 +584,8 @@ export default function CardsTab({
               </View>
               <View style={[styles.cardStatItem, { backgroundColor: isDark ? colors.surfaceVariant : colors.surface }]}>
                 <Text style={[styles.cardStatLabel, { color: textTertiary }]}>+/-</Text>
-                <Text style={[styles.cardStatValue, { color: player.pm > 0 ? "#4CAF50" : player.pm < 0 ? "#F44336" : textPrimary }]}>
-                  {player.pm > 0 ? `+${player.pm}` : player.pm}
+                <Text style={[styles.cardStatValue, { color: player.pm === null ? textTertiary : player.pm > 0 ? "#4CAF50" : player.pm < 0 ? "#F44336" : textPrimary }]}>
+                  {player.pm === null ? "—" : player.pm > 0 ? `+${player.pm}` : player.pm}
                 </Text>
               </View>
               <View style={[styles.cardStatItem, { backgroundColor: isDark ? colors.surfaceVariant : colors.surface }]}>

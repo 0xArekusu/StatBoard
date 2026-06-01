@@ -59,6 +59,7 @@ export class MatchRepository implements IMatchRepository {
       track_opponent_stats: Boolean(row.track_opponent_stats),
       score_manually_adjusted: Boolean(row.score_manually_adjusted),
       synced_to_server: Boolean(row.synced_to_server),
+      has_sub_tracking: Boolean(row.has_sub_tracking),
     } as Match;
   }
 
@@ -91,9 +92,10 @@ export class MatchRepository implements IMatchRepository {
         track_opponent_stats,
         my_team_handicap,
         opponent_handicap,
+        has_sub_tracking,
         created_at
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, 0, 0, 0, 'in_progress', ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, 0, 0, 0, 'in_progress', ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)
     `;
 
     try {

@@ -5,7 +5,7 @@
  * Extracted from MatchDetailsScreen for better modularity.
  */
 
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import {
   View,
   Text,
@@ -14,7 +14,7 @@ import {
   TouchableOpacity,
   Modal,
   Image,
-  Platform,
+  ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../../src/contexts/ThemeContext";
@@ -39,6 +39,7 @@ import {
   COURT_SVG_HEIGHT_PORTRAIT,
 } from "../../constants";
 import PlayerAvatar from "../PlayerAvatar";
+import { PDFExportService } from "../../src/services/export/PDFExportService";
 
 interface PlayerDetailModalProps {
   player: PlayerStats | null;
@@ -47,6 +48,7 @@ interface PlayerDetailModalProps {
   opponentName?: string;
   actions?: any[];
   club?: Club | null;
+  matchDate?: Date;
 }
 
 export default function PlayerDetailModal({
@@ -56,9 +58,11 @@ export default function PlayerDetailModal({
   opponentName = "Adversaire",
   actions = [],
   club = null,
+  matchDate,
 }: PlayerDetailModalProps) {
   const { colors, isDark } = useTheme();
   const { isCompact, sp, font, sizes } = useResponsive();
+  const [isExporting, setIsExporting] = useState(false);
   const textPrimary = colors.text.primary;
   const textSecondary = colors.text.secondary;
   const textTertiary = colors.text.tertiary;
@@ -113,6 +117,27 @@ export default function PlayerDetailModal({
   const courtLineColor = club?.courtLineColor || colors.court.line;
   const clubLogoUri = useSignedUrl(club?.logoUrl);
 
+  const handleExportPDF = async () => {
+    if (!player || isExporting) return;
+    setIsExporting(true);
+    try {
+      await PDFExportService.generatePlayerPDF({
+        player,
+        actions,
+        myTeamName,
+        opponentName,
+        clubLogoUrl: clubLogoUri ?? undefined,
+        courtBackgroundColor: club?.courtBackgroundColor,
+        courtLineColor: club?.courtLineColor,
+        matchDate,
+      });
+    } catch (e) {
+      console.error("[PlayerDetailModal] Export PDF error:", e);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   if (!player) return null;
 
   return (
@@ -159,6 +184,33 @@ export default function PlayerDetailModal({
                 },
               ]}
             />
+            <TouchableOpacity
+              onPress={handleExportPDF}
+              style={[
+                styles.pdfButton,
+                {
+                  top: 16,
+                  right: 64,
+                  backgroundColor: "rgba(0, 0, 0, 0.2)",
+                },
+              ]}
+              disabled={isExporting}
+            >
+              {isExporting ? (
+                <ActivityIndicator size="small" color={colors.primary} />
+              ) : (
+                <>
+                  <Ionicons
+                    name="document-text-outline"
+                    size={sizes.iconSm}
+                    color={colors.primary}
+                  />
+                  <Text style={[styles.pdfButtonText, { color: colors.primary, fontSize: font.xs }]}>
+                    PDF
+                  </Text>
+                </>
+              )}
+            </TouchableOpacity>
             <TouchableOpacity onPress={onClose} style={styles.modalCloseButton}>
               <Ionicons
                 name="close"
@@ -278,12 +330,12 @@ export default function PlayerDetailModal({
                   style={[
                     styles.statCardValue,
                     {
-                      color: player.pm > 0 ? "#4CAF50" : player.pm < 0 ? "#F44336" : textPrimary,
+                      color: player.pm === null ? textSecondary : player.pm > 0 ? "#4CAF50" : player.pm < 0 ? "#F44336" : textPrimary,
                       fontSize: isCompact ? font.xl : 28,
                     },
                   ]}
                 >
-                  {player.pm > 0 ? `+${player.pm}` : player.pm}
+                  {player.pm === null ? "—" : player.pm > 0 ? `+${player.pm}` : player.pm}
                 </Text>
                 <Text style={[styles.statCardLabel, { color: textSecondary }]}>
                   +/-
@@ -569,6 +621,20 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: "rgba(0, 0, 0, 0.2)",
     zIndex: 10,
+  },
+  pdfButton: {
+    position: "absolute",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 20,
+    zIndex: 10,
+  },
+  pdfButtonText: {
+    fontWeight: "700",
+    letterSpacing: 0.5,
   },
   modalPlayerAvatar: {
     marginTop: 0,

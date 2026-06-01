@@ -2,6 +2,7 @@ import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { View, Text, ScrollView, SafeAreaView, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import { PDFExportService } from '../src/services/export/PDFExportService';
 import { useTheme } from '../src/contexts/ThemeContext';
 import { useAuth } from '../src/contexts/AuthContext';
 import { useClub } from '../src/contexts/ClubContext';
@@ -56,6 +57,7 @@ export default function PlayerProfileScreen() {
 
   // All hooks declared at top level in consistent order
   const [period, setPeriod] = useState<StatPeriod>(STAT_PERIOD.SEASON);
+  const [isExportingPDF, setIsExportingPDF] = useState(false);
   const [loading, setLoading] = useState(true);
   const [playerData, setPlayerData] = useState<PlayerSeasonData>(
     EMPTY_PLAYER(playerId ?? null, playerNumber, playerName, photoUrl)
@@ -108,6 +110,22 @@ export default function PlayerProfileScreen() {
     loadData();
   }, [loadData]);
 
+  const handleExportPDF = async () => {
+    if (isExportingPDF || playerData.matchesPlayed === 0) return;
+    setIsExportingPDF(true);
+    try {
+      await PDFExportService.generatePlayerSeasonPDF({
+        player: playerData,
+        clubLogoUrl: currentClub?.logoUrl,
+        period,
+      });
+    } catch (e) {
+      logError('PlayerProfileScreen', 'Erreur export PDF', { error: e });
+    } finally {
+      setIsExportingPDF(false);
+    }
+  };
+
   const handlePeriodChange = (newPeriod: StatPeriod) => {
     setPeriod(newPeriod);
     applyPeriod(allDetailsRef.current, newPeriod);
@@ -115,12 +133,30 @@ export default function PlayerProfileScreen() {
 
   return (
     <SafeAreaView style={[styles.flex, { backgroundColor: colors.background }]}>
-      <TouchableOpacity
-        onPress={() => navigation.goBack()}
-        style={[styles.backBtn, { padding: sp.md }]}
-      >
-        <Ionicons name="arrow-back" size={sizes.iconMd} color={colors.text.primary} />
-      </TouchableOpacity>
+      <View style={styles.navBar}>
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={[styles.backBtn, { padding: sp.md }]}
+        >
+          <Ionicons name="arrow-back" size={sizes.iconMd} color={colors.text.primary} />
+        </TouchableOpacity>
+        {playerData.matchesPlayed > 0 && (
+          <TouchableOpacity
+            onPress={handleExportPDF}
+            disabled={isExportingPDF}
+            style={[styles.pdfBtn, { paddingVertical: sp.xs, paddingHorizontal: sp.sm }]}
+          >
+            {isExportingPDF ? (
+              <ActivityIndicator size="small" color={colors.primary} />
+            ) : (
+              <>
+                <Ionicons name="document-text-outline" size={font.md} color={colors.primary} />
+                <Text style={[styles.pdfBtnText, { color: colors.primary, fontSize: font.xs }]}>PDF</Text>
+              </>
+            )}
+          </TouchableOpacity>
+        )}
+      </View>
 
       {loading ? (
         <View style={styles.center}>
@@ -159,7 +195,20 @@ export default function PlayerProfileScreen() {
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
+  navBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
   backBtn: { alignSelf: 'flex-start' },
+  pdfBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    borderRadius: 8,
+    marginRight: 12,
+  },
+  pdfBtnText: { fontWeight: '700', letterSpacing: 0.5 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   noData: { alignItems: 'center', padding: 32 },
   noDataText: { textAlign: 'center' },
