@@ -269,7 +269,7 @@ export default function LiveMatchScreen() {
   const [showTutorial, setShowTutorial] = useState(false);
   const [tutorialHeaderHeight, setTutorialHeaderHeight] = useState(0);
   const [tutorialToggleHeight, setTutorialToggleHeight] = useState(0);
-  const [tutorialToolbarHeight, setTutorialToolbarHeight] = useState(0);
+  const tutorialToolbarHeight = isMobileLandscape ? 44 : 80;
   const [playerSelectionTab, setPlayerSelectionTab] = useState<TeamId>(
     TeamId.HOME,
   );
@@ -2269,25 +2269,23 @@ export default function LiveMatchScreen() {
       </View>
 
       {/* Toolbar */}
-      <View onLayout={(e) => setTutorialToolbarHeight(e.nativeEvent.layout.height)}>
-        <MatchToolbar
-          filterMode={filterMode}
-          showMarkers={showMarkers}
-          isGeneratingMockData={isGeneratingMockData}
-          isAdmin={isAdmin}
-          hasActiveFilters={
-            filterMode !== FilterMode.ALL ||
-            selectedPlayerIds.length > 0 ||
-            selectedPeriodIds.length > 0 ||
-            selectedTeamFilter !== TeamFilterMode.ALL
-          }
-          onUndo={undoLastAction}
-          onOpenFilter={() => setShowFilterModal(true)}
-          onToggleMarkers={() => setShowMarkers(!showMarkers)}
-          onGenerateMock={handleGenerateMockActions}
-          onOpenHistory={() => setShowHistoryModal(true)}
-        />
-      </View>
+      <MatchToolbar
+        filterMode={filterMode}
+        showMarkers={showMarkers}
+        isGeneratingMockData={isGeneratingMockData}
+        isAdmin={isAdmin}
+        hasActiveFilters={
+          filterMode !== FilterMode.ALL ||
+          selectedPlayerIds.length > 0 ||
+          selectedPeriodIds.length > 0 ||
+          selectedTeamFilter !== TeamFilterMode.ALL
+        }
+        onUndo={undoLastAction}
+        onOpenFilter={() => setShowFilterModal(true)}
+        onToggleMarkers={() => setShowMarkers(!showMarkers)}
+        onGenerateMock={handleGenerateMockActions}
+        onOpenHistory={() => setShowHistoryModal(true)}
+      />
 
       {/* Tutorial overlay */}
       <MatchTutorialOverlay
@@ -2296,6 +2294,7 @@ export default function LiveMatchScreen() {
         headerHeight={tutorialHeaderHeight}
         toggleHeight={tutorialToggleHeight}
         toolbarHeight={tutorialToolbarHeight}
+        trackOpponentStats={match.trackOpponentStats}
       />
 
       {/* Modals */}

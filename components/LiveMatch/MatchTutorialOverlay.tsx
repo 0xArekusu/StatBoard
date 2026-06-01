@@ -31,7 +31,7 @@ const STEPS: TutorialStep[] = [
     icon: "timer-outline",
     title: "Chrono & Score",
     description:
-      "Lancez ou mettez en pause le chrono, passez à la période suivante, effectuez des remplacements et marquez rapidement les points adverses.",
+      "Lancez ou mettez en pause le chrono, passez à la période suivante, visualisez le tableau des fautes, ajoutez des temps morts, effectuez des remplacements et marquez rapidement les points adverses.",
     tooltipPosition: "below",
   },
   {
@@ -39,7 +39,7 @@ const STEPS: TutorialStep[] = [
     icon: "swap-horizontal",
     title: "Vue Terrain / Actions",
     description:
-      "Basculez entre la vue terrain pour visualiser vos actions sur le parquet, et la grille pour saisir rapidement les stats.",
+      "Basculez entre la vue terrain pour visualiser vos actions sur le parquet et la grille si vous souhaitez saisir les statistiques directement sans le terrain.",
     tooltipPosition: "below",
   },
   {
@@ -47,7 +47,7 @@ const STEPS: TutorialStep[] = [
     icon: "basketball",
     title: "Grille d'actions",
     description:
-      "Enregistrez toutes les actions : tirs réussis ou manqués, rebonds, passes décisives, fautes, interceptions, contres...",
+      "Cliquez sur le terrain pour saisir une action : tirs réussis ou manqués, rebonds, fautes etc... Les actions chaînées vous proposent automatiquement les actions liées (ex: tir réussi → passe décisive, faute → lancers francs) pour un suivi plus fluide et rapide.",
     tooltipPosition: "center",
   },
   {
@@ -55,7 +55,7 @@ const STEPS: TutorialStep[] = [
     icon: "toolbox-outline",
     title: "Barre d'outils",
     description:
-      "Annulez la dernière action, filtrez par type d'action, affichez les marqueurs terrain et consultez l'historique complet.",
+      "Grâce à la barre d'action, vous pouvez annuler la dernière action, filtrer par type d'action et consulter les statistiques en temps réel, afficher ou masquer les marqueurs terrain et consulter l'historique complet.",
     tooltipPosition: "above",
   },
 ];
@@ -66,6 +66,7 @@ interface MatchTutorialOverlayProps {
   headerHeight: number;
   toggleHeight: number;
   toolbarHeight: number;
+  trackOpponentStats: boolean;
 }
 
 export function MatchTutorialOverlay({
@@ -74,6 +75,7 @@ export function MatchTutorialOverlay({
   headerHeight,
   toggleHeight,
   toolbarHeight,
+  trackOpponentStats,
 }: MatchTutorialOverlayProps) {
   const { colors } = useTheme();
   const { sp, font } = useResponsive();
@@ -83,6 +85,14 @@ export function MatchTutorialOverlay({
   const [dontShowAgain, setDontShowAgain] = useState(false);
 
   const step = STEPS[stepIndex];
+  const stepDescription =
+    step.zone === "header"
+      ? `Lancez ou mettez en pause le chrono, passez à la période suivante, visualisez le tableau des fautes, ajoutez des temps morts et effectuez des remplacements.${
+          !trackOpponentStats
+            ? " Marquez rapidement les points adverses depuis l'en-tête."
+            : ""
+        }`
+      : step.description;
   const isLast = stepIndex === STEPS.length - 1;
 
   // Don't render if heights aren't measured yet
@@ -276,7 +286,7 @@ export function MatchTutorialOverlay({
               },
             ]}
           >
-            {step.description}
+            {stepDescription}
           </Text>
 
           {/* Checkbox + buttons row */}
@@ -322,40 +332,60 @@ export function MatchTutorialOverlay({
                   onPress={handleSkip}
                   style={[
                     styles.skipBtn,
-                    { borderColor: colors.border, borderRadius: sp.sm },
+                    { borderColor: colors.error, borderRadius: sp.sm },
                   ]}
                 >
                   <Text
                     style={[
                       styles.skipBtnText,
-                      { color: colors.text.secondary, fontSize: font.sm },
+                      { color: colors.error, fontSize: font.sm },
                     ]}
                   >
                     Passer
                   </Text>
                 </TouchableOpacity>
               )}
-              <TouchableOpacity
-                onPress={handleNext}
-                style={[
-                  styles.nextBtn,
-                  {
-                    backgroundColor: colors.primary,
-                    borderRadius: sp.sm,
-                    paddingHorizontal: sp.lg,
-                    paddingVertical: sp.sm,
-                  },
-                ]}
-              >
-                <Text
+              <View style={styles.navButtons}>
+                {stepIndex > 0 && (
+                  <TouchableOpacity
+                    onPress={() => setStepIndex((i) => i - 1)}
+                    style={[
+                      styles.skipBtn,
+                      { borderColor: colors.border, borderRadius: sp.sm },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.skipBtnText,
+                        { color: colors.text.secondary, fontSize: font.sm },
+                      ]}
+                    >
+                      Précédent
+                    </Text>
+                  </TouchableOpacity>
+                )}
+                <TouchableOpacity
+                  onPress={handleNext}
                   style={[
-                    styles.nextBtnText,
-                    { color: colors.onPrimary, fontSize: font.sm },
+                    styles.nextBtn,
+                    {
+                      backgroundColor: colors.primary,
+                      borderRadius: sp.sm,
+                      paddingHorizontal: sp.lg,
+                      paddingVertical: sp.sm,
+                    },
                   ]}
                 >
-                  {isLast ? "Terminer" : "Suivant"}
-                </Text>
-              </TouchableOpacity>
+                  <Text
+                    style={[
+                      styles.nextBtnText,
+                      { color: colors.onPrimary, fontSize: font.sm },
+                    ]}
+                  >
+                    {isLast ? "Terminer" : "Suivant"}
+                  </Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
         </View>
@@ -423,5 +453,10 @@ const styles = StyleSheet.create({
   nextBtn: {},
   nextBtnText: {
     fontWeight: "700",
+  },
+  navButtons: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
   },
 });
