@@ -1244,13 +1244,13 @@ export default function LiveMatchScreen() {
 
       // Record substitution events for +/- calculation
       const actionRepo = new ActionRepository();
-      const subTeam = isOurTeam ? "MyTeam" : ("Opponent" as "MyTeam" | "Opponent");
+      const subTeam = isOurTeam ? Team.MY_TEAM : Team.OPPONENT;
       const subRoster = isOurTeam ? homeRoster : opponentRoster;
       const timeInPeriod = periodDurationMin * 60 - timer;
       let orderOffset = 0;
 
       for (const playerId of subSelection.out) {
-        const player = subRoster.find((p) => p.id === playerId);
+        const player = subRoster.find((p: Player) => p.id === playerId);
         if (!player) continue;
         await actionRepo.create({
           match_id: currentMatchId,
@@ -1268,7 +1268,7 @@ export default function LiveMatchScreen() {
       }
 
       for (const playerId of subSelection.in) {
-        const player = subRoster.find((p) => p.id === playerId);
+        const player = subRoster.find((p: Player) => p.id === playerId);
         if (!player) continue;
         await actionRepo.create({
           match_id: currentMatchId,
