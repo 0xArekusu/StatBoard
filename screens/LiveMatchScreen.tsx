@@ -45,6 +45,7 @@ import { AdminService } from "../services/AdminService";
 import { MatchRepository } from "../src/services/database/MatchRepository";
 import { ActionRepository } from "../src/services/database/ActionRepository";
 import { MatchPlayerRepository } from "../src/services/database/MatchPlayerRepository";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { logInfo, logError } from "../utils/logger";
 import {
   generateMockActions,
@@ -76,7 +77,7 @@ import {
 import { DEFAULT_COURT_COLORS } from "../src/theme/colors";
 import { supabase } from "../src/config/supabase";
 import { MatchActionGrid, ActionData } from "../components/MatchActionGrid";
-import { CourtView, MatchHeader, MatchToolbar, ActionChainModal, FoulChainModal, FoulChainResult, ShotChainModal, ShotChainResult } from "../components/LiveMatch";
+import { CourtView, MatchHeader, MatchToolbar, ActionChainModal, FoulChainModal, FoulChainResult, ShotChainModal, ShotChainResult, MatchTutorialOverlay, TUTORIAL_SKIP_KEY } from "../components/LiveMatch";
 import { useMatchSync } from "../hooks/useMatchSync";
 import { useResponsive } from "../src/hooks/useResponsive";
 import { BREAKPOINTS } from "../constants/breakpoints";
@@ -263,6 +264,12 @@ export default function LiveMatchScreen() {
   // UI STATE
   // ========================================
   const [viewMode, setViewMode] = useState<ViewMode>(ViewMode.COURT);
+
+  // Tutorial overlay
+  const [showTutorial, setShowTutorial] = useState(false);
+  const [tutorialHeaderHeight, setTutorialHeaderHeight] = useState(0);
+  const [tutorialToggleHeight, setTutorialToggleHeight] = useState(0);
+  const [tutorialToolbarHeight, setTutorialToolbarHeight] = useState(0);
   const [playerSelectionTab, setPlayerSelectionTab] = useState<TeamId>(
     TeamId.HOME,
   );
@@ -321,6 +328,17 @@ export default function LiveMatchScreen() {
     };
     checkAdminStatus();
   }, [user]);
+
+  // Show tutorial on each match start unless user opted out
+  useEffect(() => {
+    const checkTutorial = async () => {
+      const skipped = await AsyncStorage.getItem(TUTORIAL_SKIP_KEY);
+      if (skipped !== "true") {
+        setShowTutorial(true);
+      }
+    };
+    checkTutorial();
+  }, []);
 
   // ========================================
   // MATCH INITIALIZATION & RESUME
@@ -2116,6 +2134,7 @@ export default function LiveMatchScreen() {
   return (
     <View style={[styles.container, { backgroundColor: bgColor }]}>
       {/* Header */}
+      <View onLayout={(e) => setTutorialHeaderHeight(e.nativeEvent.layout.height)}>
       <MatchHeader
         match={match}
         timer={timer}
@@ -2131,9 +2150,11 @@ export default function LiveMatchScreen() {
         onOpponentScoreSimple={handleOpponentScoreSimple}
         onTimeout={handleTimeout}
       />
+      </View>
 
       {/* View Mode Toggle */}
       <View
+        onLayout={(e) => setTutorialToggleHeight(e.nativeEvent.layout.height)}
         style={[
           styles.viewModeToggle,
           {
@@ -2248,22 +2269,33 @@ export default function LiveMatchScreen() {
       </View>
 
       {/* Toolbar */}
-      <MatchToolbar
-        filterMode={filterMode}
-        showMarkers={showMarkers}
-        isGeneratingMockData={isGeneratingMockData}
-        isAdmin={isAdmin}
-        hasActiveFilters={
-          filterMode !== FilterMode.ALL ||
-          selectedPlayerIds.length > 0 ||
-          selectedPeriodIds.length > 0 ||
-          selectedTeamFilter !== TeamFilterMode.ALL
-        }
-        onUndo={undoLastAction}
-        onOpenFilter={() => setShowFilterModal(true)}
-        onToggleMarkers={() => setShowMarkers(!showMarkers)}
-        onGenerateMock={handleGenerateMockActions}
-        onOpenHistory={() => setShowHistoryModal(true)}
+      <View onLayout={(e) => setTutorialToolbarHeight(e.nativeEvent.layout.height)}>
+        <MatchToolbar
+          filterMode={filterMode}
+          showMarkers={showMarkers}
+          isGeneratingMockData={isGeneratingMockData}
+          isAdmin={isAdmin}
+          hasActiveFilters={
+            filterMode !== FilterMode.ALL ||
+            selectedPlayerIds.length > 0 ||
+            selectedPeriodIds.length > 0 ||
+            selectedTeamFilter !== TeamFilterMode.ALL
+          }
+          onUndo={undoLastAction}
+          onOpenFilter={() => setShowFilterModal(true)}
+          onToggleMarkers={() => setShowMarkers(!showMarkers)}
+          onGenerateMock={handleGenerateMockActions}
+          onOpenHistory={() => setShowHistoryModal(true)}
+        />
+      </View>
+
+      {/* Tutorial overlay */}
+      <MatchTutorialOverlay
+        visible={showTutorial}
+        onClose={() => setShowTutorial(false)}
+        headerHeight={tutorialHeaderHeight}
+        toggleHeight={tutorialToggleHeight}
+        toolbarHeight={tutorialToolbarHeight}
       />
 
       {/* Modals */}

@@ -14,3 +14,5 @@ export { ShotChainModal } from "./ShotChainModal";
 export type { ShotChainResult } from "./ShotChainModal";
 export { TeamFoulDrawer } from "./TeamFoulDrawer";
 export { TimeoutModal } from "./TimeoutModal";
+export { MatchTutorialOverlay } from "./MatchTutorialOverlay";
+export { TUTORIAL_SKIP_KEY } from "./MatchTutorialOverlay";
