@@ -55,6 +55,7 @@ export function MatchHeader({
   const { colors } = useTheme();
   const { isCompact, isPortrait, sp, font, width } = useResponsive();
   const isNarrow = isPortrait && width < BREAKPOINTS.narrowPortraitMaxWidth;
+  const isMobilePortrait = isPortrait && width < BREAKPOINTS.phoneMaxWidth;
   const amIHome = match.location === TeamId.HOME;
 
   const [foulDrawerVisible, setFoulDrawerVisible] = useState(false);
@@ -118,7 +119,7 @@ export function MatchHeader({
       : (match.opponentHandicap || 0);
 
     return (
-      <View style={styles.teamSection}>
+      <View style={[styles.teamSection]}>
         <Text
           style={[
             styles.score,
@@ -215,7 +216,7 @@ export function MatchHeader({
         {renderTeamSection(amIHome, true)}
 
         {/* CENTER (TIMER) */}
-        <View style={styles.timerSection}>
+        <View style={[styles.timerSection, isMobilePortrait && { marginHorizontal: 34 }]}>
           <View
             style={[
               styles.periodRow,
@@ -243,9 +244,9 @@ export function MatchHeader({
             </TouchableOpacity>
           </View>
 
-          <View style={styles.timerRow}>
+          <View style={[styles.timerRow, isMobilePortrait && { gap: 0 }]}>
             {/* Colonne gauche — équipe HOME */}
-            <View style={styles.sideColumn}>
+            <View style={[styles.sideColumn, isMobilePortrait && { minWidth: 28 }]}>
               {(amIHome || match.trackOpponentStats) ? (
                 <>
                   <TouchableOpacity
