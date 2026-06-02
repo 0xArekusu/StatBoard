@@ -1,7 +1,6 @@
 import React from 'react';
 import Svg, { Polygon, Line, Text as SvgText, Circle } from 'react-native-svg';
 import { useTheme } from '../../src/contexts/ThemeContext';
-import { COMMON_COLORS } from '../../src/theme';
 import { PlayerSeasonData } from '../../src/services/seasonStats';
 
 interface RadarChartProps {
@@ -62,7 +61,7 @@ export default function RadarChart({ player, size = 140 }: RadarChartProps) {
           key={i}
           points={poly(Array(N).fill(t))}
           fill="none"
-          stroke={COMMON_COLORS.white}
+          stroke={colors.text.tertiary}
           strokeWidth={t === 1.0 ? 1.4 : 0.8}
           strokeOpacity={t === 1.0 ? 0.7 : 0.4}
         />
@@ -76,7 +75,7 @@ export default function RadarChart({ player, size = 140 }: RadarChartProps) {
             key={i}
             x1={cx} y1={cy}
             x2={p.x} y2={p.y}
-            stroke={COMMON_COLORS.white}
+            stroke={colors.text.tertiary}
             strokeWidth={0.8}
             strokeOpacity={0.4}
           />
@@ -108,7 +107,7 @@ export default function RadarChart({ player, size = 140 }: RadarChartProps) {
             textAnchor="middle"
             fontSize={fs}
             fontWeight="600"
-            fill={COMMON_COLORS.white}
+            fill={colors.text.secondary}
           >
             {label}
           </SvgText>
