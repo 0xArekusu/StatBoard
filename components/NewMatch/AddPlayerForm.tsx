@@ -7,7 +7,7 @@
 import React, { useState } from "react";
 import { View, Text, TextInput, TouchableOpacity, StyleSheet } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { SLATE_COLORS, COMMON_COLORS, OPACITY } from "../../src/theme";
+import { BRAND_COLORS, COMMON_COLORS, OPACITY } from "../../src/theme";
 import { MATCH_CREATION_BUTTON_LABELS } from "../../constants";
 import type { Player } from "../../models/Player";
 import { useResponsive } from "../../src/hooks/useResponsive";
@@ -31,6 +31,8 @@ interface AddPlayerFormProps {
   allPlayers?: Player[];
   /** Selected players only — used for duplicate number check */
   selectedPlayers?: Player[];
+  /** Remove top border/margin/padding — use when rendered in a sticky container */
+  compact?: boolean;
   /** Whether dark mode is enabled */
   isDark: boolean;
   /** Theme colors */
@@ -55,6 +57,7 @@ export const AddPlayerForm: React.FC<AddPlayerFormProps> = ({
   onAdd,
   allPlayers = [],
   selectedPlayers,
+  compact,
   isDark,
   colors,
 }) => {
@@ -106,7 +109,10 @@ export const AddPlayerForm: React.FC<AddPlayerFormProps> = ({
 
   return (
     <View
-      style={[styles.addPlayerSection, { borderTopColor: colors.borderColor, paddingTop: sp.lg, marginTop: sp.lg }]}
+      style={[
+        styles.addPlayerSection,
+        !compact && { borderTopColor: colors.borderColor, paddingTop: sp.lg, marginTop: sp.lg, borderTopWidth: 1 },
+      ]}
     >
       <Text style={[styles.addPlayerTitle, { color: colors.textPrimary, fontSize: font.md, marginBottom: sp.sm + sp.xs }]}>
         {MATCH_CREATION_BUTTON_LABELS.ADD_REINFORCEMENT}
@@ -160,7 +166,7 @@ export const AddPlayerForm: React.FC<AddPlayerFormProps> = ({
           style={[
             styles.addPlayerButton,
             {
-              backgroundColor: isDark ? SLATE_COLORS[700] : SLATE_COLORS[900],
+              backgroundColor: BRAND_COLORS[600],
               opacity: isValid ? 1 : OPACITY.disabled,
               width: sp.xxl * 1.5,
               borderRadius: sp.sm,
@@ -189,7 +195,7 @@ export const AddPlayerForm: React.FC<AddPlayerFormProps> = ({
             padding: sp.sm + sp.xs,
             borderRadius: sp.sm,
             fontSize: font.md,
-            marginTop: sp.xs,
+            marginTop: sp.sm,
           },
         ]}
       />
@@ -199,11 +205,7 @@ export const AddPlayerForm: React.FC<AddPlayerFormProps> = ({
 };
 
 const styles = StyleSheet.create({
-  addPlayerSection: {
-    paddingTop: 24,
-    marginTop: 24,
-    borderTopWidth: 1,
-  },
+  addPlayerSection: {},
   addPlayerTitle: {
     fontSize: 14,
     fontWeight: "bold",

@@ -39,6 +39,8 @@ interface HomeRosterViewProps {
   onTempLicenseChange: (text: string) => void;
   /** Callback to add temp player */
   onAddTempPlayer: () => void;
+  /** If true, AddPlayerForm is not rendered (use for sticky-bottom layout) */
+  hideAddForm?: boolean;
   /** Callback when jersey number changes */
   onPlayerNumberChange?: (playerId: string, newNumber: number) => void;
   /** Callback when number error state changes */
@@ -70,6 +72,7 @@ export const HomeRosterView: React.FC<HomeRosterViewProps> = ({
   onTempNumberChange,
   onTempLicenseChange,
   onAddTempPlayer,
+  hideAddForm,
   onPlayerNumberChange,
   onNumberError,
   isDark,
@@ -152,20 +155,22 @@ export const HomeRosterView: React.FC<HomeRosterViewProps> = ({
         })}
       </View>
 
-      {/* Add Temp Player Form */}
-      <AddPlayerForm
-        name={tempPlayerName}
-        number={tempPlayerNumber}
-        license={tempPlayerLicense}
-        onNameChange={onTempNameChange}
-        onNumberChange={onTempNumberChange}
-        onLicenseChange={onTempLicenseChange}
-        onAdd={onAddTempPlayer}
-        allPlayers={availablePlayers}
-        selectedPlayers={selectedPlayers}
-        isDark={isDark}
-        colors={colors}
-      />
+      {/* Add Temp Player Form — hidden when parent uses sticky-bottom layout */}
+      {!hideAddForm && (
+        <AddPlayerForm
+          name={tempPlayerName}
+          number={tempPlayerNumber}
+          license={tempPlayerLicense}
+          onNameChange={onTempNameChange}
+          onNumberChange={onTempNumberChange}
+          onLicenseChange={onTempLicenseChange}
+          onAdd={onAddTempPlayer}
+          allPlayers={availablePlayers}
+          selectedPlayers={selectedPlayers}
+          isDark={isDark}
+          colors={colors}
+        />
+      )}
     </View>
   );
 };

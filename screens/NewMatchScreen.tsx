@@ -29,7 +29,6 @@ import {
 import { useInterstitialAd } from "../hooks/useInterstitialAd";
 import { ServiceFactory } from "../services/ServiceFactory";
 import { supabase } from "../src/config/supabase";
-import { Club } from "../models/Club";
 import { Team, TeamStatus } from "../models/Team";
 import { Player } from "../models/Player";
 import { SUBSCRIPTION_TIER } from "../models/Subscription";
@@ -43,7 +42,9 @@ import {
   HandicapSelector,
   RosterTabSwitch,
   HomeRosterView,
+  AddPlayerForm,
   OpponentRosterView,
+  AddOpponentForm,
   MatchFooter,
 } from "../components/NewMatch";
 import { RootStackParamList, RootNavigationProp } from "../types/navigation";
@@ -102,6 +103,7 @@ export default function NewMatchScreen() {
 
   // Step 2: Rosters
   const [rosterTab, setRosterTab] = useState<RosterTab>("HOME");
+  const [bottomBarHeight, setBottomBarHeight] = useState(120);
 
   // My Team Management
   const [availableHomePlayers, setAvailableHomePlayers] = useState<Player[]>([]);
@@ -121,6 +123,7 @@ export default function NewMatchScreen() {
 
   // Opponent Templates
   const [savedTemplates, setSavedTemplates] = useState<OpponentTemplate[]>([]);
+  const [loadedTemplateName, setLoadedTemplateName] = useState<string | null>(null);
 
   // ===========================
   // EFFECTS
@@ -162,6 +165,7 @@ export default function NewMatchScreen() {
     } else if (!trackOpponentStats) {
       setOpponentRoster([]);
       setOpponentStarters([]);
+      setLoadedTemplateName(null);
     }
   }, [trackOpponentStats]);
 
@@ -210,7 +214,7 @@ export default function NewMatchScreen() {
     }
   };
 
-  const handleLoadTemplate = (template: OpponentTemplate) => {
+  const applyTemplate = (template: OpponentTemplate) => {
     const now = new Date();
     const players: Player[] = template.players.map((p, i) => ({
       id: `opp-${Date.now()}-${i}`,
@@ -225,9 +229,25 @@ export default function NewMatchScreen() {
     setOpponentStarters(
       players.filter((_, i) => template.players[i].isStarter).map(p => p.id)
     );
+    setLoadedTemplateName(template.name);
   };
 
-  const handleSaveTemplate = async () => {
+  const handleLoadTemplate = (template: OpponentTemplate) => {
+    if (opponentRoster.length > 0) {
+      Alert.alert(
+        "Charger une composition",
+        "Cela va écraser la composition actuelle. Continuer ?",
+        [
+          { text: "Annuler", style: "cancel" },
+          { text: "Continuer", onPress: () => applyTemplate(template) },
+        ]
+      );
+    } else {
+      applyTemplate(template);
+    }
+  };
+
+  const handleSaveTemplate = async (name: string) => {
     try {
       const repo = new OpponentTemplateRepository();
       const templatePlayers = opponentRoster.map(p => ({
@@ -236,9 +256,10 @@ export default function NewMatchScreen() {
         isStarter: opponentStarters.includes(p.id),
         licenseNumber: p.licenseNumber,
       }));
-      await repo.upsertByName(defaultTemplateName, templatePlayers);
+      await repo.upsertByName(name, templatePlayers);
       await loadTemplates();
-      Alert.alert("Composition sauvegardée", `"${defaultTemplateName}" a été sauvegardée.`);
+      setLoadedTemplateName(name);
+      Alert.alert("Composition sauvegardée", `"${name}" a été sauvegardée.`);
     } catch (error) {
       console.error("Error saving opponent template:", error);
     }
@@ -797,7 +818,11 @@ export default function NewMatchScreen() {
   const isStep2Valid =
     selectedHomePlayers.length >= ROSTER_LIMITS.MIN_PLAYERS &&
     starters.length === Math.min(ROSTER_LIMITS.STARTERS, selectedHomePlayers.length) &&
-    selectedPlayerNumberErrors.length === 0; // Block only if selected players have number errors
+    selectedPlayerNumberErrors.length === 0 &&
+    (!trackOpponentStats || (
+      opponentRoster.length >= ROSTER_LIMITS.STARTERS &&
+      opponentStarters.length === ROSTER_LIMITS.STARTERS
+    ));
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -882,7 +907,7 @@ export default function NewMatchScreen() {
 
           <ScrollView
             style={styles.rosterContent}
-            contentContainerStyle={[styles.rosterScrollContent, { padding: sp.md }]}
+            contentContainerStyle={[styles.rosterScrollContent, { padding: sp.md, paddingBottom: bottomBarHeight }]}
             keyboardShouldPersistTaps="handled"
           >
             {rosterTab === "HOME" ? (
@@ -901,6 +926,7 @@ export default function NewMatchScreen() {
                 onAddTempPlayer={addTempHomePlayer}
                 onPlayerNumberChange={handlePlayerNumberChange}
                 onNumberError={handlePlayerNumberError}
+                hideAddForm
                 isDark={isDark}
                 colors={themeColors}
               />
@@ -922,8 +948,10 @@ export default function NewMatchScreen() {
                 onGoToStep1={() => setStep(1)}
                 savedTemplates={savedTemplates}
                 defaultTemplateName={defaultTemplateName}
+                loadedTemplateName={loadedTemplateName}
                 onLoadTemplate={handleLoadTemplate}
                 onSaveTemplate={handleSaveTemplate}
+                hideAddForm
                 isDark={isDark}
                 colors={themeColors}
               />
@@ -932,14 +960,64 @@ export default function NewMatchScreen() {
         </KeyboardAvoidingView>
       )}
 
-      {/* Footer with Action Button */}
-      <MatchFooter
-        step={step}
-        enabled={step === 1 ? !!isStep1Valid : !!isStep2Valid}
-        onPress={step === 1 ? handleNextStep : handleStart}
-        isDark={isDark}
-        colors={themeColors}
-      />
+      {/* Step 1: absolute footer */}
+      {step === 1 && (
+        <MatchFooter
+          step={step}
+          enabled={!!isStep1Valid}
+          onPress={handleNextStep}
+          isDark={isDark}
+          colors={themeColors}
+        />
+      )}
+
+      {/* Step 2: sticky form + action button, always pinned at bottom */}
+      {step === 2 && (
+        <View
+          style={[styles.bottomBar, { backgroundColor: colors.background, borderTopColor: colors.border }]}
+          onLayout={(e) => setBottomBarHeight(e.nativeEvent.layout.height)}
+        >
+          {(rosterTab === "HOME" || trackOpponentStats) && (
+            <View style={{ paddingHorizontal: sp.md, paddingTop: sp.md, paddingBottom: sp.sm }}>
+              {rosterTab === "HOME" ? (
+                <AddPlayerForm
+                  name={tempHomePlayerName}
+                  number={tempHomePlayerNumber}
+                  license={tempHomePlayerLicense}
+                  onNameChange={setTempHomePlayerName}
+                  onNumberChange={setTempHomePlayerNumber}
+                  onLicenseChange={setTempHomePlayerLicense}
+                  onAdd={addTempHomePlayer}
+                  allPlayers={availableHomePlayers}
+                  selectedPlayers={selectedHomePlayers}
+                  compact
+                  isDark={isDark}
+                  colors={themeColors}
+                />
+              ) : (
+                <AddOpponentForm
+                  playerName={newOppPlayerName}
+                  playerNumber={newOppPlayerNumber}
+                  playerLicense={newOppPlayerLicense}
+                  onNameChange={setNewOppPlayerName}
+                  onNumberChange={setNewOppPlayerNumber}
+                  onLicenseChange={setNewOppPlayerLicense}
+                  onAdd={addOpponentPlayer}
+                  colors={themeColors}
+                />
+              )}
+            </View>
+          )}
+          <MatchFooter
+            step={step}
+            enabled={!!isStep2Valid}
+            onPress={handleStart}
+            absolute={false}
+            isDark={isDark}
+            colors={themeColors}
+          />
+        </View>
+      )}
     </View>
   );
 }
@@ -967,6 +1045,12 @@ const styles = StyleSheet.create({
   },
   rosterScrollContent: {
     padding: 24,
-    paddingBottom: 100,
+  },
+  bottomBar: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    borderTopWidth: 1,
   },
 });

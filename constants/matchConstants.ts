@@ -160,6 +160,8 @@ export const MATCH_CREATION_BUTTON_LABELS = {
 export const MATCH_CREATION_INFO_MESSAGES = {
   ROSTER_INSTRUCTIONS:
     "Sélectionnez les présents et le 5 de départ (étoile à droite).",
+  OPPONENT_ROSTER_INSTRUCTIONS:
+    "Sélectionnez le 5 de départ adverse (étoile à droite).",
   NO_TEAM_CREATED: "Pas d'équipe créée",
   OPPONENT_STATS_DISABLED: "Statistiques adverses désactivées",
   OPPONENT_STATS_DISABLED_DETAIL:

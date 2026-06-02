@@ -25,6 +25,8 @@ interface MatchFooterProps {
     surfaceColor: string;
     borderColor: string;
   };
+  /** Use absolute positioning (default true). Pass false for flow layout in step 2. */
+  absolute?: boolean;
 }
 
 /**
@@ -36,12 +38,13 @@ export const MatchFooter: React.FC<MatchFooterProps> = ({
   onPress,
   isDark,
   colors,
+  absolute = true,
 }) => {
   const { sp, font, sizes } = useResponsive();
   return (
     <View
       style={[
-        styles.footer,
+        absolute ? styles.footer : styles.footerFlow,
         {
           backgroundColor: colors.surfaceColor,
           borderTopColor: colors.borderColor,
@@ -120,6 +123,10 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
+    padding: 24,
+    borderTopWidth: 1,
+  },
+  footerFlow: {
     padding: 24,
     borderTopWidth: 1,
   },

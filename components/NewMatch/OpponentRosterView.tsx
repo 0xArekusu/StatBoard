@@ -1,7 +1,8 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, StyleSheet } from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet, Modal, TextInput, Alert } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { BRAND_COLORS, SLATE_COLORS, COMMON_COLORS, OPACITY } from "../../src/theme";
+import { BRAND_COLORS, SLATE_COLORS, STATUS_COLORS, OPACITY } from "../../src/theme";
+import { AddOpponentForm } from "./AddOpponentForm";
 import {
   MATCH_CREATION_INFO_MESSAGES,
   MATCH_CREATION_BUTTON_LABELS,
@@ -29,8 +30,11 @@ interface OpponentRosterViewProps {
   onGoToStep1: () => void;
   savedTemplates: OpponentTemplate[];
   defaultTemplateName: string;
+  loadedTemplateName: string | null;
   onLoadTemplate: (template: OpponentTemplate) => void;
-  onSaveTemplate: () => void;
+  onSaveTemplate: (name: string) => void;
+  /** If true, the add-player form is not rendered (use for sticky-bottom layout) */
+  hideAddForm?: boolean;
   isDark: boolean;
   colors: {
     surfaceColor: string;
@@ -57,13 +61,49 @@ export const OpponentRosterView: React.FC<OpponentRosterViewProps> = ({
   onGoToStep1,
   savedTemplates,
   defaultTemplateName,
+  loadedTemplateName,
   onLoadTemplate,
   onSaveTemplate,
+  hideAddForm,
   isDark,
   colors,
 }) => {
   const { sp, font } = useResponsive();
   const [showTemplates, setShowTemplates] = useState(false);
+  const [showSaveModal, setShowSaveModal] = useState(false);
+  const [saveNameInput, setSaveNameInput] = useState("");
+
+  const openSaveModal = () => {
+    setSaveNameInput(defaultTemplateName);
+    setShowSaveModal(true);
+  };
+
+  const confirmSave = () => {
+    const name = saveNameInput.trim();
+    if (!name) return;
+
+    const exists = savedTemplates.some(t => t.name === name);
+    if (exists) {
+      Alert.alert(
+        "Sauvegarder la composition",
+        `"${name}" existe déjà. Écraser ?`,
+        [
+          { text: "Annuler", style: "cancel" },
+          {
+            text: "Écraser",
+            style: "destructive",
+            onPress: () => {
+              setShowSaveModal(false);
+              onSaveTemplate(name);
+            },
+          },
+        ]
+      );
+    } else {
+      setShowSaveModal(false);
+      onSaveTemplate(name);
+    }
+  };
 
   if (!trackOpponentStats) {
     return (
@@ -72,38 +112,22 @@ export const OpponentRosterView: React.FC<OpponentRosterViewProps> = ({
           style={[
             styles.disabledOpponentBox,
             {
-              backgroundColor: isDark
-                ? `${SLATE_COLORS[900]}80`
-                : SLATE_COLORS[100],
+              backgroundColor: isDark ? `${SLATE_COLORS[900]}80` : SLATE_COLORS[100],
               borderColor: colors.borderColor,
               padding: sp.xxl,
               borderRadius: sp.md,
             },
           ]}
         >
-          <MaterialCommunityIcons
-            name="chart-bar"
-            size={sp.xxl}
-            color={colors.textSecondary}
-            style={{ opacity: 0.5 }}
-          />
-          <Text
-            style={[styles.disabledOpponentTitle, { color: colors.textPrimary, fontSize: font.md, marginTop: sp.md }]}
-          >
+          <MaterialCommunityIcons name="chart-bar" size={sp.xxl} color={colors.textSecondary} style={{ opacity: 0.5 }} />
+          <Text style={[styles.disabledOpponentTitle, { color: colors.textPrimary, fontSize: font.md, marginTop: sp.md }]}>
             {MATCH_CREATION_INFO_MESSAGES.OPPONENT_STATS_DISABLED}
           </Text>
-          <Text
-            style={[styles.disabledOpponentText, { color: colors.textSecondary, fontSize: font.sm, marginTop: sp.sm }]}
-          >
+          <Text style={[styles.disabledOpponentText, { color: colors.textSecondary, fontSize: font.sm, marginTop: sp.sm }]}>
             {MATCH_CREATION_INFO_MESSAGES.OPPONENT_STATS_DISABLED_DETAIL}
           </Text>
           <TouchableOpacity onPress={onGoToStep1}>
-            <Text
-              style={[
-                styles.disabledOpponentLink,
-                { color: BRAND_COLORS[600] },
-              ]}
-            >
+            <Text style={[styles.disabledOpponentLink, { color: BRAND_COLORS[600] }]}>
               {MATCH_CREATION_BUTTON_LABELS.MODIFY_OPTIONS}
             </Text>
           </TouchableOpacity>
@@ -112,142 +136,146 @@ export const OpponentRosterView: React.FC<OpponentRosterViewProps> = ({
     );
   }
 
+  const canSave = opponentRoster.length > 0;
+  const hasTemplates = savedTemplates.length > 0;
+
   return (
     <View style={styles.rosterSection}>
-      {/* Saved templates combobox */}
-      {savedTemplates.length > 0 && (
+      {/* Info Box */}
+      <View
+        style={[
+          styles.infoBox,
+          {
+            backgroundColor: `${BRAND_COLORS[500]}10`,
+            borderColor: `${BRAND_COLORS[500]}30`,
+          },
+        ]}
+      >
+        <MaterialCommunityIcons name="information" size={16} color={BRAND_COLORS[600]} />
+        <Text style={[styles.infoBoxText, { color: BRAND_COLORS[600] }]}>
+          {MATCH_CREATION_INFO_MESSAGES.OPPONENT_ROSTER_INSTRUCTIONS}
+        </Text>
         <View
           style={[
-            styles.templateSelector,
+            styles.starterBadge,
             {
-              backgroundColor: isDark ? SLATE_COLORS[800] : SLATE_COLORS[50],
-              borderColor: colors.borderColor,
-              borderRadius: sp.sm,
+              backgroundColor:
+                opponentStarters.length === ROSTER_LIMITS.STARTERS
+                  ? STATUS_COLORS.successBackground
+                  : colors.borderColor,
             },
           ]}
         >
-          <TouchableOpacity
-            onPress={() => setShowTemplates(!showTemplates)}
-            style={styles.templateSelectorRow}
+          <Text
+            style={[
+              styles.starterBadgeText,
+              {
+                color:
+                  opponentStarters.length === ROSTER_LIMITS.STARTERS
+                    ? STATUS_COLORS.successLight
+                    : colors.textSecondary,
+              },
+            ]}
           >
-            <MaterialCommunityIcons
-              name="folder-open-outline"
-              size={16}
-              color={BRAND_COLORS[600]}
-            />
+            {opponentStarters.length} / {ROSTER_LIMITS.STARTERS}
+          </Text>
+        </View>
+      </View>
+
+      {/* Charger une composition + bouton sauvegarde */}
+      <View
+        style={[
+          styles.templateSelector,
+          {
+            backgroundColor: isDark ? SLATE_COLORS[800] : SLATE_COLORS[50],
+            borderColor: colors.borderColor,
+            borderRadius: sp.sm,
+          },
+        ]}
+      >
+        <View style={styles.templateSelectorRow}>
+          <TouchableOpacity
+            onPress={() => hasTemplates && setShowTemplates(!showTemplates)}
+            style={styles.templateSelectorLeft}
+            disabled={!hasTemplates}
+          >
+            <MaterialCommunityIcons name="folder-open-outline" size={16} color={BRAND_COLORS[600]} />
             <Text style={[styles.templateSelectorLabel, { color: BRAND_COLORS[600], fontSize: font.sm }]}>
               Charger une composition
             </Text>
-            <MaterialCommunityIcons
-              name={showTemplates ? "chevron-up" : "chevron-down"}
-              size={16}
-              color={colors.textSecondary}
-            />
+            {hasTemplates && (
+              <MaterialCommunityIcons
+                name={showTemplates ? "chevron-up" : "chevron-down"}
+                size={16}
+                color={colors.textSecondary}
+              />
+            )}
           </TouchableOpacity>
 
-          {showTemplates && (
-            <View style={[styles.templateList, { borderTopColor: colors.borderColor }]}>
-              {savedTemplates.map(template => (
-                <TouchableOpacity
-                  key={template.id}
-                  onPress={() => {
-                    onLoadTemplate(template);
-                    setShowTemplates(false);
-                  }}
-                  style={[styles.templateItem, { borderBottomColor: colors.borderColor }]}
-                >
-                  <MaterialCommunityIcons
-                    name="basketball"
-                    size={14}
-                    color={colors.textSecondary}
-                  />
-                  <Text
-                    style={[styles.templateItemText, { color: colors.textPrimary, fontSize: font.sm }]}
-                    numberOfLines={1}
-                  >
-                    {template.name}
-                  </Text>
-                  <Text style={[styles.templateItemCount, { color: colors.textSecondary, fontSize: font.xs }]}>
-                    {template.players.length} joueurs
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          )}
-        </View>
-      )}
-
-      {/* Add Opponent Form */}
-      <View style={styles.addOpponentFormWrapper}>
-        <View style={styles.addOpponentForm}>
-          <TextInput
-            placeholder="Nom (Optionnel)"
-            placeholderTextColor={colors.textSecondary}
-            value={newPlayerName}
-            onChangeText={onNewNameChange}
-            style={[
-              styles.addOpponentInput,
-              styles.addOpponentInputName,
-              {
-                backgroundColor: colors.surfaceColor,
-                borderColor: colors.borderColor,
-                color: colors.textPrimary,
-              },
-            ]}
-          />
-          <TextInput
-            placeholder="#"
-            placeholderTextColor={colors.textSecondary}
-            value={newPlayerNumber}
-            onChangeText={onNewNumberChange}
-            keyboardType="number-pad"
-            style={[
-              styles.addOpponentInput,
-              styles.addOpponentInputNumber,
-              {
-                backgroundColor: colors.surfaceColor,
-                borderColor: colors.borderColor,
-                color: colors.textPrimary,
-              },
-            ]}
-          />
+          {/* Save icon button */}
           <TouchableOpacity
-            onPress={onAddPlayer}
-            disabled={!newPlayerNumber}
+            onPress={openSaveModal}
+            disabled={!canSave}
             style={[
-              styles.addOpponentButton,
+              styles.saveIconButton,
               {
-                backgroundColor: BRAND_COLORS[600],
-                opacity: newPlayerNumber ? 1 : OPACITY.disabled,
+                borderColor: canSave ? BRAND_COLORS[600] : colors.borderColor,
+                opacity: canSave ? 1 : OPACITY.disabled,
               },
             ]}
           >
-            <Text
-              style={[
-                styles.addOpponentButtonText,
-                { color: COMMON_COLORS.white },
-              ]}
-            >
-              OK
-            </Text>
+            <MaterialCommunityIcons
+              name="content-save-outline"
+              size={18}
+              color={canSave ? BRAND_COLORS[600] : colors.textSecondary}
+            />
           </TouchableOpacity>
         </View>
-        <TextInput
-          placeholder="VTXXXXXX"
-          placeholderTextColor={colors.textSecondary}
-          value={newPlayerLicense}
-          onChangeText={onNewLicenseChange}
-          autoCapitalize="characters"
-          style={[
-            styles.addOpponentInput,
-            {
-              backgroundColor: colors.surfaceColor,
-              borderColor: colors.borderColor,
-              color: colors.textPrimary,
-            },
-          ]}
-        />
+
+        {showTemplates && hasTemplates && (
+          <View style={[styles.templateList, { borderTopColor: colors.borderColor }]}>
+            {savedTemplates.map(template => (
+              <TouchableOpacity
+                key={template.id}
+                onPress={() => {
+                  onLoadTemplate(template);
+                  setShowTemplates(false);
+                }}
+                style={[styles.templateItem, { borderBottomColor: colors.borderColor }]}
+              >
+                <MaterialCommunityIcons
+                  name="basketball"
+                  size={14}
+                  color={template.name === loadedTemplateName ? BRAND_COLORS[600] : colors.textSecondary}
+                />
+                <Text
+                  style={[styles.templateItemText, { color: colors.textPrimary, fontSize: font.sm }]}
+                  numberOfLines={1}
+                >
+                  {template.name}
+                </Text>
+                <Text style={[styles.templateItemCount, { color: colors.textSecondary, fontSize: font.xs }]}>
+                  {template.players.length} joueurs
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
       </View>
+
+      {/* Add Opponent Form — hidden when parent uses sticky-bottom layout */}
+      {!hideAddForm && (
+        <AddOpponentForm
+          playerName={newPlayerName}
+          playerNumber={newPlayerNumber}
+          playerLicense={newPlayerLicense}
+          onNameChange={onNewNameChange}
+          onNumberChange={onNewNumberChange}
+          onLicenseChange={onNewLicenseChange}
+          onAdd={onAddPlayer}
+          colors={colors}
+        />
+      )}
 
       {/* Opponent List */}
       <View style={styles.opponentList}>
@@ -268,42 +296,72 @@ export const OpponentRosterView: React.FC<OpponentRosterViewProps> = ({
           })
         ) : (
           <View style={styles.emptyOpponentList}>
-            <Text
-              style={[styles.emptyOpponentText, { color: colors.textSecondary }]}
-            >
+            <Text style={[styles.emptyOpponentText, { color: colors.textSecondary }]}>
               {MATCH_CREATION_INFO_MESSAGES.NO_OPPONENT_PLAYERS}
             </Text>
           </View>
         )}
       </View>
 
-      {/* Save template button */}
-      {opponentRoster.length > 0 && (
-        <TouchableOpacity
-          onPress={onSaveTemplate}
-          style={[
-            styles.saveTemplateButton,
-            {
-              borderColor: BRAND_COLORS[600],
-              backgroundColor: isDark
-                ? `${BRAND_COLORS[600]}15`
-                : `${BRAND_COLORS[600]}08`,
-            },
-          ]}
-        >
-          <MaterialCommunityIcons
-            name="content-save-outline"
-            size={16}
-            color={BRAND_COLORS[600]}
-          />
-          <Text
-            style={[styles.saveTemplateText, { color: BRAND_COLORS[600] }]}
-            numberOfLines={1}
+      {/* Save modal */}
+      <Modal visible={showSaveModal} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View
+            style={[
+              styles.modalCard,
+              {
+                backgroundColor: colors.surfaceColor,
+                borderColor: colors.borderColor,
+              },
+            ]}
           >
-            Sauvegarder : {defaultTemplateName}
-          </Text>
-        </TouchableOpacity>
-      )}
+            <Text style={[styles.modalTitle, { color: colors.textPrimary, fontSize: font.md }]}>
+              Sauvegarder la composition
+            </Text>
+            <TextInput
+              value={saveNameInput}
+              onChangeText={setSaveNameInput}
+              autoFocus
+              selectTextOnFocus
+              style={[
+                styles.modalInput,
+                {
+                  backgroundColor: isDark ? SLATE_COLORS[700] : SLATE_COLORS[100],
+                  borderColor: colors.borderColor,
+                  color: colors.textPrimary,
+                  fontSize: font.md,
+                },
+              ]}
+            />
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                onPress={() => setShowSaveModal(false)}
+                style={[styles.modalButton, { borderColor: colors.borderColor }]}
+              >
+                <Text style={[styles.modalButtonText, { color: colors.textSecondary, fontSize: font.sm }]}>
+                  Annuler
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={confirmSave}
+                disabled={!saveNameInput.trim()}
+                style={[
+                  styles.modalButton,
+                  styles.modalButtonPrimary,
+                  {
+                    backgroundColor: BRAND_COLORS[600],
+                    opacity: saveNameInput.trim() ? 1 : OPACITY.disabled,
+                  },
+                ]}
+              >
+                <Text style={[styles.modalButtonText, { color: "white", fontSize: font.sm }]}>
+                  Enregistrer
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -341,6 +399,12 @@ const styles = StyleSheet.create({
   templateSelectorRow: {
     flexDirection: "row",
     alignItems: "center",
+    paddingRight: 8,
+  },
+  templateSelectorLeft: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
     paddingHorizontal: 12,
     paddingVertical: 10,
@@ -367,35 +431,32 @@ const styles = StyleSheet.create({
   templateItemCount: {
     opacity: 0.6,
   },
-  addOpponentFormWrapper: {
-    gap: 8,
-    marginBottom: 24,
-  },
-  addOpponentForm: {
-    flexDirection: "row",
-    gap: 8,
-  },
-  addOpponentInput: {
-    padding: 12,
-    borderRadius: 8,
+  saveIconButton: {
     borderWidth: 1,
-    fontSize: 14,
-  },
-  addOpponentInputName: {
-    flex: 1,
-  },
-  addOpponentInputNumber: {
-    width: 64,
-    textAlign: "center",
-  },
-  addOpponentButton: {
-    paddingHorizontal: 16,
     borderRadius: 8,
+    padding: 6,
     alignItems: "center",
     justifyContent: "center",
   },
-  addOpponentButtonText: {
-    fontSize: 14,
+  infoBox: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 8,
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  infoBoxText: {
+    fontSize: 12,
+    flex: 1,
+  },
+  starterBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  starterBadgeText: {
+    fontSize: 12,
     fontWeight: "bold",
   },
   opponentList: {
@@ -409,19 +470,44 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontStyle: "italic",
   },
-  saveTemplateButton: {
-    flexDirection: "row",
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
     alignItems: "center",
+    padding: 24,
+  },
+  modalCard: {
+    width: "100%",
+    maxWidth: 400,
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 24,
+    gap: 16,
+  },
+  modalTitle: {
+    fontWeight: "bold",
+  },
+  modalInput: {
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 12,
+  },
+  modalButtons: {
+    flexDirection: "row",
     gap: 8,
-    paddingHorizontal: 12,
+    justifyContent: "flex-end",
+  },
+  modalButton: {
+    paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 8,
     borderWidth: 1,
-    marginTop: 8,
   },
-  saveTemplateText: {
-    flex: 1,
-    fontSize: 13,
-    fontWeight: "500",
+  modalButtonPrimary: {
+    borderWidth: 0,
+  },
+  modalButtonText: {
+    fontWeight: "600",
   },
 });
