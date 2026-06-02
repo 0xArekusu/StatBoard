@@ -48,6 +48,7 @@ import {
 } from "../components/NewMatch";
 import { RootStackParamList, RootNavigationProp } from "../types/navigation";
 import { showErrorAlert } from "../utils/errorAlert";
+import { OpponentTemplateRepository, OpponentTemplate } from "../src/services/database/OpponentTemplateRepository";
 
 type NewMatchRouteProp = RouteProp<RootStackParamList, "NewMatch">;
 type RosterTab = "HOME" | "AWAY";
@@ -118,6 +119,9 @@ export default function NewMatchScreen() {
   const [newOppPlayerNumber, setNewOppPlayerNumber] = useState("");
   const [newOppPlayerLicense, setNewOppPlayerLicense] = useState("");
 
+  // Opponent Templates
+  const [savedTemplates, setSavedTemplates] = useState<OpponentTemplate[]>([]);
+
   // ===========================
   // EFFECTS
   // ===========================
@@ -128,6 +132,13 @@ export default function NewMatchScreen() {
   useEffect(() => {
     loadClubData();
   }, [currentClub?.id]);
+
+  /**
+   * Load saved opponent templates on mount
+   */
+  useEffect(() => {
+    loadTemplates();
+  }, []);
 
   /**
    * Auto-create default opponent players when stats tracking is enabled
@@ -189,6 +200,49 @@ export default function NewMatchScreen() {
   // ===========================
   // DATA LOADING
   // ===========================
+
+  const loadTemplates = async () => {
+    try {
+      const repo = new OpponentTemplateRepository();
+      setSavedTemplates(await repo.getAll());
+    } catch (error) {
+      console.error("Error loading opponent templates:", error);
+    }
+  };
+
+  const handleLoadTemplate = (template: OpponentTemplate) => {
+    const now = new Date();
+    const players: Player[] = template.players.map((p, i) => ({
+      id: `opp-${Date.now()}-${i}`,
+      name: p.name,
+      jerseyNumber: p.number,
+      teamId: "",
+      licenseNumber: p.licenseNumber,
+      createdAt: now,
+      updatedAt: now,
+    }));
+    setOpponentRoster(players);
+    setOpponentStarters(
+      players.filter((_, i) => template.players[i].isStarter).map(p => p.id)
+    );
+  };
+
+  const handleSaveTemplate = async () => {
+    try {
+      const repo = new OpponentTemplateRepository();
+      const templatePlayers = opponentRoster.map(p => ({
+        number: p.jerseyNumber,
+        name: p.name,
+        isStarter: opponentStarters.includes(p.id),
+        licenseNumber: p.licenseNumber,
+      }));
+      await repo.upsertByName(defaultTemplateName, templatePlayers);
+      await loadTemplates();
+      Alert.alert("Composition sauvegardée", `"${defaultTemplateName}" a été sauvegardée.`);
+    } catch (error) {
+      console.error("Error saving opponent template:", error);
+    }
+  };
 
   /**
    * Load teams for current club
@@ -729,8 +783,13 @@ export default function NewMatchScreen() {
   // ===========================
 
   const selectedTeam = teams.find((t) => t.id === selectedTeamId) || null;
-  // For guests, validate myTeamName; for authenticated users, validate selectedTeamId
   const isStep1Valid = opponent && (user ? selectedTeamId : myTeamName);
+
+  const myName = !user ? myTeamName : (teams.find(t => t.id === selectedTeamId)?.name || "MonEquipe");
+  const today = new Date().toISOString().split("T")[0];
+  const defaultTemplateName = isHome
+    ? `${myName}_${opponent || "Adversaire"}_${today}`
+    : `${opponent || "Adversaire"}_${myName}_${today}`;
   const selectedHomePlayerIds = new Set(selectedHomePlayers.map((p) => p.id));
   const selectedPlayerNumberErrors = [...playerNumberErrors].filter((id) =>
     selectedHomePlayerIds.has(id)
@@ -815,6 +874,8 @@ export default function NewMatchScreen() {
             onTabChange={setRosterTab}
             homeCount={selectedHomePlayers.length}
             opponentCount={opponentRoster.length}
+            homeTeamName={myName}
+            opponentName={opponent || "Adversaire"}
             isDark={isDark}
             colors={themeColors}
           />
@@ -859,6 +920,10 @@ export default function NewMatchScreen() {
                 onToggleStarter={toggleOpponentStarter}
                 onRemovePlayer={removeOpponentPlayer}
                 onGoToStep1={() => setStep(1)}
+                savedTemplates={savedTemplates}
+                defaultTemplateName={defaultTemplateName}
+                onLoadTemplate={handleLoadTemplate}
+                onSaveTemplate={handleSaveTemplate}
                 isDark={isDark}
                 colors={themeColors}
               />

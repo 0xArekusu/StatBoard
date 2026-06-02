@@ -1,10 +1,4 @@
-/**
- * Opponent Roster View Component
- *
- * Displays and manages the opponent team roster.
- */
-
-import React from "react";
+import React, { useState } from "react";
 import { View, Text, TextInput, TouchableOpacity, StyleSheet } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { BRAND_COLORS, SLATE_COLORS, COMMON_COLORS, OPACITY } from "../../src/theme";
@@ -15,40 +9,29 @@ import {
 } from "../../constants";
 import { OpponentPlayerCard } from "./OpponentPlayerCard";
 import type { Player } from "../../models/Player";
+import type { OpponentTemplate } from "../../src/services/database/OpponentTemplateRepository";
 import { useResponsive } from "../../src/hooks/useResponsive";
 
 interface OpponentRosterViewProps {
-  /** Whether opponent stats tracking is enabled */
   trackOpponentStats: boolean;
-  /** Opponent roster */
   opponentRoster: Player[];
-  /** Opponent starter IDs */
   opponentStarters: string[];
-  /** New opponent player name input */
   newPlayerName: string;
-  /** New opponent player number input */
   newPlayerNumber: string;
-  /** New opponent player license input */
   newPlayerLicense: string;
-  /** Callback when new player name changes */
   onNewNameChange: (text: string) => void;
-  /** Callback when new player number changes */
   onNewNumberChange: (text: string) => void;
-  /** Callback when new player license changes */
   onNewLicenseChange: (text: string) => void;
-  /** Callback to add opponent player */
   onAddPlayer: () => void;
-  /** Callback to generate multiple players */
   onGeneratePlayers: (count: number) => void;
-  /** Callback when opponent starter toggles */
   onToggleStarter: (playerId: string) => void;
-  /** Callback to remove player */
   onRemovePlayer: (playerId: string) => void;
-  /** Callback to go back to step 1 */
   onGoToStep1: () => void;
-  /** Whether dark mode is enabled */
+  savedTemplates: OpponentTemplate[];
+  defaultTemplateName: string;
+  onLoadTemplate: (template: OpponentTemplate) => void;
+  onSaveTemplate: () => void;
   isDark: boolean;
-  /** Theme colors */
   colors: {
     surfaceColor: string;
     textPrimary: string;
@@ -57,9 +40,6 @@ interface OpponentRosterViewProps {
   };
 }
 
-/**
- * Opponent team roster management view
- */
 export const OpponentRosterView: React.FC<OpponentRosterViewProps> = ({
   trackOpponentStats,
   opponentRoster,
@@ -75,10 +55,15 @@ export const OpponentRosterView: React.FC<OpponentRosterViewProps> = ({
   onToggleStarter,
   onRemovePlayer,
   onGoToStep1,
+  savedTemplates,
+  defaultTemplateName,
+  onLoadTemplate,
+  onSaveTemplate,
   isDark,
   colors,
 }) => {
-  const { sp, font, sizes } = useResponsive();
+  const { sp, font } = useResponsive();
+  const [showTemplates, setShowTemplates] = useState(false);
 
   if (!trackOpponentStats) {
     return (
@@ -129,56 +114,68 @@ export const OpponentRosterView: React.FC<OpponentRosterViewProps> = ({
 
   return (
     <View style={styles.rosterSection}>
-      {/* Quick Add Buttons - COMMENTED FOR LATER USE */}
-      {/* TODO: Re-enable quick add buttons in a future release */}
-      {/* <View style={styles.quickAddButtons}>
-        <TouchableOpacity
-          onPress={() => onGeneratePlayers(ROSTER_LIMITS.QUICK_ADD.SMALL)}
+      {/* Saved templates combobox */}
+      {savedTemplates.length > 0 && (
+        <View
           style={[
-            styles.quickAddButton,
+            styles.templateSelector,
             {
-              backgroundColor: isDark ? SLATE_COLORS[800] : SLATE_COLORS[100],
+              backgroundColor: isDark ? SLATE_COLORS[800] : SLATE_COLORS[50],
               borderColor: colors.borderColor,
+              borderRadius: sp.sm,
             },
           ]}
         >
-          <MaterialCommunityIcons
-            name="lightning-bolt"
-            size={12}
-            color={colors.textSecondary}
-          />
-          <Text
-            style={[styles.quickAddButtonText, { color: colors.textSecondary }]}
+          <TouchableOpacity
+            onPress={() => setShowTemplates(!showTemplates)}
+            style={styles.templateSelectorRow}
           >
-            {MATCH_CREATION_BUTTON_LABELS.GENERATE_PLAYERS(
-              ROSTER_LIMITS.QUICK_ADD.SMALL
-            )}
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          onPress={() => onGeneratePlayers(ROSTER_LIMITS.QUICK_ADD.LARGE)}
-          style={[
-            styles.quickAddButton,
-            {
-              backgroundColor: isDark ? SLATE_COLORS[800] : SLATE_COLORS[100],
-              borderColor: colors.borderColor,
-            },
-          ]}
-        >
-          <MaterialCommunityIcons
-            name="lightning-bolt"
-            size={12}
-            color={colors.textSecondary}
-          />
-          <Text
-            style={[styles.quickAddButtonText, { color: colors.textSecondary }]}
-          >
-            {MATCH_CREATION_BUTTON_LABELS.GENERATE_PLAYERS(
-              ROSTER_LIMITS.QUICK_ADD.LARGE
-            )}
-          </Text>
-        </TouchableOpacity>
-      </View> */}
+            <MaterialCommunityIcons
+              name="folder-open-outline"
+              size={16}
+              color={BRAND_COLORS[600]}
+            />
+            <Text style={[styles.templateSelectorLabel, { color: BRAND_COLORS[600], fontSize: font.sm }]}>
+              Charger une composition
+            </Text>
+            <MaterialCommunityIcons
+              name={showTemplates ? "chevron-up" : "chevron-down"}
+              size={16}
+              color={colors.textSecondary}
+            />
+          </TouchableOpacity>
+
+          {showTemplates && (
+            <View style={[styles.templateList, { borderTopColor: colors.borderColor }]}>
+              {savedTemplates.map(template => (
+                <TouchableOpacity
+                  key={template.id}
+                  onPress={() => {
+                    onLoadTemplate(template);
+                    setShowTemplates(false);
+                  }}
+                  style={[styles.templateItem, { borderBottomColor: colors.borderColor }]}
+                >
+                  <MaterialCommunityIcons
+                    name="basketball"
+                    size={14}
+                    color={colors.textSecondary}
+                  />
+                  <Text
+                    style={[styles.templateItemText, { color: colors.textPrimary, fontSize: font.sm }]}
+                    numberOfLines={1}
+                  >
+                    {template.name}
+                  </Text>
+                  <Text style={[styles.templateItemCount, { color: colors.textSecondary, fontSize: font.xs }]}>
+                    {template.players.length} joueurs
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+        </View>
+      )}
 
       {/* Add Opponent Form */}
       <View style={styles.addOpponentFormWrapper}>
@@ -279,6 +276,34 @@ export const OpponentRosterView: React.FC<OpponentRosterViewProps> = ({
           </View>
         )}
       </View>
+
+      {/* Save template button */}
+      {opponentRoster.length > 0 && (
+        <TouchableOpacity
+          onPress={onSaveTemplate}
+          style={[
+            styles.saveTemplateButton,
+            {
+              borderColor: BRAND_COLORS[600],
+              backgroundColor: isDark
+                ? `${BRAND_COLORS[600]}15`
+                : `${BRAND_COLORS[600]}08`,
+            },
+          ]}
+        >
+          <MaterialCommunityIcons
+            name="content-save-outline"
+            size={16}
+            color={BRAND_COLORS[600]}
+          />
+          <Text
+            style={[styles.saveTemplateText, { color: BRAND_COLORS[600] }]}
+            numberOfLines={1}
+          >
+            Sauvegarder : {defaultTemplateName}
+          </Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 };
@@ -309,25 +334,39 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     marginTop: 16,
   },
-  // Quick add buttons styles - COMMENTED FOR LATER USE
-  // quickAddButtons: {
-  //   flexDirection: "row",
-  //   gap: 8,
-  //   marginBottom: 16,
-  // },
-  // quickAddButton: {
-  //   flexDirection: "row",
-  //   alignItems: "center",
-  //   gap: 4,
-  //   paddingHorizontal: 12,
-  //   paddingVertical: 6,
-  //   borderRadius: 999,
-  //   borderWidth: 1,
-  // },
-  // quickAddButtonText: {
-  //   fontSize: 12,
-  //   fontWeight: "bold",
-  // },
+  templateSelector: {
+    borderWidth: 1,
+    overflow: "hidden",
+  },
+  templateSelectorRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  templateSelectorLabel: {
+    flex: 1,
+    fontWeight: "600",
+  },
+  templateList: {
+    borderTopWidth: 1,
+  },
+  templateItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  templateItemText: {
+    flex: 1,
+    fontWeight: "500",
+  },
+  templateItemCount: {
+    opacity: 0.6,
+  },
   addOpponentFormWrapper: {
     gap: 8,
     marginBottom: 24,
@@ -369,5 +408,20 @@ const styles = StyleSheet.create({
   emptyOpponentText: {
     fontSize: 14,
     fontStyle: "italic",
+  },
+  saveTemplateButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    marginTop: 8,
+  },
+  saveTemplateText: {
+    flex: 1,
+    fontSize: 13,
+    fontWeight: "500",
   },
 });

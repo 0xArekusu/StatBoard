@@ -97,6 +97,17 @@ export class SQLiteAdapter implements IStorageAdapter {
     try { this.db.execSync(`ALTER TABLE matches ADD COLUMN opponent_handicap INTEGER NOT NULL DEFAULT 0`); } catch (_) {}
     try { this.db.execSync(`ALTER TABLE matches ADD COLUMN has_sub_tracking INTEGER NOT NULL DEFAULT 0`); } catch (_) {}
 
+    // Create opponent_templates table
+    this.db.execSync(`
+      CREATE TABLE IF NOT EXISTS opponent_templates (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        players TEXT NOT NULL DEFAULT '[]',
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
     // Create indexes
     this.db.execSync(`
       CREATE INDEX IF NOT EXISTS idx_match_actions_match_id ON match_actions(match_id);
