@@ -71,7 +71,9 @@ export default function MatchHistoryRow({ entry, onPress }: MatchHistoryRowProps
 
       {/* Score */}
       <Text style={[styles.score, { fontSize: font.sm, color: resultColor, fontWeight: '700' }]}>
-        {match.my_team_score} – {match.opponent_score}
+        {match.is_home
+          ? `${match.my_team_score} – ${match.opponent_score}`
+          : `${match.opponent_score} – ${match.my_team_score}`}
       </Text>
 
       {/* Stats (only if played) */}
