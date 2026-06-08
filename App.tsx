@@ -9,6 +9,7 @@ import { useState, useEffect, useRef } from "react";
 import { NavigationContainer, createNavigationContainerRef } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { AppState, AppStateStatus, Linking } from "react-native";
+import * as Updates from "expo-updates";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import * as Sentry from "@sentry/react-native";
 import AuthScreen from "./screens/authentication/AuthScreen";
@@ -33,6 +34,11 @@ import { AdProvider } from "./src/contexts/AdContext";
 import { ROUTES } from "./constants/routes";
 import { logInfo, logWarn, logError, logger } from "./utils/logger";
 import DebugCourtClick from "./DebugCourtClick";
+import { useAppUpdateCheck } from "./hooks/useAppUpdateCheck";
+import ForceUpdateModal from "./components/ForceUpdateModal";
+import { importHistoricalMatch } from "./src/utils/importHistoricalMatch";
+
+
 
 // Initialize Sentry
 try {
@@ -76,15 +82,40 @@ function Navigation() {
   const { loading, user, createSessionFromUrl } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
   const pendingNavigation = useRef<'emailConfirmed' | 'emailError' | 'resetPassword' | 'resetPasswordError' | false>(false);
+  const { isForceUpdateRequired, storeUrl } = useAppUpdateCheck();
 
   useEffect(() => {
     logInfo("App", "🚀 App initialization started");
 
-    // Simulate initial loading time for splash screen
-    setTimeout(() => {
+    // Check and apply OTA update silently during splash screen.
+    // If fetch completes in time, reloadAsync() restarts the JS bundle seamlessly.
+    // If it takes longer, the update is cached and will apply on the next launch.
+    let canReload = true;
+    if (!__DEV__) {
+      (async () => {
+        try {
+          const update = await Updates.checkForUpdateAsync();
+          if (update.isAvailable) {
+            logInfo("App", "📦 OTA update found, fetching...");
+            await Updates.fetchUpdateAsync();
+            if (canReload) {
+              logInfo("App", "🔄 Applying OTA update during splash...");
+              await Updates.reloadAsync();
+            }
+          }
+        } catch (err) {
+          logWarn("App", "OTA check skipped", { err });
+        }
+      })();
+    }
+
+    const timer = setTimeout(() => {
+      canReload = false;
       setIsLoading(false);
       logInfo("App", "✅ App initialization completed");
     }, 500);
+
+    return () => clearTimeout(timer);
   }, []);
 
   useEffect(() => {
@@ -183,11 +214,20 @@ function Navigation() {
     }
   }, [isLoading, loading]);
 
+  // useEffect(() => {
+  //   importHistoricalMatch().then(() => console.log('Match importé')).catch(console.error);
+  // }, []);
+
   // Show splash screen while loading auth or initial data
   if (isLoading || loading) {
-    return <SplashScreen />;
+    return (
+      <>
+        <SplashScreen />
+        <ForceUpdateModal visible={isForceUpdateRequired} storeUrl={storeUrl} />
+      </>
+    );
   }
-
+  
   // Determine initial route based on authentication state
   const initialRoute = user ? ROUTES.MAIN_TABS : ROUTES.AUTH;
 
@@ -199,35 +239,38 @@ function Navigation() {
   });
 
   return (
-    <NavigationContainer ref={navigationRef}>
-      <Stack.Navigator
-        initialRouteName={initialRoute}
-        screenOptions={{
-          headerShown: false,
-        }}
-      >
-        <Stack.Screen name={ROUTES.AUTH} component={AuthScreen} />
-        <Stack.Screen name={ROUTES.LOGIN} component={LoginScreen} />
-        <Stack.Screen name={ROUTES.SIGN_UP} component={RegisterScreen} />
-        <Stack.Screen name={ROUTES.RESET_PASSWORD} component={ResetPasswordScreen} />
-        <Stack.Screen name={ROUTES.MAIN_TABS} component={MainTabNavigator} />
-        <Stack.Screen name={ROUTES.DEBUG_COURT} component={DebugCourtClick} />
-        <Stack.Screen name="SentryTest" component={SentryTestScreen} />
-        <Stack.Screen
-          name={ROUTES.MATCH_DETAILS}
-          component={MatchDetailsScreen}
-        />
-        <Stack.Screen name={ROUTES.TEAM_INFO} component={TeamInfoScreen} />
-        <Stack.Screen name={ROUTES.TEAM_ROSTER} component={TeamRosterScreen} />
-        <Stack.Screen
-          name={ROUTES.TEAM_STARTERS}
-          component={TeamStartersScreen}
-        />
-        <Stack.Screen name={ROUTES.NEW_MATCH} component={NewMatchScreen} />
-        <Stack.Screen name={ROUTES.LIVE_MATCH} component={LiveMatchScreen} />
-        <Stack.Screen name={ROUTES.PLAYER_PROFILE} component={PlayerProfileScreen} />
-      </Stack.Navigator>
-    </NavigationContainer>
+    <>
+      <NavigationContainer ref={navigationRef}>
+        <Stack.Navigator
+          initialRouteName={initialRoute}
+          screenOptions={{
+            headerShown: false,
+          }}
+        >
+          <Stack.Screen name={ROUTES.AUTH} component={AuthScreen} />
+          <Stack.Screen name={ROUTES.LOGIN} component={LoginScreen} />
+          <Stack.Screen name={ROUTES.SIGN_UP} component={RegisterScreen} />
+          <Stack.Screen name={ROUTES.RESET_PASSWORD} component={ResetPasswordScreen} />
+          <Stack.Screen name={ROUTES.MAIN_TABS} component={MainTabNavigator} />
+          <Stack.Screen name={ROUTES.DEBUG_COURT} component={DebugCourtClick} />
+          <Stack.Screen name="SentryTest" component={SentryTestScreen} />
+          <Stack.Screen
+            name={ROUTES.MATCH_DETAILS}
+            component={MatchDetailsScreen}
+          />
+          <Stack.Screen name={ROUTES.TEAM_INFO} component={TeamInfoScreen} />
+          <Stack.Screen name={ROUTES.TEAM_ROSTER} component={TeamRosterScreen} />
+          <Stack.Screen
+            name={ROUTES.TEAM_STARTERS}
+            component={TeamStartersScreen}
+          />
+          <Stack.Screen name={ROUTES.NEW_MATCH} component={NewMatchScreen} />
+          <Stack.Screen name={ROUTES.LIVE_MATCH} component={LiveMatchScreen} />
+          <Stack.Screen name={ROUTES.PLAYER_PROFILE} component={PlayerProfileScreen} />
+        </Stack.Navigator>
+      </NavigationContainer>
+      <ForceUpdateModal visible={isForceUpdateRequired} storeUrl={storeUrl} />
+    </>
   );
 }
 

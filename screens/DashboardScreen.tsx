@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   View,
   Text,
@@ -99,6 +99,8 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
   const { isCompact, sp, font } = useResponsive();
   const { user, signOut, deleteAccount } = useAuth();
   const { currentClub, allClubs, setCurrentClub: setGlobalCurrentClub, activeTeamId, setActiveTeamId } = useClub();
+  const activeTeamIdRef = useRef(activeTeamId);
+  useEffect(() => { activeTeamIdRef.current = activeTeamId; }, [activeTeamId]);
 
   const [loading, setLoading] = useState(true);
   const [teams, setTeams] = useState<Team[]>([]);
@@ -242,7 +244,7 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
         // Still loading club context, wait for it
         setLoading(false);
       }
-    }, [user?.id, isGuest, currentClub?.id, activeTeamId])
+    }, [user?.id, isGuest, currentClub?.id])
   );
 
   // Reload matches when team changes
@@ -322,13 +324,14 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
           // Select first team if available and no team is selected
           if (myApprovedTeams.length > 0) {
             // Check if activeTeamId is set and is in the list of approved teams
-            const isActiveTeamValid = activeTeamId && myApprovedTeams.some(t => t.id === activeTeamId);
+            const currentActiveTeamId = activeTeamIdRef.current;
+            const isActiveTeamValid = currentActiveTeamId && myApprovedTeams.some(t => t.id === currentActiveTeamId);
 
             if (isActiveTeamValid) {
               // Use the existing valid activeTeamId
-              teamId = activeTeamId;
+              teamId = currentActiveTeamId;
               logInfo("DashboardScreen", "Using existing activeTeamId", { teamId });
-            } else if (!activeTeamId) {
+            } else if (!currentActiveTeamId) {
               // Only set activeTeamId if it's null (first time)
               teamId = myApprovedTeams[0].id;
               await setActiveTeamId(teamId);
@@ -338,7 +341,7 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
               teamId = myApprovedTeams[0].id;
               await setActiveTeamId(teamId);
               logInfo("DashboardScreen", "activeTeamId not valid - resetting to first team", {
-                oldTeamId: activeTeamId,
+                oldTeamId: currentActiveTeamId,
                 newTeamId: teamId
               });
             }
