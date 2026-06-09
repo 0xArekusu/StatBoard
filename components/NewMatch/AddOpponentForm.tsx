@@ -1,8 +1,9 @@
-import React from "react";
+import React, { useState } from "react";
 import { View, Text, TextInput, TouchableOpacity, StyleSheet } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { BRAND_COLORS, COMMON_COLORS, OPACITY } from "../../src/theme";
 import { useResponsive } from "../../src/hooks/useResponsive";
+import type { Player } from "../../models/Player";
 
 interface AddOpponentFormProps {
   playerName: string;
@@ -12,6 +13,7 @@ interface AddOpponentFormProps {
   onNumberChange: (text: string) => void;
   onLicenseChange: (text: string) => void;
   onAdd: () => void;
+  existingPlayers?: Player[];
   colors: {
     surfaceColor: string;
     textPrimary: string;
@@ -28,9 +30,27 @@ export const AddOpponentForm: React.FC<AddOpponentFormProps> = ({
   onNumberChange,
   onLicenseChange,
   onAdd,
+  existingPlayers = [],
   colors,
 }) => {
+  const [error, setError] = useState<string | null>(null);
   const { sp, font, sizes } = useResponsive();
+
+  const handleNumberChange = (text: string) => {
+    onNumberChange(text);
+    setError(null);
+  };
+
+  const handleAdd = () => {
+    setError(null);
+    const numValue = parseInt(playerNumber, 10);
+    const isDuplicate = existingPlayers.some((p) => p.jerseyNumber === numValue);
+    if (isDuplicate) {
+      setError("Ce numéro de maillot est déjà utilisé.");
+      return;
+    }
+    onAdd();
+  };
 
   return (
     <View style={styles.wrapper}>
@@ -42,13 +62,13 @@ export const AddOpponentForm: React.FC<AddOpponentFormProps> = ({
           placeholder="Nom (Optionnel)"
           placeholderTextColor={colors.textSecondary}
           value={playerName}
-          onChangeText={onNameChange}
+          onChangeText={(text) => { onNameChange(text); setError(null); }}
           style={[
             styles.input,
             styles.inputName,
             {
               backgroundColor: colors.surfaceColor,
-              borderColor: colors.borderColor,
+              borderColor: error ? "#ef4444" : colors.borderColor,
               color: colors.textPrimary,
               padding: sp.sm + sp.xs,
               borderRadius: sp.sm,
@@ -60,7 +80,7 @@ export const AddOpponentForm: React.FC<AddOpponentFormProps> = ({
           placeholder="#"
           placeholderTextColor={colors.textSecondary}
           value={playerNumber}
-          onChangeText={onNumberChange}
+          onChangeText={handleNumberChange}
           keyboardType="number-pad"
           maxLength={2}
           style={[
@@ -68,7 +88,7 @@ export const AddOpponentForm: React.FC<AddOpponentFormProps> = ({
             styles.inputNumber,
             {
               backgroundColor: colors.surfaceColor,
-              borderColor: colors.borderColor,
+              borderColor: error ? "#ef4444" : colors.borderColor,
               color: colors.textPrimary,
               padding: sp.sm + sp.xs,
               borderRadius: sp.sm,
@@ -78,7 +98,7 @@ export const AddOpponentForm: React.FC<AddOpponentFormProps> = ({
           ]}
         />
         <TouchableOpacity
-          onPress={onAdd}
+          onPress={handleAdd}
           disabled={!playerNumber}
           style={[
             styles.button,
@@ -115,6 +135,7 @@ export const AddOpponentForm: React.FC<AddOpponentFormProps> = ({
           },
         ]}
       />
+      {error && <Text style={[styles.errorText, { fontSize: font.sm, marginTop: sp.sm }]}>{error}</Text>}
     </View>
   );
 };
@@ -146,5 +167,10 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
+  },
+  errorText: {
+    fontSize: 12,
+    color: "#ef4444",
+    marginTop: 8,
   },
 });

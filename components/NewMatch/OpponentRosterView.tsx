@@ -273,6 +273,7 @@ export const OpponentRosterView: React.FC<OpponentRosterViewProps> = ({
           onNumberChange={onNewNumberChange}
           onLicenseChange={onNewLicenseChange}
           onAdd={onAddPlayer}
+          existingPlayers={opponentRoster}
           colors={colors}
         />
       )}

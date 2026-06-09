@@ -36,8 +36,6 @@ import { logInfo, logWarn, logError, logger } from "./utils/logger";
 import DebugCourtClick from "./DebugCourtClick";
 import { useAppUpdateCheck } from "./hooks/useAppUpdateCheck";
 import ForceUpdateModal from "./components/ForceUpdateModal";
-import { importHistoricalMatch } from "./src/utils/importHistoricalMatch";
-
 
 
 // Initialize Sentry
@@ -213,10 +211,6 @@ function Navigation() {
       }
     }
   }, [isLoading, loading]);
-
-  // useEffect(() => {
-  //   importHistoricalMatch().then(() => console.log('Match importé')).catch(console.error);
-  // }, []);
 
   // Show splash screen while loading auth or initial data
   if (isLoading || loading) {
