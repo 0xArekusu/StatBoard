@@ -506,8 +506,9 @@ export default function TeamRosterScreen() {
             });
 
             if (!createResult.success || !createResult.player) {
-              console.error(`Error creating player ${player.name}:`, createResult.error);
-              continue;
+              setIsSubmitting(false);
+              Alert.alert("Erreur", createResult.error || `Impossible de créer le joueur ${player.name}`);
+              return;
             }
 
             const newPlayer = createResult.player;
@@ -642,8 +643,9 @@ export default function TeamRosterScreen() {
           });
 
           if (!createResult.success || !createResult.player) {
-            console.error(`Error creating player ${player.name}:`, createResult.error);
-            continue;
+            setIsSubmitting(false);
+            Alert.alert("Erreur", createResult.error || `Impossible de créer le joueur ${player.name}`);
+            return;
           }
 
           const newPlayer = createResult.player;

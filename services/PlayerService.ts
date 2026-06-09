@@ -2,7 +2,7 @@ import type { IPlayerRepository } from "../repositories/IPlayerRepository";
 import type { CreatePlayerData, UpdatePlayerData } from "../models/Player";
 
 const MIN_PLAYERS = 5;
-const MAX_PLAYERS = 13;
+const MAX_PLAYERS = 20;
 
 /**
  * Service Layer Pattern
