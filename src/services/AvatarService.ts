@@ -23,7 +23,7 @@ export class AvatarService {
     // Clean the player name to handle cases like "Joueur 4"
     const encodedName = encodeURIComponent(playerName);
 
-    return `https://ui-avatars.com/api/?name=${encodedName}&rounded=true&size=128`;
+    return `https://ui-avatars.com/api/?name=${encodedName}&rounded=true&size=128&format=png`;
   }
 
   /**
