@@ -19,6 +19,8 @@ export enum ActionType {
   STEAL = "steal",
   BLOCK = "block",
   TURNOVER = "turnover",
+  SUBSTITUTION = "substitution",
+  TIMEOUT = "timeout",
 }
 
 /**
@@ -60,6 +62,8 @@ export const ACTION_TYPE_FR: Record<ActionType, string> = {
   [ActionType.STEAL]: "Interception",
   [ActionType.BLOCK]: "Contre",
   [ActionType.TURNOVER]: "Balle perdue",
+  [ActionType.SUBSTITUTION]: "Changement",
+  [ActionType.TIMEOUT]: "Temps mort",
 };
 
 export const SHOT_SPECIFICATION_FR: Record<ShotSpecification, string> = {
@@ -79,6 +83,14 @@ export const FOUL_SPECIFICATION_FR: Record<FoulSpecification, string> = {
   [FoulSpecification.PENALITY]: "Antisportive",
   [FoulSpecification.DISQUALIFICATION]: "Disqualifiante",
 };
+
+/**
+ * Substitution specifications
+ */
+export enum SubstitutionSpecification {
+  IN = "in",
+  OUT = "out",
+}
 
 /**
  * Generic action specification for simple actions
@@ -242,6 +254,16 @@ export const ACTION_CONFIG: Record<string, ActionConfig> = {
     color: ACTION_COLORS.foulDrawn,
     description: "Faute provoquée",
     specifications: [],
+  },
+  [ActionType.SUBSTITUTION]: {
+    id: ActionType.SUBSTITUTION,
+    label: "Changement",
+    color: "#26A69A",
+    description: "Changement de joueur",
+    specifications: [
+      { id: SubstitutionSpecification.IN, label: "Entre", color: "#4CAF50" },
+      { id: SubstitutionSpecification.OUT, label: "Sort", color: "#FF7043" },
+    ],
   },
 };
 

@@ -14,6 +14,7 @@ import { ROUTES } from "../constants/routes";
 
 import DashboardScreen from "../screens/DashboardScreen";
 import HistoryScreen from "../screens/HistoryScreen";
+import StatsScreen from "../screens/StatsScreen";
 import ClubScreen from "../screens/club/ClubScreen";
 
 const Tab = createBottomTabNavigator();
@@ -24,6 +25,26 @@ export default function MainTabNavigator() {
   const navigation = useNavigation();
 
   const isGuest = !user;
+
+  const handleStatsTabPress = (e: any) => {
+    if (isGuest) {
+      e.preventDefault();
+      Alert.alert(
+        "Connexion requise",
+        "Vous devez être connecté à une équipe pour accéder aux statistiques.",
+        [
+          { text: "Annuler", style: "cancel" },
+          {
+            text: "Se connecter",
+            onPress: async () => {
+              await signOut();
+              navigation.navigate(ROUTES.AUTH as never);
+            },
+          },
+        ]
+      );
+    }
+  };
 
   const handleClubTabPress = (e: any) => {
     if (isGuest) {
@@ -88,6 +109,23 @@ export default function MainTabNavigator() {
           tabBarIcon: ({ color, size }) => (
             <MaterialCommunityIcons name="history" size={size} color={color} />
           ),
+        }}
+      />
+      <Tab.Screen
+        name={ROUTES.STATS}
+        component={StatsScreen}
+        options={{
+          tabBarLabel: "Stats",
+          tabBarIcon: ({ color, size }) => (
+            <MaterialCommunityIcons
+              name="chart-bar"
+              size={size}
+              color={color}
+            />
+          ),
+        }}
+        listeners={{
+          tabPress: handleStatsTabPress,
         }}
       />
       <Tab.Screen

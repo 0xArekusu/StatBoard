@@ -407,6 +407,7 @@ export class MatchSyncService {
       opponent_handicap: match.opponent_handicap || 0,
       status: 'completed', // Match is completed when syncing
       created_by: userId,
+      has_sub_tracking: match.has_sub_tracking ?? false,
       created_at: match.created_at, // Preserve creation timestamp from local database
       started_at: match.started_at || null,
       ended_at: match.ended_at || null,

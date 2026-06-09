@@ -18,6 +18,7 @@ export { RosterTabSwitch } from "./RosterTabSwitch";
 export { HomeRosterView } from "./HomeRosterView";
 export { PlayerRosterCard } from "./PlayerRosterCard";
 export { AddPlayerForm } from "./AddPlayerForm";
+export { AddOpponentForm } from "./AddOpponentForm";
 export { OpponentRosterView } from "./OpponentRosterView";
 export { OpponentPlayerCard } from "./OpponentPlayerCard";
 

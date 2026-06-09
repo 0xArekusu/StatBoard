@@ -108,6 +108,14 @@ export type RootStackParamList = {
     isLocalMatch?: boolean;
   };
 
+  // Player stats
+  PlayerProfile: {
+    playerId: string | null;
+    playerNumber: number;
+    playerName: string;
+    photoUrl?: string;
+  };
+
   // Debug
   DebugCourt: undefined;
 };

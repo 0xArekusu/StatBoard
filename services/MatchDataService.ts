@@ -14,6 +14,7 @@ export interface PlayerData {
   isSubstitute: boolean;
   photoUrl?: string;
   playingTimeSeconds?: number;
+  player_id?: string | null;
 }
 
 /**
@@ -113,6 +114,7 @@ export class MatchDataService {
       isSubstitute: !p.is_starter,
       photoUrl: p.photo_url,
       playingTimeSeconds: p.playing_time_seconds || 0,
+      player_id: p.player_id || null,
     }));
 
     // Extract actions from matches.player_stats JSONB object
@@ -192,13 +194,14 @@ export class MatchDataService {
 
     // Convert to PlayerData format
     const players: PlayerData[] = matchPlayers.map((mp) => ({
-      id: mp.player_number, // Use player_number for consistency with Supabase loading
+      id: mp.player_number,
       num: mp.player_number,
       name: mp.player_name,
       team: mp.team as Team,
       isSubstitute: !mp.is_starter,
       photoUrl: mp.photo_url || undefined,
       playingTimeSeconds: mp.playing_time_seconds || 0,
+      player_id: mp.player_id || null,
     }));
 
     return { actions, players };

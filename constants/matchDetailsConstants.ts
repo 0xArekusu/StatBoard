@@ -13,6 +13,7 @@ export const TAB = {
   STATS: "STATS",
   CARDS: "CARDS",
   COURT: "COURT",
+  TIMELINE: "TIMELINE",
 } as const;
 
 export type Tab = typeof TAB[keyof typeof TAB];
@@ -57,6 +58,7 @@ export type SortBy =
   | "pf"
   | "fd"
   | "eff"
+  | "pm"
   | "fgm"
   | "fga"
   | "fg2m"
@@ -97,6 +99,7 @@ export interface PlayerStats {
   fgm: number;
   fga: number;
   eff: number;
+  pm: number | null;
   min: string; // Format "MM:SS"
 }
 

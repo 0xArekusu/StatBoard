@@ -100,6 +100,7 @@ export default function ClubInfoView({
                   color={colors.primary}
                 />
               </TouchableOpacity>
+              {false && (
               <TouchableOpacity
                 onPress={onToggleSubTab}
                 style={[
@@ -139,6 +140,7 @@ export default function ClubInfoView({
                   {subTab === CLUB_SUB_TAB.SUBSCRIPTION ? "Fermer" : "Offre"}
                 </Text>
               </TouchableOpacity>
+              )}
             </View>
           )}
         </View>

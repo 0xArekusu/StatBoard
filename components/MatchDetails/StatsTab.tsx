@@ -311,6 +311,19 @@ export default function StatsTab({
                 FP {sortBy === "fd" && (sortOrder === "desc" ? "↓" : "↑")}
               </Text>
             </TouchableOpacity>
+            <TouchableOpacity onPress={() => handleSort("pm")}>
+              <Text
+                style={[
+                  styles.tableHeaderCell,
+                  styles.statCell,
+                  {
+                    color: sortBy === "pm" ? colors.primary : textSecondary,
+                  },
+                ]}
+              >
+                +/- {sortBy === "pm" && (sortOrder === "desc" ? "↓" : "↑")}
+              </Text>
+            </TouchableOpacity>
             <TouchableOpacity onPress={() => handleSort("eff")}>
               <Text
                 style={[
@@ -506,6 +519,16 @@ export default function StatsTab({
                   styles.tableCell,
                   styles.statCell,
                   styles.statCellBold,
+                  { color: player.pm === null ? textTertiary : player.pm > 0 ? "#4CAF50" : player.pm < 0 ? "#F44336" : textPrimary },
+                ]}
+              >
+                {player.pm === null ? "—" : player.pm > 0 ? `+${player.pm}` : player.pm}
+              </Text>
+              <Text
+                style={[
+                  styles.tableCell,
+                  styles.statCell,
+                  styles.statCellBold,
                   { color: colors.primary },
                 ]}
               >
@@ -538,6 +561,7 @@ export default function StatsTab({
               pf: group.reduce((s, p) => s + p.pf, 0),
               fd: group.reduce((s, p) => s + p.fd, 0),
               eff: group.reduce((s, p) => s + p.eff, 0),
+              pm: group.some((p) => p.pm === null) ? null : group.reduce((s, p) => s + (p.pm ?? 0), 0),
             });
             const s = sumRow(starters);
             const b = sumRow(bench);
@@ -567,6 +591,7 @@ export default function StatsTab({
                     <Text style={cellStyle()}>{s.to}</Text>
                     <Text style={cellStyle()}>{s.pf}</Text>
                     <Text style={cellStyle()}>{s.fd}</Text>
+                    <Text style={[styles.tableCell, styles.statCell, styles.statCellBold, { color: textSecondary }]}>{s.pm === null ? "—" : s.pm > 0 ? `+${s.pm}` : s.pm}</Text>
                     <Text style={[styles.tableCell, styles.statCell, styles.statCellBold, { color: textSecondary }]}>{s.eff}</Text>
                   </View>
                 )}
@@ -590,6 +615,7 @@ export default function StatsTab({
                     <Text style={cellStyle()}>{b.to}</Text>
                     <Text style={cellStyle()}>{b.pf}</Text>
                     <Text style={cellStyle()}>{b.fd}</Text>
+                    <Text style={[styles.tableCell, styles.statCell, styles.statCellBold, { color: textSecondary }]}>{b.pm === null ? "—" : b.pm > 0 ? `+${b.pm}` : b.pm}</Text>
                     <Text style={[styles.tableCell, styles.statCell, styles.statCellBold, { color: textSecondary }]}>{b.eff}</Text>
                   </View>
                 )}
@@ -782,6 +808,16 @@ export default function StatsTab({
                 ]}
               >
                 {stats.reduce((sum, p) => sum + p.fd, 0)}
+              </Text>
+              <Text
+                style={[
+                  styles.tableCell,
+                  styles.statCell,
+                  styles.statCellBold,
+                  { color: textPrimary },
+                ]}
+              >
+                {(() => { if (stats.some((p) => p.pm === null)) return "—"; const t = stats.reduce((sum, p) => sum + (p.pm ?? 0), 0); return t > 0 ? `+${t}` : t; })()}
               </Text>
               <Text
                 style={[

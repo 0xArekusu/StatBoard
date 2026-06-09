@@ -90,6 +90,9 @@ export interface Match {
   synced_at?: string | null;
   last_updated?: string;
 
+  // Feature flags
+  has_sub_tracking?: boolean;
+
   // Legacy
   synced_to_server?: boolean;
   created_with_tier?: string;

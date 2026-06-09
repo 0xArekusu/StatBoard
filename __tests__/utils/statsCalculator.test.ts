@@ -1,6 +1,7 @@
 import {
   calculateEfficiency,
   calculateEfficiencyFromDB,
+  calculatePlusMinus,
 } from "../../src/utils/statsCalculator";
 
 // ─── calculateEfficiency ──────────────────────────────────────────────────────
@@ -174,5 +175,209 @@ describe("calculateEfficiencyFromDB", () => {
     });
 
     expect(calculateEfficiencyFromDB(dbStats)).toBe(expected);
+  });
+});
+
+// ─── calculatePlusMinus ───────────────────────────────────────────────────────
+
+type ActionInput = Parameters<typeof calculatePlusMinus>[0][number];
+type PlayerInput = Parameters<typeof calculatePlusMinus>[1][number];
+
+const shot = (
+  team: "MyTeam" | "Opponent",
+  playerNumber: number,
+  points: number,
+  period: number,
+  time: number,
+  order: number,
+  made = true
+): ActionInput => ({
+  action_type: "shot",
+  specification: made ? "made" : "missed",
+  points: made ? points : undefined,
+  team,
+  player_number: playerNumber,
+  period_number: period,
+  time_in_period: time,
+  action_order: order,
+});
+
+const sub = (
+  team: "MyTeam" | "Opponent",
+  playerNumber: number,
+  spec: "in" | "out",
+  period: number,
+  time: number,
+  order: number
+): ActionInput => ({
+  action_type: "substitution",
+  specification: spec,
+  team,
+  player_number: playerNumber,
+  period_number: period,
+  time_in_period: time,
+  action_order: order,
+});
+
+const starter = (team: "MyTeam" | "Opponent", num: number): PlayerInput => ({
+  player_number: num,
+  team,
+  is_starter: true,
+});
+
+const bench = (team: "MyTeam" | "Opponent", num: number): PlayerInput => ({
+  player_number: num,
+  team,
+  is_starter: false,
+});
+
+const pm = (map: Map<string, number>, team: "MyTeam" | "Opponent", num: number) =>
+  map.get(`${team}-${num}`) ?? 0;
+
+describe("calculatePlusMinus", () => {
+  it("retourne 0 pour tous les joueurs si aucune action de tir réussi", () => {
+    const players = [starter("MyTeam", 1), starter("MyTeam", 2), starter("Opponent", 10)];
+    const result = calculatePlusMinus([], players);
+    expect(pm(result, "MyTeam", 1)).toBe(0);
+    expect(pm(result, "MyTeam", 2)).toBe(0);
+    expect(pm(result, "Opponent", 10)).toBe(0);
+  });
+
+  it("un tir réussi à 2pts : titulaires de l'équipe +2, adversaires -2", () => {
+    const players = [
+      starter("MyTeam", 1), starter("MyTeam", 2),
+      starter("Opponent", 10), starter("Opponent", 11),
+    ];
+    const actions = [shot("MyTeam", 1, 2, 1, 100, 1)];
+    const result = calculatePlusMinus(actions, players);
+
+    expect(pm(result, "MyTeam", 1)).toBe(2);
+    expect(pm(result, "MyTeam", 2)).toBe(2);
+    expect(pm(result, "Opponent", 10)).toBe(-2);
+    expect(pm(result, "Opponent", 11)).toBe(-2);
+  });
+
+  it("un tir réussi à 3pts : diff correcte", () => {
+    const players = [starter("MyTeam", 5), starter("Opponent", 10)];
+    const actions = [shot("MyTeam", 5, 3, 1, 50, 1)];
+    const result = calculatePlusMinus(actions, players);
+
+    expect(pm(result, "MyTeam", 5)).toBe(3);
+    expect(pm(result, "Opponent", 10)).toBe(-3);
+  });
+
+  it("un tir manqué n'affecte pas le +/-", () => {
+    const players = [starter("MyTeam", 1), starter("Opponent", 10)];
+    const actions = [shot("MyTeam", 1, 2, 1, 100, 1, false)];
+    const result = calculatePlusMinus(actions, players);
+
+    expect(pm(result, "MyTeam", 1)).toBe(0);
+    expect(pm(result, "Opponent", 10)).toBe(0);
+  });
+
+  it("un joueur au banc avant la substitution n'est pas affecté", () => {
+    const players = [
+      starter("MyTeam", 1),
+      bench("MyTeam", 99),
+      starter("Opponent", 10),
+    ];
+    // #99 est au banc, le tir est marqué avant son entrée
+    const actions = [shot("MyTeam", 1, 2, 1, 100, 1)];
+    const result = calculatePlusMinus(actions, players);
+
+    expect(pm(result, "MyTeam", 99)).toBe(0);
+  });
+
+  it("une substitution change le lineup : l'entrant est affecté, le sortant ne l'est plus", () => {
+    const players = [
+      starter("MyTeam", 1),
+      bench("MyTeam", 99),
+      starter("Opponent", 10),
+    ];
+    const actions = [
+      // #1 sort, #99 entre à t=100
+      sub("MyTeam", 1, "out", 1, 100, 1),
+      sub("MyTeam", 99, "in", 1, 100, 2),
+      // Tir réussi à t=200 (après la sub)
+      shot("MyTeam", 99, 2, 1, 200, 3),
+    ];
+    const result = calculatePlusMinus(actions, players);
+
+    expect(pm(result, "MyTeam", 99)).toBe(2);   // entrant, présent
+    expect(pm(result, "MyTeam", 1)).toBe(0);    // sorti avant le tir
+    expect(pm(result, "Opponent", 10)).toBe(-2);
+  });
+
+  it("accumule correctement plusieurs tirs sur plusieurs périodes", () => {
+    const players = [
+      starter("MyTeam", 1),
+      starter("Opponent", 10),
+    ];
+    const actions = [
+      shot("MyTeam", 1, 2, 1, 100, 1),    // +2 pour #1 / -2 pour #10
+      shot("Opponent", 10, 3, 2, 50, 2),  // -3 pour #1 / +3 pour #10
+      shot("MyTeam", 1, 1, 2, 200, 3),    // +1 pour #1 / -1 pour #10
+    ];
+    const result = calculatePlusMinus(actions, players);
+
+    // MyTeam #1 : +2 - 3 + 1 = 0
+    expect(pm(result, "MyTeam", 1)).toBe(0);
+    // Opponent #10 : -2 + 3 - 1 = 0
+    expect(pm(result, "Opponent", 10)).toBe(0);
+  });
+
+  it("respecte l'ordre chronologique (period > time > action_order)", () => {
+    const players = [
+      starter("MyTeam", 1),
+      bench("MyTeam", 99),
+      starter("Opponent", 10),
+    ];
+    // La sub arrive en période 1 t=100, le tir en période 1 t=50 (avant)
+    const actions = [
+      shot("MyTeam", 1, 2, 1, 50, 1),           // avant la sub
+      sub("MyTeam", 1, "out", 1, 100, 2),
+      sub("MyTeam", 99, "in", 1, 100, 3),
+      shot("Opponent", 10, 2, 1, 150, 4),       // après la sub : #1 sorti, #99 présent
+    ];
+    const result = calculatePlusMinus(actions, players);
+
+    // Tir MyTeam à t=50 : #1 présent (+2), #99 absent
+    // Tir Opponent à t=150 : #99 présent (-2), #1 absent
+    expect(pm(result, "MyTeam", 1)).toBe(2);   // +2 puis plus affecté
+    expect(pm(result, "MyTeam", 99)).toBe(-2); // entré avant le tir adverse
+    expect(pm(result, "Opponent", 10)).toBe(-2 + 2); // -2 puis +2 = 0
+  });
+
+  it("les actions de substitution elles-mêmes ne modifient pas le score", () => {
+    const players = [starter("MyTeam", 1), bench("MyTeam", 99)];
+    const actions = [
+      sub("MyTeam", 1, "out", 1, 100, 1),
+      sub("MyTeam", 99, "in", 1, 100, 2),
+    ];
+    const result = calculatePlusMinus(actions, players);
+
+    expect(pm(result, "MyTeam", 1)).toBe(0);
+    expect(pm(result, "MyTeam", 99)).toBe(0);
+  });
+
+  it("ne plante pas si action_type ou specification est undefined", () => {
+    const players = [starter("MyTeam", 1)];
+    const badActions = [
+      { action_type: undefined as any, specification: undefined as any, team: "MyTeam", player_number: 1, period_number: 1, time_in_period: 50, action_order: 1 },
+      { action_type: "shot", specification: undefined as any, points: 2, team: "MyTeam", player_number: 1, period_number: 1, time_in_period: 100, action_order: 2 },
+    ];
+    expect(() => calculatePlusMinus(badActions, players)).not.toThrow();
+  });
+
+  it("initialise les joueurs absents des actions avec pm=0", () => {
+    const players = [
+      starter("MyTeam", 1),
+      starter("MyTeam", 2),
+    ];
+    // Aucune action → les deux existent dans le Map à 0
+    const result = calculatePlusMinus([], players);
+    expect(result.has("MyTeam-1")).toBe(true);
+    expect(result.has("MyTeam-2")).toBe(true);
+    expect(pm(result, "MyTeam", 1)).toBe(0);
   });
 });

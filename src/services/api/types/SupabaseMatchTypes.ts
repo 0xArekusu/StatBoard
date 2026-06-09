@@ -54,6 +54,9 @@ export interface SupabaseMatch {
   players: SupabaseMatchPlayerInfo[];  // JSONB array
   player_stats: Record<string, SupabaseMatchPlayerStats>;  // JSONB object
 
+  // Feature flags
+  has_sub_tracking: boolean;
+
   // Metadata
   created_by: string | null;  // UUID of auth user
   created_at: string;
@@ -81,6 +84,7 @@ export interface SupabaseMatchInsert {
   opponent_handicap?: number;
   status: 'in_progress' | 'completed' | 'cancelled';
   created_by?: string | null;
+  has_sub_tracking?: boolean;
 
   // Timestamps
   created_at?: string; // When user configured match and clicked "Start Match"

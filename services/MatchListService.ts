@@ -136,8 +136,8 @@ export class MatchListService {
    *
    * @returns Active match or null
    */
-  async findActiveMatch(): Promise<Match | null> {
-    return await this.matchRepository.findActiveMatch();
+  async findActiveMatch(clubId?: string, teamId?: string): Promise<Match | null> {
+    return await this.matchRepository.findActiveMatch(clubId, teamId);
   }
 
   /**

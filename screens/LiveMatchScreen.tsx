@@ -36,7 +36,7 @@ import {
   CreateActionData,
   Team,
 } from "../src/models/types";
-import { ActionType, ShotSpecification, ReboundSpecification } from "../src/models/ActionTypes";
+import { ActionType, ShotSpecification, ReboundSpecification, SubstitutionSpecification } from "../src/models/ActionTypes";
 import { Player } from "../models/Player";
 import { useAuth } from "../src/contexts/AuthContext";
 import { MatchManager } from "../src/services/match/MatchManager";
@@ -45,6 +45,7 @@ import { AdminService } from "../services/AdminService";
 import { MatchRepository } from "../src/services/database/MatchRepository";
 import { ActionRepository } from "../src/services/database/ActionRepository";
 import { MatchPlayerRepository } from "../src/services/database/MatchPlayerRepository";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { logInfo, logError } from "../utils/logger";
 import {
   generateMockActions,
@@ -76,7 +77,7 @@ import {
 import { DEFAULT_COURT_COLORS } from "../src/theme/colors";
 import { supabase } from "../src/config/supabase";
 import { MatchActionGrid, ActionData } from "../components/MatchActionGrid";
-import { CourtView, MatchHeader, MatchToolbar, ActionChainModal, FoulChainModal, FoulChainResult, ShotChainModal, ShotChainResult } from "../components/LiveMatch";
+import { CourtView, MatchHeader, MatchToolbar, ActionChainModal, FoulChainModal, FoulChainResult, ShotChainModal, ShotChainResult, MatchTutorialOverlay, TUTORIAL_SKIP_KEY } from "../components/LiveMatch";
 import { useMatchSync } from "../hooks/useMatchSync";
 import { useResponsive } from "../src/hooks/useResponsive";
 import { BREAKPOINTS } from "../constants/breakpoints";
@@ -263,6 +264,12 @@ export default function LiveMatchScreen() {
   // UI STATE
   // ========================================
   const [viewMode, setViewMode] = useState<ViewMode>(ViewMode.COURT);
+
+  // Tutorial overlay
+  const [showTutorial, setShowTutorial] = useState(false);
+  const [tutorialHeaderHeight, setTutorialHeaderHeight] = useState(0);
+  const [tutorialToggleHeight, setTutorialToggleHeight] = useState(0);
+  const tutorialToolbarHeight = isMobileLandscape ? 44 : 80;
   const [playerSelectionTab, setPlayerSelectionTab] = useState<TeamId>(
     TeamId.HOME,
   );
@@ -321,6 +328,17 @@ export default function LiveMatchScreen() {
     };
     checkAdminStatus();
   }, [user]);
+
+  // Show tutorial on each match start unless user opted out
+  useEffect(() => {
+    const checkTutorial = async () => {
+      const skipped = await AsyncStorage.getItem(TUTORIAL_SKIP_KEY);
+      if (skipped !== "true") {
+        setShowTutorial(true);
+      }
+    };
+    checkTutorial();
+  }, []);
 
   // ========================================
   // MATCH INITIALIZATION & RESUME
@@ -1187,6 +1205,8 @@ export default function LiveMatchScreen() {
       teamId: isHome ? TeamId.HOME : TeamId.AWAY,
       period_number: quarter,
       time_in_period: periodDurationMin * 60 - timer,
+      subPlayersOut: subSelection.out,
+      subPlayersIn: subSelection.in,
     };
 
     const updatedMatch = { ...match };
@@ -1220,6 +1240,53 @@ export default function LiveMatchScreen() {
           subSelection.in,
           true,
         );
+      }
+
+      // Record substitution events for +/- calculation
+      const actionRepo = new ActionRepository();
+      const subTeam = isOurTeam ? Team.MY_TEAM : Team.OPPONENT;
+      const subRoster = isOurTeam ? homeRoster : opponentRoster;
+      const timeInPeriod = periodDurationMin * 60 - timer;
+      let orderOffset = 0;
+
+      for (const playerId of subSelection.out) {
+        const player = subRoster.find((p: Player) => p.id === playerId);
+        if (!player) continue;
+        await actionRepo.create({
+          match_id: currentMatchId,
+          team: subTeam,
+          player_number: player.jerseyNumber,
+          action_type: ActionType.SUBSTITUTION,
+          specification: SubstitutionSpecification.OUT,
+          semantic_x: 50,
+          semantic_y: 50,
+          action_order: actionCounter + orderOffset,
+          period_number: quarter,
+          time_in_period: timeInPeriod,
+        });
+        orderOffset++;
+      }
+
+      for (const playerId of subSelection.in) {
+        const player = subRoster.find((p: Player) => p.id === playerId);
+        if (!player) continue;
+        await actionRepo.create({
+          match_id: currentMatchId,
+          team: subTeam,
+          player_number: player.jerseyNumber,
+          action_type: ActionType.SUBSTITUTION,
+          specification: SubstitutionSpecification.IN,
+          semantic_x: 50,
+          semantic_y: 50,
+          action_order: actionCounter + orderOffset,
+          period_number: quarter,
+          time_in_period: timeInPeriod,
+        });
+        orderOffset++;
+      }
+
+      if (orderOffset > 0) {
+        setActionCounter((prev) => prev + orderOffset);
       }
     }
 
@@ -1641,6 +1708,27 @@ export default function LiveMatchScreen() {
         }, ...updatedMatch.events];
         if (drawnTeamId === TeamId.HOME) updatedMatch.scoreHome += result.basketPoints;
         else updatedMatch.scoreAway += result.basketPoints;
+
+        if (result.assistPlayer) {
+          const assistId = await saveActionToDatabase(
+            ActionType.ASSIST, undefined, 0,
+            result.assistPlayer.jerseyNumber, drawnTeam, coords,
+          );
+          updatedMatch.events = [{
+            id: assistId || `temp-${Date.now()}`,
+            action_type: ActionType.ASSIST,
+            specification: undefined,
+            points: 0,
+            playerId: result.assistPlayer.id,
+            playerNumber: result.assistPlayer.jerseyNumber,
+            teamId: drawnTeamId,
+            timestamp: Date.now(),
+            description: `#${result.assistPlayer.jerseyNumber} ${result.assistPlayer.name} — Passe décisive`,
+            coordinates: normalizedCoords,
+            period_number: quarter,
+            time_in_period: periodDurationMin * 60 - timer,
+          }, ...updatedMatch.events];
+        }
       }
 
       // 3. Save all free throws (attributed to drawn player)
@@ -1754,6 +1842,27 @@ export default function LiveMatchScreen() {
       }, ...updatedMatch.events];
       if (foulDrawnTeamId === TeamId.HOME) updatedMatch.scoreHome += result.basketPoints;
       else updatedMatch.scoreAway += result.basketPoints;
+
+      if (result.assistPlayer) {
+        const assistId = await saveActionToDatabase(
+          ActionType.ASSIST, undefined, 0,
+          result.assistPlayer.jerseyNumber, foulDrawnTeam, coords,
+        );
+        updatedMatch.events = [{
+          id: assistId || `temp-${Date.now()}`,
+          action_type: ActionType.ASSIST,
+          specification: undefined,
+          points: 0,
+          playerId: result.assistPlayer.id,
+          playerNumber: result.assistPlayer.jerseyNumber,
+          teamId: foulDrawnTeamId,
+          timestamp: Date.now(),
+          description: `#${result.assistPlayer.jerseyNumber} ${result.assistPlayer.name} — Passe décisive`,
+          coordinates: normalizedCoords,
+          period_number: quarter,
+          time_in_period: periodDurationMin * 60 - timer,
+        }, ...updatedMatch.events];
+      }
     }
 
     // 3. Save all free throws
@@ -1928,6 +2037,32 @@ export default function LiveMatchScreen() {
     setMatch(updatedMatch);
   };
 
+  const handleTimeout = async (teamId: "HOME" | "AWAY") => {
+    const team = teamId === match.location ? Team.MY_TEAM : Team.OPPONENT;
+    const actionId = await saveActionToDatabase(
+      ActionType.TIMEOUT,
+      undefined,
+      0,
+      -1,
+      team,
+    );
+
+    const newEvent: MatchEvent = {
+      id: actionId || `temp-${Date.now()}`,
+      action_type: ActionType.TIMEOUT,
+      teamId,
+      timestamp: Date.now(),
+      description: "Temps mort",
+      period_number: quarter,
+      time_in_period: periodDurationMin * 60 - timer,
+    };
+
+    const updatedMatch = { ...match };
+    if (!updatedMatch.events) updatedMatch.events = [];
+    updatedMatch.events = [newEvent, ...updatedMatch.events];
+    setMatch(updatedMatch);
+  };
+
   const confirmEndMatch = async () => {
     setShowEndConfirm(false);
     await endMatchAndSync(() => {
@@ -1999,20 +2134,27 @@ export default function LiveMatchScreen() {
   return (
     <View style={[styles.container, { backgroundColor: bgColor }]}>
       {/* Header */}
+      <View onLayout={(e) => setTutorialHeaderHeight(e.nativeEvent.layout.height)}>
       <MatchHeader
         match={match}
         timer={timer}
         quarter={quarter}
         maxPeriods={maxPeriods}
         isRunning={isRunning}
+        events={match.events || []}
+        myTeamRoster={homeRoster}
+        opponentRoster={opponentRoster}
         onToggleTimer={toggleTimer}
         onNextQuarter={handleNextQuarter}
         onOpenSubstitution={openSubstitution}
         onOpponentScoreSimple={handleOpponentScoreSimple}
+        onTimeout={handleTimeout}
       />
+      </View>
 
       {/* View Mode Toggle */}
       <View
+        onLayout={(e) => setTutorialToggleHeight(e.nativeEvent.layout.height)}
         style={[
           styles.viewModeToggle,
           {
@@ -2145,6 +2287,16 @@ export default function LiveMatchScreen() {
         onOpenHistory={() => setShowHistoryModal(true)}
       />
 
+      {/* Tutorial overlay */}
+      <MatchTutorialOverlay
+        visible={showTutorial}
+        onClose={() => setShowTutorial(false)}
+        headerHeight={tutorialHeaderHeight}
+        toggleHeight={tutorialToggleHeight}
+        toolbarHeight={tutorialToolbarHeight}
+        trackOpponentStats={match.trackOpponentStats}
+      />
+
       {/* Modals */}
       <OvertimeModal
         visible={showOvertimeModal}
@@ -2185,6 +2337,7 @@ export default function LiveMatchScreen() {
         onPeriodSelectionChange={setSelectedPeriodIds}
         isHome={match.location === TeamId.HOME}
         starters={match.starters}
+        activePlayers={activePlayers}
         myTeamName={match.myTeamName}
         opponentName={match.opponent}
         myTeamHandicap={match.myTeamHandicap || 0}

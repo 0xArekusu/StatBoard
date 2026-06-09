@@ -177,10 +177,36 @@ describe("MatchListService", () => {
   // ─── findActiveMatch / deleteMatch ───────────────────────────────────────────
 
   describe("findActiveMatch", () => {
-    it("délègue au repository", async () => {
+    it("délègue au repository sans paramètres", async () => {
       const match = makeLocalMatch({ status: MatchStatus.IN_PROGRESS });
       mockMatchRepo.findActiveMatch.mockResolvedValue(match);
       expect(await service.findActiveMatch()).toBe(match);
+    });
+
+    it("passe clubId au repository (mode guest avec GUEST_IDS.CLUB)", async () => {
+      mockMatchRepo.findActiveMatch.mockResolvedValue(null);
+
+      await service.findActiveMatch("guest-club");
+
+      expect(mockMatchRepo.findActiveMatch).toHaveBeenCalledWith("guest-club", undefined);
+    });
+
+    it("passe clubId et teamId au repository (mode connecté)", async () => {
+      const match = makeLocalMatch({ status: MatchStatus.IN_PROGRESS });
+      mockMatchRepo.findActiveMatch.mockResolvedValue(match);
+
+      const result = await service.findActiveMatch("club-1", "team-1");
+
+      expect(mockMatchRepo.findActiveMatch).toHaveBeenCalledWith("club-1", "team-1");
+      expect(result).toBe(match);
+    });
+
+    it("retourne null si aucun match actif trouvé", async () => {
+      mockMatchRepo.findActiveMatch.mockResolvedValue(null);
+
+      const result = await service.findActiveMatch("club-1", "team-1");
+
+      expect(result).toBeNull();
     });
   });
 

@@ -7,7 +7,8 @@
  */
 
 import React, { useState, useEffect } from "react";
-import { View, StyleSheet, ScrollView, Alert, ActivityIndicator, KeyboardAvoidingView, Platform } from "react-native";
+import { View, StyleSheet, ScrollView, Alert, ActivityIndicator, KeyboardAvoidingView, Platform, Modal, TouchableWithoutFeedback, Text, TouchableOpacity } from "react-native";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { useTheme } from "../src/contexts/ThemeContext";
 import { useResponsive } from "../src/hooks/useResponsive";
@@ -24,11 +25,11 @@ import {
   type MatchCreationStep,
   ROUTES,
   PlatformOS,
+  GUEST_IDS,
 } from "../constants";
 import { useInterstitialAd } from "../hooks/useInterstitialAd";
 import { ServiceFactory } from "../services/ServiceFactory";
 import { supabase } from "../src/config/supabase";
-import { Club } from "../models/Club";
 import { Team, TeamStatus } from "../models/Team";
 import { Player } from "../models/Player";
 import { SUBSCRIPTION_TIER } from "../models/Subscription";
@@ -42,11 +43,14 @@ import {
   HandicapSelector,
   RosterTabSwitch,
   HomeRosterView,
+  AddPlayerForm,
   OpponentRosterView,
+  AddOpponentForm,
   MatchFooter,
 } from "../components/NewMatch";
 import { RootStackParamList, RootNavigationProp } from "../types/navigation";
 import { showErrorAlert } from "../utils/errorAlert";
+import { OpponentTemplateRepository, OpponentTemplate } from "../src/services/database/OpponentTemplateRepository";
 
 type NewMatchRouteProp = RouteProp<RootStackParamList, "NewMatch">;
 type RosterTab = "HOME" | "AWAY";
@@ -100,6 +104,7 @@ export default function NewMatchScreen() {
 
   // Step 2: Rosters
   const [rosterTab, setRosterTab] = useState<RosterTab>("HOME");
+  const [bottomBarHeight, setBottomBarHeight] = useState(120);
 
   // My Team Management
   const [availableHomePlayers, setAvailableHomePlayers] = useState<Player[]>([]);
@@ -117,6 +122,11 @@ export default function NewMatchScreen() {
   const [newOppPlayerNumber, setNewOppPlayerNumber] = useState("");
   const [newOppPlayerLicense, setNewOppPlayerLicense] = useState("");
 
+  // Opponent Templates
+  const [savedTemplates, setSavedTemplates] = useState<OpponentTemplate[]>([]);
+  const [loadedTemplateName, setLoadedTemplateName] = useState<string | null>(null);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+
   // ===========================
   // EFFECTS
   // ===========================
@@ -127,6 +137,13 @@ export default function NewMatchScreen() {
   useEffect(() => {
     loadClubData();
   }, [currentClub?.id]);
+
+  /**
+   * Load saved opponent templates on mount
+   */
+  useEffect(() => {
+    loadTemplates();
+  }, []);
 
   /**
    * Auto-create default opponent players when stats tracking is enabled
@@ -150,6 +167,7 @@ export default function NewMatchScreen() {
     } else if (!trackOpponentStats) {
       setOpponentRoster([]);
       setOpponentStarters([]);
+      setLoadedTemplateName(null);
     }
   }, [trackOpponentStats]);
 
@@ -189,6 +207,66 @@ export default function NewMatchScreen() {
   // DATA LOADING
   // ===========================
 
+  const loadTemplates = async () => {
+    try {
+      const repo = new OpponentTemplateRepository();
+      setSavedTemplates(await repo.getAll());
+    } catch (error) {
+      console.error("Error loading opponent templates:", error);
+    }
+  };
+
+  const applyTemplate = (template: OpponentTemplate) => {
+    const now = new Date();
+    const players: Player[] = template.players.map((p, i) => ({
+      id: `opp-${Date.now()}-${i}`,
+      name: p.name,
+      jerseyNumber: p.number,
+      teamId: "",
+      licenseNumber: p.licenseNumber,
+      createdAt: now,
+      updatedAt: now,
+    }));
+    setOpponentRoster(players);
+    setOpponentStarters(
+      players.filter((_, i) => template.players[i].isStarter).map(p => p.id)
+    );
+    setLoadedTemplateName(template.name);
+  };
+
+  const handleLoadTemplate = (template: OpponentTemplate) => {
+    if (opponentRoster.length > 0) {
+      Alert.alert(
+        "Charger une composition",
+        "Cela va écraser la composition actuelle. Continuer ?",
+        [
+          { text: "Annuler", style: "cancel" },
+          { text: "Continuer", onPress: () => applyTemplate(template) },
+        ]
+      );
+    } else {
+      applyTemplate(template);
+    }
+  };
+
+  const handleSaveTemplate = async (name: string) => {
+    try {
+      const repo = new OpponentTemplateRepository();
+      const templatePlayers = opponentRoster.map(p => ({
+        number: p.jerseyNumber,
+        name: p.name,
+        isStarter: opponentStarters.includes(p.id),
+        licenseNumber: p.licenseNumber,
+      }));
+      await repo.upsertByName(name, templatePlayers);
+      await loadTemplates();
+      setLoadedTemplateName(name);
+      Alert.alert("Composition sauvegardée", `"${name}" a été sauvegardée.`);
+    } catch (error) {
+      console.error("Error saving opponent template:", error);
+    }
+  };
+
   /**
    * Load teams for current club
    */
@@ -196,9 +274,9 @@ export default function NewMatchScreen() {
     if (!user) {
       // Guest mode: create temporary local team
       const guestTeam: Team = {
-        id: "guest-team",
+        id: GUEST_IDS.TEAM,
         name: "Mon Équipe",
-        clubId: "guest-club",
+        clubId: GUEST_IDS.CLUB,
         ownerId: "guest",
         status: TeamStatus.APPROVED,
         isActive: true,
@@ -213,13 +291,13 @@ export default function NewMatchScreen() {
         id: `guest-player-${i + 1}`,
         name: `Joueur ${i + 1}`,
         jerseyNumber: i + 1,
-        teamId: "guest-team",
+        teamId: GUEST_IDS.TEAM,
         createdAt: now,
         updatedAt: now,
       }));
 
       setTeams([guestTeam]);
-      setSelectedTeamId("guest-team");
+      setSelectedTeamId(GUEST_IDS.TEAM);
       setMyTeamName("Mon Équipe"); // Default team name for guests
 
       // Set default players as available and selected
@@ -310,7 +388,7 @@ export default function NewMatchScreen() {
    */
   const loadTeamRoster = async (teamId: string) => {
     // Skip for guest users
-    if (!user || teamId === "guest-team") {
+    if (!user || teamId === GUEST_IDS.TEAM) {
       return;
     }
 
@@ -546,9 +624,9 @@ export default function NewMatchScreen() {
   // ===========================
 
   /**
-   * Validate rosters and navigate to live match
+   * Validate rosters then show confirmation modal
    */
-  const handleStart = async () => {
+  const handleStart = () => {
     // Validate home team
     if (selectedHomePlayers.length < ROSTER_LIMITS.MIN_PLAYERS) {
       Alert.alert("Erreur", MATCH_VALIDATION_MESSAGES.MIN_PLAYERS);
@@ -599,12 +677,21 @@ export default function NewMatchScreen() {
       }
     }
 
+    setShowConfirmModal(true);
+  };
+
+  /**
+   * Start match after confirmation
+   */
+  const handleConfirmStart = async () => {
+    setShowConfirmModal(false);
+
     const team = teams.find((t) => t.id === selectedTeamId);
     if (!team) return;
 
     // Get club (from context for authenticated users, or create guest club)
     const club = user && currentClub ? currentClub : {
-      id: "guest-club",
+      id: GUEST_IDS.CLUB,
       name: "Club Local",
       acronym: "CL",
       code: "guest",
@@ -728,8 +815,13 @@ export default function NewMatchScreen() {
   // ===========================
 
   const selectedTeam = teams.find((t) => t.id === selectedTeamId) || null;
-  // For guests, validate myTeamName; for authenticated users, validate selectedTeamId
   const isStep1Valid = opponent && (user ? selectedTeamId : myTeamName);
+
+  const myName = !user ? myTeamName : (teams.find(t => t.id === selectedTeamId)?.name || "MonEquipe");
+  const today = new Date().toISOString().split("T")[0];
+  const defaultTemplateName = isHome
+    ? `${myName}_${opponent || "Adversaire"}_${today}`
+    : `${opponent || "Adversaire"}_${myName}_${today}`;
   const selectedHomePlayerIds = new Set(selectedHomePlayers.map((p) => p.id));
   const selectedPlayerNumberErrors = [...playerNumberErrors].filter((id) =>
     selectedHomePlayerIds.has(id)
@@ -737,7 +829,11 @@ export default function NewMatchScreen() {
   const isStep2Valid =
     selectedHomePlayers.length >= ROSTER_LIMITS.MIN_PLAYERS &&
     starters.length === Math.min(ROSTER_LIMITS.STARTERS, selectedHomePlayers.length) &&
-    selectedPlayerNumberErrors.length === 0; // Block only if selected players have number errors
+    selectedPlayerNumberErrors.length === 0 &&
+    (!trackOpponentStats || (
+      opponentRoster.length >= ROSTER_LIMITS.STARTERS &&
+      opponentStarters.length === ROSTER_LIMITS.STARTERS
+    ));
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -802,6 +898,17 @@ export default function NewMatchScreen() {
         </ScrollView>
       )}
 
+      {/* Step 1: footer */}
+      {step === 1 && (
+        <MatchFooter
+          step={step}
+          enabled={!!isStep1Valid}
+          onPress={handleNextStep}
+          isDark={isDark}
+          colors={themeColors}
+        />
+      )}
+
       {/* STEP 2: ROSTERS */}
       {step === 2 && (
         <KeyboardAvoidingView
@@ -814,6 +921,8 @@ export default function NewMatchScreen() {
             onTabChange={setRosterTab}
             homeCount={selectedHomePlayers.length}
             opponentCount={opponentRoster.length}
+            homeTeamName={myName}
+            opponentName={opponent || "Adversaire"}
             isDark={isDark}
             colors={themeColors}
           />
@@ -839,6 +948,7 @@ export default function NewMatchScreen() {
                 onAddTempPlayer={addTempHomePlayer}
                 onPlayerNumberChange={handlePlayerNumberChange}
                 onNumberError={handlePlayerNumberError}
+                hideAddForm
                 isDark={isDark}
                 colors={themeColors}
               />
@@ -858,22 +968,102 @@ export default function NewMatchScreen() {
                 onToggleStarter={toggleOpponentStarter}
                 onRemovePlayer={removeOpponentPlayer}
                 onGoToStep1={() => setStep(1)}
+                savedTemplates={savedTemplates}
+                defaultTemplateName={defaultTemplateName}
+                loadedTemplateName={loadedTemplateName}
+                onLoadTemplate={handleLoadTemplate}
+                onSaveTemplate={handleSaveTemplate}
+                hideAddForm
                 isDark={isDark}
                 colors={themeColors}
               />
             )}
           </ScrollView>
+
+          {/* Sticky form + action button — inside KAV so the keyboard pushes it up */}
+          <View
+            style={[styles.bottomBar, { backgroundColor: colors.background, borderTopColor: colors.border }]}
+          >
+            {(rosterTab === "HOME" || trackOpponentStats) && (
+              <View style={{ paddingHorizontal: sp.md, paddingTop: sp.md, paddingBottom: sp.sm }}>
+                {rosterTab === "HOME" ? (
+                  <AddPlayerForm
+                    name={tempHomePlayerName}
+                    number={tempHomePlayerNumber}
+                    license={tempHomePlayerLicense}
+                    onNameChange={setTempHomePlayerName}
+                    onNumberChange={setTempHomePlayerNumber}
+                    onLicenseChange={setTempHomePlayerLicense}
+                    onAdd={addTempHomePlayer}
+                    allPlayers={availableHomePlayers}
+                    selectedPlayers={selectedHomePlayers}
+                    compact
+                    isDark={isDark}
+                    colors={themeColors}
+                  />
+                ) : (
+                  <AddOpponentForm
+                    playerName={newOppPlayerName}
+                    playerNumber={newOppPlayerNumber}
+                    playerLicense={newOppPlayerLicense}
+                    onNameChange={setNewOppPlayerName}
+                    onNumberChange={setNewOppPlayerNumber}
+                    onLicenseChange={setNewOppPlayerLicense}
+                    onAdd={addOpponentPlayer}
+                    existingPlayers={opponentRoster}
+                    colors={themeColors}
+                  />
+                )}
+              </View>
+            )}
+            <MatchFooter
+              step={step}
+              enabled={!!isStep2Valid}
+              onPress={handleStart}
+              absolute={false}
+              isDark={isDark}
+              colors={themeColors}
+            />
+          </View>
         </KeyboardAvoidingView>
       )}
 
-      {/* Footer with Action Button */}
-      <MatchFooter
-        step={step}
-        enabled={step === 1 ? !!isStep1Valid : !!isStep2Valid}
-        onPress={step === 1 ? handleNextStep : handleStart}
-        isDark={isDark}
-        colors={themeColors}
-      />
+      {/* Confirmation modal */}
+      <Modal visible={showConfirmModal} transparent animationType="fade" onRequestClose={() => setShowConfirmModal(false)}>
+        <TouchableWithoutFeedback onPress={() => setShowConfirmModal(false)}>
+          <View style={confirmStyles.backdrop} />
+        </TouchableWithoutFeedback>
+        <View style={confirmStyles.wrapper}>
+          <View style={[confirmStyles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <MaterialCommunityIcons name="basketball" size={30} color={colors.primary} />
+            <Text style={[confirmStyles.label, { color: colors.text.secondary }]}>DÉMARRER LE MATCH ?</Text>
+            <Text style={[confirmStyles.versus, { color: colors.text.primary }]}>
+              {myName}
+            </Text>
+            <Text style={[confirmStyles.vsLabel, { color: colors.text.tertiary }]}>vs</Text>
+            <Text style={[confirmStyles.versus, { color: colors.text.primary }]}>
+              {opponent || "Adversaire"}
+            </Text>
+            <Text style={[confirmStyles.format, { color: colors.text.secondary }]}>
+              {periodCount === 2 ? "2 mi-temps" : `${periodCount} quarts`} · {periodDuration} min
+            </Text>
+            <View style={confirmStyles.buttons}>
+              <TouchableOpacity
+                onPress={() => setShowConfirmModal(false)}
+                style={[confirmStyles.btn, confirmStyles.cancelBtn, { borderColor: colors.border }]}
+              >
+                <Text style={[confirmStyles.btnText, { color: colors.text.secondary }]}>Annuler</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={handleConfirmStart}
+                style={[confirmStyles.btn, { backgroundColor: colors.primary }]}
+              >
+                <Text style={[confirmStyles.btnText, { color: colors.onPrimary }]}>Démarrer</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -901,6 +1091,73 @@ const styles = StyleSheet.create({
   },
   rosterScrollContent: {
     padding: 24,
-    paddingBottom: 100,
+  },
+  bottomBar: {
+    borderTopWidth: 1,
+  },
+});
+
+const confirmStyles = StyleSheet.create({
+  backdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.6)",
+  },
+  wrapper: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 24,
+  },
+  card: {
+    width: "100%",
+    maxWidth: 340,
+    borderWidth: 1,
+    borderRadius: 16,
+    paddingHorizontal: 36,
+    paddingVertical: 28,
+    alignItems: "center",
+    gap: 6,
+  },
+  label: {
+    fontSize: 10,
+    fontWeight: "bold",
+    letterSpacing: 2,
+    textTransform: "uppercase",
+    marginTop: 4,
+  },
+  versus: {
+    fontSize: 18,
+    fontWeight: "900",
+    textTransform: "uppercase",
+    letterSpacing: 1,
+    textAlign: "center",
+  },
+  vsLabel: {
+    fontSize: 12,
+    fontWeight: "600",
+    textTransform: "uppercase",
+  },
+  format: {
+    fontSize: 13,
+    fontWeight: "500",
+    marginTop: 4,
+    marginBottom: 4,
+  },
+  buttons: {
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 8,
+  },
+  btn: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  cancelBtn: {
+    borderWidth: 1,
+  },
+  btnText: {
+    fontSize: 14,
+    fontWeight: "bold",
   },
 });

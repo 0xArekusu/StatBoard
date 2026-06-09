@@ -125,6 +125,52 @@ describe("MatchRepository", () => {
 
       await expect(repo.create(makeCreateData())).rejects.toThrow("SQLite error");
     });
+
+    it("initialise les handicaps à 0 si non fournis", async () => {
+      mockExecute.mockResolvedValue(undefined);
+      mockQuery.mockResolvedValue([makeDbRow()]);
+
+      await repo.create(makeCreateData());
+
+      const params = mockExecute.mock.calls[0][1];
+      // my_team_handicap et opponent_handicap sont les 2 avant-derniers params (avant created_at)
+      const handicapIndex = params.indexOf(0, 3); // skip id, name, opponent
+      expect(params).toContain(0); // handicaps défaut à 0
+    });
+
+    it("utilise les handicaps fournis dans les params", async () => {
+      mockExecute.mockResolvedValue(undefined);
+      mockQuery.mockResolvedValue([makeDbRow()]);
+
+      await repo.create(makeCreateData({ my_team_handicap: 5, opponent_handicap: -3 }));
+
+      const params = mockExecute.mock.calls[0][1];
+      expect(params).toContain(5);
+      expect(params).toContain(-3);
+    });
+
+    it("utilise created_at si fourni", async () => {
+      mockExecute.mockResolvedValue(undefined);
+      mockQuery.mockResolvedValue([makeDbRow()]);
+
+      const createdAt = "2024-06-15T10:00:00Z";
+      await repo.create(makeCreateData({ created_at: createdAt }));
+
+      const params = mockExecute.mock.calls[0][1];
+      expect(params[params.length - 1]).toBe(createdAt);
+    });
+
+    it("génère un created_at automatique si non fourni", async () => {
+      mockExecute.mockResolvedValue(undefined);
+      mockQuery.mockResolvedValue([makeDbRow()]);
+
+      await repo.create(makeCreateData());
+
+      const params = mockExecute.mock.calls[0][1];
+      const createdAt = params[params.length - 1];
+      expect(typeof createdAt).toBe("string");
+      expect(createdAt).toMatch(/^\d{4}-\d{2}-\d{2}T/); // format ISO
+    });
   });
 
   // ─── findById ────────────────────────────────────────────────────────────
@@ -172,6 +218,55 @@ describe("MatchRepository", () => {
       const match = await repo.findActiveMatch();
 
       expect(match).toBeNull();
+    });
+
+    it("sans paramètres, passe undefined à la requête", async () => {
+      mockQuery.mockResolvedValue([]);
+
+      await repo.findActiveMatch();
+
+      expect(mockQuery).toHaveBeenCalledWith(expect.any(String), undefined);
+    });
+
+    it("filtre par clubId si fourni", async () => {
+      mockQuery.mockResolvedValue([makeDbRow({ club_id: "club-1" })]);
+
+      await repo.findActiveMatch("club-1");
+
+      const [sql, params] = mockQuery.mock.calls[0];
+      expect(sql).toContain("club_id = ?");
+      expect(params).toContain("club-1");
+    });
+
+    it("filtre par teamId si fourni", async () => {
+      mockQuery.mockResolvedValue([makeDbRow({ team_id: "team-1" })]);
+
+      await repo.findActiveMatch(undefined, "team-1");
+
+      const [sql, params] = mockQuery.mock.calls[0];
+      expect(sql).toContain("team_id = ?");
+      expect(params).toContain("team-1");
+    });
+
+    it("filtre par clubId et teamId si les deux sont fournis", async () => {
+      mockQuery.mockResolvedValue([makeDbRow({ club_id: "club-1", team_id: "team-1" })]);
+
+      await repo.findActiveMatch("club-1", "team-1");
+
+      const [sql, params] = mockQuery.mock.calls[0];
+      expect(sql).toContain("club_id = ?");
+      expect(sql).toContain("team_id = ?");
+      expect(params).toEqual(["club-1", "team-1"]);
+    });
+
+    it("fonctionne avec GUEST_IDS.CLUB comme clubId", async () => {
+      mockQuery.mockResolvedValue([makeDbRow({ club_id: "guest-club" })]);
+
+      await repo.findActiveMatch("guest-club");
+
+      const [sql, params] = mockQuery.mock.calls[0];
+      expect(sql).toContain("club_id = ?");
+      expect(params).toContain("guest-club");
     });
   });
 

@@ -5,7 +5,7 @@
  */
 
 import React, { useRef } from "react";
-import { View, Text, TouchableOpacity, StyleSheet, Animated } from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet, Animated, Dimensions } from "react-native";
 import { BRAND_COLORS, SLATE_COLORS, COMMON_COLORS } from "../../src/theme";
 import { MATCH_ROSTER_TAB_LABELS } from "../../constants";
 import { useResponsive } from "../../src/hooks/useResponsive";
@@ -21,6 +21,10 @@ interface RosterTabSwitchProps {
   homeCount: number;
   /** Number of opponent players */
   opponentCount: number;
+  /** Home team name */
+  homeTeamName?: string;
+  /** Opponent team name */
+  opponentName?: string;
   /** Whether dark mode is enabled */
   isDark: boolean;
   /** Theme colors */
@@ -39,15 +43,18 @@ export const RosterTabSwitch: React.FC<RosterTabSwitchProps> = ({
   onTabChange,
   homeCount,
   opponentCount,
+  homeTeamName,
+  opponentName,
   isDark,
   colors,
 }) => {
   const { sp, font } = useResponsive();
   const toggleAnimation = useRef(new Animated.Value(activeTab === "HOME" ? 0 : 1)).current;
 
-  // Responsive toggle dimensions
-  const toggleWidth = sp.xxl * 7.5; // ~240 default
-  const toggleHeight = sp.xxl * 1.5; // ~48 default
+  // Responsive toggle dimensions — full available width, reduced height
+  const { width: screenWidth } = Dimensions.get('window');
+  const toggleWidth = screenWidth - sp.lg * 2;
+  const toggleHeight = sp.xxl * 1.1; // reduced from 1.5
   const sliderWidth = toggleWidth / 2 - sp.xs; // Half width minus small gap
   const sliderHeight = toggleHeight - sp.xs; // Height minus small gap
 
@@ -73,7 +80,7 @@ export const RosterTabSwitch: React.FC<RosterTabSwitchProps> = ({
           backgroundColor: colors.surfaceColor,
           borderBottomColor: colors.borderColor,
           paddingHorizontal: sp.lg,
-          paddingVertical: sp.md,
+          paddingVertical: sp.sm,
         },
       ]}
     >
@@ -122,8 +129,10 @@ export const RosterTabSwitch: React.FC<RosterTabSwitchProps> = ({
                 fontSize: font.sm,
               },
             ]}
+            numberOfLines={1}
+            ellipsizeMode="tail"
           >
-            {MATCH_ROSTER_TAB_LABELS.US} ({homeCount})
+            {homeTeamName || MATCH_ROSTER_TAB_LABELS.US} ({homeCount})
           </Text>
         </View>
         <View style={styles.toggleOption}>
@@ -139,8 +148,10 @@ export const RosterTabSwitch: React.FC<RosterTabSwitchProps> = ({
                 fontSize: font.sm,
               },
             ]}
+            numberOfLines={1}
+            ellipsizeMode="tail"
           >
-            {MATCH_ROSTER_TAB_LABELS.THEM} ({opponentCount})
+            {opponentName || MATCH_ROSTER_TAB_LABELS.THEM} ({opponentCount})
           </Text>
         </View>
       </TouchableOpacity>

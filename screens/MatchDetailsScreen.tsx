@@ -46,6 +46,7 @@ import {
   ShotSpecification,
   ReboundSpecification,
 } from "../src/models/ActionTypes";
+import { GUEST_IDS } from "../constants/matchConstants";
 import { useTheme } from "../src/contexts/ThemeContext";
 import { useResponsive } from "../src/hooks/useResponsive";
 import { Colors } from "../src/theme/colors";
@@ -57,11 +58,11 @@ import { ServiceFactory } from "../services/ServiceFactory";
 import { supabase } from "../src/config/supabase";
 import { getSignedUrl } from "../utils/storageHelper";
 import { useSignedUrl } from "../hooks/useSignedUrl";
-import { StatsTab, CardsTab, CourtTab, EvolutionTab, PlayerDetailModal } from "../components/MatchDetails";
+import { StatsTab, CardsTab, CourtTab, EvolutionTab, TimelineTab, PlayerDetailModal } from "../components/MatchDetails";
 import type { PlayerStats, Tab, TeamFilter, ActionFilterType, SortBy, SortOrder } from "../constants/matchDetailsConstants";
 import { TAB, ACTION_FILTER } from "../constants";
 import { RootStackParamList, RootNavigationProp } from "../types/navigation";
-import { calculateEfficiency } from "../src/utils/statsCalculator";
+import { calculateEfficiency, calculatePlusMinus } from "../src/utils/statsCalculator";
 
 type MatchDetailsRouteProp = RouteProp<RootStackParamList, "MatchDetails">;
 
@@ -146,7 +147,7 @@ export default function MatchDetailsScreen() {
   useEffect(() => {
     const loadClub = async () => {
       // Skip loading for guest mode (offline matches)
-      if (!match.club_id || match.club_id === "guest-club") {
+      if (!match.club_id || match.club_id === GUEST_IDS.CLUB) {
         return;
       }
 
@@ -403,6 +404,7 @@ export default function MatchDetailsScreen() {
             fg3m: 0,
             fg3a: 0,
             eff: 0,
+            pm: 0,
             min: "0:00",
           });
         });
@@ -454,6 +456,7 @@ export default function MatchDetailsScreen() {
               fg3m: 0,
               fg3a: 0,
               eff: 0,
+              pm: 0,
               min: "0:00",
             });
           }
@@ -522,6 +525,24 @@ export default function MatchDetailsScreen() {
       stats.min = formatPlayingTime(playingTimeSeconds);
     });
   }
+
+    // STEP 4: Calculate +/- for all players in the map
+    const allPlayersForPm = (players || [])
+      .filter((p) => {
+        const num = p.num || p.player_number;
+        return num && num !== 9999 && num !== -1;
+      })
+      .map((p) => ({
+        player_number: p.num || p.player_number,
+        team: p.team as "MyTeam" | "Opponent",
+        is_starter: !p.isSubstitute,
+      }));
+
+    const pmMap = calculatePlusMinus(actions || [], allPlayersForPm);
+
+    playerStatsMap.forEach((stats, key) => {
+      stats.pm = match.has_sub_tracking ? (pmMap.get(key) ?? null) : null;
+    });
 
     // Convert map to array and sort by points (default sort)
     const playersList = Array.from(playerStatsMap.values()).sort(
@@ -633,6 +654,7 @@ export default function MatchDetailsScreen() {
         opponentName={match.opponent_name}
         actions={actions}
         club={club}
+        matchDate={match.created_at ? new Date(match.created_at) : undefined}
       />
 
       {/* PDF EXPORT LOADER MODAL */}
@@ -948,12 +970,42 @@ export default function MatchDetailsScreen() {
               color={activeTab === TAB.COURT ? colors.text.primary : textTertiary}
             />
           </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => setActiveTab(TAB.TIMELINE)}
+            style={[
+              styles.tabButton,
+              {
+                backgroundColor:
+                  activeTab === TAB.TIMELINE ? colors.primary : surfaceColor,
+                borderColor: borderColor,
+                width: sizes.avatarSm,
+                height: sizes.avatarSm,
+                borderRadius: sp.sm,
+              },
+            ]}
+          >
+            <Ionicons
+              name="time-outline"
+              size={sizes.iconSm}
+              color={activeTab === TAB.TIMELINE ? colors.text.primary : textTertiary}
+            />
+          </TouchableOpacity>
         </View>
       </View>
 
-      {/* CONTENT */}
+      {/* TIMELINE — gère son propre scroll avec header sticky */}
+      {activeTab === TAB.TIMELINE && (
+        <TimelineTab
+          actions={actions}
+          match={match}
+          playerNamesMap={playerNamesMap}
+        />
+      )}
+
+      {/* CONTENT (tous les autres onglets) */}
+      {activeTab !== TAB.TIMELINE && (
       <ScrollView style={[styles.content, { padding: sp.md }]} showsVerticalScrollIndicator={false}>
-        
+
           {/* EVOLUTION VIEW */}
           {activeTab === TAB.EVOLUTION && (
           <EvolutionTab
@@ -1009,7 +1061,9 @@ export default function MatchDetailsScreen() {
             totalPeriods={match.total_periods || 4}
           />
         )}
+
       </ScrollView>
+      )}
     </SafeAreaView>
   );
 }
