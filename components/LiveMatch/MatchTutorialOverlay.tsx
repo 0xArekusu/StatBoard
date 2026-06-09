@@ -106,7 +106,7 @@ export function MatchTutorialOverlay({
     0,
     screenHeight - safeTop - headerHeight - toggleHeight - toolbarHeight
   );
-console.log(insets)
+  
   const zones: Record<Zone, { top: number; height: number }> = {
     header: { top: safeTop, height: headerHeight },
     toggle: { top: safeTop + headerHeight, height: toggleHeight },
