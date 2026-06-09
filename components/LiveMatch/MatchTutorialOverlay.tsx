@@ -106,12 +106,12 @@ export function MatchTutorialOverlay({
     0,
     screenHeight - safeTop - headerHeight - toggleHeight - toolbarHeight
   );
-
+console.log(insets)
   const zones: Record<Zone, { top: number; height: number }> = {
     header: { top: safeTop, height: headerHeight },
     toggle: { top: safeTop + headerHeight, height: toggleHeight },
     grid: { top: safeTop + headerHeight + toggleHeight, height: gridHeight },
-    toolbar: { top: screenHeight - toolbarHeight, height: toolbarHeight },
+    toolbar: { top: screenHeight - toolbarHeight, height: toolbarHeight - insets.bottom },
   };
 
   const activeZone = zones[step.zone];
