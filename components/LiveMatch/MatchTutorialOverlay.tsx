@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   useWindowDimensions,
+  Platform,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -110,8 +111,8 @@ export function MatchTutorialOverlay({
   const zones: Record<Zone, { top: number; height: number }> = {
     header: { top: safeTop, height: headerHeight },
     toggle: { top: safeTop + headerHeight, height: toggleHeight },
-    grid: { top: safeTop + headerHeight + toggleHeight, height: gridHeight },
-    toolbar: { top: screenHeight - toolbarHeight, height: toolbarHeight - insets.bottom },
+    grid: { top: safeTop + headerHeight + toggleHeight, height: gridHeight - Platform.select({ ios: 15, default: 0 }) },
+    toolbar: { top: screenHeight - toolbarHeight - Platform.select({ ios: 10, default: 0 }), height: toolbarHeight - insets.bottom },
   };
 
   const activeZone = zones[step.zone];
