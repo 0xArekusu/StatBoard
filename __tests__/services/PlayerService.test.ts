@@ -87,8 +87,8 @@ describe("PlayerService", () => {
       expect(r2.success).toBe(true);
     });
 
-    it("échoue si l'équipe a déjà 13 joueurs", async () => {
-      mockRepo.countByTeamId.mockResolvedValue(13);
+    it("échoue si l'équipe a déjà 20 joueurs", async () => {
+      mockRepo.countByTeamId.mockResolvedValue(20);
       const result = await service.createPlayer({
         teamId: "team-1",
         name: "John",
@@ -96,7 +96,7 @@ describe("PlayerService", () => {
       });
       expect(result).toEqual({
         success: false,
-        error: "Une équipe ne peut pas avoir plus de 13 joueurs",
+        error: "Une équipe ne peut pas avoir plus de 20 joueurs",
       });
     });
 
