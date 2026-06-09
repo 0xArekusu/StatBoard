@@ -98,7 +98,7 @@ export const AddOpponentForm: React.FC<AddOpponentFormProps> = ({
         </TouchableOpacity>
       </View>
       <TextInput
-        placeholder="VTXXXXXX"
+        placeholder="VTXXXXXX (Optionnel)"
         placeholderTextColor={colors.textSecondary}
         value={playerLicense}
         onChangeText={onLicenseChange}

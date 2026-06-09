@@ -181,7 +181,7 @@ export const AddPlayerForm: React.FC<AddPlayerFormProps> = ({
         </TouchableOpacity>
       </View>
       <TextInput
-        placeholder="VTXXXXXX"
+        placeholder="VTXXXXXX (Optionnel)"
         placeholderTextColor={colors.textSecondary}
         value={license}
         onChangeText={onLicenseChange}

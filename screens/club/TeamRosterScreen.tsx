@@ -1064,7 +1064,7 @@ export default function TeamRosterScreen() {
                       fontSize: font.md,
                     },
                   ]}
-                  placeholder="VTXXXXXX"
+                  placeholder="VTXXXXXX (Optionnel)"
                   placeholderTextColor={colors.text.tertiary}
                   value={newPlayerLicense}
                   onChangeText={setNewPlayerLicense}
