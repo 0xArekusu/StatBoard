@@ -52,7 +52,9 @@ export default function StatsScreen() {
       );
       const details = await loadAllMatchDetails(matches, supabase);
       allDetailsRef.current = details;
+
       const stats = computeSeasonStats(details, period);
+
       const filtered = filterMatchesByPeriod(matches, period);
       setPlayers(stats);
       setMatchCount(filtered.length);

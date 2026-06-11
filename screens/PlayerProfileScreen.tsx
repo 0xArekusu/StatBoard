@@ -76,7 +76,7 @@ export default function PlayerProfileScreen() {
       const filteredMatches = filterMatchesByPeriod(details.map((d) => d.match), p);
       const filteredIds = new Set(filteredMatches.map((m) => m.id));
       const filteredDetails = details.filter((d) => filteredIds.has(d.match.id));
-      const history = computePlayerMatchHistory(details, playerNumber);
+      const history = computePlayerMatchHistory(details, playerNumber, playerId, playerName);
 
       setPlayerData(found ?? EMPTY_PLAYER(playerId ?? null, playerNumber, playerName, photoUrl));
       setMatchesInPeriod(filteredDetails.length);

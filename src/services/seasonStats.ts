@@ -75,8 +75,9 @@ function normalizeName(name: string): string {
     .replace(/\s+/g, ' ');
 }
 
-function playerKey(player: PlayerData): string {
-  return player.player_id ?? `name-${normalizeName(player.name)}`;
+function playerKey(player: PlayerData, matchId?: string): string {
+  if (player.player_id) return player.player_id;
+  return `renfort-${matchId ?? 'unknown'}-${normalizeName(player.name)}`;
 }
 
 function computeStatsForPlayer(
@@ -196,11 +197,11 @@ export function computeSeasonStats(
   // Tracks jersey number frequency per player key to pick the canonical number
   const numberCounts = new Map<string, Map<number, number>>();
 
-  for (const { actions, players } of details) {
+  for (const { actions, players, match } of details) {
     const myTeam = players.filter((p) => p.team === Team.MY_TEAM && p.num !== 9999);
 
     for (const player of myTeam) {
-      const key = playerKey(player);
+      const key = playerKey(player, match.id);
 
       // Track number frequency for canonical number selection
       if (!numberCounts.has(key)) numberCounts.set(key, new Map());
@@ -223,12 +224,6 @@ export function computeSeasonStats(
       }
 
       const data = playerMap.get(key)!;
-      const hasActions = actions.some(
-        (a) => a.team === Team.MY_TEAM && a.player === player.num
-      );
-      const played = (player.playingTimeSeconds ?? 0) > 0 || hasActions;
-
-      if (!played) continue;
 
       data.matchesPlayed += 1;
       data.totalPlayingTimeSeconds += player.playingTimeSeconds ?? 0;
@@ -286,25 +281,30 @@ export function computeSeasonStats(
 
 export function computePlayerMatchHistory(
   allDetails: MatchWithDetails[],
-  playerNumber: number
+  playerNumber: number,
+  playerId?: string | null,
+  playerName?: string,
 ): MatchHistoryEntry[] {
   return [...allDetails]
     .sort((a, b) => new Date(b.match.created_at).getTime() - new Date(a.match.created_at).getTime())
     .map(({ match, actions, players }) => {
-      const player = players.find(
-        (p) => p.team === Team.MY_TEAM && p.num === playerNumber
-      );
+      let player: PlayerData | undefined;
+      if (playerId) {
+        player = players.find((p) => p.team === Team.MY_TEAM && p.player_id === playerId);
+      } else {
+        player = players.find((p) => p.team === Team.MY_TEAM && p.player_id === null && p.name === playerName);
+      }
       if (!player) {
         return { match, played: false, pts: 0, reb: 0, ast: 0, eff: 0 };
       }
       const hasActions = actions.some(
-        (a) => a.team === Team.MY_TEAM && a.player === playerNumber
+        (a) => a.team === Team.MY_TEAM && a.player === player!.num
       );
       const played = (player.playingTimeSeconds ?? 0) > 0 || hasActions;
       if (!played) {
         return { match, played: false, pts: 0, reb: 0, ast: 0, eff: 0 };
       }
-      const s = computeStatsForPlayer(actions, playerNumber);
+      const s = computeStatsForPlayer(actions, player.num);
       return { match, played: true, pts: s.pts, reb: s.reb, ast: s.ast, eff: s.eff };
     });
 }
