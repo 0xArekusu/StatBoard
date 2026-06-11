@@ -34,6 +34,7 @@ export interface PlayerSeasonData {
   fga: number;
   eff: number;
   totalPlayingTimeSeconds: number;
+  matchesWithTrackedTime: number;
   // Averages per match played
   avgPts: number;
   avgReb: number;
@@ -199,6 +200,7 @@ export function computeSeasonStats(
 
   for (const { actions, players, match } of details) {
     const myTeam = players.filter((p) => p.team === Team.MY_TEAM && p.num !== 9999);
+    const matchHasTracking = myTeam.some((p) => (p.playingTimeSeconds ?? 0) > 0);
 
     for (const player of myTeam) {
       const key = playerKey(player, match.id);
@@ -218,7 +220,7 @@ export function computeSeasonStats(
           pts: 0, reb: 0, reb_off: 0, reb_def: 0,
           ast: 0, stl: 0, blk: 0, to: 0, pf: 0, fd: 0,
           ftm: 0, fta: 0, fg2m: 0, fg2a: 0, fg3m: 0, fg3a: 0,
-          fgm: 0, fga: 0, eff: 0, totalPlayingTimeSeconds: 0,
+          fgm: 0, fga: 0, eff: 0, totalPlayingTimeSeconds: 0, matchesWithTrackedTime: 0,
           avgPts: 0, avgReb: 0, avgAst: 0, avgDef: 0, avgEff: 0,
         });
       }
@@ -227,6 +229,7 @@ export function computeSeasonStats(
 
       data.matchesPlayed += 1;
       data.totalPlayingTimeSeconds += player.playingTimeSeconds ?? 0;
+      if (matchHasTracking) data.matchesWithTrackedTime += 1;
 
       const matchStats = computeStatsForPlayer(actions, player.num);
       data.pts += matchStats.pts;

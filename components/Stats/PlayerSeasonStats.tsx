@@ -30,8 +30,8 @@ export default function PlayerSeasonStats({ player }: PlayerSeasonStatsProps) {
       <View style={[styles.cardGrid, { gap: sp.sm, paddingHorizontal: sp.md }]}>
         {[
           {
-            value: player.totalPlayingTimeSeconds > 0
-              ? formatTime(player.totalPlayingTimeSeconds, n)
+            value: player.matchesWithTrackedTime > 0
+              ? formatTime(player.totalPlayingTimeSeconds, player.matchesWithTrackedTime)
               : '--:--',
             label: 'Temps moy.',
           },
