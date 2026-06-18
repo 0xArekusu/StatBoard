@@ -25,6 +25,7 @@ export const ROUTES = {
   RESET_PASSWORD: "ResetPassword",
   STATS: "Stats",
   PLAYER_PROFILE: "PlayerProfile",
+  PLAYBOOK: "Playbook",
 } as const;
 
 // Type for route names

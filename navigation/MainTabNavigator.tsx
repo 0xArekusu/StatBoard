@@ -16,6 +16,7 @@ import DashboardScreen from "../screens/DashboardScreen";
 import HistoryScreen from "../screens/HistoryScreen";
 import StatsScreen from "../screens/StatsScreen";
 import ClubScreen from "../screens/club/ClubScreen";
+import PlaybookScreen from "../screens/PlaybookScreen";
 
 const Tab = createBottomTabNavigator();
 
@@ -143,6 +144,20 @@ export default function MainTabNavigator() {
         }}
         listeners={{
           tabPress: handleClubTabPress,
+        }}
+      />
+      <Tab.Screen
+        name={ROUTES.PLAYBOOK}
+        component={PlaybookScreen}
+        options={{
+          tabBarLabel: "Systèmes",
+          tabBarIcon: ({ color, size }) => (
+            <MaterialCommunityIcons
+              name="strategy"
+              size={size}
+              color={color}
+            />
+          ),
         }}
       />
     </Tab.Navigator>
