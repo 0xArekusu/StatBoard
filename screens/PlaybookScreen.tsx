@@ -12,6 +12,7 @@ import { useTheme } from "../src/contexts/ThemeContext";
 import { BRAND_COLORS, SLATE_COLORS } from "../src/theme";
 import { PlaybookItem, PlayCategory } from "../src/models/PlayTypes";
 import { MOCK_PLAYS } from "../constants/mockPlays";
+import PlayEditorModal from "./PlayEditorModal";
 
 const CATEGORY_LABELS: Record<PlayCategory | "ALL", string> = {
   ALL: "Tous",
@@ -42,6 +43,7 @@ export default function PlaybookScreen() {
 
   const [plays] = useState<PlaybookItem[]>(MOCK_PLAYS);
   const [activeCategory, setActiveCategory] = useState<PlayCategory | "ALL">("ALL");
+  const [selectedPlay, setSelectedPlay] = useState<PlaybookItem | null>(null);
 
   const filteredPlays = useMemo(() => {
     if (activeCategory === "ALL") return plays;
@@ -125,10 +127,17 @@ export default function PlaybookScreen() {
               border={border}
               textPrimary={textPrimary}
               textSecondary={textSecondary}
+              onPress={() => setSelectedPlay(play)}
             />
           ))
         )}
       </ScrollView>
+
+      <PlayEditorModal
+        play={selectedPlay}
+        visible={selectedPlay !== null}
+        onClose={() => setSelectedPlay(null)}
+      />
     </SafeAreaView>
   );
 }
@@ -141,9 +150,10 @@ interface PlayCardProps {
   border: string;
   textPrimary: string;
   textSecondary: string;
+  onPress: () => void;
 }
 
-function PlayCard({ play, surface, border, textPrimary, textSecondary }: PlayCardProps) {
+function PlayCard({ play, surface, border, textPrimary, textSecondary, onPress }: PlayCardProps) {
   const isDefense = play.category === "DEFENSE";
   const badgeColor = isDefense ? "#ef4444" : BRAND_COLORS[500];
   const badgeBg = isDefense ? "#ef444420" : `${BRAND_COLORS[500]}20`;
@@ -151,6 +161,7 @@ function PlayCard({ play, surface, border, textPrimary, textSecondary }: PlayCar
   return (
     <TouchableOpacity
       activeOpacity={0.75}
+      onPress={onPress}
       style={[styles.card, { backgroundColor: surface, borderColor: border }]}
     >
       <View style={styles.cardHeader}>
