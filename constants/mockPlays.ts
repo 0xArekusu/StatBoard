@@ -1,4 +1,21 @@
-import { PlaybookItem } from "../src/models/PlayTypes";
+import { PlaybookItem, DrawingPoint } from "../src/models/PlayTypes";
+
+export const STORAGE_KEY_PLAYBOOK = "statboard_playbook_v1";
+
+// Default 5-out formation used when creating a new play
+export const DEFAULT_POSITIONS: Record<string, DrawingPoint> = {
+  A1: { x: 50, y: 75 },
+  A2: { x: 15, y: 52 },
+  A3: { x: 85, y: 52 },
+  A4: { x: 25, y: 25 },
+  A5: { x: 75, y: 25 },
+  D1: { x: 50, y: 67 },
+  D2: { x: 20, y: 45 },
+  D3: { x: 80, y: 45 },
+  D4: { x: 30, y: 18 },
+  D5: { x: 70, y: 18 },
+  BALL: { x: 50, y: 72 },
+};
 
 // Player positions use percentage coordinates (0–100) relative to the half-court view.
 // Origin (0,0) = top-left, (100,100) = bottom-right.
