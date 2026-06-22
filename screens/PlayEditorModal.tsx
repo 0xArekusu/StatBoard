@@ -40,6 +40,7 @@ const TOOLS: { key: DrawingTool; icon: string; label: string }[] = [
   { key: "pass",   icon: "dots-horizontal",  label: "PASSE" },
   { key: "drive",  icon: "arrow-right-bold", label: "COURSE" },
   { key: "screen", icon: "rectangle-outline",label: "ÉCRAN" },
+  { key: "pencil", icon: "pencil",           label: "DESSIN" },
 ];
 
 interface PlayEditorModalProps {
