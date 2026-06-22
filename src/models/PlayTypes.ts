@@ -24,6 +24,7 @@ export interface DrawingStroke {
   points: DrawingPoint[];
   color: string;
   width: number;
+  sourceToken?: string;
 }
 
 export interface PlayScene {

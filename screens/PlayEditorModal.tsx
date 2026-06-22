@@ -28,6 +28,38 @@ const COURT_VB_W = 100;
 const COURT_VB_H = 85;
 const DRAG_THRESHOLD = 10;
 const ALL_TOKEN_KEYS = ["A1","A2","A3","A4","A5","D1","D2","D3","D4","D5","BALL"] as const;
+const ATTACKER_KEYS = ["A1","A2","A3","A4","A5"] as const;
+
+function derivePositionsFromDrawings(
+  positions: Record<string, DrawingPoint>,
+  drawings: DrawingStroke[],
+): Record<string, DrawingPoint> {
+  const pos: Record<string, DrawingPoint> = {};
+  for (const k of Object.keys(positions)) pos[k] = { ...positions[k] };
+
+  for (const stroke of drawings) {
+    if (stroke.points.length < 2) continue;
+    const start = stroke.points[0];
+    const end   = stroke.points[stroke.points.length - 1];
+
+    const sourceKey = stroke.sourceToken ?? null;
+
+    if (stroke.type === "pass") {
+      pos["BALL"] = { x: end.x, y: end.y };
+    } else if (stroke.type === "drive") {
+      if (!sourceKey) continue;
+      const ball = pos["BALL"];
+      const ballNear = ball && Math.hypot(ball.x - start.x, ball.y - start.y) < 8;
+      pos[sourceKey] = { x: end.x, y: end.y };
+      if (ballNear) pos["BALL"] = { x: end.x, y: end.y };
+    } else if (stroke.type === "screen") {
+      if (!sourceKey) continue;
+      pos[sourceKey] = { x: end.x, y: end.y };
+    }
+  }
+
+  return pos;
+}
 
 const CATEGORY_LABELS: Record<string, string> = {
   OFFENSE: "ATTAQUE", DEFENSE: "DÉFENSE",
@@ -156,8 +188,9 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
   const syncDrawColor  = (c: string)     => { drawColorRef.current  = c; setDrawColor(c); };
 
   // ── Drag ─────────────────────────────────────────────────────────────────
-  const draggingKey = useRef<string | null>(null);
-  const courtRef    = useRef<View>(null);
+  const draggingKey    = useRef<string | null>(null);
+  const sourceTokenRef = useRef<string | null>(null);
+  const courtRef       = useRef<View>(null);
   const courtAbsPos = useRef({ x: 0, y: 0 });
 
   const measureCourt = useCallback(() => {
@@ -219,11 +252,12 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
   // ── Add scene (duplicate current positions, blank drawings) ───────────────
   const addScene = useCallback(() => {
     const scenes = commitCurrentScene();
+    const derivedPositions = derivePositionsFromDrawings(positionsRef.current, drawingsRef.current);
     const newScene: PlayScene = {
       id: `scene-${Date.now()}`,
       title: `Étape ${scenes.length + 1}`,
       description: "",
-      positions: { ...positionsRef.current } as any,
+      positions: derivedPositions as any,
       drawings: [],
     };
     const updated = [...scenes, newScene];
@@ -334,10 +368,33 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
               if (d < bestDist) { bestDist = d; best = key; }
             }
             draggingKey.current = best;
-          } else {
+          } else if (activeToolRef.current === "pencil") {
             draggingKey.current = null;
+            sourceTokenRef.current = null;
             livePointsRef.current = [pt];
             setLivePoints([pt]);
+          } else {
+            // pass / drive / screen : doit démarrer depuis un attaquant
+            draggingKey.current = null;
+            let found: string | null = null;
+            let foundPos: DrawingPoint | null = null;
+            let foundDist = DRAG_THRESHOLD;
+            for (const key of ATTACKER_KEYS) {
+              const p = positionsRef.current[key];
+              if (!p) continue;
+              const d = Math.hypot(p.x - pt.x, p.y - pt.y);
+              if (d < foundDist) { foundDist = d; found = key; foundPos = p; }
+            }
+            if (found && foundPos) {
+              sourceTokenRef.current = found;
+              const snap = { x: foundPos.x, y: foundPos.y };
+              livePointsRef.current = [snap];
+              setLivePoints([snap]);
+            } else {
+              sourceTokenRef.current = null;
+              livePointsRef.current = [];
+              setLivePoints([]);
+            }
           }
         });
       },
@@ -357,11 +414,13 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
             y: (cy / COURT_VB_H) * courtHRef.current - offset,
           });
         } else {
-          const pt = { x: cx, y: cy };
           const prev = livePointsRef.current;
+          // Aucun point de départ valide (contrainte de source non respectée)
+          if (prev.length === 0) return;
+          const pt = { x: cx, y: cy };
           const next = activeToolRef.current === "pencil"
             ? [...prev, pt]
-            : [prev[0] ?? pt, pt];
+            : [prev[0], pt];
           livePointsRef.current = next;
           setLivePoints([...next]);
         }
@@ -380,6 +439,7 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
             points: pts,
             color: drawColorRef.current,
             width: 3,
+            sourceToken: sourceTokenRef.current ?? undefined,
           };
           undoStackRef.current = [...undoStackRef.current, [...drawingsRef.current]];
           redoStackRef.current = [];
@@ -389,12 +449,14 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
           setCanUndo(true);
           setCanRedo(false);
         }
+        sourceTokenRef.current = null;
         livePointsRef.current = [];
         setLivePoints([]);
       },
 
       onPanResponderTerminate: () => {
         draggingKey.current = null;
+        sourceTokenRef.current = null;
         livePointsRef.current = [];
         setLivePoints([]);
       },
