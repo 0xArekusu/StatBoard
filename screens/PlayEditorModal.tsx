@@ -11,6 +11,8 @@ import {
   PanResponder,
   Alert,
   Share,
+  Animated,
+  Easing,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
@@ -19,19 +21,19 @@ import { BRAND_COLORS, SLATE_COLORS } from "../src/theme";
 import { PlaybookItem, PlayScene, DrawingPoint, DrawingStroke, DrawingTool } from "../src/models/PlayTypes";
 import TacticalCourtSVG from "../components/Playbook/TacticalCourtSVG";
 import DrawingOverlaySVG from "../components/Playbook/DrawingOverlaySVG";
+import PlayerToken from "../components/Playbook/PlayerToken";
+import PlaybackControls from "../components/Playbook/PlaybackControls";
 
 const COURT_VB_W = 100;
 const COURT_VB_H = 85;
 const DRAG_THRESHOLD = 10;
+const ALL_TOKEN_KEYS = ["A1","A2","A3","A4","A5","D1","D2","D3","D4","D5","BALL"] as const;
 
 const CATEGORY_LABELS: Record<string, string> = {
   OFFENSE: "ATTAQUE", DEFENSE: "DÉFENSE",
   OUT_OF_BOUNDS: "TOUCHE", PRESS_BREAK: "PRESSE", OTHER: "AUTRE",
 };
 
-const POSITION_NAMES: Record<string, string> = {
-  A1: "Meneur", A2: "Arrière", A3: "Ailier", A4: "Ailier F.", A5: "Pivot",
-};
 
 const DRAW_COLORS = ["#2563eb", "#dc2626", "#ea580c", "#16a34a", "#eab308"];
 
@@ -63,6 +65,9 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
 
   const courtW = Math.min(screenW - 32, 480);
   const courtH = Math.round((courtW * COURT_VB_H) / COURT_VB_W);
+  const courtWRef = useRef(courtW);
+  const courtHRef = useRef(courtH);
+  useEffect(() => { courtWRef.current = courtW; courtHRef.current = courtH; }, [courtW, courtH]);
 
   // ── Scene list (local mutable copy of all scenes) ─────────────────────────
   const [localScenes, setLocalScenesState] = useState<PlayScene[]>([]);
@@ -82,8 +87,51 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
     setSceneIndexState(i);
   };
 
+  // ── Playback ──────────────────────────────────────────────────────────────
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [speed, setSpeed] = useState(1500);
+  const [showDefenders, setShowDefenders] = useState(true);
+  const isPlayingRef = useRef(false);
+  const speedRef = useRef(1500);
+  useEffect(() => { isPlayingRef.current = isPlaying; }, [isPlaying]);
+  useEffect(() => { speedRef.current = speed; }, [speed]);
+
+  // ── Animated token positions ───────────────────────────────────────────────
+  const animatedPositions = useRef<Record<string, Animated.ValueXY>>(
+    Object.fromEntries(ALL_TOKEN_KEYS.map(k => [k, new Animated.ValueXY()]))
+  );
+
+  const snapPositions = useCallback((pos: Record<string, DrawingPoint>) => {
+    for (const [key, p] of Object.entries(pos)) {
+      const anim = animatedPositions.current[key];
+      if (!anim) continue;
+      const offset = key === "BALL" ? 10 : 14;
+      anim.setValue({
+        x: (p.x / COURT_VB_W) * courtWRef.current - offset,
+        y: (p.y / COURT_VB_H) * courtHRef.current - offset,
+      });
+    }
+  }, []);
+
+  const animatePositions = useCallback((pos: Record<string, DrawingPoint>, duration: number) => {
+    const anims = Object.entries(pos).map(([key, p]) => {
+      const anim = animatedPositions.current[key];
+      if (!anim) return null;
+      const offset = key === "BALL" ? 10 : 14;
+      return Animated.timing(anim, {
+        toValue: {
+          x: (p.x / COURT_VB_W) * courtWRef.current - offset,
+          y: (p.y / COURT_VB_H) * courtHRef.current - offset,
+        },
+        duration,
+        easing: Easing.inOut(Easing.ease),
+        useNativeDriver: false,
+      });
+    }).filter(Boolean) as Animated.CompositeAnimation[];
+    Animated.parallel(anims).start();
+  }, []);
+
   // ── Per-scene mutable state (positions + drawings) ────────────────────────
-  const [positions, setPositions] = useState<Record<string, DrawingPoint>>({});
   const positionsRef = useRef<Record<string, DrawingPoint>>({});
 
   const [drawings, setDrawings] = useState<DrawingStroke[]>([]);
@@ -136,7 +184,7 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
     const pos: Record<string, DrawingPoint> = {};
     for (const [k, v] of Object.entries(scene.positions)) pos[k] = { ...v };
     positionsRef.current = pos;
-    setPositions({ ...pos });
+    snapPositions(pos);
 
     const dr = (scene.drawings ?? []).map((d) => ({ ...d }));
     drawingsRef.current = dr;
@@ -149,7 +197,7 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
     redoStackRef.current = [];
     setCanUndo(false);
     setCanRedo(false);
-  }, []);
+  }, [snapPositions]);
 
   // ── Change scene: commit current → load next ──────────────────────────────
   const changeScene = useCallback((newIndex: number) => {
@@ -158,11 +206,12 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
     loadScene(localScenesRef.current[newIndex]);
   }, [commitCurrentScene, loadScene]);
 
-  // ── Close: commit → emit update → close ──────────────────────────────────
+  // ── Close: stop playback → commit → emit update → close ──────────────────
   const handleClose = useCallback(() => {
     if (!play) { onClose(); return; }
+    setIsPlaying(false);
     const scenes = commitCurrentScene();
-    setLocalScenes(scenes); // sync state too
+    setLocalScenes(scenes);
     onUpdate({ ...play, scenes });
     onClose();
   }, [play, commitCurrentScene, onUpdate, onClose]);
@@ -214,9 +263,45 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
     setLocalScenesState([...scenes]);
   }, []);
 
+  // ── Advance one scene during playback (reads only from refs) ─────────────
+  const advanceSceneForPlayback = useCallback(() => {
+    if (localScenesRef.current.length < 2) return;
+    const nextIdx = (sceneIndexRef.current + 1) % localScenesRef.current.length;
+    sceneIndexRef.current = nextIdx;
+    setSceneIndexState(nextIdx);
+    const scene = localScenesRef.current[nextIdx];
+    const pos: Record<string, DrawingPoint> = {};
+    for (const [k, v] of Object.entries(scene.positions)) pos[k] = { ...(v as DrawingPoint) };
+    positionsRef.current = pos;
+    animatePositions(pos, speedRef.current * 0.88);
+    const dr = (scene.drawings ?? []).map((d) => ({ ...d }));
+    drawingsRef.current = dr;
+    setDrawings([...dr]);
+    livePointsRef.current = [];
+    setLivePoints([]);
+  }, [animatePositions]);
+
+  // ── Playback loop ─────────────────────────────────────────────────────────
+  useEffect(() => {
+    if (!isPlaying) return;
+    const timer = setInterval(advanceSceneForPlayback, speedRef.current);
+    return () => {
+      clearInterval(timer);
+      Object.values(animatedPositions.current).forEach(a => a.stopAnimation());
+      // Snap back to current scene positions
+      const scene = localScenesRef.current[sceneIndexRef.current];
+      if (scene) {
+        const pos: Record<string, DrawingPoint> = {};
+        for (const [k, v] of Object.entries(scene.positions)) pos[k] = { ...(v as DrawingPoint) };
+        snapPositions(pos);
+      }
+    };
+  }, [isPlaying, advanceSceneForPlayback, snapPositions]);
+
   // ── Init on open ──────────────────────────────────────────────────────────
   useEffect(() => {
     if (!play || !visible) return;
+    setIsPlaying(false);
     const scenes = play.scenes.map((s) => ({
       ...s,
       positions: Object.fromEntries(Object.entries(s.positions).map(([k, v]) => [k, { ...(v as DrawingPoint) }])),
@@ -232,8 +317,8 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
   // ── PanResponder ──────────────────────────────────────────────────────────
   const panResponder = useRef(
     PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder:  () => true,
+      onStartShouldSetPanResponder: () => !isPlayingRef.current,
+      onMoveShouldSetPanResponder:  () => !isPlayingRef.current,
 
       onPanResponderGrant: (_evt, gs) => {
         courtRef.current?.measure((_fx, _fy, _w, _h, px, py) => {
@@ -265,9 +350,12 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
         if (activeToolRef.current === "move") {
           const key = draggingKey.current;
           if (!key) return;
-          const next = { ...positionsRef.current, [key]: { x: cx, y: cy } };
-          positionsRef.current = next;
-          setPositions({ ...next });
+          positionsRef.current = { ...positionsRef.current, [key]: { x: cx, y: cy } };
+          const offset = key === "BALL" ? 10 : 14;
+          animatedPositions.current[key]?.setValue({
+            x: (cx / COURT_VB_W) * courtWRef.current - offset,
+            y: (cy / COURT_VB_H) * courtHRef.current - offset,
+          });
         } else {
           const pt = { x: cx, y: cy };
           const prev = livePointsRef.current;
@@ -435,39 +523,28 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
               liveColor={drawColor}
             />
             <View style={StyleSheet.absoluteFill} pointerEvents="none">
-              {Object.entries(positions).map(([key, pos]) => {
-                const isBall = key === "BALL";
-                const isDefender = key.startsWith("D");
-                const num = key.replace("A", "").replace("D", "");
-                const left = (pos.x / COURT_VB_W) * courtW;
-                const top  = (pos.y / COURT_VB_H) * courtH;
-                if (isBall) return <View key={key} style={[styles.ball, { left: left - 10, top: top - 10 }]} />;
-                return (
-                  <View key={key} style={[styles.tokenWrapper, { left: left - 14, top: top - 14 }]}>
-                    <View style={[styles.token, isDefender ? styles.tokenDef : styles.tokenAtk]}>
-                      <Text style={styles.tokenNum}>{isDefender ? `D${num}` : num}</Text>
-                    </View>
-                    {!isDefender && POSITION_NAMES[key] ? (
-                      <View style={styles.tokenLabelBg}>
-                        <Text style={styles.tokenLabelText} numberOfLines={1}>{POSITION_NAMES[key]}</Text>
-                      </View>
-                    ) : null}
-                  </View>
-                );
-              })}
+              {ALL_TOKEN_KEYS.map((key) => (
+                <PlayerToken
+                  key={key}
+                  tokenKey={key}
+                  animX={animatedPositions.current[key].x}
+                  animY={animatedPositions.current[key].y}
+                  visible={!key.startsWith("D") || showDefenders}
+                />
+              ))}
             </View>
           </View>
         </View>
 
         {/* ── Toolbar ────────────────────────────────────────────────────── */}
-        <View style={[styles.toolbar, { backgroundColor: surface, borderBottomColor: border }]}>
+        <View style={[styles.toolbar, { backgroundColor: surface, borderBottomColor: border, opacity: isPlaying ? 0.4 : 1 }]}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.toolScroll}>
             {TOOLS.map(({ key, icon, label }) => {
               const active = activeTool === key;
               return (
                 <TouchableOpacity
                   key={key}
-                  onPress={() => syncActiveTool(key)}
+                  onPress={() => !isPlaying && syncActiveTool(key)}
                   style={[styles.toolBtn, active ? { backgroundColor: BRAND_COLORS[500] } : { backgroundColor: isDark ? SLATE_COLORS[800] : SLATE_COLORS[100] }]}
                 >
                   <MaterialCommunityIcons name={icon as any} size={14} color={active ? "#FFF" : textSecondary} />
@@ -499,6 +576,22 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
             </TouchableOpacity>
           </View>
         </View>
+
+        {/* ── Playback controls ──────────────────────────────────────────── */}
+        <PlaybackControls
+          isPlaying={isPlaying}
+          speed={speed}
+          showDefenders={showDefenders}
+          sceneIndex={sceneIndex}
+          totalScenes={localScenes.length}
+          onTogglePlay={() => { setIsPlaying(v => !v); setIsSorting(false); }}
+          onSpeedChange={(ms) => setSpeed(ms)}
+          onToggleDefenders={() => setShowDefenders(v => !v)}
+          isDark={isDark}
+          surface={surface}
+          border={border}
+          textSecondary={textSecondary}
+        />
 
         {/* ── Scrollable bottom ──────────────────────────────────────────── */}
         <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
@@ -544,7 +637,7 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
           <View style={styles.timelineHeader}>
             <Text style={[styles.timelineLabel, { color: textSecondary }]}>ÉTAPES</Text>
             <View style={styles.timelineActions}>
-              {localScenes.length > 1 && (
+              {localScenes.length > 1 && !isPlaying && (
                 <TouchableOpacity
                   onPress={() => setIsSorting((v) => !v)}
                   style={[styles.addSceneBtn, {
@@ -700,12 +793,4 @@ const styles = StyleSheet.create({
   navBtn: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 4, paddingVertical: 13, borderRadius: 14, borderWidth: 1 },
   navBtnText: { fontSize: 13, fontWeight: "800" },
 
-  tokenWrapper: { position: "absolute", alignItems: "center", gap: 2 },
-  token: { width: 28, height: 28, borderRadius: 14, alignItems: "center", justifyContent: "center", shadowColor: "#000", shadowOpacity: 0.4, shadowRadius: 4, shadowOffset: { width: 0, height: 2 }, elevation: 5 },
-  tokenAtk: { backgroundColor: "#4f46e5", borderWidth: 2, borderColor: "#818cf8" },
-  tokenDef: { backgroundColor: "#dc2626", borderWidth: 2, borderColor: "#f87171" },
-  tokenNum: { color: "#FFF", fontSize: 9, fontWeight: "900" },
-  tokenLabelBg: { backgroundColor: "rgba(0,0,0,0.7)", paddingHorizontal: 4, paddingVertical: 1, borderRadius: 4 },
-  tokenLabelText: { color: "#FFF", fontSize: 7, fontWeight: "700" },
-  ball: { position: "absolute", width: 20, height: 20, borderRadius: 10, backgroundColor: "#f97316", borderWidth: 1.5, borderColor: "#c2410c", shadowColor: "#000", shadowOpacity: 0.4, shadowRadius: 3, shadowOffset: { width: 0, height: 2 }, elevation: 5 },
 });
