@@ -62,6 +62,104 @@ function derivePositionsFromDrawings(
   return pos;
 }
 
+// Réduit le nombre de points d'un tracé pour l'animation (max 1 point tous les minDist unités)
+function subsamplePath(points: DrawingPoint[], minDist = 1.5): DrawingPoint[] {
+  if (points.length <= 2) return points;
+  const result: DrawingPoint[] = [points[0]];
+  let acc = 0;
+  for (let i = 1; i < points.length - 1; i++) {
+    const dx = points[i].x - result[result.length - 1].x;
+    const dy = points[i].y - result[result.length - 1].y;
+    acc += Math.hypot(dx, dy);
+    if (acc >= minDist) { result.push(points[i]); acc = 0; }
+  }
+  result.push(points[points.length - 1]);
+  return result;
+}
+
+// Crée une animation de suivi de chemin via une unique Animated.Value (0→1) + addListener.
+// Pas d'Animated.sequence → pas de gap inter-étape → fluide dès la première frame.
+function buildPathAnimation(
+  key: string,
+  rawPoints: DrawingPoint[],
+  duration: number,
+  courtW: number,
+  courtH: number,
+  animMap: Record<string, Animated.ValueXY>,
+): Animated.CompositeAnimation | null {
+  const anim = animMap[key];
+  if (!anim || rawPoints.length < 2) return null;
+
+  const points = subsamplePath(rawPoints, 2);
+
+  // Longueurs d'arc cumulées pour un lookup O(log N) par frame
+  const cum: number[] = [0];
+  let totalLen = 0;
+  for (let i = 1; i < points.length; i++) {
+    totalLen += Math.hypot(points[i].x - points[i-1].x, points[i].y - points[i-1].y);
+    cum.push(totalLen);
+  }
+  if (totalLen < 0.1) return null;
+
+  const offset = key === "BALL" ? 10 : 14;
+  const progress = new Animated.Value(0);
+
+  // Appelé à chaque frame par le driver Animated
+  const listenerId = progress.addListener(({ value }) => {
+    const arc = value * totalLen;
+    // Recherche binaire du segment courant
+    let lo = 0, hi = cum.length - 2;
+    while (lo < hi) {
+      const mid = (lo + hi + 1) >> 1;
+      if (cum[mid] <= arc) lo = mid; else hi = mid - 1;
+    }
+    const segLen = cum[lo + 1] - cum[lo];
+    const t = segLen > 0 ? (arc - cum[lo]) / segLen : 0;
+    anim.setValue({
+      x: ((points[lo].x + t * (points[lo+1].x - points[lo].x)) / COURT_VB_W) * courtW - offset,
+      y: ((points[lo].y + t * (points[lo+1].y - points[lo].y)) / COURT_VB_H) * courtH - offset,
+    });
+  });
+
+  const timing = Animated.timing(progress, {
+    toValue: 1,
+    duration,
+    easing: Easing.linear,
+    useNativeDriver: false,
+  });
+
+  return {
+    start(cb?: (r: { finished: boolean }) => void) {
+      timing.start((result) => { progress.removeListener(listenerId); cb?.(result); });
+    },
+    stop()  { timing.stop();  progress.removeListener(listenerId); },
+    reset() { timing.reset(); progress.removeListener(listenerId); },
+  } as unknown as Animated.CompositeAnimation;
+}
+
+// Animation linéaire simple pour un jeton sans tracé
+function buildLinearAnimation(
+  key: string,
+  target: DrawingPoint,
+  duration: number,
+  courtW: number,
+  courtH: number,
+  animMap: Record<string, Animated.ValueXY>,
+): Animated.CompositeAnimation | null {
+  const anim = animMap[key];
+  if (!anim) return null;
+  const offset = key === "BALL" ? 10 : 14;
+  return Animated.timing(anim, {
+    toValue: {
+      x: (target.x / COURT_VB_W) * courtW - offset,
+      y: (target.y / COURT_VB_H) * courtH - offset,
+    },
+    duration,
+    easing: Easing.out(Easing.cubic),
+    useNativeDriver: false,
+  });
+}
+
 const CATEGORY_LABELS: Record<string, string> = {
   OFFENSE: "ATTAQUE", DEFENSE: "DÉFENSE",
   OUT_OF_BOUNDS: "TOUCHE", PRESS_BREAK: "PRESSE", OTHER: "AUTRE",
@@ -152,23 +250,6 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
     }
   }, []);
 
-  const animatePositions = useCallback((pos: Record<string, DrawingPoint>, duration: number) => {
-    const anims = Object.entries(pos).map(([key, p]) => {
-      const anim = animatedPositions.current[key];
-      if (!anim) return null;
-      const offset = key === "BALL" ? 10 : 14;
-      return Animated.timing(anim, {
-        toValue: {
-          x: (p.x / COURT_VB_W) * courtWRef.current - offset,
-          y: (p.y / COURT_VB_H) * courtHRef.current - offset,
-        },
-        duration,
-        easing: Easing.inOut(Easing.ease),
-        useNativeDriver: false,
-      });
-    }).filter(Boolean) as Animated.CompositeAnimation[];
-    Animated.parallel(anims).start();
-  }, []);
 
   // ── Per-scene mutable state (positions + drawings) ────────────────────────
   const positionsRef = useRef<Record<string, DrawingPoint>>({});
@@ -314,31 +395,96 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
   }, []);
 
   // ── Advance one scene during playback (reads only from refs) ─────────────
-  const advanceSceneForPlayback = useCallback(() => {
-    if (localScenesRef.current.length < 2) return;
+  const advanceSceneForPlayback = useCallback((onDone: (finished: boolean) => void) => {
+    if (localScenesRef.current.length < 2) { onDone(false); return; }
+
+    // Capture tracés de la scène courante AVANT d'avancer (contiennent les waypoints)
+    const currentDrawings = drawingsRef.current;
+    const currentPositions = positionsRef.current;
+
     const nextIdx = (sceneIndexRef.current + 1) % localScenesRef.current.length;
     sceneIndexRef.current = nextIdx;
-    setSceneIndexState(nextIdx);
+
     const scene = localScenesRef.current[nextIdx];
-    const pos: Record<string, DrawingPoint> = {};
-    for (const [k, v] of Object.entries(scene.positions)) pos[k] = { ...(v as DrawingPoint) };
-    positionsRef.current = pos;
-    animatePositions(pos, speedRef.current * 0.88);
+    const nextPos: Record<string, DrawingPoint> = {};
+    for (const [k, v] of Object.entries(scene.positions)) nextPos[k] = { ...(v as DrawingPoint) };
+    positionsRef.current = nextPos;
+
+    const duration = speedRef.current;
+    const cW = courtWRef.current;
+    const cH = courtHRef.current;
+    const animMap = animatedPositions.current;
+
+    // Associe chaque jeton à son tracé (waypoints réels)
+    const handled = new Set<string>();
+    const anims: Animated.CompositeAnimation[] = [];
+
+    for (const stroke of currentDrawings) {
+      if (stroke.points.length < 2) continue;
+      const keys: string[] = [];
+      if (stroke.type === DrawingTool.Pass) {
+        keys.push("BALL");
+      } else if (stroke.type === DrawingTool.Drive && stroke.sourceToken) {
+        keys.push(stroke.sourceToken);
+        const ball = currentPositions["BALL"];
+        const start = stroke.points[0];
+        if (ball && Math.hypot(ball.x - start.x, ball.y - start.y) < 8) keys.push("BALL");
+      } else if (stroke.type === DrawingTool.Screen && stroke.sourceToken) {
+        keys.push(stroke.sourceToken);
+      }
+      for (const key of keys) {
+        if (handled.has(key)) continue;
+        handled.add(key);
+        const a = buildPathAnimation(key, stroke.points, duration, cW, cH, animMap);
+        if (a) anims.push(a);
+      }
+    }
+
+    // Animation linéaire pour les jetons sans tracé
+    for (const [key, target] of Object.entries(nextPos)) {
+      if (handled.has(key)) continue;
+      const a = buildLinearAnimation(key, target, duration, cW, cH, animMap);
+      if (a) anims.push(a);
+    }
+
     const dr = (scene.drawings ?? []).map((d) => ({ ...d }));
     drawingsRef.current = dr;
-    setDrawings([...dr]);
     livePointsRef.current = [];
-    setLivePoints([]);
-  }, [animatePositions]);
 
-  // ── Playback loop ─────────────────────────────────────────────────────────
+    // Démarrer l'animation AVANT les setState pour éviter la concurrence
+    // avec les re-renders sur les premières frames
+    if (anims.length === 0) {
+      setSceneIndexState(nextIdx);
+      setDrawings([...dr]);
+      setLivePoints([]);
+      onDone(true);
+      return;
+    }
+    Animated.parallel(anims).start(({ finished }) => onDone(finished));
+    setSceneIndexState(nextIdx);
+    setDrawings([...dr]);
+    setLivePoints([]);
+  }, []);
+
+  // ── Playback loop — chaîne les scènes via callbacks, jamais de setInterval ──
   useEffect(() => {
     if (!isPlaying) return;
-    const timer = setInterval(advanceSceneForPlayback, speedRef.current);
+    let cancelled = false;
+
+    function runLoop() {
+      if (cancelled) return;
+      advanceSceneForPlayback((finished) => {
+        if (finished && !cancelled) runLoop();
+      });
+    }
+
+    // Petite pause initiale pour voir la scène courante avant le premier mouvement
+    const firstTimer = setTimeout(runLoop, speedRef.current * 0.15);
+
     return () => {
-      clearInterval(timer);
+      cancelled = true;
+      clearTimeout(firstTimer);
       Object.values(animatedPositions.current).forEach(a => a.stopAnimation());
-      // Snap back to current scene positions
       const scene = localScenesRef.current[sceneIndexRef.current];
       if (scene) {
         const pos: Record<string, DrawingPoint> = {};
