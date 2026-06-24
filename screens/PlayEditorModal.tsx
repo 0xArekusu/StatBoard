@@ -190,9 +190,13 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
   const activeToolRef = useRef<DrawingTool>(DrawingTool.Move);
   const [drawColor, setDrawColor] = useState(DRAW_COLORS[0]);
   const drawColorRef = useRef(DRAW_COLORS[0]);
+  const [straightMode, setStraightMode] = useState(true);
+  const straightModeRef = useRef(true);
+  const [toolbarWrap, setToolbarWrap] = useState(false);
 
-  const syncDrawColor  = (c: string)      => { drawColorRef.current  = c; setDrawColor(c); };
-  const syncActiveTool = (t: DrawingTool) => {
+  const syncDrawColor    = (c: string)      => { drawColorRef.current   = c; setDrawColor(c); };
+  const syncStraightMode = (v: boolean)     => { straightModeRef.current = v; setStraightMode(v); };
+  const syncActiveTool   = (t: DrawingTool) => {
     activeToolRef.current = t;
     setActiveTool(t);
     const defaultColor = TOOL_DEFAULT_COLOR[t];
@@ -429,9 +433,8 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
           const prev = livePointsRef.current;
           if (prev.length === 0) return;
           const pt = { x: cx, y: cy };
-          const next = activeToolRef.current === DrawingTool.Pencil
-            ? [...prev, pt]
-            : [prev[0], pt];
+          const isFreeDraw = activeToolRef.current === DrawingTool.Pencil || !straightModeRef.current;
+          const next = isFreeDraw ? [...prev, pt] : [prev[0], pt];
           livePointsRef.current = next;
           setLivePoints([...next]);
         }
@@ -623,24 +626,91 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
         </View>
 
         {/* ── Toolbar ────────────────────────────────────────────────────── */}
-        <View style={[styles.toolbar, { backgroundColor: colors.surface, borderBottomColor: colors.border, opacity: isPlaying ? 0.4 : 1 }]}>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.toolScroll}>
-            {TOOLS.map(({ key, icon, label }) => {
-              const active = activeTool === key;
-              return (
+        <View
+          onLayout={(e) => setToolbarWrap(e.nativeEvent.layout.width < 430)}
+          style={[styles.toolbar, { backgroundColor: colors.surface, borderBottomColor: colors.border, opacity: isPlaying ? 0.4 : 1 }]}
+        >
+          {/* Row 1 : chips outils + (mode+couleurs si grand écran) + actions */}
+          <View style={styles.toolbarRow1}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.toolScroll}>
+              {TOOLS.map(({ key, icon, label }) => {
+                const active = activeTool === key;
+                return (
+                  <TouchableOpacity
+                    key={key}
+                    onPress={() => !isPlaying && syncActiveTool(key)}
+                    style={[styles.toolBtn, active ? { backgroundColor: colors.primary } : { backgroundColor: colors.surfaceVariant }]}
+                  >
+                    <MaterialCommunityIcons name={icon as any} size={14} color={active ? colors.onPrimary : colors.text.secondary} />
+                    <Text style={[styles.toolLabel, { color: active ? colors.onPrimary : colors.text.secondary }]}>{label}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+
+            {/* Mode + couleurs : inline si grand écran */}
+            {!toolbarWrap && activeTool !== DrawingTool.Move && (
+              <View style={styles.drawingControls}>
+                <View style={[styles.modeSep, { backgroundColor: colors.border }]} />
                 <TouchableOpacity
-                  key={key}
-                  onPress={() => !isPlaying && syncActiveTool(key)}
-                  style={[styles.toolBtn, active ? { backgroundColor: colors.primary } : { backgroundColor: colors.surfaceVariant }]}
+                  onPress={() => syncStraightMode(true)}
+                  style={[styles.modeBtn, { backgroundColor: colors.surfaceVariant, borderColor: straightMode ? colors.primary : colors.border }]}
                 >
-                  <MaterialCommunityIcons name={icon as any} size={14} color={active ? colors.onPrimary : colors.text.secondary} />
-                  <Text style={[styles.toolLabel, { color: active ? colors.onPrimary : colors.text.secondary }]}>{label}</Text>
+                  <MaterialCommunityIcons name="ruler" size={14} color={straightMode ? colors.primary : colors.text.secondary} />
                 </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
-          <View style={styles.toolRight}>
-            {activeTool !== DrawingTool.Move && (
+                <TouchableOpacity
+                  onPress={() => syncStraightMode(false)}
+                  style={[styles.modeBtn, { backgroundColor: colors.surfaceVariant, borderColor: !straightMode ? colors.primary : colors.border }]}
+                >
+                  <MaterialCommunityIcons name="sine-wave" size={14} color={!straightMode ? colors.primary : colors.text.secondary} />
+                </TouchableOpacity>
+                <View style={[styles.modeSep, { backgroundColor: colors.border }]} />
+                <View style={styles.colorRow}>
+                  {DRAW_COLORS.map((c) => (
+                    <TouchableOpacity key={c} onPress={() => syncDrawColor(c)}
+                      style={[
+                        styles.colorDot,
+                        { backgroundColor: c },
+                        c === COMMON_COLORS.white && styles.colorDotWhite,
+                        drawColor === c && (c === COMMON_COLORS.white ? styles.colorDotActiveWhite : styles.colorDotActive),
+                      ]} />
+                  ))}
+                </View>
+              </View>
+            )}
+
+            <View style={styles.toolActions}>
+              <TouchableOpacity onPress={undo} disabled={!canUndo}
+                style={[styles.iconBtn, { opacity: !canUndo ? 0.3 : 1 }]}>
+                <MaterialCommunityIcons name="undo" size={18} color={colors.text.secondary} />
+              </TouchableOpacity>
+              <TouchableOpacity onPress={redo} disabled={!canRedo}
+                style={[styles.iconBtn, { opacity: !canRedo ? 0.3 : 1 }]}>
+                <MaterialCommunityIcons name="redo" size={18} color={colors.text.secondary} />
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => setShowStrokeManager(true)} disabled={drawings.length === 0}
+                style={[styles.iconBtn, { opacity: drawings.length === 0 ? 0.3 : 1 }]}>
+                <MaterialCommunityIcons name="trash-can-outline" size={18} color={colors.text.secondary} />
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Row 2 : mode + couleurs sur petit écran uniquement */}
+          {toolbarWrap && activeTool !== DrawingTool.Move && (
+            <View style={styles.toolbarRow2}>
+              <TouchableOpacity
+                onPress={() => syncStraightMode(true)}
+                style={[styles.modeBtn, { backgroundColor: colors.surfaceVariant, borderColor: straightMode ? colors.primary : colors.border }]}
+              >
+                <MaterialCommunityIcons name="ruler" size={14} color={straightMode ? colors.primary : colors.text.secondary} />
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => syncStraightMode(false)}
+                style={[styles.modeBtn, { backgroundColor: colors.surfaceVariant, borderColor: !straightMode ? colors.primary : colors.border }]}
+              >
+                <MaterialCommunityIcons name="sine-wave" size={14} color={!straightMode ? colors.primary : colors.text.secondary} />
+              </TouchableOpacity>
+              <View style={[styles.modeSep, { backgroundColor: colors.border }]} />
               <View style={styles.colorRow}>
                 {DRAW_COLORS.map((c) => (
                   <TouchableOpacity key={c} onPress={() => syncDrawColor(c)}
@@ -652,20 +722,8 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
                     ]} />
                 ))}
               </View>
-            )}
-            <TouchableOpacity onPress={undo} disabled={!canUndo}
-              style={[styles.iconBtn, { opacity: !canUndo ? 0.3 : 1 }]}>
-              <MaterialCommunityIcons name="undo" size={18} color={colors.text.secondary} />
-            </TouchableOpacity>
-            <TouchableOpacity onPress={redo} disabled={!canRedo}
-              style={[styles.iconBtn, { opacity: !canRedo ? 0.3 : 1 }]}>
-              <MaterialCommunityIcons name="redo" size={18} color={colors.text.secondary} />
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => setShowStrokeManager(true)} disabled={drawings.length === 0}
-              style={[styles.iconBtn, { opacity: drawings.length === 0 ? 0.3 : 1 }]}>
-              <MaterialCommunityIcons name="trash-can-outline" size={18} color={colors.text.secondary} />
-            </TouchableOpacity>
-          </View>
+            </View>
+          )}
         </View>
 
         {/* ── Playback controls ──────────────────────────────────────────── */}
@@ -855,11 +913,16 @@ const styles = StyleSheet.create({
 
   courtOuter: { alignItems: "center", paddingVertical: 12 },
 
-  toolbar: { flexDirection: "row", alignItems: "center", borderBottomWidth: 1, paddingVertical: 8, paddingRight: 8, gap: 8 },
+  toolbar: { flexDirection: "column", borderBottomWidth: 1, paddingVertical: 8 },
+  toolbarRow1: { flexDirection: "row", alignItems: "center", paddingRight: 8 },
+  toolbarRow2: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 10, paddingTop: 6 },
   toolScroll: { paddingHorizontal: 10, gap: 6 },
   toolBtn: { flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10 },
   toolLabel: { fontSize: 9, fontWeight: "900", letterSpacing: 0.4 },
-  toolRight: { flexDirection: "row", alignItems: "center", gap: 6 },
+  toolActions: { flexDirection: "row", alignItems: "center", gap: 6 },
+  drawingControls: { flexDirection: "row", alignItems: "center", gap: 6 },
+  modeSep: { width: 1, height: 16 },
+  modeBtn: { padding: 6, borderRadius: 8, borderWidth: 1.5 },
   colorRow: { flexDirection: "row", gap: 5 },
   colorDot: { width: 14, height: 14, borderRadius: 7 },
   colorDotActive: { borderWidth: 2, borderColor: "#FFF", transform: [{ scale: 1.2 }] },
