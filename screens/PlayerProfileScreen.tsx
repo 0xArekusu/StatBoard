@@ -42,7 +42,7 @@ const EMPTY_PLAYER = (
   pts: 0, reb: 0, reb_off: 0, reb_def: 0,
   ast: 0, stl: 0, blk: 0, to: 0, pf: 0, fd: 0,
   ftm: 0, fta: 0, fg2m: 0, fg2a: 0, fg3m: 0, fg3a: 0,
-  fgm: 0, fga: 0, eff: 0, totalPlayingTimeSeconds: 0,
+  fgm: 0, fga: 0, eff: 0, totalPlayingTimeSeconds: 0, matchesWithTrackedTime: 0,
   avgPts: 0, avgReb: 0, avgAst: 0, avgDef: 0, avgEff: 0,
 });
 
@@ -76,7 +76,7 @@ export default function PlayerProfileScreen() {
       const filteredMatches = filterMatchesByPeriod(details.map((d) => d.match), p);
       const filteredIds = new Set(filteredMatches.map((m) => m.id));
       const filteredDetails = details.filter((d) => filteredIds.has(d.match.id));
-      const history = computePlayerMatchHistory(details, playerNumber);
+      const history = computePlayerMatchHistory(details, playerNumber, playerId, playerName);
 
       setPlayerData(found ?? EMPTY_PLAYER(playerId ?? null, playerNumber, playerName, photoUrl));
       setMatchesInPeriod(filteredDetails.length);

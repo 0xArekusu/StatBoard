@@ -3049,6 +3049,7 @@ export class PDFExportService {
       avgPts: number;
       avgEff: number;
       totalPlayingTimeSeconds: number;
+      matchesWithTrackedTime: number;
       reb_off: number; reb_def: number;
       ast: number; stl: number; blk: number;
       to: number; pf: number; fd: number;
@@ -3065,9 +3066,10 @@ export class PDFExportService {
   }): Promise<string> {
     const { player, period, ...rest } = options;
     const n = player.matchesPlayed || 1;
+    const nTime = player.matchesWithTrackedTime || 0;
 
-    const avgSec = Math.round(player.totalPlayingTimeSeconds / n);
-    const avgMin = `${Math.floor(avgSec / 60)}:${String(avgSec % 60).padStart(2, "0")}`;
+    const avgSec = nTime > 0 ? Math.round(player.totalPlayingTimeSeconds / nTime) : 0;
+    const avgMin = nTime > 0 ? `${Math.floor(avgSec / 60)}:${String(avgSec % 60).padStart(2, "0")}` : '--:--';
 
     const round1 = (v: number) => Math.round(v * 10) / 10;
 
