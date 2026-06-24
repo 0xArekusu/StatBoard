@@ -741,10 +741,22 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
                   </Text>
                 </TouchableOpacity>
               )}
-              <TouchableOpacity onPress={addScene} style={[styles.addSceneBtn, { backgroundColor: colors.primary }]}>
-                <MaterialCommunityIcons name="plus" size={13} color={colors.onPrimary} />
-                <Text style={[styles.addSceneBtnText, { color: colors.onPrimary }]}>AJOUTER</Text>
-              </TouchableOpacity>
+              {(() => {
+                const isLast = sceneIndex === localScenes.length - 1;
+                return (
+                  <TouchableOpacity
+                    onPress={isLast ? addScene : undefined}
+                    style={[styles.addSceneBtn, {
+                      backgroundColor: isLast ? colors.primary : colors.surfaceVariant,
+                      opacity: isLast ? 1 : 0.4,
+                    }]}
+                    disabled={!isLast}
+                  >
+                    <MaterialCommunityIcons name="plus" size={13} color={isLast ? colors.onPrimary : colors.text.secondary} />
+                    <Text style={[styles.addSceneBtnText, { color: isLast ? colors.onPrimary : colors.text.secondary }]}>AJOUTER</Text>
+                  </TouchableOpacity>
+                );
+              })()}
             </View>
           </View>
 
