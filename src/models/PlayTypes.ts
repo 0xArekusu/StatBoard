@@ -1,4 +1,10 @@
-export type DrawingTool = 'move' | 'pencil' | 'pass' | 'drive' | 'screen';
+export enum DrawingTool {
+  Move   = 'move',
+  Pencil = 'pencil',
+  Pass   = 'pass',
+  Drive  = 'drive',
+  Screen = 'screen',
+}
 
 export type PlayCategory =
   | 'OFFENSE'
@@ -20,7 +26,7 @@ export interface DrawingPoint {
 
 export interface DrawingStroke {
   id: string;
-  type: Exclude<DrawingTool, 'move'>;
+  type: Exclude<DrawingTool, DrawingTool.Move>;
   points: DrawingPoint[];
   color: string;
   width: number;

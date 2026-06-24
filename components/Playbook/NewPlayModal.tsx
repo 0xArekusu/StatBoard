@@ -13,7 +13,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useTheme } from "../../src/contexts/ThemeContext";
-import { BRAND_COLORS, SLATE_COLORS } from "../../src/theme";
+import { STATUS_COLORS } from "../../src/theme";
 import { PlayCategory } from "../../src/models/PlayTypes";
 
 const CATEGORIES: { key: PlayCategory; label: string; icon: string }[] = [
@@ -37,14 +37,7 @@ interface NewPlayModalProps {
 }
 
 export default function NewPlayModal({ visible, onClose, onCreate }: NewPlayModalProps) {
-  const { isDark } = useTheme();
-
-  const surface   = isDark ? SLATE_COLORS[900] : "#FFFFFF";
-  const bg        = isDark ? SLATE_COLORS[950] : SLATE_COLORS[50];
-  const textPrimary   = isDark ? "#FFFFFF" : SLATE_COLORS[900];
-  const textSecondary = isDark ? SLATE_COLORS[400] : SLATE_COLORS[500];
-  const border    = isDark ? SLATE_COLORS[800] : SLATE_COLORS[200];
-  const inputBg   = isDark ? SLATE_COLORS[800] : SLATE_COLORS[50];
+  const { colors } = useTheme();
 
   const [name, setName]           = useState("");
   const [category, setCategory]   = useState<PlayCategory>("OFFENSE");
@@ -52,13 +45,11 @@ export default function NewPlayModal({ visible, onClose, onCreate }: NewPlayModa
 
   const nameRef = useRef<TextInput>(null);
 
-  // Reset form when modal opens
   useEffect(() => {
     if (visible) {
       setName("");
       setCategory("OFFENSE");
       setDescription("");
-      // Auto-focus the name field after the modal animation
       setTimeout(() => nameRef.current?.focus(), 350);
     }
   }, [visible]);
@@ -77,21 +68,21 @@ export default function NewPlayModal({ visible, onClose, onCreate }: NewPlayModa
       presentationStyle="formSheet"
       onRequestClose={onClose}
     >
-      <SafeAreaView style={[styles.root, { backgroundColor: bg }]}>
+      <SafeAreaView style={[styles.root, { backgroundColor: colors.background }]}>
         <KeyboardAvoidingView
           style={{ flex: 1 }}
           behavior={Platform.OS === "ios" ? "padding" : undefined}
         >
           {/* Header */}
-          <View style={[styles.header, { backgroundColor: surface, borderBottomColor: border }]}>
+          <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
             <TouchableOpacity onPress={onClose} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-              <MaterialCommunityIcons name="close" size={22} color={textSecondary} />
+              <MaterialCommunityIcons name="close" size={22} color={colors.text.secondary} />
             </TouchableOpacity>
-            <Text style={[styles.headerTitle, { color: textPrimary }]}>NOUVEAU SYSTÈME</Text>
+            <Text style={[styles.headerTitle, { color: colors.text.primary }]}>NOUVEAU SYSTÈME</Text>
             <TouchableOpacity
               onPress={handleCreate}
               disabled={!canCreate}
-              style={[styles.createBtn, { backgroundColor: canCreate ? BRAND_COLORS[500] : SLATE_COLORS[700] }]}
+              style={[styles.createBtn, { backgroundColor: canCreate ? colors.primary : colors.button.secondary }]}
             >
               <Text style={styles.createBtnText}>CRÉER</Text>
             </TouchableOpacity>
@@ -105,14 +96,14 @@ export default function NewPlayModal({ visible, onClose, onCreate }: NewPlayModa
           >
             {/* Name */}
             <View style={styles.field}>
-              <Text style={[styles.label, { color: textSecondary }]}>NOM DU SYSTÈME *</Text>
+              <Text style={[styles.label, { color: colors.text.secondary }]}>NOM DU SYSTÈME *</Text>
               <TextInput
                 ref={nameRef}
                 value={name}
                 onChangeText={setName}
                 placeholder="ex : Pick & Roll haut, Zone 2-3..."
-                placeholderTextColor={isDark ? SLATE_COLORS[600] : SLATE_COLORS[400]}
-                style={[styles.input, { backgroundColor: inputBg, borderColor: border, color: textPrimary }]}
+                placeholderTextColor={colors.text.disabled}
+                style={[styles.input, { backgroundColor: colors.surfaceVariant, borderColor: colors.border, color: colors.text.primary }]}
                 returnKeyType="next"
                 maxLength={60}
               />
@@ -120,12 +111,11 @@ export default function NewPlayModal({ visible, onClose, onCreate }: NewPlayModa
 
             {/* Category */}
             <View style={styles.field}>
-              <Text style={[styles.label, { color: textSecondary }]}>CATÉGORIE</Text>
+              <Text style={[styles.label, { color: colors.text.secondary }]}>CATÉGORIE</Text>
               <View style={styles.categoryGrid}>
                 {CATEGORIES.map(({ key, label, icon }) => {
                   const active = category === key;
-                  const isDefense = key === "DEFENSE";
-                  const activeColor = isDefense ? "#ef4444" : BRAND_COLORS[500];
+                  const activeColor = key === "DEFENSE" ? STATUS_COLORS.errorLight : colors.primary;
                   return (
                     <TouchableOpacity
                       key={key}
@@ -133,8 +123,8 @@ export default function NewPlayModal({ visible, onClose, onCreate }: NewPlayModa
                       style={[
                         styles.categoryPill,
                         {
-                          backgroundColor: active ? `${activeColor}20` : inputBg,
-                          borderColor: active ? activeColor : border,
+                          backgroundColor: active ? `${activeColor}20` : colors.surfaceVariant,
+                          borderColor: active ? activeColor : colors.border,
                           borderWidth: active ? 1.5 : 1,
                         },
                       ]}
@@ -142,9 +132,9 @@ export default function NewPlayModal({ visible, onClose, onCreate }: NewPlayModa
                       <MaterialCommunityIcons
                         name={icon as any}
                         size={14}
-                        color={active ? activeColor : textSecondary}
+                        color={active ? activeColor : colors.text.secondary}
                       />
-                      <Text style={[styles.categoryLabel, { color: active ? activeColor : textSecondary }]}>
+                      <Text style={[styles.categoryLabel, { color: active ? activeColor : colors.text.secondary }]}>
                         {label}
                       </Text>
                       {active && (
@@ -158,27 +148,27 @@ export default function NewPlayModal({ visible, onClose, onCreate }: NewPlayModa
 
             {/* Description */}
             <View style={styles.field}>
-              <Text style={[styles.label, { color: textSecondary }]}>DESCRIPTION (optionnel)</Text>
+              <Text style={[styles.label, { color: colors.text.secondary }]}>DESCRIPTION (optionnel)</Text>
               <TextInput
                 value={description}
                 onChangeText={setDescription}
                 placeholder="Décrivez l'objectif tactique de ce système..."
-                placeholderTextColor={isDark ? SLATE_COLORS[600] : SLATE_COLORS[400]}
-                style={[styles.textarea, { backgroundColor: inputBg, borderColor: border, color: textPrimary }]}
+                placeholderTextColor={colors.text.disabled}
+                style={[styles.textarea, { backgroundColor: colors.surfaceVariant, borderColor: colors.border, color: colors.text.primary }]}
                 multiline
                 numberOfLines={3}
                 textAlignVertical="top"
                 maxLength={300}
               />
-              <Text style={[styles.charCount, { color: textSecondary }]}>
+              <Text style={[styles.charCount, { color: colors.text.secondary }]}>
                 {description.length}/300
               </Text>
             </View>
 
             {/* Info tip */}
-            <View style={[styles.tip, { backgroundColor: `${BRAND_COLORS[500]}12`, borderColor: `${BRAND_COLORS[500]}30` }]}>
-              <MaterialCommunityIcons name="information-outline" size={16} color={BRAND_COLORS[500]} />
-              <Text style={[styles.tipText, { color: isDark ? SLATE_COLORS[300] : SLATE_COLORS[600] }]}>
+            <View style={[styles.tip, { backgroundColor: `${colors.primary}12`, borderColor: `${colors.primary}30` }]}>
+              <MaterialCommunityIcons name="information-outline" size={16} color={colors.primary} />
+              <Text style={[styles.tipText, { color: colors.text.secondary }]}>
                 Le système démarre avec une étape et une formation 5-out par défaut. Vous pourrez déplacer les joueurs et ajouter des tracés dans l'éditeur.
               </Text>
             </View>
@@ -201,11 +191,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
   },
   headerTitle: { fontSize: 13, fontWeight: "900", letterSpacing: 1 },
-  createBtn: {
-    paddingHorizontal: 16,
-    paddingVertical: 7,
-    borderRadius: 10,
-  },
+  createBtn: { paddingHorizontal: 16, paddingVertical: 7, borderRadius: 10 },
   createBtnText: { color: "#FFF", fontSize: 11, fontWeight: "900", letterSpacing: 0.5 },
 
   scroll: { flex: 1 },

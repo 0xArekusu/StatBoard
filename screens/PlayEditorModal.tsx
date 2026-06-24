@@ -17,7 +17,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useTheme } from "../src/contexts/ThemeContext";
-import { BRAND_COLORS, SLATE_COLORS } from "../src/theme";
+import { STATUS_COLORS, COMMON_COLORS } from "../src/theme";
 import { PlaybookItem, PlayScene, DrawingPoint, DrawingStroke, DrawingTool } from "../src/models/PlayTypes";
 import TacticalCourtSVG from "../components/Playbook/TacticalCourtSVG";
 import DrawingOverlaySVG from "../components/Playbook/DrawingOverlaySVG";
@@ -44,15 +44,15 @@ function derivePositionsFromDrawings(
 
     const sourceKey = stroke.sourceToken ?? null;
 
-    if (stroke.type === "pass") {
+    if (stroke.type === DrawingTool.Pass) {
       pos["BALL"] = { x: end.x, y: end.y };
-    } else if (stroke.type === "drive") {
+    } else if (stroke.type === DrawingTool.Drive) {
       if (!sourceKey) continue;
       const ball = pos["BALL"];
       const ballNear = ball && Math.hypot(ball.x - start.x, ball.y - start.y) < 8;
       pos[sourceKey] = { x: end.x, y: end.y };
       if (ballNear) pos["BALL"] = { x: end.x, y: end.y };
-    } else if (stroke.type === "screen") {
+    } else if (stroke.type === DrawingTool.Screen) {
       if (!sourceKey) continue;
       pos[sourceKey] = { x: end.x, y: end.y };
     }
@@ -67,14 +67,27 @@ const CATEGORY_LABELS: Record<string, string> = {
 };
 
 
-const DRAW_COLORS = ["#2563eb", "#dc2626", "#ea580c", "#16a34a", "#eab308"];
+const DRAW_COLORS = [
+  "#2563eb",
+  STATUS_COLORS.errorLight,
+  STATUS_COLORS.warning,
+  STATUS_COLORS.successLight,
+  "#eab308",
+  COMMON_COLORS.white,
+];
+
+const TOOL_DEFAULT_COLOR: Partial<Record<DrawingTool, string>> = {
+  [DrawingTool.Drive]:  "#2563eb",
+  [DrawingTool.Pass]:   STATUS_COLORS.warning,
+  [DrawingTool.Screen]: COMMON_COLORS.white,
+};
 
 const TOOLS: { key: DrawingTool; icon: string; label: string }[] = [
-  { key: "move",   icon: "cursor-move",      label: "DÉPLACER" },
-  { key: "pass",   icon: "dots-horizontal",  label: "PASSE" },
-  { key: "drive",  icon: "arrow-right-bold", label: "COURSE" },
-  { key: "screen", icon: "rectangle-outline",label: "ÉCRAN" },
-  { key: "pencil", icon: "pencil",           label: "DESSIN" },
+  { key: DrawingTool.Move,   icon: "cursor-move",       label: "DÉPLACER" },
+  { key: DrawingTool.Pass,   icon: "dots-horizontal",   label: "PASSE" },
+  { key: DrawingTool.Drive,  icon: "arrow-right-bold",  label: "COURSE" },
+  { key: DrawingTool.Screen, icon: "rectangle-outline", label: "ÉCRAN" },
+  { key: DrawingTool.Pencil, icon: "pencil",            label: "DESSIN" },
 ];
 
 interface PlayEditorModalProps {
@@ -85,15 +98,8 @@ interface PlayEditorModalProps {
 }
 
 export default function PlayEditorModal({ play, visible, onClose, onUpdate }: PlayEditorModalProps) {
-  const { isDark } = useTheme();
+  const { colors } = useTheme();
   const { width: screenW } = useWindowDimensions();
-
-  const bg          = isDark ? SLATE_COLORS[950] : SLATE_COLORS[50];
-  const surface     = isDark ? SLATE_COLORS[900] : "#FFFFFF";
-  const textPrimary = isDark ? "#FFFFFF" : SLATE_COLORS[900];
-  const textSecondary = isDark ? SLATE_COLORS[400] : SLATE_COLORS[500];
-  const border      = isDark ? SLATE_COLORS[800] : SLATE_COLORS[200];
-  const inputBg     = isDark ? SLATE_COLORS[800] : SLATE_COLORS[50];
 
   const courtW = Math.min(screenW - 32, 480);
   const courtH = Math.round((courtW * COURT_VB_H) / COURT_VB_W);
@@ -179,13 +185,18 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
   const [canRedo, setCanRedo] = useState(false);
 
   // ── Tool & color ──────────────────────────────────────────────────────────
-  const [activeTool, setActiveTool] = useState<DrawingTool>("move");
-  const activeToolRef = useRef<DrawingTool>("move");
+  const [activeTool, setActiveTool] = useState<DrawingTool>(DrawingTool.Move);
+  const activeToolRef = useRef<DrawingTool>(DrawingTool.Move);
   const [drawColor, setDrawColor] = useState(DRAW_COLORS[0]);
   const drawColorRef = useRef(DRAW_COLORS[0]);
 
-  const syncActiveTool = (t: DrawingTool) => { activeToolRef.current = t; setActiveTool(t); };
-  const syncDrawColor  = (c: string)     => { drawColorRef.current  = c; setDrawColor(c); };
+  const syncDrawColor  = (c: string)      => { drawColorRef.current  = c; setDrawColor(c); };
+  const syncActiveTool = (t: DrawingTool) => {
+    activeToolRef.current = t;
+    setActiveTool(t);
+    const defaultColor = TOOL_DEFAULT_COLOR[t];
+    if (defaultColor) syncDrawColor(defaultColor);
+  };
 
   // ── Drag ─────────────────────────────────────────────────────────────────
   const draggingKey    = useRef<string | null>(null);
@@ -345,7 +356,7 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
     setLocalScenesState(scenes);
     setSceneIndex(0);
     loadScene(scenes[0]);
-    syncActiveTool("move");
+    syncActiveTool(DrawingTool.Move);
   }, [play?.id, visible]);
 
   // ── PanResponder ──────────────────────────────────────────────────────────
@@ -361,14 +372,14 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
             x: Math.max(1, Math.min(99, ((gs.x0 - px) / courtW) * COURT_VB_W)),
             y: Math.max(1, Math.min(84, ((gs.y0 - py) / courtH) * COURT_VB_H)),
           };
-          if (activeToolRef.current === "move") {
+          if (activeToolRef.current === DrawingTool.Move) {
             let best: string | null = null, bestDist = DRAG_THRESHOLD;
             for (const [key, pos] of Object.entries(positionsRef.current)) {
               const d = Math.hypot(pos.x - pt.x, pos.y - pt.y);
               if (d < bestDist) { bestDist = d; best = key; }
             }
             draggingKey.current = best;
-          } else if (activeToolRef.current === "pencil") {
+          } else if (activeToolRef.current === DrawingTool.Pencil) {
             draggingKey.current = null;
             sourceTokenRef.current = null;
             livePointsRef.current = [pt];
@@ -404,7 +415,7 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
         const cx = Math.max(1, Math.min(99, ((gs.moveX - x) / courtW) * COURT_VB_W));
         const cy = Math.max(1, Math.min(84, ((gs.moveY - y) / courtH) * COURT_VB_H));
 
-        if (activeToolRef.current === "move") {
+        if (activeToolRef.current === DrawingTool.Move) {
           const key = draggingKey.current;
           if (!key) return;
           positionsRef.current = { ...positionsRef.current, [key]: { x: cx, y: cy } };
@@ -415,10 +426,9 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
           });
         } else {
           const prev = livePointsRef.current;
-          // Aucun point de départ valide (contrainte de source non respectée)
           if (prev.length === 0) return;
           const pt = { x: cx, y: cy };
-          const next = activeToolRef.current === "pencil"
+          const next = activeToolRef.current === DrawingTool.Pencil
             ? [...prev, pt]
             : [prev[0], pt];
           livePointsRef.current = next;
@@ -427,7 +437,7 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
       },
 
       onPanResponderRelease: () => {
-        if (activeToolRef.current === "move") {
+        if (activeToolRef.current === DrawingTool.Move) {
           draggingKey.current = null;
           return;
         }
@@ -435,10 +445,10 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
         if (pts.length >= 2) {
           const stroke: DrawingStroke = {
             id: `s-${Date.now()}`,
-            type: activeToolRef.current as DrawingStroke["type"],
+            type: activeToolRef.current as Exclude<DrawingTool, DrawingTool.Move>,
             points: pts,
             color: drawColorRef.current,
-            width: 3,
+            width: 1.5,
             sourceToken: sourceTokenRef.current ?? undefined,
           };
           undoStackRef.current = [...undoStackRef.current, [...drawingsRef.current]];
@@ -541,17 +551,17 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
   // ── Guard ─────────────────────────────────────────────────────────────────
   if (!play) return null;
   const scene = localScenes[sceneIndex] ?? localScenes[0];
-  const isDefense = play.category === "DEFENSE";
-  const badgeColor = isDefense ? "#ef4444" : BRAND_COLORS[500];
+  const isDefense  = play.category === "DEFENSE";
+  const badgeColor = isDefense ? STATUS_COLORS.errorLight : colors.primary;
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={handleClose}>
-      <SafeAreaView style={[styles.root, { backgroundColor: bg }]}>
+      <SafeAreaView style={[styles.root, { backgroundColor: colors.background }]}>
 
         {/* ── Header ─────────────────────────────────────────────────────── */}
-        <View style={[styles.header, { backgroundColor: surface, borderBottomColor: border }]}>
+        <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
           <TouchableOpacity onPress={handleClose} style={styles.headerBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-            <MaterialCommunityIcons name="chevron-down" size={26} color={textSecondary} />
+            <MaterialCommunityIcons name="chevron-down" size={26} color={colors.text.secondary} />
           </TouchableOpacity>
           <View style={styles.headerCenter}>
             <View style={[styles.badge, { backgroundColor: `${badgeColor}20` }]}>
@@ -559,17 +569,17 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
                 {CATEGORY_LABELS[play.category] ?? play.category}
               </Text>
             </View>
-            <Text style={[styles.headerTitle, { color: textPrimary }]} numberOfLines={1}>
+            <Text style={[styles.headerTitle, { color: colors.text.primary }]} numberOfLines={1}>
               {play.name}
             </Text>
           </View>
           <TouchableOpacity onPress={handleShare} style={[styles.headerBtn, { alignItems: "center" }]}>
-            <MaterialCommunityIcons name="share-variant-outline" size={20} color={textSecondary} />
+            <MaterialCommunityIcons name="share-variant-outline" size={20} color={colors.text.secondary} />
           </TouchableOpacity>
         </View>
 
         {/* ── Court ──────────────────────────────────────────────────────── */}
-        <View style={[styles.courtOuter, { backgroundColor: isDark ? SLATE_COLORS[950] : SLATE_COLORS[100] }]}>
+        <View style={[styles.courtOuter, { backgroundColor: colors.background }]}>
           <View
             ref={courtRef}
             onLayout={measureCourt}
@@ -581,7 +591,7 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
               width={courtW} height={courtH}
               drawings={drawings}
               livePoints={livePoints}
-              liveTool={activeTool === "move" ? "pencil" : activeTool}
+              liveTool={activeTool === DrawingTool.Move ? DrawingTool.Pencil : activeTool}
               liveColor={drawColor}
             />
             <View style={StyleSheet.absoluteFill} pointerEvents="none">
@@ -599,7 +609,7 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
         </View>
 
         {/* ── Toolbar ────────────────────────────────────────────────────── */}
-        <View style={[styles.toolbar, { backgroundColor: surface, borderBottomColor: border, opacity: isPlaying ? 0.4 : 1 }]}>
+        <View style={[styles.toolbar, { backgroundColor: colors.surface, borderBottomColor: colors.border, opacity: isPlaying ? 0.4 : 1 }]}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.toolScroll}>
             {TOOLS.map(({ key, icon, label }) => {
               const active = activeTool === key;
@@ -607,34 +617,39 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
                 <TouchableOpacity
                   key={key}
                   onPress={() => !isPlaying && syncActiveTool(key)}
-                  style={[styles.toolBtn, active ? { backgroundColor: BRAND_COLORS[500] } : { backgroundColor: isDark ? SLATE_COLORS[800] : SLATE_COLORS[100] }]}
+                  style={[styles.toolBtn, active ? { backgroundColor: colors.primary } : { backgroundColor: colors.surfaceVariant }]}
                 >
-                  <MaterialCommunityIcons name={icon as any} size={14} color={active ? "#FFF" : textSecondary} />
-                  <Text style={[styles.toolLabel, { color: active ? "#FFF" : textSecondary }]}>{label}</Text>
+                  <MaterialCommunityIcons name={icon as any} size={14} color={active ? colors.onPrimary : colors.text.secondary} />
+                  <Text style={[styles.toolLabel, { color: active ? colors.onPrimary : colors.text.secondary }]}>{label}</Text>
                 </TouchableOpacity>
               );
             })}
           </ScrollView>
           <View style={styles.toolRight}>
-            {activeTool !== "move" && (
+            {activeTool !== DrawingTool.Move && (
               <View style={styles.colorRow}>
                 {DRAW_COLORS.map((c) => (
                   <TouchableOpacity key={c} onPress={() => syncDrawColor(c)}
-                    style={[styles.colorDot, { backgroundColor: c }, drawColor === c && styles.colorDotActive]} />
+                    style={[
+                      styles.colorDot,
+                      { backgroundColor: c },
+                      c === COMMON_COLORS.white && styles.colorDotWhite,
+                      drawColor === c && (c === COMMON_COLORS.white ? styles.colorDotActiveWhite : styles.colorDotActive),
+                    ]} />
                 ))}
               </View>
             )}
             <TouchableOpacity onPress={undo} disabled={!canUndo}
               style={[styles.iconBtn, { opacity: !canUndo ? 0.3 : 1 }]}>
-              <MaterialCommunityIcons name="undo" size={18} color={textSecondary} />
+              <MaterialCommunityIcons name="undo" size={18} color={colors.text.secondary} />
             </TouchableOpacity>
             <TouchableOpacity onPress={redo} disabled={!canRedo}
               style={[styles.iconBtn, { opacity: !canRedo ? 0.3 : 1 }]}>
-              <MaterialCommunityIcons name="redo" size={18} color={textSecondary} />
+              <MaterialCommunityIcons name="redo" size={18} color={colors.text.secondary} />
             </TouchableOpacity>
             <TouchableOpacity onPress={clearDrawings} disabled={drawings.length === 0}
               style={[styles.iconBtn, { opacity: drawings.length === 0 ? 0.3 : 1 }]}>
-              <MaterialCommunityIcons name="trash-can-outline" size={18} color={textSecondary} />
+              <MaterialCommunityIcons name="trash-can-outline" size={18} color={colors.text.secondary} />
             </TouchableOpacity>
           </View>
         </View>
@@ -649,10 +664,6 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
           onTogglePlay={() => { setIsPlaying(v => !v); setIsSorting(false); }}
           onSpeedChange={(ms) => setSpeed(ms)}
           onToggleDefenders={() => setShowDefenders(v => !v)}
-          isDark={isDark}
-          surface={surface}
-          border={border}
-          textSecondary={textSecondary}
         />
 
         {/* ── Scrollable bottom ──────────────────────────────────────────── */}
@@ -660,9 +671,9 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
 
           {/* Scene description — inline editable */}
           {scene && (
-            <View style={[styles.descBox, { backgroundColor: surface, borderColor: border }]}>
+            <View style={[styles.descBox, { backgroundColor: colors.surface, borderColor: colors.border }]}>
               <View style={styles.descHeader}>
-                <Text style={[styles.descStep, { color: BRAND_COLORS[500] }]}>
+                <Text style={[styles.descStep, { color: colors.primary }]}>
                   ÉTAPE {sceneIndex + 1} / {localScenes.length}
                 </Text>
                 {localScenes.length > 1 && (
@@ -670,24 +681,24 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
                     onPress={() => deleteScene(sceneIndex)}
                     hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
                   >
-                    <MaterialCommunityIcons name="trash-can-outline" size={15} color="#ef4444" />
+                    <MaterialCommunityIcons name="trash-can-outline" size={15} color={colors.error} />
                   </TouchableOpacity>
                 )}
               </View>
               <TextInput
                 value={scene.title}
                 onChangeText={(v) => updateSceneText("title", v)}
-                style={[styles.descTitleInput, { color: textPrimary }]}
+                style={[styles.descTitleInput, { color: colors.text.primary }]}
                 placeholder="Titre de l'étape..."
-                placeholderTextColor={textSecondary}
+                placeholderTextColor={colors.text.secondary}
                 maxLength={60}
               />
               <TextInput
                 value={scene.description}
                 onChangeText={(v) => updateSceneText("description", v)}
-                style={[styles.descTextInput, { color: textSecondary, backgroundColor: inputBg, borderColor: border }]}
+                style={[styles.descTextInput, { color: colors.text.secondary, backgroundColor: colors.surfaceVariant, borderColor: colors.border }]}
                 placeholder="Décrivez les mouvements de cette étape..."
-                placeholderTextColor={isDark ? SLATE_COLORS[600] : SLATE_COLORS[400]}
+                placeholderTextColor={colors.text.disabled}
                 multiline
                 textAlignVertical="top"
                 maxLength={300}
@@ -697,30 +708,28 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
 
           {/* Timeline + add scene */}
           <View style={styles.timelineHeader}>
-            <Text style={[styles.timelineLabel, { color: textSecondary }]}>ÉTAPES</Text>
+            <Text style={[styles.timelineLabel, { color: colors.text.secondary }]}>ÉTAPES</Text>
             <View style={styles.timelineActions}>
               {localScenes.length > 1 && !isPlaying && (
                 <TouchableOpacity
                   onPress={() => setIsSorting((v) => !v)}
                   style={[styles.addSceneBtn, {
-                    backgroundColor: isSorting
-                      ? BRAND_COLORS[500]
-                      : isDark ? SLATE_COLORS[800] : SLATE_COLORS[100],
+                    backgroundColor: isSorting ? colors.primary : colors.surfaceVariant,
                   }]}
                 >
                   <MaterialCommunityIcons
                     name="swap-horizontal"
                     size={13}
-                    color={isSorting ? "#FFF" : textSecondary}
+                    color={isSorting ? colors.onPrimary : colors.text.secondary}
                   />
-                  <Text style={[styles.addSceneBtnText, { color: isSorting ? "#FFF" : textSecondary }]}>
+                  <Text style={[styles.addSceneBtnText, { color: isSorting ? colors.onPrimary : colors.text.secondary }]}>
                     TRI
                   </Text>
                 </TouchableOpacity>
               )}
-              <TouchableOpacity onPress={addScene} style={[styles.addSceneBtn, { backgroundColor: BRAND_COLORS[500] }]}>
-                <MaterialCommunityIcons name="plus" size={13} color="#FFF" />
-                <Text style={styles.addSceneBtnText}>AJOUTER</Text>
+              <TouchableOpacity onPress={addScene} style={[styles.addSceneBtn, { backgroundColor: colors.primary }]}>
+                <MaterialCommunityIcons name="plus" size={13} color={colors.onPrimary} />
+                <Text style={[styles.addSceneBtnText, { color: colors.onPrimary }]}>AJOUTER</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -736,21 +745,19 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
                       disabled={i === 0}
                       style={[styles.pillArrow, { opacity: i === 0 ? 0.2 : 1 }]}
                     >
-                      <MaterialCommunityIcons name="chevron-left" size={14} color={textSecondary} />
+                      <MaterialCommunityIcons name="chevron-left" size={14} color={colors.text.secondary} />
                     </TouchableOpacity>
                   )}
                   <TouchableOpacity
                     onPress={() => isSorting ? undefined : changeScene(i)}
                     style={[styles.pill, {
-                      backgroundColor: active ? BRAND_COLORS[500] : surface,
-                      borderColor: isSorting
-                        ? (isDark ? SLATE_COLORS[600] : SLATE_COLORS[300])
-                        : active ? BRAND_COLORS[500] : border,
+                      backgroundColor: active ? colors.primary : colors.surface,
+                      borderColor: isSorting ? colors.text.tertiary : active ? colors.primary : colors.border,
                       borderStyle: isSorting ? "dashed" : "solid",
                     }]}
                   >
-                    <Text style={[styles.pillNum, { color: active ? "#FFF" : textSecondary }]}>{i + 1}</Text>
-                    <Text style={[styles.pillLabel, { color: active ? "#FFF" : textSecondary }]} numberOfLines={1}>
+                    <Text style={[styles.pillNum, { color: active ? colors.onPrimary : colors.text.secondary }]}>{i + 1}</Text>
+                    <Text style={[styles.pillLabel, { color: active ? colors.onPrimary : colors.text.secondary }]} numberOfLines={1}>
                       {s.title}
                     </Text>
                   </TouchableOpacity>
@@ -760,7 +767,7 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
                       disabled={i === localScenes.length - 1}
                       style={[styles.pillArrow, { opacity: i === localScenes.length - 1 ? 0.2 : 1 }]}
                     >
-                      <MaterialCommunityIcons name="chevron-right" size={14} color={textSecondary} />
+                      <MaterialCommunityIcons name="chevron-right" size={14} color={colors.text.secondary} />
                     </TouchableOpacity>
                   )}
                 </View>
@@ -774,23 +781,23 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
               <TouchableOpacity
                 onPress={() => changeScene(Math.max(0, sceneIndex - 1))}
                 disabled={sceneIndex === 0}
-                style={[styles.navBtn, { backgroundColor: surface, borderColor: border, opacity: sceneIndex === 0 ? 0.3 : 1 }]}
+                style={[styles.navBtn, { backgroundColor: colors.surface, borderColor: colors.border, opacity: sceneIndex === 0 ? 0.3 : 1 }]}
               >
-                <MaterialCommunityIcons name="chevron-left" size={20} color={textPrimary} />
-                <Text style={[styles.navBtnText, { color: textPrimary }]}>Précédent</Text>
+                <MaterialCommunityIcons name="chevron-left" size={20} color={colors.text.primary} />
+                <Text style={[styles.navBtnText, { color: colors.text.primary }]}>Précédent</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={() => changeScene(Math.min(localScenes.length - 1, sceneIndex + 1))}
                 disabled={sceneIndex === localScenes.length - 1}
                 style={[styles.navBtn, {
-                  backgroundColor: sceneIndex < localScenes.length - 1 ? BRAND_COLORS[500] : surface,
-                  borderColor: border,
+                  backgroundColor: sceneIndex < localScenes.length - 1 ? colors.primary : colors.surface,
+                  borderColor: colors.border,
                   opacity: sceneIndex === localScenes.length - 1 ? 0.3 : 1,
                 }]}
               >
-                <Text style={[styles.navBtnText, { color: sceneIndex < localScenes.length - 1 ? "#FFF" : textPrimary }]}>Suivant</Text>
+                <Text style={[styles.navBtnText, { color: sceneIndex < localScenes.length - 1 ? colors.onPrimary : colors.text.primary }]}>Suivant</Text>
                 <MaterialCommunityIcons name="chevron-right" size={20}
-                  color={sceneIndex < localScenes.length - 1 ? "#FFF" : textPrimary} />
+                  color={sceneIndex < localScenes.length - 1 ? colors.onPrimary : colors.text.primary} />
               </TouchableOpacity>
             </View>
           )}
@@ -822,6 +829,8 @@ const styles = StyleSheet.create({
   colorRow: { flexDirection: "row", gap: 5 },
   colorDot: { width: 14, height: 14, borderRadius: 7 },
   colorDotActive: { borderWidth: 2, borderColor: "#FFF", transform: [{ scale: 1.2 }] },
+  colorDotWhite: { borderWidth: 1, borderColor: "#94a3b8" },
+  colorDotActiveWhite: { borderWidth: 2, borderColor: "#475569", transform: [{ scale: 1.2 }] },
   iconBtn: { padding: 4 },
 
   scroll: { flex: 1 },

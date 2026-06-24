@@ -27,7 +27,7 @@ export default function PlayThumbnail({ scene, width, height }: Props) {
             key={c}
             id={`th-${c.replace("#", "")}`}
             viewBox="0 0 10 10"
-            refX="8" refY="5"
+            refX="4" refY="5"
             markerWidth="4" markerHeight="4"
             orient="auto"
           >

@@ -1,7 +1,8 @@
 import React from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { BRAND_COLORS, SLATE_COLORS } from "../../src/theme";
+import { useTheme } from "../../src/contexts/ThemeContext";
+import { STATUS_COLORS } from "../../src/theme";
 
 export const SPEED_OPTIONS = [
   { label: "LENT",   ms: 2000 },
@@ -18,20 +19,17 @@ interface Props {
   onTogglePlay: () => void;
   onSpeedChange: (ms: number) => void;
   onToggleDefenders: () => void;
-  isDark: boolean;
-  surface: string;
-  border: string;
-  textSecondary: string;
 }
 
 export default function PlaybackControls({
   isPlaying, speed, showDefenders,
   sceneIndex, totalScenes,
   onTogglePlay, onSpeedChange, onToggleDefenders,
-  isDark, surface, border, textSecondary,
 }: Props) {
+  const { colors } = useTheme();
+
   return (
-    <View style={[styles.container, { backgroundColor: surface, borderBottomColor: border }]}>
+    <View style={[styles.container, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
       <View style={styles.row}>
         {/* Play / Pause */}
         <TouchableOpacity
@@ -40,7 +38,7 @@ export default function PlaybackControls({
           style={[
             styles.playBtn,
             {
-              backgroundColor: isPlaying ? "#f59e0b" : BRAND_COLORS[500],
+              backgroundColor: isPlaying ? "#f59e0b" : colors.primary,
               opacity: totalScenes <= 1 ? 0.4 : 1,
             },
           ]}
@@ -48,22 +46,22 @@ export default function PlaybackControls({
           <MaterialCommunityIcons
             name={isPlaying ? "pause" : "play"}
             size={20}
-            color="#FFF"
+            color={colors.onPrimary}
           />
         </TouchableOpacity>
 
         {/* Speed selector */}
-        <View style={[styles.speedGroup, { backgroundColor: isDark ? SLATE_COLORS[800] : SLATE_COLORS[100] }]}>
+        <View style={[styles.speedGroup, { backgroundColor: colors.surfaceVariant }]}>
           {SPEED_OPTIONS.map(({ label, ms }) => (
             <TouchableOpacity
               key={ms}
               onPress={() => onSpeedChange(ms)}
               style={[
                 styles.speedBtn,
-                speed === ms && { backgroundColor: isDark ? SLATE_COLORS[700] : "#FFFFFF" },
+                speed === ms && { backgroundColor: colors.surface },
               ]}
             >
-              <Text style={[styles.speedLabel, { color: speed === ms ? BRAND_COLORS[500] : textSecondary }]}>
+              <Text style={[styles.speedLabel, { color: speed === ms ? colors.primary : colors.text.secondary }]}>
                 {label}
               </Text>
             </TouchableOpacity>
@@ -75,11 +73,11 @@ export default function PlaybackControls({
           <MaterialCommunityIcons
             name={isPlaying ? "play-circle" : "play-circle-outline"}
             size={13}
-            color={isPlaying ? BRAND_COLORS[500] : textSecondary}
+            color={isPlaying ? colors.primary : colors.text.secondary}
           />
-          <Text style={[styles.counter, { color: textSecondary }]}>
+          <Text style={[styles.counter, { color: colors.text.secondary }]}>
             {sceneIndex + 1}
-            <Text style={{ color: isDark ? SLATE_COLORS[600] : SLATE_COLORS[400] }}>
+            <Text style={{ color: colors.text.tertiary }}>
               {" / "}{totalScenes}
             </Text>
           </Text>
@@ -91,17 +89,17 @@ export default function PlaybackControls({
           style={[
             styles.defBtn,
             {
-              backgroundColor: showDefenders ? "#ef444415" : (isDark ? SLATE_COLORS[800] : SLATE_COLORS[100]),
-              borderColor: showDefenders ? "#ef4444" : border,
+              backgroundColor: showDefenders ? `${STATUS_COLORS.errorLight}15` : colors.surfaceVariant,
+              borderColor: showDefenders ? STATUS_COLORS.errorLight : colors.border,
             },
           ]}
         >
           <MaterialCommunityIcons
             name={showDefenders ? "eye-outline" : "eye-off-outline"}
             size={13}
-            color={showDefenders ? "#ef4444" : textSecondary}
+            color={showDefenders ? STATUS_COLORS.errorLight : colors.text.secondary}
           />
-          <Text style={[styles.defLabel, { color: showDefenders ? "#ef4444" : textSecondary }]}>
+          <Text style={[styles.defLabel, { color: showDefenders ? STATUS_COLORS.errorLight : colors.text.secondary }]}>
             DEF
           </Text>
         </TouchableOpacity>
