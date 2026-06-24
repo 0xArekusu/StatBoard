@@ -23,6 +23,7 @@ import TacticalCourtSVG from "../components/Playbook/TacticalCourtSVG";
 import DrawingOverlaySVG from "../components/Playbook/DrawingOverlaySVG";
 import PlayerToken from "../components/Playbook/PlayerToken";
 import PlaybackControls from "../components/Playbook/PlaybackControls";
+import StrokeManagerSheet from "../components/Playbook/StrokeManagerSheet";
 
 const COURT_VB_W = 100;
 const COURT_VB_H = 85;
@@ -530,6 +531,19 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
     Share.share({ message: lines.filter((l, i, a) => !(l === "" && a[i - 1] === "")).join("\n") });
   }, [play, commitCurrentScene]);
 
+  // ── Stroke manager sheet ──────────────────────────────────────────────────
+  const [showStrokeManager, setShowStrokeManager] = useState(false);
+
+  const deleteStroke = (id: string) => {
+    undoStackRef.current = [...undoStackRef.current, [...drawingsRef.current]];
+    redoStackRef.current = [];
+    const next = drawingsRef.current.filter((s) => s.id !== id);
+    drawingsRef.current = next;
+    setDrawings([...next]);
+    setCanUndo(true);
+    setCanRedo(false);
+  };
+
   // ── Sort mode ────────────────────────────────────────────────────────────
   const [isSorting, setIsSorting] = useState(false);
 
@@ -647,7 +661,7 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
               style={[styles.iconBtn, { opacity: !canRedo ? 0.3 : 1 }]}>
               <MaterialCommunityIcons name="redo" size={18} color={colors.text.secondary} />
             </TouchableOpacity>
-            <TouchableOpacity onPress={clearDrawings} disabled={drawings.length === 0}
+            <TouchableOpacity onPress={() => setShowStrokeManager(true)} disabled={drawings.length === 0}
               style={[styles.iconBtn, { opacity: drawings.length === 0 ? 0.3 : 1 }]}>
               <MaterialCommunityIcons name="trash-can-outline" size={18} color={colors.text.secondary} />
             </TouchableOpacity>
@@ -802,6 +816,14 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
             </View>
           )}
         </ScrollView>
+
+        <StrokeManagerSheet
+          visible={showStrokeManager}
+          drawings={drawings}
+          onClose={() => setShowStrokeManager(false)}
+          onDeleteStroke={deleteStroke}
+          onClearAll={clearDrawings}
+        />
       </SafeAreaView>
     </Modal>
   );
