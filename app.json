@@ -23,7 +23,13 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.coachassistant.basketball",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "CFBundleDevelopmentRegion": "fr",
+        "CFBundleAllowMixedLocalizations": true,
+        "CFBundleLocalizations": [
+          "fr",
+          "en"
+        ]
       }
     },
     "android": {
