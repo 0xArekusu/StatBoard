@@ -228,6 +228,7 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
   const [isPlaying, setIsPlaying] = useState(false);
   const [speed, setSpeed] = useState(1500);
   const [showDefenders, setShowDefenders] = useState(true);
+  const [hideArrows, setHideArrows] = useState(false);
   const isPlayingRef = useRef(false);
   const speedRef = useRef(1500);
   useEffect(() => { isPlayingRef.current = isPlaying; }, [isPlaying]);
@@ -756,6 +757,7 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
               livePoints={livePoints}
               liveTool={activeTool === DrawingTool.Move ? DrawingTool.Pencil : activeTool}
               liveColor={drawColor}
+              hideDrawings={isPlaying && hideArrows}
             />
             <View style={StyleSheet.absoluteFill} pointerEvents="none">
               {ALL_TOKEN_KEYS.map((key) => (
@@ -877,11 +879,13 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
           isPlaying={isPlaying}
           speed={speed}
           showDefenders={showDefenders}
+          hideArrows={hideArrows}
           sceneIndex={sceneIndex}
           totalScenes={localScenes.length}
           onTogglePlay={() => { setIsPlaying(v => !v); setIsSorting(false); }}
           onSpeedChange={(ms) => setSpeed(ms)}
           onToggleDefenders={() => setShowDefenders(v => !v)}
+          onToggleHideArrows={() => setHideArrows(v => !v)}
         />
 
         {/* ── Scrollable bottom ──────────────────────────────────────────── */}

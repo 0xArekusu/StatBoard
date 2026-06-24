@@ -14,17 +14,19 @@ interface Props {
   isPlaying: boolean;
   speed: number;
   showDefenders: boolean;
+  hideArrows: boolean;
   sceneIndex: number;
   totalScenes: number;
   onTogglePlay: () => void;
   onSpeedChange: (ms: number) => void;
   onToggleDefenders: () => void;
+  onToggleHideArrows: () => void;
 }
 
 export default function PlaybackControls({
-  isPlaying, speed, showDefenders,
+  isPlaying, speed, showDefenders, hideArrows,
   sceneIndex, totalScenes,
-  onTogglePlay, onSpeedChange, onToggleDefenders,
+  onTogglePlay, onSpeedChange, onToggleDefenders, onToggleHideArrows,
 }: Props) {
   const { colors } = useTheme();
 
@@ -67,6 +69,29 @@ export default function PlaybackControls({
             </TouchableOpacity>
           ))}
         </View>
+
+        {/* Hide arrows toggle — only active during playback */}
+        <TouchableOpacity
+          onPress={onToggleHideArrows}
+          disabled={!isPlaying}
+          style={[
+            styles.arrowBtn,
+            {
+              backgroundColor: hideArrows ? `${colors.primary}20` : colors.surfaceVariant,
+              borderColor: hideArrows ? colors.primary : colors.border,
+              opacity: !isPlaying ? 0.35 : 1,
+            },
+          ]}
+        >
+          <MaterialCommunityIcons
+            name={hideArrows ? "eye-off-outline" : "eye-outline"}
+            size={13}
+            color={hideArrows ? colors.primary : colors.text.secondary}
+          />
+          <Text style={[styles.arrowLabel, { color: hideArrows ? colors.primary : colors.text.secondary }]}>
+            TRACÉS
+          </Text>
+        </TouchableOpacity>
 
         {/* Scene counter */}
         <View style={styles.counterRow}>
@@ -132,4 +157,11 @@ const styles = StyleSheet.create({
     borderRadius: 10, borderWidth: 1,
   },
   defLabel: { fontSize: 9, fontWeight: "900" },
+
+  arrowBtn: {
+    flexDirection: "row", alignItems: "center", gap: 4,
+    paddingHorizontal: 10, paddingVertical: 7,
+    borderRadius: 10, borderWidth: 1,
+  },
+  arrowLabel: { fontSize: 9, fontWeight: "900" },
 });

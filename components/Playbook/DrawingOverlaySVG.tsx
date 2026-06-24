@@ -9,10 +9,11 @@ interface Props {
   livePoints: DrawingPoint[];
   liveTool: Exclude<DrawingTool, "move">;
   liveColor: string;
+  hideDrawings?: boolean;
 }
 
 export default function DrawingOverlaySVG({
-  width, height, drawings, livePoints, liveTool, liveColor,
+  width, height, drawings, livePoints, liveTool, liveColor, hideDrawings,
 }: Props) {
   const liveStroke: DrawingStroke | null =
     livePoints.length >= 2
@@ -27,8 +28,8 @@ export default function DrawingOverlaySVG({
       style={{ position: "absolute", top: 0, left: 0 }}
       pointerEvents="none"
     >
-      {drawings.map((stroke) => renderStroke(stroke))}
-      {liveStroke && renderStroke(liveStroke)}
+      {!hideDrawings && drawings.map((stroke) => renderStroke(stroke))}
+      {!hideDrawings && liveStroke && renderStroke(liveStroke)}
     </Svg>
   );
 }
