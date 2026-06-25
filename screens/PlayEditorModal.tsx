@@ -518,47 +518,52 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
       onMoveShouldSetPanResponder:  () => !isPlayingRef.current,
 
       onPanResponderGrant: (_evt, gs) => {
+        // Traitement synchrone : courtAbsPos est maintenu à jour par onLayout (measureCourt).
+        // On ne peut pas envelopper dans measure() car c'est async → draggingKey serait null
+        // lors des premiers onPanResponderMove → positionsRef jamais mis à jour.
+        const { x, y } = courtAbsPos.current;
+        const pt = {
+          x: Math.max(1, Math.min(99, ((gs.x0 - x) / courtW) * COURT_VB_W)),
+          y: Math.max(1, Math.min(84, ((gs.y0 - y) / courtH) * COURT_VB_H)),
+        };
+        if (activeToolRef.current === DrawingTool.Move) {
+          let best: string | null = null, bestDist = DRAG_THRESHOLD;
+          for (const [key, pos] of Object.entries(positionsRef.current)) {
+            const d = Math.hypot(pos.x - pt.x, pos.y - pt.y);
+            if (d < bestDist) { bestDist = d; best = key; }
+          }
+          draggingKey.current = best;
+        } else if (activeToolRef.current === DrawingTool.Pencil) {
+          draggingKey.current = null;
+          sourceTokenRef.current = null;
+          livePointsRef.current = [pt];
+          setLivePoints([pt]);
+        } else {
+          // pass / drive / screen : doit démarrer depuis un attaquant
+          draggingKey.current = null;
+          let found: string | null = null;
+          let foundPos: DrawingPoint | null = null;
+          let foundDist = DRAG_THRESHOLD;
+          for (const key of ATTACKER_KEYS) {
+            const p = positionsRef.current[key];
+            if (!p) continue;
+            const d = Math.hypot(p.x - pt.x, p.y - pt.y);
+            if (d < foundDist) { foundDist = d; found = key; foundPos = p; }
+          }
+          if (found && foundPos) {
+            sourceTokenRef.current = found;
+            const snap = { x: foundPos.x, y: foundPos.y };
+            livePointsRef.current = [snap];
+            setLivePoints([snap]);
+          } else {
+            sourceTokenRef.current = null;
+            livePointsRef.current = [];
+            setLivePoints([]);
+          }
+        }
+        // Refresh async pour les gestes futurs (scroll, clavier, rotation)
         courtRef.current?.measure((_fx, _fy, _w, _h, px, py) => {
           courtAbsPos.current = { x: px, y: py };
-          const pt = {
-            x: Math.max(1, Math.min(99, ((gs.x0 - px) / courtW) * COURT_VB_W)),
-            y: Math.max(1, Math.min(84, ((gs.y0 - py) / courtH) * COURT_VB_H)),
-          };
-          if (activeToolRef.current === DrawingTool.Move) {
-            let best: string | null = null, bestDist = DRAG_THRESHOLD;
-            for (const [key, pos] of Object.entries(positionsRef.current)) {
-              const d = Math.hypot(pos.x - pt.x, pos.y - pt.y);
-              if (d < bestDist) { bestDist = d; best = key; }
-            }
-            draggingKey.current = best;
-          } else if (activeToolRef.current === DrawingTool.Pencil) {
-            draggingKey.current = null;
-            sourceTokenRef.current = null;
-            livePointsRef.current = [pt];
-            setLivePoints([pt]);
-          } else {
-            // pass / drive / screen : doit démarrer depuis un attaquant
-            draggingKey.current = null;
-            let found: string | null = null;
-            let foundPos: DrawingPoint | null = null;
-            let foundDist = DRAG_THRESHOLD;
-            for (const key of ATTACKER_KEYS) {
-              const p = positionsRef.current[key];
-              if (!p) continue;
-              const d = Math.hypot(p.x - pt.x, p.y - pt.y);
-              if (d < foundDist) { foundDist = d; found = key; foundPos = p; }
-            }
-            if (found && foundPos) {
-              sourceTokenRef.current = found;
-              const snap = { x: foundPos.x, y: foundPos.y };
-              livePointsRef.current = [snap];
-              setLivePoints([snap]);
-            } else {
-              sourceTokenRef.current = null;
-              livePointsRef.current = [];
-              setLivePoints([]);
-            }
-          }
         });
       },
 
