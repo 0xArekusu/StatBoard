@@ -211,10 +211,48 @@ describe("MatchListService", () => {
   });
 
   describe("deleteMatch", () => {
-    it("délègue au repository", async () => {
+    it("supprime un match local via le repository", async () => {
       mockMatchRepo.delete.mockResolvedValue(undefined);
-      await service.deleteMatch("match-1");
+      const localMatch = makeLocalMatch({ id: "match-1", synced_to_server: 0 }) as any;
+      await service.deleteMatch(localMatch);
       expect(mockMatchRepo.delete).toHaveBeenCalledWith("match-1");
+    });
+
+    it("supprime un match syncé via Supabase sans toucher au repository", async () => {
+      const deleteBuilder: any = {
+        delete: jest.fn().mockReturnThis(),
+        eq: jest.fn(),
+      };
+      deleteBuilder.delete.mockReturnValue(deleteBuilder);
+      // Premier .eq("id", ...) retourne le builder pour chaîner
+      // Deuxième .eq("created_by", ...) retourne la promise finale
+      deleteBuilder.eq
+        .mockReturnValueOnce(deleteBuilder)
+        .mockResolvedValueOnce({ error: null });
+      mockSupabase.from.mockReturnValue(deleteBuilder);
+
+      const syncedMatch = makeLocalMatch({
+        id: -1,
+        synced_to_server: 1,
+        supabase_id: "uuid-supabase-1",
+      }) as any;
+
+      await service.deleteMatch(syncedMatch, "user-1");
+      expect(mockSupabase.from).toHaveBeenCalledWith("matches");
+      expect(deleteBuilder.delete).toHaveBeenCalled();
+      expect(mockMatchRepo.delete).not.toHaveBeenCalled();
+    });
+
+    it("lève une erreur si userId manquant pour un match syncé", async () => {
+      const syncedMatch = makeLocalMatch({
+        id: -1,
+        synced_to_server: 1,
+        supabase_id: "uuid-supabase-1",
+      }) as any;
+
+      await expect(service.deleteMatch(syncedMatch)).rejects.toThrow(
+        "userId required to delete a synced match"
+      );
     });
   });
 });

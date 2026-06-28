@@ -141,11 +141,23 @@ export class MatchListService {
   }
 
   /**
-   * Delete a match by ID
+   * Delete a match — handles both local (SQLite) and synced (Supabase) matches.
+   * Never call this for guest users; the caller must enforce that restriction.
    *
-   * @param matchId - ID of the match to delete
+   * @param match - Match object to delete
+   * @param userId - Required when deleting a synced match (ownership check)
    */
-  async deleteMatch(matchId: string): Promise<void> {
-    return await this.matchRepository.delete(matchId);
+  async deleteMatch(match: Match, userId?: string | null): Promise<void> {
+    if (match.synced_to_server && match.supabase_id) {
+      if (!userId) throw new Error("userId required to delete a synced match");
+      const { error } = await this.supabase
+        .from("matches")
+        .delete()
+        .eq("id", match.supabase_id)
+        .eq("created_by", userId);
+      if (error) throw error;
+    } else {
+      await this.matchRepository.delete(match.id);
+    }
   }
 }

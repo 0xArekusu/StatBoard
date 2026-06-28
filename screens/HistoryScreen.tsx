@@ -63,6 +63,7 @@ export default function HistoryScreen({ navigation }: HistoryScreenProps) {
     reason: "",
   });
   const [isSyncing, setIsSyncing] = useState(false);
+  const [deletingMatchId, setDeletingMatchId] = useState<string | number | null>(null);
 
   useEffect(() => {
     // Only load if we have a club or are in guest mode
@@ -166,6 +167,36 @@ export default function HistoryScreen({ navigation }: HistoryScreenProps) {
    * - Reloads match list after successful sync
    * - Closes sync confirmation modal when complete
    */
+  const handleDeleteMatch = (match: Match) => {
+    Alert.alert(
+      "Supprimer le match",
+      `Supprimer le match contre ${match.opponent_name} ? Cette action est irréversible.`,
+      [
+        { text: "Annuler", style: "cancel" },
+        {
+          text: "Supprimer",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              setDeletingMatchId(match.id);
+              const matchListService = ServiceFactory.getMatchListService(supabase);
+              await matchListService.deleteMatch(match, user?.id);
+              await loadHistoryData();
+            } catch (error) {
+              showErrorAlert({
+                action: "supprimer le match",
+                error,
+                context: "HistoryScreen",
+              });
+            } finally {
+              setDeletingMatchId(null);
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const handleSyncAll = async () => {
     try {
       setIsSyncing(true);
@@ -478,6 +509,7 @@ export default function HistoryScreen({ navigation }: HistoryScreenProps) {
                 <MatchCard
                   key={`match-${match.id}-${index}`}
                   match={match}
+                  isDeleting={deletingMatchId === match.id}
                   onPress={() => {
                     navigation.navigate(
                       ROUTES.MATCH_DETAILS as never,
@@ -486,6 +518,7 @@ export default function HistoryScreen({ navigation }: HistoryScreenProps) {
                       } as never,
                     );
                   }}
+                  onDelete={user ? () => handleDeleteMatch(match) : undefined}
                 />
               ))}
             </View>
@@ -514,6 +547,8 @@ export default function HistoryScreen({ navigation }: HistoryScreenProps) {
 interface MatchCardProps {
   match: Match;
   onPress: () => void;
+  onDelete?: () => void;
+  isDeleting?: boolean;
 }
 
 /**
@@ -532,7 +567,7 @@ interface MatchCardProps {
  * - Result badge uses success/error colors
  * - Sync status shows cloud icon for synced, warning for local-only
  */
-function MatchCard({ match, onPress }: MatchCardProps) {
+function MatchCard({ match, onPress, onDelete, isDeleting }: MatchCardProps) {
   const { isDark, colors } = useTheme();
   const { sp, font, sizes } = useResponsive();
   const scoreA = match.my_team_score || 0;
@@ -742,7 +777,7 @@ function MatchCard({ match, onPress }: MatchCardProps) {
           </View>
         </View>
 
-        {/* Sync Status Badge */}
+        {/* Sync Status Badge — colonne centrale */}
         <View style={styles.matchCardFooterCenter}>
           {isSynced ? (
             <View style={[styles.syncStatusBadge, { gap: sp.xs }]}>
@@ -787,8 +822,8 @@ function MatchCard({ match, onPress }: MatchCardProps) {
           )}
         </View>
 
-        {/* Analyze Button */}
-        <View style={styles.matchCardFooterRight}>
+        {/* Détails + Delete — colonne droite, contenu poussé à droite */}
+        <View style={[styles.matchCardFooterRight, { flexDirection: "row", justifyContent: "flex-end", alignItems: "center", gap: sp.md }]}>
           <TouchableOpacity style={[styles.matchAnalyzeButton, { gap: sp.xs }]} onPress={onPress}>
             <Text style={[styles.matchAnalyzeText, { color: colors.primary, fontSize: font.xs }]}>
               Détails
@@ -799,6 +834,24 @@ function MatchCard({ match, onPress }: MatchCardProps) {
               color={colors.primary}
             />
           </TouchableOpacity>
+
+          {onDelete && (
+            <TouchableOpacity
+              onPress={onDelete}
+              disabled={isDeleting}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              {isDeleting ? (
+                <ActivityIndicator size="small" color={colors.error} />
+              ) : (
+                <MaterialCommunityIcons
+                  name="trash-can-outline"
+                  size={font.lg}
+                  color={colors.error}
+                />
+              )}
+            </TouchableOpacity>
+          )}
         </View>
       </View>
     </TouchableOpacity>

@@ -96,6 +96,9 @@ export interface Match {
   // Legacy
   synced_to_server?: boolean;
   created_with_tier?: string;
+
+  // Set on server matches fetched from Supabase (id is a negative integer in that case)
+  supabase_id?: string;
 }
 
 export interface CreateMatchData {
