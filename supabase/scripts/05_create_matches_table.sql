@@ -140,3 +140,8 @@ CREATE POLICY "Team owner can delete their matches"
       )
     )
   );
+
+-- Policy: Match creator can delete their own matches
+CREATE POLICY "Users can delete their own matches"
+  ON matches FOR DELETE
+  USING (auth.uid() = created_by);
