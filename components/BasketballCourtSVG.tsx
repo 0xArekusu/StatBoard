@@ -1,5 +1,5 @@
 import React from "react";
-import Svg, { Path, G, ClipPath, Defs, Circle, Image, Line, Polygon, Text } from "react-native-svg";
+import Svg, { Path, G, ClipPath, Defs, Circle, Image, Line, Polygon, Rect, Text } from "react-native-svg";
 import { useTheme } from "../src/contexts/ThemeContext";
 import { COACH_ASSISTANT_LOGO_MARGIN } from "../src/utils/logoHelper";
 import {
@@ -39,6 +39,8 @@ interface BasketballCourtSVGProps {
   lineColor?: string;
   markers?: CourtMarker[];
   logoUri?: string | null;
+  courtSponsorTopUri?: string | null;
+  courtSponsorBottomUri?: string | null;
 }
 
 export default function BasketballCourtSVG({
@@ -49,6 +51,8 @@ export default function BasketballCourtSVG({
   lineColor = DEFAULT_COURT_COLORS.line,
   markers = [],
   logoUri = null,
+  courtSponsorTopUri = null,
+  courtSponsorBottomUri = null,
 }: BasketballCourtSVGProps) {
   const { colors } = useTheme();
 
@@ -344,6 +348,64 @@ export default function BasketballCourtSVG({
         </G>
       );
     });
+  };
+
+  /**
+   * Render sponsor logos in both half-courts (between free throw arc and center circle).
+   * Top zone  (portrait): y=354–444, centered at x=307.875 → landscape: x=330–480, centered at y=307.875
+   * Bottom zone (portrait): y=692–782, centered at x=307.875 → landscape: x=667–817, centered at y=307.875
+   * Each zone is independent: top and bottom can show different sponsors.
+   */
+  const renderCourtSponsors = () => {
+    if (!courtSponsorTopUri && !courtSponsorBottomUri) return null;
+
+    if (isPortrait) {
+      const w = 250;
+      const h = 90;
+      const x_top = COURT_SVG_WIDTH_PORTRAIT - w;
+      const x_bottom = 0;
+      const cx_top = x_top + w / 2;
+      const cy_top = 354 + h / 2;
+      const cx_bottom = x_bottom + w / 2;
+      const cy_bottom = 692 + h / 2;
+      return (
+        <G>
+          {courtSponsorTopUri && (
+            <G transform={`rotate(90, ${cx_top}, ${cy_top})`}>
+              <Rect x={x_top} y={354} width={w} height={h} rx={6} fill="white" opacity={0.85} />
+              <Image href={courtSponsorTopUri} x={x_top} y={354} width={w} height={h} preserveAspectRatio="xMidYMid meet" />
+            </G>
+          )}
+          {courtSponsorBottomUri && (
+            <G transform={`rotate(-90, ${cx_bottom}, ${cy_bottom})`}>
+              <Rect x={x_bottom} y={692} width={w} height={h} rx={6} fill="white" opacity={0.85} />
+              <Image href={courtSponsorBottomUri} x={x_bottom} y={692} width={w} height={h} preserveAspectRatio="xMidYMid meet" />
+            </G>
+          )}
+        </G>
+      );
+    } else {
+      // Landscape: top portrait zone → left side, bottom portrait zone → right side
+      const w = 150;
+      const h = 90;
+      const y = COURT_SVG_HEIGHT_LANDSCAPE / 2 - h / 2;
+      return (
+        <G>
+          {courtSponsorTopUri && (
+            <G>
+              <Rect x={330} y={y} width={w} height={h} rx={6} fill="white" opacity={0.85} />
+              <Image href={courtSponsorTopUri} x={330} y={y} width={w} height={h} preserveAspectRatio="xMidYMid meet" />
+            </G>
+          )}
+          {courtSponsorBottomUri && (
+            <G>
+              <Rect x={667} y={y} width={w} height={h} rx={6} fill="white" opacity={0.85} />
+              <Image href={courtSponsorBottomUri} x={667} y={y} width={w} height={h} preserveAspectRatio="xMidYMid meet" />
+            </G>
+          )}
+        </G>
+      );
+    }
   };
 
   /**
@@ -749,6 +811,9 @@ export default function BasketballCourtSVG({
         </G>
       </G>
 
+      {/* Render sponsor zones on the floor (under center logo and markers) */}
+      {renderCourtSponsors()}
+
       {/* Render center court logo first (under markers) */}
       {renderCenterLogo()}
 
@@ -1099,6 +1164,9 @@ export default function BasketballCourtSVG({
           />
         </G>
       </G>
+
+      {/* Render sponsor zones on the floor (under center logo and markers) */}
+      {renderCourtSponsors()}
 
       {/* Render center court logo first (under markers) */}
       {renderCenterLogo()}

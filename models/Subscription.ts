@@ -8,7 +8,7 @@
 /**
  * Available subscription tiers
  */
-export type SubscriptionTier = "free" | "basic" | "premium" | "ultimate";
+export type SubscriptionTier = "free" | "basic" | "premium" | "ultimate" | "sponsor";
 
 /**
  * Subscription tier constants
@@ -18,6 +18,7 @@ export const SUBSCRIPTION_TIER = {
   BASIC: "basic" as const,
   PREMIUM: "premium" as const,
   ULTIMATE: "ultimate" as const,
+  SPONSOR: "sponsor" as const,
 } as const;
 
 /**
@@ -29,6 +30,7 @@ export enum UserMode {
   BASIC = "basic", // Basic subscription
   PREMIUM = "premium", // Premium subscription
   ULTIMATE = "ultimate", // Ultimate subscription
+  SPONSOR = "sponsor", // Sponsor tier — can configure custom court sponsors
 }
 
 /**
@@ -71,6 +73,11 @@ export const SUBSCRIPTION_LIMITS: Record<SubscriptionTier, SubscriptionLimits> =
       maxLocalMatches: Infinity,
       canSyncToServer: true,
     },
+    [SUBSCRIPTION_TIER.SPONSOR]: {
+      maxTeams: 9,
+      maxLocalMatches: Infinity,
+      canSyncToServer: true,
+    },
   };
 
 /**
@@ -91,6 +98,7 @@ export const SUBSCRIPTION_TIER_LABELS: Record<SubscriptionTier, string> = {
   [SUBSCRIPTION_TIER.BASIC]: "Basic",
   [SUBSCRIPTION_TIER.PREMIUM]: "Premium",
   [SUBSCRIPTION_TIER.ULTIMATE]: "Ultimate",
+  [SUBSCRIPTION_TIER.SPONSOR]: "Sponsor",
 };
 
 /**
@@ -102,6 +110,7 @@ export const USER_MODE_LABELS: Record<UserMode, string> = {
   [UserMode.BASIC]: "Basic",
   [UserMode.PREMIUM]: "Premium",
   [UserMode.ULTIMATE]: "Ultimate",
+  [UserMode.SPONSOR]: "Sponsor",
 };
 
 /**

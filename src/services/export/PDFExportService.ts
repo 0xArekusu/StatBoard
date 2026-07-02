@@ -33,6 +33,13 @@ interface Player {
   isSubstitute?: boolean;
 }
 
+interface PDFSponsor {
+  priority: 1 | 2;
+  logo_url: string;
+  name: string;
+  source: 'club' | 'platform' | 'fallback';
+}
+
 interface PDFExportOptions {
   myTeamName: string;
   opponentName: string;
@@ -52,6 +59,7 @@ interface PDFExportOptions {
   overtimePeriods?: number; // Number of overtime periods played
   myTeamHandicap?: number;
   opponentHandicap?: number;
+  matchSponsors?: PDFSponsor[];
 }
 
 export class PDFExportService {
@@ -219,6 +227,7 @@ export class PDFExportService {
       overtimePeriods = 0,
       myTeamHandicap = 0,
       opponentHandicap = 0,
+      matchSponsors = [],
     } = options;
 
     console.log("[PDF Export] 🚀 Début generateMatchPDF");
@@ -412,6 +421,7 @@ export class PDFExportService {
       awayTeamHandicap,
       myTeamHandicap,
       opponentHandicap,
+      matchSponsors,
     });
 
     // Generate PDF using expo-print
@@ -1672,6 +1682,7 @@ export class PDFExportService {
     awayTeamHandicap?: number;
     myTeamHandicap?: number;
     opponentHandicap?: number;
+    matchSponsors?: PDFSponsor[];
   }): string {
     const {
       myTeamName,
@@ -1709,6 +1720,7 @@ export class PDFExportService {
       awayTeamHandicap = 0,
       myTeamHandicap = 0,
       opponentHandicap = 0,
+      matchSponsors = [],
     } = data;
 
     // Generate the score chart SVG with action-by-action evolution
@@ -1925,6 +1937,48 @@ export class PDFExportService {
       color: ${PDF_COLORS.table.textTertiary};
       border-top: 1px solid ${PDF_COLORS.table.border};
       padding-top: 10px;
+    }
+    .sponsor-header-bar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      margin: 12px 0 20px 0;
+      padding: 10px 20px;
+      border: 1px solid ${PDF_COLORS.table.border};
+      border-radius: 8px;
+      background: ${PDF_COLORS.table.headerBg};
+    }
+    .sponsor-header-label {
+      font-size: 9px;
+      font-style: italic;
+      color: ${PDF_COLORS.table.textSecondary};
+      white-space: nowrap;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .sponsor-header-logo {
+      height: 36px;
+      width: auto;
+      object-fit: contain;
+    }
+    .sponsor-footer-bar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      margin-bottom: 8px;
+    }
+    .sponsor-footer-label {
+      font-size: 8px;
+      font-style: italic;
+      color: ${PDF_COLORS.table.textSecondary};
+    }
+    .sponsor-footer-logo {
+      height: 28px;
+      width: auto;
+      object-fit: contain;
+      opacity: 0.85;
     }
     .warning-banner {
       background-color: ${PDF_COLORS.warning.background};
@@ -2223,6 +2277,14 @@ export class PDFExportService {
     <div class="match-info">${homeTeamName} vs ${awayTeamName}</div>
     <div class="date">${dateStr}</div>
   </div>
+
+  ${matchSponsors && matchSponsors.length > 0 ? `
+  <div class="sponsor-header-bar">
+    <span class="sponsor-header-label">Match présenté par</span>
+    ${matchSponsors.sort((a, b) => a.priority - b.priority).map(s =>
+      `<img src="${s.logo_url}" class="sponsor-header-logo" alt="${s.name}" title="${s.name}" />`
+    ).join('')}
+  </div>` : ''}
 
   <div class="score-summary">
     <div>SCORE FINAL</div>
@@ -2952,7 +3014,16 @@ export class PDFExportService {
   ` : ""}
 </div>
 
-  <div class="footer">Généré par Coach Assistant • ${dateStr}</div>
+  <div class="footer">
+    ${matchSponsors && matchSponsors.length > 0 ? `
+    <div class="sponsor-footer-bar">
+      <span class="sponsor-footer-label">Partenaires officiels</span>
+      ${matchSponsors.sort((a, b) => a.priority - b.priority).map(s =>
+        `<img src="${s.logo_url}" class="sponsor-footer-logo" alt="${s.name}" title="${s.name}" />`
+      ).join('')}
+    </div>` : ''}
+    Généré par Coach Assistant • ${dateStr}
+  </div>
 </body>
 </html>`;
 

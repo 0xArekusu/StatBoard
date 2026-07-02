@@ -35,6 +35,8 @@ interface CourtViewProps {
   clubLogoUrl: string | null;
   courtBackgroundColor: string;
   courtLineColor: string;
+  courtSponsorTopUri?: string | null;
+  courtSponsorBottomUri?: string | null;
 }
 
 export const CourtView: React.FC<CourtViewProps> = ({
@@ -50,6 +52,8 @@ export const CourtView: React.FC<CourtViewProps> = ({
   clubLogoUrl,
   courtBackgroundColor,
   courtLineColor,
+  courtSponsorTopUri = null,
+  courtSponsorBottomUri = null,
 }) => {
   const { colors } = useTheme();
   const [courtDimensions, setCourtDimensions] = useState({
@@ -216,6 +220,8 @@ export const CourtView: React.FC<CourtViewProps> = ({
         lineColor={courtLineColor}
         logoUri={clubLogoUrl}
         markers={regularMarkers}
+        courtSponsorTopUri={courtSponsorTopUri}
+        courtSponsorBottomUri={courtSponsorBottomUri}
       />
       {/* Animated overlay for last marker with fade effect */}
       {showLastMarker && lastMarker.length > 0 && (

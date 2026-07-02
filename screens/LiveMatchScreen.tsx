@@ -39,7 +39,9 @@ import {
 import { ActionType, ShotSpecification, ReboundSpecification, SubstitutionSpecification } from "../src/models/ActionTypes";
 import { Player } from "../models/Player";
 import { useAuth } from "../src/contexts/AuthContext";
+import { useClub } from "../src/contexts/ClubContext";
 import { MatchManager } from "../src/services/match/MatchManager";
+import { resolveMatchSponsors, MatchSponsor, getSponsorUris } from "../src/services/SponsorService";
 import { ActionQueue } from "../src/services/match/ActionQueue";
 import { AdminService } from "../services/AdminService";
 import { MatchRepository } from "../src/services/database/MatchRepository";
@@ -103,6 +105,7 @@ export default function LiveMatchScreen() {
   const { isCompact, isPortrait, sp, font, width } = useResponsive();
   const isMobileLandscape = !isPortrait && width < BREAKPOINTS.mobileLandscapeMaxWidth;
   const { user } = useAuth();
+  const { currentClub } = useClub();
   const matchData = route.params?.matchData;
   const resumeMatchId = route.params?.matchId;
 
@@ -115,6 +118,12 @@ export default function LiveMatchScreen() {
   const [currentMatchId, setCurrentMatchId] = useState<string | null>(null);
   const [actionCounter, setActionCounter] = useState(0);
   const [isLoadingMatch, setIsLoadingMatch] = useState(!!resumeMatchId);
+  const [matchSponsors, setMatchSponsors] = useState<MatchSponsor[]>(() => {
+    if (matchData?.match_sponsors) {
+      try { return JSON.parse(matchData.match_sponsors); } catch { return []; }
+    }
+    return [];
+  });
 
   // ========================================
   // MATCH STATE
@@ -496,6 +505,14 @@ export default function LiveMatchScreen() {
           setActionCounter(maxActionOrder + 1);
 
           setCurrentMatchId(resumeMatchId);
+
+          // Restore sponsors from local storage snapshot
+          if (existingMatch.match_sponsors) {
+            try {
+              setMatchSponsors(JSON.parse(existingMatch.match_sponsors));
+            } catch {}
+          }
+
           setIsLoadingMatch(false);
 
           logInfo("LiveMatchScreen", "✅ Match resumed successfully", {
@@ -527,6 +544,13 @@ export default function LiveMatchScreen() {
             location: match.location,
           });
 
+          // Resolve sponsors at match creation time (snapshot for live view + PDF)
+          const resolvedSponsors = await resolveMatchSponsors(
+            match.clubId || null,
+            currentClub?.subscriptionTier || null,
+          );
+          setMatchSponsors(resolvedSponsors);
+
           const matchCreateData: CreateMatchData & { created_at: string } = {
             my_team_name: match.myTeamName || null,
             opponent_name: match.opponent || "Adversaire",
@@ -542,6 +566,7 @@ export default function LiveMatchScreen() {
             court_line_color: match.courtLineColor || null,
             my_team_handicap: match.myTeamHandicap || 0,
             opponent_handicap: match.opponentHandicap || 0,
+            match_sponsors: JSON.stringify(resolvedSponsors),
             created_at: match.createdAt || new Date().toISOString(), // Use timestamp from NewMatchScreen
           };
 
@@ -2250,22 +2275,27 @@ export default function LiveMatchScreen() {
           </ScrollView>
         )}
 
-        {viewMode === ViewMode.COURT && (
-          <CourtView
-            onCourtClick={handleCourtClick}
-            events={match.events}
-            showMarkers={showMarkers}
-            filterMode={filterMode}
-            selectedPlayerIds={selectedPlayerIds}
-            selectedPeriodIds={selectedPeriodIds}
-            selectedTeamFilter={selectedTeamFilter}
-            isHome={match.location === TeamId.HOME}
-            trackOpponentStats={match.trackOpponentStats}
-            clubLogoUrl={match.clubLogoUrl}
-            courtBackgroundColor={match.courtBackgroundColor}
-            courtLineColor={match.courtLineColor}
-          />
-        )}
+        {viewMode === ViewMode.COURT && (() => {
+          const { top: sponsorTop, bottom: sponsorBottom } = getSponsorUris(matchSponsors);
+          return (
+            <CourtView
+              onCourtClick={handleCourtClick}
+              events={match.events}
+              showMarkers={showMarkers}
+              filterMode={filterMode}
+              selectedPlayerIds={selectedPlayerIds}
+              selectedPeriodIds={selectedPeriodIds}
+              selectedTeamFilter={selectedTeamFilter}
+              isHome={match.location === TeamId.HOME}
+              trackOpponentStats={match.trackOpponentStats}
+              clubLogoUrl={match.clubLogoUrl}
+              courtBackgroundColor={match.courtBackgroundColor}
+              courtLineColor={match.courtLineColor}
+              courtSponsorTopUri={sponsorTop}
+              courtSponsorBottomUri={sponsorBottom}
+            />
+          );
+        })()}
       </View>
 
       {/* Toolbar */}

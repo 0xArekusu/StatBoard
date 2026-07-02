@@ -277,6 +277,9 @@ export default function MatchDetailsScreen() {
         clubLogoUrl, // Signed URL for PDF (valid 2h) or undefined if offline/error
         courtBackgroundColor: club?.courtBackgroundColor, // Use club court background color if configured
         courtLineColor: club?.courtLineColor, // Use club court line color if configured
+        matchSponsors: match.match_sponsors
+          ? (() => { try { return JSON.parse(match.match_sponsors); } catch { return []; } })()
+          : [],
       };
 
       console.log('[MatchDetailsScreen] 📋 pdfOptions.players envoyé:', pdfOptions.players.map(p => ({
