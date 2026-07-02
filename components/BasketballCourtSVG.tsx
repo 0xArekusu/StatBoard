@@ -361,8 +361,8 @@ export default function BasketballCourtSVG({
 
     if (isPortrait) {
       const w = 250;
-      const h = 90;
-      const x_top = COURT_SVG_WIDTH_PORTRAIT - w;
+      const h = 120;
+      const x_top = COURT_SVG_WIDTH_PORTRAIT - (w / 1.2);
       const x_bottom = 0;
       const cx_top = x_top + w / 2;
       const cy_top = 354 + h / 2;
@@ -372,7 +372,7 @@ export default function BasketballCourtSVG({
         <G>
           {courtSponsorTopUri && (
             <G transform={`rotate(90, ${cx_top}, ${cy_top})`}>
-              <Rect x={x_top} y={354} width={w} height={h} rx={6} fill="white" opacity={0.85} />
+              <Rect x={COURT_SVG_HEIGHT_PORTRAIT/2 - w/2 - 30} y={COURT_SVG_WIDTH_PORTRAIT} width={w} height={h} rx={6} fill="white" opacity={0.85} />
               <Image href={courtSponsorTopUri} x={x_top} y={354} width={w} height={h} preserveAspectRatio="xMidYMid meet" />
             </G>
           )}
