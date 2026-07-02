@@ -361,46 +361,61 @@ export default function BasketballCourtSVG({
 
     if (isPortrait) {
       const w = 250;
-      const h = 120;
-      const x_top = COURT_SVG_WIDTH_PORTRAIT - (w / 1.2);
-      const x_bottom = 0;
-      const cx_top = x_top + w / 2;
-      const cy_top = 354 + h / 2;
-      const cx_bottom = x_bottom + w / 2;
-      const cy_bottom = 692 + h / 2;
+      const h = 110;
+      const sideMargin = 20;
+      const centerMargin = 10;
+      const centerY = 572.812;
+
+      // After rotate(90°) around (cx, cy), the visual size becomes h×w (90 wide × 250 tall).
+      // Visual left edge = cx - h/2  |  Visual bottom = cy + w/2  |  Visual top = cy - w/2
+      const cx_top = COURT_SVG_WIDTH_PORTRAIT - sideMargin - h / 2; // 550.75 (right sideline)
+      const cy_top = centerY - centerMargin - w / 2;                // 437.812
+      const cx_bottom = sideMargin + h / 2;                         // 65 (left sideline)
+      const cy_bottom = centerY + centerMargin + w / 2;             // 707.812
+
       return (
         <G>
           {courtSponsorTopUri && (
             <G transform={`rotate(90, ${cx_top}, ${cy_top})`}>
-              <Rect x={COURT_SVG_HEIGHT_PORTRAIT/2 - w/2 - 30} y={COURT_SVG_WIDTH_PORTRAIT} width={w} height={h} rx={6} fill="white" opacity={0.85} />
-              <Image href={courtSponsorTopUri} x={x_top} y={354} width={w} height={h} preserveAspectRatio="xMidYMid meet" />
+              <Rect x={cx_top - w / 2} y={cy_top - h / 2} width={w} height={h} rx={6} fill="transparent" opacity={0.85} />
+              <Image href={courtSponsorTopUri} x={cx_top - w / 2} y={cy_top - h / 2} width={w} height={h} preserveAspectRatio="xMidYMid meet" />
             </G>
           )}
           {courtSponsorBottomUri && (
             <G transform={`rotate(-90, ${cx_bottom}, ${cy_bottom})`}>
-              <Rect x={x_bottom} y={692} width={w} height={h} rx={6} fill="white" opacity={0.85} />
-              <Image href={courtSponsorBottomUri} x={x_bottom} y={692} width={w} height={h} preserveAspectRatio="xMidYMid meet" />
+              <Rect x={cx_bottom - w / 2} y={cy_bottom - h / 2} width={w} height={h} rx={6} fill="transparent" opacity={0.85} />
+              <Image href={courtSponsorBottomUri} x={cx_bottom - w / 2} y={cy_bottom - h / 2} width={w} height={h} preserveAspectRatio="xMidYMid meet" />
             </G>
           )}
         </G>
       );
     } else {
-      // Landscape: top portrait zone → left side, bottom portrait zone → right side
-      const w = 150;
-      const h = 90;
-      const y = COURT_SVG_HEIGHT_LANDSCAPE / 2 - h / 2;
+      const w = 250;
+      const h = 110;
+      const sideMargin = 20;
+      const centerMargin = 10;
+      const centerX = 572.812; // vertical center line in landscape
+
+      // Horizontal zones along the sideline (no rotation needed in landscape).
+      // Top sponsor: near top sideline (y≈0), right edge touching center line
+      const top_x = centerX - centerMargin - w;  // 312.812
+      const top_y = sideMargin;                   // 20
+      // Bottom sponsor: near bottom sideline (y≈615.75), left edge touching center line
+      const bottom_x = centerX + centerMargin;    // 582.812
+      const bottom_y = COURT_SVG_HEIGHT_LANDSCAPE - sideMargin - h; // 485.75
+
       return (
         <G>
           {courtSponsorTopUri && (
             <G>
-              <Rect x={330} y={y} width={w} height={h} rx={6} fill="white" opacity={0.85} />
-              <Image href={courtSponsorTopUri} x={330} y={y} width={w} height={h} preserveAspectRatio="xMidYMid meet" />
+              <Rect x={top_x} y={top_y} width={w} height={h} rx={6} fill="white" opacity={0.85} />
+              <Image href={courtSponsorTopUri} x={top_x} y={top_y} width={w} height={h} preserveAspectRatio="xMidYMid meet" />
             </G>
           )}
           {courtSponsorBottomUri && (
             <G>
-              <Rect x={667} y={y} width={w} height={h} rx={6} fill="white" opacity={0.85} />
-              <Image href={courtSponsorBottomUri} x={667} y={y} width={w} height={h} preserveAspectRatio="xMidYMid meet" />
+              <Rect x={bottom_x} y={bottom_y} width={w} height={h} rx={6} fill="white" opacity={0.85} />
+              <Image href={courtSponsorBottomUri} x={bottom_x} y={bottom_y} width={w} height={h} preserveAspectRatio="xMidYMid meet" />
             </G>
           )}
         </G>
