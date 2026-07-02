@@ -41,6 +41,8 @@ interface BasketballCourtSVGProps {
   logoUri?: string | null;
   courtSponsorTopUri?: string | null;
   courtSponsorBottomUri?: string | null;
+  courtSponsorThirdUri?: string | null;
+  courtSponsorFourthUri?: string | null;
 }
 
 export default function BasketballCourtSVG({
@@ -53,6 +55,8 @@ export default function BasketballCourtSVG({
   logoUri = null,
   courtSponsorTopUri = null,
   courtSponsorBottomUri = null,
+  courtSponsorThirdUri = null,
+  courtSponsorFourthUri = null,
 }: BasketballCourtSVGProps) {
   const { colors } = useTheme();
 
@@ -357,7 +361,8 @@ export default function BasketballCourtSVG({
    * Each zone is independent: top and bottom can show different sponsors.
    */
   const renderCourtSponsors = () => {
-    if (!courtSponsorTopUri && !courtSponsorBottomUri) return null;
+    const hasAny = courtSponsorTopUri || courtSponsorBottomUri || courtSponsorThirdUri || courtSponsorFourthUri;
+    if (!hasAny) return null;
 
     if (isPortrait) {
       const w = 250;
@@ -366,27 +371,34 @@ export default function BasketballCourtSVG({
       const centerMargin = 10;
       const centerY = 572.812;
 
-      // After rotate(90°) around (cx, cy), the visual size becomes h×w (90 wide × 250 tall).
-      // Visual left edge = cx - h/2  |  Visual bottom = cy + w/2  |  Visual top = cy - w/2
-      const cx_top = COURT_SVG_WIDTH_PORTRAIT - sideMargin - h / 2; // 550.75 (right sideline)
-      const cy_top = centerY - centerMargin - w / 2;                // 437.812
-      const cx_bottom = sideMargin + h / 2;                         // 65 (left sideline)
-      const cy_bottom = centerY + centerMargin + w / 2;             // 707.812
+      // After rotate(90°/-90°) around (cx, cy), visual size becomes h×w (110 wide × 250 tall).
+      // Zone 1: right sideline, above center, +90°
+      const cx1 = COURT_SVG_WIDTH_PORTRAIT - sideMargin - h / 2;
+      const cy1 = centerY - centerMargin - w / 2;
+      // Zone 2: left sideline, below center, -90°
+      const cx2 = sideMargin + h / 2;
+      const cy2 = centerY + centerMargin + w / 2;
+      // Zone 3: left sideline, above center (mirror of 1), -90°
+      const cx3 = sideMargin + h / 2;
+      const cy3 = cy1;
+      // Zone 4: right sideline, below center (mirror of 2), +90°
+      const cx4 = COURT_SVG_WIDTH_PORTRAIT - sideMargin - h / 2;
+      const cy4 = cy2;
+
+      const zone = (uri: string | null, cx: number, cy: number, rot: 90 | -90) =>
+        uri ? (
+          <G transform={`rotate(${rot}, ${cx}, ${cy})`}>
+            <Rect x={cx - w / 2} y={cy - h / 2} width={w} height={h} rx={6} fill="transparent" opacity={0.85} />
+            <Image href={uri} x={cx - w / 2} y={cy - h / 2} width={w} height={h} preserveAspectRatio="xMidYMid meet" />
+          </G>
+        ) : null;
 
       return (
         <G>
-          {courtSponsorTopUri && (
-            <G transform={`rotate(90, ${cx_top}, ${cy_top})`}>
-              <Rect x={cx_top - w / 2} y={cy_top - h / 2} width={w} height={h} rx={6} fill="transparent" opacity={0.85} />
-              <Image href={courtSponsorTopUri} x={cx_top - w / 2} y={cy_top - h / 2} width={w} height={h} preserveAspectRatio="xMidYMid meet" />
-            </G>
-          )}
-          {courtSponsorBottomUri && (
-            <G transform={`rotate(-90, ${cx_bottom}, ${cy_bottom})`}>
-              <Rect x={cx_bottom - w / 2} y={cy_bottom - h / 2} width={w} height={h} rx={6} fill="transparent" opacity={0.85} />
-              <Image href={courtSponsorBottomUri} x={cx_bottom - w / 2} y={cy_bottom - h / 2} width={w} height={h} preserveAspectRatio="xMidYMid meet" />
-            </G>
-          )}
+          {zone(courtSponsorTopUri, cx1, cy1, 90)}
+          {zone(courtSponsorBottomUri, cx2, cy2, -90)}
+          {zone(courtSponsorThirdUri, cx3, cy3, -90)}
+          {zone(courtSponsorFourthUri, cx4, cy4, 90)}
         </G>
       );
     } else {
@@ -394,30 +406,36 @@ export default function BasketballCourtSVG({
       const h = 110;
       const sideMargin = 20;
       const centerMargin = 10;
-      const centerX = 572.812; // vertical center line in landscape
+      const centerX = 572.812;
 
       // Horizontal zones along the sideline (no rotation needed in landscape).
-      // Top sponsor: near top sideline (y≈0), right edge touching center line
-      const top_x = centerX - centerMargin - w;  // 312.812
-      const top_y = sideMargin;                   // 20
-      // Bottom sponsor: near bottom sideline (y≈615.75), left edge touching center line
-      const bottom_x = centerX + centerMargin;    // 582.812
-      const bottom_y = COURT_SVG_HEIGHT_LANDSCAPE - sideMargin - h; // 485.75
+      // Zone 1: top sideline, left of center
+      const x1 = centerX - centerMargin - w;
+      const y1 = sideMargin;
+      // Zone 2: bottom sideline, right of center
+      const x2 = centerX + centerMargin;
+      const y2 = COURT_SVG_HEIGHT_LANDSCAPE - sideMargin - h;
+      // Zone 3: top sideline, right of center (mirror of 1)
+      const x3 = centerX + centerMargin;
+      const y3 = sideMargin;
+      // Zone 4: bottom sideline, left of center (mirror of 2)
+      const x4 = centerX - centerMargin - w;
+      const y4 = COURT_SVG_HEIGHT_LANDSCAPE - sideMargin - h;
+
+      const zone = (uri: string | null, x: number, y: number) =>
+        uri ? (
+          <G>
+            <Rect x={x} y={y} width={w} height={h} rx={6} fill="transparent" opacity={0.85} />
+            <Image href={uri} x={x} y={y} width={w} height={h} preserveAspectRatio="xMidYMid meet" />
+          </G>
+        ) : null;
 
       return (
         <G>
-          {courtSponsorTopUri && (
-            <G>
-              <Rect x={top_x} y={top_y} width={w} height={h} rx={6} fill="white" opacity={0.85} />
-              <Image href={courtSponsorTopUri} x={top_x} y={top_y} width={w} height={h} preserveAspectRatio="xMidYMid meet" />
-            </G>
-          )}
-          {courtSponsorBottomUri && (
-            <G>
-              <Rect x={bottom_x} y={bottom_y} width={w} height={h} rx={6} fill="white" opacity={0.85} />
-              <Image href={courtSponsorBottomUri} x={bottom_x} y={bottom_y} width={w} height={h} preserveAspectRatio="xMidYMid meet" />
-            </G>
-          )}
+          {zone(courtSponsorTopUri, x1, y1)}
+          {zone(courtSponsorBottomUri, x2, y2)}
+          {zone(courtSponsorThirdUri, x3, y3)}
+          {zone(courtSponsorFourthUri, x4, y4)}
         </G>
       );
     }
