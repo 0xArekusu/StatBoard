@@ -11,12 +11,14 @@ export function useSponsor(
   courtSponsorBottomUri: string | null;
   courtSponsorThirdUri: string | null;
   courtSponsorFourthUri: string | null;
+  sideSponsorLeftUri: string | null;
+  sideSponsorRightUri: string | null;
 } {
   return useMemo(() => {
     if (!matchSponsors || matchSponsors.length === 0) {
-      return { courtSponsorTopUri: null, courtSponsorBottomUri: null, courtSponsorThirdUri: null, courtSponsorFourthUri: null };
+      return { courtSponsorTopUri: null, courtSponsorBottomUri: null, courtSponsorThirdUri: null, courtSponsorFourthUri: null, sideSponsorLeftUri: null, sideSponsorRightUri: null };
     }
-    const { top, bottom, third, fourth } = getSponsorUris(matchSponsors, backgroundColor);
-    return { courtSponsorTopUri: top, courtSponsorBottomUri: bottom, courtSponsorThirdUri: third, courtSponsorFourthUri: fourth };
+    const { top, bottom, third, fourth, sideLeft, sideRight } = getSponsorUris(matchSponsors, backgroundColor);
+    return { courtSponsorTopUri: top, courtSponsorBottomUri: bottom, courtSponsorThirdUri: third, courtSponsorFourthUri: fourth, sideSponsorLeftUri: sideLeft, sideSponsorRightUri: sideRight };
   }, [matchSponsors, backgroundColor]);
 }

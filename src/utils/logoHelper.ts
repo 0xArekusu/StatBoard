@@ -8,6 +8,8 @@ export const COACH_ASSISTANT_LOGO = require('../../components/icons/coachassista
 export const COACH_ASSISTANT_LOGO_NO_BG = require('../../components/icons/coachassistant-logo-no-bg.png');
 export const COACH_ASSISTANT_LOGO_MARGIN = require('../../components/icons/coachassistant-logo-margin.png');
 export const COACH_ASSISTANT_LOGO_WHITE_NO_BG = require('../../components/icons/coachassistant-logo-white-no-bg.png');
+export const COACH_ASSISTANT_LOGO_LINE_COLORED_BALL = require('../../components/icons/coachassistant-logo-line-colored-ball.png');
+export const COACH_ASSISTANT_LOGO_LINE_COLORED_BALL_WHITE = require('../../components/icons/coachassistant-logo-line-colored-ball-white.png');
 
 // Returns true if the given hex color is perceived as dark (luminance < 0.5).
 // Useful for picking a contrasting logo or text color.

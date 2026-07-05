@@ -2276,7 +2276,7 @@ export default function LiveMatchScreen() {
         )}
 
         {viewMode === ViewMode.COURT && (() => {
-          const { top: sponsorTop, bottom: sponsorBottom, third: sponsorThird, fourth: sponsorFourth } = getSponsorUris(matchSponsors, match.courtBackgroundColor);
+          const { top: sponsorTop, bottom: sponsorBottom, third: sponsorThird, fourth: sponsorFourth, sideLeft: sponsorSideLeft, sideRight: sponsorSideRight } = getSponsorUris(matchSponsors, match.courtBackgroundColor);
           return (
             <CourtView
               onCourtClick={handleCourtClick}
@@ -2295,6 +2295,8 @@ export default function LiveMatchScreen() {
               courtSponsorBottomUri={sponsorBottom}
               courtSponsorThirdUri={sponsorThird}
               courtSponsorFourthUri={sponsorFourth}
+              sideSponsorLeftUri={sponsorSideLeft}
+              sideSponsorRightUri={sponsorSideRight}
             />
           );
         })()}
