@@ -21,6 +21,7 @@ import {
   COURT_SVG_HEIGHT_PORTRAIT,
 } from "../../constants";
 import { useResponsive } from "../../src/hooks/useResponsive";
+import { BREAKPOINTS } from "../../constants/breakpoints";
 
 enum SponsorSide { Left = 'left', Right = 'right' }
 
@@ -66,6 +67,8 @@ export const CourtView: React.FC<CourtViewProps> = ({
   sideSponsorRightUri = null,
 }) => {
   const { colors } = useTheme();
+  const { width: screenWidth, height: screenHeight } = useResponsive();
+  const isMobile = Math.min(screenWidth, screenHeight) < BREAKPOINTS.phoneMaxWidth;
   const [courtDimensions, setCourtDimensions] = useState({
     width: 0,
     height: 0,
@@ -230,14 +233,14 @@ export const CourtView: React.FC<CourtViewProps> = ({
     return (
       <View style={[
         styles.sideBanner,
-        side === SponsorSide.Left ? { left: 50 } : { right: 50 },
+        side === SponsorSide.Left ? { left: isMobile ? 0 : 50 } : { right: isMobile ? 0 : 50 },
       ]}>
         <Image
           source={source}
           style={[
             styles.sideBannerImage,
             {
-              width: Math.min(courtDimensions.height * 0.45, 220),
+              width: courtDimensions.height * 0.4,
               height: SIDE_WIDTH - 10,
               transform: [{ rotate: rotation }],
             },

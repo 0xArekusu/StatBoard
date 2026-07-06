@@ -1,12 +1,6 @@
 import { supabase } from '../config/supabase';
 import { SUBSCRIPTION_TIER, SubscriptionTier } from '../../models/Subscription';
-import {
-  COACH_ASSISTANT_LOGO_NO_BG,
-  COACH_ASSISTANT_LOGO_WHITE_NO_BG,
-  COACH_ASSISTANT_LOGO_LINE_COLORED_BALL,
-  COACH_ASSISTANT_LOGO_LINE_COLORED_BALL_WHITE,
-  isColorDark,
-} from '../utils/logoHelper';
+import { isColorDark } from '../utils/logoHelper';
 
 export interface MatchSponsor {
   priority: 1 | 2 | 3 | 4 | 5 | 6;
@@ -31,10 +25,7 @@ export async function resolveMatchSponsors(
     if (clubSponsors.length > 0) return clubSponsors;
   }
 
-  const platformSponsors = await fetchActivePlatformSponsors();
-  if (platformSponsors.length > 0) return platformSponsors;
-
-  return buildFallbackSponsors();
+  return await fetchActivePlatformSponsors();
 }
 
 async function fetchClubSponsors(clubId: string): Promise<MatchSponsor[]> {
@@ -79,38 +70,22 @@ async function fetchActivePlatformSponsors(): Promise<MatchSponsor[]> {
   }));
 }
 
-function buildFallbackSponsors(): MatchSponsor[] {
-  const onCourt = (priority: 1 | 2 | 3 | 4): MatchSponsor => ({
-    priority,
-    logo_url: COACH_ASSISTANT_LOGO_NO_BG,
-    logo_url_dark: COACH_ASSISTANT_LOGO_WHITE_NO_BG,
-    name: 'Coach Assistant',
-    source: 'fallback',
-  });
-  const sideBanner = (priority: 5 | 6): MatchSponsor => ({
-    priority,
-    logo_url: COACH_ASSISTANT_LOGO_LINE_COLORED_BALL,
-    logo_url_dark: COACH_ASSISTANT_LOGO_LINE_COLORED_BALL_WHITE,
-    name: 'Coach Assistant',
-    source: 'fallback',
-  });
-  return [onCourt(1), onCourt(2), onCourt(3), onCourt(4), sideBanner(5), sideBanner(6)];
-}
-
 // Extract logo URIs for all 6 zones from a saved match_sponsors snapshot.
-// Pass backgroundColor to automatically pick logo_url_dark on dark courts.
-// Zones 1–4: on-court. Zones 5–6: side banners (left/right of the court).
+// Zones 1–4 (on-court): pick logo_url_dark based on court background color.
+// Zones 5–6 (side banners, outside the court): pick logo_url_dark based on app theme.
 export function getSponsorUris(
   matchSponsors: MatchSponsor[],
   backgroundColor?: string,
+  isThemeDark?: boolean,
 ): { top: string | null; bottom: string | null; third: string | null; fourth: string | null; sideLeft: string | null; sideRight: string | null } {
-  const dark = backgroundColor ? isColorDark(backgroundColor) : false;
-  const pick = (s: MatchSponsor) =>
+  const courtDark = backgroundColor ? isColorDark(backgroundColor) : false;
+  const pick = (s: MatchSponsor, dark: boolean) =>
     dark && s.logo_url_dark ? s.logo_url_dark : s.logo_url;
 
   const find = (p: 1 | 2 | 3 | 4 | 5 | 6) => {
     const s = matchSponsors.find((s) => s.priority === p);
-    return s ? pick(s) : null;
+    const dark = p <= 4 ? courtDark : (isThemeDark ?? false);
+    return s ? pick(s, dark) : null;
   };
 
   return { top: find(1), bottom: find(2), third: find(3), fourth: find(4), sideLeft: find(5), sideRight: find(6) };
