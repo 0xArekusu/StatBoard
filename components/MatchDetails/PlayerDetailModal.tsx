@@ -34,6 +34,7 @@ import {
   COACH_ASSISTANT_LOGO_NO_BG,
   COACH_ASSISTANT_LOGO_WHITE_NO_BG,
 } from "../../src/utils/logoHelper";
+import { MatchSponsor, getSponsorUris } from "../../src/services/SponsorService";
 import {
   COURT_SVG_WIDTH_PORTRAIT,
   COURT_SVG_HEIGHT_PORTRAIT,
@@ -49,6 +50,7 @@ interface PlayerDetailModalProps {
   actions?: any[];
   club?: Club | null;
   matchDate?: Date;
+  matchSponsors?: MatchSponsor[];
 }
 
 export default function PlayerDetailModal({
@@ -59,6 +61,7 @@ export default function PlayerDetailModal({
   actions = [],
   club = null,
   matchDate,
+  matchSponsors = [],
 }: PlayerDetailModalProps) {
   const { colors, isDark } = useTheme();
   const { isCompact, sp, font, sizes } = useResponsive();
@@ -117,6 +120,11 @@ export default function PlayerDetailModal({
   const courtLineColor = club?.courtLineColor || colors.court.line;
   const clubLogoUri = useSignedUrl(club?.logoUrl);
 
+  const sponsorUris = useMemo(
+    () => getSponsorUris(matchSponsors, courtBackgroundColor, isDark),
+    [matchSponsors, courtBackgroundColor, isDark],
+  );
+
   const handleExportPDF = async () => {
     if (!player || isExporting) return;
     setIsExporting(true);
@@ -130,6 +138,7 @@ export default function PlayerDetailModal({
         courtBackgroundColor: club?.courtBackgroundColor,
         courtLineColor: club?.courtLineColor,
         matchDate,
+        matchSponsors,
       });
     } catch (e) {
       console.error("[PlayerDetailModal] Export PDF error:", e);
@@ -573,7 +582,29 @@ export default function PlayerDetailModal({
                     lineColor={courtLineColor}
                     markers={courtMarkers}
                     logoUri={clubLogoUri}
+                    courtSponsorTopUri={sponsorUris.top}
+                    courtSponsorBottomUri={sponsorUris.bottom}
+                    courtSponsorThirdUri={sponsorUris.third}
+                    courtSponsorFourthUri={sponsorUris.fourth}
                   />
+                  {sponsorUris.sideLeft ? (
+                    <View style={[styles.sideBanner, { left: 0 }]}>
+                      <Image
+                        source={{ uri: sponsorUris.sideLeft }}
+                        style={[styles.sideBannerImage, { transform: [{ rotate: '-90deg' }] }]}
+                        resizeMode="contain"
+                      />
+                    </View>
+                  ) : null}
+                  {sponsorUris.sideRight ? (
+                    <View style={[styles.sideBanner, { right: 0 }]}>
+                      <Image
+                        source={{ uri: sponsorUris.sideRight }}
+                        style={[styles.sideBannerImage, { transform: [{ rotate: '90deg' }] }]}
+                        resizeMode="contain"
+                      />
+                    </View>
+                  ) : null}
                 </View>
               </View>
             )}
@@ -784,6 +815,17 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     padding: 20,
     borderRadius: 16,
-    overflow: "hidden",
+  },
+  sideBanner: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    width: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  sideBannerImage: {
+    width: 150,
+    height: 60,
   },
 });

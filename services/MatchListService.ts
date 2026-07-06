@@ -92,6 +92,9 @@ export class MatchListService {
             opponent_score: sm.opponent_score,
             my_team_handicap: sm.my_team_handicap || 0,
             opponent_handicap: sm.opponent_handicap || 0,
+            match_sponsors: sm.match_sponsors
+              ? (typeof sm.match_sponsors === "string" ? sm.match_sponsors : JSON.stringify(sm.match_sponsors))
+              : null,
             synced_to_server: 1,
             created_at: sm.created_at,
             started_at: sm.started_at,

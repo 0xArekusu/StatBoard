@@ -41,7 +41,7 @@ import { Player } from "../models/Player";
 import { useAuth } from "../src/contexts/AuthContext";
 import { useClub } from "../src/contexts/ClubContext";
 import { MatchManager } from "../src/services/match/MatchManager";
-import { resolveMatchSponsors, MatchSponsor, getSponsorUris } from "../src/services/SponsorService";
+import { resolveMatchSponsors, MatchSponsor, getSponsorUris, parseMatchSponsors } from "../src/services/SponsorService";
 import { ActionQueue } from "../src/services/match/ActionQueue";
 import { AdminService } from "../services/AdminService";
 import { MatchRepository } from "../src/services/database/MatchRepository";
@@ -118,12 +118,9 @@ export default function LiveMatchScreen() {
   const [currentMatchId, setCurrentMatchId] = useState<string | null>(null);
   const [actionCounter, setActionCounter] = useState(0);
   const [isLoadingMatch, setIsLoadingMatch] = useState(!!resumeMatchId);
-  const [matchSponsors, setMatchSponsors] = useState<MatchSponsor[]>(() => {
-    if (matchData?.match_sponsors) {
-      try { return JSON.parse(matchData.match_sponsors); } catch { return []; }
-    }
-    return [];
-  });
+  const [matchSponsors, setMatchSponsors] = useState<MatchSponsor[]>(() =>
+    parseMatchSponsors(matchData?.match_sponsors)
+  );
 
   // ========================================
   // MATCH STATE
@@ -508,9 +505,7 @@ export default function LiveMatchScreen() {
 
           // Restore sponsors from local storage snapshot
           if (existingMatch.match_sponsors) {
-            try {
-              setMatchSponsors(JSON.parse(existingMatch.match_sponsors));
-            } catch {}
+            setMatchSponsors(parseMatchSponsors(existingMatch.match_sponsors));
           }
 
           setIsLoadingMatch(false);

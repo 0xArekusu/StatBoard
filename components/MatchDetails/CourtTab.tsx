@@ -13,6 +13,7 @@ import {
   ScrollView,
   TouchableOpacity,
   useWindowDimensions,
+  Image,
 } from "react-native";
 import { useTheme } from "../../src/contexts/ThemeContext";
 import { useResponsive } from "../../src/hooks/useResponsive";
@@ -47,6 +48,14 @@ interface CourtTabProps {
   logoUri: any;
   activeTeamFilter: "MyTeam" | "Opponent";
   totalPeriods: number;
+  sponsorUris?: {
+    top: string | null;
+    bottom: string | null;
+    third: string | null;
+    fourth: string | null;
+    sideLeft: string | null;
+    sideRight: string | null;
+  };
 }
 
 export default function CourtTab({
@@ -63,6 +72,7 @@ export default function CourtTab({
   logoUri,
   activeTeamFilter,
   totalPeriods,
+  sponsorUris,
 }: CourtTabProps) {
   const { colors } = useTheme();
   const { sp, font, sizes, isCompact } = useResponsive();
@@ -825,8 +835,8 @@ export default function CourtTab({
               styles.courtContainer,
               {
                 backgroundColor: surfaceColor,
-                width: "100%", // Court width + padding
-                height: courtHeight + sp.xxl, // Court height + padding
+                width: "100%",
+                height: courtHeight + sp.xxl,
                 alignSelf: "center",
                 padding: sp.md,
                 borderRadius: sp.md,
@@ -842,6 +852,10 @@ export default function CourtTab({
               backgroundColor={courtBackgroundColor}
               lineColor={courtLineColor}
               logoUri={logoUri}
+              courtSponsorTopUri={sponsorUris?.top}
+              courtSponsorBottomUri={sponsorUris?.bottom}
+              courtSponsorThirdUri={sponsorUris?.third}
+              courtSponsorFourthUri={sponsorUris?.fourth}
               markers={
                 actions
                   ?.filter((action: any) => {
@@ -965,6 +979,32 @@ export default function CourtTab({
                   }) || []
               }
             />
+            {sponsorUris?.sideLeft ? (
+              <View style={[styles.sideBanner, { left: 0 }]}>
+                <Image
+                  source={{ uri: sponsorUris.sideLeft }}
+                  style={[styles.sideBannerImage, {
+                    width: Math.min(courtHeight * 0.45, 220),
+                    height: 60,
+                    transform: [{ rotate: isPortrait ? '-90deg' : '-90deg' }],
+                  }]}
+                  resizeMode="contain"
+                />
+              </View>
+            ) : null}
+            {sponsorUris?.sideRight ? (
+              <View style={[styles.sideBanner, { right: 0 }]}>
+                <Image
+                  source={{ uri: sponsorUris.sideRight }}
+                  style={[styles.sideBannerImage, {
+                    width: Math.min(courtHeight * 0.45, 220),
+                    height: 60,
+                    transform: [{ rotate: isPortrait ? '90deg' : '90deg' }],
+                  }]}
+                  resizeMode="contain"
+                />
+              </View>
+            ) : null}
           </View>
         </>
       )}
@@ -983,6 +1023,16 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 16,
   },
+  sideBanner: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    width: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+    overflow: 'hidden',
+  },
+  sideBannerImage: {},
   shotStatsSummary: {
     marginTop: 0,
     padding: 0,

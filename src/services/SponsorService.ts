@@ -70,6 +70,21 @@ async function fetchActivePlatformSponsors(): Promise<MatchSponsor[]> {
   }));
 }
 
+// Parses a match_sponsors snapshot coming from SQLite or Supabase.
+// Handles legacy rows that were double JSON-encoded on sync (stored as a
+// JSONB string scalar instead of a JSONB array), which requires parsing twice.
+export function parseMatchSponsors(raw: unknown): MatchSponsor[] {
+  let value: unknown = raw;
+  for (let i = 0; i < 2 && typeof value === 'string'; i++) {
+    try {
+      value = JSON.parse(value);
+    } catch {
+      return [];
+    }
+  }
+  return Array.isArray(value) ? (value as MatchSponsor[]) : [];
+}
+
 // Extract logo URIs for all 6 zones from a saved match_sponsors snapshot.
 // Zones 1–4 (on-court): pick logo_url_dark based on court background color.
 // Zones 5–6 (side banners, outside the court): pick logo_url_dark based on app theme.
