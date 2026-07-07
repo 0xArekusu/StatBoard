@@ -2889,10 +2889,10 @@ export class PDFExportService {
     }` : ""}
     .page-header {
       display: flex; align-items: center; justify-content: space-between;
-      padding-bottom: 14px;
+      padding-bottom: 10px;
       border-bottom: 2px solid ${PDF_COLORS.table.border};
-      margin-bottom: 20px;
-      min-height: 80px;
+      margin-bottom: 14px;
+      min-height: 72px;
     }
     .page-header-logo-left { height: 64px; width: auto; }
     .page-header-logo-right { height: 72px; width: auto; }
@@ -2901,7 +2901,7 @@ export class PDFExportService {
     .page-header-date { font-size: 11px; color: ${PDF_COLORS.card.textSecondary}; margin-top: 4px; }
     .player-header {
       display: flex; align-items: center; justify-content: space-between;
-      margin-bottom: 18px; padding-bottom: 14px;
+      margin-bottom: 12px; padding-bottom: 10px;
       border-bottom: 1px solid ${PDF_COLORS.card.border};
     }
     .player-info-left { display: flex; align-items: center; gap: 14px; }
@@ -2930,7 +2930,7 @@ export class PDFExportService {
     .player-points-label { font-size: 10px; font-weight: 700; color: ${PDF_COLORS.card.accent}; text-transform: uppercase; }
     .main-stats-grid {
       display: grid; grid-template-columns: repeat(4, 1fr);
-      gap: 10px; margin-bottom: 20px;
+      gap: 10px; margin-bottom: 14px;
     }
     .main-stat-card {
       text-align: center; padding: 14px 10px;
@@ -2946,7 +2946,7 @@ export class PDFExportService {
     .main-stat-value.highlight { color: ${PDF_COLORS.card.accent}; }
     .main-stat-label { font-size: 9px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: ${PDF_COLORS.card.textSecondary}; margin-top: 5px; }
     .section-title { font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: ${PDF_COLORS.card.text}; margin-bottom: 10px; }
-    .shooting-section { margin-bottom: 20px; }
+    .shooting-section { margin-bottom: 14px; }
     .shooting-card { border: 1px solid ${PDF_COLORS.card.border}; border-radius: 12px; padding: 16px; }
     .shooting-bars { display: flex; flex-direction: column; gap: 12px; margin-bottom: 12px; }
     .shooting-bar { display: flex; align-items: center; gap: 12px; }
@@ -2959,7 +2959,7 @@ export class PDFExportService {
     .shooting-summary-item { flex: 1; text-align: center; }
     .shooting-summary-value { font-size: 20px; font-weight: 900; color: ${PDF_COLORS.card.text}; }
     .shooting-summary-label { font-size: 8px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; color: ${PDF_COLORS.card.textSecondary}; margin-top: 2px; }
-    .details-section { margin-bottom: 20px; }
+    .details-section { margin-bottom: 14px; }
     .stats-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
     .stat-box {
       display: flex; flex-direction: column; align-items: center; gap: 4px;
@@ -2969,9 +2969,40 @@ export class PDFExportService {
     .stat-box-label { font-size: 10px; font-weight: 600; color: ${PDF_COLORS.card.textSecondary}; text-transform: uppercase; line-height: 1; }
     .stat-box-value { font-size: 20px; font-weight: 700; color: ${PDF_COLORS.card.text}; line-height: 1; }
     .stat-box-value-row { display: flex; align-items: center; justify-content: center; gap: 4px; }
-    .court-section { margin-top: 20px; }
+    .court-section { margin-top: 12px; }
     .court-wrapper { text-align: center; }
-    .footer { margin-top: 24px; text-align: center; font-size: 9px; color: ${PDF_COLORS.table.textTertiary}; border-top: 1px solid ${PDF_COLORS.table.border}; padding-top: 10px; }
+    .footer {
+      margin-top: 14px;
+      text-align: center;
+      font-size: 9px;
+      color: ${PDF_COLORS.table.textTertiary};
+      border-top: 1px solid ${PDF_COLORS.table.border};
+      padding-top: 8px;
+      /* Keep the sponsor bar and the "Généré par" line together on one page —
+         without this, a near-full page can push just the last text line over. */
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+    .sponsor-footer-bar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 6px;
+    }
+    .sponsor-footer-label {
+      font-size: 8px;
+      font-style: italic;
+      color: ${PDF_COLORS.table.textSecondary};
+      white-space: nowrap;
+    }
+    .sponsor-footer-logo {
+      /* Fixed box so a logo image never renders at its native pixel size. */
+      width: 50px;
+      height: 32px;
+      object-fit: contain;
+    }
   </style>
 </head>
 <body>

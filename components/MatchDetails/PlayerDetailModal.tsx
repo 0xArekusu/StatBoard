@@ -33,11 +33,14 @@ import {
 import {
   COACH_ASSISTANT_LOGO_NO_BG,
   COACH_ASSISTANT_LOGO_WHITE_NO_BG,
+  isColorDark,
 } from "../../src/utils/logoHelper";
 import { MatchSponsor, getSponsorUris } from "../../src/services/SponsorService";
 import {
   COURT_SVG_WIDTH_PORTRAIT,
   COURT_SVG_HEIGHT_PORTRAIT,
+  COURT_SVG_WIDTH_LANDSCAPE,
+  COURT_SVG_HEIGHT_LANDSCAPE,
 } from "../../constants";
 import PlayerAvatar from "../PlayerAvatar";
 import { PDFExportService } from "../../src/services/export/PDFExportService";
@@ -120,9 +123,12 @@ export default function PlayerDetailModal({
   const courtLineColor = club?.courtLineColor || colors.court.line;
   const clubLogoUri = useSignedUrl(club?.logoUrl);
 
+  // Sponsors 5/6 (side banners) sit right next to the court in this modal,
+  // so their dark/light variant must follow the court background, not the app theme.
+  const isCourtDark = isColorDark(courtBackgroundColor);
   const sponsorUris = useMemo(
-    () => getSponsorUris(matchSponsors, courtBackgroundColor, isDark),
-    [matchSponsors, courtBackgroundColor, isDark],
+    () => getSponsorUris(matchSponsors, courtBackgroundColor, isCourtDark),
+    [matchSponsors, courtBackgroundColor, isCourtDark],
   );
 
   const handleExportPDF = async () => {
@@ -811,10 +817,12 @@ const styles = StyleSheet.create({
     lineHeight: 13,
   },
   courtContainer: {
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 20,
+    flex: 1,
+    alignSelf: "center",
+    aspectRatio: COURT_SVG_WIDTH_LANDSCAPE / COURT_SVG_HEIGHT_LANDSCAPE,
     borderRadius: 16,
+    overflow: "hidden",
+    padding: 20,
   },
   sideBanner: {
     position: 'absolute',
