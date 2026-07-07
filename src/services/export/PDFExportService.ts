@@ -1737,11 +1737,15 @@ export class PDFExportService {
     const imgStyle = (rotate: string) =>
       `width:${bannerW}px;height:${bannerH}px;object-fit:contain;transform:${rotate};`;
 
+    // Negative offset so the banner sits just outside the court's own box,
+    // right next to the court line, instead of overlapping the SVG itself.
     const sideStyle = (side: 'left' | 'right') =>
-      `position:absolute;top:0;bottom:0;${side}:0;width:${stripW}px;display:flex;align-items:center;justify-content:center;`;
+      `position:absolute;top:0;bottom:0;${side}:-${stripW}px;width:${stripW}px;display:flex;align-items:center;justify-content:center;`;
 
+    // The rounded-corner clipping lives on this inner div (SVG only) so it doesn't
+    // also clip the side banners, which must stick out beyond the court's box.
     return `<div style="position:relative;display:inline-block;">
-  ${svgString}
+  <div style="border-radius:12px;overflow:hidden;">${svgString}</div>
   ${left  ? `<div style="${sideStyle('left')}"><img src="${pick(left)}"  style="${imgStyle('rotate(-90deg)')}" /></div>` : ''}
   ${right ? `<div style="${sideStyle('right')}"><img src="${pick(right)}" style="${imgStyle('rotate(90deg)')}"  /></div>` : ''}
 </div>`;
@@ -2044,11 +2048,12 @@ export class PDFExportService {
     }
     .sponsor-header-bar {
       display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 20px;
+      gap: 10px;
       margin: 12px 0 20px 0;
-      padding: 10px 20px;
+      padding: 12px 16px;
       border: 1px solid ${PDF_COLORS.table.border};
       border-radius: 8px;
       background: ${PDF_COLORS.table.headerBg};
@@ -2061,9 +2066,22 @@ export class PDFExportService {
       text-transform: uppercase;
       letter-spacing: 0.5px;
     }
+    .sponsor-header-logos {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
     .sponsor-header-logo {
-      height: 36px;
-      width: auto;
+      /* Fixed box (not height+auto width) so a mix of narrow and wide logos
+         has a predictable total width — 6 logos always fit on one line.
+         Height has plenty of headroom (doesn't affect row width), so it's
+         set generously — square-ish logos will fill it, wide wordmark-style
+         logos (made for rotated side banners) stay thinner by their own
+         aspect ratio, not because of this box. */
+      width: 80px;
+      height: 56px;
       object-fit: contain;
     }
     .sponsor-footer-bar {
@@ -2385,9 +2403,11 @@ export class PDFExportService {
   ${matchSponsors && matchSponsors.length > 0 ? `
   <div class="sponsor-header-bar">
     <span class="sponsor-header-label">Match présenté par</span>
-    ${matchSponsors.sort((a, b) => a.priority - b.priority).map(s =>
-      `<img src="${s.logo_url}" class="sponsor-header-logo" alt="${s.name}" title="${s.name}" />`
-    ).join('')}
+    <div class="sponsor-header-logos">
+      ${matchSponsors.sort((a, b) => a.priority - b.priority).map(s =>
+        `<img src="${s.logo_url}" class="sponsor-header-logo" alt="${s.name}" title="${s.name}" />`
+      ).join('')}
+    </div>
   </div>` : ''}
 
   <div class="score-summary">
@@ -2950,7 +2970,7 @@ export class PDFExportService {
     .stat-box-value { font-size: 20px; font-weight: 700; color: ${PDF_COLORS.card.text}; line-height: 1; }
     .stat-box-value-row { display: flex; align-items: center; justify-content: center; gap: 4px; }
     .court-section { margin-top: 20px; }
-    .court-wrapper { text-align: center; border-radius: 12px; overflow: hidden; }
+    .court-wrapper { text-align: center; }
     .footer { margin-top: 24px; text-align: center; font-size: 9px; color: ${PDF_COLORS.table.textTertiary}; border-top: 1px solid ${PDF_COLORS.table.border}; padding-top: 10px; }
   </style>
 </head>
