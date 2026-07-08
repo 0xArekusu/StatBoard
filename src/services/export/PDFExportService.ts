@@ -40,6 +40,7 @@ interface PDFSponsor {
   logo_url_dark?: string | null;
   name: string;
   source: 'club' | 'platform' | 'fallback';
+  is_paid?: boolean; // false = default/fallback branding, excluded from "official partners" sections
 }
 
 interface PDFExportOptions {
@@ -1831,6 +1832,9 @@ export class PDFExportService {
       matchSponsors = [],
     } = data;
 
+    // Only paid sponsors appear in the "Match présenté par" / "Partenaires officiels" bars
+    const officialSponsors = matchSponsors.filter((s) => s.is_paid !== false);
+
     // Generate the score chart SVG with action-by-action evolution
     const chartSVG = this.generateScoreChart(
       evolutionMyTeam,
@@ -2400,11 +2404,11 @@ export class PDFExportService {
     <div class="date">${dateStr}</div>
   </div>
 
-  ${matchSponsors && matchSponsors.length > 0 ? `
+  ${officialSponsors.length > 0 ? `
   <div class="sponsor-header-bar">
     <span class="sponsor-header-label">Match présenté par</span>
     <div class="sponsor-header-logos">
-      ${matchSponsors.sort((a, b) => a.priority - b.priority).map(s =>
+      ${officialSponsors.sort((a, b) => a.priority - b.priority).map(s =>
         `<img src="${s.logo_url}" class="sponsor-header-logo" alt="${s.name}" title="${s.name}" />`
       ).join('')}
     </div>
@@ -2787,6 +2791,9 @@ export class PDFExportService {
       fileName,
       matchSponsors,
     } = options;
+
+    // Only paid sponsors appear in the "Partenaires officiels" bar
+    const officialSponsors = (matchSponsors ?? []).filter((s) => s.is_paid !== false);
 
     let playerPhotoBase64: string | null = null;
     if (player.photoUrl && player.photoUrl.startsWith("http")) {
@@ -3182,10 +3189,10 @@ export class PDFExportService {
 </div>
 
   <div class="footer">
-    ${matchSponsors && matchSponsors.length > 0 ? `
+    ${officialSponsors.length > 0 ? `
     <div class="sponsor-footer-bar">
       <span class="sponsor-footer-label">Partenaires officiels</span>
-      ${matchSponsors.sort((a, b) => a.priority - b.priority).map(s =>
+      ${officialSponsors.sort((a, b) => a.priority - b.priority).map(s =>
         `<img src="${s.logo_url}" class="sponsor-footer-logo" alt="${s.name}" title="${s.name}" />`
       ).join('')}
     </div>` : ''}

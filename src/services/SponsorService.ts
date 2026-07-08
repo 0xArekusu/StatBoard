@@ -1,5 +1,5 @@
 import { supabase } from '../config/supabase';
-import { SUBSCRIPTION_TIER, SubscriptionTier } from '../../models/Subscription';
+import { SUBSCRIPTION_LIMITS, SubscriptionTier } from '../../models/Subscription';
 import { isColorDark } from '../utils/logoHelper';
 
 export interface MatchSponsor {
@@ -8,24 +8,34 @@ export interface MatchSponsor {
   logo_url_dark?: string | null; // light-colored variant for dark court backgrounds
   name: string;
   source: 'club' | 'platform' | 'fallback';
+  is_paid?: boolean; // false = default/fallback branding (e.g. Coach Assistant), excluded from PDF "official partners" sections
 }
 
 
-// Resolves up to 2 sponsors for a match at creation time.
-// Priority logic:
-//   1. Club on 'sponsor' tier with active club_sponsors → use those
-//   2. Active platform_sponsors → use those
-//   3. Fallback → Coach Assistant logo
+// Resolves sponsors for a match at creation time, merged per priority slot (1–6).
+// Priority logic per slot:
+//   1. Club whose tier has canConfigureSponsors, with an active club_sponsors row at that priority → use it
+//   2. Otherwise, active platform_sponsors row at that priority → use it
+//   3. Otherwise, the slot stays empty
 export async function resolveMatchSponsors(
   clubId: string | null,
   subscriptionTier: SubscriptionTier | null,
 ): Promise<MatchSponsor[]> {
-  if (clubId && subscriptionTier === SUBSCRIPTION_TIER.SPONSOR) {
-    const clubSponsors = await fetchClubSponsors(clubId);
-    if (clubSponsors.length > 0) return clubSponsors;
-  }
+  const canConfigure =
+    !!clubId && !!subscriptionTier && !!SUBSCRIPTION_LIMITS[subscriptionTier]?.canConfigureSponsors;
 
-  return await fetchActivePlatformSponsors();
+  const [clubSponsors, platformSponsors] = await Promise.all([
+    canConfigure ? fetchClubSponsors(clubId!) : Promise.resolve([]),
+    fetchActivePlatformSponsors(),
+  ]);
+
+  if (clubSponsors.length === 0) return platformSponsors;
+
+  const byPriority = new Map<number, MatchSponsor>();
+  for (const sponsor of platformSponsors) byPriority.set(sponsor.priority, sponsor);
+  for (const sponsor of clubSponsors) byPriority.set(sponsor.priority, sponsor); // club wins ties
+
+  return Array.from(byPriority.values()).sort((a, b) => a.priority - b.priority);
 }
 
 async function fetchClubSponsors(clubId: string): Promise<MatchSponsor[]> {
@@ -45,6 +55,7 @@ async function fetchClubSponsors(clubId: string): Promise<MatchSponsor[]> {
     logo_url_dark: row.logo_url_dark ?? null,
     name: row.name,
     source: 'club' as const,
+    is_paid: true, // A club's own sponsor is always a real (paid) partner
   }));
 }
 
@@ -52,7 +63,7 @@ async function fetchActivePlatformSponsors(): Promise<MatchSponsor[]> {
   const now = new Date().toISOString();
   const { data, error } = await supabase
     .from('platform_sponsors')
-    .select('priority, logo_url, logo_url_dark, name')
+    .select('priority, logo_url, logo_url_dark, name, is_paid')
     .eq('is_active', true)
     .or(`start_date.is.null,start_date.lte.${now}`)
     .or(`end_date.is.null,end_date.gte.${now}`)
@@ -67,6 +78,7 @@ async function fetchActivePlatformSponsors(): Promise<MatchSponsor[]> {
     logo_url_dark: row.logo_url_dark ?? null,
     name: row.name,
     source: 'platform' as const,
+    is_paid: row.is_paid ?? true,
   }));
 }
 
