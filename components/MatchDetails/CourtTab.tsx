@@ -110,23 +110,35 @@ export default function CourtTab({
   // Determine orientation based on screen dimensions
   const isPortrait = windowDimensions.height > windowDimensions.width;
 
-  // Use fixed dimensions from constants
-  const courtWidth = isPortrait
+  // Banners are positioned outside the court's own box (negative offset) so they
+  // sit right next to the court line without adding width to the layout.
+  const SIDE_BANNER_WIDTH = 30;
+
+  // Max dimensions from constants (tuned for tablets/large screens). On narrow
+  // phones the court must shrink below this max, otherwise courtWidth +
+  // 2*SIDE_BANNER_WIDTH exceeds the screen width and the banners get pushed
+  // off-screen — there's no horizontal scroll to reveal them.
+  const maxCourtWidth = isPortrait
     ? COURT_DISPLAY_WIDTH_PORTRAIT_MAX
     : COURT_DISPLAY_WIDTH_LANDSCAPE_MAX;
-  const courtHeight = isPortrait
+  const maxCourtHeight = isPortrait
     ? COURT_DISPLAY_HEIGHT_PORTRAIT_MAX
     : COURT_DISPLAY_HEIGHT_LANDSCAPE_MAX;
+  const courtAspectRatio = maxCourtHeight / maxCourtWidth;
+
+  // Horizontal chrome outside the court box: the screen's ScrollView padding
+  // (sp.md each side) + courtContainer's own padding (sp.md each side) + both
+  // side banners.
+  const availableCourtWidth =
+    windowDimensions.width - sp.md * 4 - SIDE_BANNER_WIDTH * 2;
+  const courtWidth = Math.min(maxCourtWidth, Math.max(200, availableCourtWidth));
+  const courtHeight = courtWidth * courtAspectRatio;
 
   // Side sponsor banners are rotated 90deg — their image lays out as
   // (sideBannerImageLength x 60) but visually occupies (60 x sideBannerImageLength)
   // once rotated. The wrapper must be sized to that rotated footprint, not the
   // pre-rotation layout box, otherwise overflow:hidden clips almost all of it away.
   const sideBannerImageLength = Math.min(courtHeight * 0.45, 220);
-  // Banners are positioned outside the court's own box (negative offset) so they
-  // sit right next to the court line without adding width to the layout — that
-  // would overflow the screen since the court is already sized to fill it.
-  const SIDE_BANNER_WIDTH = 30;
 
   // Determine which specifications to show based on selected action type
   // Only show specifications if exactly one action type is selected
