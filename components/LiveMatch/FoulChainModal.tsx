@@ -13,8 +13,33 @@ import { useResponsive } from "../../src/hooks/useResponsive";
 import { ACTION_COLORS, STATUS_COLORS } from "../../src/theme/colors";
 import { FoulChainContext, TeamId } from "../../constants/liveMatchConstants";
 import { Player } from "../../models/Player";
+import { FoulSpecification, FOUL_SPECIFICATION_FR } from "../../src/models/ActionTypes";
+
+const FOUL_TYPE_COLORS: Record<FoulSpecification, string> = {
+  [FoulSpecification.PERSONAL]: ACTION_COLORS.foul.personal,
+  [FoulSpecification.PENALITY]: ACTION_COLORS.foul.penality,
+  [FoulSpecification.TECHNICAL]: ACTION_COLORS.foul.technical,
+  [FoulSpecification.DISQUALIFICATION]: ACTION_COLORS.foul.disqualification,
+};
+
+const FOUL_TYPE_ORDER: FoulSpecification[] = [
+  FoulSpecification.PERSONAL,
+  FoulSpecification.PENALITY,
+  FoulSpecification.TECHNICAL,
+  FoulSpecification.DISQUALIFICATION,
+];
+
+// Antisportive & Disqualifiante share the same FIBA free-throw rule:
+// 2 LF hors-tir, 2 ou 3 LF si tir raté, 1 LF si and-one (panier marqué).
+// Seule la disqualifiante entraîne en plus l'exclusion du joueur.
+const FOUL_TYPES_WITH_FORCED_LF = [
+  FoulSpecification.PENALITY,
+  FoulSpecification.TECHNICAL,
+  FoulSpecification.DISQUALIFICATION,
+];
 
 export interface FoulChainResult {
+  foulType: FoulSpecification;
   foulPlayer?: Player;
   basketPoints?: 2 | 3;
   assistPlayer?: Player;
@@ -44,6 +69,7 @@ export const FoulChainModal: React.FC<FoulChainModalProps> = ({
 }) => {
   const { colors } = useTheme();
   const { sp, font, sizes } = useResponsive();
+  const [foulType, setFoulType] = useState<FoulSpecification | null>(null);
   const [selectedFoulPlayer, setSelectedFoulPlayer] = useState<Player | null>(null);
   const [basketMarked, setBasketMarked] = useState(false);
   const [basketPoints, setBasketPoints] = useState<2 | 3 | null>(null);
@@ -55,6 +81,7 @@ export const FoulChainModal: React.FC<FoulChainModalProps> = ({
 
   useEffect(() => {
     if (visible) {
+      setFoulType(null);
       setSelectedFoulPlayer(null);
       setBasketMarked(false);
       setBasketPoints(null);
@@ -65,6 +92,35 @@ export const FoulChainModal: React.FC<FoulChainModalProps> = ({
       setLfResults([null, null]);
     }
   }, [visible]);
+
+  const handleFoulTypeSelect = (type: FoulSpecification) => {
+    setFoulType(type);
+    // Reset downstream sections — the shooting/LF context depends on the type
+    setBasketMarked(false);
+    setBasketPoints(null);
+    setAssistEnabled(false);
+    setSelectedAssistPlayer(null);
+    if (type === FoulSpecification.TECHNICAL) {
+      // Technique : 1 LF fixe, pas de tir associé
+      setLfsEnabled(true);
+      setLfCount(1);
+      setLfResults([null]);
+    } else if (
+      type === FoulSpecification.PENALITY ||
+      type === FoulSpecification.DISQUALIFICATION
+    ) {
+      // Antisportive / Disqualifiante : 2 LF de base (règle FIBA Art. 37 / 38.3.3),
+      // réduit à 1 automatiquement si and-one via handleBasketMarkedChange
+      setLfsEnabled(true);
+      setLfCount(2);
+      setLfResults([null, null]);
+    } else {
+      // Personnelle : entièrement manuel, comme avant
+      setLfsEnabled(false);
+      setLfCount(2);
+      setLfResults([null, null]);
+    }
+  };
 
   const handleBasketMarkedChange = (val: boolean) => {
     setBasketMarked(val);
@@ -97,16 +153,20 @@ export const FoulChainModal: React.FC<FoulChainModalProps> = ({
   };
 
   const isFoulCommitted = context?.mode === "foul_committed";
+  const isTechnical = foulType === FoulSpecification.TECHNICAL;
+  const forcesLF = foulType !== null && FOUL_TYPES_WITH_FORCED_LF.includes(foulType);
 
   const isValid =
+    foulType !== null &&
     (!trackOpponentStats || selectedFoulPlayer !== null) &&
     (!basketMarked || basketPoints !== null) &&
     (!assistEnabled || selectedAssistPlayer !== null) &&
     (!lfsEnabled || lfResults.every((r) => r !== null));
 
   const handleConfirm = () => {
-    if (!isValid || !context) return;
+    if (!isValid || !context || !foulType) return;
     onComplete({
+      foulType,
       foulPlayer: selectedFoulPlayer ?? undefined,
       basketPoints: basketMarked && basketPoints ? basketPoints : undefined,
       assistPlayer: assistEnabled && selectedAssistPlayer ? selectedAssistPlayer : undefined,
@@ -149,6 +209,45 @@ export const FoulChainModal: React.FC<FoulChainModalProps> = ({
                 ? `Faute commise — #${context.foulDrawnPlayerNumber}`
                 : `Faute provoquée — #${context.foulDrawnPlayerNumber}`}
             </Text>
+
+            {/* Type de faute — sélectionné en premier, pilote le reste du formulaire */}
+            <View style={{ gap: sp.sm }}>
+              <Text style={[styles.sectionLabel, { color: colors.text.primary, fontSize: font.md }]}>
+                Type de faute ?
+              </Text>
+              <View style={[styles.playerRow, { gap: sp.xs }]}>
+                {FOUL_TYPE_ORDER.map((type) => {
+                  const isSelected = foulType === type;
+                  const typeColor = FOUL_TYPE_COLORS[type];
+                  return (
+                    <TouchableOpacity
+                      key={type}
+                      style={[
+                        styles.foulTypeBtn,
+                        {
+                          backgroundColor: isSelected ? typeColor : typeColor + "15",
+                          borderColor: typeColor,
+                          padding: sp.xs,
+                          borderRadius: sp.xs,
+                        },
+                      ]}
+                      onPress={() => handleFoulTypeSelect(type)}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={{ color: isSelected ? "#fff" : typeColor, fontSize: font.xs, fontWeight: "700", textAlign: "center" }}>
+                        {FOUL_SPECIFICATION_FR[type]}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+
+            {foulType && (
+            <>
+
+            {/* Separator */}
+            <View style={{ height: 1, backgroundColor: colors.border }} />
 
             {/* Foul player selection */}
             {trackOpponentStats && (
@@ -196,7 +295,8 @@ export const FoulChainModal: React.FC<FoulChainModalProps> = ({
             {/* Separator */}
             <View style={{ height: 1, backgroundColor: colors.border }} />
 
-            {/* Panier marqué */}
+            {/* Panier marqué — sans objet pour une faute technique (pas de tir associé) */}
+            {!isTechnical && (
             <View style={{ gap: sp.sm }}>
               <View style={styles.toggleRow}>
                 <Text style={[styles.sectionLabel, { color: colors.text.primary, fontSize: font.md }]}>
@@ -337,6 +437,7 @@ export const FoulChainModal: React.FC<FoulChainModalProps> = ({
                 </View>
               )}
             </View>
+            )}
 
             {/* Separator */}
             <View style={{ height: 1, backgroundColor: colors.border }} />
@@ -351,7 +452,7 @@ export const FoulChainModal: React.FC<FoulChainModalProps> = ({
                   {(["Non", "Oui"] as const).map((label) => {
                     const isOn = label === "Oui";
                     const isActive = lfsEnabled === isOn;
-                    const isDisabled = basketMarked && !isOn;
+                    const isDisabled = (basketMarked || forcesLF) && !isOn;
                     return (
                       <TouchableOpacity
                         key={label}
@@ -385,8 +486,8 @@ export const FoulChainModal: React.FC<FoulChainModalProps> = ({
 
               {lfsEnabled && (
                 <View style={{ gap: sp.md }}>
-                  {/* LF count — hidden when basket marked (forced to 1) */}
-                  {!basketMarked && (
+                  {/* LF count — hidden when basket marked (forced to 1) or foul type fixes it (Technique) */}
+                  {!basketMarked && !isTechnical && (
                     <View style={[styles.toggleBtns, { gap: sp.sm }]}>
                       {([2, 3] as const).map((count) => {
                         const isActive = lfCount === count;
@@ -452,6 +553,9 @@ export const FoulChainModal: React.FC<FoulChainModalProps> = ({
               )}
             </View>
 
+            </>
+            )}
+
             {/* Valider */}
             <TouchableOpacity
               style={[
@@ -511,6 +615,12 @@ const styles = StyleSheet.create({
   },
   playerRow: {
     flexDirection: "row",
+  },
+  foulTypeBtn: {
+    flex: 1,
+    borderWidth: 1.5,
+    alignItems: "center",
+    minWidth: 0,
   },
   playerCard: {
     flex: 1,

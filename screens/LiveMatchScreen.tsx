@@ -36,7 +36,7 @@ import {
   CreateActionData,
   Team,
 } from "../src/models/types";
-import { ActionType, ShotSpecification, ReboundSpecification, SubstitutionSpecification } from "../src/models/ActionTypes";
+import { ActionType, ShotSpecification, ReboundSpecification, SubstitutionSpecification, FOUL_SPECIFICATION_FR } from "../src/models/ActionTypes";
 import { Player } from "../models/Player";
 import { useAuth } from "../src/contexts/AuthContext";
 import { useClub } from "../src/contexts/ClubContext";
@@ -1354,6 +1354,24 @@ export default function LiveMatchScreen() {
       ? TeamId.AWAY
       : TeamId.HOME;
 
+    // FOUL triggers foul chain modal — ask for the foul type + who drew it (either team).
+    // Bail out BEFORE saving anything: the FOUL event is created inside
+    // handleFoulChainComplete once the foul type (and free throws) is known,
+    // so it can be saved with the correct specification from the start.
+    if (action_type === ActionType.FOUL && match.trackOpponentStats && !fromChainActionType) {
+      setFoulChainContext({
+        foulDrawnPlayerId: playerId,
+        foulDrawnPlayerNumber: player?.jerseyNumber || 0,
+        foulDrawnPlayerName: player?.name || "",
+        foulDrawnTeamId: teamId,
+        coords,
+        mode: "foul_committed",
+      });
+      setWorkflowStep(WorkflowStep.FOUL_CHAIN);
+      setPendingEvent({});
+      return;
+    }
+
     const pName = player?.name || "Joueur";
 
     // Create temporary action object for description
@@ -1434,21 +1452,6 @@ export default function LiveMatchScreen() {
         foulDrawnPlayerName: player?.name || "",
         foulDrawnTeamId: teamId,
         coords,
-      });
-      setWorkflowStep(WorkflowStep.FOUL_CHAIN);
-      setPendingEvent({});
-      return;
-    }
-
-    // FOUL triggers foul chain modal — ask who drew the foul (either team)
-    if (action_type === ActionType.FOUL && match.trackOpponentStats) {
-      setFoulChainContext({
-        foulDrawnPlayerId: playerId,
-        foulDrawnPlayerNumber: player?.jerseyNumber || 0,
-        foulDrawnPlayerName: player?.name || "",
-        foulDrawnTeamId: teamId,
-        coords,
-        mode: "foul_committed",
       });
       setWorkflowStep(WorkflowStep.FOUL_CHAIN);
       setPendingEvent({});
@@ -1538,7 +1541,38 @@ export default function LiveMatchScreen() {
     closeWorkflow();
   };
 
-  const handleFoulChainIgnore = () => {
+  const handleFoulChainIgnore = async () => {
+    // "foul_committed" mode defers saving the FOUL until the modal completes
+    // (to capture the type) — if ignored instead, still record a bare FOUL
+    // so the action isn't silently lost, matching the pre-existing behavior.
+    if (foulChainContext?.mode === "foul_committed") {
+      const { foulDrawnPlayerId, foulDrawnPlayerNumber, foulDrawnPlayerName, foulDrawnTeamId, coords } = foulChainContext;
+      const isMyTeamPlayer = homeRoster.some((p: Player) => p.id === foulDrawnPlayerId);
+      const foulDrawnTeam = isMyTeamPlayer ? Team.MY_TEAM : Team.OPPONENT;
+      const normalizedCoords = coords
+        ? { x: coords.x / COURT_SVG_WIDTH_PORTRAIT, y: coords.y / COURT_SVG_HEIGHT_PORTRAIT }
+        : undefined;
+      const actionId = await saveActionToDatabase(
+        ActionType.FOUL, undefined, 0,
+        foulDrawnPlayerNumber, foulDrawnTeam, coords,
+      );
+      const updatedMatch = { ...match, events: [...(match.events || [])] };
+      updatedMatch.events = [{
+        id: actionId || `temp-${Date.now()}`,
+        action_type: ActionType.FOUL,
+        specification: undefined,
+        points: 0,
+        playerId: foulDrawnPlayerId,
+        playerNumber: foulDrawnPlayerNumber,
+        teamId: foulDrawnTeamId,
+        timestamp: Date.now(),
+        description: `#${foulDrawnPlayerNumber} ${foulDrawnPlayerName} — Faute`,
+        coordinates: normalizedCoords,
+        period_number: quarter,
+        time_in_period: periodDurationMin * 60 - timer,
+      }, ...updatedMatch.events];
+      setMatch(updatedMatch);
+    }
     setFoulChainContext(null);
     closeWorkflow();
   };
@@ -1686,6 +1720,26 @@ export default function LiveMatchScreen() {
       const drawnTeam = isMyTeamPlayer ? Team.OPPONENT : Team.MY_TEAM;
       const drawnTeamId = opponentTeamId;
 
+      // 0. Save FOUL for the committing player, with the type picked in the modal
+      const foulCommittedId = await saveActionToDatabase(
+        ActionType.FOUL, result.foulType, 0,
+        foulDrawnPlayerNumber, foulDrawnTeam, coords,
+      );
+      updatedMatch.events = [{
+        id: foulCommittedId || `temp-${Date.now()}`,
+        action_type: ActionType.FOUL,
+        specification: result.foulType,
+        points: 0,
+        playerId: foulDrawnPlayerId,
+        playerNumber: foulDrawnPlayerNumber,
+        teamId: foulDrawnTeamId,
+        timestamp: Date.now(),
+        description: `#${foulDrawnPlayerNumber} ${foulDrawnPlayerName} — Faute (${FOUL_SPECIFICATION_FR[result.foulType]})`,
+        coordinates: normalizedCoords,
+        period_number: quarter,
+        time_in_period: periodDurationMin * 60 - timer,
+      }, ...updatedMatch.events];
+
       // 1. Save FOUL_DRAWN for the player who drew the foul
       const foulDrawnId = await saveActionToDatabase(
         ActionType.FOUL_DRAWN, undefined, 0,
@@ -1821,19 +1875,19 @@ export default function LiveMatchScreen() {
     if (result.foulPlayer) {
       const opponentTeam = isMyTeamPlayer ? Team.OPPONENT : Team.MY_TEAM;
       const actionId = await saveActionToDatabase(
-        ActionType.FOUL, undefined, 0,
+        ActionType.FOUL, result.foulType, 0,
         result.foulPlayer.jerseyNumber, opponentTeam, coords,
       );
       updatedMatch.events = [{
         id: actionId || `temp-${Date.now()}`,
         action_type: ActionType.FOUL,
-        specification: undefined,
+        specification: result.foulType,
         points: 0,
         playerId: result.foulPlayer.id,
         playerNumber: result.foulPlayer.jerseyNumber,
         teamId: opponentTeamId,
         timestamp: Date.now(),
-        description: `#${result.foulPlayer.jerseyNumber} ${result.foulPlayer.name} — Faute`,
+        description: `#${result.foulPlayer.jerseyNumber} ${result.foulPlayer.name} — Faute (${FOUL_SPECIFICATION_FR[result.foulType]})`,
         coordinates: normalizedCoords,
         period_number: quarter,
         time_in_period: periodDurationMin * 60 - timer,
