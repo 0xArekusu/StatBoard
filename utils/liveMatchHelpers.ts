@@ -8,6 +8,8 @@ import {
   ActionType,
   ShotSpecification,
   ReboundSpecification,
+  FoulSpecification,
+  FOUL_SPECIFICATION_FR,
 } from "../src/models/ActionTypes";
 import { Team } from "../src/models/types";
 
@@ -73,7 +75,8 @@ export const getActionDescription = (
     )
       return `Équipe — Rebond`;
   } else if (action.action_type === ActionType.FOUL) {
-    return `${prefix}Faute`;
+    const foulLabel = FOUL_SPECIFICATION_FR[action.specification as FoulSpecification];
+    return foulLabel ? `${prefix}Faute (${foulLabel})` : `${prefix}Faute`;
   } else if (action.action_type === ActionType.FOUL_DRAWN) {
     return `${prefix}Faute provoquée`;
   } else if (action.action_type === ActionType.ASSIST) {

@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import Svg, { Circle, Line, Polygon } from "react-native-svg";
 import { BRAND_COLORS, COMMON_COLORS, STATUS_COLORS, Spacing, Typography } from "../src/theme";
 import { Player } from "../models/Player";
 import { MatchActionGrid, ActionData } from "./MatchActionGrid";
@@ -25,6 +26,8 @@ import {
   ActionType,
   ShotSpecification,
   ReboundSpecification,
+  getActionColor,
+  getMarkerShapeType,
 } from "../src/models/ActionTypes";
 
 // History Modal
@@ -107,6 +110,95 @@ export const HistoryModal: React.FC<HistoryModalProps> = ({
         ? match.myTeamName || "Mon équipe"
         : match.opponent || "Adversaire";
     return `${eventToDelete.description}\n${timeStr} • ${teamStr}`;
+  };
+
+  // Icone indicatrice reprenant les mêmes formes/couleurs que les marqueurs sur le terrain
+  const renderHistoryMarker = (evt: MatchEvent) => {
+    if (evt.action_type === "substitution") {
+      return (
+        <View style={styles.historyMarkerIcon}>
+          <MaterialCommunityIcons
+            name="swap-horizontal"
+            size={16}
+            color={textSecondary}
+          />
+        </View>
+      );
+    }
+
+    const shapeType = getMarkerShapeType(evt.action_type, evt.specification);
+    const color = getActionColor(evt.action_type, evt.specification, evt.points);
+    const size = 18;
+    const center = size / 2;
+    const r = 5.5;
+
+    return (
+      <Svg
+        width={size}
+        height={size}
+        viewBox={`0 0 ${size} ${size}`}
+        style={styles.historyMarkerIcon}
+      >
+        {shapeType === "circle-outline" && (
+          <Circle
+            cx={center}
+            cy={center}
+            r={r}
+            fill="none"
+            stroke={color}
+            strokeWidth={2.5}
+          />
+        )}
+        {shapeType === "cross" && (
+          <>
+            <Line
+              x1={center - r}
+              y1={center - r}
+              x2={center + r}
+              y2={center + r}
+              stroke={color}
+              strokeWidth={2.5}
+              strokeLinecap="round"
+            />
+            <Line
+              x1={center + r}
+              y1={center - r}
+              x2={center - r}
+              y2={center + r}
+              stroke={color}
+              strokeWidth={2.5}
+              strokeLinecap="round"
+            />
+          </>
+        )}
+        {shapeType === "triangle" && (
+          <Polygon
+            points={`${center},${center - r} ${center + r},${center + r} ${center - r},${center + r}`}
+            fill={color}
+            stroke="#FFFFFF"
+            strokeWidth={1}
+          />
+        )}
+        {shapeType === "diamond" && (
+          <Polygon
+            points={`${center},${center - r} ${center + r},${center} ${center},${center + r} ${center - r},${center}`}
+            fill={color}
+            stroke="#FFFFFF"
+            strokeWidth={1.5}
+          />
+        )}
+        {shapeType === "circle" && (
+          <Circle
+            cx={center}
+            cy={center}
+            r={r}
+            fill={color}
+            stroke="#FFFFFF"
+            strokeWidth={1.5}
+          />
+        )}
+      </Svg>
+    );
   };
 
   return (
@@ -201,6 +293,7 @@ export const HistoryModal: React.FC<HistoryModalProps> = ({
                     },
                   ]}
                 >
+                  {renderHistoryMarker(evt)}
                   <View style={styles.historyItemLeft}>
                     <Text
                       style={[
@@ -3185,6 +3278,9 @@ const styles = StyleSheet.create({
   },
   historyItemLeft: {
     flex: 1,
+  },
+  historyMarkerIcon: {
+    marginRight: 10,
   },
   historyItemDescription: {
     fontSize: 14,
