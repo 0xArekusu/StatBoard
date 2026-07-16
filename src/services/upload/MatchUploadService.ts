@@ -57,7 +57,7 @@ export class MatchUploadService {
    * @param matchId Local SQLite match ID
    * @throws Error if match not found or upload fails
    */
-  async uploadAndCleanup(matchId: number): Promise<void> {
+  async uploadAndCleanup(matchId: string): Promise<void> {
     try {
       logInfo('MatchUploadService', '🚀 Starting upload process', { matchId });
 
@@ -71,8 +71,8 @@ export class MatchUploadService {
       logInfo('MatchUploadService', '📋 Match loaded from local database', {
         matchId,
         status: match.status,
-        teamA: match.team_a_name,
-        teamB: match.team_b_name
+        teamA: match.my_team_name,
+        teamB: match.opponent_name
       });
 
       // 2. Load actions from local database
@@ -89,7 +89,7 @@ export class MatchUploadService {
       const players = matchPlayers.map((mp) => ({
         num: mp.player_number,
         name: mp.player_name,
-        team: mp.team,
+        team: (mp.team === "MyTeam" ? "A" : "B") as "A" | "B",
       }));
       logInfo('MatchUploadService', `👥 Loaded ${players.length} players`, {
         matchId,
@@ -134,7 +134,7 @@ export class MatchUploadService {
    * @param matchId Local SQLite match ID
    * @returns true if match exists and status is "completed"
    */
-  async canUpload(matchId: number): Promise<boolean> {
+  async canUpload(matchId: string): Promise<boolean> {
     try {
       const match = await this.matchRepository.findById(matchId);
       const eligible = match !== null && match.status === "completed";

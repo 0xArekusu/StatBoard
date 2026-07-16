@@ -412,6 +412,18 @@ export class MatchSyncService {
       started_at: match.started_at || null,
       ended_at: match.ended_at || null,
       synced_at: new Date().toISOString(), // Set current time as sync time
+      // match.match_sponsors is a JSON-stringified snapshot from SQLite (TEXT column).
+      // Parse it before sending so it lands in the Supabase JSONB column as a real
+      // array, not as a double-encoded JSON string scalar.
+      match_sponsors: match.match_sponsors
+        ? (() => {
+            try {
+              return JSON.parse(match.match_sponsors as string);
+            } catch {
+              return null;
+            }
+          })()
+        : null,
       players: playersArray as any, // JSONB in Supabase
       player_stats: playerStatsObject as any, // JSONB in Supabase
     };

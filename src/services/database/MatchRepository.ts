@@ -93,9 +93,10 @@ export class MatchRepository implements IMatchRepository {
         my_team_handicap,
         opponent_handicap,
         has_sub_tracking,
+        match_sponsors,
         created_at
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, 0, 0, 0, 'in_progress', ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, 0, 0, 0, 'in_progress', ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)
     `;
 
     try {
@@ -130,6 +131,7 @@ export class MatchRepository implements IMatchRepository {
         data.track_opponent_stats ? 1 : 0,
         data.my_team_handicap || 0,
         data.opponent_handicap || 0,
+        data.match_sponsors || null,
         createdAt
       ]);
 

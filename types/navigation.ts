@@ -98,6 +98,7 @@ export type RootStackParamList = {
       createdAt: string;
       myTeamHandicap?: number;
       opponentHandicap?: number;
+      match_sponsors?: string | null;
     };
   };
   MatchDetails: {

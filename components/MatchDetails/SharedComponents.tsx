@@ -101,14 +101,25 @@ export const ShootingBar: React.FC<ShootingBarProps> = ({
 // STAT BOX COMPONENT
 // ===========================
 
+interface StatBoxQuadItem {
+  value: number | string;
+  color: string;
+  label: string;
+  markerType?: MarkerType;
+}
+
 interface StatBoxProps {
   label: string;
-  value: number | string;
+  value?: number | string;
   sub?: string;
   markerType?: MarkerType;
   markerColor?: string;
   leftMarkerType?: MarkerType;
   leftMarkerColor?: string;
+  // Détail par sous-catégorie (ex: fautes personnelle/technique/antisportive/disqualifiante,
+  // ou rebonds offensif/défensif). 2 éléments -> une seule ligne, 4 éléments -> grille 2x2.
+  // Remplace value/markerType quand fourni.
+  quad?: StatBoxQuadItem[];
 }
 
 export const StatBox: React.FC<StatBoxProps> = ({
@@ -119,16 +130,15 @@ export const StatBox: React.FC<StatBoxProps> = ({
   markerColor,
   leftMarkerType,
   leftMarkerColor,
+  quad,
 }) => {
   const { colors } = useTheme();
   const { isCompact, sp, font } = useResponsive();
   const textPrimary = colors.text.primary;
   const textSecondary = colors.text.secondary;
 
-  const renderMarker = (type?: MarkerType, color?: string) => {
+  const renderMarker = (type?: MarkerType, color?: string, size: number = 12) => {
     if (!type || !color) return null;
-
-    const size = 12;
 
     if (type === MarkerType.CIRCLE) {
       return (
@@ -181,6 +191,18 @@ export const StatBox: React.FC<StatBoxProps> = ({
     return null;
   };
 
+  const renderQuadItem = (item: StatBoxQuadItem, key: number) => (
+    <View key={key} style={styles.statBoxQuadItem}>
+      {renderMarker(item.markerType ?? MarkerType.DIAMOND, item.color, 7)}
+      <Text style={styles.statBoxQuadValue}>
+        <Text style={{ color: textPrimary }}>{item.value}</Text>
+        <Text style={[styles.statBoxQuadLabel, { color: textSecondary }]}>
+          {" "}({item.label})
+        </Text>
+      </Text>
+    </View>
+  );
+
   return (
     <View
       style={[
@@ -195,23 +217,42 @@ export const StatBox: React.FC<StatBoxProps> = ({
       <Text style={[styles.statBoxLabel, { color: textSecondary }]}>
         {label}
       </Text>
-      <View
-        style={[
-          styles.statBoxValueRow,
-          !leftMarkerType && styles.statBoxValueRowNoLeft,
-        ]}
-      >
-        {renderMarker(leftMarkerType, leftMarkerColor)}
-        <Text
+      {quad ? (
+        quad.length === 4 ? (
+          <View style={styles.statBoxQuadGrid}>
+            <View style={styles.statBoxQuadColumn}>
+              {renderQuadItem(quad[0], 0)}
+              {renderQuadItem(quad[1], 1)}
+            </View>
+            <View style={styles.statBoxQuadColumn}>
+              {renderQuadItem(quad[2], 2)}
+              {renderQuadItem(quad[3], 3)}
+            </View>
+          </View>
+        ) : (
+          <View style={styles.statBoxQuadGrid}>
+            {quad.map((item, i) => renderQuadItem(item, i))}
+          </View>
+        )
+      ) : (
+        <View
           style={[
-            styles.statBoxValue,
-            { color: textPrimary, fontSize: font.lg },
+            styles.statBoxValueRow,
+            !leftMarkerType && styles.statBoxValueRowNoLeft,
           ]}
         >
-          {value}
-        </Text>
-        {renderMarker(markerType, markerColor)}
-      </View>
+          {renderMarker(leftMarkerType, leftMarkerColor)}
+          <Text
+            style={[
+              styles.statBoxValue,
+              { color: textPrimary, fontSize: font.lg },
+            ]}
+          >
+            {value}
+          </Text>
+          {renderMarker(markerType, markerColor)}
+        </View>
+      )}
       {sub && (
         <Text style={[styles.statBoxSub, { color: textSecondary }]}>{sub}</Text>
       )}
@@ -276,6 +317,7 @@ const styles = StyleSheet.create({
   // Stat Box
   statBox: {
     alignItems: "center",
+    justifyContent: "space-between",
     borderRadius: 8,
   },
   statBoxLabel: {
@@ -283,6 +325,7 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     letterSpacing: 0.5,
     textTransform: "uppercase",
+    textAlign: "center",
     marginBottom: 2,
   },
   statBoxValueRow: {
@@ -297,9 +340,33 @@ const styles = StyleSheet.create({
   statBoxValue: {
     fontWeight: "900",
     lineHeight: 16,
+    textAlign: "center",
   },
   statBoxSub: {
     fontSize: 8,
+    textAlign: "center",
     marginTop: 2,
+  },
+  statBoxQuadGrid: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  statBoxQuadColumn: {
+    gap: 1,
+  },
+  statBoxQuadItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 2,
+  },
+  statBoxQuadLabel: {
+    fontSize: 8,
+    fontWeight: "400",
+  },
+  statBoxQuadValue: {
+    fontSize: 10,
+    fontWeight: "900",
+    lineHeight: 11,
+    textAlign: "center",
   },
 });

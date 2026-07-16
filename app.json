@@ -2,7 +2,7 @@
   "expo": {
     "name": "Coach Assistant",
     "slug": "coach-assistant",
-    "version": "1.0.8",
+    "version": "1.0.9",
     "runtimeVersion": {
       "policy": "appVersion"
     },
@@ -23,7 +23,13 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.coachassistant.basketball",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "CFBundleDevelopmentRegion": "fr",
+        "CFBundleAllowMixedLocalizations": true,
+        "CFBundleLocalizations": [
+          "fr",
+          "en"
+        ]
       }
     },
     "android": {
@@ -64,6 +70,7 @@
           "project": "coach-assistant"
         }
       ],
+      "./plugins/withModularHeaders",
       [
         "react-native-google-mobile-ads",
         {

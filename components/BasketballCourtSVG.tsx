@@ -1,5 +1,5 @@
 import React from "react";
-import Svg, { Path, G, ClipPath, Defs, Circle, Image, Line, Polygon, Text } from "react-native-svg";
+import Svg, { Path, G, ClipPath, Defs, Circle, Image, Line, Polygon, Rect, Text } from "react-native-svg";
 import { useTheme } from "../src/contexts/ThemeContext";
 import { COACH_ASSISTANT_LOGO_MARGIN } from "../src/utils/logoHelper";
 import {
@@ -39,6 +39,10 @@ interface BasketballCourtSVGProps {
   lineColor?: string;
   markers?: CourtMarker[];
   logoUri?: string | null;
+  courtSponsorTopUri?: string | null;
+  courtSponsorBottomUri?: string | null;
+  courtSponsorThirdUri?: string | null;
+  courtSponsorFourthUri?: string | null;
 }
 
 export default function BasketballCourtSVG({
@@ -49,6 +53,10 @@ export default function BasketballCourtSVG({
   lineColor = DEFAULT_COURT_COLORS.line,
   markers = [],
   logoUri = null,
+  courtSponsorTopUri = null,
+  courtSponsorBottomUri = null,
+  courtSponsorThirdUri = null,
+  courtSponsorFourthUri = null,
 }: BasketballCourtSVGProps) {
   const { colors } = useTheme();
 
@@ -344,6 +352,93 @@ export default function BasketballCourtSVG({
         </G>
       );
     });
+  };
+
+  /**
+   * Render sponsor logos in both half-courts (between free throw arc and center circle).
+   * Top zone  (portrait): y=354–444, centered at x=307.875 → landscape: x=330–480, centered at y=307.875
+   * Bottom zone (portrait): y=692–782, centered at x=307.875 → landscape: x=667–817, centered at y=307.875
+   * Each zone is independent: top and bottom can show different sponsors.
+   */
+  const renderCourtSponsors = () => {
+    const hasAny = courtSponsorTopUri || courtSponsorBottomUri || courtSponsorThirdUri || courtSponsorFourthUri;
+    if (!hasAny) return null;
+
+    if (isPortrait) {
+      const w = 250;
+      const h = 110;
+      const sideMargin = 20;
+      const centerMargin = 10;
+      const centerY = 572.812;
+
+      // After rotate(90°/-90°) around (cx, cy), visual size becomes h×w (110 wide × 250 tall).
+      // Zone 1: right sideline, above center, +90°
+      const cx1 = COURT_SVG_WIDTH_PORTRAIT - sideMargin - h / 2;
+      const cy1 = centerY - centerMargin - w / 2;
+      // Zone 2: left sideline, below center, -90°
+      const cx2 = sideMargin + h / 2;
+      const cy2 = centerY + centerMargin + w / 2;
+      // Zone 3: left sideline, above center (mirror of 1), -90°
+      const cx3 = sideMargin + h / 2;
+      const cy3 = cy1;
+      // Zone 4: right sideline, below center (mirror of 2), +90°
+      const cx4 = COURT_SVG_WIDTH_PORTRAIT - sideMargin - h / 2;
+      const cy4 = cy2;
+
+      const zone = (uri: string | null, cx: number, cy: number, rot: 90 | -90) =>
+        uri ? (
+          <G transform={`rotate(${rot}, ${cx}, ${cy})`}>
+            <Rect x={cx - w / 2} y={cy - h / 2} width={w} height={h} rx={6} fill="transparent" opacity={0.85} />
+            <Image href={uri} x={cx - w / 2} y={cy - h / 2} width={w} height={h} preserveAspectRatio="xMidYMid meet" />
+          </G>
+        ) : null;
+
+      return (
+        <G>
+          {zone(courtSponsorTopUri, cx1, cy1, 90)}
+          {zone(courtSponsorBottomUri, cx2, cy2, -90)}
+          {zone(courtSponsorThirdUri, cx3, cy3, -90)}
+          {zone(courtSponsorFourthUri, cx4, cy4, 90)}
+        </G>
+      );
+    } else {
+      const w = 250;
+      const h = 110;
+      const sideMargin = 20;
+      const centerMargin = 10;
+      const centerX = 572.812;
+
+      // Horizontal zones along the sideline (no rotation needed in landscape).
+      // Zone 1: top sideline, left of center
+      const x1 = centerX - centerMargin - w;
+      const y1 = sideMargin;
+      // Zone 2: bottom sideline, right of center
+      const x2 = centerX + centerMargin;
+      const y2 = COURT_SVG_HEIGHT_LANDSCAPE - sideMargin - h;
+      // Zone 3: top sideline, right of center (mirror of 1)
+      const x3 = centerX + centerMargin;
+      const y3 = sideMargin;
+      // Zone 4: bottom sideline, left of center (mirror of 2)
+      const x4 = centerX - centerMargin - w;
+      const y4 = COURT_SVG_HEIGHT_LANDSCAPE - sideMargin - h;
+
+      const zone = (uri: string | null, x: number, y: number) =>
+        uri ? (
+          <G>
+            <Rect x={x} y={y} width={w} height={h} rx={6} fill="transparent" opacity={0.85} />
+            <Image href={uri} x={x} y={y} width={w} height={h} preserveAspectRatio="xMidYMid meet" />
+          </G>
+        ) : null;
+
+      return (
+        <G>
+          {zone(courtSponsorTopUri, x1, y1)}
+          {zone(courtSponsorBottomUri, x2, y2)}
+          {zone(courtSponsorThirdUri, x3, y3)}
+          {zone(courtSponsorFourthUri, x4, y4)}
+        </G>
+      );
+    }
   };
 
   /**
@@ -749,6 +844,9 @@ export default function BasketballCourtSVG({
         </G>
       </G>
 
+      {/* Render sponsor zones on the floor (under center logo and markers) */}
+      {renderCourtSponsors()}
+
       {/* Render center court logo first (under markers) */}
       {renderCenterLogo()}
 
@@ -1099,6 +1197,9 @@ export default function BasketballCourtSVG({
           />
         </G>
       </G>
+
+      {/* Render sponsor zones on the floor (under center logo and markers) */}
+      {renderCourtSponsors()}
 
       {/* Render center court logo first (under markers) */}
       {renderCenterLogo()}

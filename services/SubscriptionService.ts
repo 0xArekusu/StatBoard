@@ -24,7 +24,7 @@ export class SubscriptionService {
       // Fetch from database
       const { data, error } = await this.supabase
         .from("subscription_plans")
-        .select("name, max_teams, max_local_matches, can_sync_to_server, price_monthly")
+        .select("name, max_teams, max_local_matches, can_sync_to_server, can_configure_sponsors, price_monthly")
         .eq("tier", tier)
         .single();
 
@@ -35,6 +35,7 @@ export class SubscriptionService {
           maxTeams: data.max_teams,
           maxLocalMatches: data.max_local_matches,
           canSyncToServer: data.can_sync_to_server,
+          canConfigureSponsors: data.can_configure_sponsors,
           priceMonthly: data.price_monthly,
           name: data.name,
         };
@@ -177,7 +178,7 @@ export class SubscriptionService {
     try {
       const { data, error } = await this.supabase
         .from("subscription_plans")
-        .select("tier, name, max_teams, max_local_matches, can_sync_to_server, price_monthly")
+        .select("tier, name, max_teams, max_local_matches, can_sync_to_server, can_configure_sponsors, price_monthly")
         .order("price_monthly", { ascending: true });
 
       if (error) throw error;
@@ -198,6 +199,7 @@ export class SubscriptionService {
           maxTeams: plan.max_teams,
           maxLocalMatches: plan.max_local_matches,
           canSyncToServer: plan.can_sync_to_server,
+          canConfigureSponsors: plan.can_configure_sponsors,
           priceMonthly: plan.price_monthly,
           name: plan.name,
         },

@@ -90,12 +90,19 @@ export interface Match {
   synced_at?: string | null;
   last_updated?: string;
 
+  // Sponsors — snapshot at match creation time (for live view + PDF report)
+  // Format: [{ priority: 1|2, logo_url, name, source: 'club'|'platform'|'fallback' }]
+  match_sponsors?: string | null; // JSON string in SQLite
+
   // Feature flags
   has_sub_tracking?: boolean;
 
   // Legacy
   synced_to_server?: boolean;
   created_with_tier?: string;
+
+  // Set on server matches fetched from Supabase (id is a negative integer in that case)
+  supabase_id?: string;
 }
 
 export interface CreateMatchData {
@@ -122,6 +129,9 @@ export interface CreateMatchData {
   club_logo_url?: string | null;
   court_background_color?: string | null;
   court_line_color?: string | null;
+
+  // Sponsors (same snapshot format as Match.match_sponsors)
+  match_sponsors?: string | null;
 }
 
 export interface Action {
