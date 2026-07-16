@@ -1719,14 +1719,14 @@ export class PDFExportService {
   }
 
   // Wraps a court SVG string in a div with rotated side-banner <img> for zones 5-6.
+  // These banners sit on the white PDF page (outside the court), so they always use
+  // the standard (dark-colored) logo, regardless of the court's own background color.
   private static wrapCourtWithSideBanners(
     svgString: string,
     sponsors: PDFSponsor[] | undefined,
-    backgroundColor: string,
     courtHeight: number = 250
   ): string {
-    const dark = isColorDark(backgroundColor);
-    const pick = (s: PDFSponsor) => dark && s.logo_url_dark ? s.logo_url_dark : s.logo_url;
+    const pick = (s: PDFSponsor) => s.logo_url;
     const left  = sponsors?.find(s => s.priority === 5);
     const right = sponsors?.find(s => s.priority === 6);
     if (!left && !right) return svgString;
@@ -2297,6 +2297,7 @@ export class PDFExportService {
       display: flex;
       flex-direction: column;
       align-items: center;
+      justify-content: center;
       gap: 4px;
       padding: 12px;
       background: ${PDF_COLORS.card.background};
@@ -2328,6 +2329,37 @@ export class PDFExportService {
       align-items: center;
       justify-content: center;
       gap: 4px;
+    }
+    .stat-box-sub {
+      font-size: 9px;
+      color: ${PDF_COLORS.card.textSecondary};
+      margin-top: 2px;
+    }
+    .stat-box-quad-row, .stat-box-quad {
+      display: flex;
+      gap: 10px;
+    }
+    .stat-box-quad-col {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .stat-box-quad-item {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+    }
+    .stat-box-quad-value {
+      font-size: 13px;
+      font-weight: 700;
+      color: ${PDF_COLORS.card.text};
+      white-space: nowrap;
+    }
+    .stat-box-quad-label {
+      font-size: 9px;
+      font-weight: 400;
+      color: ${PDF_COLORS.card.textSecondary};
+      white-space: nowrap;
     }
     .courts-container {
       display: flex;
@@ -2498,8 +2530,7 @@ export class PDFExportService {
             clubLogoUrl,
             matchSponsors
           ),
-          matchSponsors,
-          courtBackgroundColor
+          matchSponsors
         );
 
         // Calculate shooting percentages
@@ -2640,12 +2671,18 @@ export class PDFExportService {
             </div>
           </div>
           <div class="stat-box">
-            <div class="stat-box-label">REB OFF/DEF</div>
-            <div class="stat-box-value-row">
-              <svg width="16" height="16" viewBox="0 0 16 16" style="flex-shrink:0"><polygon points="8,2 14,14 2,14" fill="${getActionColor(ActionType.REBOUND, ReboundSpecification.OFFENSIVE)}" stroke="#FFFFFF" stroke-width="1"/></svg>
-              <div class="stat-box-value">${playerStats.orb}/${playerStats.drb}</div>
-              <svg width="16" height="16" viewBox="0 0 16 16" style="flex-shrink:0"><polygon points="8,2 14,14 2,14" fill="${getActionColor(ActionType.REBOUND, ReboundSpecification.DEFENSIVE)}" stroke="#FFFFFF" stroke-width="1"/></svg>
+            <div class="stat-box-label">REB</div>
+            <div class="stat-box-quad-row">
+              <div class="stat-box-quad-item">
+                <svg width="12" height="12" viewBox="0 0 16 16" style="flex-shrink:0"><polygon points="8,2 14,14 2,14" fill="${getActionColor(ActionType.REBOUND, ReboundSpecification.OFFENSIVE)}" stroke="#FFFFFF" stroke-width="1"/></svg>
+                <span class="stat-box-quad-value">${playerStats.orb} <span class="stat-box-quad-label">(OFF)</span></span>
+              </div>
+              <div class="stat-box-quad-item">
+                <svg width="12" height="12" viewBox="0 0 16 16" style="flex-shrink:0"><polygon points="8,2 14,14 2,14" fill="${getActionColor(ActionType.REBOUND, ReboundSpecification.DEFENSIVE)}" stroke="#FFFFFF" stroke-width="1"/></svg>
+                <span class="stat-box-quad-value">${playerStats.drb} <span class="stat-box-quad-label">(DEF)</span></span>
+              </div>
             </div>
+            <div class="stat-box-sub">Rebonds: ${playerStats.orb + playerStats.drb}</div>
           </div>
           <div class="stat-box">
             <div class="stat-box-label">AST</div>
@@ -2676,11 +2713,30 @@ export class PDFExportService {
             </div>
           </div>
           <div class="stat-box">
-            <div class="stat-box-label">FT</div>
-            <div class="stat-box-value-row">
-              <div class="stat-box-value">${totalFouls}</div>
-              <svg width="16" height="16" viewBox="0 0 16 16" style="flex-shrink:0"><polygon points="8,2 14,8 8,14 2,8" fill="${getActionColor(ActionType.FOUL)}" stroke="#FFFFFF" stroke-width="2"/></svg>
+            <div class="stat-box-label">FTE</div>
+            <div class="stat-box-quad">
+              <div class="stat-box-quad-col">
+                <div class="stat-box-quad-item">
+                  <svg width="12" height="12" viewBox="0 0 16 16" style="flex-shrink:0"><polygon points="8,2 14,8 8,14 2,8" fill="${getActionColor(ActionType.FOUL, FoulSpecification.PERSONAL)}" stroke="#FFFFFF" stroke-width="2"/></svg>
+                  <span class="stat-box-quad-value">${playerStats.pf} <span class="stat-box-quad-label">(PERS)</span></span>
+                </div>
+                <div class="stat-box-quad-item">
+                  <svg width="12" height="12" viewBox="0 0 16 16" style="flex-shrink:0"><polygon points="8,2 14,8 8,14 2,8" fill="${getActionColor(ActionType.FOUL, FoulSpecification.TECHNICAL)}" stroke="#FFFFFF" stroke-width="2"/></svg>
+                  <span class="stat-box-quad-value">${playerStats.tf} <span class="stat-box-quad-label">(TECH)</span></span>
+                </div>
+              </div>
+              <div class="stat-box-quad-col">
+                <div class="stat-box-quad-item">
+                  <svg width="12" height="12" viewBox="0 0 16 16" style="flex-shrink:0"><polygon points="8,2 14,8 8,14 2,8" fill="${getActionColor(ActionType.FOUL, FoulSpecification.PENALITY)}" stroke="#FFFFFF" stroke-width="2"/></svg>
+                  <span class="stat-box-quad-value">${playerStats.uf} <span class="stat-box-quad-label">(ANT)</span></span>
+                </div>
+                <div class="stat-box-quad-item">
+                  <svg width="12" height="12" viewBox="0 0 16 16" style="flex-shrink:0"><polygon points="8,2 14,8 8,14 2,8" fill="${getActionColor(ActionType.FOUL, FoulSpecification.DISQUALIFICATION)}" stroke="#FFFFFF" stroke-width="2"/></svg>
+                  <span class="stat-box-quad-value">${playerStats.df} <span class="stat-box-quad-label">(DISQ)</span></span>
+                </div>
+              </div>
             </div>
+            <div class="stat-box-sub">Fautes: ${totalFouls}</div>
           </div>
           <div class="stat-box">
             <div class="stat-box-label">FP</div>
@@ -2816,6 +2872,21 @@ export class PDFExportService {
       return num === player.playerNumber && a.team === player.team;
     });
 
+    // Détail des fautes par type (indisponible pour les moyennes de saison, qui n'ont pas
+    // d'actions brutes — on retombe alors sur le total agrégé player.pf).
+    const normalizeActionType = (a: any): string => (a.type || a.action_type || "").toLowerCase();
+    const normalizeSpecification = (a: any): string => (a.specification || "").toLowerCase();
+    const playerFouls = playerActions.filter(
+      (a) => normalizeActionType(a) === ActionType.FOUL
+    );
+    const hasFoulBreakdown = actions.length > 0;
+    const foulBreakdown = {
+      pers: playerFouls.filter((a) => normalizeSpecification(a) === FoulSpecification.PERSONAL).length,
+      tech: playerFouls.filter((a) => normalizeSpecification(a) === FoulSpecification.TECHNICAL).length,
+      ant: playerFouls.filter((a) => normalizeSpecification(a) === FoulSpecification.PENALITY).length,
+      disq: playerFouls.filter((a) => normalizeSpecification(a) === FoulSpecification.DISQUALIFICATION).length,
+    };
+
     const hasPositionedActions = playerActions.some((a) => a.semanticPosition);
     const courtSVG = hasPositionedActions
       ? (() => {
@@ -2843,8 +2914,7 @@ export class PDFExportService {
               courtLogoBase64,
               matchSponsors
             ),
-            matchSponsors,
-            courtBackgroundColor
+            matchSponsors
           );
         })()
       : null;
@@ -2896,19 +2966,19 @@ export class PDFExportService {
     }` : ""}
     .page-header {
       display: flex; align-items: center; justify-content: space-between;
-      padding-bottom: 10px;
+      padding-bottom: 8px;
       border-bottom: 2px solid ${PDF_COLORS.table.border};
-      margin-bottom: 14px;
-      min-height: 72px;
+      margin-bottom: 10px;
+      min-height: 56px;
     }
-    .page-header-logo-left { height: 64px; width: auto; }
-    .page-header-logo-right { height: 72px; width: auto; }
+    .page-header-logo-left { height: 52px; width: auto; }
+    .page-header-logo-right { height: 56px; width: auto; }
     .page-header-center { text-align: center; flex: 1; }
     .page-header-match { font-size: 13px; font-weight: 700; color: ${PDF_COLORS.card.text}; }
     .page-header-date { font-size: 11px; color: ${PDF_COLORS.card.textSecondary}; margin-top: 4px; }
     .player-header {
       display: flex; align-items: center; justify-content: space-between;
-      margin-bottom: 12px; padding-bottom: 10px;
+      margin-bottom: 8px; padding-bottom: 8px;
       border-bottom: 1px solid ${PDF_COLORS.card.border};
     }
     .player-info-left { display: flex; align-items: center; gap: 14px; }
@@ -2937,10 +3007,10 @@ export class PDFExportService {
     .player-points-label { font-size: 10px; font-weight: 700; color: ${PDF_COLORS.card.accent}; text-transform: uppercase; }
     .main-stats-grid {
       display: grid; grid-template-columns: repeat(4, 1fr);
-      gap: 10px; margin-bottom: 14px;
+      gap: 10px; margin-bottom: 10px;
     }
     .main-stat-card {
-      text-align: center; padding: 14px 10px;
+      text-align: center; padding: 10px;
       background: ${PDF_COLORS.card.headerBg};
       border: 1px solid ${PDF_COLORS.card.border};
       border-radius: 12px;
@@ -2953,9 +3023,9 @@ export class PDFExportService {
     .main-stat-value.highlight { color: ${PDF_COLORS.card.accent}; }
     .main-stat-label { font-size: 9px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: ${PDF_COLORS.card.textSecondary}; margin-top: 5px; }
     .section-title { font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: ${PDF_COLORS.card.text}; margin-bottom: 10px; }
-    .shooting-section { margin-bottom: 14px; }
-    .shooting-card { border: 1px solid ${PDF_COLORS.card.border}; border-radius: 12px; padding: 16px; }
-    .shooting-bars { display: flex; flex-direction: column; gap: 12px; margin-bottom: 12px; }
+    .shooting-section { margin-bottom: 10px; }
+    .shooting-card { border: 1px solid ${PDF_COLORS.card.border}; border-radius: 12px; padding: 12px; }
+    .shooting-bars { display: flex; flex-direction: column; gap: 10px; margin-bottom: 10px; }
     .shooting-bar { display: flex; align-items: center; gap: 12px; }
     .shooting-bar-label { font-size: 11px; font-weight: 600; color: ${PDF_COLORS.card.textSecondary}; min-width: 55px; text-transform: uppercase; }
     .shooting-bar-track { flex: 1; height: 12px; }
@@ -2966,25 +3036,31 @@ export class PDFExportService {
     .shooting-summary-item { flex: 1; text-align: center; }
     .shooting-summary-value { font-size: 20px; font-weight: 900; color: ${PDF_COLORS.card.text}; }
     .shooting-summary-label { font-size: 8px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; color: ${PDF_COLORS.card.textSecondary}; margin-top: 2px; }
-    .details-section { margin-bottom: 14px; }
-    .stats-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+    .details-section { margin-bottom: 10px; }
+    .stats-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
     .stat-box {
-      display: flex; flex-direction: column; align-items: center; gap: 4px;
-      padding: 12px 8px; background: ${PDF_COLORS.card.background};
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+      padding: 10px 6px; background: ${PDF_COLORS.card.background};
       border: 1px solid ${PDF_COLORS.card.border}; border-radius: 8px; text-align: center;
     }
     .stat-box-label { font-size: 10px; font-weight: 600; color: ${PDF_COLORS.card.textSecondary}; text-transform: uppercase; line-height: 1; }
     .stat-box-value { font-size: 20px; font-weight: 700; color: ${PDF_COLORS.card.text}; line-height: 1; }
     .stat-box-value-row { display: flex; align-items: center; justify-content: center; gap: 4px; }
-    .court-section { margin-top: 12px; }
+    .stat-box-sub { font-size: 8px; color: ${PDF_COLORS.card.textSecondary}; margin-top: 1px; }
+    .stat-box-quad-row, .stat-box-quad { display: flex; gap: 10px; }
+    .stat-box-quad-col { display: flex; flex-direction: column; gap: 2px; }
+    .stat-box-quad-item { display: flex; align-items: center; gap: 3px; }
+    .stat-box-quad-value { font-size: 12px; font-weight: 700; color: ${PDF_COLORS.card.text}; white-space: nowrap; }
+    .stat-box-quad-label { font-size: 8px; font-weight: 400; color: ${PDF_COLORS.card.textSecondary}; white-space: nowrap; }
+    .court-section { margin-top: 8px; }
     .court-wrapper { text-align: center; }
     .footer {
-      margin-top: 14px;
+      margin-top: 10px;
       text-align: center;
       font-size: 9px;
       color: ${PDF_COLORS.table.textTertiary};
       border-top: 1px solid ${PDF_COLORS.table.border};
-      padding-top: 8px;
+      padding-top: 6px;
       /* Keep the sponsor bar and the "Généré par" line together on one page —
          without this, a near-full page can push just the last text line over. */
       page-break-inside: avoid;
@@ -3121,12 +3197,18 @@ export class PDFExportService {
     <div class="section-title">Détails</div>
     <div class="stats-grid">
       <div class="stat-box">
-        <div class="stat-box-label">REB OFF/DEF</div>
-        <div class="stat-box-value-row">
-          <svg width="14" height="14" viewBox="0 0 16 16"><polygon points="8,2 14,14 2,14" fill="${getActionColor(ActionType.REBOUND, ReboundSpecification.OFFENSIVE)}" stroke="#FFFFFF" stroke-width="1"/></svg>
-          <div class="stat-box-value">${player.reb_off}/${player.reb_def}</div>
-          <svg width="14" height="14" viewBox="0 0 16 16"><polygon points="8,2 14,14 2,14" fill="${getActionColor(ActionType.REBOUND, ReboundSpecification.DEFENSIVE)}" stroke="#FFFFFF" stroke-width="1"/></svg>
+        <div class="stat-box-label">REB</div>
+        <div class="stat-box-quad-row">
+          <div class="stat-box-quad-item">
+            <svg width="12" height="12" viewBox="0 0 16 16"><polygon points="8,2 14,14 2,14" fill="${getActionColor(ActionType.REBOUND, ReboundSpecification.OFFENSIVE)}" stroke="#FFFFFF" stroke-width="1"/></svg>
+            <span class="stat-box-quad-value">${player.reb_off} <span class="stat-box-quad-label">(OFF)</span></span>
+          </div>
+          <div class="stat-box-quad-item">
+            <svg width="12" height="12" viewBox="0 0 16 16"><polygon points="8,2 14,14 2,14" fill="${getActionColor(ActionType.REBOUND, ReboundSpecification.DEFENSIVE)}" stroke="#FFFFFF" stroke-width="1"/></svg>
+            <span class="stat-box-quad-value">${player.reb_def} <span class="stat-box-quad-label">(DEF)</span></span>
+          </div>
         </div>
+        <div class="stat-box-sub">Rebonds: ${player.reb_off + player.reb_def}</div>
       </div>
       <div class="stat-box">
         <div class="stat-box-label">AST</div>
@@ -3158,10 +3240,40 @@ export class PDFExportService {
       </div>
       <div class="stat-box">
         <div class="stat-box-label">FTE</div>
+        ${
+          hasFoulBreakdown
+            ? `
+        <div class="stat-box-quad">
+          <div class="stat-box-quad-col">
+            <div class="stat-box-quad-item">
+              <svg width="12" height="12" viewBox="0 0 16 16"><polygon points="8,2 14,8 8,14 2,8" fill="${getActionColor(ActionType.FOUL, FoulSpecification.PERSONAL)}" stroke="#FFFFFF" stroke-width="2"/></svg>
+              <span class="stat-box-quad-value">${foulBreakdown.pers} <span class="stat-box-quad-label">(PERS)</span></span>
+            </div>
+            <div class="stat-box-quad-item">
+              <svg width="12" height="12" viewBox="0 0 16 16"><polygon points="8,2 14,8 8,14 2,8" fill="${getActionColor(ActionType.FOUL, FoulSpecification.TECHNICAL)}" stroke="#FFFFFF" stroke-width="2"/></svg>
+              <span class="stat-box-quad-value">${foulBreakdown.tech} <span class="stat-box-quad-label">(TECH)</span></span>
+            </div>
+          </div>
+          <div class="stat-box-quad-col">
+            <div class="stat-box-quad-item">
+              <svg width="12" height="12" viewBox="0 0 16 16"><polygon points="8,2 14,8 8,14 2,8" fill="${getActionColor(ActionType.FOUL, FoulSpecification.PENALITY)}" stroke="#FFFFFF" stroke-width="2"/></svg>
+              <span class="stat-box-quad-value">${foulBreakdown.ant} <span class="stat-box-quad-label">(ANT)</span></span>
+            </div>
+            <div class="stat-box-quad-item">
+              <svg width="12" height="12" viewBox="0 0 16 16"><polygon points="8,2 14,8 8,14 2,8" fill="${getActionColor(ActionType.FOUL, FoulSpecification.DISQUALIFICATION)}" stroke="#FFFFFF" stroke-width="2"/></svg>
+              <span class="stat-box-quad-value">${foulBreakdown.disq} <span class="stat-box-quad-label">(DISQ)</span></span>
+            </div>
+          </div>
+        </div>
+        <div class="stat-box-sub">Fautes: ${player.pf}</div>
+        `
+            : `
         <div class="stat-box-value-row">
           <div class="stat-box-value">${player.pf}</div>
           <svg width="14" height="14" viewBox="0 0 16 16"><polygon points="8,2 14,8 8,14 2,8" fill="${getActionColor(ActionType.FOUL)}" stroke="#FFFFFF" stroke-width="2"/></svg>
         </div>
+        `
+        }
       </div>
       <div class="stat-box">
         <div class="stat-box-label">FP</div>

@@ -44,7 +44,7 @@ export default function StatsTab({
   handicap = 0,
 }: StatsTabProps) {
   const { colors, isDark } = useTheme();
-  const { sp, font, sizes } = useResponsive();
+  const { sp, font } = useResponsive();
   const [showLegend, setShowLegend] = useState(false);
 
   // Define color variables using theme context
@@ -78,7 +78,8 @@ export default function StatsTab({
               styles.tableHeader,
               {
                 backgroundColor: colors.surfaceVariant,
-                padding: sp.sm,
+                paddingHorizontal: 16,
+                paddingVertical: sp.sm,
               },
             ]}
           >
@@ -90,14 +91,13 @@ export default function StatsTab({
                   {
                     color: sortBy === "name" ? colors.primary : textSecondary,
                     fontSize: font.xs,
-                    paddingHorizontal: sp.sm,
                   },
                 ]}
               >
                 JOUEUR {sortBy === "name" && (sortOrder === "desc" ? "↓" : "↑")}
               </Text>
             </TouchableOpacity>
-            <View style={[styles.numberCell, { width: sizes.avatarSm }]}>
+            <View style={styles.numberCell}>
               <Text
                 style={[
                   styles.tableHeaderCell,
@@ -882,6 +882,7 @@ const styles = StyleSheet.create({
   },
   tableHeader: {
     flexDirection: "row",
+    alignItems: "center",
     paddingVertical: 12,
     paddingHorizontal: 16,
   },
@@ -893,6 +894,7 @@ const styles = StyleSheet.create({
   },
   tableRow: {
     flexDirection: "row",
+    alignItems: "center",
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
