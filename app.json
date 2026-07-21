@@ -78,7 +78,8 @@
           "iosAppId": "ca-app-pub-5211468835188047~1528541997",
           "userTrackingUsageDescription": "Cet identifiant sera utilisé pour vous proposer des publicités personnalisées."
         }
-      ]
+      ],
+      "expo-localization"
     ],
     "extra": {
       "eas": {

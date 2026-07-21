@@ -62,6 +62,8 @@ import GuestWelcomeModal from "../components/GuestWelcomeModal";
 import MatchLimitModal from "../components/MatchLimitModal";
 import { ROUTES } from "../constants/routes";
 import { GUEST_IDS } from "../constants/matchConstants";
+import { ANALYTICS_EVENTS, ANALYTICS_MATCH_ABANDON_REASON } from "../constants/analyticsEvents";
+import { usePostHog } from "posthog-react-native";
 import { COACH_ASSISTANT_LOGO_MARGIN } from "../src/utils/logoHelper";
 import { SUBSCRIPTION_LIMITS, NOT_CONNECTED_LIMITS, SUBSCRIPTION_TIER } from "../models/Subscription";
 import { AdminService } from "../services/AdminService";
@@ -98,6 +100,7 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
   const { colors, isDark, setThemeMode } = useTheme();
   const { isCompact, sp, font } = useResponsive();
   const { user, signOut, deleteAccount } = useAuth();
+  const posthog = usePostHog();
   const { currentClub, allClubs, setCurrentClub: setGlobalCurrentClub, activeTeamId, setActiveTeamId } = useClub();
   const activeTeamIdRef = useRef(activeTeamId);
   useEffect(() => { activeTeamIdRef.current = activeTeamId; }, [activeTeamId]);
@@ -399,6 +402,7 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
    * Signs out the current user and navigates to Auth screen
    */
   const handleSignOut = async () => {
+    posthog?.capture(ANALYTICS_EVENTS.USER_LOGGED_OUT);
     await signOut();
     navigation.navigate("Auth");
   };
@@ -428,6 +432,7 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
                     setIsDeletingAccount(false);
 
                     if (error) {
+                      posthog?.capture(ANALYTICS_EVENTS.ACCOUNT_DELETION_BLOCKED, { error_code: errorCode ?? null });
                       if (errorCode === "club_owner") {
                         Alert.alert(
                           "Suppression impossible",
@@ -442,6 +447,7 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
                       return;
                     }
 
+                    posthog?.capture(ANALYTICS_EVENTS.ACCOUNT_DELETED);
                     await signOut();
                     navigation.navigate("Auth");
                   },
@@ -490,7 +496,9 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
               const matchListService = ServiceFactory.getMatchListService(supabase);
 
               // Delete all match data (actions and players are cascade deleted via FOREIGN KEY)
-              await matchListService.deleteMatch(liveMatchToResume.id);
+              await matchListService.deleteMatch(liveMatchToResume, user?.id);
+
+              posthog?.capture(ANALYTICS_EVENTS.MATCH_ABANDONED, { reason: ANALYTICS_MATCH_ABANDON_REASON.MANUAL });
 
               // Remove from state
               setLiveMatchToResume(null);
@@ -533,6 +541,11 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
       logWarn("DashboardScreen", "⚠️ Match limit reached", {
         currentMatchCount,
         maxLocalMatches: limits.maxLocalMatches
+      });
+      posthog?.capture(ANALYTICS_EVENTS.MATCH_LIMIT_REACHED, {
+        is_guest: isGuest,
+        current_match_count: currentMatchCount,
+        max_local_matches: limits.maxLocalMatches,
       });
       setShowMatchLimitModal(true);
       return;
@@ -578,7 +591,9 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
               const matchListService = ServiceFactory.getMatchListService(supabase);
 
               // Delete the active match
-              await matchListService.deleteMatch(liveMatchToResume.id);
+              await matchListService.deleteMatch(liveMatchToResume, user?.id);
+
+              posthog?.capture(ANALYTICS_EVENTS.MATCH_ABANDONED, { reason: ANALYTICS_MATCH_ABANDON_REASON.NEW_MATCH });
 
               // Close popup
               setLiveMatchToResume(null);
@@ -652,6 +667,7 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
    */
   const handleToggleTheme = () => {
     const nextMode = isDark ? "light" : "dark";
+    posthog?.capture(ANALYTICS_EVENTS.THEME_TOGGLED, { mode: nextMode });
     setThemeMode(nextMode);
   };
 
@@ -1082,7 +1098,10 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
               </TouchableOpacity>
 
               <TouchableOpacity
-                onPress={() => setShowProfileMenu(true)}
+                onPress={() => {
+                  posthog?.capture(ANALYTICS_EVENTS.PROFILE_MENU_OPENED);
+                  setShowProfileMenu(true);
+                }}
                 style={[
                   styles.clubLogo,
                   {
@@ -1201,7 +1220,10 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
                   )}
                   <Picker
                     selectedValue={activeTeamId || ""}
-                    onValueChange={(value) => setActiveTeamId(value)}
+                    onValueChange={(value) => {
+                      posthog?.capture(ANALYTICS_EVENTS.TEAM_CHANGED, { team_id: value, club_id: currentClub?.id ?? null });
+                      setActiveTeamId(value);
+                    }}
                     style={[styles.picker, { color: colors.text.primary }]}
                     dropdownIconColor={colors.text.secondary}
                   >

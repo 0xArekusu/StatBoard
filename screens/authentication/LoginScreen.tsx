@@ -13,13 +13,14 @@ import {
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuth } from '../../src/contexts/AuthContext';
-import { ROUTES, PlatformOS } from '../../constants';
+import { ROUTES, PlatformOS, ANALYTICS_EVENTS, ANALYTICS_LOGIN_METHOD } from '../../constants';
 import { useTheme } from '../../src/contexts/ThemeContext';
 import { SHADOW_COLOR, OPACITY, STATUS_COLORS } from '../../src/theme';
 import GoogleLogo from '../../components/icons/GoogleLogo';
 import AppleLogo from '../../components/icons/AppleLogo';
 import { useResponsive } from '../../src/hooks/useResponsive';
 import TermsAcceptanceModal from '../../components/TermsAcceptanceModal';
+import { usePostHog } from 'posthog-react-native';
 
 /**
  * LoginScreen - Email/password login form
@@ -39,6 +40,7 @@ export default function LoginScreen({ navigation, route }: any) {
   const emailError = route?.params?.emailError === true;
   const passwordReset = route?.params?.passwordReset === true;
   const { signIn, signInWithGoogle, signInWithApple, acceptTerms, signOut, resetPassword } = useAuth();
+  const posthog = usePostHog();
   const { colors } = useTheme();
   const { sp, font, sizes, isCompact } = useResponsive();
 
@@ -80,9 +82,11 @@ export default function LoginScreen({ navigation, route }: any) {
     if (error) {
       const translatedError = translateError(error.message);
       Alert.alert('Erreur de connexion', translatedError);
+      posthog?.capture(ANALYTICS_EVENTS.LOGIN_FAILED, { method: ANALYTICS_LOGIN_METHOD.PASSWORD, error_message: error.message ?? null });
     } else if (needsTermsAcceptance) {
       setShowTermsModal(true);
     } else {
+      posthog?.capture(ANALYTICS_EVENTS.USER_LOGGED_IN, { method: ANALYTICS_LOGIN_METHOD.PASSWORD });
       navigation.navigate(ROUTES.MAIN_TABS);
     }
   };
@@ -97,9 +101,11 @@ export default function LoginScreen({ navigation, route }: any) {
 
     if (error) {
       Alert.alert('Erreur de connexion Google', error.message);
+      posthog?.capture(ANALYTICS_EVENTS.LOGIN_FAILED, { method: ANALYTICS_LOGIN_METHOD.GOOGLE, error_message: error.message ?? null });
     } else if (needsTermsAcceptance) {
       setShowTermsModal(true);
     } else {
+      posthog?.capture(ANALYTICS_EVENTS.USER_LOGGED_IN, { method: ANALYTICS_LOGIN_METHOD.GOOGLE });
       navigation.navigate(ROUTES.MAIN_TABS);
     }
   };
@@ -107,6 +113,7 @@ export default function LoginScreen({ navigation, route }: any) {
   const handleTermsAccept = async () => {
     await acceptTerms();
     setShowTermsModal(false);
+    posthog?.capture(ANALYTICS_EVENTS.USER_LOGGED_IN, { method: ANALYTICS_LOGIN_METHOD.PASSWORD_AFTER_TERMS });
     navigation.navigate(ROUTES.MAIN_TABS);
   };
 
@@ -125,9 +132,11 @@ export default function LoginScreen({ navigation, route }: any) {
 
     if (error) {
       Alert.alert('Erreur de connexion Apple', error.message);
+      posthog?.capture(ANALYTICS_EVENTS.LOGIN_FAILED, { method: ANALYTICS_LOGIN_METHOD.APPLE, error_message: error.message ?? null });
     } else if (needsTermsAcceptance) {
       setShowTermsModal(true);
     } else if (error === null) {
+      posthog?.capture(ANALYTICS_EVENTS.USER_LOGGED_IN, { method: ANALYTICS_LOGIN_METHOD.APPLE });
       navigation.navigate(ROUTES.MAIN_TABS);
     }
   };

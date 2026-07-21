@@ -42,9 +42,12 @@ import {
   COURT_SVG_HEIGHT_PORTRAIT,
   COURT_SVG_WIDTH_LANDSCAPE,
   COURT_SVG_HEIGHT_LANDSCAPE,
+  ANALYTICS_EVENTS,
+  ANALYTICS_PDF_EXPORT_TYPE,
 } from "../../constants";
 import PlayerAvatar from "../PlayerAvatar";
 import { PDFExportService } from "../../src/services/export/PDFExportService";
+import { usePostHog } from "posthog-react-native";
 
 interface PlayerDetailModalProps {
   player: PlayerStats | null;
@@ -69,6 +72,7 @@ export default function PlayerDetailModal({
 }: PlayerDetailModalProps) {
   const { colors, isDark } = useTheme();
   const { isCompact, sp, font, sizes } = useResponsive();
+  const posthog = usePostHog();
   const [isExporting, setIsExporting] = useState(false);
   const textPrimary = colors.text.primary;
   const textSecondary = colors.text.secondary;
@@ -164,6 +168,7 @@ export default function PlayerDetailModal({
         matchDate,
         matchSponsors,
       });
+      posthog?.capture(ANALYTICS_EVENTS.PDF_EXPORTED, { type: ANALYTICS_PDF_EXPORT_TYPE.PLAYER_MATCH });
     } catch (e) {
       console.error("[PlayerDetailModal] Export PDF error:", e);
     } finally {

@@ -13,7 +13,8 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
-import { PlatformOS } from "../../constants";
+import { PlatformOS, ANALYTICS_EVENTS } from "../../constants";
+import { usePostHog } from "posthog-react-native";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import {
@@ -124,6 +125,7 @@ export default function TeamRosterScreen() {
   const navigation = useNavigation<RootNavigationProp>();
   const route = useRoute<TeamRosterRouteProp>();
   const { user } = useAuth();
+  const posthog = usePostHog();
   const { colors } = useTheme();
   const { sp, font, sizes, isCompact } = useResponsive();
   const { clubId, teamId, teamData } = route.params;
@@ -272,6 +274,7 @@ export default function TeamRosterScreen() {
     setNewPlayerNumber("");
     setNewPlayerPhoto("");
     setNewPlayerLicense("");
+    posthog?.capture(ANALYTICS_EVENTS.TEAM_PLAYER_ADDED);
   };
 
   /**
@@ -286,6 +289,7 @@ export default function TeamRosterScreen() {
     if (isNewPlayer) {
       // For new players, no warning needed - just remove
       setRoster(roster.filter((p) => p.id !== id));
+      posthog?.capture(ANALYTICS_EVENTS.TEAM_PLAYER_REMOVED);
     } else {
       // For existing players in edit mode, show warning about stats
       Alert.alert(
@@ -298,6 +302,7 @@ export default function TeamRosterScreen() {
             style: "destructive",
             onPress: () => {
               setRoster(roster.filter((p) => p.id !== id));
+              posthog?.capture(ANALYTICS_EVENTS.TEAM_PLAYER_REMOVED);
             },
           },
         ],
@@ -374,6 +379,7 @@ export default function TeamRosterScreen() {
     setEditingPlayerPhoto("");
     setEditingPlayerLicense("");
     setEditPlayerError(null);
+    posthog?.capture(ANALYTICS_EVENTS.TEAM_PLAYER_EDITED);
   };
 
   /**
@@ -488,6 +494,14 @@ export default function TeamRosterScreen() {
           );
           return;
         }
+
+        posthog?.capture(ANALYTICS_EVENTS.TEAM_UPDATED, {
+          team_name: teamData.name,
+          category: teamData.category,
+          gender: teamData.gender,
+          has_coach_photo: !!uploadedCoachPhotoUrl,
+          roster_size: roster.length,
+        });
 
         // Update players intelligently
         const playerService = ServiceFactory.getPlayerService(supabase);
@@ -613,6 +627,14 @@ export default function TeamRosterScreen() {
           });
           return;
         }
+
+        posthog?.capture(ANALYTICS_EVENTS.TEAM_CREATED, {
+          team_name: teamData.name,
+          category: teamData.category,
+          gender: teamData.gender,
+          has_coach_photo: !!uploadedCoachPhotoUrl,
+          roster_size: roster.length,
+        });
 
         // Upload coach photo now that the team exists in DB (RLS will pass)
         if (coachPhotoUrl && coachPhotoUrl.startsWith("file://")) {

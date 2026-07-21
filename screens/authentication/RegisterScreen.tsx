@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuth } from '../../src/contexts/AuthContext';
-import { ROUTES, PlatformOS } from '../../constants';
+import { ROUTES, PlatformOS, ANALYTICS_EVENTS } from '../../constants';
 import { useTheme } from '../../src/contexts/ThemeContext';
 import { SHADOW_COLOR, OPACITY, PASSWORD_VALIDATION } from '../../src/theme';
 import GoogleLogo from '../../components/icons/GoogleLogo';
@@ -22,6 +22,7 @@ import { useResponsive } from '../../src/hooks/useResponsive';
 import PolicyBottomSheet from '../../components/PolicyBottomSheet';
 import TermsAcceptanceModal from '../../components/TermsAcceptanceModal';
 import { logInfo, logError } from '../../utils/logger';
+import { usePostHog } from 'posthog-react-native';
 
 /**
  * RegisterScreen - Registration form with email/password
@@ -44,6 +45,7 @@ export default function RegisterScreen({ navigation }: any) {
   const [loading, setLoading] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
   const { signUp, signInWithGoogle, signInWithApple, acceptTerms, signOut, resendConfirmationEmail } = useAuth();
+  const posthog = usePostHog();
   const { colors } = useTheme();
   const { sp, font, sizes } = useResponsive();
 
@@ -111,6 +113,12 @@ export default function RegisterScreen({ navigation }: any) {
       hasError: !!error,
       errorMessage: error?.message,
     });
+
+    if (error) {
+      posthog?.capture(ANALYTICS_EVENTS.ACCOUNT_CREATION_FAILED, { error_message: error.message ?? null });
+    } else {
+      posthog?.capture(ANALYTICS_EVENTS.ACCOUNT_CREATED);
+    }
 
     if (error) {
       logError('RegisterScreen', '❌ Registration failed', {

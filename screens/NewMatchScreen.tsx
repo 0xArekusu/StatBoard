@@ -26,7 +26,9 @@ import {
   ROUTES,
   PlatformOS,
   GUEST_IDS,
+  ANALYTICS_EVENTS,
 } from "../constants";
+import { usePostHog } from "posthog-react-native";
 import { useInterstitialAd } from "../hooks/useInterstitialAd";
 import { ServiceFactory } from "../services/ServiceFactory";
 import { supabase } from "../src/config/supabase";
@@ -67,6 +69,7 @@ export default function NewMatchScreen() {
   const { colors, isDark } = useTheme();
   const { sp } = useResponsive();
   const { user } = useAuth();
+  const posthog = usePostHog();
   const { currentClub } = useClub();
   const { showIfReady: showInterstitial } = useInterstitialAd();
 
@@ -261,6 +264,7 @@ export default function NewMatchScreen() {
       await repo.upsertByName(name, templatePlayers);
       await loadTemplates();
       setLoadedTemplateName(name);
+      posthog?.capture(ANALYTICS_EVENTS.OPPONENT_TEMPLATE_SAVED, { players_count: templatePlayers.length });
       Alert.alert("Composition sauvegardée", `"${name}" a été sauvegardée.`);
     } catch (error) {
       console.error("Error saving opponent template:", error);
@@ -551,6 +555,7 @@ export default function NewMatchScreen() {
     setTempHomePlayerName("");
     setTempHomePlayerNumber("");
     setTempHomePlayerLicense("");
+    posthog?.capture(ANALYTICS_EVENTS.REINFORCEMENT_ADDED);
   };
 
   // ===========================
@@ -763,6 +768,22 @@ export default function NewMatchScreen() {
       myTeamHandicap,
       opponentHandicap,
     };
+
+    posthog?.capture(ANALYTICS_EVENTS.MATCH_SETUP_STARTED, {
+      team_name: finalTeamName,
+      opponent_name: opponent,
+      is_home: isHome,
+      track_opponent_stats: trackOpponentStats,
+      period_count: periodCount,
+      period_duration: periodDuration,
+      my_team_players_count: selectedHomePlayers.length,
+      my_team_starters_count: starters.length,
+      opponent_players_count: trackOpponentStats ? opponentRoster.length : 0,
+      opponent_starters_count: trackOpponentStats ? opponentStarters.length : 0,
+      my_team_handicap: myTeamHandicap,
+      opponent_handicap: opponentHandicap,
+      is_guest: !user,
+    });
 
     // Show interstitial ad at the natural transition point (roster → live match)
     await showInterstitial();

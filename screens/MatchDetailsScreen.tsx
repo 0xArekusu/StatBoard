@@ -47,6 +47,8 @@ import {
   ReboundSpecification,
 } from "../src/models/ActionTypes";
 import { GUEST_IDS } from "../constants/matchConstants";
+import { ANALYTICS_EVENTS, ANALYTICS_PDF_EXPORT_TYPE } from "../constants/analyticsEvents";
+import { usePostHog } from "posthog-react-native";
 import { useTheme } from "../src/contexts/ThemeContext";
 import { useResponsive } from "../src/hooks/useResponsive";
 import { Colors } from "../src/theme/colors";
@@ -73,6 +75,7 @@ export default function MatchDetailsScreen() {
   // ========================================
   const navigation = useNavigation<RootNavigationProp>();
   const route = useRoute<MatchDetailsRouteProp>();
+  const posthog = usePostHog();
   const { match, fromLiveMatch, isLocalMatch } = route.params;
   const { colors, isDark } = useTheme();
   const { sp, font, sizes } = useResponsive();
@@ -290,6 +293,7 @@ export default function MatchDetailsScreen() {
 
       await PDFExportService.generateMatchPDF(pdfOptions);
       setIsExportingPDF(false);
+      posthog?.capture(ANALYTICS_EVENTS.PDF_EXPORTED, { type: ANALYTICS_PDF_EXPORT_TYPE.MATCH });
       Alert.alert("Succès", "Le PDF a été généré et partagé avec succès");
     } catch (error) {
       setIsExportingPDF(false);

@@ -2,8 +2,10 @@ import { useEffect, useState } from "react";
 import { Platform } from "react-native";
 import Constants from "expo-constants";
 import * as Updates from "expo-updates";
+import { usePostHog } from "posthog-react-native";
 import { supabase } from "../src/config/supabase";
 import { logInfo, logWarn, logError } from "../utils/logger";
+import { ANALYTICS_EVENTS } from "../constants/analyticsEvents";
 
 // TODO: remplacer [APP_STORE_ID] par l'identifiant numérique Apple après publication
 const STORE_URLS = {
@@ -25,6 +27,7 @@ function isVersionLessThan(current: string, minimum: string): boolean {
 }
 
 export function useAppUpdateCheck() {
+  const posthog = usePostHog();
   const [isForceUpdateRequired, setIsForceUpdateRequired] = useState(false);
   const storeUrl = Platform.OS === "ios" ? STORE_URLS.ios : STORE_URLS.android;
 
@@ -56,6 +59,10 @@ export function useAppUpdateCheck() {
           logWarn("UpdateCheck", "⚠️ Force update required", {
             currentVersion,
             minimumVersion: data.value,
+          });
+          posthog?.capture(ANALYTICS_EVENTS.FORCE_UPDATE_SHOWN, {
+            current_version: currentVersion,
+            minimum_version: data.value,
           });
           setIsForceUpdateRequired(true);
         }

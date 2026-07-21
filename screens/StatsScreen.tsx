@@ -17,6 +17,8 @@ import {
 } from '../src/services/seasonStats';
 import { StatPeriod, LeaderCategory, STAT_PERIOD, LEADER_CATEGORY, LEADER_CATEGORY_LEGEND } from '../constants/statsConstants';
 import { ROUTES } from '../constants/routes';
+import { ANALYTICS_EVENTS } from '../constants/analyticsEvents';
+import { usePostHog } from 'posthog-react-native';
 import { RootNavigationProp } from '../types/navigation';
 import { logInfo, logError } from '../utils/logger';
 import PeriodFilter from '../components/Stats/PeriodFilter';
@@ -29,6 +31,7 @@ export default function StatsScreen() {
   const { currentClub, activeTeamId } = useClub();
   const { sp, font } = useResponsive();
   const navigation = useNavigation<RootNavigationProp>();
+  const posthog = usePostHog();
 
   const [period, setPeriod] = useState<StatPeriod>(STAT_PERIOD.SEASON);
   const [category, setCategory] = useState<LeaderCategory>(LEADER_CATEGORY.EFF);
@@ -72,6 +75,7 @@ export default function StatsScreen() {
   );
 
   const handlePeriodChange = (newPeriod: StatPeriod) => {
+    posthog?.capture(ANALYTICS_EVENTS.STATS_PERIOD_CHANGED, { period: newPeriod });
     setPeriod(newPeriod);
     const stats = computeSeasonStats(allDetailsRef.current, newPeriod);
     const filtered = filterMatchesByPeriod(
@@ -82,7 +86,13 @@ export default function StatsScreen() {
     setMatchCount(filtered.length);
   };
 
+  const handleCategoryChange = (newCategory: LeaderCategory) => {
+    posthog?.capture(ANALYTICS_EVENTS.STATS_CATEGORY_CHANGED, { category: newCategory });
+    setCategory(newCategory);
+  };
+
   const handlePlayerPress = (player: PlayerSeasonData) => {
+    posthog?.capture(ANALYTICS_EVENTS.PLAYER_STATS_OPENED);
     navigation.navigate(ROUTES.PLAYER_PROFILE as 'PlayerProfile', {
       playerId: player.playerId,
       playerNumber: player.playerNumber,
@@ -113,7 +123,7 @@ export default function StatsScreen() {
 
         <PeriodFilter selected={period} onChange={handlePeriodChange} />
 
-        <CategoryTabs selected={category} onChange={setCategory} />
+        <CategoryTabs selected={category} onChange={handleCategoryChange} />
         {LEADER_CATEGORY_LEGEND[category] ? (
           <Text style={[styles.legend, { fontSize: font.xs, color: colors.text.tertiary, paddingHorizontal: sp.md, paddingTop: sp.xs }]}>
             ℹ︎ {LEADER_CATEGORY_LEGEND[category]}

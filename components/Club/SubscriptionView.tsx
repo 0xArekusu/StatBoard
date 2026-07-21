@@ -25,6 +25,8 @@ import { ServiceFactory } from "../../services/ServiceFactory";
 import { supabase } from "../../src/config/supabase";
 import TeamSelectionModal from "./TeamSelectionModal";
 import { showErrorAlert } from "../../utils/errorAlert";
+import { ANALYTICS_EVENTS } from "../../constants/analyticsEvents";
+import { usePostHog } from "posthog-react-native";
 
 /** Props for the main SubscriptionView component */
 interface SubscriptionViewProps {
@@ -154,6 +156,7 @@ export default function SubscriptionView({
 }: SubscriptionViewProps) {
   // Get theme context for dark/light mode support
   const { colors } = useTheme();
+  const posthog = usePostHog();
 
   // State for subscription data
   const [loading, setLoading] = useState(true);
@@ -289,6 +292,11 @@ export default function SubscriptionView({
               if (onSubscriptionUpdated) {
                 onSubscriptionUpdated(result.club);
               }
+
+              posthog?.capture(ANALYTICS_EVENTS.SUBSCRIPTION_UPGRADED, {
+                from_tier: club.subscriptionTier,
+                to_tier: tier,
+              });
 
               Alert.alert("Succès", message);
               onClose();

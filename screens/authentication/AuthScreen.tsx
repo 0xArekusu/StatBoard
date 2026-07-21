@@ -10,9 +10,11 @@ import { LinearGradient } from "expo-linear-gradient";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import Constants from "expo-constants";
 import { useNavigation } from "@react-navigation/native";
+import { usePostHog } from "posthog-react-native";
 import { useTheme } from "../../src/contexts/ThemeContext";
 import { OPACITY, SHADOW_COLOR } from "../../src/theme";
 import { ROUTES } from "../../constants/routes";
+import { ANALYTICS_EVENTS } from "../../constants/analyticsEvents";
 import Logo from "../../components/icons/Logo";
 import { useResponsive } from "../../src/hooks/useResponsive";
 
@@ -27,12 +29,14 @@ import { useResponsive } from "../../src/hooks/useResponsive";
 export default function AuthScreen() {
   const { colors } = useTheme();
   const navigation = useNavigation();
+  const posthog = usePostHog();
   const { sp, font, sizes, isCompact } = useResponsive();
 
   /**
    * Handles guest login - navigates directly to main app without authentication
    */
   const handleGuestLogin = async () => {
+    posthog?.capture(ANALYTICS_EVENTS.GUEST_MODE_STARTED);
     // Set a flag to show guest welcome modal on next dashboard visit
     const AsyncStorage = (
       await import("@react-native-async-storage/async-storage")
