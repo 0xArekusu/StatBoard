@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { Platform } from "react-native";
+import { useEffect, useRef, useState } from "react";
+import { AppState, Linking, Platform } from "react-native";
 import Constants from "expo-constants";
 import * as Updates from "expo-updates";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -46,6 +46,9 @@ export function useAppUpdateCheck() {
   const [isForceUpdateRequired, setIsForceUpdateRequired] = useState(false);
   const [changelog, setChangelog] = useState<Changelog | null>(null);
   const storeUrl = Platform.OS === "ios" ? STORE_URLS.ios : STORE_URLS.android;
+  const currentVersion = Constants.expoConfig?.version ?? "0.0.0";
+  // Distingue "parti au store après clic" (normal) de "quitté sans mettre à jour" (abandon).
+  const didClickUpdateRef = useRef(false);
 
   useEffect(() => {
     const isProduction = !__DEV__ && Updates.channel === "production";
@@ -53,8 +56,6 @@ export function useAppUpdateCheck() {
       logInfo("UpdateCheck", "Force update check skipped", { channel: Updates.channel, isDev: __DEV__ });
       return;
     }
-
-    const currentVersion = Constants.expoConfig?.version ?? "0.0.0";
 
     (async () => {
       try {
@@ -126,6 +127,31 @@ export function useAppUpdateCheck() {
     }
   }, []);
 
+  // Clic sur "Mettre à jour" : on trace, on mémorise le clic (pour ne pas compter
+  // l'ouverture du store comme un abandon), puis on ouvre la fiche store.
+  const onUpdatePress = () => {
+    didClickUpdateRef.current = true;
+    posthog?.capture(ANALYTICS_EVENTS.FORCE_UPDATE_CLICKED, { current_version: currentVersion });
+    Linking.openURL(storeUrl).catch((err) =>
+      logError("UpdateCheck", "Error opening store URL", { err })
+    );
+  };
+
+  // Tant que la mise à jour est requise, un passage en arrière-plan SANS avoir cliqué
+  // "Mettre à jour" = l'utilisateur a quitté l'app plutôt que de la mettre à jour.
+  useEffect(() => {
+    if (!isForceUpdateRequired) return;
+    const subscription = AppState.addEventListener("change", (nextAppState) => {
+      if (nextAppState === "background") {
+        if (didClickUpdateRef.current) return; // parti au store après clic : normal
+        posthog?.capture(ANALYTICS_EVENTS.FORCE_UPDATE_ABANDONED, { current_version: currentVersion });
+      } else if (nextAppState === "active") {
+        didClickUpdateRef.current = false; // de retour sans avoir mis à jour : réarme la détection
+      }
+    });
+    return () => subscription.remove();
+  }, [isForceUpdateRequired, currentVersion, posthog]);
+
   const dismissChangelog = () => {
     const version = changelog?.version;
     setChangelog(null);
@@ -136,5 +162,5 @@ export function useAppUpdateCheck() {
     );
   };
 
-  return { isForceUpdateRequired, storeUrl, changelog, dismissChangelog };
+  return { isForceUpdateRequired, storeUrl, onUpdatePress, changelog, dismissChangelog };
 }

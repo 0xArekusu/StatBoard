@@ -60,6 +60,8 @@ export const ANALYTICS_EVENTS = {
 
   // App-level
   FORCE_UPDATE_SHOWN: "force_update_shown",
+  FORCE_UPDATE_CLICKED: "force_update_clicked",
+  FORCE_UPDATE_ABANDONED: "force_update_abandoned",
   CHANGELOG_SHOWN: "changelog_shown",
   CHANGELOG_DISMISSED: "changelog_dismissed",
 } as const;

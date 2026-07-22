@@ -83,7 +83,7 @@ function Navigation() {
   const { loading, user, createSessionFromUrl } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
   const pendingNavigation = useRef<'emailConfirmed' | 'emailError' | 'resetPassword' | 'resetPasswordError' | false>(false);
-  const { isForceUpdateRequired, storeUrl, changelog, dismissChangelog } = useAppUpdateCheck();
+  const { isForceUpdateRequired, onUpdatePress, changelog, dismissChangelog } = useAppUpdateCheck();
   const posthog = usePostHog();
   const routeNameRef = useRef<string | undefined>(undefined);
 
@@ -238,7 +238,7 @@ function Navigation() {
     return (
       <>
         <SplashScreen />
-        <ForceUpdateModal visible={isForceUpdateRequired} storeUrl={storeUrl} />
+        <ForceUpdateModal visible={isForceUpdateRequired} onUpdatePress={onUpdatePress} />
       </>
     );
   }
@@ -297,7 +297,7 @@ function Navigation() {
           <Stack.Screen name={ROUTES.PLAYER_PROFILE} component={PlayerProfileScreen} />
         </Stack.Navigator>
       </NavigationContainer>
-      <ForceUpdateModal visible={isForceUpdateRequired} storeUrl={storeUrl} />
+      <ForceUpdateModal visible={isForceUpdateRequired} onUpdatePress={onUpdatePress} />
       <ChangelogModal
         visible={!!changelog}
         title={changelog?.title ?? null}
