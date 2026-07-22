@@ -38,6 +38,7 @@ import { logInfo, logWarn, logError, logger } from "./utils/logger";
 import DebugCourtClick from "./DebugCourtClick";
 import { useAppUpdateCheck } from "./hooks/useAppUpdateCheck";
 import ForceUpdateModal from "./components/ForceUpdateModal";
+import ChangelogModal from "./components/ChangelogModal";
 
 
 // Initialize Sentry
@@ -82,7 +83,7 @@ function Navigation() {
   const { loading, user, createSessionFromUrl } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
   const pendingNavigation = useRef<'emailConfirmed' | 'emailError' | 'resetPassword' | 'resetPasswordError' | false>(false);
-  const { isForceUpdateRequired, storeUrl } = useAppUpdateCheck();
+  const { isForceUpdateRequired, storeUrl, changelog, dismissChangelog } = useAppUpdateCheck();
   const posthog = usePostHog();
   const routeNameRef = useRef<string | undefined>(undefined);
 
@@ -297,6 +298,12 @@ function Navigation() {
         </Stack.Navigator>
       </NavigationContainer>
       <ForceUpdateModal visible={isForceUpdateRequired} storeUrl={storeUrl} />
+      <ChangelogModal
+        visible={!!changelog}
+        title={changelog?.title ?? null}
+        items={changelog?.items ?? []}
+        onClose={dismissChangelog}
+      />
     </>
   );
 }

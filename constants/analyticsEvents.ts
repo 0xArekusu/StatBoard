@@ -60,6 +60,8 @@ export const ANALYTICS_EVENTS = {
 
   // App-level
   FORCE_UPDATE_SHOWN: "force_update_shown",
+  CHANGELOG_SHOWN: "changelog_shown",
+  CHANGELOG_DISMISSED: "changelog_dismissed",
 } as const;
 
 export type AnalyticsEvent = (typeof ANALYTICS_EVENTS)[keyof typeof ANALYTICS_EVENTS];
