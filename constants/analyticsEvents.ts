@@ -64,6 +64,8 @@ export const ANALYTICS_EVENTS = {
   FORCE_UPDATE_ABANDONED: "force_update_abandoned",
   CHANGELOG_SHOWN: "changelog_shown",
   CHANGELOG_DISMISSED: "changelog_dismissed",
+  // DEBUG TEMPORAIRE — à retirer après diagnostic du changelog
+  UPDATE_CHECK_DEBUG: "update_check_debug",
 } as const;
 
 export type AnalyticsEvent = (typeof ANALYTICS_EVENTS)[keyof typeof ANALYTICS_EVENTS];

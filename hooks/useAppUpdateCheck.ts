@@ -28,6 +28,15 @@ export interface Changelog {
   items: ChangelogItem[];
 }
 
+function safeParseArray(value: string): unknown[] {
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
 function isVersionLessThan(current: string, minimum: string): boolean {
   const parse = (v: string) => v.split(".").map(Number);
   const curr = parse(current);
@@ -51,6 +60,13 @@ export function useAppUpdateCheck() {
   const didClickUpdateRef = useRef(false);
 
   useEffect(() => {
+    // DEBUG TEMPORAIRE — à retirer après diagnostic du changelog.
+    posthog?.capture(ANALYTICS_EVENTS.UPDATE_CHECK_DEBUG, {
+      channel: Updates.channel,
+      is_dev: __DEV__,
+      current_version: currentVersion,
+    });
+
     // production = utilisateurs finaux, preview = builds de test (QA).
     const isEnabled = !__DEV__ && ["production", "preview"].includes(Updates.channel ?? "");
     if (!isEnabled) {
@@ -110,8 +126,12 @@ export function useAppUpdateCheck() {
           return;
         }
 
-        const items: ChangelogItem[] =
-          Array.isArray(data?.items) ? data!.items.filter((it: ChangelogItem) => it?.title) : [];
+        // items est du jsonb array, mais l'éditeur Supabase peut le stocker en string JSON (double-encodage) : on tolère les deux.
+        const rawItems =
+          typeof data?.items === "string" ? safeParseArray(data.items) : data?.items;
+        const items: ChangelogItem[] = Array.isArray(rawItems)
+          ? rawItems.filter((it: ChangelogItem) => it?.title)
+          : [];
         if (!data || items.length === 0) {
           // Aucun changelog publié pour cette version → on marque vu pour éviter un refetch à chaque lancement.
           await AsyncStorage.setItem(CHANGELOG_SEEN_KEY, installedVersion);
