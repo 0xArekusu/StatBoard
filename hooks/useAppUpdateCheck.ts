@@ -51,8 +51,9 @@ export function useAppUpdateCheck() {
   const didClickUpdateRef = useRef(false);
 
   useEffect(() => {
-    const isProduction = !__DEV__ && Updates.channel === "production";
-    if (!isProduction) {
+    // production = utilisateurs finaux, preview = builds de test (QA).
+    const isEnabled = !__DEV__ && ["production", "preview"].includes(Updates.channel ?? "");
+    if (!isEnabled) {
       logInfo("UpdateCheck", "Force update check skipped", { channel: Updates.channel, isDev: __DEV__ });
       return;
     }
