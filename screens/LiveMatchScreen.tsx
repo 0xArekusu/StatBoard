@@ -27,6 +27,7 @@ import {
 } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
+import { usePostHog } from "posthog-react-native";
 import { useTheme } from "../src/contexts/ThemeContext";
 import { SLATE_COLORS } from "../src/theme/colors";
 import { RootStackParamList, RootNavigationProp } from "../types/navigation";
@@ -36,10 +37,12 @@ import {
   CreateActionData,
   Team,
 } from "../src/models/types";
-import { ActionType, ShotSpecification, ReboundSpecification, SubstitutionSpecification } from "../src/models/ActionTypes";
+import { ActionType, ShotSpecification, ReboundSpecification, SubstitutionSpecification, FoulSpecification, FOUL_SPECIFICATION_FR } from "../src/models/ActionTypes";
 import { Player } from "../models/Player";
 import { useAuth } from "../src/contexts/AuthContext";
+import { useClub } from "../src/contexts/ClubContext";
 import { MatchManager } from "../src/services/match/MatchManager";
+import { resolveMatchSponsors, MatchSponsor, getSponsorUris, parseMatchSponsors } from "../src/services/SponsorService";
 import { ActionQueue } from "../src/services/match/ActionQueue";
 import { AdminService } from "../services/AdminService";
 import { MatchRepository } from "../src/services/database/MatchRepository";
@@ -73,6 +76,8 @@ import { getChainContext } from "../utils/actionChainRules";
 import {
   COURT_SVG_WIDTH_PORTRAIT,
   COURT_SVG_HEIGHT_PORTRAIT,
+  ANALYTICS_EVENTS,
+  ANALYTICS_MATCH_START_TRIGGER,
 } from "../constants";
 import { DEFAULT_COURT_COLORS } from "../src/theme/colors";
 import { supabase } from "../src/config/supabase";
@@ -103,6 +108,8 @@ export default function LiveMatchScreen() {
   const { isCompact, isPortrait, sp, font, width } = useResponsive();
   const isMobileLandscape = !isPortrait && width < BREAKPOINTS.mobileLandscapeMaxWidth;
   const { user } = useAuth();
+  const { currentClub } = useClub();
+  const posthog = usePostHog();
   const matchData = route.params?.matchData;
   const resumeMatchId = route.params?.matchId;
 
@@ -115,6 +122,9 @@ export default function LiveMatchScreen() {
   const [currentMatchId, setCurrentMatchId] = useState<string | null>(null);
   const [actionCounter, setActionCounter] = useState(0);
   const [isLoadingMatch, setIsLoadingMatch] = useState(!!resumeMatchId);
+  const [matchSponsors, setMatchSponsors] = useState<MatchSponsor[]>(() =>
+    parseMatchSponsors(matchData?.match_sponsors)
+  );
 
   // ========================================
   // MATCH STATE
@@ -496,6 +506,12 @@ export default function LiveMatchScreen() {
           setActionCounter(maxActionOrder + 1);
 
           setCurrentMatchId(resumeMatchId);
+
+          // Restore sponsors from local storage snapshot
+          if (existingMatch.match_sponsors) {
+            setMatchSponsors(parseMatchSponsors(existingMatch.match_sponsors));
+          }
+
           setIsLoadingMatch(false);
 
           logInfo("LiveMatchScreen", "✅ Match resumed successfully", {
@@ -527,6 +543,13 @@ export default function LiveMatchScreen() {
             location: match.location,
           });
 
+          // Resolve sponsors at match creation time (snapshot for live view + PDF)
+          const resolvedSponsors = await resolveMatchSponsors(
+            match.clubId || null,
+            currentClub?.subscriptionTier || null,
+          );
+          setMatchSponsors(resolvedSponsors);
+
           const matchCreateData: CreateMatchData & { created_at: string } = {
             my_team_name: match.myTeamName || null,
             opponent_name: match.opponent || "Adversaire",
@@ -542,6 +565,7 @@ export default function LiveMatchScreen() {
             court_line_color: match.courtLineColor || null,
             my_team_handicap: match.myTeamHandicap || 0,
             opponent_handicap: match.opponentHandicap || 0,
+            match_sponsors: JSON.stringify(resolvedSponsors),
             created_at: match.createdAt || new Date().toISOString(), // Use timestamp from NewMatchScreen
           };
 
@@ -768,6 +792,7 @@ export default function LiveMatchScreen() {
           if (currentMatch && !currentMatch.started_at) {
             const matchManager = new MatchManager();
             await matchManager.startMatch(currentMatchId);
+            posthog?.capture(ANALYTICS_EVENTS.MATCH_STARTED, { trigger: ANALYTICS_MATCH_START_TRIGGER.TIMER });
             logInfo("LiveMatchScreen", "✅ Match started_at set on timer start", {
               matchId: currentMatchId,
             });
@@ -1311,6 +1336,7 @@ export default function LiveMatchScreen() {
         if (currentMatch && !currentMatch.started_at) {
           const matchManager = new MatchManager();
           await matchManager.startMatch(currentMatchId);
+          posthog?.capture(ANALYTICS_EVENTS.MATCH_STARTED, { trigger: ANALYTICS_MATCH_START_TRIGGER.FIRST_ACTION });
           logInfo("LiveMatchScreen", "✅ Match started_at set on first action", {
             matchId: currentMatchId,
           });
@@ -1333,6 +1359,21 @@ export default function LiveMatchScreen() {
       : match.location === TeamId.HOME
       ? TeamId.AWAY
       : TeamId.HOME;
+
+    // L'événement FOUL est créé dans handleFoulChainComplete, pas ici, pour connaître le type avant la sauvegarde
+    if (action_type === ActionType.FOUL && !fromChainActionType) {
+      setFoulChainContext({
+        foulDrawnPlayerId: playerId,
+        foulDrawnPlayerNumber: player?.jerseyNumber || 0,
+        foulDrawnPlayerName: player?.name || "",
+        foulDrawnTeamId: teamId,
+        coords,
+        mode: "foul_committed",
+      });
+      setWorkflowStep(WorkflowStep.FOUL_CHAIN);
+      setPendingEvent({});
+      return;
+    }
 
     const pName = player?.name || "Joueur";
 
@@ -1414,21 +1455,6 @@ export default function LiveMatchScreen() {
         foulDrawnPlayerName: player?.name || "",
         foulDrawnTeamId: teamId,
         coords,
-      });
-      setWorkflowStep(WorkflowStep.FOUL_CHAIN);
-      setPendingEvent({});
-      return;
-    }
-
-    // FOUL triggers foul chain modal — ask who drew the foul (either team)
-    if (action_type === ActionType.FOUL && match.trackOpponentStats) {
-      setFoulChainContext({
-        foulDrawnPlayerId: playerId,
-        foulDrawnPlayerNumber: player?.jerseyNumber || 0,
-        foulDrawnPlayerName: player?.name || "",
-        foulDrawnTeamId: teamId,
-        coords,
-        mode: "foul_committed",
       });
       setWorkflowStep(WorkflowStep.FOUL_CHAIN);
       setPendingEvent({});
@@ -1518,7 +1544,35 @@ export default function LiveMatchScreen() {
     closeWorkflow();
   };
 
-  const handleFoulChainIgnore = () => {
+  const handleFoulChainIgnore = async (foulType: FoulSpecification) => {
+    if (foulChainContext?.mode === "foul_committed") {
+      const { foulDrawnPlayerId, foulDrawnPlayerNumber, foulDrawnPlayerName, foulDrawnTeamId, coords } = foulChainContext;
+      const isMyTeamPlayer = homeRoster.some((p: Player) => p.id === foulDrawnPlayerId);
+      const foulDrawnTeam = isMyTeamPlayer ? Team.MY_TEAM : Team.OPPONENT;
+      const normalizedCoords = coords
+        ? { x: coords.x / COURT_SVG_WIDTH_PORTRAIT, y: coords.y / COURT_SVG_HEIGHT_PORTRAIT }
+        : undefined;
+      const actionId = await saveActionToDatabase(
+        ActionType.FOUL, foulType, 0,
+        foulDrawnPlayerNumber, foulDrawnTeam, coords,
+      );
+      const updatedMatch = { ...match, events: [...(match.events || [])] };
+      updatedMatch.events = [{
+        id: actionId || `temp-${Date.now()}`,
+        action_type: ActionType.FOUL,
+        specification: foulType,
+        points: 0,
+        playerId: foulDrawnPlayerId,
+        playerNumber: foulDrawnPlayerNumber,
+        teamId: foulDrawnTeamId,
+        timestamp: Date.now(),
+        description: `#${foulDrawnPlayerNumber} ${foulDrawnPlayerName} — Faute (${FOUL_SPECIFICATION_FR[foulType]})`,
+        coordinates: normalizedCoords,
+        period_number: quarter,
+        time_in_period: periodDurationMin * 60 - timer,
+      }, ...updatedMatch.events];
+      setMatch(updatedMatch);
+    }
     setFoulChainContext(null);
     closeWorkflow();
   };
@@ -1660,48 +1714,72 @@ export default function LiveMatchScreen() {
       ? { x: coords.x / COURT_SVG_WIDTH_PORTRAIT, y: coords.y / COURT_SVG_HEIGHT_PORTRAIT }
       : undefined;
 
-    // ── foul_committed mode: result.foulPlayer drew the foul, pts/LF go to them ─────
-    if (foulChainContext.mode === "foul_committed" && result.foulPlayer) {
+    // ── mode foul_committed : result.foulPlayer a provoqué la faute, pts/LF vont à lui ─────
+    if (foulChainContext.mode === "foul_committed") {
       const drawnPlayer = result.foulPlayer;
       const drawnTeam = isMyTeamPlayer ? Team.OPPONENT : Team.MY_TEAM;
       const drawnTeamId = opponentTeamId;
 
-      // 1. Save FOUL_DRAWN for the player who drew the foul
-      const foulDrawnId = await saveActionToDatabase(
-        ActionType.FOUL_DRAWN, undefined, 0,
-        drawnPlayer.jerseyNumber, drawnTeam, coords,
+      // 0. Sauvegarde le FOUL du joueur fautif, avec le type choisi dans la modale
+      const foulCommittedId = await saveActionToDatabase(
+        ActionType.FOUL, result.foulType, 0,
+        foulDrawnPlayerNumber, foulDrawnTeam, coords,
       );
       updatedMatch.events = [{
-        id: foulDrawnId || `temp-${Date.now()}`,
-        action_type: ActionType.FOUL_DRAWN,
-        specification: undefined,
+        id: foulCommittedId || `temp-${Date.now()}`,
+        action_type: ActionType.FOUL,
+        specification: result.foulType,
         points: 0,
-        playerId: drawnPlayer.id,
-        playerNumber: drawnPlayer.jerseyNumber,
-        teamId: drawnTeamId,
+        playerId: foulDrawnPlayerId,
+        playerNumber: foulDrawnPlayerNumber,
+        teamId: foulDrawnTeamId,
         timestamp: Date.now(),
-        description: `#${drawnPlayer.jerseyNumber} ${drawnPlayer.name} — Faute provoquée`,
+        description: `#${foulDrawnPlayerNumber} ${foulDrawnPlayerName} — Faute (${FOUL_SPECIFICATION_FR[result.foulType]})`,
         coordinates: normalizedCoords,
         period_number: quarter,
         time_in_period: periodDurationMin * 60 - timer,
       }, ...updatedMatch.events];
 
-      // 2. Save basket if and-one (attributed to drawn player)
+      // 1. Sauvegarde le FOUL_DRAWN — absent pour une Technique (pas de drawnPlayer)
+      if (drawnPlayer) {
+        const foulDrawnId = await saveActionToDatabase(
+          ActionType.FOUL_DRAWN, undefined, 0,
+          drawnPlayer.jerseyNumber, drawnTeam, coords,
+        );
+        updatedMatch.events = [{
+          id: foulDrawnId || `temp-${Date.now()}`,
+          action_type: ActionType.FOUL_DRAWN,
+          specification: undefined,
+          points: 0,
+          playerId: drawnPlayer.id,
+          playerNumber: drawnPlayer.jerseyNumber,
+          teamId: drawnTeamId,
+          timestamp: Date.now(),
+          description: `#${drawnPlayer.jerseyNumber} ${drawnPlayer.name} — Faute provoquée`,
+          coordinates: normalizedCoords,
+          period_number: quarter,
+          time_in_period: periodDurationMin * 60 - timer,
+        }, ...updatedMatch.events];
+      }
+
+      // 2. Sauvegarde le panier si and-one
       if (result.basketPoints) {
         const shotId = await saveActionToDatabase(
           ActionType.SHOT, ShotSpecification.MADE, result.basketPoints,
-          drawnPlayer.jerseyNumber, drawnTeam, coords,
+          drawnPlayer?.jerseyNumber ?? -1, drawnTeam, coords,
         );
         updatedMatch.events = [{
           id: shotId || `temp-${Date.now()}`,
           action_type: ActionType.SHOT,
           specification: ShotSpecification.MADE,
           points: result.basketPoints,
-          playerId: drawnPlayer.id,
-          playerNumber: drawnPlayer.jerseyNumber,
+          playerId: drawnPlayer?.id,
+          playerNumber: drawnPlayer?.jerseyNumber ?? -1,
           teamId: drawnTeamId,
           timestamp: Date.now(),
-          description: `#${drawnPlayer.jerseyNumber} ${drawnPlayer.name} — Tir (+${result.basketPoints})`,
+          description: drawnPlayer
+            ? `#${drawnPlayer.jerseyNumber} ${drawnPlayer.name} — Tir (+${result.basketPoints})`
+            : `Équipe — Tir (+${result.basketPoints})`,
           coordinates: normalizedCoords,
           period_number: quarter,
           time_in_period: periodDurationMin * 60 - timer,
@@ -1709,7 +1787,7 @@ export default function LiveMatchScreen() {
         if (drawnTeamId === TeamId.HOME) updatedMatch.scoreHome += result.basketPoints;
         else updatedMatch.scoreAway += result.basketPoints;
 
-        if (result.assistPlayer) {
+        if (result.assistPlayer && drawnPlayer) {
           const assistId = await saveActionToDatabase(
             ActionType.ASSIST, undefined, 0,
             result.assistPlayer.jerseyNumber, drawnTeam, coords,
@@ -1731,27 +1809,29 @@ export default function LiveMatchScreen() {
         }
       }
 
-      // 3. Save all free throws (attributed to drawn player)
+      // 3. Sauvegarde tous les lancers-francs
       const ftsCommitted = result.freethrows;
       let lastLFSpecCommitted: ShotSpecification | null = null;
       for (let i = 0; i < ftsCommitted.length; i++) {
         const spec = ftsCommitted[i] === "made" ? ShotSpecification.MADE : ShotSpecification.MISSED;
         if (i === ftsCommitted.length - 1) lastLFSpecCommitted = spec;
         const lfId = await saveActionToDatabase(
-          ActionType.SHOT, spec, 1, drawnPlayer.jerseyNumber, drawnTeam, undefined,
+          ActionType.SHOT, spec, 1, drawnPlayer?.jerseyNumber ?? -1, drawnTeam, undefined,
         );
         updatedMatch.events = [{
           id: lfId || `temp-${Date.now()}`,
           action_type: ActionType.SHOT,
           specification: spec,
           points: 1,
-          playerId: drawnPlayer.id,
-          playerNumber: drawnPlayer.jerseyNumber,
+          playerId: drawnPlayer?.id,
+          playerNumber: drawnPlayer?.jerseyNumber ?? -1,
           teamId: drawnTeamId,
           timestamp: Date.now(),
-          description: spec === ShotSpecification.MADE
-            ? `#${drawnPlayer.jerseyNumber} ${drawnPlayer.name} — LF (+1)`
-            : `#${drawnPlayer.jerseyNumber} ${drawnPlayer.name} — LF raté`,
+          description: drawnPlayer
+            ? (spec === ShotSpecification.MADE
+                ? `#${drawnPlayer.jerseyNumber} ${drawnPlayer.name} — LF (+1)`
+                : `#${drawnPlayer.jerseyNumber} ${drawnPlayer.name} — LF raté`)
+            : (spec === ShotSpecification.MADE ? "Équipe — LF technique (+1)" : "Équipe — LF technique raté"),
           period_number: quarter,
           time_in_period: periodDurationMin * 60 - timer,
         }, ...updatedMatch.events];
@@ -1771,8 +1851,8 @@ export default function LiveMatchScreen() {
           action_type: ActionType.SHOT,
           specification: ShotSpecification.MISSED,
           points: 1,
-          playerId: drawnPlayer.id,
-          playerNumber: drawnPlayer.jerseyNumber,
+          playerId: drawnPlayer?.id,
+          playerNumber: drawnPlayer?.jerseyNumber ?? -1,
           teamId: drawnTeamId,
           timestamp: Date.now(),
           description: "",
@@ -1796,24 +1876,28 @@ export default function LiveMatchScreen() {
       return;
     }
 
-    // ── foul_drawn mode (original): result.foulPlayer committed the foul ────────
-    // 1. Save Foul for the opponent player who committed it
-    if (result.foulPlayer) {
+    // ── mode foul_drawn (original) : result.foulPlayer a commis la faute ────────
+    // 1. Sauvegarde la faute du joueur adverse
+    if (match.trackOpponentStats) {
       const opponentTeam = isMyTeamPlayer ? Team.OPPONENT : Team.MY_TEAM;
+      const foulPlayerNumber = result.foulPlayer?.jerseyNumber ?? -1;
+      const foulPlayerName = result.foulPlayer?.name;
       const actionId = await saveActionToDatabase(
-        ActionType.FOUL, undefined, 0,
-        result.foulPlayer.jerseyNumber, opponentTeam, coords,
+        ActionType.FOUL, result.foulType, 0,
+        foulPlayerNumber, opponentTeam, coords,
       );
       updatedMatch.events = [{
         id: actionId || `temp-${Date.now()}`,
         action_type: ActionType.FOUL,
-        specification: undefined,
+        specification: result.foulType,
         points: 0,
-        playerId: result.foulPlayer.id,
-        playerNumber: result.foulPlayer.jerseyNumber,
+        playerId: result.foulPlayer?.id,
+        playerNumber: foulPlayerNumber,
         teamId: opponentTeamId,
         timestamp: Date.now(),
-        description: `#${result.foulPlayer.jerseyNumber} ${result.foulPlayer.name} — Faute`,
+        description: result.foulPlayer
+          ? `#${foulPlayerNumber} ${foulPlayerName} — Faute (${FOUL_SPECIFICATION_FR[result.foulType]})`
+          : `Équipe — Faute (${FOUL_SPECIFICATION_FR[result.foulType]})`,
         coordinates: normalizedCoords,
         period_number: quarter,
         time_in_period: periodDurationMin * 60 - timer,
@@ -2250,22 +2334,31 @@ export default function LiveMatchScreen() {
           </ScrollView>
         )}
 
-        {viewMode === ViewMode.COURT && (
-          <CourtView
-            onCourtClick={handleCourtClick}
-            events={match.events}
-            showMarkers={showMarkers}
-            filterMode={filterMode}
-            selectedPlayerIds={selectedPlayerIds}
-            selectedPeriodIds={selectedPeriodIds}
-            selectedTeamFilter={selectedTeamFilter}
-            isHome={match.location === TeamId.HOME}
-            trackOpponentStats={match.trackOpponentStats}
-            clubLogoUrl={match.clubLogoUrl}
-            courtBackgroundColor={match.courtBackgroundColor}
-            courtLineColor={match.courtLineColor}
-          />
-        )}
+        {viewMode === ViewMode.COURT && (() => {
+          const { top: sponsorTop, bottom: sponsorBottom, third: sponsorThird, fourth: sponsorFourth, sideLeft: sponsorSideLeft, sideRight: sponsorSideRight } = getSponsorUris(matchSponsors, match.courtBackgroundColor, isDark);
+          return (
+            <CourtView
+              onCourtClick={handleCourtClick}
+              events={match.events}
+              showMarkers={showMarkers}
+              filterMode={filterMode}
+              selectedPlayerIds={selectedPlayerIds}
+              selectedPeriodIds={selectedPeriodIds}
+              selectedTeamFilter={selectedTeamFilter}
+              isHome={match.location === TeamId.HOME}
+              trackOpponentStats={match.trackOpponentStats}
+              clubLogoUrl={match.clubLogoUrl}
+              courtBackgroundColor={match.courtBackgroundColor}
+              courtLineColor={match.courtLineColor}
+              courtSponsorTopUri={sponsorTop}
+              courtSponsorBottomUri={sponsorBottom}
+              courtSponsorThirdUri={sponsorThird}
+              courtSponsorFourthUri={sponsorFourth}
+              sideSponsorLeftUri={sponsorSideLeft}
+              sideSponsorRightUri={sponsorSideRight}
+            />
+          );
+        })()}
       </View>
 
       {/* Toolbar */}

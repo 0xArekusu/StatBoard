@@ -7,6 +7,7 @@
 import { useState } from "react";
 import { useNavigation } from "@react-navigation/native";
 import { Alert } from "react-native";
+import { usePostHog } from "posthog-react-native";
 import { useInterstitialAd } from "./useInterstitialAd";
 import { SupabaseClient } from "@supabase/supabase-js";
 import { RootNavigationProp } from "../types/navigation";
@@ -17,6 +18,7 @@ import { ActionRepository } from "../src/services/database/ActionRepository";
 import { logInfo, logError, logWarn } from "../utils/logger";
 import { ROUTES } from "../constants/routes";
 import { TeamId } from "../constants/liveMatchConstants";
+import { ANALYTICS_EVENTS } from "../constants/analyticsEvents";
 import { MatchSyncService } from "../src/services/api/MatchSyncService";
 
 interface UseMatchSyncProps {
@@ -43,6 +45,7 @@ export function useMatchSync({
   user,
 }: UseMatchSyncProps) {
   const navigation = useNavigation<RootNavigationProp>();
+  const posthog = usePostHog();
   const [isSyncing, setIsSyncing] = useState(false);
   const [showLocalSaveWarning, setShowLocalSaveWarning] = useState(false);
   const { showIfReady: showInterstitial } = useInterstitialAd();
@@ -99,6 +102,13 @@ export function useMatchSync({
       // Mark match as completed and compact actions
       await matchManager.endMatch(currentMatchId);
 
+      posthog?.capture(ANALYTICS_EVENTS.MATCH_ENDED, {
+        my_team_score: myTeamScore,
+        opponent_score: opponentScore,
+        total_periods_played: quarter,
+        overtime_periods: overtimesPlayed,
+      });
+
       logInfo("useMatchSync", "✅ Match ended and compacted", {
         matchId: currentMatchId,
         finalScores: `${myTeamScore} - ${opponentScore}`,
@@ -135,6 +145,8 @@ export function useMatchSync({
               supabaseMatchId: syncResult.matchId,
             });
 
+            posthog?.capture(ANALYTICS_EVENTS.MATCH_SYNC_SUCCEEDED);
+
             // Fetch synced match data from Supabase
             await fetchAndNavigateToSyncedMatch(syncResult.matchId!);
           } else {
@@ -142,6 +154,8 @@ export function useMatchSync({
               matchId: currentMatchId,
               error: syncResult.error,
             });
+
+            posthog?.capture(ANALYTICS_EVENTS.MATCH_SYNC_FAILED, { error_message: syncResult.error ?? null });
 
             setIsSyncing(false);
 
@@ -180,6 +194,10 @@ export function useMatchSync({
         logError("useMatchSync", "❌ Error during sync attempt", {
           matchId: currentMatchId,
           error: syncError instanceof Error ? syncError.message : syncError,
+        });
+
+        posthog?.capture(ANALYTICS_EVENTS.MATCH_SYNC_FAILED, {
+          error_message: syncError instanceof Error ? syncError.message : null,
         });
 
         setIsSyncing(false);

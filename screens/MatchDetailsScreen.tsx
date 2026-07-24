@@ -47,6 +47,8 @@ import {
   ReboundSpecification,
 } from "../src/models/ActionTypes";
 import { GUEST_IDS } from "../constants/matchConstants";
+import { ANALYTICS_EVENTS, ANALYTICS_PDF_EXPORT_TYPE } from "../constants/analyticsEvents";
+import { usePostHog } from "posthog-react-native";
 import { useTheme } from "../src/contexts/ThemeContext";
 import { useResponsive } from "../src/hooks/useResponsive";
 import { Colors } from "../src/theme/colors";
@@ -58,6 +60,7 @@ import { ServiceFactory } from "../services/ServiceFactory";
 import { supabase } from "../src/config/supabase";
 import { getSignedUrl } from "../utils/storageHelper";
 import { useSignedUrl } from "../hooks/useSignedUrl";
+import { MatchSponsor, getSponsorUris, parseMatchSponsors } from "../src/services/SponsorService";
 import { StatsTab, CardsTab, CourtTab, EvolutionTab, TimelineTab, PlayerDetailModal } from "../components/MatchDetails";
 import type { PlayerStats, Tab, TeamFilter, ActionFilterType, SortBy, SortOrder } from "../constants/matchDetailsConstants";
 import { TAB, ACTION_FILTER } from "../constants";
@@ -72,6 +75,7 @@ export default function MatchDetailsScreen() {
   // ========================================
   const navigation = useNavigation<RootNavigationProp>();
   const route = useRoute<MatchDetailsRouteProp>();
+  const posthog = usePostHog();
   const { match, fromLiveMatch, isLocalMatch } = route.params;
   const { colors, isDark } = useTheme();
   const { sp, font, sizes } = useResponsive();
@@ -277,6 +281,7 @@ export default function MatchDetailsScreen() {
         clubLogoUrl, // Signed URL for PDF (valid 2h) or undefined if offline/error
         courtBackgroundColor: club?.courtBackgroundColor, // Use club court background color if configured
         courtLineColor: club?.courtLineColor, // Use club court line color if configured
+        matchSponsors: parseMatchSponsors(match.match_sponsors),
       };
 
       console.log('[MatchDetailsScreen] 📋 pdfOptions.players envoyé:', pdfOptions.players.map(p => ({
@@ -288,6 +293,7 @@ export default function MatchDetailsScreen() {
 
       await PDFExportService.generateMatchPDF(pdfOptions);
       setIsExportingPDF(false);
+      posthog?.capture(ANALYTICS_EVENTS.PDF_EXPORTED, { type: ANALYTICS_PDF_EXPORT_TYPE.MATCH });
       Alert.alert("Succès", "Le PDF a été généré et partagé avec succès");
     } catch (error) {
       setIsExportingPDF(false);
@@ -626,6 +632,17 @@ export default function MatchDetailsScreen() {
   const courtLineColor = club?.courtLineColor || colors.court.line;
   const logoUri = useSignedUrl(club?.logoUrl);
 
+  // Sponsors — parsed once from SQLite/Supabase snapshot (works offline)
+  const matchSponsors = useMemo<MatchSponsor[]>(
+    () => parseMatchSponsors(match.match_sponsors),
+    [match.match_sponsors],
+  );
+
+  const sponsorUris = useMemo(
+    () => getSponsorUris(matchSponsors, courtBackgroundColor, isDark),
+    [matchSponsors, courtBackgroundColor, isDark],
+  );
+
   // ========================================
   // LOADING SCREEN
   // ========================================
@@ -655,6 +672,7 @@ export default function MatchDetailsScreen() {
         actions={actions}
         club={club}
         matchDate={match.created_at ? new Date(match.created_at) : undefined}
+        matchSponsors={matchSponsors}
       />
 
       {/* PDF EXPORT LOADER MODAL */}
@@ -1059,6 +1077,7 @@ export default function MatchDetailsScreen() {
             logoUri={logoUri}
             activeTeamFilter={activeTeamFilter}
             totalPeriods={match.total_periods || 4}
+            sponsorUris={sponsorUris}
           />
         )}
 

@@ -13,6 +13,7 @@ import {
   ScrollView,
   TouchableOpacity,
   useWindowDimensions,
+  Image,
 } from "react-native";
 import { useTheme } from "../../src/contexts/ThemeContext";
 import { useResponsive } from "../../src/hooks/useResponsive";
@@ -47,6 +48,14 @@ interface CourtTabProps {
   logoUri: any;
   activeTeamFilter: "MyTeam" | "Opponent";
   totalPeriods: number;
+  sponsorUris?: {
+    top: string | null;
+    bottom: string | null;
+    third: string | null;
+    fourth: string | null;
+    sideLeft: string | null;
+    sideRight: string | null;
+  };
 }
 
 export default function CourtTab({
@@ -63,6 +72,7 @@ export default function CourtTab({
   logoUri,
   activeTeamFilter,
   totalPeriods,
+  sponsorUris,
 }: CourtTabProps) {
   const { colors } = useTheme();
   const { sp, font, sizes, isCompact } = useResponsive();
@@ -100,13 +110,35 @@ export default function CourtTab({
   // Determine orientation based on screen dimensions
   const isPortrait = windowDimensions.height > windowDimensions.width;
 
-  // Use fixed dimensions from constants
-  const courtWidth = isPortrait
+  // Banners are positioned outside the court's own box (negative offset) so they
+  // sit right next to the court line without adding width to the layout.
+  const SIDE_BANNER_WIDTH = 30;
+
+  // Max dimensions from constants (tuned for tablets/large screens). On narrow
+  // phones the court must shrink below this max, otherwise courtWidth +
+  // 2*SIDE_BANNER_WIDTH exceeds the screen width and the banners get pushed
+  // off-screen — there's no horizontal scroll to reveal them.
+  const maxCourtWidth = isPortrait
     ? COURT_DISPLAY_WIDTH_PORTRAIT_MAX
     : COURT_DISPLAY_WIDTH_LANDSCAPE_MAX;
-  const courtHeight = isPortrait
+  const maxCourtHeight = isPortrait
     ? COURT_DISPLAY_HEIGHT_PORTRAIT_MAX
     : COURT_DISPLAY_HEIGHT_LANDSCAPE_MAX;
+  const courtAspectRatio = maxCourtHeight / maxCourtWidth;
+
+  // Horizontal chrome outside the court box: the screen's ScrollView padding
+  // (sp.md each side) + courtContainer's own padding (sp.md each side) + both
+  // side banners.
+  const availableCourtWidth =
+    windowDimensions.width - sp.md * 4 - SIDE_BANNER_WIDTH * 2;
+  const courtWidth = Math.min(maxCourtWidth, Math.max(200, availableCourtWidth));
+  const courtHeight = courtWidth * courtAspectRatio;
+
+  // Side sponsor banners are rotated 90deg — their image lays out as
+  // (sideBannerImageLength x 60) but visually occupies (60 x sideBannerImageLength)
+  // once rotated. The wrapper must be sized to that rotated footprint, not the
+  // pre-rotation layout box, otherwise overflow:hidden clips almost all of it away.
+  const sideBannerImageLength = Math.min(courtHeight * 0.45, 220);
 
   // Determine which specifications to show based on selected action type
   // Only show specifications if exactly one action type is selected
@@ -825,24 +857,42 @@ export default function CourtTab({
               styles.courtContainer,
               {
                 backgroundColor: surfaceColor,
-                width: "100%", // Court width + padding
-                height: courtHeight + sp.xxl, // Court height + padding
+                width: "100%",
+                height: courtHeight + sp.xxl,
                 alignSelf: "center",
                 padding: sp.md,
                 borderRadius: sp.md,
               },
             ]}
           >
-            <BasketballCourtSVG
-              key={`court-${
-                isPortrait ? "portrait" : "landscape"
-              }-${courtWidth}-${courtHeight}`}
-              width={courtWidth}
-              height={courtHeight}
-              backgroundColor={courtBackgroundColor}
-              lineColor={courtLineColor}
-              logoUri={logoUri}
-              markers={
+            <View style={{ width: courtWidth, height: courtHeight, position: 'relative' }}>
+              <View style={[styles.sideBanner, { left: -SIDE_BANNER_WIDTH, top: 0, bottom: 0, width: SIDE_BANNER_WIDTH }]}>
+                {sponsorUris?.sideLeft ? (
+                  <Image
+                    source={{ uri: sponsorUris.sideLeft }}
+                    style={[styles.sideBannerImage, {
+                      width: sideBannerImageLength,
+                      height: 60,
+                      transform: [{ rotate: '-90deg' }],
+                    }]}
+                    resizeMode="contain"
+                  />
+                ) : null}
+              </View>
+              <BasketballCourtSVG
+                key={`court-${
+                  isPortrait ? "portrait" : "landscape"
+                }-${courtWidth}-${courtHeight}`}
+                width={courtWidth}
+                height={courtHeight}
+                backgroundColor={courtBackgroundColor}
+                lineColor={courtLineColor}
+                logoUri={logoUri}
+                courtSponsorTopUri={sponsorUris?.top}
+                courtSponsorBottomUri={sponsorUris?.bottom}
+                courtSponsorThirdUri={sponsorUris?.third}
+                courtSponsorFourthUri={sponsorUris?.fourth}
+                markers={
                 actions
                   ?.filter((action: any) => {
                     // Filter by team using activeTeamFilter (already selected at top)
@@ -963,8 +1013,22 @@ export default function CourtTab({
                       playerNumber: action.player_number || action.player,
                     };
                   }) || []
-              }
-            />
+                }
+              />
+              <View style={[styles.sideBanner, { right: -SIDE_BANNER_WIDTH, top: 0, bottom: 0, width: SIDE_BANNER_WIDTH }]}>
+                {sponsorUris?.sideRight ? (
+                  <Image
+                    source={{ uri: sponsorUris.sideRight }}
+                    style={[styles.sideBannerImage, {
+                      width: sideBannerImageLength,
+                      height: 60,
+                      transform: [{ rotate: '90deg' }],
+                    }]}
+                    resizeMode="contain"
+                  />
+                ) : null}
+              </View>
+            </View>
           </View>
         </>
       )}
@@ -983,6 +1047,13 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 16,
   },
+  sideBanner: {
+    position: 'absolute',
+    justifyContent: 'center',
+    alignItems: 'center',
+    overflow: 'hidden',
+  },
+  sideBannerImage: {},
   shotStatsSummary: {
     marginTop: 0,
     padding: 0,

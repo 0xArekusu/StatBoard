@@ -44,7 +44,7 @@ const makeMatch = (overrides: any = {}) => ({
 const makeMatchPlayer = (overrides: any = {}) => ({
   player_number: 10,
   player_name: "John",
-  team: "A",
+  team: "MyTeam",
   ...overrides,
 });
 
@@ -82,11 +82,11 @@ describe("MatchUploadService", () => {
       mockMatchPlayerRepo.deletePlayersForMatch.mockResolvedValue(undefined);
       mockMatchRepo.delete.mockResolvedValue(undefined);
 
-      await service.uploadAndCleanup(1);
+      await service.uploadAndCleanup("1");
 
-      expect(mockMatchRepo.findById).toHaveBeenCalledWith(1);
-      expect(mockActionRepo.getActionsForMatch).toHaveBeenCalledWith(1);
-      expect(mockMatchPlayerRepo.getPlayersForMatch).toHaveBeenCalledWith(1);
+      expect(mockMatchRepo.findById).toHaveBeenCalledWith("1");
+      expect(mockActionRepo.getActionsForMatch).toHaveBeenCalledWith("1");
+      expect(mockMatchPlayerRepo.getPlayersForMatch).toHaveBeenCalledWith("1");
       expect(mockPayloadAdapter.adapt).toHaveBeenCalledWith({
         match,
         actions,
@@ -94,15 +94,15 @@ describe("MatchUploadService", () => {
       });
       expect(mockApiService.uploadMatch).toHaveBeenCalledWith(payload);
       // Cleanup
-      expect(mockActionRepo.deleteActionsForMatch).toHaveBeenCalledWith(1);
-      expect(mockMatchPlayerRepo.deletePlayersForMatch).toHaveBeenCalledWith(1);
-      expect(mockMatchRepo.delete).toHaveBeenCalledWith(1);
+      expect(mockActionRepo.deleteActionsForMatch).toHaveBeenCalledWith("1");
+      expect(mockMatchPlayerRepo.deletePlayersForMatch).toHaveBeenCalledWith("1");
+      expect(mockMatchRepo.delete).toHaveBeenCalledWith("1");
     });
 
     it("lance une erreur si le match n'existe pas", async () => {
       mockMatchRepo.findById.mockResolvedValue(null);
 
-      await expect(service.uploadAndCleanup(99)).rejects.toThrow("Match with ID 99 not found");
+      await expect(service.uploadAndCleanup("99")).rejects.toThrow("Match with ID 99 not found");
       expect(mockApiService.uploadMatch).not.toHaveBeenCalled();
     });
 
@@ -113,7 +113,7 @@ describe("MatchUploadService", () => {
       mockPayloadAdapter.adapt.mockReturnValue({});
       mockApiService.uploadMatch.mockRejectedValue(new Error("Server error"));
 
-      await expect(service.uploadAndCleanup(1)).rejects.toThrow("Server error");
+      await expect(service.uploadAndCleanup("1")).rejects.toThrow("Server error");
 
       // Cleanup ne doit PAS être appelé
       expect(mockActionRepo.deleteActionsForMatch).not.toHaveBeenCalled();
@@ -125,7 +125,7 @@ describe("MatchUploadService", () => {
       mockMatchRepo.findById.mockResolvedValue(makeMatch());
       mockActionRepo.getActionsForMatch.mockRejectedValue(new Error("DB error"));
 
-      await expect(service.uploadAndCleanup(1)).rejects.toThrow("DB error");
+      await expect(service.uploadAndCleanup("1")).rejects.toThrow("DB error");
     });
   });
 
@@ -135,7 +135,7 @@ describe("MatchUploadService", () => {
     it("retourne true si le match est terminé (completed)", async () => {
       mockMatchRepo.findById.mockResolvedValue(makeMatch({ status: "completed" }));
 
-      const result = await service.canUpload(1);
+      const result = await service.canUpload("1");
 
       expect(result).toBe(true);
     });
@@ -143,7 +143,7 @@ describe("MatchUploadService", () => {
     it("retourne false si le match est en cours (in_progress)", async () => {
       mockMatchRepo.findById.mockResolvedValue(makeMatch({ status: "in_progress" }));
 
-      const result = await service.canUpload(1);
+      const result = await service.canUpload("1");
 
       expect(result).toBe(false);
     });
@@ -151,7 +151,7 @@ describe("MatchUploadService", () => {
     it("retourne false si le match n'existe pas", async () => {
       mockMatchRepo.findById.mockResolvedValue(null);
 
-      const result = await service.canUpload(99);
+      const result = await service.canUpload("99");
 
       expect(result).toBe(false);
     });
@@ -159,7 +159,7 @@ describe("MatchUploadService", () => {
     it("retourne false si une erreur est levée", async () => {
       mockMatchRepo.findById.mockRejectedValue(new Error("DB error"));
 
-      const result = await service.canUpload(1);
+      const result = await service.canUpload("1");
 
       expect(result).toBe(false);
     });

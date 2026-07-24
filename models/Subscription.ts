@@ -8,7 +8,7 @@
 /**
  * Available subscription tiers
  */
-export type SubscriptionTier = "free" | "basic" | "premium" | "ultimate";
+export type SubscriptionTier = "free" | "basic" | "premium" | "ultimate" | "sponsor";
 
 /**
  * Subscription tier constants
@@ -18,6 +18,7 @@ export const SUBSCRIPTION_TIER = {
   BASIC: "basic" as const,
   PREMIUM: "premium" as const,
   ULTIMATE: "ultimate" as const,
+  SPONSOR: "sponsor" as const,
 } as const;
 
 /**
@@ -29,6 +30,7 @@ export enum UserMode {
   BASIC = "basic", // Basic subscription
   PREMIUM = "premium", // Premium subscription
   ULTIMATE = "ultimate", // Ultimate subscription
+  SPONSOR = "sponsor", // Sponsor tier — can configure custom court sponsors
 }
 
 /**
@@ -38,6 +40,7 @@ export interface SubscriptionLimits {
   maxTeams: number; // Maximum number of teams user can manage
   maxLocalMatches: number; // Maximum number of matches stored locally
   canSyncToServer: boolean; // Whether user can sync matches to cloud
+  canConfigureSponsors: boolean; // Whether the club can configure custom court sponsors
   priceMonthly?: number; // Monthly price in euros (optional for backward compatibility)
   name?: string; // Display name for the tier (optional, from database)
 }
@@ -55,21 +58,31 @@ export const SUBSCRIPTION_LIMITS: Record<SubscriptionTier, SubscriptionLimits> =
       maxTeams: 0,
       maxLocalMatches: 3, // 3 matches max in freemium
       canSyncToServer: false, // No sync in freemium
+      canConfigureSponsors: false,
     },
     [SUBSCRIPTION_TIER.BASIC]: {
       maxTeams: 1,
       maxLocalMatches: Infinity, // Unlimited with subscription
       canSyncToServer: true, // Sync enabled (no time limit)
+      canConfigureSponsors: false,
     },
     [SUBSCRIPTION_TIER.PREMIUM]: {
       maxTeams: 3,
       maxLocalMatches: Infinity,
       canSyncToServer: true,
+      canConfigureSponsors: false,
     },
     [SUBSCRIPTION_TIER.ULTIMATE]: {
       maxTeams: 9,
       maxLocalMatches: Infinity,
       canSyncToServer: true,
+      canConfigureSponsors: true, // Ultimate clubs can configure their own court sponsors
+    },
+    [SUBSCRIPTION_TIER.SPONSOR]: {
+      maxTeams: 9,
+      maxLocalMatches: Infinity,
+      canSyncToServer: true,
+      canConfigureSponsors: true, // Legacy tier, kept for clubs still on it
     },
   };
 
@@ -81,6 +94,7 @@ export const NOT_CONNECTED_LIMITS: SubscriptionLimits = {
   maxTeams: 0,
   maxLocalMatches: 3, // 3 matches max in trial mode
   canSyncToServer: false,
+  canConfigureSponsors: false,
 };
 
 /**
@@ -91,6 +105,7 @@ export const SUBSCRIPTION_TIER_LABELS: Record<SubscriptionTier, string> = {
   [SUBSCRIPTION_TIER.BASIC]: "Basic",
   [SUBSCRIPTION_TIER.PREMIUM]: "Premium",
   [SUBSCRIPTION_TIER.ULTIMATE]: "Ultimate",
+  [SUBSCRIPTION_TIER.SPONSOR]: "Sponsor",
 };
 
 /**
@@ -102,6 +117,7 @@ export const USER_MODE_LABELS: Record<UserMode, string> = {
   [UserMode.BASIC]: "Basic",
   [UserMode.PREMIUM]: "Premium",
   [UserMode.ULTIMATE]: "Ultimate",
+  [UserMode.SPONSOR]: "Sponsor",
 };
 
 /**

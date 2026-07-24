@@ -8,11 +8,13 @@
 
 import React, { createContext, useState, useEffect, useContext, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { usePostHog } from 'posthog-react-native';
 import { supabase } from '../config/supabase';
 import { ServiceFactory } from '../../services/ServiceFactory';
 import { Club } from '../../models/Club';
 import { logInfo, logError } from '../../utils/logger';
 import { useAuth } from './AuthContext';
+import { ANALYTICS_EVENTS, ANALYTICS_CLUB_LOAD_SOURCE } from '../../constants/analyticsEvents';
 
 const CURRENT_CLUB_ID_KEY = '@current_club_id';
 const ACTIVE_TEAM_ID_KEY = '@active_team_id';
@@ -35,6 +37,7 @@ const ClubContext = createContext<ClubContextType | undefined>(undefined);
  */
 export function ClubProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
+  const posthog = usePostHog();
   const [currentClub, setCurrentClubState] = useState<Club | null>(null);
   const [allClubs, setAllClubs] = useState<Club[]>([]);
   const [loading, setLoading] = useState(true);
@@ -95,6 +98,10 @@ export function ClubProvider({ children }: { children: React.ReactNode }) {
             logoUrl: savedClub.logoUrl,
           });
           setCurrentClubState(savedClub);
+          posthog?.capture(ANALYTICS_EVENTS.CLUB_LOADED, {
+            club_id: savedClub.id,
+            source: ANALYTICS_CLUB_LOAD_SOURCE.RESTORED,
+          });
           setLoading(false);
           return;
         } else {
@@ -112,6 +119,10 @@ export function ClubProvider({ children }: { children: React.ReactNode }) {
         });
         setCurrentClubState(firstClub);
         await AsyncStorage.setItem(CURRENT_CLUB_ID_KEY, firstClub.id);
+        posthog?.capture(ANALYTICS_EVENTS.CLUB_LOADED, {
+          club_id: firstClub.id,
+          source: ANALYTICS_CLUB_LOAD_SOURCE.FIRST_SELECTED,
+        });
       } else {
         logInfo('ClubContext', 'ℹ️ No clubs found for user');
         setCurrentClubState(null);

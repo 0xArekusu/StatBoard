@@ -1,5 +1,6 @@
 import * as Print from "expo-print";
 import * as Sharing from "expo-sharing";
+import * as FileSystem from "expo-file-system/legacy";
 import { Platform } from "react-native";
 import {
   ActionType,
@@ -13,7 +14,7 @@ import { Team } from "../../models/types";
 import type { CourtMarker } from "../../../components/BasketballCourtSVG";
 import { PDF_COLORS } from "../../theme/colors";
 import { PlatformOS } from "../../../constants";
-import { COACH_ASSISTANT_LOGO_MARGIN } from "../../utils/logoHelper";
+import { COACH_ASSISTANT_LOGO_MARGIN, isColorDark } from "../../utils/logoHelper";
 import {
   COURT_SVG_WIDTH_PORTRAIT,
   COURT_SVG_HEIGHT_PORTRAIT,
@@ -31,6 +32,15 @@ interface Player {
   photoUrl?: string;
   playingTimeSeconds?: number;
   isSubstitute?: boolean;
+}
+
+interface PDFSponsor {
+  priority: 1 | 2 | 3 | 4 | 5 | 6;
+  logo_url: string;
+  logo_url_dark?: string | null;
+  name: string;
+  source: 'club' | 'platform' | 'fallback';
+  is_paid?: boolean; // false = default/fallback branding, excluded from "official partners" sections
 }
 
 interface PDFExportOptions {
@@ -52,6 +62,7 @@ interface PDFExportOptions {
   overtimePeriods?: number; // Number of overtime periods played
   myTeamHandicap?: number;
   opponentHandicap?: number;
+  matchSponsors?: PDFSponsor[];
 }
 
 export class PDFExportService {
@@ -67,6 +78,21 @@ export class PDFExportService {
   private static formatDateFile(date: Date): string {
     const d = date.toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric" });
     return d.replace(/\//g, "-");
+  }
+
+  /**
+   * Prints HTML to a PDF file and renames it to the given file name.
+   * expo-print's printToFileAsync doesn't support a `fileName` option,
+   * so the generated file is moved to a properly named path afterward.
+   */
+  private static async printAndRename(
+    html: string,
+    fileName: string
+  ): Promise<{ uri: string }> {
+    const { uri } = await Print.printToFileAsync({ html });
+    const renamedUri = `${FileSystem.cacheDirectory}${fileName}.pdf`;
+    await FileSystem.moveAsync({ from: uri, to: renamedUri });
+    return { uri: renamedUri };
   }
 
   /**
@@ -219,6 +245,7 @@ export class PDFExportService {
       overtimePeriods = 0,
       myTeamHandicap = 0,
       opponentHandicap = 0,
+      matchSponsors = [],
     } = options;
 
     console.log("[PDF Export] 🚀 Début generateMatchPDF");
@@ -412,11 +439,12 @@ export class PDFExportService {
       awayTeamHandicap,
       myTeamHandicap,
       opponentHandicap,
+      matchSponsors,
     });
 
     // Generate PDF using expo-print
     const matchFileName = `${this.sanitizeFileName(homeTeamName)}_${this.sanitizeFileName(awayTeamName)}_all_stats_${this.formatDateFile(matchDate)}`;
-    const { uri } = await Print.printToFileAsync({ html, fileName: matchFileName });
+    const { uri } = await this.printAndRename(html, matchFileName);
 
     // Share the PDF with platform-specific options
     if (await Sharing.isAvailableAsync()) {
@@ -700,6 +728,7 @@ export class PDFExportService {
       blk: blocks,
       tov: turnovers,
       fd: foulsDrawn,
+      pm: 0,
     };
   }
 
@@ -1161,7 +1190,8 @@ export class PDFExportService {
     backgroundColor: string = PDF_COLORS.court.background,
     lineColor: string = PDF_COLORS.court.line,
     markers: CourtMarker[] = [],
-    logoUrl?: string | null
+    logoUrl?: string | null,
+    sponsors?: PDFSponsor[]
   ): string {
     const isPortrait = height > width;
     const SVG_WIDTH = isPortrait
@@ -1204,6 +1234,49 @@ export class PDFExportService {
         ? `<clipPath id="logoClipPortrait"><circle cx="307" cy="573" r="76" /></clipPath>`
         : `<clipPath id="logoClipLandscape"><circle cx="573" cy="307" r="76" /></clipPath>`
       : "";
+
+    // On-court sponsor zones 1-4 (same coordinates as BasketballCourtSVG component)
+    const dark = isColorDark(backgroundColor);
+    const pick = (s: PDFSponsor) => dark && s.logo_url_dark ? s.logo_url_dark : s.logo_url;
+    const onCourtSponsors = (sponsors || []).filter(s => s.priority >= 1 && s.priority <= 4);
+
+    const renderCourtSponsors = (() => {
+      if (onCourtSponsors.length === 0) return '';
+      const w = 250; const h = 110;
+      const sideMargin = 20; const centerMargin = 10;
+
+      if (isPortrait) {
+        const centerY = 572.812;
+        const cx1 = COURT_SVG_WIDTH_PORTRAIT - sideMargin - h / 2;
+        const cy1 = centerY - centerMargin - w / 2;
+        const cx2 = sideMargin + h / 2;
+        const cy2 = centerY + centerMargin + w / 2;
+        const cx3 = cx2; const cy3 = cy1;
+        const cx4 = cx1; const cy4 = cy2;
+        const zone = (s: PDFSponsor | undefined, cx: number, cy: number, rot: number) =>
+          s ? `<g transform="rotate(${rot},${cx},${cy})"><image href="${pick(s)}" x="${cx - w/2}" y="${cy - h/2}" width="${w}" height="${h}" preserveAspectRatio="xMidYMid meet" /></g>` : '';
+        return [
+          zone(onCourtSponsors.find(s => s.priority === 1), cx1, cy1, 90),
+          zone(onCourtSponsors.find(s => s.priority === 2), cx2, cy2, -90),
+          zone(onCourtSponsors.find(s => s.priority === 3), cx3, cy3, -90),
+          zone(onCourtSponsors.find(s => s.priority === 4), cx4, cy4, 90),
+        ].join('');
+      } else {
+        const centerX = 572.812;
+        const x1 = centerX - centerMargin - w; const y1 = sideMargin;
+        const x2 = centerX + centerMargin;     const y2 = COURT_SVG_HEIGHT_LANDSCAPE - sideMargin - h;
+        const x3 = x2;                         const y3 = sideMargin;
+        const x4 = x1;                         const y4 = y2;
+        const zone = (s: PDFSponsor | undefined, x: number, y: number) =>
+          s ? `<image href="${pick(s)}" x="${x}" y="${y}" width="${w}" height="${h}" preserveAspectRatio="xMidYMid meet" />` : '';
+        return [
+          zone(onCourtSponsors.find(s => s.priority === 1), x1, y1),
+          zone(onCourtSponsors.find(s => s.priority === 2), x2, y2),
+          zone(onCourtSponsors.find(s => s.priority === 3), x3, y3),
+          zone(onCourtSponsors.find(s => s.priority === 4), x4, y4),
+        ].join('');
+      }
+    })();
 
     // Center logo - use club logo if provided, otherwise display app logo
     const renderCenterLogo = isPortrait
@@ -1411,6 +1484,9 @@ export class PDFExportService {
           </g>
         </g>
 
+        <!-- Sponsor zones 1-4 (under center logo) -->
+        ${renderCourtSponsors}
+
         <!-- Render center court logo first (behind markers) -->
         ${renderCenterLogo}
 
@@ -1494,6 +1570,9 @@ export class PDFExportService {
         <g clip-path="url(#J)"><g clip-path="url(#K)"><path fill="none" d="M306.95 282.441c2.616 7.68 4.335 16.461 4.335 25.055a75.318 75.318 0 01-4.094 24.488c-.082.164-.082.325-.164.489-10.476 28.62-38.144 49.707-68.043 50.11h-2.902V232.327h2.898c30.063.406 57.735 21.164 67.97 50.113zm0 0" stroke="${lineColor}" stroke-width="8.996"/></g></g>
         <g clip-path="url(#L)"><g clip-path="url(#M)"><path fill="${lineColor}" d="M219.508 238.836a69.926 69.926 0 00-11.977 4.11l-3.676-8.212a78.757 78.757 0 0113.516-4.636zm-15.778 5.953a70.415 70.415 0 00-10.667 6.86l-5.524-7.098a79.126 79.126 0 0112.024-7.735zm-13.93 9.559a70.952 70.952 0 00-8.738 9.191l-7.046-5.594a80.116 80.116 0 019.843-10.355zm-11.273 12.59a70.204 70.204 0 00-6.312 10.988l-8.172-3.762a79.415 79.415 0 017.113-12.39zm-7.96 14.878a70.1 70.1 0 00-3.512 12.176l-8.832-1.703a78.746 78.746 0 013.957-13.734zm-4.184 16.344a70.87 70.87 0 00-.606 9.297c0 1.14.028 2.277.078 3.41l-8.984.426a78.324 78.324 0 01-.09-3.836c0-3.516.227-7.004.68-10.465zm-.203 16.91a70.29 70.29 0 002.476 12.434l-8.629 2.543a79.41 79.41 0 01-2.793-14.02zm3.793 16.453a70.301 70.301 0 005.367 11.473l-7.778 4.527a79.273 79.273 0 01-6.05-12.941zm7.601 15.063c2.352 3.531 5 6.832 7.95 9.894l-6.481 6.239a79.754 79.754 0 01-8.957-11.149zm10.973 12.851a70.635 70.635 0 0010.062 7.735l-4.82 7.594a79.477 79.477 0 01-11.34-8.711zm13.7 9.891a69.874 69.874 0 0011.589 5.106l-2.867 8.527a79.203 79.203 0 01-13.078-5.758zm15.632 6.328a69.696 69.696 0 0012.476 2.184l-.746 8.969a79.328 79.328 0 01-14.078-2.465zm16.703 2.41a70.504 70.504 0 0012.68-.832l1.39 8.891a80.164 80.164 0 01-12.37.957c-.641 0-1.278-.008-1.915-.02zm16.824-1.609a69.589 69.589 0 0012.074-3.816l3.48 8.296a79.023 79.023 0 01-13.628 4.31zm15.926-5.57a70.434 70.434 0 0010.82-6.598l5.356 7.227a79.026 79.026 0 01-12.203 7.441zm14.148-9.223a70.741 70.741 0 008.957-8.98l6.91 5.761a80.154 80.154 0 01-10.09 10.118zm11.57-12.312a70.669 70.669 0 006.575-10.84l8.078 3.953a79.52 79.52 0 01-7.41 12.223zm8.317-14.696a69.997 69.997 0 003.801-12.086l8.789 1.914a78.88 78.88 0 01-4.285 13.633zm4.574-16.23a71.351 71.351 0 00.825-12.688l8.992-.215a79.86 79.86 0 01-.93 14.281zm.598-16.914a70.532 70.532 0 00-2.176-12.485l8.688-2.336a79.662 79.662 0 012.453 14.079zm-3.398-16.528a70.047 70.047 0 00-5.086-11.597l7.879-4.34a79.01 79.01 0 015.738 13.082zm-7.239-15.242a70.394 70.394 0 00-7.71-10.078l6.628-6.086a79.997 79.997 0 018.688 11.36zm-10.664-13.11a70.306 70.306 0 00-9.875-7.968l5-7.48a79.978 79.978 0 0111.13 8.98zm-13.46-10.214a70.088 70.088 0 00-11.462-5.379l3.07-8.457a78.662 78.662 0 0112.934 6.074zm-15.481-6.703a69.803 69.803 0 00-12.426-2.485l.961-8.94a78.382 78.382 0 0114.02 2.8zm-16.625-2.809a75.4 75.4 0 00-3.39-.078c-4.266 0-8.481.375-12.637 1.129l-1.606-8.852a79.93 79.93 0 0114.242-1.273c1.274 0 2.547.031 3.817.09zm0 0"/></g></g>
 
+        <!-- Sponsor zones 1-4 (under center logo) -->
+        ${renderCourtSponsors}
+
         <!-- Render center court logo first (behind markers) -->
         ${renderCenterLogo}
 
@@ -1512,7 +1591,8 @@ export class PDFExportService {
     playerId: number,
     backgroundColor: string = PDF_COLORS.court.background,
     lineColor: string = PDF_COLORS.court.line,
-    logoUrl?: string | null
+    logoUrl?: string | null,
+    sponsors?: PDFSponsor[]
   ): string {
     const width = 465;
     const height = 250;
@@ -1541,7 +1621,8 @@ export class PDFExportService {
       backgroundColor,
       lineColor,
       markers,
-      logoUrl
+      logoUrl,
+      sponsors
     );
   }
 
@@ -1553,7 +1634,8 @@ export class PDFExportService {
     playerId: number,
     backgroundColor: string = PDF_COLORS.court.background,
     lineColor: string = PDF_COLORS.court.line,
-    logoUrl?: string | null
+    logoUrl?: string | null,
+    sponsors?: PDFSponsor[]
   ): string {
     const width = 465;
     const height = 250;
@@ -1586,7 +1668,8 @@ export class PDFExportService {
       backgroundColor,
       lineColor,
       markers,
-      logoUrl
+      logoUrl,
+      sponsors
     );
   }
 
@@ -1598,7 +1681,8 @@ export class PDFExportService {
     playerId: number,
     backgroundColor: string = PDF_COLORS.court.background,
     lineColor: string = PDF_COLORS.court.line,
-    logoUrl?: string | null
+    logoUrl?: string | null,
+    sponsors?: PDFSponsor[]
   ): string {
     const width = 465;
     const height = 250;
@@ -1629,8 +1713,43 @@ export class PDFExportService {
       backgroundColor,
       lineColor,
       markers,
-      logoUrl
+      logoUrl,
+      sponsors
     );
+  }
+
+  // Wraps a court SVG string in a div with rotated side-banner <img> for zones 5-6.
+  // These banners sit on the white PDF page (outside the court), so they always use
+  // the standard (dark-colored) logo, regardless of the court's own background color.
+  private static wrapCourtWithSideBanners(
+    svgString: string,
+    sponsors: PDFSponsor[] | undefined,
+    courtHeight: number = 250
+  ): string {
+    const pick = (s: PDFSponsor) => s.logo_url;
+    const left  = sponsors?.find(s => s.priority === 5);
+    const right = sponsors?.find(s => s.priority === 6);
+    if (!left && !right) return svgString;
+
+    const bannerH  = 50;
+    const bannerW  = Math.round(courtHeight * 0.55);
+    const stripW   = bannerH + 8;
+
+    const imgStyle = (rotate: string) =>
+      `width:${bannerW}px;height:${bannerH}px;object-fit:contain;transform:${rotate};`;
+
+    // Negative offset so the banner sits just outside the court's own box,
+    // right next to the court line, instead of overlapping the SVG itself.
+    const sideStyle = (side: 'left' | 'right') =>
+      `position:absolute;top:0;bottom:0;${side}:-${stripW}px;width:${stripW}px;display:flex;align-items:center;justify-content:center;`;
+
+    // The rounded-corner clipping lives on this inner div (SVG only) so it doesn't
+    // also clip the side banners, which must stick out beyond the court's box.
+    return `<div style="position:relative;display:inline-block;">
+  <div style="border-radius:12px;overflow:hidden;">${svgString}</div>
+  ${left  ? `<div style="${sideStyle('left')}"><img src="${pick(left)}"  style="${imgStyle('rotate(-90deg)')}" /></div>` : ''}
+  ${right ? `<div style="${sideStyle('right')}"><img src="${pick(right)}" style="${imgStyle('rotate(90deg)')}"  /></div>` : ''}
+</div>`;
   }
 
   /**
@@ -1672,6 +1791,7 @@ export class PDFExportService {
     awayTeamHandicap?: number;
     myTeamHandicap?: number;
     opponentHandicap?: number;
+    matchSponsors?: PDFSponsor[];
   }): string {
     const {
       myTeamName,
@@ -1709,7 +1829,11 @@ export class PDFExportService {
       awayTeamHandicap = 0,
       myTeamHandicap = 0,
       opponentHandicap = 0,
+      matchSponsors = [],
     } = data;
+
+    // Only paid sponsors appear in the "Match présenté par" / "Partenaires officiels" bars
+    const officialSponsors = matchSponsors.filter((s) => s.is_paid !== false);
 
     // Generate the score chart SVG with action-by-action evolution
     const chartSVG = this.generateScoreChart(
@@ -1926,6 +2050,62 @@ export class PDFExportService {
       border-top: 1px solid ${PDF_COLORS.table.border};
       padding-top: 10px;
     }
+    .sponsor-header-bar {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin: 12px 0 20px 0;
+      padding: 12px 16px;
+      border: 1px solid ${PDF_COLORS.table.border};
+      border-radius: 8px;
+      background: ${PDF_COLORS.table.headerBg};
+    }
+    .sponsor-header-label {
+      font-size: 9px;
+      font-style: italic;
+      color: ${PDF_COLORS.table.textSecondary};
+      white-space: nowrap;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .sponsor-header-logos {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .sponsor-header-logo {
+      /* Fixed box (not height+auto width) so a mix of narrow and wide logos
+         has a predictable total width — 6 logos always fit on one line.
+         Height has plenty of headroom (doesn't affect row width), so it's
+         set generously — square-ish logos will fill it, wide wordmark-style
+         logos (made for rotated side banners) stay thinner by their own
+         aspect ratio, not because of this box. */
+      width: 80px;
+      height: 56px;
+      object-fit: contain;
+    }
+    .sponsor-footer-bar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      margin-bottom: 8px;
+    }
+    .sponsor-footer-label {
+      font-size: 8px;
+      font-style: italic;
+      color: ${PDF_COLORS.table.textSecondary};
+    }
+    .sponsor-footer-logo {
+      height: 28px;
+      width: auto;
+      object-fit: contain;
+      opacity: 0.85;
+    }
     .warning-banner {
       background-color: ${PDF_COLORS.warning.background};
       border: 2px solid ${PDF_COLORS.warning.border};
@@ -2117,6 +2297,7 @@ export class PDFExportService {
       display: flex;
       flex-direction: column;
       align-items: center;
+      justify-content: center;
       gap: 4px;
       padding: 12px;
       background: ${PDF_COLORS.card.background};
@@ -2148,6 +2329,37 @@ export class PDFExportService {
       align-items: center;
       justify-content: center;
       gap: 4px;
+    }
+    .stat-box-sub {
+      font-size: 9px;
+      color: ${PDF_COLORS.card.textSecondary};
+      margin-top: 2px;
+    }
+    .stat-box-quad-row, .stat-box-quad {
+      display: flex;
+      gap: 10px;
+    }
+    .stat-box-quad-col {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .stat-box-quad-item {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+    }
+    .stat-box-quad-value {
+      font-size: 13px;
+      font-weight: 700;
+      color: ${PDF_COLORS.card.text};
+      white-space: nowrap;
+    }
+    .stat-box-quad-label {
+      font-size: 9px;
+      font-weight: 400;
+      color: ${PDF_COLORS.card.textSecondary};
+      white-space: nowrap;
     }
     .courts-container {
       display: flex;
@@ -2224,6 +2436,16 @@ export class PDFExportService {
     <div class="date">${dateStr}</div>
   </div>
 
+  ${officialSponsors.length > 0 ? `
+  <div class="sponsor-header-bar">
+    <span class="sponsor-header-label">Match présenté par</span>
+    <div class="sponsor-header-logos">
+      ${officialSponsors.sort((a, b) => a.priority - b.priority).map(s =>
+        `<img src="${s.logo_url}" class="sponsor-header-logo" alt="${s.name}" title="${s.name}" />`
+      ).join('')}
+    </div>
+  </div>` : ''}
+
   <div class="score-summary">
     <div>SCORE FINAL</div>
     <div class="final-score">${homeTeamScore} - ${awayTeamScore}</div>
@@ -2299,12 +2521,16 @@ export class PDFExportService {
       .map((player) => {
         const playerStats = this.calculatePlayerStats(player.id, actions);
         const playerPm = pmLookup.get(`${player.team}-${player.num}`) || 0;
-        const allActionsCourtSVG = this.generatePlayerAllActionsCourt(
-          actions,
-          player.id,
-          courtBackgroundColor,
-          courtLineColor,
-          clubLogoUrl
+        const allActionsCourtSVG = this.wrapCourtWithSideBanners(
+          this.generatePlayerAllActionsCourt(
+            actions,
+            player.id,
+            courtBackgroundColor,
+            courtLineColor,
+            clubLogoUrl,
+            matchSponsors
+          ),
+          matchSponsors
         );
 
         // Calculate shooting percentages
@@ -2445,12 +2671,18 @@ export class PDFExportService {
             </div>
           </div>
           <div class="stat-box">
-            <div class="stat-box-label">REB OFF/DEF</div>
-            <div class="stat-box-value-row">
-              <svg width="16" height="16" viewBox="0 0 16 16" style="flex-shrink:0"><polygon points="8,2 14,14 2,14" fill="${getActionColor(ActionType.REBOUND, ReboundSpecification.OFFENSIVE)}" stroke="#FFFFFF" stroke-width="1"/></svg>
-              <div class="stat-box-value">${playerStats.orb}/${playerStats.drb}</div>
-              <svg width="16" height="16" viewBox="0 0 16 16" style="flex-shrink:0"><polygon points="8,2 14,14 2,14" fill="${getActionColor(ActionType.REBOUND, ReboundSpecification.DEFENSIVE)}" stroke="#FFFFFF" stroke-width="1"/></svg>
+            <div class="stat-box-label">REB</div>
+            <div class="stat-box-quad-row">
+              <div class="stat-box-quad-item">
+                <svg width="12" height="12" viewBox="0 0 16 16" style="flex-shrink:0"><polygon points="8,2 14,14 2,14" fill="${getActionColor(ActionType.REBOUND, ReboundSpecification.OFFENSIVE)}" stroke="#FFFFFF" stroke-width="1"/></svg>
+                <span class="stat-box-quad-value">${playerStats.orb} <span class="stat-box-quad-label">(OFF)</span></span>
+              </div>
+              <div class="stat-box-quad-item">
+                <svg width="12" height="12" viewBox="0 0 16 16" style="flex-shrink:0"><polygon points="8,2 14,14 2,14" fill="${getActionColor(ActionType.REBOUND, ReboundSpecification.DEFENSIVE)}" stroke="#FFFFFF" stroke-width="1"/></svg>
+                <span class="stat-box-quad-value">${playerStats.drb} <span class="stat-box-quad-label">(DEF)</span></span>
+              </div>
             </div>
+            <div class="stat-box-sub">Rebonds: ${playerStats.orb + playerStats.drb}</div>
           </div>
           <div class="stat-box">
             <div class="stat-box-label">AST</div>
@@ -2481,11 +2713,30 @@ export class PDFExportService {
             </div>
           </div>
           <div class="stat-box">
-            <div class="stat-box-label">FT</div>
-            <div class="stat-box-value-row">
-              <div class="stat-box-value">${totalFouls}</div>
-              <svg width="16" height="16" viewBox="0 0 16 16" style="flex-shrink:0"><polygon points="8,2 14,8 8,14 2,8" fill="${getActionColor(ActionType.FOUL)}" stroke="#FFFFFF" stroke-width="2"/></svg>
+            <div class="stat-box-label">FTE</div>
+            <div class="stat-box-quad">
+              <div class="stat-box-quad-col">
+                <div class="stat-box-quad-item">
+                  <svg width="12" height="12" viewBox="0 0 16 16" style="flex-shrink:0"><polygon points="8,2 14,8 8,14 2,8" fill="${getActionColor(ActionType.FOUL, FoulSpecification.PERSONAL)}" stroke="#FFFFFF" stroke-width="2"/></svg>
+                  <span class="stat-box-quad-value">${playerStats.pf} <span class="stat-box-quad-label">(PERS)</span></span>
+                </div>
+                <div class="stat-box-quad-item">
+                  <svg width="12" height="12" viewBox="0 0 16 16" style="flex-shrink:0"><polygon points="8,2 14,8 8,14 2,8" fill="${getActionColor(ActionType.FOUL, FoulSpecification.TECHNICAL)}" stroke="#FFFFFF" stroke-width="2"/></svg>
+                  <span class="stat-box-quad-value">${playerStats.tf} <span class="stat-box-quad-label">(TECH)</span></span>
+                </div>
+              </div>
+              <div class="stat-box-quad-col">
+                <div class="stat-box-quad-item">
+                  <svg width="12" height="12" viewBox="0 0 16 16" style="flex-shrink:0"><polygon points="8,2 14,8 8,14 2,8" fill="${getActionColor(ActionType.FOUL, FoulSpecification.PENALITY)}" stroke="#FFFFFF" stroke-width="2"/></svg>
+                  <span class="stat-box-quad-value">${playerStats.uf} <span class="stat-box-quad-label">(ANT)</span></span>
+                </div>
+                <div class="stat-box-quad-item">
+                  <svg width="12" height="12" viewBox="0 0 16 16" style="flex-shrink:0"><polygon points="8,2 14,8 8,14 2,8" fill="${getActionColor(ActionType.FOUL, FoulSpecification.DISQUALIFICATION)}" stroke="#FFFFFF" stroke-width="2"/></svg>
+                  <span class="stat-box-quad-value">${playerStats.df} <span class="stat-box-quad-label">(DISQ)</span></span>
+                </div>
+              </div>
             </div>
+            <div class="stat-box-sub">Fautes: ${totalFouls}</div>
           </div>
           <div class="stat-box">
             <div class="stat-box-label">FP</div>
@@ -2578,6 +2829,7 @@ export class PDFExportService {
     radarSVG?: string;
     hideStarterBadge?: boolean;
     fileName?: string;
+    matchSponsors?: PDFSponsor[];
   }): Promise<string> {
     const {
       player,
@@ -2593,7 +2845,11 @@ export class PDFExportService {
       radarSVG,
       hideStarterBadge = false,
       fileName,
+      matchSponsors,
     } = options;
+
+    // Only paid sponsors appear in the "Partenaires officiels" bar
+    const officialSponsors = (matchSponsors ?? []).filter((s) => s.is_paid !== false);
 
     let playerPhotoBase64: string | null = null;
     if (player.photoUrl && player.photoUrl.startsWith("http")) {
@@ -2616,6 +2872,21 @@ export class PDFExportService {
       return num === player.playerNumber && a.team === player.team;
     });
 
+    // Détail des fautes par type (indisponible pour les moyennes de saison, qui n'ont pas
+    // d'actions brutes — on retombe alors sur le total agrégé player.pf).
+    const normalizeActionType = (a: any): string => (a.type || a.action_type || "").toLowerCase();
+    const normalizeSpecification = (a: any): string => (a.specification || "").toLowerCase();
+    const playerFouls = playerActions.filter(
+      (a) => normalizeActionType(a) === ActionType.FOUL
+    );
+    const hasFoulBreakdown = actions.length > 0;
+    const foulBreakdown = {
+      pers: playerFouls.filter((a) => normalizeSpecification(a) === FoulSpecification.PERSONAL).length,
+      tech: playerFouls.filter((a) => normalizeSpecification(a) === FoulSpecification.TECHNICAL).length,
+      ant: playerFouls.filter((a) => normalizeSpecification(a) === FoulSpecification.PENALITY).length,
+      disq: playerFouls.filter((a) => normalizeSpecification(a) === FoulSpecification.DISQUALIFICATION).length,
+    };
+
     const hasPositionedActions = playerActions.some((a) => a.semanticPosition);
     const courtSVG = hasPositionedActions
       ? (() => {
@@ -2633,13 +2904,17 @@ export class PDFExportService {
               actionType: a.action_type || a.type,
               specification: a.specification,
             }));
-          return this.generateBasketballCourtSVG(
-            465,
-            250,
-            courtBackgroundColor,
-            courtLineColor,
-            markers,
-            courtLogoBase64
+          return this.wrapCourtWithSideBanners(
+            this.generateBasketballCourtSVG(
+              465,
+              250,
+              courtBackgroundColor,
+              courtLineColor,
+              markers,
+              courtLogoBase64,
+              matchSponsors
+            ),
+            matchSponsors
           );
         })()
       : null;
@@ -2691,19 +2966,19 @@ export class PDFExportService {
     }` : ""}
     .page-header {
       display: flex; align-items: center; justify-content: space-between;
-      padding-bottom: 14px;
+      padding-bottom: 8px;
       border-bottom: 2px solid ${PDF_COLORS.table.border};
-      margin-bottom: 20px;
-      min-height: 80px;
+      margin-bottom: 10px;
+      min-height: 56px;
     }
-    .page-header-logo-left { height: 64px; width: auto; }
-    .page-header-logo-right { height: 72px; width: auto; }
+    .page-header-logo-left { height: 52px; width: auto; }
+    .page-header-logo-right { height: 56px; width: auto; }
     .page-header-center { text-align: center; flex: 1; }
     .page-header-match { font-size: 13px; font-weight: 700; color: ${PDF_COLORS.card.text}; }
     .page-header-date { font-size: 11px; color: ${PDF_COLORS.card.textSecondary}; margin-top: 4px; }
     .player-header {
       display: flex; align-items: center; justify-content: space-between;
-      margin-bottom: 18px; padding-bottom: 14px;
+      margin-bottom: 8px; padding-bottom: 8px;
       border-bottom: 1px solid ${PDF_COLORS.card.border};
     }
     .player-info-left { display: flex; align-items: center; gap: 14px; }
@@ -2732,10 +3007,10 @@ export class PDFExportService {
     .player-points-label { font-size: 10px; font-weight: 700; color: ${PDF_COLORS.card.accent}; text-transform: uppercase; }
     .main-stats-grid {
       display: grid; grid-template-columns: repeat(4, 1fr);
-      gap: 10px; margin-bottom: 20px;
+      gap: 10px; margin-bottom: 10px;
     }
     .main-stat-card {
-      text-align: center; padding: 14px 10px;
+      text-align: center; padding: 10px;
       background: ${PDF_COLORS.card.headerBg};
       border: 1px solid ${PDF_COLORS.card.border};
       border-radius: 12px;
@@ -2748,9 +3023,9 @@ export class PDFExportService {
     .main-stat-value.highlight { color: ${PDF_COLORS.card.accent}; }
     .main-stat-label { font-size: 9px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: ${PDF_COLORS.card.textSecondary}; margin-top: 5px; }
     .section-title { font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: ${PDF_COLORS.card.text}; margin-bottom: 10px; }
-    .shooting-section { margin-bottom: 20px; }
-    .shooting-card { border: 1px solid ${PDF_COLORS.card.border}; border-radius: 12px; padding: 16px; }
-    .shooting-bars { display: flex; flex-direction: column; gap: 12px; margin-bottom: 12px; }
+    .shooting-section { margin-bottom: 10px; }
+    .shooting-card { border: 1px solid ${PDF_COLORS.card.border}; border-radius: 12px; padding: 12px; }
+    .shooting-bars { display: flex; flex-direction: column; gap: 10px; margin-bottom: 10px; }
     .shooting-bar { display: flex; align-items: center; gap: 12px; }
     .shooting-bar-label { font-size: 11px; font-weight: 600; color: ${PDF_COLORS.card.textSecondary}; min-width: 55px; text-transform: uppercase; }
     .shooting-bar-track { flex: 1; height: 12px; }
@@ -2761,19 +3036,56 @@ export class PDFExportService {
     .shooting-summary-item { flex: 1; text-align: center; }
     .shooting-summary-value { font-size: 20px; font-weight: 900; color: ${PDF_COLORS.card.text}; }
     .shooting-summary-label { font-size: 8px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; color: ${PDF_COLORS.card.textSecondary}; margin-top: 2px; }
-    .details-section { margin-bottom: 20px; }
-    .stats-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+    .details-section { margin-bottom: 10px; }
+    .stats-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
     .stat-box {
-      display: flex; flex-direction: column; align-items: center; gap: 4px;
-      padding: 12px 8px; background: ${PDF_COLORS.card.background};
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+      padding: 10px 6px; background: ${PDF_COLORS.card.background};
       border: 1px solid ${PDF_COLORS.card.border}; border-radius: 8px; text-align: center;
     }
     .stat-box-label { font-size: 10px; font-weight: 600; color: ${PDF_COLORS.card.textSecondary}; text-transform: uppercase; line-height: 1; }
     .stat-box-value { font-size: 20px; font-weight: 700; color: ${PDF_COLORS.card.text}; line-height: 1; }
     .stat-box-value-row { display: flex; align-items: center; justify-content: center; gap: 4px; }
-    .court-section { margin-top: 20px; }
-    .court-wrapper { text-align: center; border-radius: 12px; overflow: hidden; }
-    .footer { margin-top: 24px; text-align: center; font-size: 9px; color: ${PDF_COLORS.table.textTertiary}; border-top: 1px solid ${PDF_COLORS.table.border}; padding-top: 10px; }
+    .stat-box-sub { font-size: 8px; color: ${PDF_COLORS.card.textSecondary}; margin-top: 1px; }
+    .stat-box-quad-row, .stat-box-quad { display: flex; gap: 10px; }
+    .stat-box-quad-col { display: flex; flex-direction: column; gap: 2px; }
+    .stat-box-quad-item { display: flex; align-items: center; gap: 3px; }
+    .stat-box-quad-value { font-size: 12px; font-weight: 700; color: ${PDF_COLORS.card.text}; white-space: nowrap; }
+    .stat-box-quad-label { font-size: 8px; font-weight: 400; color: ${PDF_COLORS.card.textSecondary}; white-space: nowrap; }
+    .court-section { margin-top: 8px; }
+    .court-wrapper { text-align: center; }
+    .footer {
+      margin-top: 10px;
+      text-align: center;
+      font-size: 9px;
+      color: ${PDF_COLORS.table.textTertiary};
+      border-top: 1px solid ${PDF_COLORS.table.border};
+      padding-top: 6px;
+      /* Keep the sponsor bar and the "Généré par" line together on one page —
+         without this, a near-full page can push just the last text line over. */
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+    .sponsor-footer-bar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 6px;
+    }
+    .sponsor-footer-label {
+      font-size: 8px;
+      font-style: italic;
+      color: ${PDF_COLORS.table.textSecondary};
+      white-space: nowrap;
+    }
+    .sponsor-footer-logo {
+      /* Fixed box so a logo image never renders at its native pixel size. */
+      width: 50px;
+      height: 32px;
+      object-fit: contain;
+    }
   </style>
 </head>
 <body>
@@ -2885,12 +3197,18 @@ export class PDFExportService {
     <div class="section-title">Détails</div>
     <div class="stats-grid">
       <div class="stat-box">
-        <div class="stat-box-label">REB OFF/DEF</div>
-        <div class="stat-box-value-row">
-          <svg width="14" height="14" viewBox="0 0 16 16"><polygon points="8,2 14,14 2,14" fill="${getActionColor(ActionType.REBOUND, ReboundSpecification.OFFENSIVE)}" stroke="#FFFFFF" stroke-width="1"/></svg>
-          <div class="stat-box-value">${player.reb_off}/${player.reb_def}</div>
-          <svg width="14" height="14" viewBox="0 0 16 16"><polygon points="8,2 14,14 2,14" fill="${getActionColor(ActionType.REBOUND, ReboundSpecification.DEFENSIVE)}" stroke="#FFFFFF" stroke-width="1"/></svg>
+        <div class="stat-box-label">REB</div>
+        <div class="stat-box-quad-row">
+          <div class="stat-box-quad-item">
+            <svg width="12" height="12" viewBox="0 0 16 16"><polygon points="8,2 14,14 2,14" fill="${getActionColor(ActionType.REBOUND, ReboundSpecification.OFFENSIVE)}" stroke="#FFFFFF" stroke-width="1"/></svg>
+            <span class="stat-box-quad-value">${player.reb_off} <span class="stat-box-quad-label">(OFF)</span></span>
+          </div>
+          <div class="stat-box-quad-item">
+            <svg width="12" height="12" viewBox="0 0 16 16"><polygon points="8,2 14,14 2,14" fill="${getActionColor(ActionType.REBOUND, ReboundSpecification.DEFENSIVE)}" stroke="#FFFFFF" stroke-width="1"/></svg>
+            <span class="stat-box-quad-value">${player.reb_def} <span class="stat-box-quad-label">(DEF)</span></span>
+          </div>
         </div>
+        <div class="stat-box-sub">Rebonds: ${player.reb_off + player.reb_def}</div>
       </div>
       <div class="stat-box">
         <div class="stat-box-label">AST</div>
@@ -2922,10 +3240,40 @@ export class PDFExportService {
       </div>
       <div class="stat-box">
         <div class="stat-box-label">FTE</div>
+        ${
+          hasFoulBreakdown
+            ? `
+        <div class="stat-box-quad">
+          <div class="stat-box-quad-col">
+            <div class="stat-box-quad-item">
+              <svg width="12" height="12" viewBox="0 0 16 16"><polygon points="8,2 14,8 8,14 2,8" fill="${getActionColor(ActionType.FOUL, FoulSpecification.PERSONAL)}" stroke="#FFFFFF" stroke-width="2"/></svg>
+              <span class="stat-box-quad-value">${foulBreakdown.pers} <span class="stat-box-quad-label">(PERS)</span></span>
+            </div>
+            <div class="stat-box-quad-item">
+              <svg width="12" height="12" viewBox="0 0 16 16"><polygon points="8,2 14,8 8,14 2,8" fill="${getActionColor(ActionType.FOUL, FoulSpecification.TECHNICAL)}" stroke="#FFFFFF" stroke-width="2"/></svg>
+              <span class="stat-box-quad-value">${foulBreakdown.tech} <span class="stat-box-quad-label">(TECH)</span></span>
+            </div>
+          </div>
+          <div class="stat-box-quad-col">
+            <div class="stat-box-quad-item">
+              <svg width="12" height="12" viewBox="0 0 16 16"><polygon points="8,2 14,8 8,14 2,8" fill="${getActionColor(ActionType.FOUL, FoulSpecification.PENALITY)}" stroke="#FFFFFF" stroke-width="2"/></svg>
+              <span class="stat-box-quad-value">${foulBreakdown.ant} <span class="stat-box-quad-label">(ANT)</span></span>
+            </div>
+            <div class="stat-box-quad-item">
+              <svg width="12" height="12" viewBox="0 0 16 16"><polygon points="8,2 14,8 8,14 2,8" fill="${getActionColor(ActionType.FOUL, FoulSpecification.DISQUALIFICATION)}" stroke="#FFFFFF" stroke-width="2"/></svg>
+              <span class="stat-box-quad-value">${foulBreakdown.disq} <span class="stat-box-quad-label">(DISQ)</span></span>
+            </div>
+          </div>
+        </div>
+        <div class="stat-box-sub">Fautes: ${player.pf}</div>
+        `
+            : `
         <div class="stat-box-value-row">
           <div class="stat-box-value">${player.pf}</div>
           <svg width="14" height="14" viewBox="0 0 16 16"><polygon points="8,2 14,8 8,14 2,8" fill="${getActionColor(ActionType.FOUL)}" stroke="#FFFFFF" stroke-width="2"/></svg>
         </div>
+        `
+        }
       </div>
       <div class="stat-box">
         <div class="stat-box-label">FP</div>
@@ -2952,12 +3300,21 @@ export class PDFExportService {
   ` : ""}
 </div>
 
-  <div class="footer">Généré par Coach Assistant • ${dateStr}</div>
+  <div class="footer">
+    ${officialSponsors.length > 0 ? `
+    <div class="sponsor-footer-bar">
+      <span class="sponsor-footer-label">Partenaires officiels</span>
+      ${officialSponsors.sort((a, b) => a.priority - b.priority).map(s =>
+        `<img src="${s.logo_url}" class="sponsor-footer-logo" alt="${s.name}" title="${s.name}" />`
+      ).join('')}
+    </div>` : ''}
+    Généré par Coach Assistant • ${dateStr}
+  </div>
 </body>
 </html>`;
 
     const computedFileName = fileName ?? `${this.sanitizeFileName(myTeamName)}_${this.sanitizeFileName(opponentName)}_${this.sanitizeFileName(player.name)}_stats_${this.formatDateFile(matchDate)}`;
-    const { uri } = await Print.printToFileAsync({ html, fileName: computedFileName });
+    const { uri } = await this.printAndRename(html, computedFileName);
 
     if (await Sharing.isAvailableAsync()) {
       const sharingOptions: Record<string, any> = {};
@@ -3081,7 +3438,14 @@ export class PDFExportService {
     const periodTag = period ? (periodSuffix[period] ?? period) : "all";
     const seasonFileName = `${this.sanitizeFileName(player.playerName)}_mean_stats_${periodTag}`;
 
-    const radarSVG = this.generateRadarSVG(player, 240);
+    const radarSVG = this.generateRadarSVG(
+      {
+        ...player,
+        avgReb: (player.reb_off + player.reb_def) / n,
+        avgAst: player.ast / n,
+      },
+      240
+    );
 
     return this.generatePlayerPDF({
       player: {

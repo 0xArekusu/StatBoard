@@ -19,6 +19,8 @@ import {
   MatchWithDetails,
 } from '../src/services/seasonStats';
 import { StatPeriod, STAT_PERIOD } from '../constants/statsConstants';
+import { ANALYTICS_EVENTS, ANALYTICS_PDF_EXPORT_TYPE } from '../constants/analyticsEvents';
+import { usePostHog } from 'posthog-react-native';
 import { RootStackParamList, RootNavigationProp } from '../types/navigation';
 import { logInfo, logError } from '../utils/logger';
 import PeriodFilter from '../components/Stats/PeriodFilter';
@@ -53,6 +55,7 @@ export default function PlayerProfileScreen() {
   const { sp, font, sizes } = useResponsive();
   const navigation = useNavigation<RootNavigationProp>();
   const route = useRoute<PlayerProfileRouteProp>();
+  const posthog = usePostHog();
   const { playerId, playerNumber, playerName, photoUrl } = route.params;
 
   // All hooks declared at top level in consistent order
@@ -119,6 +122,7 @@ export default function PlayerProfileScreen() {
         clubLogoUrl: currentClub?.logoUrl,
         period,
       });
+      posthog?.capture(ANALYTICS_EVENTS.PDF_EXPORTED, { type: ANALYTICS_PDF_EXPORT_TYPE.PLAYER_SEASON });
     } catch (e) {
       logError('PlayerProfileScreen', 'Erreur export PDF', { error: e });
     } finally {

@@ -29,17 +29,25 @@ import {
   getActionColor,
   ActionType,
   ReboundSpecification,
+  FoulSpecification,
 } from "../../src/models/ActionTypes";
 import {
   COACH_ASSISTANT_LOGO_NO_BG,
   COACH_ASSISTANT_LOGO_WHITE_NO_BG,
+  isColorDark,
 } from "../../src/utils/logoHelper";
+import { MatchSponsor, getSponsorUris } from "../../src/services/SponsorService";
 import {
   COURT_SVG_WIDTH_PORTRAIT,
   COURT_SVG_HEIGHT_PORTRAIT,
+  COURT_SVG_WIDTH_LANDSCAPE,
+  COURT_SVG_HEIGHT_LANDSCAPE,
+  ANALYTICS_EVENTS,
+  ANALYTICS_PDF_EXPORT_TYPE,
 } from "../../constants";
 import PlayerAvatar from "../PlayerAvatar";
 import { PDFExportService } from "../../src/services/export/PDFExportService";
+import { usePostHog } from "posthog-react-native";
 
 interface PlayerDetailModalProps {
   player: PlayerStats | null;
@@ -49,6 +57,7 @@ interface PlayerDetailModalProps {
   actions?: any[];
   club?: Club | null;
   matchDate?: Date;
+  matchSponsors?: MatchSponsor[];
 }
 
 export default function PlayerDetailModal({
@@ -59,9 +68,11 @@ export default function PlayerDetailModal({
   actions = [],
   club = null,
   matchDate,
+  matchSponsors = [],
 }: PlayerDetailModalProps) {
   const { colors, isDark } = useTheme();
   const { isCompact, sp, font, sizes } = useResponsive();
+  const posthog = usePostHog();
   const [isExporting, setIsExporting] = useState(false);
   const textPrimary = colors.text.primary;
   const textSecondary = colors.text.secondary;
@@ -78,6 +89,23 @@ export default function PlayerDetailModal({
       return action.team === player.team && playerNum === player.playerNumber;
     });
   }, [actions, player]);
+
+  // Breakdown of fouls by type (personal/technical/antisportive/disqualifying)
+  const foulBreakdown = useMemo(() => {
+    const counts: Record<string, number> = {
+      [FoulSpecification.PERSONAL]: 0,
+      [FoulSpecification.TECHNICAL]: 0,
+      [FoulSpecification.PENALITY]: 0,
+      [FoulSpecification.DISQUALIFICATION]: 0,
+    };
+    playerActions.forEach((action: any) => {
+      const actionType = (action.action_type || action.type || "").toUpperCase();
+      if (actionType !== ActionType.FOUL.toUpperCase()) return;
+      const spec = (action.specification || "").toLowerCase();
+      if (spec in counts) counts[spec] += 1;
+    });
+    return counts;
+  }, [playerActions]);
 
   // Create markers for court visualization
   const courtMarkers = useMemo(() => {
@@ -117,6 +145,14 @@ export default function PlayerDetailModal({
   const courtLineColor = club?.courtLineColor || colors.court.line;
   const clubLogoUri = useSignedUrl(club?.logoUrl);
 
+  // Sponsors 5/6 (side banners) sit right next to the court in this modal,
+  // so their dark/light variant must follow the court background, not the app theme.
+  const isCourtDark = isColorDark(courtBackgroundColor);
+  const sponsorUris = useMemo(
+    () => getSponsorUris(matchSponsors, courtBackgroundColor, isCourtDark),
+    [matchSponsors, courtBackgroundColor, isCourtDark],
+  );
+
   const handleExportPDF = async () => {
     if (!player || isExporting) return;
     setIsExporting(true);
@@ -130,7 +166,9 @@ export default function PlayerDetailModal({
         courtBackgroundColor: club?.courtBackgroundColor,
         courtLineColor: club?.courtLineColor,
         matchDate,
+        matchSponsors,
       });
+      posthog?.capture(ANALYTICS_EVENTS.PDF_EXPORTED, { type: ANALYTICS_PDF_EXPORT_TYPE.PLAYER_MATCH });
     } catch (e) {
       console.error("[PlayerDetailModal] Export PDF error:", e);
     } finally {
@@ -479,21 +517,22 @@ export default function PlayerDetailModal({
               </Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.detailedStatsScrollView} contentContainerStyle={[styles.detailedStatsGrid, styles.detailedStatsGridCentered]}>
                 <StatBox
-                  label="REB OFF/DEF"
-                  value={`${player.reb_off}/${player.reb_def}`}
-                  sub={`Total: ${player.reb}`}
-                  leftMarkerType={MarkerType.TRIANGLE}
-                  leftMarkerColor={getActionColor(
-                    ActionType.REBOUND,
-                    ReboundSpecification.OFFENSIVE,
-                    0
-                  )}
-                  markerType={MarkerType.TRIANGLE}
-                  markerColor={getActionColor(
-                    ActionType.REBOUND,
-                    ReboundSpecification.DEFENSIVE,
-                    0
-                  )}
+                  label="REB"
+                  sub={`Rebonds: ${player.reb}`}
+                  quad={[
+                    {
+                      label: "OFF",
+                      value: player.reb_off,
+                      color: getActionColor(ActionType.REBOUND, ReboundSpecification.OFFENSIVE, 0),
+                      markerType: MarkerType.TRIANGLE,
+                    },
+                    {
+                      label: "DEF",
+                      value: player.reb_def,
+                      color: getActionColor(ActionType.REBOUND, ReboundSpecification.DEFENSIVE, 0),
+                      markerType: MarkerType.TRIANGLE,
+                    },
+                  ]}
                 />
                 <StatBox
                   label="AST"
@@ -525,10 +564,29 @@ export default function PlayerDetailModal({
                 />
                 <StatBox
                   label="FTE"
-                  value={player.pf}
-                  sub="Fautes"
-                  markerType={MarkerType.DIAMOND}
-                  markerColor={getActionColor(ActionType.FOUL, "", 0)}
+                  sub={`Fautes: ${player.pf}`}
+                  quad={[
+                    {
+                      label: "PERS",
+                      value: foulBreakdown[FoulSpecification.PERSONAL],
+                      color: getActionColor(ActionType.FOUL, FoulSpecification.PERSONAL, 0),
+                    },
+                    {
+                      label: "TECH",
+                      value: foulBreakdown[FoulSpecification.TECHNICAL],
+                      color: getActionColor(ActionType.FOUL, FoulSpecification.TECHNICAL, 0),
+                    },
+                    {
+                      label: "ANT",
+                      value: foulBreakdown[FoulSpecification.PENALITY],
+                      color: getActionColor(ActionType.FOUL, FoulSpecification.PENALITY, 0),
+                    },
+                    {
+                      label: "DISQ",
+                      value: foulBreakdown[FoulSpecification.DISQUALIFICATION],
+                      color: getActionColor(ActionType.FOUL, FoulSpecification.DISQUALIFICATION, 0),
+                    },
+                  ]}
                 />
                 <StatBox
                   label="FP"
@@ -573,7 +631,29 @@ export default function PlayerDetailModal({
                     lineColor={courtLineColor}
                     markers={courtMarkers}
                     logoUri={clubLogoUri}
+                    courtSponsorTopUri={sponsorUris.top}
+                    courtSponsorBottomUri={sponsorUris.bottom}
+                    courtSponsorThirdUri={sponsorUris.third}
+                    courtSponsorFourthUri={sponsorUris.fourth}
                   />
+                  {sponsorUris.sideLeft ? (
+                    <View style={[styles.sideBanner, { left: 0 }]}>
+                      <Image
+                        source={{ uri: sponsorUris.sideLeft }}
+                        style={[styles.sideBannerImage, { transform: [{ rotate: '-90deg' }] }]}
+                        resizeMode="contain"
+                      />
+                    </View>
+                  ) : null}
+                  {sponsorUris.sideRight ? (
+                    <View style={[styles.sideBanner, { right: 0 }]}>
+                      <Image
+                        source={{ uri: sponsorUris.sideRight }}
+                        style={[styles.sideBannerImage, { transform: [{ rotate: '90deg' }] }]}
+                        resizeMode="contain"
+                      />
+                    </View>
+                  ) : null}
                 </View>
               </View>
             )}
@@ -780,10 +860,23 @@ const styles = StyleSheet.create({
     lineHeight: 13,
   },
   courtContainer: {
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 20,
+    flex: 1,
+    alignSelf: "center",
+    aspectRatio: COURT_SVG_WIDTH_LANDSCAPE / COURT_SVG_HEIGHT_LANDSCAPE,
     borderRadius: 16,
     overflow: "hidden",
+    padding: 20,
+  },
+  sideBanner: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    width: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  sideBannerImage: {
+    width: 150,
+    height: 60,
   },
 });

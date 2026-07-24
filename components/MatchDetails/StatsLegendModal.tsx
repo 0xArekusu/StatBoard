@@ -303,7 +303,7 @@ export default function StatsLegendModal({
                 FT
               </Text>
               <Text style={[styles.legendValue, { color: textPrimary }]}>
-                Fautes
+                Fautes (total : personnelles + techniques + antisportives + disqualifiantes)
               </Text>
               {renderMarker(
                 MarkerType.DIAMOND,

@@ -5,7 +5,7 @@
  */
 
 import React, { useState, useEffect, useRef } from "react";
-import { View, StyleSheet, Animated } from "react-native";
+import { View, StyleSheet, Animated, Image } from "react-native";
 import {
   MatchEvent,
   FilterMode,
@@ -21,6 +21,9 @@ import {
   COURT_SVG_HEIGHT_PORTRAIT,
 } from "../../constants";
 import { useResponsive } from "../../src/hooks/useResponsive";
+import { BREAKPOINTS } from "../../constants/breakpoints";
+
+enum SponsorSide { Left = 'left', Right = 'right' }
 
 interface CourtViewProps {
   onCourtClick: (x: number, y: number) => void;
@@ -35,6 +38,12 @@ interface CourtViewProps {
   clubLogoUrl: string | null;
   courtBackgroundColor: string;
   courtLineColor: string;
+  courtSponsorTopUri?: string | null;
+  courtSponsorBottomUri?: string | null;
+  courtSponsorThirdUri?: string | null;
+  courtSponsorFourthUri?: string | null;
+  sideSponsorLeftUri?: string | null;
+  sideSponsorRightUri?: string | null;
 }
 
 export const CourtView: React.FC<CourtViewProps> = ({
@@ -50,8 +59,16 @@ export const CourtView: React.FC<CourtViewProps> = ({
   clubLogoUrl,
   courtBackgroundColor,
   courtLineColor,
+  courtSponsorTopUri = null,
+  courtSponsorBottomUri = null,
+  courtSponsorThirdUri = null,
+  courtSponsorFourthUri = null,
+  sideSponsorLeftUri = null,
+  sideSponsorRightUri = null,
 }) => {
   const { colors } = useTheme();
+  const { width: screenWidth, height: screenHeight } = useResponsive();
+  const isMobile = Math.min(screenWidth, screenHeight) < BREAKPOINTS.phoneMaxWidth;
   const [courtDimensions, setCourtDimensions] = useState({
     width: 0,
     height: 0,
@@ -204,6 +221,36 @@ export const CourtView: React.FC<CourtViewProps> = ({
     showLastMarker && eventsToDisplay.length > 0 ? [markers[0]] : [];
   const regularMarkers = showLastMarker ? [] : markers;
 
+  const isPortrait = courtDimensions.height > courtDimensions.width;
+  const SIDE_WIDTH = 80;
+
+  const renderSideSponsor = (uri: string | null, side: SponsorSide) => {
+    if (!uri) return null;
+    const source = typeof uri === 'string' ? { uri } : (uri as any);
+    const rotation = isPortrait
+      ? side === SponsorSide.Left ? '-90deg' : '90deg'
+      : side === SponsorSide.Left ? '-90deg' : '90deg';
+    return (
+      <View style={[
+        styles.sideBanner,
+        side === SponsorSide.Left ? { left: isMobile ? 0 : 50 } : { right: isMobile ? 0 : 50 },
+      ]}>
+        <Image
+          source={source}
+          style={[
+            styles.sideBannerImage,
+            {
+              width: courtDimensions.height * 0.4,
+              height: SIDE_WIDTH - 10,
+              transform: [{ rotate: rotation }],
+            },
+          ]}
+          resizeMode="contain"
+        />
+      </View>
+    );
+  };
+
   return (
     <View style={styles.courtContainer} onLayout={handleLayout}>
       <BasketballCourtSVG
@@ -216,6 +263,10 @@ export const CourtView: React.FC<CourtViewProps> = ({
         lineColor={courtLineColor}
         logoUri={clubLogoUrl}
         markers={regularMarkers}
+        courtSponsorTopUri={courtSponsorTopUri}
+        courtSponsorBottomUri={courtSponsorBottomUri}
+        courtSponsorThirdUri={courtSponsorThirdUri}
+        courtSponsorFourthUri={courtSponsorFourthUri}
       />
       {/* Animated overlay for last marker with fade effect */}
       {showLastMarker && lastMarker.length > 0 && (
@@ -238,6 +289,8 @@ export const CourtView: React.FC<CourtViewProps> = ({
           />
         </Animated.View>
       )}
+      {renderSideSponsor(sideSponsorLeftUri, SponsorSide.Left)}
+      {renderSideSponsor(sideSponsorRightUri, SponsorSide.Right)}
     </View>
   );
 };
@@ -247,5 +300,17 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+  },
+  sideBanner: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    width: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+    overflow: 'hidden',
+  },
+  sideBannerImage: {
+    // sized dynamically in renderSideSponsor
   },
 });

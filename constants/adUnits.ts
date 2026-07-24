@@ -22,7 +22,7 @@ const IS_PRODUCTION = process.env.NODE_ENV === "production";
 // ---------------------------------------------------------------------------
 
 const BANNER_UNIT_ID = Platform.select({
-  ios: "ca-app-pub-XXXXXXXXXXXXXXXX/XXXXXXXXXX", // TODO: replace with real iOS banner unit ID
+  ios: "ca-app-pub-5211468835188047/3030478278",
   android: "ca-app-pub-5211468835188047/4270082028",
 });
 
@@ -35,7 +35,7 @@ export const BANNER_AD_UNIT_ID = IS_PRODUCTION
 // ---------------------------------------------------------------------------
 
 const INTERSTITIAL_UNIT_ID = Platform.select({
-  ios: "ca-app-pub-XXXXXXXXXXXXXXXX/XXXXXXXXXX", // TODO: replace with real iOS interstitial unit ID
+  ios: "ca-app-pub-5211468835188047/5465069927", 
   android: "ca-app-pub-5211468835188047/7547248955", 
 });
 

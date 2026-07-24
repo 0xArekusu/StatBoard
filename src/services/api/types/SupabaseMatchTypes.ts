@@ -92,6 +92,10 @@ export interface SupabaseMatchInsert {
   ended_at?: string | null;
   synced_at?: string | null;
 
+  // Sponsors snapshot — must be a real array so it lands in the JSONB column
+  // as an array, not a double-encoded JSON string scalar.
+  match_sponsors?: unknown[] | null;
+
   // Embedded player data
   players?: SupabaseMatchPlayerInfo[];  // JSONB array
   player_stats?: Record<string, SupabaseMatchPlayerStats>;  // JSONB object

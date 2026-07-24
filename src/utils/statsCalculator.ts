@@ -82,7 +82,7 @@ export function calculatePlusMinus(
   const sorted = [...actions].sort((a, b) => {
     if (a.period_number !== b.period_number) return a.period_number - b.period_number;
     if (a.time_in_period !== b.time_in_period) return a.time_in_period - b.time_in_period;
-    return a.action_order - b.action_order;
+    return (a.action_order ?? 0) - (b.action_order ?? 0);
   });
 
   for (const action of sorted) {
