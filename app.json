@@ -2,7 +2,7 @@
   "expo": {
     "name": "Coach Assistant",
     "slug": "coach-assistant",
-    "version": "1.0.9",
+    "version": "1.1.0",
     "runtimeVersion": {
       "policy": "appVersion"
     },
@@ -14,11 +14,6 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "scheme": "com.coachassistant.basketball",
-    "splash": {
-      "image": "./assets/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
-    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.coachassistant.basketball",
@@ -72,13 +67,27 @@
       ],
       "./plugins/withModularHeaders",
       [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#ffffff",
+          "dark": {
+            "image": "./assets/splash-icon.png",
+            "backgroundColor": "#332F41"
+          }
+        }
+      ],
+      [
         "react-native-google-mobile-ads",
         {
           "androidAppId": "ca-app-pub-5211468835188047~3444352413",
           "iosAppId": "ca-app-pub-5211468835188047~1528541997",
           "userTrackingUsageDescription": "Cet identifiant sera utilisé pour vous proposer des publicités personnalisées."
         }
-      ]
+      ],
+      "expo-localization"
     ],
     "extra": {
       "eas": {

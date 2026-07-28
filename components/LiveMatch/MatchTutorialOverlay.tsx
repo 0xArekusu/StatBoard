@@ -11,8 +11,10 @@ import {
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { usePostHog } from "posthog-react-native";
 import { useTheme } from "../../src/contexts/ThemeContext";
 import { useResponsive } from "../../src/hooks/useResponsive";
+import { ANALYTICS_EVENTS } from "../../constants/analyticsEvents";
 
 export const TUTORIAL_SKIP_KEY = "@match_tutorial_skip";
 
@@ -80,6 +82,7 @@ export function MatchTutorialOverlay({
 }: MatchTutorialOverlayProps) {
   const { colors } = useTheme();
   const { sp, font } = useResponsive();
+  const posthog = usePostHog();
   const { height: screenHeight } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const [stepIndex, setStepIndex] = useState(0);
@@ -130,6 +133,7 @@ export function MatchTutorialOverlay({
     if (dontShowAgain) {
       await AsyncStorage.setItem(TUTORIAL_SKIP_KEY, "true");
     }
+    posthog?.capture(ANALYTICS_EVENTS.MATCH_TUTORIAL_SKIPPED, { step_index: stepIndex });
     setStepIndex(0);
     setDontShowAgain(false);
     onClose();
@@ -139,6 +143,7 @@ export function MatchTutorialOverlay({
     if (dontShowAgain) {
       await AsyncStorage.setItem(TUTORIAL_SKIP_KEY, "true");
     }
+    posthog?.capture(ANALYTICS_EVENTS.MATCH_TUTORIAL_COMPLETED);
     setStepIndex(0);
     setDontShowAgain(false);
     onClose();

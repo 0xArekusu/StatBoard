@@ -27,6 +27,7 @@ import {
 } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
+import { usePostHog } from "posthog-react-native";
 import { useTheme } from "../src/contexts/ThemeContext";
 import { SLATE_COLORS } from "../src/theme/colors";
 import { RootStackParamList, RootNavigationProp } from "../types/navigation";
@@ -75,6 +76,8 @@ import { getChainContext } from "../utils/actionChainRules";
 import {
   COURT_SVG_WIDTH_PORTRAIT,
   COURT_SVG_HEIGHT_PORTRAIT,
+  ANALYTICS_EVENTS,
+  ANALYTICS_MATCH_START_TRIGGER,
 } from "../constants";
 import { DEFAULT_COURT_COLORS } from "../src/theme/colors";
 import { supabase } from "../src/config/supabase";
@@ -106,6 +109,7 @@ export default function LiveMatchScreen() {
   const isMobileLandscape = !isPortrait && width < BREAKPOINTS.mobileLandscapeMaxWidth;
   const { user } = useAuth();
   const { currentClub } = useClub();
+  const posthog = usePostHog();
   const matchData = route.params?.matchData;
   const resumeMatchId = route.params?.matchId;
 
@@ -788,6 +792,7 @@ export default function LiveMatchScreen() {
           if (currentMatch && !currentMatch.started_at) {
             const matchManager = new MatchManager();
             await matchManager.startMatch(currentMatchId);
+            posthog?.capture(ANALYTICS_EVENTS.MATCH_STARTED, { trigger: ANALYTICS_MATCH_START_TRIGGER.TIMER });
             logInfo("LiveMatchScreen", "✅ Match started_at set on timer start", {
               matchId: currentMatchId,
             });
@@ -1331,6 +1336,7 @@ export default function LiveMatchScreen() {
         if (currentMatch && !currentMatch.started_at) {
           const matchManager = new MatchManager();
           await matchManager.startMatch(currentMatchId);
+          posthog?.capture(ANALYTICS_EVENTS.MATCH_STARTED, { trigger: ANALYTICS_MATCH_START_TRIGGER.FIRST_ACTION });
           logInfo("LiveMatchScreen", "✅ Match started_at set on first action", {
             matchId: currentMatchId,
           });

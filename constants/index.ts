@@ -41,6 +41,9 @@ export {
 // Routes
 export * from "./routes";
 
+// Analytics events
+export * from "./analyticsEvents";
+
 // Match Details Screen
 export * from "./matchDetailsConstants";
 export { TAB, ACTION_FILTER } from "./matchDetailsConstants";

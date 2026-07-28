@@ -1,15 +1,15 @@
 import React from "react";
-import { Modal, View, Text, TouchableOpacity, StyleSheet, Linking } from "react-native";
+import { Modal, View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../src/contexts/ThemeContext";
 import { useResponsive } from "../src/hooks/useResponsive";
 
 interface ForceUpdateModalProps {
   visible: boolean;
-  storeUrl: string;
+  onUpdatePress: () => void;
 }
 
-export default function ForceUpdateModal({ visible, storeUrl }: ForceUpdateModalProps) {
+export default function ForceUpdateModal({ visible, onUpdatePress }: ForceUpdateModalProps) {
   const { colors, isDark } = useTheme();
   const { sp, font, sizes } = useResponsive();
 
@@ -69,7 +69,7 @@ export default function ForceUpdateModal({ visible, storeUrl }: ForceUpdateModal
                 borderRadius: sp.md,
               },
             ]}
-            onPress={() => Linking.openURL(storeUrl)}
+            onPress={onUpdatePress}
           >
             <Text style={[styles.buttonText, { color: colors.onPrimary, fontSize: font.md }]}>
               Mettre à jour

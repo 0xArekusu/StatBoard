@@ -32,8 +32,10 @@ import {
   ClubSubTab,
   CLUB_TAB,
   ClubTab, ClubFormData,
-  INITIAL_CLUB_FORM_DATA
+  INITIAL_CLUB_FORM_DATA,
+  ANALYTICS_EVENTS
 } from "../../constants";
+import { usePostHog } from "posthog-react-native";
 
 interface ClubScreenProps {
   navigation: any;
@@ -57,6 +59,7 @@ interface ClubScreenProps {
 export default function ClubScreen({ navigation, route }: ClubScreenProps) {
   const { isDark, colors } = useTheme();
   const { user } = useAuth();
+  const posthog = usePostHog();
   const { currentClub, refreshClubs } = useClub();
   const { sp, font, isCompact } = useResponsive();
 
@@ -153,6 +156,10 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
   const handleAddTeam = () => {
     if (!currentClub) return;
     if (isLimitReached) {
+      posthog?.capture(ANALYTICS_EVENTS.TEAM_LIMIT_REACHED, {
+        tier: currentTier,
+        max_teams: maxTeams,
+      });
       Alert.alert(
         "Limite atteinte",
         `Votre abonnement ${currentTier} est limité à ${maxTeams} équipes. Veuillez mettre à jour votre offre.`,
@@ -188,6 +195,7 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
                 user.id,
               );
               await loadClubData();
+              posthog?.capture(ANALYTICS_EVENTS.TEAM_STATUS_UPDATED, { status: TeamStatus.APPROVED });
               Alert.alert("Succès", "Équipe validée");
             } catch (error) {
               console.error("Error approving team:", error);
@@ -230,6 +238,7 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
                 user.id,
               );
               await loadClubData();
+              posthog?.capture(ANALYTICS_EVENTS.TEAM_STATUS_UPDATED, { status: TeamStatus.REJECTED });
               Alert.alert("Équipe refusée");
             } catch (error) {
               console.error("Error rejecting team:", error);
@@ -369,6 +378,7 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
         console.log('[ClubScreen] Club updated, new logoUrl:', currentClub.logoUrl);
 
         setIsEditingClub(false);
+        posthog?.capture(ANALYTICS_EVENTS.CLUB_UPDATED);
         Alert.alert("Succès", "Club modifié avec succès !");
       } catch (error) {
         console.error("Error updating club:", error);
@@ -441,6 +451,7 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
         setFormData(INITIAL_CLUB_FORM_DATA);
         setActiveTab(CLUB_TAB.CREATE);
 
+        posthog?.capture(ANALYTICS_EVENTS.CLUB_CREATED);
         Alert.alert("Succès", "Club créé avec succès !");
       } catch (error) {
         console.error("Error creating club:", error);
@@ -492,6 +503,7 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
         setFormData(INITIAL_CLUB_FORM_DATA);
         setActiveTab(CLUB_TAB.CREATE);
 
+        posthog?.capture(ANALYTICS_EVENTS.CLUB_JOINED);
         Alert.alert(
           "Succès",
           `Vous avez rejoint le club "${clubToJoin.name}" !`,

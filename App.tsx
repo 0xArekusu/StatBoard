@@ -12,6 +12,7 @@ import { AppState, AppStateStatus, Linking } from "react-native";
 import * as Updates from "expo-updates";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import * as Sentry from "@sentry/react-native";
+import { PostHogProvider, usePostHog } from "posthog-react-native";
 import AuthScreen from "./screens/authentication/AuthScreen";
 import LoginScreen from "./screens/authentication/LoginScreen";
 import RegisterScreen from "./screens/authentication/RegisterScreen";
@@ -32,10 +33,12 @@ import { ClubProvider } from "./src/contexts/ClubContext";
 import { ThemeProvider } from "./src/contexts/ThemeContext";
 import { AdProvider } from "./src/contexts/AdContext";
 import { ROUTES } from "./constants/routes";
+import { ANALYTICS_EVENTS } from "./constants/analyticsEvents";
 import { logInfo, logWarn, logError, logger } from "./utils/logger";
 import DebugCourtClick from "./DebugCourtClick";
 import { useAppUpdateCheck } from "./hooks/useAppUpdateCheck";
 import ForceUpdateModal from "./components/ForceUpdateModal";
+import ChangelogModal from "./components/ChangelogModal";
 
 
 // Initialize Sentry
@@ -80,7 +83,23 @@ function Navigation() {
   const { loading, user, createSessionFromUrl } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
   const pendingNavigation = useRef<'emailConfirmed' | 'emailError' | 'resetPassword' | 'resetPasswordError' | false>(false);
-  const { isForceUpdateRequired, storeUrl } = useAppUpdateCheck();
+  const { isForceUpdateRequired, onUpdatePress, changelog, dismissChangelog } = useAppUpdateCheck();
+  const posthog = usePostHog();
+  const routeNameRef = useRef<string | undefined>(undefined);
+
+  // Identify the PostHog user on login, reset on logout.
+  // is_guest is registered as a super property so it's attached to every
+  // subsequent event automatically (screens, match creation, etc.) without
+  // threading it through each individual capture() call.
+  useEffect(() => {
+    if (user) {
+      posthog?.identify(user.id, { email: user.email ?? null });
+      posthog?.register({ is_guest: false });
+    } else {
+      posthog?.reset();
+      posthog?.register({ is_guest: true });
+    }
+  }, [user, posthog]);
 
   useEffect(() => {
     logInfo("App", "🚀 App initialization started");
@@ -136,6 +155,7 @@ function Navigation() {
         if (isEmailCallback) {
           if (error) {
             logError("App", "❌ Failed to process email callback", { error: error.message });
+            posthog?.capture(ANALYTICS_EVENTS.ACCOUNT_CONFIRMATION_FAILED, { error_message: error.message ?? null });
             if (navigationRef.isReady()) {
               navigationRef.navigate(ROUTES.LOGIN, { emailError: true });
             } else {
@@ -143,6 +163,7 @@ function Navigation() {
             }
           } else {
             logInfo("App", "✅ Email confirmed, navigating to login");
+            posthog?.capture(ANALYTICS_EVENTS.ACCOUNT_CONFIRMED);
             if (navigationRef.isReady()) {
               navigationRef.navigate(ROUTES.LOGIN, { emailConfirmed: true });
             } else {
@@ -217,7 +238,7 @@ function Navigation() {
     return (
       <>
         <SplashScreen />
-        <ForceUpdateModal visible={isForceUpdateRequired} storeUrl={storeUrl} />
+        <ForceUpdateModal visible={isForceUpdateRequired} onUpdatePress={onUpdatePress} />
       </>
     );
   }
@@ -234,7 +255,20 @@ function Navigation() {
 
   return (
     <>
-      <NavigationContainer ref={navigationRef}>
+      <NavigationContainer
+        ref={navigationRef}
+        onReady={() => {
+          routeNameRef.current = navigationRef.getCurrentRoute()?.name;
+        }}
+        onStateChange={() => {
+          const previousRouteName = routeNameRef.current;
+          const currentRouteName = navigationRef.getCurrentRoute()?.name;
+          if (currentRouteName && previousRouteName !== currentRouteName) {
+            posthog?.screen(currentRouteName);
+          }
+          routeNameRef.current = currentRouteName;
+        }}
+      >
         <Stack.Navigator
           initialRouteName={initialRoute}
           screenOptions={{
@@ -263,7 +297,13 @@ function Navigation() {
           <Stack.Screen name={ROUTES.PLAYER_PROFILE} component={PlayerProfileScreen} />
         </Stack.Navigator>
       </NavigationContainer>
-      <ForceUpdateModal visible={isForceUpdateRequired} storeUrl={storeUrl} />
+      <ForceUpdateModal visible={isForceUpdateRequired} onUpdatePress={onUpdatePress} />
+      <ChangelogModal
+        visible={!!changelog}
+        title={changelog?.title ?? null}
+        items={changelog?.items ?? []}
+        onClose={dismissChangelog}
+      />
     </>
   );
 }
@@ -351,11 +391,21 @@ function App() {
         <SafeAreaView style={{ flex: 1 }}>
           <ThemeProvider>
             <AuthProvider>
-              <ClubProvider>
-                <AdProvider>
-                  <Navigation />
-                </AdProvider>
-              </ClubProvider>
+              <PostHogProvider
+                apiKey={process.env.EXPO_PUBLIC_POSTHOG_API_KEY ?? ""}
+                options={{
+                  host: process.env.EXPO_PUBLIC_POSTHOG_HOST,
+                  enableSessionReplay: false,
+                  disabled: !process.env.EXPO_PUBLIC_POSTHOG_API_KEY,
+                }}
+                autocapture={{ captureTouches: false, captureScreens: false }}
+              >
+                <ClubProvider>
+                  <AdProvider>
+                    <Navigation />
+                  </AdProvider>
+                </ClubProvider>
+              </PostHogProvider>
             </AuthProvider>
           </ThemeProvider>
         </SafeAreaView>

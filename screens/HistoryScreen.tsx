@@ -11,9 +11,11 @@ import {
 } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { usePostHog } from "posthog-react-native";
 import { useTheme } from "../src/contexts/ThemeContext";
 import { useAuth } from "../src/contexts/AuthContext";
 import { useClub } from "../src/contexts/ClubContext";
+import { ANALYTICS_EVENTS } from "../constants/analyticsEvents";
 import { useResponsive } from "../src/hooks/useResponsive";
 import { Match } from "../src/models/types";
 import { supabase } from "../src/config/supabase";
@@ -47,6 +49,7 @@ interface HistoryScreenProps {
 export default function HistoryScreen({ navigation }: HistoryScreenProps) {
   const { colors, isDark } = useTheme();
   const { user } = useAuth();
+  const posthog = usePostHog();
   const { currentClub, activeTeamId, setActiveTeamId } = useClub();
   const { sp, font, sizes } = useResponsive();
 
@@ -181,6 +184,7 @@ export default function HistoryScreen({ navigation }: HistoryScreenProps) {
               setDeletingMatchId(match.id);
               const matchListService = ServiceFactory.getMatchListService(supabase);
               await matchListService.deleteMatch(match, user?.id);
+              posthog?.capture(ANALYTICS_EVENTS.MATCH_DELETED, { status: match.status });
               await loadHistoryData();
             } catch (error) {
               showErrorAlert({
