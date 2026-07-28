@@ -14,11 +14,6 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "scheme": "com.coachassistant.basketball",
-    "splash": {
-      "image": "./assets/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
-    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.coachassistant.basketball",
@@ -71,6 +66,19 @@
         }
       ],
       "./plugins/withModularHeaders",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#ffffff",
+          "dark": {
+            "image": "./assets/splash-icon.png",
+            "backgroundColor": "#332F41"
+          }
+        }
+      ],
       [
         "react-native-google-mobile-ads",
         {
