@@ -310,6 +310,18 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
     return scenes;
   }, []);
 
+  // ── Unsaved-changes tracking (for the close-confirmation prompt) ─────────
+  const dirtyRef = useRef(false);
+  const markDirty = useCallback(() => { dirtyRef.current = true; }, []);
+
+  // ── Start/stop playback: commit pending edits before advanceSceneForPlayback
+  // starts overwriting drawingsRef/positionsRef with stored scene data ─────────
+  const handleTogglePlay = useCallback(() => {
+    if (!isPlayingRef.current) commitCurrentScene();
+    setIsPlaying((v) => !v);
+    setIsSorting(false);
+  }, [commitCurrentScene]);
+
   // ── Load a scene into local edit state ───────────────────────────────────
   const loadScene = useCallback((scene: PlayScene) => {
     const pos: Record<string, DrawingPoint> = {};
@@ -337,15 +349,35 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
     loadScene(localScenesRef.current[newIndex]);
   }, [commitCurrentScene, loadScene]);
 
-  // ── Close: stop playback → commit → emit update → close ──────────────────
-  const handleClose = useCallback(() => {
-    if (!play) { onClose(); return; }
-    setIsPlaying(false);
+  // ── Save: commit current scene → emit update → clear dirty flag ──────────
+  const persistChanges = useCallback(() => {
+    if (!play) return;
     const scenes = commitCurrentScene();
     setLocalScenes(scenes);
     onUpdate({ ...play, scenes });
-    onClose();
-  }, [play, commitCurrentScene, onUpdate, onClose]);
+    dirtyRef.current = false;
+  }, [play, commitCurrentScene, onUpdate]);
+
+  const handleSave = useCallback(() => {
+    setIsPlaying(false);
+    persistChanges();
+  }, [persistChanges]);
+
+  // ── Close: warn if there are unsaved changes before discarding/closing ───
+  const handleRequestClose = useCallback(() => {
+    if (!play) { onClose(); return; }
+    setIsPlaying(false);
+    if (!dirtyRef.current) { onClose(); return; }
+    Alert.alert(
+      "Modifications non sauvegardées",
+      "Ce système contient des changements non sauvegardés. Voulez-vous les sauvegarder avant de fermer ?",
+      [
+        { text: "Annuler", style: "cancel" },
+        { text: "Fermer sans sauvegarder", style: "destructive", onPress: () => onClose() },
+        { text: "Sauvegarder", onPress: () => { persistChanges(); onClose(); } },
+      ],
+    );
+  }, [play, onClose, persistChanges]);
 
   // ── Add scene (duplicate current positions, blank drawings) ───────────────
   const addScene = useCallback(() => {
@@ -364,7 +396,8 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
     const newIndex = updated.length - 1;
     setSceneIndex(newIndex);
     loadScene(newScene);
-  }, [commitCurrentScene, loadScene]);
+    markDirty();
+  }, [commitCurrentScene, loadScene, markDirty]);
 
   // ── Delete scene ──────────────────────────────────────────────────────────
   const deleteScene = useCallback((indexToDelete: number) => {
@@ -382,10 +415,11 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
           const newIndex = Math.max(0, Math.min(indexToDelete, updated.length - 1));
           setSceneIndex(newIndex);
           loadScene(updated[newIndex]);
+          markDirty();
         },
       },
     ]);
-  }, [commitCurrentScene, loadScene]);
+  }, [commitCurrentScene, loadScene, markDirty]);
 
   // ── Update scene text (title / description) ───────────────────────────────
   const updateSceneText = useCallback((field: "title" | "description", value: string) => {
@@ -393,7 +427,8 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
     scenes[sceneIndexRef.current] = { ...scenes[sceneIndexRef.current], [field]: value };
     localScenesRef.current = scenes;
     setLocalScenesState([...scenes]);
-  }, []);
+    markDirty();
+  }, [markDirty]);
 
   // ── Advance one scene during playback (reads only from refs) ─────────────
   const advanceSceneForPlayback = useCallback((onDone: (finished: boolean) => void) => {
@@ -517,6 +552,7 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
     setSceneIndex(0);
     loadScene(scenes[0]);
     syncActiveTool(DrawingTool.Move);
+    dirtyRef.current = false;
   }, [play?.id, visible]);
 
   // ── PanResponder ──────────────────────────────────────────────────────────
@@ -605,6 +641,7 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
 
       onPanResponderRelease: () => {
         if (activeToolRef.current === DrawingTool.Move) {
+          if (draggingKey.current) markDirty();
           draggingKey.current = null;
           return;
         }
@@ -625,6 +662,7 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
           setDrawings([...next]);
           setCanUndo(true);
           setCanRedo(false);
+          markDirty();
         }
         sourceTokenRef.current = null;
         livePointsRef.current = [];
@@ -649,6 +687,7 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
     setDrawings([...prev]);
     setCanUndo(undoStackRef.current.length > 0);
     setCanRedo(true);
+    markDirty();
   };
 
   const redo = () => {
@@ -660,6 +699,7 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
     setDrawings([...next]);
     setCanUndo(true);
     setCanRedo(redoStackRef.current.length > 0);
+    markDirty();
   };
 
   const clearDrawings = () => {
@@ -668,6 +708,7 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
     redoStackRef.current = [];
     drawingsRef.current = [];
     setDrawings([]);
+    markDirty();
     setCanUndo(true);
     setCanRedo(false);
   };
@@ -708,6 +749,7 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
     setDrawings([...next]);
     setCanUndo(true);
     setCanRedo(false);
+    markDirty();
   };
 
   // ── Sort mode ────────────────────────────────────────────────────────────
@@ -726,7 +768,8 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
     const newIdx = sceneIndexRef.current === from ? to : sceneIndexRef.current;
     setSceneIndex(newIdx);
     loadScene(reordered[newIdx]);
-  }, [commitCurrentScene, loadScene]);
+    markDirty();
+  }, [commitCurrentScene, loadScene, markDirty]);
 
   // ── Guard ─────────────────────────────────────────────────────────────────
   if (!play) return null;
@@ -735,13 +778,13 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
   const badgeColor = isDefense ? STATUS_COLORS.errorLight : colors.primary;
 
   return (
-    <Modal visible={visible} animationType="slide" presentationStyle="fullScreen" onRequestClose={handleClose}>
+    <Modal visible={visible} animationType="slide" presentationStyle="fullScreen" onRequestClose={handleRequestClose}>
       <SafeAreaView style={[styles.root, { backgroundColor: colors.background }]}>
 
         {/* ── Header ─────────────────────────────────────────────────────── */}
         <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
-          <TouchableOpacity onPress={handleClose} style={styles.headerBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-            <MaterialCommunityIcons name="chevron-down" size={26} color={colors.text.secondary} />
+          <TouchableOpacity onPress={handleRequestClose} style={styles.headerBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+            <MaterialCommunityIcons name="close" size={24} color={colors.text.secondary} />
           </TouchableOpacity>
           <View style={styles.headerCenter}>
             <View style={[styles.badge, { backgroundColor: `${badgeColor}20` }]}>
@@ -753,6 +796,9 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
               {play.name}
             </Text>
           </View>
+          <TouchableOpacity onPress={handleSave} style={[styles.headerBtn, { alignItems: "center" }]}>
+            <MaterialCommunityIcons name="content-save-outline" size={20} color={colors.text.secondary} />
+          </TouchableOpacity>
           <TouchableOpacity onPress={handleShare} style={[styles.headerBtn, { alignItems: "center" }]}>
             <MaterialCommunityIcons name="share-variant-outline" size={20} color={colors.text.secondary} />
           </TouchableOpacity>
@@ -898,7 +944,7 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
           hideArrows={hideArrows}
           sceneIndex={sceneIndex}
           totalScenes={localScenes.length}
-          onTogglePlay={() => { setIsPlaying(v => !v); setIsSorting(false); }}
+          onTogglePlay={handleTogglePlay}
           onSpeedChange={(ms) => setSpeed(ms)}
           onToggleDefenders={() => setShowDefenders(v => !v)}
           onToggleHideArrows={() => setHideArrows(v => !v)}
@@ -948,23 +994,7 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
           <View style={styles.timelineHeader}>
             <Text style={[styles.timelineLabel, { color: colors.text.secondary }]}>ÉTAPES</Text>
             <View style={styles.timelineActions}>
-              {localScenes.length > 1 && !isPlaying && (
-                <TouchableOpacity
-                  onPress={() => setIsSorting((v) => !v)}
-                  style={[styles.addSceneBtn, {
-                    backgroundColor: isSorting ? colors.primary : colors.surfaceVariant,
-                  }]}
-                >
-                  <MaterialCommunityIcons
-                    name="swap-horizontal"
-                    size={13}
-                    color={isSorting ? colors.onPrimary : colors.text.secondary}
-                  />
-                  <Text style={[styles.addSceneBtnText, { color: isSorting ? colors.onPrimary : colors.text.secondary }]}>
-                    TRI
-                  </Text>
-                </TouchableOpacity>
-              )}
+              {/* Bouton TRI désactivé temporairement */}
               {(() => {
                 const isLast = sceneIndex === localScenes.length - 1;
                 return (
