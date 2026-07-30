@@ -416,29 +416,37 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
     const cH = courtHRef.current;
     const animMap = animatedPositions.current;
 
-    // Associe chaque jeton à son tracé (waypoints réels)
-    const handled = new Set<string>();
-    const anims: Animated.CompositeAnimation[] = [];
+    // Associe chaque jeton à la liste ordonnée de ses tracés (plusieurs tracés
+    // successifs sur le même jeton, ex. deux passes chaînées dans une même étape,
+    // doivent être chaînés en un seul chemin plutôt que de n'en garder qu'un seul)
+    const keyStrokes = new Map<string, DrawingStroke[]>();
+    const pushKey = (key: string, stroke: DrawingStroke) => {
+      const arr = keyStrokes.get(key);
+      if (arr) arr.push(stroke); else keyStrokes.set(key, [stroke]);
+    };
 
     for (const stroke of currentDrawings) {
       if (stroke.points.length < 2) continue;
-      const keys: string[] = [];
       if (stroke.type === DrawingTool.Pass) {
-        keys.push("BALL");
+        pushKey("BALL", stroke);
       } else if (stroke.type === DrawingTool.Drive && stroke.sourceToken) {
-        keys.push(stroke.sourceToken);
+        pushKey(stroke.sourceToken, stroke);
         const ball = currentPositions["BALL"];
         const start = stroke.points[0];
-        if (ball && Math.hypot(ball.x - start.x, ball.y - start.y) < 8) keys.push("BALL");
+        if (ball && Math.hypot(ball.x - start.x, ball.y - start.y) < 8) pushKey("BALL", stroke);
       } else if (stroke.type === DrawingTool.Screen && stroke.sourceToken) {
-        keys.push(stroke.sourceToken);
+        pushKey(stroke.sourceToken, stroke);
       }
-      for (const key of keys) {
-        if (handled.has(key)) continue;
-        handled.add(key);
-        const a = buildPathAnimation(key, stroke.points, duration, cW, cH, animMap);
-        if (a) anims.push(a);
-      }
+    }
+
+    const handled = new Set<string>();
+    const anims: Animated.CompositeAnimation[] = [];
+
+    for (const [key, strokes] of keyStrokes) {
+      handled.add(key);
+      const points = strokes.flatMap((s) => s.points);
+      const a = buildPathAnimation(key, points, duration, cW, cH, animMap);
+      if (a) anims.push(a);
     }
 
     // Animation linéaire pour les jetons sans tracé
