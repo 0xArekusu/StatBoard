@@ -516,6 +516,9 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
     PanResponder.create({
       onStartShouldSetPanResponder: () => !isPlayingRef.current,
       onMoveShouldSetPanResponder:  () => !isPlayingRef.current,
+      onStartShouldSetPanResponderCapture: () => !isPlayingRef.current,
+      onMoveShouldSetPanResponderCapture:  () => !isPlayingRef.current,
+      onPanResponderTerminationRequest: () => false,
 
       onPanResponderGrant: (_evt, gs) => {
         // Traitement synchrone : courtAbsPos est maintenu à jour par onLayout (measureCourt).
@@ -724,7 +727,7 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
   const badgeColor = isDefense ? STATUS_COLORS.errorLight : colors.primary;
 
   return (
-    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={handleClose}>
+    <Modal visible={visible} animationType="slide" presentationStyle="fullScreen" onRequestClose={handleClose}>
       <SafeAreaView style={[styles.root, { backgroundColor: colors.background }]}>
 
         {/* ── Header ─────────────────────────────────────────────────────── */}
