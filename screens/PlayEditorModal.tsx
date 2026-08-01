@@ -181,6 +181,13 @@ const TOOL_DEFAULT_COLOR: Partial<Record<DrawingTool, string>> = {
   [DrawingTool.Screen]: COMMON_COLORS.white,
 };
 
+// Mode de tracé par défaut à la sélection de l'outil (droit = ligne, libre = tracé main levée)
+const TOOL_DEFAULT_STRAIGHT: Partial<Record<DrawingTool, boolean>> = {
+  [DrawingTool.Pass]:   true,
+  [DrawingTool.Drive]:  false,
+  [DrawingTool.Screen]: false,
+};
+
 const TOOLS: { key: DrawingTool; icon: string; label: string }[] = [
   { key: DrawingTool.Move,   icon: "cursor-move",       label: "DÉPLACER" },
   { key: DrawingTool.Pass,   icon: "dots-horizontal",   label: "PASSE" },
@@ -280,7 +287,6 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
   const drawColorRef = useRef(DRAW_COLORS[0]);
   const [straightMode, setStraightMode] = useState(true);
   const straightModeRef = useRef(true);
-  const [toolbarWrap, setToolbarWrap] = useState(false);
 
   const syncDrawColor    = (c: string)      => { drawColorRef.current   = c; setDrawColor(c); };
   const syncStraightMode = (v: boolean)     => { straightModeRef.current = v; setStraightMode(v); };
@@ -289,6 +295,8 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
     setActiveTool(t);
     const defaultColor = TOOL_DEFAULT_COLOR[t];
     if (defaultColor) syncDrawColor(defaultColor);
+    const defaultStraight = TOOL_DEFAULT_STRAIGHT[t];
+    if (defaultStraight !== undefined) syncStraightMode(defaultStraight);
   };
 
   // ── Drag ─────────────────────────────────────────────────────────────────
@@ -886,10 +894,9 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
 
         {/* ── Toolbar ────────────────────────────────────────────────────── */}
         <View
-          onLayout={(e) => setToolbarWrap(e.nativeEvent.layout.width < 430)}
           style={[styles.toolbar, { backgroundColor: colors.surface, borderBottomColor: colors.border, opacity: isAnimating ? 0.4 : 1 }]}
         >
-          {/* Row 1 : chips outils + (mode+couleurs si grand écran) + actions */}
+          {/* Row 1 : chips outils + actions */}
           <View style={styles.toolbarRow1}>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.toolScroll}>
               {TOOLS.map(({ key, icon, label }) => {
@@ -907,37 +914,6 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
               })}
             </ScrollView>
 
-            {/* Mode + couleurs : inline si grand écran */}
-            {!toolbarWrap && activeTool !== DrawingTool.Move && (
-              <View style={styles.drawingControls}>
-                <View style={[styles.modeSep, { backgroundColor: colors.border }]} />
-                <TouchableOpacity
-                  onPress={() => syncStraightMode(true)}
-                  style={[styles.modeBtn, { backgroundColor: colors.surfaceVariant, borderColor: straightMode ? colors.primary : colors.border }]}
-                >
-                  <MaterialCommunityIcons name="ruler" size={14} color={straightMode ? colors.primary : colors.text.secondary} />
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => syncStraightMode(false)}
-                  style={[styles.modeBtn, { backgroundColor: colors.surfaceVariant, borderColor: !straightMode ? colors.primary : colors.border }]}
-                >
-                  <MaterialCommunityIcons name="sine-wave" size={14} color={!straightMode ? colors.primary : colors.text.secondary} />
-                </TouchableOpacity>
-                <View style={[styles.modeSep, { backgroundColor: colors.border }]} />
-                <View style={styles.colorRow}>
-                  {DRAW_COLORS.map((c) => (
-                    <TouchableOpacity key={c} onPress={() => syncDrawColor(c)}
-                      style={[
-                        styles.colorDot,
-                        { backgroundColor: c },
-                        c === COMMON_COLORS.white && styles.colorDotWhite,
-                        drawColor === c && (c === COMMON_COLORS.white ? styles.colorDotActiveWhite : styles.colorDotActive),
-                      ]} />
-                  ))}
-                </View>
-              </View>
-            )}
-
             <View style={styles.toolActions}>
               <TouchableOpacity onPress={undo} disabled={!canUndo}
                 style={[styles.iconBtn, { opacity: !canUndo ? 0.3 : 1 }]}>
@@ -954,8 +930,8 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
             </View>
           </View>
 
-          {/* Row 2 : mode + couleurs sur petit écran uniquement */}
-          {toolbarWrap && activeTool !== DrawingTool.Move && (
+          {/* Row 2 : type de tracé (droit/libre) + couleurs, sous le choix d'outil */}
+          {activeTool !== DrawingTool.Move && (
             <View style={styles.toolbarRow2}>
               <TouchableOpacity
                 onPress={() => syncStraightMode(true)}
