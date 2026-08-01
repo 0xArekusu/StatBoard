@@ -226,13 +226,19 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
 
   // ── Playback ──────────────────────────────────────────────────────────────
   const [isPlaying, setIsPlaying] = useState(false);
+  // Animation d'une seule étape (bouton "étape suivante") — distinct de isPlaying
+  // (lecture en boucle) mais doit verrouiller l'édition de la même façon.
+  const [isStepping, setIsStepping] = useState(false);
   const [speed, setSpeed] = useState(1500);
   const [showDefenders, setShowDefenders] = useState(true);
   const [hideArrows, setHideArrows] = useState(false);
   const isPlayingRef = useRef(false);
+  const isSteppingRef = useRef(false);
   const speedRef = useRef(1500);
   useEffect(() => { isPlayingRef.current = isPlaying; }, [isPlaying]);
+  useEffect(() => { isSteppingRef.current = isStepping; }, [isStepping]);
   useEffect(() => { speedRef.current = speed; }, [speed]);
+  const isAnimating = isPlaying || isStepping;
 
   // ── Animated token positions ───────────────────────────────────────────────
   const animatedPositions = useRef<Record<string, Animated.ValueXY>>(
@@ -317,7 +323,15 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
   // ── Start/stop playback: commit pending edits before advanceSceneForPlayback
   // starts overwriting drawingsRef/positionsRef with stored scene data ─────────
   const handleTogglePlay = useCallback(() => {
-    if (!isPlayingRef.current) commitCurrentScene();
+    if (!isPlayingRef.current) {
+      commitCurrentScene();
+      // La lecture s'arrête désormais à la dernière étape (pas de bouclage) :
+      // un nouvel appui repart du début plutôt que de ne rien animer.
+      if (sceneIndexRef.current >= localScenesRef.current.length - 1) {
+        setSceneIndex(0);
+        loadScene(localScenesRef.current[0]);
+      }
+    }
     setIsPlaying((v) => !v);
     setIsSorting(false);
   }, [commitCurrentScene]);
@@ -340,6 +354,7 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
     redoStackRef.current = [];
     setCanUndo(false);
     setCanRedo(false);
+    setIsEditingTitle(false);
   }, [snapPositions]);
 
   // ── Change scene: commit current → load next ──────────────────────────────
@@ -433,12 +448,14 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
   // ── Advance one scene during playback (reads only from refs) ─────────────
   const advanceSceneForPlayback = useCallback((onDone: (finished: boolean) => void) => {
     if (localScenesRef.current.length < 2) { onDone(false); return; }
+    // Dernière étape déjà atteinte : rien à animer, on s'arrête (pas de bouclage).
+    if (sceneIndexRef.current >= localScenesRef.current.length - 1) { onDone(false); return; }
 
     // Capture tracés de la scène courante AVANT d'avancer (contiennent les waypoints)
     const currentDrawings = drawingsRef.current;
     const currentPositions = positionsRef.current;
 
-    const nextIdx = (sceneIndexRef.current + 1) % localScenesRef.current.length;
+    const nextIdx = sceneIndexRef.current + 1;
     sceneIndexRef.current = nextIdx;
 
     const scene = localScenesRef.current[nextIdx];
@@ -524,6 +541,15 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
     setLivePoints([]);
   }, []);
 
+  // ── Step forward: anime jusqu'à l'étape suivante puis s'arrête (pas de boucle) ─
+  const handleStepForward = useCallback(() => {
+    if (isPlayingRef.current || isSteppingRef.current) return;
+    if (sceneIndexRef.current >= localScenesRef.current.length - 1) return;
+    commitCurrentScene();
+    setIsStepping(true);
+    advanceSceneForPlayback(() => setIsStepping(false));
+  }, [commitCurrentScene, advanceSceneForPlayback]);
+
   // ── Playback loop — chaîne les scènes via callbacks, jamais de setInterval ──
   useEffect(() => {
     if (!isPlaying) return;
@@ -532,7 +558,9 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
     function runLoop() {
       if (cancelled) return;
       advanceSceneForPlayback((finished) => {
-        if (finished && !cancelled) runLoop();
+        if (cancelled) return;
+        if (finished) runLoop();
+        else setIsPlaying(false); // dernière étape atteinte → on s'arrête au lieu de reboucler
       });
     }
 
@@ -572,10 +600,10 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
   // ── PanResponder ──────────────────────────────────────────────────────────
   const panResponder = useRef(
     PanResponder.create({
-      onStartShouldSetPanResponder: () => !isPlayingRef.current,
-      onMoveShouldSetPanResponder:  () => !isPlayingRef.current,
-      onStartShouldSetPanResponderCapture: () => !isPlayingRef.current,
-      onMoveShouldSetPanResponderCapture:  () => !isPlayingRef.current,
+      onStartShouldSetPanResponder: () => !isPlayingRef.current && !isSteppingRef.current,
+      onMoveShouldSetPanResponder:  () => !isPlayingRef.current && !isSteppingRef.current,
+      onStartShouldSetPanResponderCapture: () => !isPlayingRef.current && !isSteppingRef.current,
+      onMoveShouldSetPanResponderCapture:  () => !isPlayingRef.current && !isSteppingRef.current,
       onPanResponderTerminationRequest: () => false,
 
       onPanResponderGrant: (_evt, gs) => {
@@ -752,6 +780,13 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
     Share.share({ message: lines.filter((l, i, a) => !(l === "" && a[i - 1] === "")).join("\n") });
   }, [play, commitCurrentScene]);
 
+  // ── Scene title: read mode (Text) vs edit mode (TextInput) ────────────────
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const titleInputRef = useRef<TextInput>(null);
+  useEffect(() => {
+    if (isEditingTitle) titleInputRef.current?.focus();
+  }, [isEditingTitle]);
+
   // ── Stroke manager sheet ──────────────────────────────────────────────────
   const [showStrokeManager, setShowStrokeManager] = useState(false);
 
@@ -833,7 +868,7 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
               livePoints={livePoints}
               liveTool={activeTool === DrawingTool.Move ? DrawingTool.Pencil : activeTool}
               liveColor={drawColor}
-              hideDrawings={isPlaying && hideArrows}
+              hideDrawings={isAnimating && hideArrows}
             />
             <View style={StyleSheet.absoluteFill} pointerEvents="none">
               {ALL_TOKEN_KEYS.map((key) => (
@@ -852,7 +887,7 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
         {/* ── Toolbar ────────────────────────────────────────────────────── */}
         <View
           onLayout={(e) => setToolbarWrap(e.nativeEvent.layout.width < 430)}
-          style={[styles.toolbar, { backgroundColor: colors.surface, borderBottomColor: colors.border, opacity: isPlaying ? 0.4 : 1 }]}
+          style={[styles.toolbar, { backgroundColor: colors.surface, borderBottomColor: colors.border, opacity: isAnimating ? 0.4 : 1 }]}
         >
           {/* Row 1 : chips outils + (mode+couleurs si grand écran) + actions */}
           <View style={styles.toolbarRow1}>
@@ -862,7 +897,7 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
                 return (
                   <TouchableOpacity
                     key={key}
-                    onPress={() => !isPlaying && syncActiveTool(key)}
+                    onPress={() => !isAnimating && syncActiveTool(key)}
                     style={[styles.toolBtn, active ? { backgroundColor: colors.primary } : { backgroundColor: colors.surfaceVariant }]}
                   >
                     <MaterialCommunityIcons name={icon as any} size={14} color={active ? colors.onPrimary : colors.text.secondary} />
@@ -953,12 +988,14 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
         {/* ── Playback controls ──────────────────────────────────────────── */}
         <PlaybackControls
           isPlaying={isPlaying}
+          isStepping={isStepping}
           speed={speed}
           showDefenders={showDefenders}
           hideArrows={hideArrows}
           sceneIndex={sceneIndex}
           totalScenes={localScenes.length}
           onTogglePlay={handleTogglePlay}
+          onStepForward={handleStepForward}
           onSpeedChange={(ms) => setSpeed(ms)}
           onToggleDefenders={() => setShowDefenders(v => !v)}
           onToggleHideArrows={() => setHideArrows(v => !v)}
@@ -983,14 +1020,40 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
                   </TouchableOpacity>
                 )}
               </View>
-              <TextInput
-                value={scene.title}
-                onChangeText={(v) => updateSceneText("title", v)}
-                style={[styles.descTitleInput, { color: colors.text.primary }]}
-                placeholder="Titre de l'étape..."
-                placeholderTextColor={colors.text.secondary}
-                maxLength={60}
-              />
+              <View style={styles.descTitleRow}>
+                {isEditingTitle ? (
+                  <TextInput
+                    ref={titleInputRef}
+                    value={scene.title}
+                    onChangeText={(v) => updateSceneText("title", v)}
+                    onBlur={() => setIsEditingTitle(false)}
+                    onSubmitEditing={() => setIsEditingTitle(false)}
+                    returnKeyType="done"
+                    style={[
+                      styles.descTitleInput,
+                      styles.descTitleInputEditing,
+                      { color: colors.text.primary, backgroundColor: colors.surfaceVariant, borderColor: colors.primary },
+                    ]}
+                    placeholder="Titre de l'étape..."
+                    placeholderTextColor={colors.text.secondary}
+                    maxLength={60}
+                  />
+                ) : (
+                  <Text style={[styles.descTitleInput, styles.descTitleText, { color: colors.text.primary }]} numberOfLines={1}>
+                    {scene.title || "Titre de l'étape..."}
+                  </Text>
+                )}
+                <TouchableOpacity
+                  onPress={() => setIsEditingTitle((v) => !v)}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  <MaterialCommunityIcons
+                    name={isEditingTitle ? "check" : "pencil-outline"}
+                    size={14}
+                    color={isEditingTitle ? colors.primary : colors.text.tertiary}
+                  />
+                </TouchableOpacity>
+              </View>
               <TextInput
                 value={scene.description}
                 onChangeText={(v) => updateSceneText("description", v)}
@@ -1146,7 +1209,13 @@ const styles = StyleSheet.create({
   descBox: { borderRadius: 16, borderWidth: 1, padding: 14, gap: 8 },
   descHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   descStep: { fontSize: 9, fontWeight: "900", letterSpacing: 1.5 },
-  descTitleInput: { fontSize: 15, fontWeight: "800", letterSpacing: -0.2, paddingVertical: 0 },
+  descTitleRow: { flexDirection: "row", alignItems: "center", gap: 6 },
+  descTitleInput: { flexShrink: 1, fontSize: 15, fontWeight: "800", letterSpacing: -0.2, paddingVertical: 0 },
+  descTitleText: { paddingVertical: 2 },
+  descTitleInputEditing: {
+    borderWidth: 1, borderRadius: 8,
+    paddingHorizontal: 8, paddingVertical: 4,
+  },
   descTextInput: {
     fontSize: 13, fontWeight: "500", lineHeight: 20,
     borderWidth: 1, borderRadius: 10,
