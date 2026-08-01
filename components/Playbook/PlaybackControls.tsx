@@ -12,23 +12,27 @@ export const SPEED_OPTIONS = [
 
 interface Props {
   isPlaying: boolean;
+  isStepping: boolean;
   speed: number;
   showDefenders: boolean;
   hideArrows: boolean;
   sceneIndex: number;
   totalScenes: number;
   onTogglePlay: () => void;
+  onStepForward: () => void;
   onSpeedChange: (ms: number) => void;
   onToggleDefenders: () => void;
   onToggleHideArrows: () => void;
 }
 
 export default function PlaybackControls({
-  isPlaying, speed, showDefenders, hideArrows,
+  isPlaying, isStepping, speed, showDefenders, hideArrows,
   sceneIndex, totalScenes,
-  onTogglePlay, onSpeedChange, onToggleDefenders, onToggleHideArrows,
+  onTogglePlay, onStepForward, onSpeedChange, onToggleDefenders, onToggleHideArrows,
 }: Props) {
   const { colors } = useTheme();
+  const isLastScene = sceneIndex >= totalScenes - 1;
+  const stepDisabled = totalScenes <= 1 || isPlaying || isStepping || isLastScene;
 
   return (
     <View style={[styles.container, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
@@ -50,6 +54,18 @@ export default function PlaybackControls({
             size={20}
             color={colors.onPrimary}
           />
+        </TouchableOpacity>
+
+        {/* Step forward — anime jusqu'à l'étape suivante puis s'arrête */}
+        <TouchableOpacity
+          onPress={onStepForward}
+          disabled={stepDisabled}
+          style={[
+            styles.stepBtn,
+            { backgroundColor: colors.surfaceVariant, opacity: stepDisabled ? 0.35 : 1 },
+          ]}
+        >
+          <MaterialCommunityIcons name="skip-next" size={18} color={colors.text.secondary} />
         </TouchableOpacity>
 
         {/* Speed selector */}
@@ -142,6 +158,11 @@ const styles = StyleSheet.create({
     alignItems: "center", justifyContent: "center",
     shadowColor: "#000", shadowOpacity: 0.15,
     shadowRadius: 4, shadowOffset: { width: 0, height: 2 }, elevation: 3,
+  },
+
+  stepBtn: {
+    width: 32, height: 32, borderRadius: 16,
+    alignItems: "center", justifyContent: "center",
   },
 
   speedGroup: { flexDirection: "row", borderRadius: 10, padding: 3, gap: 2 },
