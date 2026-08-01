@@ -77,14 +77,14 @@ export default function StrokeManagerSheet({
               contentContainerStyle={styles.listContent}
               showsVerticalScrollIndicator={false}
             >
-              {drawings.map((stroke, index) => {
+              {drawings.map((stroke, index) => ({ stroke, index })).reverse().map(({ stroke, index }) => {
                 const meta = STROKE_META[stroke.type] ?? { label: stroke.type, icon: "pencil" };
                 return (
                   <View
                     key={stroke.id}
                     style={[styles.item, { backgroundColor: colors.surfaceVariant, borderColor: colors.border }]}
                   >
-                    {/* Index */}
+                    {/* Index (ordre de création, pas d'affichage) */}
                     <Text style={[styles.itemIndex, { color: colors.text.tertiary }]}>
                       {index + 1}
                     </Text>

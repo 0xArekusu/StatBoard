@@ -460,17 +460,31 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
       if (arr) arr.push(stroke); else keyStrokes.set(key, [stroke]);
     };
 
+    // Position simulée, mise à jour tracé après tracé (même logique que
+    // derivePositionsFromDrawings) : un tracé peut suivre une passe/course
+    // précédente dans la même étape, donc "où est le ballon ?" doit refléter
+    // l'état APRÈS les tracés déjà traités, pas la position figée en début de scène.
+    const simPos: Record<string, DrawingPoint> = { ...currentPositions };
+
     for (const stroke of currentDrawings) {
       if (stroke.points.length < 2) continue;
+      const start = stroke.points[0];
+      const end = stroke.points[stroke.points.length - 1];
       if (stroke.type === DrawingTool.Pass) {
         pushKey("BALL", stroke);
+        simPos["BALL"] = end;
       } else if (stroke.type === DrawingTool.Drive && stroke.sourceToken) {
         pushKey(stroke.sourceToken, stroke);
-        const ball = currentPositions["BALL"];
-        const start = stroke.points[0];
-        if (ball && Math.hypot(ball.x - start.x, ball.y - start.y) < 8) pushKey("BALL", stroke);
+        const ball = simPos["BALL"];
+        const ballNear = ball && Math.hypot(ball.x - start.x, ball.y - start.y) < 8;
+        simPos[stroke.sourceToken] = end;
+        if (ballNear) {
+          pushKey("BALL", stroke);
+          simPos["BALL"] = end;
+        }
       } else if (stroke.type === DrawingTool.Screen && stroke.sourceToken) {
         pushKey(stroke.sourceToken, stroke);
+        simPos[stroke.sourceToken] = end;
       }
     }
 
