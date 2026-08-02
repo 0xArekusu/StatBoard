@@ -18,7 +18,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useTheme } from "../src/contexts/ThemeContext";
 import { STATUS_COLORS, COMMON_COLORS } from "../src/theme";
-import { PlaybookItem, PlayScene, DrawingPoint, DrawingStroke, DrawingTool } from "../src/models/PlayTypes";
+import { PlaybookItem, PlayScene, DrawingPoint, DrawingStroke, DrawingTool, PlayerMove } from "../src/models/PlayTypes";
 import TacticalCourtSVG from "../components/Playbook/TacticalCourtSVG";
 import DrawingOverlaySVG from "../components/Playbook/DrawingOverlaySVG";
 import PlayerToken from "../components/Playbook/PlayerToken";
@@ -188,6 +188,14 @@ const TOOL_DEFAULT_STRAIGHT: Partial<Record<DrawingTool, boolean>> = {
   [DrawingTool.Screen]: false,
 };
 
+// Historique undo/redo unifié : tracés, positions et déplacements ensemble,
+// pour qu'un déplacement de jeton soit annulable au même titre qu'un tracé.
+interface EditSnapshot {
+  drawings: DrawingStroke[];
+  positions: Record<string, DrawingPoint>;
+  moves: PlayerMove[];
+}
+
 const TOOLS: { key: DrawingTool; icon: string; label: string }[] = [
   { key: DrawingTool.Move,   icon: "cursor-move",       label: "DÉPLACER" },
   { key: DrawingTool.Pass,   icon: "dots-horizontal",   label: "PASSE" },
@@ -265,18 +273,24 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
   }, []);
 
 
-  // ── Per-scene mutable state (positions + drawings) ────────────────────────
+  // ── Per-scene mutable state (positions + drawings + moves) ────────────────
   const positionsRef = useRef<Record<string, DrawingPoint>>({});
+  // Positions au chargement de l'étape : référence "avant" pour les déplacements
+  // nets (un déplacement compare toujours à cet état, pas au drag précédent).
+  const baselinePositionsRef = useRef<Record<string, DrawingPoint>>({});
 
   const [drawings, setDrawings] = useState<DrawingStroke[]>([]);
   const drawingsRef = useRef<DrawingStroke[]>([]);
 
+  const [moves, setMoves] = useState<PlayerMove[]>([]);
+  const movesRef = useRef<PlayerMove[]>([]);
+
   const [livePoints, setLivePoints] = useState<DrawingPoint[]>([]);
   const livePointsRef = useRef<DrawingPoint[]>([]);
 
-  // ── Undo / redo stacks (drawings only) ───────────────────────────────────
-  const undoStackRef = useRef<DrawingStroke[][]>([]);
-  const redoStackRef = useRef<DrawingStroke[][]>([]);
+  // ── Undo / redo stacks (tracés + déplacements, historique unique) ────────
+  const undoStackRef = useRef<EditSnapshot[]>([]);
+  const redoStackRef = useRef<EditSnapshot[]>([]);
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
 
@@ -319,6 +333,7 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
       ...scenes[sceneIndexRef.current],
       positions: { ...positionsRef.current } as any,
       drawings: [...drawingsRef.current],
+      moves: [...movesRef.current],
     };
     localScenesRef.current = scenes;
     return scenes;
@@ -349,11 +364,16 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
     const pos: Record<string, DrawingPoint> = {};
     for (const [k, v] of Object.entries(scene.positions)) pos[k] = { ...v };
     positionsRef.current = pos;
+    baselinePositionsRef.current = { ...pos };
     snapPositions(pos);
 
     const dr = (scene.drawings ?? []).map((d) => ({ ...d }));
     drawingsRef.current = dr;
     setDrawings([...dr]);
+
+    const mv = (scene.moves ?? []).map((m) => ({ ...m }));
+    movesRef.current = mv;
+    setMoves([...mv]);
 
     livePointsRef.current = [];
     setLivePoints([]);
@@ -630,6 +650,9 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
             if (d < bestDist) { bestDist = d; best = key; }
           }
           draggingKey.current = best;
+          // Snapshot AVANT le drag (positions pas encore modifiées) pour que ce
+          // déplacement soit annulable au même titre qu'un tracé.
+          if (best) pushUndoSnapshot();
         } else if (activeToolRef.current === DrawingTool.Pencil) {
           draggingKey.current = null;
           sourceTokenRef.current = null;
@@ -691,7 +714,24 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
 
       onPanResponderRelease: () => {
         if (activeToolRef.current === DrawingTool.Move) {
-          if (draggingKey.current) markDirty();
+          const key = draggingKey.current;
+          if (key) {
+            const finalPos = positionsRef.current[key];
+            const basePos = baselinePositionsRef.current[key];
+            const existingIdx = movesRef.current.findIndex((m) => m.tokenKey === key);
+            const netMoved = !!basePos && Math.hypot(finalPos.x - basePos.x, finalPos.y - basePos.y) > 0.5;
+            let nextMoves = movesRef.current;
+            if (!netMoved) {
+              if (existingIdx !== -1) nextMoves = movesRef.current.filter((_, i) => i !== existingIdx);
+            } else if (existingIdx !== -1) {
+              nextMoves = movesRef.current.map((m, i) => (i === existingIdx ? { ...m, to: finalPos } : m));
+            } else {
+              nextMoves = [...movesRef.current, { id: `move-${Date.now()}`, tokenKey: key, from: basePos, to: finalPos }];
+            }
+            movesRef.current = nextMoves;
+            setMoves([...nextMoves]);
+            markDirty();
+          }
           draggingKey.current = null;
           return;
         }
@@ -705,13 +745,10 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
             width: 1.5,
             sourceToken: sourceTokenRef.current ?? undefined,
           };
-          undoStackRef.current = [...undoStackRef.current, [...drawingsRef.current]];
-          redoStackRef.current = [];
+          pushUndoSnapshot();
           const next = [...drawingsRef.current, stroke];
           drawingsRef.current = next;
           setDrawings([...next]);
-          setCanUndo(true);
-          setCanRedo(false);
           markDirty();
         }
         sourceTokenRef.current = null;
@@ -728,13 +765,38 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
     })
   ).current;
 
+  // Snapshot de l'état courant (tracés + positions + déplacements), poussé
+  // AVANT chaque mutation pour permettre l'undo.
+  const pushUndoSnapshot = () => {
+    undoStackRef.current = [...undoStackRef.current, {
+      drawings: [...drawingsRef.current],
+      positions: { ...positionsRef.current },
+      moves: [...movesRef.current],
+    }];
+    redoStackRef.current = [];
+    setCanUndo(true);
+    setCanRedo(false);
+  };
+
+  const restoreSnapshot = (snap: EditSnapshot) => {
+    drawingsRef.current = snap.drawings;
+    setDrawings([...snap.drawings]);
+    positionsRef.current = { ...snap.positions };
+    snapPositions(positionsRef.current);
+    movesRef.current = [...snap.moves];
+    setMoves([...snap.moves]);
+  };
+
   const undo = () => {
     if (undoStackRef.current.length === 0) return;
     const prev = undoStackRef.current[undoStackRef.current.length - 1];
-    redoStackRef.current = [[...drawingsRef.current], ...redoStackRef.current];
+    redoStackRef.current = [{
+      drawings: [...drawingsRef.current],
+      positions: { ...positionsRef.current },
+      moves: [...movesRef.current],
+    }, ...redoStackRef.current];
     undoStackRef.current = undoStackRef.current.slice(0, -1);
-    drawingsRef.current = prev;
-    setDrawings([...prev]);
+    restoreSnapshot(prev);
     setCanUndo(undoStackRef.current.length > 0);
     setCanRedo(true);
     markDirty();
@@ -743,24 +805,30 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
   const redo = () => {
     if (redoStackRef.current.length === 0) return;
     const next = redoStackRef.current[0];
-    undoStackRef.current = [...undoStackRef.current, [...drawingsRef.current]];
+    undoStackRef.current = [...undoStackRef.current, {
+      drawings: [...drawingsRef.current],
+      positions: { ...positionsRef.current },
+      moves: [...movesRef.current],
+    }];
     redoStackRef.current = redoStackRef.current.slice(1);
-    drawingsRef.current = next;
-    setDrawings([...next]);
+    restoreSnapshot(next);
     setCanUndo(true);
     setCanRedo(redoStackRef.current.length > 0);
     markDirty();
   };
 
   const clearDrawings = () => {
-    if (drawingsRef.current.length === 0) return;
-    undoStackRef.current = [...undoStackRef.current, [...drawingsRef.current]];
-    redoStackRef.current = [];
+    if (drawingsRef.current.length === 0 && movesRef.current.length === 0) return;
+    pushUndoSnapshot();
     drawingsRef.current = [];
     setDrawings([]);
+    const pos = { ...positionsRef.current };
+    for (const m of movesRef.current) pos[m.tokenKey] = { ...m.from };
+    positionsRef.current = pos;
+    snapPositions(pos);
+    movesRef.current = [];
+    setMoves([]);
     markDirty();
-    setCanUndo(true);
-    setCanRedo(false);
   };
 
   // ── Share ─────────────────────────────────────────────────────────────────
@@ -799,13 +867,22 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
   const [showStrokeManager, setShowStrokeManager] = useState(false);
 
   const deleteStroke = (id: string) => {
-    undoStackRef.current = [...undoStackRef.current, [...drawingsRef.current]];
-    redoStackRef.current = [];
+    pushUndoSnapshot();
     const next = drawingsRef.current.filter((s) => s.id !== id);
     drawingsRef.current = next;
     setDrawings([...next]);
-    setCanUndo(true);
-    setCanRedo(false);
+    markDirty();
+  };
+
+  const deleteMove = (id: string) => {
+    const move = movesRef.current.find((m) => m.id === id);
+    if (!move) return;
+    pushUndoSnapshot();
+    movesRef.current = movesRef.current.filter((m) => m.id !== id);
+    setMoves([...movesRef.current]);
+    const pos = { ...positionsRef.current, [move.tokenKey]: { ...move.from } };
+    positionsRef.current = pos;
+    snapPositions(pos);
     markDirty();
   };
 
@@ -923,8 +1000,8 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
                 style={[styles.iconBtn, { opacity: !canRedo ? 0.3 : 1 }]}>
                 <MaterialCommunityIcons name="redo" size={18} color={colors.text.secondary} />
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => setShowStrokeManager(true)} disabled={drawings.length === 0}
-                style={[styles.iconBtn, { opacity: drawings.length === 0 ? 0.3 : 1 }]}>
+              <TouchableOpacity onPress={() => setShowStrokeManager(true)} disabled={drawings.length === 0 && moves.length === 0}
+                style={[styles.iconBtn, { opacity: (drawings.length === 0 && moves.length === 0) ? 0.3 : 1 }]}>
                 <MaterialCommunityIcons name="trash-can-outline" size={18} color={colors.text.secondary} />
               </TouchableOpacity>
             </View>
@@ -1139,8 +1216,10 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
         <StrokeManagerSheet
           visible={showStrokeManager}
           drawings={drawings}
+          moves={moves}
           onClose={() => setShowStrokeManager(false)}
           onDeleteStroke={deleteStroke}
+          onDeleteMove={deleteMove}
           onClearAll={clearDrawings}
         />
       </SafeAreaView>

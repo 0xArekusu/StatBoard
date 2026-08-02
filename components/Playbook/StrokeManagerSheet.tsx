@@ -6,7 +6,7 @@ import {
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useTheme } from "../../src/contexts/ThemeContext";
 import { STATUS_COLORS } from "../../src/theme";
-import { DrawingStroke, DrawingTool } from "../../src/models/PlayTypes";
+import { DrawingStroke, DrawingTool, PlayerMove } from "../../src/models/PlayTypes";
 
 const STROKE_META: Record<string, { label: string; icon: string }> = {
   [DrawingTool.Pass]:   { label: "Passe",  icon: "dots-horizontal" },
@@ -15,18 +15,31 @@ const STROKE_META: Record<string, { label: string; icon: string }> = {
   [DrawingTool.Pencil]: { label: "Dessin", icon: "pencil" },
 };
 
+const ATTACKER_POSITION_NAMES: Record<string, string> = {
+  A1: "Meneur", A2: "Arrière", A3: "Ailier", A4: "Ailier F.", A5: "Pivot",
+};
+
+function tokenLabel(key: string): string {
+  if (key === "BALL") return "Ballon";
+  if (key.startsWith("D")) return `Défenseur ${key.slice(1)}`;
+  return ATTACKER_POSITION_NAMES[key] ?? key;
+}
+
 interface Props {
   visible: boolean;
   drawings: DrawingStroke[];
+  moves: PlayerMove[];
   onClose: () => void;
   onDeleteStroke: (id: string) => void;
+  onDeleteMove: (id: string) => void;
   onClearAll: () => void;
 }
 
 export default function StrokeManagerSheet({
-  visible, drawings, onClose, onDeleteStroke, onClearAll,
+  visible, drawings, moves, onClose, onDeleteStroke, onDeleteMove, onClearAll,
 }: Props) {
   const { colors } = useTheme();
+  const total = drawings.length + moves.length;
 
   return (
     <Modal
@@ -45,10 +58,10 @@ export default function StrokeManagerSheet({
           {/* Header */}
           <View style={[styles.header, { borderBottomColor: colors.border }]}>
             <Text style={[styles.title, { color: colors.text.primary }]}>
-              Tracés — {drawings.length} élément{drawings.length > 1 ? "s" : ""}
+              Actions — {total} élément{total > 1 ? "s" : ""}
             </Text>
             <View style={styles.headerActions}>
-              {drawings.length > 0 && (
+              {total > 0 && (
                 <TouchableOpacity
                   onPress={() => { onClearAll(); onClose(); }}
                   style={[styles.clearAllBtn, { borderColor: STATUS_COLORS.errorLight }]}
@@ -64,11 +77,11 @@ export default function StrokeManagerSheet({
           </View>
 
           {/* List */}
-          {drawings.length === 0 ? (
+          {total === 0 ? (
             <View style={styles.empty}>
               <MaterialCommunityIcons name="draw" size={32} color={colors.text.disabled} />
               <Text style={[styles.emptyText, { color: colors.text.secondary }]}>
-                Aucun tracé sur cette étape
+                Aucune action sur cette étape
               </Text>
             </View>
           ) : (
@@ -115,6 +128,28 @@ export default function StrokeManagerSheet({
                   </View>
                 );
               })}
+
+              {moves.slice().reverse().map((move) => (
+                <View
+                  key={move.id}
+                  style={[styles.item, { backgroundColor: colors.surfaceVariant, borderColor: colors.border }]}
+                >
+                  <MaterialCommunityIcons name="cursor-move" size={16} color={colors.text.secondary} />
+                  <Text style={[styles.itemLabel, { color: colors.text.primary }]}>
+                    Déplacement — {tokenLabel(move.tokenKey)}
+                  </Text>
+
+                  <View style={{ flex: 1 }} />
+
+                  <TouchableOpacity
+                    onPress={() => onDeleteMove(move.id)}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    style={[styles.deleteBtn, { backgroundColor: `${STATUS_COLORS.errorLight}15` }]}
+                  >
+                    <MaterialCommunityIcons name="trash-can-outline" size={15} color={STATUS_COLORS.errorLight} />
+                  </TouchableOpacity>
+                </View>
+              ))}
             </ScrollView>
           )}
         </View>

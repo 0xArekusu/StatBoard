@@ -33,12 +33,23 @@ export interface DrawingStroke {
   sourceToken?: string;
 }
 
+// Déplacement net d'un jeton (outil Déplacer) sur une étape : un seul par
+// jeton, comparé à sa position au chargement de l'étape (pas à un historique
+// de drags intermédiaires).
+export interface PlayerMove {
+  id: string;
+  tokenKey: string;
+  from: DrawingPoint;
+  to: DrawingPoint;
+}
+
 export interface PlayScene {
   id: string;
   title: string;
   description: string;
   positions: Record<PlayerKey, DrawingPoint>;
   drawings: DrawingStroke[];
+  moves?: PlayerMove[];
 }
 
 export interface PlaybookItem {
