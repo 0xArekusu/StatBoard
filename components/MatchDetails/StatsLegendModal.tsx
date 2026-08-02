@@ -5,7 +5,7 @@
  */
 
 import React from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Modal } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, Modal, ScrollView } from "react-native";
 import Svg, { Circle, Polygon } from "react-native-svg";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useTheme } from "../../src/contexts/ThemeContext";
@@ -108,11 +108,7 @@ export default function StatsLegendModal({
       animationType="fade"
       onRequestClose={onClose}
     >
-      <TouchableOpacity
-        style={styles.modalOverlay}
-        activeOpacity={1}
-        onPress={onClose}
-      >
+      <View style={styles.modalOverlay}>
         <View
           style={[
             styles.modalContent,
@@ -120,7 +116,6 @@ export default function StatsLegendModal({
               backgroundColor: colors.surface,
             },
           ]}
-          onStartShouldSetResponder={() => true}
         >
           <TouchableOpacity onPress={onClose} style={styles.modalCloseButton}>
             <MaterialCommunityIcons
@@ -141,6 +136,11 @@ export default function StatsLegendModal({
             LÉGENDE DES STATISTIQUES
           </Text>
 
+          <ScrollView
+            style={styles.legendScroll}
+            showsVerticalScrollIndicator={true}
+            contentContainerStyle={styles.scrollContent}
+          >
           <View style={styles.legendGrid}>
             <View style={styles.legendItem}>
               <Text style={[styles.legendLabel, { color: textSecondary }]}>
@@ -339,8 +339,9 @@ export default function StatsLegendModal({
               </Text>
             </View>
           </View>
+          </ScrollView>
         </View>
-      </TouchableOpacity>
+      </View>
     </Modal>
   );
 }
@@ -356,13 +357,21 @@ const styles = StyleSheet.create({
   modalContent: {
     width: "100%",
     maxWidth: 500,
+    maxHeight: "85%",
     borderRadius: 16,
     padding: 24,
+    overflow: "hidden",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.3,
     shadowRadius: 16,
     elevation: 10,
+  },
+  legendScroll: {
+    flexShrink: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
   },
   modalCloseButton: {
     position: "absolute",
