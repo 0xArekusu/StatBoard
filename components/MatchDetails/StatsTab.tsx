@@ -43,7 +43,7 @@ export default function StatsTab({
   teamRebounds,
   handicap = 0,
 }: StatsTabProps) {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const { sp, font } = useResponsive();
   const [showLegend, setShowLegend] = useState(false);
 
@@ -872,7 +872,6 @@ export default function StatsTab({
 const styles = StyleSheet.create({
   scrollViewContent: {
     flexGrow: 1,
-    justifyContent: "center",
   },
   tableContainer: {
     borderRadius: 16,
@@ -927,7 +926,7 @@ const styles = StyleSheet.create({
   playerNameText: {
     fontSize: 12,
     fontWeight: "700",
-    flex: 1,
+    maxWidth: 96,
   },
   minCell: {
     width: 40,

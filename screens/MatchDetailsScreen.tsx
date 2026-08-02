@@ -554,6 +554,7 @@ export default function MatchDetailsScreen() {
     const playersList = Array.from(playerStatsMap.values()).sort(
       (a, b) => b.pts - a.pts
     );
+
     return playersList;
   };
 
