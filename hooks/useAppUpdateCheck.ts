@@ -8,7 +8,6 @@ import { supabase } from "../src/config/supabase";
 import { logInfo, logWarn, logError } from "../utils/logger";
 import { ANALYTICS_EVENTS } from "../constants/analyticsEvents";
 
-// TODO: remplacer [APP_STORE_ID] par l'identifiant numérique Apple après publication
 const STORE_URLS = {
   ios: "itms-apps://itunes.apple.com/app/id6760178414",
   android: "https://play.google.com/store/apps/details?id=com.coachassistant.basketball",
