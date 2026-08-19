@@ -4,7 +4,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useTheme } from "../../src/contexts/ThemeContext";
 import { FilterMode } from "../../constants/liveMatchConstants";
 import { useResponsive } from "../../src/hooks/useResponsive";
-import { useLandscapeCollapse } from "../../src/hooks/useLandscapeCollapse";
+import { useCollapsibleBar } from "../../src/hooks/useCollapsibleBar";
 import { LandscapeToggleButton } from "./LandscapeToggleButton";
 
 interface MatchToolbarProps {
@@ -41,7 +41,7 @@ export function MatchToolbar({
   const iconSize = isMobileLandscape ? 18 : 22;
   const toolbarHeight = isMobileLandscape ? 44 : 64;
 
-  const [expanded, setExpanded] = useLandscapeCollapse(isMobileLandscape);
+  const [expanded, setExpanded] = useCollapsibleBar(isMobileLandscape);
 
   // Paysage téléphone + repliée : un simple onglet flottant pour déplier la barre
   if (isMobileLandscape && !expanded) {

@@ -85,6 +85,7 @@ import { supabase } from "../src/config/supabase";
 import { MatchActionGrid, ActionData } from "../components/MatchActionGrid";
 import { CourtView, MatchHeader, MatchToolbar, ActionChainModal, FoulChainModal, FoulChainResult, ShotChainModal, ShotChainResult, MatchTutorialOverlay, TUTORIAL_SKIP_KEY } from "../components/LiveMatch";
 import { useMatchSync } from "../hooks/useMatchSync";
+import { useCollapsibleBar } from "../src/hooks/useCollapsibleBar";
 import { useResponsive } from "../src/hooks/useResponsive";
 import {
   HistoryModal,
@@ -105,7 +106,15 @@ export default function LiveMatchScreen() {
   const navigation = useNavigation<RootNavigationProp>();
   const route = useRoute<LiveMatchRouteProp>();
   const { colors, isDark } = useTheme();
-  const { isCompact, isPortrait, sp, font, width, isMobileLandscape } = useResponsive();
+  const { isCompact, isPortrait, sp, font, width, isMobileLandscape, isMobilePortrait } = useResponsive();
+  // État repliée/déployée de la barre de score, remonté ici (et non local à
+  // MatchHeader) car on en a aussi besoin pour masquer le switch TERRAIN/ACTIONS
+  // quand la mini-barre est active en portrait.
+  const [isHeaderExpanded, setIsHeaderExpanded] = useCollapsibleBar(isMobileLandscape, isMobilePortrait);
+  // Le terrain doit occuper toute la place dispo dès que la mini-barre de score
+  // est active : en paysage (toujours repliée par défaut), ou en portrait quand
+  // l'utilisateur l'a repliée lui-même.
+  const forceCourtOnlyView = isMobileLandscape || (isMobilePortrait && !isHeaderExpanded);
   const { user } = useAuth();
   const { currentClub } = useClub();
   const posthog = usePostHog();
@@ -274,14 +283,15 @@ export default function LiveMatchScreen() {
   // ========================================
   const [viewMode, setViewMode] = useState<ViewMode>(ViewMode.COURT);
 
-  // En paysage téléphone, le terrain doit occuper tout l'espace : on masque le
-  // switch TERRAIN/ACTIONS et on force la vue terrain (l'utilisateur repasse
-  // en portrait s'il a besoin de la grille d'actions).
+  // Quand la mini-barre de score est active (paysage, ou portrait replié), le
+  // terrain doit occuper tout l'espace : on masque le switch TERRAIN/ACTIONS et
+  // on force la vue terrain (l'utilisateur déplie la barre ou repasse en
+  // portrait déployé s'il a besoin de la grille d'actions).
   useEffect(() => {
-    if (isMobileLandscape) {
+    if (forceCourtOnlyView) {
       setViewMode(ViewMode.COURT);
     }
-  }, [isMobileLandscape]);
+  }, [forceCourtOnlyView]);
 
   // Tutorial overlay
   const [showTutorial, setShowTutorial] = useState(false);
@@ -2247,11 +2257,13 @@ export default function LiveMatchScreen() {
         onOpenSubstitution={openSubstitution}
         onOpponentScoreSimple={handleOpponentScoreSimple}
         onTimeout={handleTimeout}
+        expanded={isHeaderExpanded}
+        onExpandedChange={setIsHeaderExpanded}
       />
       </View>
 
-      {/* View Mode Toggle (masqué en paysage téléphone : le terrain prend toute la place) */}
-      {!isMobileLandscape && (
+      {/* View Mode Toggle (masqué quand la mini-barre de score est active : le terrain prend toute la place) */}
+      {!forceCourtOnlyView && (
       <View
         onLayout={(e) => setTutorialToggleHeight(e.nativeEvent.layout.height)}
         style={[

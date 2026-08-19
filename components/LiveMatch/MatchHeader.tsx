@@ -7,7 +7,6 @@ import { formatTime, getPeriodLabel } from "../../utils/liveMatchHelpers";
 import { TeamId, MatchEvent } from "../../constants/liveMatchConstants";
 import { BREAKPOINTS } from "../../constants/breakpoints";
 import { useResponsive } from "../../src/hooks/useResponsive";
-import { useLandscapeCollapse } from "../../src/hooks/useLandscapeCollapse";
 import { Player } from "../../models/Player";
 import { ActionType } from "../../src/models/ActionTypes";
 import { TeamFoulDrawer } from "./TeamFoulDrawer";
@@ -38,6 +37,11 @@ interface MatchHeaderProps {
   onOpenSubstitution: () => void;
   onOpponentScoreSimple?: (value: number) => void;
   onTimeout?: (teamId: "HOME" | "AWAY") => void;
+  /** Repliée/déployée (paysage ou portrait téléphone). Contrôlé par le parent
+   * car LiveMatchScreen a aussi besoin de connaître cet état (ex: masquer le
+   * switch TERRAIN/ACTIONS quand la mini-barre est active en portrait). */
+  expanded: boolean;
+  onExpandedChange: (expanded: boolean) => void;
 }
 
 export function MatchHeader({
@@ -54,17 +58,18 @@ export function MatchHeader({
   onOpenSubstitution,
   onOpponentScoreSimple,
   onTimeout,
+  expanded,
+  onExpandedChange,
 }: MatchHeaderProps) {
   const { colors } = useTheme();
-  const { isCompact, isPortrait, sp, font, width, isMobileLandscape } = useResponsive();
+  const { isCompact, isPortrait, sp, font, width, isMobileLandscape, isMobilePortrait } = useResponsive();
   const isNarrow = isPortrait && width < BREAKPOINTS.narrowPortraitMaxWidth;
-  const isMobilePortrait = isPortrait && width < BREAKPOINTS.phoneMaxWidth;
   const amIHome = match.location === TeamId.HOME;
 
   const [foulDrawerVisible, setFoulDrawerVisible] = useState(false);
   const [timeoutModalTeamId, setTimeoutModalTeamId] = useState<"HOME" | "AWAY" | null>(null);
 
-  const [expanded, setExpanded] = useLandscapeCollapse(isMobileLandscape);
+  const canCollapse = isMobileLandscape || isMobilePortrait;
 
   const myTeamId = match.location as "HOME" | "AWAY";
   const opponentTeamId = myTeamId === "HOME" ? "AWAY" : "HOME";
@@ -204,8 +209,8 @@ export function MatchHeader({
     );
   };
 
-  // Paysage téléphone + repliée : mini bande avec l'essentiel (équipes, score, chrono, points adverses)
-  if (isMobileLandscape && !expanded) {
+  // Repliée : mini bande avec l'essentiel (équipes, score, chrono, points adverses)
+  if (canCollapse && !expanded) {
     return (
       <CollapsedMatchHeader
         myTeamName={match.myTeamName || "Mon équipe"}
@@ -218,11 +223,15 @@ export function MatchHeader({
         onToggleTimer={onToggleTimer}
         onNextQuarter={onNextQuarter}
         onOpponentScoreSimple={onOpponentScoreSimple}
-        onExpand={() => setExpanded(true)}
+        onOpenSubstitution={onOpenSubstitution}
+        onExpand={() => onExpandedChange(true)}
       />
     );
   }
 
+  // En paysage, la barre déployée flotte par-dessus le terrain (place rare, ne doit
+  // pas redimensionner). En portrait il y a de la marge : elle reste dans le flux
+  // normal comme avant, et redimensionne normalement au repli/dépli (voulu).
   return (
     <View
       style={[
@@ -236,10 +245,10 @@ export function MatchHeader({
         isMobileLandscape && styles.headerOverlay,
       ]}
     >
-      {isMobileLandscape && (
+      {canCollapse && (
         <LandscapeToggleButton
           icon="chevron-up"
-          onPress={() => setExpanded(false)}
+          onPress={() => onExpandedChange(false)}
           color={colors.primary}
           backgroundColor={surfaceColor}
           borderColor={borderColor}
