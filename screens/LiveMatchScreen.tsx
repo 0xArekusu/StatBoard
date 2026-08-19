@@ -86,7 +86,6 @@ import { MatchActionGrid, ActionData } from "../components/MatchActionGrid";
 import { CourtView, MatchHeader, MatchToolbar, ActionChainModal, FoulChainModal, FoulChainResult, ShotChainModal, ShotChainResult, MatchTutorialOverlay, TUTORIAL_SKIP_KEY } from "../components/LiveMatch";
 import { useMatchSync } from "../hooks/useMatchSync";
 import { useResponsive } from "../src/hooks/useResponsive";
-import { BREAKPOINTS } from "../constants/breakpoints";
 import {
   HistoryModal,
   FilterModal,
@@ -106,20 +105,7 @@ export default function LiveMatchScreen() {
   const navigation = useNavigation<RootNavigationProp>();
   const route = useRoute<LiveMatchRouteProp>();
   const { colors, isDark } = useTheme();
-  const { isCompact, isPortrait, sp, font, width, height } = useResponsive();
-  const isMobileLandscape = !isPortrait && width < BREAKPOINTS.mobileLandscapeMaxWidth;
-
-  // DEBUG TEMPORAIRE — à retirer une fois le comportement paysage confirmé sur device
-  useEffect(() => {
-    logInfo("LiveMatchScreen", "📐 Dimensions changed", {
-      width,
-      height,
-      isPortrait,
-      isCompact,
-      isMobileLandscape,
-      mobileLandscapeMaxWidth: BREAKPOINTS.mobileLandscapeMaxWidth,
-    });
-  }, [width, height, isPortrait, isCompact, isMobileLandscape]);
+  const { isCompact, isPortrait, sp, font, width, isMobileLandscape } = useResponsive();
   const { user } = useAuth();
   const { currentClub } = useClub();
   const posthog = usePostHog();

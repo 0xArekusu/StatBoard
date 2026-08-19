@@ -1,16 +1,19 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useTheme } from "../../src/contexts/ThemeContext";
 import { SLATE_COLORS } from "../../src/theme/colors";
 import { formatTime, getPeriodLabel } from "../../utils/liveMatchHelpers";
-import { TeamId, MatchEvent, MOBILE_LANDSCAPE_HEADER_RESERVED_HEIGHT } from "../../constants/liveMatchConstants";
+import { TeamId, MatchEvent } from "../../constants/liveMatchConstants";
 import { BREAKPOINTS } from "../../constants/breakpoints";
 import { useResponsive } from "../../src/hooks/useResponsive";
+import { useLandscapeCollapse } from "../../src/hooks/useLandscapeCollapse";
 import { Player } from "../../models/Player";
 import { ActionType } from "../../src/models/ActionTypes";
 import { TeamFoulDrawer } from "./TeamFoulDrawer";
 import { TimeoutModal } from "./TimeoutModal";
+import { CollapsedMatchHeader } from "./CollapsedMatchHeader";
+import { LandscapeToggleButton } from "./LandscapeToggleButton";
 
 interface MatchHeaderProps {
   match: {
@@ -53,20 +56,15 @@ export function MatchHeader({
   onTimeout,
 }: MatchHeaderProps) {
   const { colors } = useTheme();
-  const { isCompact, isPortrait, sp, font, width } = useResponsive();
+  const { isCompact, isPortrait, sp, font, width, isMobileLandscape } = useResponsive();
   const isNarrow = isPortrait && width < BREAKPOINTS.narrowPortraitMaxWidth;
   const isMobilePortrait = isPortrait && width < BREAKPOINTS.phoneMaxWidth;
-  const isMobileLandscape = !isPortrait && width < BREAKPOINTS.mobileLandscapeMaxWidth;
   const amIHome = match.location === TeamId.HOME;
 
   const [foulDrawerVisible, setFoulDrawerVisible] = useState(false);
   const [timeoutModalTeamId, setTimeoutModalTeamId] = useState<"HOME" | "AWAY" | null>(null);
 
-  // Repliée par défaut : la barre de score repart repliée à chaque entrée en paysage téléphone
-  const [expanded, setExpanded] = useState(false);
-  useEffect(() => {
-    if (isMobileLandscape) setExpanded(false);
-  }, [isMobileLandscape]);
+  const [expanded, setExpanded] = useLandscapeCollapse(isMobileLandscape);
 
   const myTeamId = match.location as "HOME" | "AWAY";
   const opponentTeamId = myTeamId === "HOME" ? "AWAY" : "HOME";
@@ -208,103 +206,20 @@ export function MatchHeader({
 
   // Paysage téléphone + repliée : mini bande avec l'essentiel (équipes, score, chrono, points adverses)
   if (isMobileLandscape && !expanded) {
-    const myScore = amIHome ? match.scoreHome : match.scoreAway;
-    const opponentScore = amIHome ? match.scoreAway : match.scoreHome;
-    const myTeamName = match.myTeamName || "Mon équipe";
-    const opponentTeamName = match.opponent || "Adversaire";
-
     return (
-      <View
-        style={[
-          styles.collapsedBar,
-          { backgroundColor: surfaceColor, borderBottomColor: borderColor },
-        ]}
-      >
-        {/* Mon équipe : nom + score */}
-        <View style={styles.collapsedSide}>
-          <Text
-            style={[styles.collapsedTeamName, { color: colors.primary }]}
-            numberOfLines={1}
-          >
-            {myTeamName}
-          </Text>
-          <Text style={[styles.collapsedScore, styles.collapsedSpacedLeft, { color: textPrimary }]}>
-            {myScore}
-          </Text>
-        </View>
-
-        {/* Centre : play/pause, chrono, période suivante */}
-        <View style={styles.collapsedCenter}>
-          <TouchableOpacity
-            onPress={onToggleTimer}
-            style={[
-              styles.collapsedPlayButton,
-              {
-                backgroundColor: isRunning ? colors.button.playPaused : colors.primary,
-              },
-            ]}
-          >
-            <MaterialCommunityIcons
-              name={isRunning ? "pause" : "play"}
-              size={14}
-              color={isRunning ? colors.error : colors.onPrimary}
-            />
-          </TouchableOpacity>
-
-          <Text style={styles.collapsedTimer}>{formatTime(timer)}</Text>
-
-          <TouchableOpacity
-            onPress={onNextQuarter}
-            style={[
-              styles.collapsedNextPeriodButton,
-              { backgroundColor: colors.surfaceVariant, borderColor },
-            ]}
-          >
-            <MaterialCommunityIcons name="chevron-right" size={14} color={colors.primary} />
-          </TouchableOpacity>
-        </View>
-
-        {/* Adversaire : score + nom + ajout rapide de points */}
-        <View style={styles.collapsedSide}>
-          <Text style={[styles.collapsedScore, { color: textSecondary }]}>{opponentScore}</Text>
-          <Text
-            style={[styles.collapsedTeamName, styles.collapsedSpacedLeft, { color: textSecondary }]}
-            numberOfLines={1}
-          >
-            {opponentTeamName}
-          </Text>
-
-          {!match.trackOpponentStats && onOpponentScoreSimple && (
-            <View style={[styles.collapsedQuickScoreRow, styles.collapsedSpacedLeft]}>
-              {[1, 2, 3].map((value) => (
-                <TouchableOpacity
-                  key={value}
-                  onPress={() => onOpponentScoreSimple(value)}
-                  style={[
-                    styles.collapsedQuickScoreButton,
-                    { backgroundColor: colors.button.quickScoreBackground },
-                  ]}
-                >
-                  <Text style={[styles.collapsedQuickScoreText, { color: textSecondary }]}>
-                    +{value}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          )}
-        </View>
-
-        <TouchableOpacity
-          onPress={() => setExpanded(true)}
-          style={[
-            styles.toggleButton,
-            styles.toggleButtonTop,
-            { backgroundColor: surfaceColor, borderColor },
-          ]}
-        >
-          <MaterialCommunityIcons name="chevron-down" size={16} color={colors.primary} />
-        </TouchableOpacity>
-      </View>
+      <CollapsedMatchHeader
+        myTeamName={match.myTeamName || "Mon équipe"}
+        myScore={amIHome ? match.scoreHome : match.scoreAway}
+        opponentTeamName={match.opponent || "Adversaire"}
+        opponentScore={amIHome ? match.scoreAway : match.scoreHome}
+        timer={timer}
+        isRunning={isRunning}
+        showOpponentQuickScore={!match.trackOpponentStats && !!onOpponentScoreSimple}
+        onToggleTimer={onToggleTimer}
+        onNextQuarter={onNextQuarter}
+        onOpponentScoreSimple={onOpponentScoreSimple}
+        onExpand={() => setExpanded(true)}
+      />
     );
   }
 
@@ -322,16 +237,14 @@ export function MatchHeader({
       ]}
     >
       {isMobileLandscape && (
-        <TouchableOpacity
+        <LandscapeToggleButton
+          icon="chevron-up"
           onPress={() => setExpanded(false)}
-          style={[
-            styles.toggleButton,
-            styles.toggleButtonTop,
-            { backgroundColor: surfaceColor, borderColor },
-          ]}
-        >
-          <MaterialCommunityIcons name="chevron-up" size={16} color={colors.primary} />
-        </TouchableOpacity>
+          color={colors.primary}
+          backgroundColor={surfaceColor}
+          borderColor={borderColor}
+          style={styles.toggleButtonTop}
+        />
       )}
 
       <View style={styles.headerContent}>
@@ -719,87 +632,8 @@ const styles = StyleSheet.create({
     right: 0,
     zIndex: 20,
   },
-  toggleButton: {
-    position: "absolute",
-    width: 32,
-    height: 32,
-    borderRadius: 999,
-    borderWidth: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    zIndex: 21,
-  },
   toggleButtonTop: {
     top: 4,
     right: 6,
-  },
-  collapsedBar: {
-    flexDirection: "row",
-    alignItems: "center",
-    height: MOBILE_LANDSCAPE_HEADER_RESERVED_HEIGHT,
-    paddingLeft: 10,
-    paddingRight: 44,
-    borderBottomWidth: 1,
-  },
-  collapsedSide: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-  },
-  collapsedCenter: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    paddingHorizontal: 8,
-  },
-  collapsedTeamName: {
-    fontSize: 10,
-    fontWeight: "bold",
-    textTransform: "uppercase",
-    maxWidth: 90,
-  },
-  collapsedSpacedLeft: {
-    marginLeft: 10,
-  },
-  collapsedScore: {
-    fontSize: 20,
-    fontWeight: "900",
-    letterSpacing: -1,
-  },
-  collapsedNextPeriodButton: {
-    width: 20,
-    height: 20,
-    borderRadius: 4,
-    borderWidth: 1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  collapsedPlayButton: {
-    width: 24,
-    height: 24,
-    borderRadius: 999,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  collapsedTimer: {
-    fontFamily: "monospace",
-    fontSize: 16,
-    fontWeight: "900",
-    color: "#dc2626",
-  },
-  collapsedQuickScoreRow: {
-    flexDirection: "row",
-    gap: 6,
-  },
-  collapsedQuickScoreButton: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 4,
-  },
-  collapsedQuickScoreText: {
-    fontSize: 12,
-    fontWeight: "bold",
   },
 });

@@ -1,10 +1,11 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useTheme } from "../../src/contexts/ThemeContext";
 import { FilterMode } from "../../constants/liveMatchConstants";
 import { useResponsive } from "../../src/hooks/useResponsive";
-import { BREAKPOINTS } from "../../constants/breakpoints";
+import { useLandscapeCollapse } from "../../src/hooks/useLandscapeCollapse";
+import { LandscapeToggleButton } from "./LandscapeToggleButton";
 
 interface MatchToolbarProps {
   filterMode: FilterMode;
@@ -32,10 +33,7 @@ export function MatchToolbar({
   onOpenHistory,
 }: MatchToolbarProps) {
   const { colors } = useTheme();
-  const { isPortrait, width } = useResponsive();
-  const isLandscape = !isPortrait;
-  const isMobileLandscape =
-    isLandscape && width < BREAKPOINTS.mobileLandscapeMaxWidth;
+  const { isMobileLandscape } = useResponsive();
   const surfaceColor = colors.surface;
   const textSecondary = colors.text.secondary;
   const borderColor = colors.border;
@@ -43,29 +41,21 @@ export function MatchToolbar({
   const iconSize = isMobileLandscape ? 18 : 22;
   const toolbarHeight = isMobileLandscape ? 44 : 64;
 
-  // Repliée par défaut : la barre repart repliée à chaque entrée en paysage téléphone
-  const [expanded, setExpanded] = useState(false);
-  useEffect(() => {
-    if (isMobileLandscape) setExpanded(false);
-  }, [isMobileLandscape]);
+  const [expanded, setExpanded] = useLandscapeCollapse(isMobileLandscape);
 
   // Paysage téléphone + repliée : un simple onglet flottant pour déplier la barre
   if (isMobileLandscape && !expanded) {
     return (
-      <TouchableOpacity
+      <LandscapeToggleButton
+        icon={hasActiveFilters ? "filter" : "filter-outline"}
         onPress={() => setExpanded(true)}
-        style={[
-          styles.toggleButton,
-          styles.toggleButtonCollapsed,
-          { backgroundColor: surfaceColor, borderColor },
-        ]}
-      >
-        <MaterialCommunityIcons
-          name={hasActiveFilters ? "filter" : "filter-outline"}
-          size={20}
-          color={colors.primary}
-        />
-      </TouchableOpacity>
+        color={colors.primary}
+        backgroundColor={surfaceColor}
+        borderColor={borderColor}
+        style={styles.toggleButtonCollapsed}
+        size={36}
+        iconSize={20}
+      />
     );
   }
 
@@ -82,16 +72,16 @@ export function MatchToolbar({
       ]}
     >
       {isMobileLandscape && (
-        <TouchableOpacity
+        <LandscapeToggleButton
+          icon="chevron-down"
           onPress={() => setExpanded(false)}
-          style={[
-            styles.toggleButton,
-            styles.toggleButtonInBar,
-            { backgroundColor: surfaceColor, borderColor },
-          ]}
-        >
-          <MaterialCommunityIcons name="chevron-down" size={18} color={colors.primary} />
-        </TouchableOpacity>
+          color={colors.primary}
+          backgroundColor={surfaceColor}
+          borderColor={borderColor}
+          style={styles.toggleButtonInBar}
+          size={36}
+          iconSize={18}
+        />
       )}
 
       <TouchableOpacity onPress={onUndo} style={styles.toolbarButton}>
@@ -213,15 +203,6 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: "500",
     marginTop: 4,
-  },
-  toggleButton: {
-    position: "absolute",
-    width: 36,
-    height: 36,
-    borderRadius: 999,
-    borderWidth: 1,
-    alignItems: "center",
-    justifyContent: "center",
   },
   toggleButtonCollapsed: {
     bottom: 6,
