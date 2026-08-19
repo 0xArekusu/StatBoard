@@ -2344,7 +2344,7 @@ export default function LiveMatchScreen() {
       )}
 
       {/* Main Content */}
-      <View style={[styles.mainContent, { paddingBottom: isMobileLandscape ? 44 : 64 }]}>
+      <View style={[styles.mainContent, { paddingBottom: isMobileLandscape ? 0 : 64 }]}>
         {viewMode === ViewMode.GRID && (
           <ScrollView
             style={styles.gridScroll}

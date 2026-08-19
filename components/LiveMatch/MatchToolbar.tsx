@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useTheme } from "../../src/contexts/ThemeContext";
@@ -43,6 +43,32 @@ export function MatchToolbar({
   const iconSize = isMobileLandscape ? 18 : 22;
   const toolbarHeight = isMobileLandscape ? 44 : 64;
 
+  // Repliée par défaut : la barre repart repliée à chaque entrée en paysage téléphone
+  const [expanded, setExpanded] = useState(false);
+  useEffect(() => {
+    if (isMobileLandscape) setExpanded(false);
+  }, [isMobileLandscape]);
+
+  // Paysage téléphone + repliée : un simple onglet flottant pour déplier la barre
+  if (isMobileLandscape && !expanded) {
+    return (
+      <TouchableOpacity
+        onPress={() => setExpanded(true)}
+        style={[
+          styles.toggleButton,
+          styles.toggleButtonCollapsed,
+          { backgroundColor: surfaceColor, borderColor },
+        ]}
+      >
+        <MaterialCommunityIcons
+          name={hasActiveFilters ? "filter" : "filter-outline"}
+          size={20}
+          color={colors.primary}
+        />
+      </TouchableOpacity>
+    );
+  }
+
   return (
     <View
       style={[
@@ -51,9 +77,23 @@ export function MatchToolbar({
           backgroundColor: surfaceColor,
           borderTopColor: borderColor,
           height: toolbarHeight,
+          paddingRight: isMobileLandscape ? 44 : 8,
         },
       ]}
     >
+      {isMobileLandscape && (
+        <TouchableOpacity
+          onPress={() => setExpanded(false)}
+          style={[
+            styles.toggleButton,
+            styles.toggleButtonInBar,
+            { backgroundColor: surfaceColor, borderColor },
+          ]}
+        >
+          <MaterialCommunityIcons name="chevron-down" size={18} color={colors.primary} />
+        </TouchableOpacity>
+      )}
+
       <TouchableOpacity onPress={onUndo} style={styles.toolbarButton}>
         <MaterialCommunityIcons
           name="undo"
@@ -173,5 +213,22 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: "500",
     marginTop: 4,
+  },
+  toggleButton: {
+    position: "absolute",
+    width: 36,
+    height: 36,
+    borderRadius: 999,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  toggleButtonCollapsed: {
+    bottom: 6,
+    right: 6,
+  },
+  toggleButtonInBar: {
+    top: 4,
+    right: 6,
   },
 });
