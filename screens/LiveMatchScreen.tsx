@@ -105,8 +105,20 @@ export default function LiveMatchScreen() {
   const navigation = useNavigation<RootNavigationProp>();
   const route = useRoute<LiveMatchRouteProp>();
   const { colors, isDark } = useTheme();
-  const { isCompact, isPortrait, sp, font, width } = useResponsive();
+  const { isCompact, isPortrait, sp, font, width, height } = useResponsive();
   const isMobileLandscape = !isPortrait && width < BREAKPOINTS.mobileLandscapeMaxWidth;
+
+  // DEBUG TEMPORAIRE — à retirer une fois le comportement paysage confirmé sur device
+  useEffect(() => {
+    logInfo("LiveMatchScreen", "📐 Dimensions changed", {
+      width,
+      height,
+      isPortrait,
+      isCompact,
+      isMobileLandscape,
+      mobileLandscapeMaxWidth: BREAKPOINTS.mobileLandscapeMaxWidth,
+    });
+  }, [width, height, isPortrait, isCompact, isMobileLandscape]);
   const { user } = useAuth();
   const { currentClub } = useClub();
   const posthog = usePostHog();
@@ -274,6 +286,15 @@ export default function LiveMatchScreen() {
   // UI STATE
   // ========================================
   const [viewMode, setViewMode] = useState<ViewMode>(ViewMode.COURT);
+
+  // En paysage téléphone, le terrain doit occuper tout l'espace : on masque le
+  // switch TERRAIN/ACTIONS et on force la vue terrain (l'utilisateur repasse
+  // en portrait s'il a besoin de la grille d'actions).
+  useEffect(() => {
+    if (isMobileLandscape) {
+      setViewMode(ViewMode.COURT);
+    }
+  }, [isMobileLandscape]);
 
   // Tutorial overlay
   const [showTutorial, setShowTutorial] = useState(false);
@@ -2236,7 +2257,8 @@ export default function LiveMatchScreen() {
       />
       </View>
 
-      {/* View Mode Toggle */}
+      {/* View Mode Toggle (masqué en paysage téléphone : le terrain prend toute la place) */}
+      {!isMobileLandscape && (
       <View
         onLayout={(e) => setTutorialToggleHeight(e.nativeEvent.layout.height)}
         style={[
@@ -2319,6 +2341,7 @@ export default function LiveMatchScreen() {
           </Text>
         </TouchableOpacity>
       </View>
+      )}
 
       {/* Main Content */}
       <View style={[styles.mainContent, { paddingBottom: isMobileLandscape ? 44 : 64 }]}>
