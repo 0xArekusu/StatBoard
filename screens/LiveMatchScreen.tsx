@@ -71,6 +71,7 @@ import {
   ChainSuggestion,
   FoulChainContext,
   ShotChainContext,
+  MOBILE_LANDSCAPE_HEADER_RESERVED_HEIGHT,
 } from "../constants/liveMatchConstants";
 import { getChainContext } from "../utils/actionChainRules";
 import {
@@ -2239,7 +2240,13 @@ export default function LiveMatchScreen() {
   return (
     <View style={[styles.container, { backgroundColor: bgColor }]}>
       {/* Header */}
-      <View onLayout={(e) => setTutorialHeaderHeight(e.nativeEvent.layout.height)}>
+      {/* En paysage téléphone, hauteur fixe réservée (celle de la mini barre) : le */}
+      {/* terrain ne doit jamais se redimensionner quand on déplie/replie la barre, */}
+      {/* qui s'affiche alors en overlay par-dessus au lieu de pousser le contenu. */}
+      <View
+        style={isMobileLandscape ? { height: MOBILE_LANDSCAPE_HEADER_RESERVED_HEIGHT } : undefined}
+        onLayout={(e) => setTutorialHeaderHeight(e.nativeEvent.layout.height)}
+      >
       <MatchHeader
         match={match}
         timer={timer}

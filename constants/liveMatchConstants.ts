@@ -199,3 +199,11 @@ export interface ChainContext {
  * about where they clicked before the marker disappears.
  */
 export const TEMPORARY_MARKER_DISPLAY_DURATION = 500;
+
+/**
+ * Hauteur de la mini barre de score repliée en paysage téléphone.
+ * Réservée en permanence dans le layout (que la barre soit repliée ou
+ * déployée) pour que le terrain ne se redimensionne jamais quand on
+ * déplie/replie la barre complète (qui s'affiche alors en overlay).
+ */
+export const MOBILE_LANDSCAPE_HEADER_RESERVED_HEIGHT = 40;
