@@ -24,6 +24,9 @@
         "CFBundleLocalizations": [
           "fr",
           "en"
+        ],
+        "LSApplicationQueriesSchemes": [
+          "itms-apps"
         ]
       }
     },
