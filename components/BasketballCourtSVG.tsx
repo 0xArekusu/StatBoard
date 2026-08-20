@@ -387,9 +387,11 @@ export default function BasketballCourtSVG({
 
       const zone = (uri: string | null, cx: number, cy: number, rot: 90 | -90) =>
         uri ? (
-          <G transform={`rotate(${rot}, ${cx}, ${cy})`}>
+          // key forces a full remount on rotation: react-native-svg's Image on iOS doesn't
+          // reliably reposition its native layer when only x/y/width/height props change.
+          <G key={`sponsor-${cx}-${cy}`} transform={`rotate(${rot}, ${cx}, ${cy})`}>
             <Rect x={cx - w / 2} y={cy - h / 2} width={w} height={h} rx={6} fill="transparent" opacity={0.85} />
-            <Image href={uri} x={cx - w / 2} y={cy - h / 2} width={w} height={h} preserveAspectRatio="xMidYMid meet" />
+            <Image key={`img-${uri}-${cx}-${cy}`} href={uri} x={cx - w / 2} y={cy - h / 2} width={w} height={h} preserveAspectRatio="xMidYMid meet" />
           </G>
         ) : null;
 
@@ -424,9 +426,11 @@ export default function BasketballCourtSVG({
 
       const zone = (uri: string | null, x: number, y: number) =>
         uri ? (
-          <G>
+          // key forces a full remount on rotation: react-native-svg's Image on iOS doesn't
+          // reliably reposition its native layer when only x/y/width/height props change.
+          <G key={`sponsor-${x}-${y}`}>
             <Rect x={x} y={y} width={w} height={h} rx={6} fill="transparent" opacity={0.85} />
-            <Image href={uri} x={x} y={y} width={w} height={h} preserveAspectRatio="xMidYMid meet" />
+            <Image key={`img-${uri}-${x}-${y}`} href={uri} x={x} y={y} width={w} height={h} preserveAspectRatio="xMidYMid meet" />
           </G>
         ) : null;
 
