@@ -245,17 +245,12 @@ export default function MatchDetailsScreen() {
   const handleExportPDF = async () => {
     try {
       setIsExportingPDF(true);
-      console.log('[MatchDetailsScreen] 📤 handleExportPDF - Début export');
-      console.log('[MatchDetailsScreen] 📊 État players actuel:', players.length);
-      console.log('[MatchDetailsScreen] 🎬 État actions actuel:', actions.length);
 
       // Determine if opponent stats are tracked by checking for opponent players
       // (excluding generic player 9999 used for opponent points without detailed tracking)
       const trackOpponentStats = players?.some(
         (p) => p.team === Team.OPPONENT && p.num !== 9999
       ) || false;
-
-      console.log('[MatchDetailsScreen] 🏀 trackOpponentStats:', trackOpponentStats);
 
       // Generate signed URL for club logo if available (for PDF embedding)
       let clubLogoUrl: string | undefined = undefined;
@@ -283,13 +278,6 @@ export default function MatchDetailsScreen() {
         courtLineColor: club?.courtLineColor, // Use club court line color if configured
         matchSponsors: parseMatchSponsors(match.match_sponsors),
       };
-
-      console.log('[MatchDetailsScreen] 📋 pdfOptions.players envoyé:', pdfOptions.players.map(p => ({
-        id: p.id,
-        num: p.num,
-        name: p.name,
-        team: p.team
-      })));
 
       await PDFExportService.generateMatchPDF(pdfOptions);
       setIsExportingPDF(false);

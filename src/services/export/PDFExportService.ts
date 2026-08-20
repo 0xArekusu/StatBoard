@@ -173,7 +173,6 @@ export class PDFExportService {
     try {
       const response = await fetch(url);
       if (!response.ok) {
-        console.warn(`[PDF Export] Failed to fetch image: ${url}`);
         return null;
       }
       const blob = await response.blob();
@@ -184,10 +183,6 @@ export class PDFExportService {
         reader.readAsDataURL(blob);
       });
     } catch (error) {
-      console.warn(
-        `[PDF Export] Error converting image to base64: ${url}`,
-        error
-      );
       return null;
     }
   }
@@ -218,7 +213,6 @@ export class PDFExportService {
         reader.readAsDataURL(blob);
       });
     } catch (error) {
-      console.error(`[PDF Export] Error loading default logo:`, error);
       return null;
     }
   }
@@ -248,36 +242,6 @@ export class PDFExportService {
       matchSponsors = [],
     } = options;
 
-    console.log("[PDF Export] 🚀 Début generateMatchPDF");
-    console.log("[PDF Export] 📊 Nombre de joueurs reçus:", players.length);
-    console.log(
-      "[PDF Export] 👥 Liste des joueurs reçus:",
-      players.map((p) => ({
-        id: p.id,
-        num: p.num,
-        name: p.name,
-        team: p.team,
-      }))
-    );
-    console.log("[PDF Export] 🎬 Nombre d'actions:", actions.length);
-    console.log("[PDF Export] 📌 trackOpponentStats:", trackOpponentStats);
-
-    // Log quelques actions pour voir leur structure
-    if (actions.length > 0) {
-      console.log(
-        "[PDF Export] 📝 Échantillon de 5 premières actions:",
-        actions.slice(0, 5).map((a) => ({
-          player_number: a.player_number,
-          player: a.player,
-          type: a.type,
-          action_type: a.action_type,
-          team: a.team,
-          specification: a.specification,
-          points: a.points,
-        }))
-      );
-    }
-
     // Determine home and away teams based on isHome flag
     const homeTeamName = isHome ? myTeamName : opponentName;
     const awayTeamName = isHome ? opponentName : myTeamName;
@@ -301,27 +265,13 @@ export class PDFExportService {
     );
 
     // Convert club logo to base64 for PDF embedding
-    console.log(`[PDF Export] Club logo URL:`, clubLogoUrl);
     let clubLogoBase64: string | undefined = clubLogoUrl;
     if (clubLogoUrl && clubLogoUrl.startsWith("http")) {
-      console.log(`[PDF Export] Converting club logo to base64`);
       const base64Logo = await this.imageUrlToBase64(clubLogoUrl);
       clubLogoBase64 = base64Logo || clubLogoUrl;
-      console.log(
-        `[PDF Export] Club logo conversion complete, has base64:`,
-        !!base64Logo
-      );
     } else if (!clubLogoUrl) {
-      console.log(
-        `[PDF Export] No club logo, using default Coach Assistant logo`
-      );
       const defaultLogo = await this.loadDefaultLogo();
       clubLogoBase64 = defaultLogo || undefined;
-      console.log(`[PDF Export] Default logo loaded:`, !!defaultLogo);
-    } else {
-      console.log(
-        `[PDF Export] Club logo not converted (not http or undefined)`
-      );
     }
 
     const totalPeriods = matchFormat === "2_halves" ? 2 : 4;
@@ -340,33 +290,12 @@ export class PDFExportService {
     const { evolutionMyTeam, evolutionOpponent, evolutionPeriods } =
       this.calculateActionByActionEvolution(actions, totalPeriodsPlayed, myTeamHandicap, opponentHandicap);
 
-    // Calculate player stats - always include MY_TEAM, include OPPONENT only if tracking
-    console.log(
-      "[PDF Export] 🔍 Tous les joueurs reçus:",
-      playersWithBase64Photos.map((p) => ({
-        id: p.id,
-        num: p.num,
-        name: p.name,
-        team: p.team,
-        hasPhoto: !!p.photoUrl,
-      }))
-    );
-
     const playersMyTeam = playersWithBase64Photos.filter(
       (p) => p.team === Team.MY_TEAM
     );
     const playersOpponent = trackOpponentStats
       ? playersWithBase64Photos.filter((p) => p.team === Team.OPPONENT)
       : [];
-
-    console.log(
-      "[PDF Export] 👥 Joueurs MY_TEAM filtrés:",
-      playersMyTeam.length
-    );
-    console.log(
-      "[PDF Export] 👥 Joueurs OPPONENT filtrés:",
-      playersOpponent.length
-    );
 
     // Compute +/- for all players
     const allPlayersForPm = [...playersMyTeam, ...playersOpponent].map((p) => ({
@@ -377,12 +306,8 @@ export class PDFExportService {
     const pmMap = calculatePlusMinus(actions, allPlayersForPm);
 
     const statsMyTeam = playersMyTeam.map((player) => {
-      console.log(
-        `[PDF Export] ⚡ Calcul stats pour joueur MY_TEAM - ID: ${player.id}, Num: ${player.num}, Nom: ${player.name}`
-      );
       const stats = this.calculatePlayerStats(player.id, actions);
       stats.pm = pmMap.get(`${player.team}-${player.num}`) || 0;
-      console.log(`[PDF Export] 📊 Stats calculées:`, stats);
       return {
         ...player,
         stats,
@@ -390,12 +315,8 @@ export class PDFExportService {
     });
 
     const statsOpponent = playersOpponent.map((player) => {
-      console.log(
-        `[PDF Export] ⚡ Calcul stats pour joueur OPPONENT - ID: ${player.id}, Num: ${player.num}, Nom: ${player.name}`
-      );
       const stats = this.calculatePlayerStats(player.id, actions);
       stats.pm = pmMap.get(`${player.team}-${player.num}`) || 0;
-      console.log(`[PDF Export] 📊 Stats calculées:`, stats);
       return {
         ...player,
         stats,
@@ -605,32 +526,11 @@ export class PDFExportService {
    * Handles both database format (action_type, player_number) and app format (type, player)
    */
   private static calculatePlayerStats(playerId: number, actions: any[]) {
-    console.log(
-      `[PDF Export] 🎯 calculatePlayerStats appelé pour playerId: ${playerId}`
-    );
-    console.log(
-      `[PDF Export] 📋 Nombre total d'actions à analyser: ${actions.length}`
-    );
-
     // Filter actions for this player - handle both player_number (DB) and player (app) formats
     const playerActions = actions.filter((a) => {
       const playerNum = a.player_number || a.player;
       return playerNum === playerId;
     });
-
-    console.log(
-      `[PDF Export] ✅ Actions trouvées pour playerId ${playerId}: ${playerActions.length}`
-    );
-    if (playerActions.length > 0) {
-      console.log(`[PDF Export] 📝 Première action du joueur ${playerId}:`, {
-        player_number: playerActions[0].player_number,
-        player: playerActions[0].player,
-        type: playerActions[0].type,
-        action_type: playerActions[0].action_type,
-        specification: playerActions[0].specification,
-        points: playerActions[0].points,
-      });
-    }
 
     // Helper function to normalize action type
     // Note: Actions from MatchDataService use 'type', database uses 'action_type'
@@ -885,38 +785,12 @@ export class PDFExportService {
       <tbody>
         ${stats
           .map((player) => {
-            console.log(`[PDF Export] 🏀 Génération HTML pour joueur:`, {
-              id: player.id,
-              num: player.num,
-              name: player.name,
-              team: player.team,
-              stats: player.stats,
-            });
-
             const totalFouls = this.calculateTotalFouls(player.stats);
             const totalRebounds = player.stats.orb + player.stats.drb;
             const totalFgm = player.stats.twopm + player.stats.threepm;
             const totalFga = player.stats.twopa + player.stats.threepa;
 
-            console.log(
-              `[PDF Export] 🔢 Calcul EVAL pour ${player.name} (#${player.num}):`,
-              {
-                points: player.stats.points,
-                rebounds: totalRebounds,
-                ast: player.stats.ast,
-                stl: player.stats.stl,
-                blk: player.stats.blk,
-                fgMissed:
-                  player.stats.twopa -
-                  player.stats.twopm +
-                  (player.stats.threepa - player.stats.threepm),
-                ftMissed: player.stats.fta - player.stats.ftm,
-                tov: player.stats.tov,
-              }
-            );
-
             const efficiency = calculateEfficiencyFromDB(player.stats);
-            console.log(`[PDF Export] ✅ EVAL calculée:`, efficiency);
 
             const playingTime = this.getPlayingTime(player.playingTimeSeconds);
 
@@ -2545,15 +2419,6 @@ export class PDFExportService {
         const ftPct = this.calculateShootingPercentage(
           playerStats.ftm,
           playerStats.fta
-        );
-
-        console.log(
-          `[PDF Export] 📊 Shooting percentages for player ${player.num}:`,
-          {
-            twoPoint: `${playerStats.twopm}/${playerStats.twopa} = ${twoPtPct}%`,
-            threePoint: `${playerStats.threepm}/${playerStats.threepa} = ${threePtPct}%`,
-            freeThrow: `${playerStats.ftm}/${playerStats.fta} = ${ftPct}%`,
-          }
         );
 
         const hasStats =
