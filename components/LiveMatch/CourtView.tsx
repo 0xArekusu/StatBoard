@@ -44,6 +44,7 @@ interface CourtViewProps {
   courtSponsorFourthUri?: string | null;
   sideSponsorLeftUri?: string | null;
   sideSponsorRightUri?: string | null;
+  hideSideSponsors?: boolean;
 }
 
 export const CourtView: React.FC<CourtViewProps> = ({
@@ -65,6 +66,7 @@ export const CourtView: React.FC<CourtViewProps> = ({
   courtSponsorFourthUri = null,
   sideSponsorLeftUri = null,
   sideSponsorRightUri = null,
+  hideSideSponsors = false,
 }) => {
   const { colors } = useTheme();
   const { width: screenWidth, height: screenHeight } = useResponsive();
@@ -225,7 +227,7 @@ export const CourtView: React.FC<CourtViewProps> = ({
   const SIDE_WIDTH = 80;
 
   const renderSideSponsor = (uri: string | null, side: SponsorSide) => {
-    if (!uri) return null;
+    if (!uri || hideSideSponsors) return null;
     const source = typeof uri === 'string' ? { uri } : (uri as any);
     const rotation = isPortrait
       ? side === SponsorSide.Left ? '-90deg' : '90deg'

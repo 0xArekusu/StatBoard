@@ -2384,6 +2384,7 @@ export default function LiveMatchScreen() {
               courtSponsorFourthUri={sponsorFourth}
               sideSponsorLeftUri={sponsorSideLeft}
               sideSponsorRightUri={sponsorSideRight}
+              hideSideSponsors={isMobilePortrait && !isHeaderExpanded}
             />
           );
         })()}
