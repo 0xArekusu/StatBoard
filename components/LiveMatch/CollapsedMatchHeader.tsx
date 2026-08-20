@@ -172,7 +172,7 @@ export function CollapsedMatchHeader({
           <Text style={[styles.score, styles.spacedLeft, { color: textPrimary }]}>{myScore}</Text>
         </View>
 
-        <View style={styles.center}>
+        <View style={styles.centerPortrait}>
           <Text style={styles.timer}>{formatTime(timer)}</Text>
         </View>
 
@@ -196,10 +196,10 @@ export function CollapsedMatchHeader({
           </TouchableOpacity>
         </View>
 
-        <View style={styles.center}>
+        <View style={styles.centerPortrait}>
           <View style={styles.playWithNext}>
             {playButton}
-            <View style={styles.nextPeriodOverlay}>{nextPeriodButton}</View>
+            {nextPeriodButton}
           </View>
         </View>
 
@@ -233,7 +233,7 @@ const styles = StyleSheet.create({
     flexDirection: "column",
     paddingVertical: 6,
     paddingLeft: 10,
-    paddingRight: 44,
+    paddingRight: 10,
     gap: 2,
   },
   portraitRow: {
@@ -253,14 +253,16 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingHorizontal: 8,
   },
-  playWithNext: {
-    position: "relative",
+  centerPortrait: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    width: 56,
   },
-  nextPeriodOverlay: {
-    position: "absolute",
-    left: "100%",
-    top: 2,
-    marginLeft: 4,
+  playWithNext: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
   },
   teamName: {
     fontSize: 10,

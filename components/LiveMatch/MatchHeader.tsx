@@ -336,7 +336,7 @@ export function MatchHeader({
                   </View>
                 </>
               ) : (
-                <View style={styles.sideColumnPlaceholder} />
+                <View style={[styles.sideColumnPlaceholder, isMobilePortrait && { minWidth: 28 }]} />
               )}
             </View>
 
@@ -357,7 +357,7 @@ export function MatchHeader({
             </View>
 
             {/* Colonne droite — équipe AWAY */}
-            <View style={styles.sideColumn}>
+            <View style={[styles.sideColumn, isMobilePortrait && { minWidth: 28 }]}>
               {(!amIHome || match.trackOpponentStats) ? (
                 <>
                   <TouchableOpacity
@@ -402,7 +402,7 @@ export function MatchHeader({
                   </View>
                 </>
               ) : (
-                <View style={styles.sideColumnPlaceholder} />
+                <View style={[styles.sideColumnPlaceholder, isMobilePortrait && { minWidth: 28 }]} />
               )}
             </View>
           </View>
