@@ -22,6 +22,7 @@ import {
   useRoute,
   RouteProp,
   useFocusEffect,
+  StackActions,
 } from "@react-navigation/native";
 import { useAuth } from "../../src/contexts/AuthContext";
 import { useTheme } from "../../src/contexts/ThemeContext";
@@ -599,9 +600,10 @@ export default function TeamRosterScreen() {
           {
             text: "OK",
             onPress: () => {
-              // Go back to previous screen (Club)
-              navigation.goBack();
-              navigation.goBack();
+              // Go back to previous screen (Club) - pop 2 in one atomic action
+              // (two sequential goBack() calls can leave a stale TeamInfo/TeamRoster
+              // instance in the stack, which then gets reused with stale state)
+              navigation.dispatch(StackActions.pop(2));
             },
           },
         ]);
@@ -701,9 +703,8 @@ export default function TeamRosterScreen() {
           {
             text: "OK",
             onPress: () => {
-              // Go back to previous screen (Club)
-              navigation.goBack();
-              navigation.goBack();
+              // Go back to previous screen (Club) - pop 2 in one atomic action
+              navigation.dispatch(StackActions.pop(2));
             },
           },
         ]);

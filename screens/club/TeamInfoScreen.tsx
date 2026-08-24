@@ -9,7 +9,7 @@ import {
   BackHandler,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useNavigation, useRoute, RouteProp, useFocusEffect } from "@react-navigation/native";
+import { useNavigation, useRoute, RouteProp, useFocusEffect, StackActions } from "@react-navigation/native";
 import { useTheme } from "../../src/contexts/ThemeContext";
 import { useAuth } from "../../src/contexts/AuthContext";
 import { CommonStyles } from "../../src/theme";
@@ -133,8 +133,7 @@ export default function TeamInfoScreen() {
                 {
                   text: "OK",
                   onPress: () => {
-                    navigation.goBack();
-                    navigation.goBack();
+                    navigation.dispatch(StackActions.pop(2));
                   },
                 },
               ]);
