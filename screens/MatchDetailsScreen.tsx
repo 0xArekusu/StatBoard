@@ -363,11 +363,11 @@ export default function MatchDetailsScreen() {
         // Exclude generic player 9999 used for opponent points without tracking
         // Check both 'num' and 'player_number' fields for compatibility
         .filter((player) => {
-          const playerNum = player.num || player.player_number;
+          const playerNum = player.num ?? player.player_number;
           return playerNum !== 9999;
         })
         .forEach((player) => {
-          const playerNum = player.num || player.player_number;
+          const playerNum = player.num ?? player.player_number;
           const key = `${player.team}-${playerNum}`;
           // Use fallback if name is undefined, null, or empty string
           const playerName = (player.name || player.player_name) && (player.name || player.player_name).trim() !== ''
@@ -410,10 +410,10 @@ export default function MatchDetailsScreen() {
         .filter((action) => action.team === teamFilter)
         .forEach((action) => {
           // Handle both data formats (player_number from database, player from app)
-          const playerNum = action.player_number || action.player;
+          const playerNum = action.player_number ?? action.player;
 
           // Skip invalid player numbers (9999 = generic opponent, -1 = team rebound)
-          if (!playerNum || playerNum === 9999 || playerNum === -1) {
+          if (playerNum === undefined || playerNum === null || playerNum === 9999 || playerNum === -1) {
             return;
           }
 
@@ -523,11 +523,11 @@ export default function MatchDetailsScreen() {
     // STEP 4: Calculate +/- for all players in the map
     const allPlayersForPm = (players || [])
       .filter((p) => {
-        const num = p.num || p.player_number;
-        return num && num !== 9999 && num !== -1;
+        const num = p.num ?? p.player_number;
+        return num !== undefined && num !== null && num !== 9999 && num !== -1;
       })
       .map((p) => ({
-        player_number: p.num || p.player_number,
+        player_number: p.num ?? p.player_number,
         team: p.team as "MyTeam" | "Opponent",
         is_starter: !p.isSubstitute,
       }));
