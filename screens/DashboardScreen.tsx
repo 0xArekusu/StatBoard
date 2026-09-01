@@ -17,9 +17,8 @@ import { Picker } from "@react-native-picker/picker";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useTranslation } from "react-i18next";
-import { INTL_LOCALES, SUPPORTED_LANGUAGES, SupportedLanguage } from "../src/i18n";
+import { INTL_LOCALES, SupportedLanguage } from "../src/i18n";
 import { useTheme } from "../src/contexts/ThemeContext";
-import { useLanguage } from "../src/contexts/LanguageContext";
 import { STATUS_COLORS } from "../src/theme";
 import { useResponsive } from "../src/hooks/useResponsive";
 import { useAuth } from "../src/contexts/AuthContext";
@@ -63,6 +62,7 @@ import DashboardResumeMatchModal from "../components/dashboard/DashboardResumeMa
 import DashboardRecentMatches from "../components/dashboard/DashboardRecentMatches";
 import GuestWelcomeModal from "../components/GuestWelcomeModal";
 import MatchLimitModal from "../components/MatchLimitModal";
+import LanguageSelector from "../components/LanguageSelector";
 import { ROUTES } from "../constants/routes";
 import { GUEST_IDS } from "../constants/matchConstants";
 import { ANALYTICS_EVENTS, ANALYTICS_MATCH_ABANDON_REASON } from "../constants/analyticsEvents";
@@ -102,7 +102,6 @@ interface DashboardScreenProps {
 export default function DashboardScreen({ navigation }: DashboardScreenProps) {
   const { t, i18n } = useTranslation();
   const { colors, isDark, setThemeMode } = useTheme();
-  const { language, setLanguage } = useLanguage();
   const { isCompact, sp, font } = useResponsive();
   const { user, signOut, deleteAccount } = useAuth();
   const posthog = usePostHog();
@@ -118,7 +117,6 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
   );
   const [isNewMatchFlow, setIsNewMatchFlow] = useState(false); // true if opened from "Nouveau match" button
   const [showProfileMenu, setShowProfileMenu] = useState(false);
-  const [showLanguageMenu, setShowLanguageMenu] = useState(false);
   const [showGuestWelcome, setShowGuestWelcome] = useState(false);
   const [showClubSwitcher, setShowClubSwitcher] = useState(false);
   const [showMatchLimitModal, setShowMatchLimitModal] = useState(false);
@@ -678,16 +676,6 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
   };
 
   /**
-   * Switches the app language and closes the language dropdown
-   */
-  const handleChangeLanguage = async (lang: SupportedLanguage) => {
-    setShowLanguageMenu(false);
-    if (lang === language) return;
-    posthog?.capture(ANALYTICS_EVENTS.LANGUAGE_CHANGED, { language: lang });
-    await setLanguage(lang);
-  };
-
-  /**
    * Export logs for debugging - sends last 2000 log lines to Sentry
    */
   const handleExportLogs = async () => {
@@ -853,62 +841,6 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
           setIsNewMatchFlow(false);
         }}
       />
-
-      {/* Language Selector Modal */}
-      <Modal
-        visible={showLanguageMenu}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={() => setShowLanguageMenu(false)}
-      >
-        <TouchableOpacity
-          style={styles.languageModalOverlay}
-          activeOpacity={1}
-          onPress={() => setShowLanguageMenu(false)}
-        >
-          <View
-            style={[
-              styles.languageModalCard,
-              {
-                backgroundColor: colors.surface,
-                borderColor: colors.border,
-              },
-            ]}
-          >
-            <Text style={[styles.languageModalTitle, { color: colors.text.primary }]}>
-              {t("dashboard.languageMenu.title")}
-            </Text>
-            {SUPPORTED_LANGUAGES.map((lang) => (
-              <TouchableOpacity
-                key={lang}
-                style={[
-                  styles.languageOption,
-                  {
-                    backgroundColor:
-                      language === lang
-                        ? isDark
-                          ? `${colors.primary}33`
-                          : `${colors.primary}1A`
-                        : "transparent",
-                  },
-                ]}
-                onPress={() => handleChangeLanguage(lang)}
-              >
-                <Text style={[styles.languageOptionText, { color: colors.text.primary }]}>
-                  {t(`dashboard.languageMenu.options.${lang}`)}
-                </Text>
-                {language === lang && (
-                  <MaterialCommunityIcons
-                    name="check-circle"
-                    size={20}
-                    color={colors.primary}
-                  />
-                )}
-              </TouchableOpacity>
-            ))}
-          </View>
-        </TouchableOpacity>
-      </Modal>
 
       {/* Profile Menu Modal */}
       <Modal
@@ -1137,20 +1069,7 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
             </View>
 
             <View style={styles.headerRight}>
-              <TouchableOpacity
-                onPress={() => setShowLanguageMenu(true)}
-                style={[
-                  styles.iconButton,
-                  {
-                    backgroundColor: colors.surface,
-                    borderColor: colors.border,
-                  },
-                ]}
-              >
-                <Text style={[styles.languageButtonText, { color: colors.text.primary }]}>
-                  {language.toUpperCase()}
-                </Text>
-              </TouchableOpacity>
+              <LanguageSelector />
 
               <TouchableOpacity
                 onPress={handleToggleTheme}
@@ -1442,39 +1361,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
-  },
-  languageButtonText: {
-    fontSize: 14,
-    fontWeight: "700",
-  },
-  languageModalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  languageModalCard: {
-    minWidth: 220,
-    borderRadius: 16,
-    borderWidth: 1,
-    padding: 16,
-  },
-  languageModalTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    marginBottom: 12,
-  },
-  languageOption: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingVertical: 12,
-    paddingHorizontal: 12,
-    borderRadius: 10,
-  },
-  languageOptionText: {
-    fontSize: 15,
-    fontWeight: "500",
   },
   clubLogo: {
     width: 48,

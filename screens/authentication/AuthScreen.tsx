@@ -16,6 +16,7 @@ import { OPACITY, SHADOW_COLOR } from "../../src/theme";
 import { ROUTES } from "../../constants/routes";
 import { ANALYTICS_EVENTS } from "../../constants/analyticsEvents";
 import Logo from "../../components/icons/Logo";
+import LanguageSelector from "../../components/LanguageSelector";
 import { useResponsive } from "../../src/hooks/useResponsive";
 
 /**
@@ -59,6 +60,16 @@ export default function AuthScreen() {
         ]}
         style={styles.overlay}
       >
+        <View style={[styles.languageSelectorContainer, { top: sp.xl, right: sp.xl }]}>
+          <LanguageSelector
+            buttonStyle={{
+              backgroundColor: "rgba(0, 0, 0, 0.35)",
+              borderColor: "rgba(255, 255, 255, 0.3)",
+            }}
+            textColor={colors.onPrimary}
+          />
+        </View>
+
         <View
           style={[
             styles.landingContainer,
@@ -201,6 +212,10 @@ const styles = StyleSheet.create({
   },
   overlay: {
     flex: 1,
+  },
+  languageSelectorContainer: {
+    position: "absolute",
+    zIndex: 10,
   },
   landingContainer: {
     flex: 1,

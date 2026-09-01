@@ -7,7 +7,14 @@
     "send": "Send",
     "success": "Success",
     "info": "Info",
-    "genericErrorRetry": "An error occurred. Please try again."
+    "genericErrorRetry": "An error occurred. Please try again.",
+    "language": {
+      "title": "Language",
+      "options": {
+        "fr": "Français",
+        "en": "English"
+      }
+    }
   },
   "dashboard": {
     "greeting": "Hello,",
@@ -22,13 +29,6 @@
     "ctaDescriptionNoClub": "To start tracking stats, you need to link your account to a team.",
     "ctaDescriptionNoTeam": "You're part of a club — create a team now to start tracking your matches.",
     "ctaStart": "Get Started",
-    "languageMenu": {
-      "title": "Language",
-      "options": {
-        "fr": "Français",
-        "en": "English"
-      }
-    },
     "profileMenu": {
       "exportLogs": "Export logs",
       "testSentry": "Test Sentry",

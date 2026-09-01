@@ -7,7 +7,14 @@
     "send": "Envoyer",
     "success": "Succès",
     "info": "Info",
-    "genericErrorRetry": "Une erreur est survenue. Veuillez réessayer."
+    "genericErrorRetry": "Une erreur est survenue. Veuillez réessayer.",
+    "language": {
+      "title": "Langue",
+      "options": {
+        "fr": "Français",
+        "en": "English"
+      }
+    }
   },
   "dashboard": {
     "greeting": "Bonjour,",
@@ -22,13 +29,6 @@
     "ctaDescriptionNoClub": "Pour commencer à suivre les statistiques, vous devez associer votre compte à une équipe.",
     "ctaDescriptionNoTeam": "Vous faites partie d'un club, créez maintenant une équipe pour commencer à suivre vos matchs.",
     "ctaStart": "Commencer",
-    "languageMenu": {
-      "title": "Langue",
-      "options": {
-        "fr": "Français",
-        "en": "English"
-      }
-    },
     "profileMenu": {
       "exportLogs": "Exporter les logs",
       "testSentry": "Test Sentry",
