@@ -2,6 +2,7 @@ import React, { useState, useCallback, useRef } from 'react';
 import { View, Text, ScrollView, SafeAreaView, TouchableOpacity, StyleSheet } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '../src/contexts/ThemeContext';
 import { useAuth } from '../src/contexts/AuthContext';
 import { useClub } from '../src/contexts/ClubContext';
@@ -26,6 +27,7 @@ import CategoryTabs from '../components/Stats/CategoryTabs';
 import LeaderboardList from '../components/Stats/LeaderboardList';
 
 export default function StatsScreen() {
+  const { t } = useTranslation();
   const { colors } = useTheme();
   const { user } = useAuth();
   const { currentClub, activeTeamId } = useClub();
@@ -106,7 +108,7 @@ export default function StatsScreen() {
       <SafeAreaView style={[styles.flex, { backgroundColor: colors.background }]}>
         <View style={styles.locked}>
           <Text style={[styles.lockedText, { fontSize: font.md, color: colors.text.tertiary }]}>
-            Rejoignez une équipe pour accéder aux statistiques de la saison.
+            {t('statsScreen.lockedMessage')}
           </Text>
         </View>
       </SafeAreaView>
@@ -118,7 +120,7 @@ export default function StatsScreen() {
       {/* Sticky header — outside ScrollView */}
       <View style={[styles.header, { paddingHorizontal: sp.md, paddingTop: sp.lg, paddingBottom: sp.sm, gap: sp.md, backgroundColor: colors.background }]}>
         <Text style={[styles.title, { fontSize: font.xxl, color: colors.text.primary }]}>
-          Stats Équipe
+          {t('statsScreen.title')}
         </Text>
 
         <PeriodFilter selected={period} onChange={handlePeriodChange} />
@@ -141,7 +143,7 @@ export default function StatsScreen() {
             color={showRenforts ? colors.primary : colors.text.tertiary}
           />
           <Text style={[styles.renfortLabel, { fontSize: font.xs, color: showRenforts ? colors.text.secondary : colors.text.tertiary }]}>
-            Afficher les renforts
+            {t('statsScreen.showReinforcements')}
           </Text>
         </TouchableOpacity>
 

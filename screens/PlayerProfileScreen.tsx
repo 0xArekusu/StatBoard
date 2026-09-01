@@ -2,6 +2,7 @@ import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { View, Text, ScrollView, SafeAreaView, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { PDFExportService } from '../src/services/export/PDFExportService';
 import { useTheme } from '../src/contexts/ThemeContext';
 import { useAuth } from '../src/contexts/AuthContext';
@@ -50,6 +51,7 @@ const EMPTY_PLAYER = (
 });
 
 export default function PlayerProfileScreen() {
+  const { t } = useTranslation();
   const { colors } = useTheme();
   const { user } = useAuth();
   const { currentClub, activeTeamId } = useClub();
@@ -185,7 +187,7 @@ export default function PlayerProfileScreen() {
           ) : (
             <View style={styles.noData}>
               <Text style={[styles.noDataText, { fontSize: font.md, color: colors.text.tertiary }]}>
-                Aucune statistique pour cette période.
+                {t('playerProfileScreen.noStatsForPeriod')}
               </Text>
             </View>
           )}

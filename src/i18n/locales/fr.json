@@ -1,7 +1,9 @@
 {
   "common": {
     "cancel": "Annuler",
+    "continue": "Continuer",
     "ok": "OK",
+    "delete": "Supprimer",
     "error": "Erreur",
     "guest": "Invité",
     "send": "Envoyer",
@@ -75,5 +77,306 @@
         "errorMessage": "Impossible d'envoyer les logs. Veuillez réessayer."
       }
     }
+  },
+  "splashScreen": {
+    "loading": "Chargement..."
+  },
+  "statsScreen": {
+    "title": "Stats Équipe",
+    "lockedMessage": "Rejoignez une équipe pour accéder aux statistiques de la saison.",
+    "showReinforcements": "Afficher les renforts"
+  },
+  "playerProfileScreen": {
+    "noStatsForPeriod": "Aucune statistique pour cette période."
+  },
+  "authScreen": {
+    "tagline": "Vos statistiques au rythme du match.",
+    "createAccount": "Créer un compte",
+    "login": "Se connecter",
+    "tryFreeGuest": "Essayer gratuitement (Invité)"
+  },
+  "resetPasswordScreen": {
+    "title": "Nouveau mot de passe",
+    "subtitle": "Choisissez un nouveau mot de passe sécurisé.",
+    "newPasswordLabel": "Nouveau mot de passe",
+    "confirmPasswordLabel": "Confirmer le mot de passe",
+    "submitButton": "Mettre à jour le mot de passe",
+    "errors": {
+      "fillAllFields": "Veuillez remplir tous les champs",
+      "passwordsDontMatch": "Les mots de passe ne correspondent pas",
+      "passwordTooShort": "Le mot de passe doit contenir au moins {{minLength}} caractères"
+    }
+  },
+  "teamInfoScreen": {
+    "headerTitleEdit": "Modification d'équipe",
+    "headerTitleCreate": "Création d'équipe",
+    "sectionTitle": "Informations de base",
+    "nameLabel": "Nom de l'équipe",
+    "namePlaceholder": "Ex: U15 Région",
+    "categoryLabel": "Catégorie / Niveau",
+    "categoryPlaceholder": "Ex: Départemental 1",
+    "genderLabel": "Genre",
+    "deleteButton": "Supprimer l'équipe",
+    "nextButton": "Suivant",
+    "errors": {
+      "nameRequired": "Le nom de l'équipe est obligatoire"
+    },
+    "deleteAlert": {
+      "title": "Supprimer l'équipe",
+      "message": "Êtes-vous sûr de vouloir supprimer définitivement cette équipe ?\n\n⚠️ Attention : Cette action archivera l'équipe et toutes ses données associées.",
+      "confirmButton": "Supprimer",
+      "failureTitle": "Erreur de suppression",
+      "failureMessage": "Impossible de supprimer l'équipe. Vérifiez vos permissions.",
+      "successMessage": "Équipe supprimée"
+    }
+  },
+  "loginScreen": {
+    "title": "Bon retour !",
+    "subtitle": "Entrez vos identifiants pour continuer.",
+    "emailLabel": "Email",
+    "emailPlaceholder": "coach@exemple.com",
+    "passwordLabel": "Mot de passe",
+    "forgotPasswordLink": "Mot de passe oublié ?",
+    "submitButton": "Se connecter",
+    "orContinueWith": "Ou continuer avec",
+    "noAccountYet": "Pas encore de compte ?",
+    "signUpLink": "S'inscrire",
+    "supabaseErrors": {
+      "invalidCredentials": "Email ou mot de passe incorrect",
+      "emailNotConfirmed": "Veuillez confirmer votre email avant de vous connecter",
+      "userNotFound": "Aucun compte associé à cet email"
+    },
+    "errors": {
+      "fillAllFields": "Veuillez remplir tous les champs",
+      "loginErrorTitle": "Erreur de connexion",
+      "googleErrorTitle": "Erreur de connexion Google",
+      "appleErrorTitle": "Erreur de connexion Apple",
+      "emailRequiredTitle": "Email requis",
+      "emailRequiredMessage": "Veuillez entrer votre adresse email pour réinitialiser votre mot de passe"
+    },
+    "forgotPassword": {
+      "sentTitle": "Email envoyé",
+      "sentMessage": "Un email de réinitialisation a été envoyé à votre adresse email"
+    },
+    "banners": {
+      "emailConfirmed": "Email confirmé ! Vous pouvez maintenant vous connecter.",
+      "confirmationLinkInvalid": "Le lien de confirmation est invalide ou a expiré. Veuillez vous réinscrire.",
+      "passwordUpdated": "Mot de passe mis à jour ! Vous pouvez maintenant vous connecter."
+    }
+  },
+  "teamStartersScreen": {
+    "headerTitle": "Le 5 Majeur",
+    "title": "Sélectionnez le 5 Majeur",
+    "selectFiveStarters": "Sélectionnez 5 titulaires",
+    "lineupMustBeComplete": "Le 5 majeur doit être complet pour valider.",
+    "saving": "Sauvegarde...",
+    "creating": "Création...",
+    "validateButton": "Valider l'équipe",
+    "alerts": {
+      "lineupFullTitle": "5 Majeur complet",
+      "lineupFullMessage": "Le 5 majeur est complet ! Retirez un joueur avant d'en ajouter un autre.",
+      "needExactlyFive": "Vous devez sélectionner exactement 5 titulaires (actuellement: {{count}}).",
+      "mustBeLoggedIn": "Vous devez être connecté",
+      "updateFailed": "Impossible de modifier l'équipe",
+      "updateSuccess": "L'équipe a été modifiée avec succès",
+      "createSuccess": "Votre équipe a été créée et est en attente de validation par le responsable du club."
+    }
+  },
+  "registerScreen": {
+    "title": "Créer un compte",
+    "subtitle": "Rejoignez la communauté des coachs.",
+    "fullNameLabel": "Nom complet",
+    "fullNamePlaceholder": "Coach Carter",
+    "emailLabel": "Email",
+    "emailPlaceholder": "coach@exemple.com",
+    "passwordLabel": "Mot de passe",
+    "confirmPasswordLabel": "Confirmer le mot de passe",
+    "submitButton": "S'inscrire",
+    "orContinueWith": "Ou continuer avec",
+    "alreadyHaveAccount": "Déjà un compte ?",
+    "loginLink": "Se connecter",
+    "terms": {
+      "acceptPrefix": "J'accepte les",
+      "andThe": "et la",
+      "termsOfServiceLink": "Conditions d'utilisation",
+      "termsOfServiceTitle": "Conditions d'utilisation",
+      "privacyPolicyLink": "Politique de confidentialité",
+      "privacyPolicyTitle": "Politique de confidentialité"
+    },
+    "errors": {
+      "fillAllFields": "Veuillez remplir tous les champs",
+      "passwordsDontMatch": "Les mots de passe ne correspondent pas",
+      "passwordTooShort": "Le mot de passe doit contenir au moins {{minLength}} caractères",
+      "termsRequired": "Vous devez accepter les conditions d'utilisation et la politique de confidentialité pour créer un compte",
+      "registrationErrorTitle": "Erreur d'inscription",
+      "googleErrorTitle": "Erreur de connexion Google",
+      "appleErrorTitle": "Erreur de connexion Apple"
+    },
+    "unconfirmedAccount": {
+      "title": "Compte non confirmé",
+      "message": "Un compte existe déjà avec cet email mais n'a pas été confirmé.\n\n⚠️ Note importante : Le mot de passe pris en compte sera celui que vous avez défini la première fois, utilisez \"Mot de passe oublié\" après confirmation de l'email si besoin.",
+      "resendButton": "Renvoyer l'email",
+      "backToLoginButton": "Retour à la connexion"
+    },
+    "success": {
+      "title": "Inscription réussie",
+      "message": "Un email de confirmation a été envoyé à votre adresse. Veuillez vérifier votre boîte de réception (et les spams) et cliquer sur le lien de confirmation depuis cet appareil avant de vous connecter."
+    },
+    "resend": {
+      "errorMessage": "Impossible de renvoyer l'email. Veuillez réessayer plus tard.",
+      "sentTitle": "Email envoyé",
+      "sentMessage": "Un nouvel email de confirmation a été envoyé. Veuillez vérifier votre boîte de réception et vos spams."
+    }
+  },
+  "clubScreen": {
+    "spaceTitle": "Espace Club",
+    "createNewClubTitle": "Créer un nouveau club",
+    "editClubTitle": "Modifier mon club",
+    "createTab": "Créer",
+    "joinTab": "Rejoindre",
+    "editButton": "Modifier",
+    "createMyClubButton": "Créer mon club",
+    "alerts": {
+      "teamLimitReachedTitle": "Limite atteinte",
+      "teamLimitReachedMessage": "Votre abonnement {{tier}} est limité à {{maxTeams}} équipes. Veuillez mettre à jour votre offre.",
+      "approveTeamTitle": "Valider l'équipe",
+      "approveTeamMessage": "Confirmer la validation de cette équipe ?",
+      "approveButton": "Valider",
+      "teamApprovedSuccess": "Équipe validée",
+      "rejectTeamTitle": "Refuser l'équipe",
+      "rejectTeamMessage": "Confirmer le refus de cette équipe ? Elle apparaîtra comme refusée au créateur.",
+      "rejectButton": "Refuser",
+      "teamRejectedSuccess": "Équipe refusée",
+      "deleteTeamTitle": "Supprimer l'équipe",
+      "deleteTeamMessage": "Êtes-vous sûr de vouloir supprimer définitivement cette équipe ? Cette action est irréversible.",
+      "teamDeletedSuccess": "Équipe supprimée",
+      "clubUpdatedSuccess": "Club modifié avec succès !",
+      "nameAndAcronymRequired": "Veuillez renseigner le nom du club et le sigle",
+      "clubCreatedSuccess": "Club créé avec succès !",
+      "codeRequired": "Veuillez renseigner le code du club",
+      "clubNotFoundByCode": "Aucun club trouvé avec ce code",
+      "joinFailed": "Impossible de rejoindre le club",
+      "joinedSuccess": "Vous avez rejoint le club \"{{name}}\" !",
+      "joinUnexpectedError": "Une erreur est survenue lors de la tentative de rejoindre le club"
+    }
+  },
+  "historyScreen": {
+    "title": "Historique des matchs",
+    "noMatches": "Aucun match enregistré.",
+    "syncNowCta": "SYNCHRONISER MAINTENANT",
+    "syncSuccessTitle": "Synchronisation réussie",
+    "syncSuccessMessage_one": "{{count}} match synchronisé avec succès.",
+    "syncSuccessMessage_other": "{{count}} matchs synchronisés avec succès.",
+    "syncErrorFallback": "Erreur lors de la synchronisation",
+    "syncUnexpectedError": "Une erreur est survenue lors de la synchronisation. Veuillez réessayer.",
+    "upgradeComingSoon": "Fonctionnalité d'upgrade à venir",
+    "matchCount_one": "{{count}} match",
+    "matchCount_other": "{{count}} matchs",
+    "unsyncedCount_one": "{{count}} match non synchronisé",
+    "unsyncedCount_other": "{{count}} matchs non synchronisés",
+    "deleteAlert": {
+      "title": "Supprimer le match",
+      "message": "Supprimer le match contre {{opponent}} ? Cette action est irréversible."
+    },
+    "syncModal": {
+      "title": "SYNCHRONISATION",
+      "descriptionPrefix": "Voulez-vous envoyer les statistiques de",
+      "descriptionSuffix": "sur le serveur du club ?",
+      "sending": "Envoi en cours...",
+      "confirm": "Confirmer"
+    },
+    "matchCard": {
+      "home": "Domicile",
+      "away": "Extérieur",
+      "usFallback": "NOUS",
+      "vs": "VS",
+      "win": "VICTOIRE",
+      "loss": "DÉFAITE",
+      "synced": "SYNC",
+      "local": "LOCAL",
+      "details": "Détails"
+    }
+  },
+  "newMatchScreen": {
+    "myTeamFallback": "Mon Équipe",
+    "opponentFallback": "Adversaire",
+    "localClubFallback": "Club Local",
+    "validation": {
+      "noOpponent": "Veuillez saisir le nom de l'adversaire.",
+      "noTeamName": "Veuillez saisir le nom de votre équipe",
+      "noTeam": "Veuillez sélectionner une équipe.",
+      "startersFull": "Le 5 majeur est complet. Retirez un joueur avant d'en ajouter un.",
+      "minPlayers": "Il faut au moins 1 joueur dans votre équipe.",
+      "duplicateHomeNumbers": "Des numéros de maillot sont en double dans votre équipe : {{numbers}}",
+      "startersRequired": "Veuillez sélectionner {{count}} joueurs pour le 5 de départ.",
+      "opponentMinPlayers": "L'équipe adverse doit avoir au moins 5 joueurs.",
+      "duplicateOpponentNumbers": "Des numéros de maillot sont en double dans l'équipe adverse : {{numbers}}",
+      "opponentStartersRequired": "Veuillez sélectionner 5 joueurs de départ pour l'équipe adverse.",
+      "noClub": "Impossible de démarrer le match : aucun club sélectionné."
+    },
+    "alerts": {
+      "loadTemplateTitle": "Charger une composition",
+      "loadTemplateMessage": "Cela va écraser la composition actuelle. Continuer ?",
+      "templateSavedTitle": "Composition sauvegardée",
+      "templateSavedMessage": "\"{{name}}\" a été sauvegardée.",
+      "teamSuspendedTitle": "Équipe suspendue",
+      "teamSuspendedMessage": "Cette équipe a été suspendue suite au changement d'abonnement. Veuillez passer à une offre supérieure pour la réactiver.",
+      "noActiveTeamTitle": "Aucune équipe active",
+      "noActiveTeamMessage": "Vos équipes ont été suspendues suite au changement d'abonnement. Veuillez passer à une offre supérieure pour les réactiver.",
+      "duplicateNumberTitle": "Numéro en double",
+      "duplicateNumberMessage": "Le joueur {{playerName}} porte le #{{number}}, déjà utilisé par {{conflictName}}. Modifiez l'un des numéros avant de sélectionner ce joueur.",
+      "lineupFullTitle": "5 majeur complet"
+    },
+    "confirmModal": {
+      "title": "DÉMARRER LE MATCH ?",
+      "vs": "vs",
+      "halves": "2 mi-temps",
+      "quarters": "{{count}} quarts",
+      "start": "Démarrer"
+    }
+  },
+  "matchDetailsScreen": {
+    "loadError": "Impossible de charger les données du match. Veuillez réessayer.",
+    "loadingData": "Chargement des données du match...",
+    "generatingPdf": "Génération du PDF…",
+    "pdfExportedSuccess": "Le PDF a été généré et partagé avec succès",
+    "menu": "Menu",
+    "myTeamFallback": "Notre équipe",
+    "opponentFallback": "Adversaire"
+  },
+  "teamRosterScreen": {
+    "coachNamePlaceholder": "Nom du coach",
+    "coachNameFallback": "Nom du Coach",
+    "saveButton": "Enregistrer",
+    "playerNamePlaceholder": "Nom du joueur",
+    "addButton": "Ajouter",
+    "saving": "Modification...",
+    "creating": "Création...",
+    "updateTeamButton": "Modifier l'équipe",
+    "createTeamButton": "Créer l'équipe",
+    "validation": {
+      "duplicateName": "Un joueur avec ce nom existe déjà.",
+      "numberRange": "Le numéro doit être entre 0 et 99.",
+      "duplicateNumber": "Ce numéro de maillot est déjà utilisé.",
+      "maxRosterSize": "Limite maximale de 15 joueurs atteinte.",
+      "coachNameRequired": "Le nom du coach est obligatoire",
+      "minPlayers": "L'équipe doit comporter au moins 5 joueurs (Actuellement : {{count}})"
+    },
+    "deletePlayerAlert": {
+      "title": "Supprimer le joueur",
+      "message": "Êtes-vous sûr de vouloir supprimer {{playerName}} ?\n\n⚠️ Attention : Toutes les statistiques associées à ce joueur seront définitivement perdues."
+    },
+    "alerts": {
+      "updateErrorTitle": "Erreur de modification",
+      "updateErrorMessage": "Impossible de modifier l'équipe. Vous n'avez peut-être pas les permissions nécessaires.",
+      "createPlayerFailed": "Impossible de créer le joueur {{playerName}}",
+      "updateSuccess": "Équipe modifiée avec succès !",
+      "createSuccess": "Équipe créée avec succès !"
+    }
+  },
+  "liveMatchScreen": {
+    "myTeamFallback": "Mon Équipe",
+    "opponentFallback": "Adversaire",
+    "playerFallback": "Joueur"
   }
 }

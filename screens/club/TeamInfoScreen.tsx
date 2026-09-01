@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useRoute, RouteProp, useFocusEffect, StackActions } from "@react-navigation/native";
+import { useTranslation } from "react-i18next";
 import { useTheme } from "../../src/contexts/ThemeContext";
 import { useAuth } from "../../src/contexts/AuthContext";
 import { CommonStyles } from "../../src/theme";
@@ -25,6 +26,7 @@ import { showErrorAlert } from "../../utils/errorAlert";
 type TeamInfoRouteProp = RouteProp<RootStackParamList, "TeamInfo">;
 
 export default function TeamInfoScreen() {
+  const { t } = useTranslation();
   const navigation = useNavigation<RootNavigationProp>();
   const route = useRoute<TeamInfoRouteProp>();
   const { colors } = useTheme();
@@ -90,7 +92,7 @@ export default function TeamInfoScreen() {
 
   const handleNext = () => {
     if (!name.trim()) {
-      Alert.alert("Erreur", "Le nom de l'équipe est obligatoire");
+      Alert.alert(t("common.error"), t("teamInfoScreen.errors.nameRequired"));
       return;
     }
 
@@ -109,12 +111,12 @@ export default function TeamInfoScreen() {
     if (!teamId || !user) return;
 
     Alert.alert(
-      "Supprimer l'équipe",
-      "Êtes-vous sûr de vouloir supprimer définitivement cette équipe ?\n\n⚠️ Attention : Cette action archivera l'équipe et toutes ses données associées.",
+      t("teamInfoScreen.deleteAlert.title"),
+      t("teamInfoScreen.deleteAlert.message"),
       [
-        { text: "Annuler", style: "cancel" },
+        { text: t("common.cancel"), style: "cancel" },
         {
-          text: "Supprimer",
+          text: t("teamInfoScreen.deleteAlert.confirmButton"),
           style: "destructive",
           onPress: async () => {
             try {
@@ -123,15 +125,15 @@ export default function TeamInfoScreen() {
 
               if (!result.success) {
                 Alert.alert(
-                  "Erreur de suppression",
-                  result.error || "Impossible de supprimer l'équipe. Vérifiez vos permissions."
+                  t("teamInfoScreen.deleteAlert.failureTitle"),
+                  result.error || t("teamInfoScreen.deleteAlert.failureMessage")
                 );
                 return;
               }
 
-              Alert.alert("Succès", "Équipe supprimée", [
+              Alert.alert(t("common.success"), t("teamInfoScreen.deleteAlert.successMessage"), [
                 {
-                  text: "OK",
+                  text: t("common.ok"),
                   onPress: () => {
                     navigation.dispatch(StackActions.pop(2));
                   },
@@ -169,7 +171,7 @@ export default function TeamInfoScreen() {
         <Text
           style={[CommonStyles.headerTitle, { color: colors.text.primary }]}
         >
-          {teamId ? "Modification d'équipe" : "Création d'équipe"}
+          {teamId ? t("teamInfoScreen.headerTitleEdit") : t("teamInfoScreen.headerTitleCreate")}
         </Text>
         <View style={{ width: 24 }} />
       </View>
@@ -187,13 +189,13 @@ export default function TeamInfoScreen() {
       {/* Content */}
       <View style={[styles.content, { padding: sp.lg }]}>
         <Text style={[styles.title, { color: colors.text.primary, fontSize: font.xxl, marginBottom: sp.xl }]}>
-          Informations de base
+          {t("teamInfoScreen.sectionTitle")}
         </Text>
 
         {/* Team Name */}
         <View style={[styles.section, { marginBottom: sp.lg }]}>
           <Text style={[styles.label, { color: colors.text.secondary, fontSize: font.md, marginBottom: sp.sm }]}>
-            Nom de l'équipe <Text style={styles.required}>*</Text>
+            {t("teamInfoScreen.nameLabel")} <Text style={styles.required}>*</Text>
           </Text>
           <TextInput
             style={[
@@ -206,7 +208,7 @@ export default function TeamInfoScreen() {
                 fontSize: font.lg,
               },
             ]}
-            placeholder="Ex: U15 Région"
+            placeholder={t("teamInfoScreen.namePlaceholder")}
             placeholderTextColor={colors.text.tertiary}
             value={name}
             onChangeText={setName}
@@ -217,7 +219,7 @@ export default function TeamInfoScreen() {
         {/* Category */}
         <View style={[styles.section, { marginBottom: sp.lg }]}>
           <Text style={[styles.label, { color: colors.text.secondary, fontSize: font.md, marginBottom: sp.sm }]}>
-            Catégorie / Niveau
+            {t("teamInfoScreen.categoryLabel")}
           </Text>
           <TextInput
             style={[
@@ -230,7 +232,7 @@ export default function TeamInfoScreen() {
                 fontSize: font.lg,
               },
             ]}
-            placeholder="Ex: Départemental 1"
+            placeholder={t("teamInfoScreen.categoryPlaceholder")}
             placeholderTextColor={colors.text.tertiary}
             value={category}
             onChangeText={setCategory}
@@ -241,7 +243,7 @@ export default function TeamInfoScreen() {
         {/* Gender */}
         <View style={[styles.section, { marginBottom: sp.lg }]}>
           <Text style={[styles.label, { color: colors.text.secondary, fontSize: font.md, marginBottom: sp.sm }]}>
-            Genre
+            {t("teamInfoScreen.genderLabel")}
           </Text>
           <View style={[styles.genderGrid, { gap: sp.sm }]}>
             {GENDERS.map((g) => (
@@ -303,7 +305,7 @@ export default function TeamInfoScreen() {
             onPress={handleDeleteTeam}
           >
             <Ionicons name="trash-outline" size={20} color={colors.error} />
-            <Text style={[styles.deleteButtonText, { color: colors.error, fontSize: font.lg }]}>Supprimer l'équipe</Text>
+            <Text style={[styles.deleteButtonText, { color: colors.error, fontSize: font.lg }]}>{t("teamInfoScreen.deleteButton")}</Text>
           </TouchableOpacity>
         )}
         <TouchableOpacity
@@ -319,7 +321,7 @@ export default function TeamInfoScreen() {
           onPress={handleNext}
           disabled={!name.trim()}
         >
-          <Text style={[styles.nextButtonText, { fontSize: font.lg }]}>Suivant</Text>
+          <Text style={[styles.nextButtonText, { fontSize: font.lg }]}>{t("teamInfoScreen.nextButton")}</Text>
           <Ionicons name="chevron-forward" size={20} color="#fff" />
         </TouchableOpacity>
       </View>

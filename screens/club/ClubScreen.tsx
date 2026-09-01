@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { MaterialCommunityIcons, Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
+import { useTranslation } from "react-i18next";
 import { useTheme } from "../../src/contexts/ThemeContext";
 import { useAuth } from "../../src/contexts/AuthContext";
 import { useClub } from "../../src/contexts/ClubContext";
@@ -57,6 +58,7 @@ interface ClubScreenProps {
  * - Member: Can create teams but needs owner approval
  */
 export default function ClubScreen({ navigation, route }: ClubScreenProps) {
+  const { t } = useTranslation();
   const { isDark, colors } = useTheme();
   const { user } = useAuth();
   const posthog = usePostHog();
@@ -161,8 +163,8 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
         max_teams: maxTeams,
       });
       Alert.alert(
-        "Limite atteinte",
-        `Votre abonnement ${currentTier} est limité à ${maxTeams} équipes. Veuillez mettre à jour votre offre.`,
+        t("clubScreen.alerts.teamLimitReachedTitle"),
+        t("clubScreen.alerts.teamLimitReachedMessage", { tier: currentTier, maxTeams }),
       );
       return;
     }
@@ -180,12 +182,12 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
   const handleApproveTeam = async (teamId: string) => {
     if (!currentClub || !isOwner || !user) return;
     Alert.alert(
-      "Valider l'équipe",
-      "Confirmer la validation de cette équipe ?",
+      t("clubScreen.alerts.approveTeamTitle"),
+      t("clubScreen.alerts.approveTeamMessage"),
       [
-        { text: "Annuler", style: "cancel" },
+        { text: t("common.cancel"), style: "cancel" },
         {
-          text: "Valider",
+          text: t("clubScreen.alerts.approveButton"),
           onPress: async () => {
             try {
               const teamService = ServiceFactory.getTeamService(supabase);
@@ -196,7 +198,7 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
               );
               await loadClubData();
               posthog?.capture(ANALYTICS_EVENTS.TEAM_STATUS_UPDATED, { status: TeamStatus.APPROVED });
-              Alert.alert("Succès", "Équipe validée");
+              Alert.alert(t("common.success"), t("clubScreen.alerts.teamApprovedSuccess"));
             } catch (error) {
               console.error("Error approving team:", error);
               showErrorAlert({
@@ -222,12 +224,12 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
   const handleRejectTeam = async (teamId: string) => {
     if (!currentClub || !isOwner || !user) return;
     Alert.alert(
-      "Refuser l'équipe",
-      "Confirmer le refus de cette équipe ? Elle apparaîtra comme refusée au créateur.",
+      t("clubScreen.alerts.rejectTeamTitle"),
+      t("clubScreen.alerts.rejectTeamMessage"),
       [
-        { text: "Annuler", style: "cancel" },
+        { text: t("common.cancel"), style: "cancel" },
         {
-          text: "Refuser",
+          text: t("clubScreen.alerts.rejectButton"),
           style: "destructive",
           onPress: async () => {
             try {
@@ -239,7 +241,7 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
               );
               await loadClubData();
               posthog?.capture(ANALYTICS_EVENTS.TEAM_STATUS_UPDATED, { status: TeamStatus.REJECTED });
-              Alert.alert("Équipe refusée");
+              Alert.alert(t("clubScreen.alerts.teamRejectedSuccess"));
             } catch (error) {
               console.error("Error rejecting team:", error);
               showErrorAlert({
@@ -265,19 +267,19 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
   const handleDeleteTeam = async (teamId: string) => {
     if (!currentClub || !isOwner || !user) return;
     Alert.alert(
-      "Supprimer l'équipe",
-      "Êtes-vous sûr de vouloir supprimer définitivement cette équipe ? Cette action est irréversible.",
+      t("clubScreen.alerts.deleteTeamTitle"),
+      t("clubScreen.alerts.deleteTeamMessage"),
       [
-        { text: "Annuler", style: "cancel" },
+        { text: t("common.cancel"), style: "cancel" },
         {
-          text: "Supprimer",
+          text: t("common.delete"),
           style: "destructive",
           onPress: async () => {
             try {
               const teamService = ServiceFactory.getTeamService(supabase);
               await teamService.deleteTeam(teamId, user.id);
               await loadClubData();
-              Alert.alert("Équipe supprimée");
+              Alert.alert(t("clubScreen.alerts.teamDeletedSuccess"));
             } catch (error) {
               console.error("Error deleting team:", error);
               showErrorAlert({
@@ -379,7 +381,7 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
 
         setIsEditingClub(false);
         posthog?.capture(ANALYTICS_EVENTS.CLUB_UPDATED);
-        Alert.alert("Succès", "Club modifié avec succès !");
+        Alert.alert(t("common.success"), t("clubScreen.alerts.clubUpdatedSuccess"));
       } catch (error) {
         console.error("Error updating club:", error);
         showErrorAlert({
@@ -391,7 +393,7 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
     } else if (activeTab === CLUB_TAB.CREATE || isCreatingNewClub) {
       // CREATE MODE - Validation
       if (!formData.name || !formData.acronym) {
-        Alert.alert("Erreur", "Veuillez renseigner le nom du club et le sigle");
+        Alert.alert(t("common.error"), t("clubScreen.alerts.nameAndAcronymRequired"));
         return;
       }
       if (!user) return;
@@ -452,7 +454,7 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
         setActiveTab(CLUB_TAB.CREATE);
 
         posthog?.capture(ANALYTICS_EVENTS.CLUB_CREATED);
-        Alert.alert("Succès", "Club créé avec succès !");
+        Alert.alert(t("common.success"), t("clubScreen.alerts.clubCreatedSuccess"));
       } catch (error) {
         console.error("Error creating club:", error);
         showErrorAlert({
@@ -464,7 +466,7 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
     } else {
       // Join logic - Validation
       if (!formData.code) {
-        Alert.alert("Erreur", "Veuillez renseigner le code du club");
+        Alert.alert(t("common.error"), t("clubScreen.alerts.codeRequired"));
         return;
       }
       if (!user) return;
@@ -475,7 +477,7 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
         const clubToJoin = await clubService.getClubByCode(formData.code);
 
         if (!clubToJoin) {
-          Alert.alert("Erreur", "Aucun club trouvé avec ce code");
+          Alert.alert(t("common.error"), t("clubScreen.alerts.clubNotFoundByCode"));
           return;
         }
 
@@ -490,8 +492,8 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
 
         if (!result.success) {
           Alert.alert(
-            "Erreur",
-            result.error || "Impossible de rejoindre le club",
+            t("common.error"),
+            result.error || t("clubScreen.alerts.joinFailed"),
           );
           return;
         }
@@ -505,14 +507,14 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
 
         posthog?.capture(ANALYTICS_EVENTS.CLUB_JOINED);
         Alert.alert(
-          "Succès",
-          `Vous avez rejoint le club "${clubToJoin.name}" !`,
+          t("common.success"),
+          t("clubScreen.alerts.joinedSuccess", { name: clubToJoin.name }),
         );
       } catch (error) {
         console.error("Error joining club:", error);
         Alert.alert(
-          "Erreur",
-          "Une erreur est survenue lors de la tentative de rejoindre le club",
+          t("common.error"),
+          t("clubScreen.alerts.joinUnexpectedError"),
         );
       }
     }
@@ -641,13 +643,13 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
               <Ionicons name="arrow-back" size={24} color={textPrimary} />
             </TouchableOpacity>
             <Text style={[styles.title, { color: textPrimary, fontSize: font.xxl, marginBottom: 0 }]}>
-              {isCreatingNewClub ? "Créer un nouveau club" : "Modifier mon club"}
+              {isCreatingNewClub ? t("clubScreen.createNewClubTitle") : t("clubScreen.editClubTitle")}
             </Text>
             <View style={{ width: 24 }} />
           </View>
         ) : (
           <Text style={[styles.title, { color: textPrimary, fontSize: font.xxl, marginBottom: sp.lg }]}>
-            Espace Club
+            {t("clubScreen.spaceTitle")}
           </Text>
         )}
 
@@ -685,7 +687,7 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
                   },
                 ]}
               >
-                Créer
+                {t("clubScreen.createTab")}
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -708,7 +710,7 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
                   },
                 ]}
               >
-                Rejoindre
+                {t("clubScreen.joinTab")}
               </Text>
             </TouchableOpacity>
           </View>
@@ -755,12 +757,12 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
               />
               <Text style={[styles.submitButtonText, { color: colors.text.primary, fontSize: font.lg }]}>
                 {isEditingClub
-                  ? "Modifier"
+                  ? t("clubScreen.editButton")
                   : isCreatingNewClub
-                    ? "Créer un nouveau club"
+                    ? t("clubScreen.createNewClubTitle")
                     : activeTab === CLUB_TAB.CREATE
-                      ? "Créer mon club"
-                      : "Rejoindre"}
+                      ? t("clubScreen.createMyClubButton")
+                      : t("clubScreen.joinTab")}
               </Text>
             </>
           )}

@@ -39,6 +39,7 @@ import {
   useFocusEffect,
 } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
+import { useTranslation } from "react-i18next";
 import { Match, Team } from "../src/models/types";
 import { Club } from "../models/Club";
 import {
@@ -74,6 +75,7 @@ export default function MatchDetailsScreen() {
   // ========================================
   // NAVIGATION & ROUTING
   // ========================================
+  const { t } = useTranslation();
   const navigation = useNavigation<RootNavigationProp>();
   const route = useRoute<MatchDetailsRouteProp>();
   const posthog = usePostHog();
@@ -134,8 +136,8 @@ export default function MatchDetailsScreen() {
       } catch (error) {
         console.error("Error loading match data:", error);
         Alert.alert(
-          "Erreur",
-          "Impossible de charger les données du match. Veuillez réessayer."
+          t("common.error"),
+          t("matchDetailsScreen.loadError")
         );
       } finally {
         setLoading(false);
@@ -260,8 +262,8 @@ export default function MatchDetailsScreen() {
       }
 
       const pdfOptions = {
-        myTeamName: match.my_team_name || "Notre équipe",
-        opponentName: match.opponent_name || "Adversaire",
+        myTeamName: match.my_team_name || t("matchDetailsScreen.myTeamFallback"),
+        opponentName: match.opponent_name || t("matchDetailsScreen.opponentFallback"),
         myTeamScore: match.my_team_score || 0,
         opponentScore: match.opponent_score || 0,
         actions: actions || [], // Raw actions from database (with action_type, player_number, etc.)
@@ -284,7 +286,7 @@ export default function MatchDetailsScreen() {
       setIsExportingPDF(false);
       posthog?.capture(ANALYTICS_EVENTS.PDF_EXPORTED, { type: ANALYTICS_PDF_EXPORT_TYPE.MATCH });
       recordReviewPromptSignal();
-      Alert.alert("Succès", "Le PDF a été généré et partagé avec succès");
+      Alert.alert(t("common.success"), t("matchDetailsScreen.pdfExportedSuccess"));
     } catch (error) {
       setIsExportingPDF(false);
       console.error("Error exporting PDF:", error);
@@ -643,7 +645,7 @@ export default function MatchDetailsScreen() {
       <SafeAreaView style={[styles.container, { backgroundColor: bgColor, justifyContent: 'center', alignItems: 'center' }]}>
         <ActivityIndicator size="large" color={colors.primary} />
         <Text style={{ color: colors.text.secondary, marginTop: 16 }}>
-          Chargement des données du match...
+          {t("matchDetailsScreen.loadingData")}
         </Text>
       </SafeAreaView>
     );
@@ -658,7 +660,7 @@ export default function MatchDetailsScreen() {
       <PlayerDetailModal
         player={viewPlayer}
         onClose={() => setViewPlayer(null)}
-        myTeamName={match.my_team_name || "Notre équipe"}
+        myTeamName={match.my_team_name || t("matchDetailsScreen.myTeamFallback")}
         opponentName={match.opponent_name}
         actions={actions}
         club={club}
@@ -672,7 +674,7 @@ export default function MatchDetailsScreen() {
           <View style={[styles.pdfLoaderBox, { backgroundColor: colors.surface, borderColor: colors.border }]}>
             <ActivityIndicator size="large" color={colors.primary} />
             <Text style={[styles.pdfLoaderText, { color: colors.text.primary }]}>
-              Génération du PDF…
+              {t("matchDetailsScreen.generatingPdf")}
             </Text>
           </View>
         </View>
@@ -739,7 +741,7 @@ export default function MatchDetailsScreen() {
             >
               <Ionicons name="grid-outline" size={font.md} color={colors.primary} />
               <Text style={[styles.menuButtonText, { color: colors.primary, fontSize: font.xs }]}>
-                Menu
+                {t("matchDetailsScreen.menu")}
               </Text>
             </TouchableOpacity>
           </View>
@@ -749,7 +751,7 @@ export default function MatchDetailsScreen() {
           {/* LEFT SIDE - My team when home, opponent when away */}
           <View style={styles.teamScore}>
             <Text style={[styles.teamLabel, { color: textSecondary, fontSize: font.sm }]}>
-              {match.is_home ? (match.my_team_name || "Notre équipe") : match.opponent_name}
+              {match.is_home ? (match.my_team_name || t("matchDetailsScreen.myTeamFallback")) : match.opponent_name}
             </Text>
             <Text
               style={[
@@ -788,7 +790,7 @@ export default function MatchDetailsScreen() {
           {/* RIGHT SIDE - Opponent when home, my team when away */}
           <View style={styles.teamScore}>
             <Text style={[styles.teamLabel, { color: textSecondary, fontSize: font.sm }]}>
-              {match.is_home ? match.opponent_name : (match.my_team_name || "Notre équipe")}
+              {match.is_home ? match.opponent_name : (match.my_team_name || t("matchDetailsScreen.myTeamFallback"))}
             </Text>
             <Text
               style={[
@@ -862,7 +864,7 @@ export default function MatchDetailsScreen() {
                     },
                   ]}
                 >
-                  {match.my_team_name || "Mon équipe"}
+                  {match.my_team_name || t("matchDetailsScreen.myTeamFallback")}
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
@@ -891,7 +893,7 @@ export default function MatchDetailsScreen() {
                     },
                   ]}
                 >
-                  {match.opponent_name || "Adversaire"}
+                  {match.opponent_name || t("matchDetailsScreen.opponentFallback")}
                 </Text>
               </TouchableOpacity>
             </View>

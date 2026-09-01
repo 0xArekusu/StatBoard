@@ -128,22 +128,6 @@ export const MATCH_CREATION_STEP_LABELS = {
 } as const;
 
 /**
- * Error messages for match creation validation
- */
-export const MATCH_VALIDATION_MESSAGES = {
-  NO_OPPONENT: "Veuillez saisir le nom de l'adversaire.",
-  NO_TEAM: "Veuillez sélectionner une équipe.",
-  MIN_PLAYERS: "Il faut au moins 1 joueur dans votre équipe.",
-  STARTERS_REQUIRED: (count: number) =>
-    `Veuillez sélectionner ${count} joueurs pour le 5 de départ.`,
-  STARTERS_FULL: "Le 5 majeur est complet. Retirez un joueur avant d'en ajouter un.",
-  OPPONENT_MIN_PLAYERS: "L'équipe adverse doit avoir au moins 5 joueurs.",
-  OPPONENT_STARTERS_REQUIRED:
-    "Veuillez sélectionner 5 joueurs de départ pour l'équipe adverse.",
-  NO_CLUB: "Impossible de démarrer le match : aucun club sélectionné."
-} as const;
-
-/**
  * Button labels for match creation
  */
 export const MATCH_CREATION_BUTTON_LABELS = {

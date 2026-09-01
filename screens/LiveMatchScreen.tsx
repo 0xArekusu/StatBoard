@@ -28,6 +28,7 @@ import {
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { usePostHog } from "posthog-react-native";
+import { useTranslation } from "react-i18next";
 import { useTheme } from "../src/contexts/ThemeContext";
 import { SLATE_COLORS } from "../src/theme/colors";
 import { RootStackParamList, RootNavigationProp } from "../types/navigation";
@@ -103,6 +104,7 @@ import {
 type LiveMatchRouteProp = RouteProp<RootStackParamList, "LiveMatch">;
 
 export default function LiveMatchScreen() {
+  const { t } = useTranslation();
   const navigation = useNavigation<RootNavigationProp>();
   const route = useRoute<LiveMatchRouteProp>();
   const { colors, isDark } = useTheme();
@@ -144,8 +146,8 @@ export default function LiveMatchScreen() {
         id: matchData.id,
         clubId: matchData.clubId,
         teamId: matchData.teamId,
-        myTeamName: matchData.teamName || "Mon Équipe",
-        opponent: matchData.opponent || "Adversaire",
+        myTeamName: matchData.teamName || t("liveMatchScreen.myTeamFallback"),
+        opponent: matchData.opponent || t("liveMatchScreen.opponentFallback"),
         location: matchData.isHome ? TeamId.HOME : TeamId.AWAY,
         scoreHome: matchData.isHome
           ? (matchData.myTeamHandicap || 0)
@@ -172,8 +174,8 @@ export default function LiveMatchScreen() {
     // Fallback to mock data
     return {
       id: Date.now().toString(),
-      myTeamName: "Mon Équipe",
-      opponent: "Adversaire",
+      myTeamName: t("liveMatchScreen.myTeamFallback"),
+      opponent: t("liveMatchScreen.opponentFallback"),
       location: TeamId.HOME,
       scoreHome: 0,
       scoreAway: 0,
@@ -468,15 +470,15 @@ export default function LiveMatchScreen() {
           const matchEvents = convertActionsToMatchEvents(
             actions,
             players,
-            existingMatch.opponent_name || "Adversaire",
+            existingMatch.opponent_name || t("liveMatchScreen.opponentFallback"),
             isHome,
           );
 
           // Update match state with loaded data
           setMatch({
             ...match,
-            myTeamName: existingMatch.my_team_name || "Mon Équipe",
-            opponent: existingMatch.opponent_name || "Adversaire",
+            myTeamName: existingMatch.my_team_name || t("liveMatchScreen.myTeamFallback"),
+            opponent: existingMatch.opponent_name || t("liveMatchScreen.opponentFallback"),
             location: existingMatch.is_home ? TeamId.HOME : TeamId.AWAY,
             trackOpponentStats: existingMatch.track_opponent_stats,
             myTeamHandicap: existingMatch.my_team_handicap || 0,
@@ -570,7 +572,7 @@ export default function LiveMatchScreen() {
 
           const matchCreateData: CreateMatchData & { created_at: string } = {
             my_team_name: match.myTeamName || null,
-            opponent_name: match.opponent || "Adversaire",
+            opponent_name: match.opponent || t("liveMatchScreen.opponentFallback"),
             is_home: match.location === TeamId.HOME,
             track_opponent_stats: match.trackOpponentStats || false,
             total_periods: match.periodCount || 4,
@@ -637,7 +639,7 @@ export default function LiveMatchScreen() {
                   match_id: createdMatch.id,
                   player_id: null,
                   player_number: 9999,
-                  player_name: match.opponent || "Adversaire",
+                  player_name: match.opponent || t("liveMatchScreen.opponentFallback"),
                   team: "Opponent" as const,
                   photo_url: null,
                 },
@@ -983,7 +985,7 @@ export default function LiveMatchScreen() {
       const convertedEvents = convertActionsToMatchEvents(
         loadedActions,
         allPlayers,
-        match.opponent || "Adversaire",
+        match.opponent || t("liveMatchScreen.opponentFallback"),
         isHome,
       );
 
@@ -1237,7 +1239,7 @@ export default function LiveMatchScreen() {
 
     const amIHome = match.location === TeamId.HOME;
     const isOurTeam = isHome === amIHome;
-    const subTeamName = isOurTeam ? (match.myTeamName || "Mon équipe") : (match.opponent || "Adversaire");
+    const subTeamName = isOurTeam ? (match.myTeamName || t("liveMatchScreen.myTeamFallback")) : (match.opponent || t("liveMatchScreen.opponentFallback"));
     const subDescription = `Changements (${subTeamName}): ${subSelection.in.length} joueur(s)`;
 
     const newEvent: MatchEvent = {
@@ -1393,7 +1395,7 @@ export default function LiveMatchScreen() {
       return;
     }
 
-    const pName = player?.name || "Joueur";
+    const pName = player?.name || t("liveMatchScreen.playerFallback");
 
     // Create temporary action object for description
     // When we are home (match.location === TeamId.HOME):
@@ -2128,7 +2130,7 @@ export default function LiveMatchScreen() {
       specification: ShotSpecification.MADE,
       teamId: match.location === TeamId.HOME ? TeamId.AWAY : TeamId.HOME,
       timestamp: Date.now(),
-      description: `${match.opponent || "Adversaire"} +${value}`,
+      description: `${match.opponent || t("liveMatchScreen.opponentFallback")} +${value}`,
       period_number: quarter,
       time_in_period: periodDurationMin * 60 - timer,
       points: value,

@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "../../src/contexts/AuthContext";
 import { useTheme } from "../../src/contexts/ThemeContext";
 import { CommonStyles } from "../../src/theme";
@@ -42,6 +43,7 @@ type TeamStartersRouteProp = RouteProp<RootStackParamList, "TeamStarters">;
  * Note: Starters are tracked locally in this screen only for UI purposes
  */
 export default function TeamStartersScreen() {
+  const { t } = useTranslation();
   const navigation = useNavigation<RootNavigationProp>();
   const route = useRoute<TeamStartersRouteProp>();
   const { user } = useAuth();
@@ -68,8 +70,8 @@ export default function TeamStartersScreen() {
     } else {
       if (starters.length >= 5) {
         Alert.alert(
-          "5 Majeur complet",
-          "Le 5 majeur est complet ! Retirez un joueur avant d'en ajouter un autre."
+          t("teamStartersScreen.alerts.lineupFullTitle"),
+          t("teamStartersScreen.alerts.lineupFullMessage")
         );
         return;
       }
@@ -86,14 +88,14 @@ export default function TeamStartersScreen() {
   const handleFinish = async () => {
     if (starters.length !== 5) {
       Alert.alert(
-        "Erreur",
-        `Vous devez sélectionner exactement 5 titulaires (actuellement: ${starters.length}).`
+        t("common.error"),
+        t("teamStartersScreen.alerts.needExactlyFive", { count: starters.length })
       );
       return;
     }
 
     if (!user) {
-      Alert.alert("Erreur", "Vous devez être connecté");
+      Alert.alert(t("common.error"), t("teamStartersScreen.alerts.mustBeLoggedIn"));
       return;
     }
 
@@ -118,8 +120,8 @@ export default function TeamStartersScreen() {
 
         if (!result.success) {
           Alert.alert(
-            "Erreur",
-            result.error || "Impossible de modifier l'équipe"
+            t("common.error"),
+            result.error || t("teamStartersScreen.alerts.updateFailed")
           );
           setSaving(false);
           return;
@@ -159,9 +161,9 @@ export default function TeamStartersScreen() {
           }
         }
 
-        Alert.alert("Succès", "L'équipe a été modifiée avec succès", [
+        Alert.alert(t("common.success"), t("teamStartersScreen.alerts.updateSuccess"), [
           {
-            text: "OK",
+            text: t("common.ok"),
             onPress: () => {
               navigation.navigate(ROUTES.CLUB);
             },
@@ -214,11 +216,11 @@ export default function TeamStartersScreen() {
         }
 
         Alert.alert(
-          "Succès",
-          "Votre équipe a été créée et est en attente de validation par le responsable du club.",
+          t("common.success"),
+          t("teamStartersScreen.alerts.createSuccess"),
           [
             {
-              text: "OK",
+              text: t("common.ok"),
               onPress: () => {
                 navigation.navigate(ROUTES.CLUB);
               },
@@ -256,7 +258,7 @@ export default function TeamStartersScreen() {
         <Text
           style={[CommonStyles.headerTitle, { color: colors.text.primary }]}
         >
-          Le 5 Majeur
+          {t("teamStartersScreen.headerTitle")}
         </Text>
         <View style={{ width: 24 }} />
       </View>
@@ -276,7 +278,7 @@ export default function TeamStartersScreen() {
 
       <ScrollView style={[styles.content, { padding: sp.lg }]}>
         <Text style={[styles.title, { color: colors.text.primary, fontSize: font.xxl, marginBottom: sp.lg }]}>
-          Sélectionnez le 5 Majeur
+          {t("teamStartersScreen.title")}
         </Text>
 
         {/* Info Box */}
@@ -294,7 +296,7 @@ export default function TeamStartersScreen() {
           <View style={[styles.infoLeft, { gap: sp.sm }]}>
             <Ionicons name="shirt" size={18} color={colors.primary} />
             <Text style={[styles.infoText, { color: colors.primary, fontSize: font.md }]}>
-              Sélectionnez 5 titulaires
+              {t("teamStartersScreen.selectFiveStarters")}
             </Text>
           </View>
           <View
@@ -327,7 +329,7 @@ export default function TeamStartersScreen() {
           <View style={[styles.errorBox, { backgroundColor: `${colors.primary}15`, borderColor: colors.primary, gap: sp.sm, padding: sp.sm, marginBottom: sp.md }]}>
             <Ionicons name="alert-circle" size={16} color={colors.primary} />
             <Text style={[styles.errorText, { color: colors.primary, fontSize: font.sm }]}>
-              Le 5 majeur doit être complet pour valider.
+              {t("teamStartersScreen.lineupMustBeComplete")}
             </Text>
           </View>
         )}
@@ -434,12 +436,12 @@ export default function TeamStartersScreen() {
             <>
               <ActivityIndicator color="#fff" size="small" />
               <Text style={[styles.finishButtonText, { fontSize: font.lg }]}>
-                {teamId ? "Sauvegarde..." : "Création..."}
+                {teamId ? t("teamStartersScreen.saving") : t("teamStartersScreen.creating")}
               </Text>
             </>
           ) : (
             <>
-              <Text style={[styles.finishButtonText, { fontSize: font.lg }]}>Valider l'équipe</Text>
+              <Text style={[styles.finishButtonText, { fontSize: font.lg }]}>{t("teamStartersScreen.validateButton")}</Text>
               <Ionicons name="checkmark" size={20} color="#fff" />
             </>
           )}

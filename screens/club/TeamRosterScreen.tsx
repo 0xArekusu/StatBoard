@@ -24,6 +24,7 @@ import {
   useFocusEffect,
   StackActions,
 } from "@react-navigation/native";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "../../src/contexts/AuthContext";
 import { useTheme } from "../../src/contexts/ThemeContext";
 import { CommonStyles } from "../../src/theme";
@@ -123,6 +124,7 @@ function PlayerPhotoPreview({
  * - Upload photos for coach and players
  */
 export default function TeamRosterScreen() {
+  const { t } = useTranslation();
   const navigation = useNavigation<RootNavigationProp>();
   const route = useRoute<TeamRosterRouteProp>();
   const { user } = useAuth();
@@ -230,7 +232,7 @@ export default function TeamRosterScreen() {
 
     // Validation: Check max roster size
     if (roster.length >= 15) {
-      setAddPlayerError("Limite maximale de 15 joueurs atteinte.");
+      setAddPlayerError(t("teamRosterScreen.validation.maxRosterSize"));
       return;
     }
 
@@ -239,7 +241,7 @@ export default function TeamRosterScreen() {
       (p) => p.name.toLowerCase() === trimmedName.toLowerCase(),
     );
     if (isDuplicateName) {
-      setAddPlayerError("Un joueur avec ce nom existe déjà.");
+      setAddPlayerError(t("teamRosterScreen.validation.duplicateName"));
       return;
     }
 
@@ -251,14 +253,14 @@ export default function TeamRosterScreen() {
       numValue > 99 ||
       !Number.isInteger(Number(trimmedNumber))
     ) {
-      setAddPlayerError("Le numéro doit être entre 0 et 99.");
+      setAddPlayerError(t("teamRosterScreen.validation.numberRange"));
       return;
     }
 
     // Validation: Check duplicate jersey number
     const isDuplicateNumber = roster.some((p) => p.jerseyNumber === numValue);
     if (isDuplicateNumber) {
-      setAddPlayerError("Ce numéro de maillot est déjà utilisé.");
+      setAddPlayerError(t("teamRosterScreen.validation.duplicateNumber"));
       return;
     }
 
@@ -294,12 +296,12 @@ export default function TeamRosterScreen() {
     } else {
       // For existing players in edit mode, show warning about stats
       Alert.alert(
-        "Supprimer le joueur",
-        `Êtes-vous sûr de vouloir supprimer ${playerName} ?\n\n⚠️ Attention : Toutes les statistiques associées à ce joueur seront définitivement perdues.`,
+        t("teamRosterScreen.deletePlayerAlert.title"),
+        t("teamRosterScreen.deletePlayerAlert.message", { playerName }),
         [
-          { text: "Annuler", style: "cancel" },
+          { text: t("common.cancel"), style: "cancel" },
           {
-            text: "Supprimer",
+            text: t("common.delete"),
             style: "destructive",
             onPress: () => {
               setRoster(roster.filter((p) => p.id !== id));
@@ -338,7 +340,7 @@ export default function TeamRosterScreen() {
       numValue > 99 ||
       !Number.isInteger(Number(trimmedNumber))
     ) {
-      setEditPlayerError("Le numéro doit être entre 0 et 99.");
+      setEditPlayerError(t("teamRosterScreen.validation.numberRange"));
       return;
     }
 
@@ -349,7 +351,7 @@ export default function TeamRosterScreen() {
     );
 
     if (isDuplicateName) {
-      setEditPlayerError("Un joueur avec ce nom existe déjà.");
+      setEditPlayerError(t("teamRosterScreen.validation.duplicateName"));
       return;
     }
 
@@ -359,7 +361,7 @@ export default function TeamRosterScreen() {
     );
 
     if (isDuplicateNumber) {
-      setEditPlayerError("Ce numéro de maillot est déjà utilisé.");
+      setEditPlayerError(t("teamRosterScreen.validation.duplicateNumber"));
       return;
     }
 
@@ -431,15 +433,15 @@ export default function TeamRosterScreen() {
    */
   const handleNext = async () => {
     if (!coachName.trim()) {
-      Alert.alert("Erreur", "Le nom du coach est obligatoire");
+      Alert.alert(t("common.error"), t("teamRosterScreen.validation.coachNameRequired"));
       setIsEditingCoach(true);
       return;
     }
 
     if (roster.length < 5) {
       Alert.alert(
-        "Erreur",
-        `L'équipe doit comporter au moins 5 joueurs (Actuellement : ${roster.length})`,
+        t("common.error"),
+        t("teamRosterScreen.validation.minPlayers", { count: roster.length }),
       );
       return;
     }
@@ -490,8 +492,8 @@ export default function TeamRosterScreen() {
         if (!updateResult.success) {
           setIsSubmitting(false);
           Alert.alert(
-            "Erreur de modification",
-            updateResult.error || "Impossible de modifier l'équipe. Vous n'avez peut-être pas les permissions nécessaires."
+            t("teamRosterScreen.alerts.updateErrorTitle"),
+            updateResult.error || t("teamRosterScreen.alerts.updateErrorMessage")
           );
           return;
         }
@@ -522,7 +524,7 @@ export default function TeamRosterScreen() {
 
             if (!createResult.success || !createResult.player) {
               setIsSubmitting(false);
-              Alert.alert("Erreur", createResult.error || `Impossible de créer le joueur ${player.name}`);
+              Alert.alert(t("common.error"), createResult.error || t("teamRosterScreen.alerts.createPlayerFailed", { playerName: player.name }));
               return;
             }
 
@@ -596,9 +598,9 @@ export default function TeamRosterScreen() {
         }
 
         setIsSubmitting(false);
-        Alert.alert("Succès", "Équipe modifiée avec succès !", [
+        Alert.alert(t("common.success"), t("teamRosterScreen.alerts.updateSuccess"), [
           {
-            text: "OK",
+            text: t("common.ok"),
             onPress: () => {
               // Go back to previous screen (Club) - pop 2 in one atomic action
               // (two sequential goBack() calls can leave a stale TeamInfo/TeamRoster
@@ -668,7 +670,7 @@ export default function TeamRosterScreen() {
 
           if (!createResult.success || !createResult.player) {
             setIsSubmitting(false);
-            Alert.alert("Erreur", createResult.error || `Impossible de créer le joueur ${player.name}`);
+            Alert.alert(t("common.error"), createResult.error || t("teamRosterScreen.alerts.createPlayerFailed", { playerName: player.name }));
             return;
           }
 
@@ -699,9 +701,9 @@ export default function TeamRosterScreen() {
         }
 
         setIsSubmitting(false);
-        Alert.alert("Succès", "Équipe créée avec succès !", [
+        Alert.alert(t("common.success"), t("teamRosterScreen.alerts.createSuccess"), [
           {
-            text: "OK",
+            text: t("common.ok"),
             onPress: () => {
               // Go back to previous screen (Club) - pop 2 in one atomic action
               navigation.dispatch(StackActions.pop(2));
@@ -862,7 +864,7 @@ export default function TeamRosterScreen() {
                           color: colors.text.primary,
                         },
                       ]}
-                      placeholder="Nom du coach"
+                      placeholder={t("teamRosterScreen.coachNamePlaceholder")}
                       placeholderTextColor={colors.text.tertiary}
                       value={coachName}
                       onChangeText={setCoachName}
@@ -876,7 +878,7 @@ export default function TeamRosterScreen() {
                       ]}
                       onPress={() => setIsEditingCoach(false)}
                     >
-                      <Text style={styles.saveCoachText}>Enregistrer</Text>
+                      <Text style={styles.saveCoachText}>{t("teamRosterScreen.saveButton")}</Text>
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -908,7 +910,7 @@ export default function TeamRosterScreen() {
                           { color: colors.text.primary },
                         ]}
                       >
-                        {coachName || "Nom du Coach"}
+                        {coachName || t("teamRosterScreen.coachNameFallback")}
                       </Text>
                       {!coachName && <Text style={styles.required}> *</Text>}
                     </View>
@@ -1068,7 +1070,7 @@ export default function TeamRosterScreen() {
                       fontSize: font.md,
                     },
                   ]}
-                  placeholder="Nom du joueur"
+                  placeholder={t("teamRosterScreen.playerNamePlaceholder")}
                   placeholderTextColor={colors.text.tertiary}
                   value={newPlayerName}
                   onChangeText={(text) => {
@@ -1132,7 +1134,7 @@ export default function TeamRosterScreen() {
                       !newPlayerName || !newPlayerNumber || roster.length >= 15
                     }
                   >
-                    <Text style={styles.addButtonText}>Ajouter</Text>
+                    <Text style={styles.addButtonText}>{t("teamRosterScreen.addButton")}</Text>
                   </TouchableOpacity>
                 </View>
                 {addPlayerError && (
@@ -1212,7 +1214,7 @@ export default function TeamRosterScreen() {
                                 fontSize: font.md,
                               },
                             ]}
-                            placeholder="Nom du joueur"
+                            placeholder={t("teamRosterScreen.playerNamePlaceholder")}
                             placeholderTextColor={colors.text.tertiary}
                             value={editingPlayerName}
                             onChangeText={(text) => {
@@ -1419,13 +1421,13 @@ export default function TeamRosterScreen() {
                   { marginLeft: sp.sm, fontSize: font.lg },
                 ]}
               >
-                {teamId ? "Modification..." : "Création..."}
+                {teamId ? t("teamRosterScreen.saving") : t("teamRosterScreen.creating")}
               </Text>
             </>
           ) : (
             <>
               <Text style={[styles.nextButtonText, { fontSize: font.lg }]}>
-                {teamId ? "Modifier l'équipe" : "Créer l'équipe"}
+                {teamId ? t("teamRosterScreen.updateTeamButton") : t("teamRosterScreen.createTeamButton")}
               </Text>
               <Ionicons name="checkmark" size={20} color="#fff" />
             </>

@@ -12,6 +12,8 @@ import {
 import { useFocusEffect } from "@react-navigation/native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { usePostHog } from "posthog-react-native";
+import { useTranslation } from "react-i18next";
+import { INTL_LOCALES, SupportedLanguage } from "../src/i18n";
 import { useTheme } from "../src/contexts/ThemeContext";
 import { useAuth } from "../src/contexts/AuthContext";
 import { useClub } from "../src/contexts/ClubContext";
@@ -47,6 +49,7 @@ interface HistoryScreenProps {
  * - LOCAL: Match data exists only on device (not backed up)
  */
 export default function HistoryScreen({ navigation }: HistoryScreenProps) {
+  const { t } = useTranslation();
   const { colors, isDark } = useTheme();
   const { user } = useAuth();
   const posthog = usePostHog();
@@ -172,12 +175,12 @@ export default function HistoryScreen({ navigation }: HistoryScreenProps) {
    */
   const handleDeleteMatch = (match: Match) => {
     Alert.alert(
-      "Supprimer le match",
-      `Supprimer le match contre ${match.opponent_name} ? Cette action est irréversible.`,
+      t("historyScreen.deleteAlert.title"),
+      t("historyScreen.deleteAlert.message", { opponent: match.opponent_name }),
       [
-        { text: "Annuler", style: "cancel" },
+        { text: t("common.cancel"), style: "cancel" },
         {
-          text: "Supprimer",
+          text: t("common.delete"),
           style: "destructive",
           onPress: async () => {
             try {
@@ -211,8 +214,8 @@ export default function HistoryScreen({ navigation }: HistoryScreenProps) {
 
       if (result.synced > 0) {
         Alert.alert(
-          "Synchronisation réussie",
-          `${result.synced} match${result.synced > 1 ? "s" : ""} synchronisé${result.synced > 1 ? "s" : ""} avec succès.`,
+          t("historyScreen.syncSuccessTitle"),
+          t("historyScreen.syncSuccessMessage", { count: result.synced }),
         );
         // Reload data to reflect changes
         await loadHistoryData();
@@ -226,7 +229,7 @@ export default function HistoryScreen({ navigation }: HistoryScreenProps) {
 
         setSyncError({
           visible: true,
-          reason: result.errors[0] || "Erreur lors de la synchronisation",
+          reason: result.errors[0] || t("historyScreen.syncErrorFallback"),
           isNotConnected,
           isFreemium,
         });
@@ -237,7 +240,7 @@ export default function HistoryScreen({ navigation }: HistoryScreenProps) {
       console.error("Error syncing matches:", error);
       setSyncError({
         visible: true,
-        reason: "Une erreur est survenue lors de la synchronisation. Veuillez réessayer.",
+        reason: t("historyScreen.syncUnexpectedError"),
       });
     } finally {
       setIsSyncing(false);
@@ -332,7 +335,7 @@ export default function HistoryScreen({ navigation }: HistoryScreenProps) {
                   },
                 ]}
               >
-                SYNCHRONISATION
+                {t("historyScreen.syncModal.title")}
               </Text>
               <Text
                 style={[
@@ -342,11 +345,11 @@ export default function HistoryScreen({ navigation }: HistoryScreenProps) {
                   },
                 ]}
               >
-                Voulez-vous envoyer les statistiques de{" "}
+                {t("historyScreen.syncModal.descriptionPrefix")}{" "}
                 <Text style={{ fontWeight: "bold" }}>
-                  {unsyncedCount} match{unsyncedCount > 1 ? "s" : ""}
+                  {t("historyScreen.matchCount", { count: unsyncedCount })}
                 </Text>{" "}
-                sur le serveur du club ?
+                {t("historyScreen.syncModal.descriptionSuffix")}
               </Text>
             </View>
 
@@ -372,7 +375,7 @@ export default function HistoryScreen({ navigation }: HistoryScreenProps) {
                   />
                 )}
                 <Text style={styles.modalPrimaryButtonText}>
-                  {isSyncing ? "Envoi en cours..." : "Confirmer"}
+                  {isSyncing ? t("historyScreen.syncModal.sending") : t("historyScreen.syncModal.confirm")}
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
@@ -393,7 +396,7 @@ export default function HistoryScreen({ navigation }: HistoryScreenProps) {
                     },
                   ]}
                 >
-                  Annuler
+                  {t("common.cancel")}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -405,7 +408,7 @@ export default function HistoryScreen({ navigation }: HistoryScreenProps) {
         <View style={[styles.content, { padding: sp.lg, paddingTop: sp.md }]}>
           {/* Title */}
           <Text style={[styles.title, { color: textPrimary, fontSize: font.xxl, marginBottom: sp.lg }]}>
-            Historique des matchs
+            {t("historyScreen.title")}
           </Text>
 
           {/* Sync Banner - Only show if user is authenticated (not in guest mode) */}
@@ -458,8 +461,7 @@ export default function HistoryScreen({ navigation }: HistoryScreenProps) {
                       },
                     ]}
                   >
-                    {unsyncedCount} match{unsyncedCount > 1 ? "s" : ""} non
-                    synchronisé{unsyncedCount > 1 ? "s" : ""}
+                    {t("historyScreen.unsyncedCount", { count: unsyncedCount })}
                   </Text>
                   <Text
                     style={[
@@ -470,7 +472,7 @@ export default function HistoryScreen({ navigation }: HistoryScreenProps) {
                       },
                     ]}
                   >
-                    SYNCHRONISER MAINTENANT
+                    {t("historyScreen.syncNowCta")}
                   </Text>
                 </View>
               </View>
@@ -504,7 +506,7 @@ export default function HistoryScreen({ navigation }: HistoryScreenProps) {
                 style={{ opacity: 0.5 }}
               />
               <Text style={[styles.emptyStateText, { color: textSecondary, fontSize: font.lg, marginTop: sp.md }]}>
-                Aucun match enregistré.
+                {t("historyScreen.noMatches")}
               </Text>
             </View>
           ) : (
@@ -541,7 +543,7 @@ export default function HistoryScreen({ navigation }: HistoryScreenProps) {
         onLogin={() => navigation.navigate(ROUTES.LOGIN)}
         onUpgrade={() => {
           // TODO: Navigate to subscription screen
-          Alert.alert("Info", "Fonctionnalité d'upgrade à venir");
+          Alert.alert(t("common.info"), t("historyScreen.upgradeComingSoon"));
         }}
       />
     </>
@@ -572,6 +574,7 @@ interface MatchCardProps {
  * - Sync status shows cloud icon for synced, warning for local-only
  */
 function MatchCard({ match, onPress, onDelete, isDeleting }: MatchCardProps) {
+  const { t, i18n } = useTranslation();
   const { isDark, colors } = useTheme();
   const { sp, font, sizes } = useResponsive();
   const scoreA = match.my_team_score || 0;
@@ -586,7 +589,7 @@ function MatchCard({ match, onPress, onDelete, isDeleting }: MatchCardProps) {
    */
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString("fr-FR", {
+    return date.toLocaleDateString(INTL_LOCALES[i18n.language as SupportedLanguage] ?? INTL_LOCALES.fr, {
       weekday: "short",
       day: "numeric",
       month: "long",
@@ -631,7 +634,7 @@ function MatchCard({ match, onPress, onDelete, isDeleting }: MatchCardProps) {
           <Text
             style={[styles.matchCardInfoText, { color: colors.text.secondary, fontSize: font.sm }]}
           >
-            {match.is_home ? "Domicile" : "Extérieur"}
+            {match.is_home ? t("historyScreen.matchCard.home") : t("historyScreen.matchCard.away")}
           </Text>
         </View>
       </View>
@@ -657,7 +660,7 @@ function MatchCard({ match, onPress, onDelete, isDeleting }: MatchCardProps) {
               style={[styles.matchTeamLabel, { color: colors.text.secondary, fontSize: font.sm, marginTop: sp.xs }]}
               numberOfLines={1}
             >
-              {match.my_team_name || "NOUS"}
+              {match.my_team_name || t("historyScreen.matchCard.usFallback")}
             </Text>
           </View>
         ) : (
@@ -696,7 +699,7 @@ function MatchCard({ match, onPress, onDelete, isDeleting }: MatchCardProps) {
           ]}
         >
           <Text style={[styles.matchVsText, { color: colors.text.secondary, fontSize: font.sm }]}>
-            VS
+            {t("historyScreen.matchCard.vs")}
           </Text>
         </View>
 
@@ -740,7 +743,7 @@ function MatchCard({ match, onPress, onDelete, isDeleting }: MatchCardProps) {
               style={[styles.matchTeamLabel, { color: colors.text.secondary, fontSize: font.sm, marginTop: sp.xs }]}
               numberOfLines={1}
             >
-              {match.my_team_name || "NOUS"}
+              {match.my_team_name || t("historyScreen.matchCard.usFallback")}
             </Text>
           </View>
         )}
@@ -776,7 +779,7 @@ function MatchCard({ match, onPress, onDelete, isDeleting }: MatchCardProps) {
                 },
               ]}
             >
-              {isWin ? "VICTOIRE" : "DÉFAITE"}
+              {isWin ? t("historyScreen.matchCard.win") : t("historyScreen.matchCard.loss")}
             </Text>
           </View>
         </View>
@@ -801,7 +804,7 @@ function MatchCard({ match, onPress, onDelete, isDeleting }: MatchCardProps) {
                   },
                 ]}
               >
-                SYNC
+                {t("historyScreen.matchCard.synced")}
               </Text>
             </View>
           ) : (
@@ -820,7 +823,7 @@ function MatchCard({ match, onPress, onDelete, isDeleting }: MatchCardProps) {
                   },
                 ]}
               >
-                LOCAL
+                {t("historyScreen.matchCard.local")}
               </Text>
             </View>
           )}
@@ -830,7 +833,7 @@ function MatchCard({ match, onPress, onDelete, isDeleting }: MatchCardProps) {
         <View style={[styles.matchCardFooterRight, { flexDirection: "row", justifyContent: "flex-end", alignItems: "center", gap: sp.md }]}>
           <TouchableOpacity style={[styles.matchAnalyzeButton, { gap: sp.xs }]} onPress={onPress}>
             <Text style={[styles.matchAnalyzeText, { color: colors.primary, fontSize: font.xs }]}>
-              Détails
+              {t("historyScreen.matchCard.details")}
             </Text>
             <MaterialCommunityIcons
               name="chart-bar"

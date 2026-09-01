@@ -10,6 +10,7 @@ import React, { useState, useEffect } from "react";
 import { View, StyleSheet, ScrollView, Alert, ActivityIndicator, KeyboardAvoidingView, Platform, Modal, TouchableWithoutFeedback, Text, TouchableOpacity } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
+import { useTranslation } from "react-i18next";
 import { useTheme } from "../src/contexts/ThemeContext";
 import { useResponsive } from "../src/hooks/useResponsive";
 import { useAuth } from "../src/contexts/AuthContext";
@@ -17,7 +18,6 @@ import { useClub } from "../src/contexts/ClubContext";
 import { DEFAULT_COURT_COLORS, DEFAULT_CLUB_COLORS } from "../src/theme";
 import { getSignedUrl } from "../utils/storageHelper";
 import {
-  MATCH_VALIDATION_MESSAGES,
   ROSTER_LIMITS,
   DEFAULT_OPPONENT_PLAYERS_COUNT,
   getDefaultOpponentPlayerName,
@@ -64,6 +64,7 @@ type RosterTab = "HOME" | "AWAY";
  * Manages team selection, match configuration, and roster setup.
  */
 export default function NewMatchScreen() {
+  const { t } = useTranslation();
   const navigation = useNavigation<RootNavigationProp>();
   const route = useRoute<NewMatchRouteProp>();
   const { colors, isDark } = useTheme();
@@ -240,11 +241,11 @@ export default function NewMatchScreen() {
   const handleLoadTemplate = (template: OpponentTemplate) => {
     if (opponentRoster.length > 0) {
       Alert.alert(
-        "Charger une composition",
-        "Cela va écraser la composition actuelle. Continuer ?",
+        t("newMatchScreen.alerts.loadTemplateTitle"),
+        t("newMatchScreen.alerts.loadTemplateMessage"),
         [
-          { text: "Annuler", style: "cancel" },
-          { text: "Continuer", onPress: () => applyTemplate(template) },
+          { text: t("common.cancel"), style: "cancel" },
+          { text: t("common.continue"), onPress: () => applyTemplate(template) },
         ]
       );
     } else {
@@ -265,7 +266,7 @@ export default function NewMatchScreen() {
       await loadTemplates();
       setLoadedTemplateName(name);
       posthog?.capture(ANALYTICS_EVENTS.OPPONENT_TEMPLATE_SAVED, { players_count: templatePlayers.length });
-      Alert.alert("Composition sauvegardée", `"${name}" a été sauvegardée.`);
+      Alert.alert(t("newMatchScreen.alerts.templateSavedTitle"), t("newMatchScreen.alerts.templateSavedMessage", { name }));
     } catch (error) {
       console.error("Error saving opponent template:", error);
     }
@@ -279,7 +280,7 @@ export default function NewMatchScreen() {
       // Guest mode: create temporary local team
       const guestTeam: Team = {
         id: GUEST_IDS.TEAM,
-        name: "Mon Équipe",
+        name: t("newMatchScreen.myTeamFallback"),
         clubId: GUEST_IDS.CLUB,
         ownerId: "guest",
         status: TeamStatus.APPROVED,
@@ -302,7 +303,7 @@ export default function NewMatchScreen() {
 
       setTeams([guestTeam]);
       setSelectedTeamId(GUEST_IDS.TEAM);
-      setMyTeamName("Mon Équipe"); // Default team name for guests
+      setMyTeamName(t("newMatchScreen.myTeamFallback")); // Default team name for guests
 
       // Set default players as available and selected
       setAvailableHomePlayers(defaultPlayers);
@@ -333,11 +334,11 @@ export default function NewMatchScreen() {
 
         if (requestedTeam && (!requestedTeam.isActive || requestedTeam.status !== TeamStatus.APPROVED)) {
           Alert.alert(
-            "Équipe suspendue",
-            "Cette équipe a été suspendue suite au changement d'abonnement. Veuillez passer à une offre supérieure pour la réactiver.",
+            t("newMatchScreen.alerts.teamSuspendedTitle"),
+            t("newMatchScreen.alerts.teamSuspendedMessage"),
             [
               {
-                text: "OK",
+                text: t("common.ok"),
                 onPress: () => navigation.goBack(),
               },
             ]
@@ -362,11 +363,11 @@ export default function NewMatchScreen() {
         const allTeams = clubTeams.filter((team) => team.ownerId === user.id);
         if (allTeams.length > 0) {
           Alert.alert(
-            "Aucune équipe active",
-            "Vos équipes ont été suspendues suite au changement d'abonnement. Veuillez passer à une offre supérieure pour les réactiver.",
+            t("newMatchScreen.alerts.noActiveTeamTitle"),
+            t("newMatchScreen.alerts.noActiveTeamMessage"),
             [
               {
-                text: "OK",
+                text: t("common.ok"),
                 onPress: () => navigation.goBack(),
               },
             ]
@@ -424,16 +425,16 @@ export default function NewMatchScreen() {
    */
   const handleNextStep = () => {
     if (!opponent) {
-      Alert.alert("Erreur", MATCH_VALIDATION_MESSAGES.NO_OPPONENT);
+      Alert.alert(t("common.error"), t("newMatchScreen.validation.noOpponent"));
       return;
     }
     // For guest users, validate team name instead of selectedTeamId
     if (!user && !myTeamName) {
-      Alert.alert("Erreur", "Veuillez saisir le nom de votre équipe");
+      Alert.alert(t("common.error"), t("newMatchScreen.validation.noTeamName"));
       return;
     }
     if (user && !selectedTeamId) {
-      Alert.alert("Erreur", MATCH_VALIDATION_MESSAGES.NO_TEAM);
+      Alert.alert(t("common.error"), t("newMatchScreen.validation.noTeam"));
       return;
     }
 
@@ -474,8 +475,12 @@ export default function NewMatchScreen() {
       );
       if (conflict) {
         Alert.alert(
-          "Numéro en double",
-          `Le joueur ${player.name} porte le #${player.jerseyNumber}, déjà utilisé par ${conflict.name}. Modifiez l'un des numéros avant de sélectionner ce joueur.`
+          t("newMatchScreen.alerts.duplicateNumberTitle"),
+          t("newMatchScreen.alerts.duplicateNumberMessage", {
+            playerName: player.name,
+            number: player.jerseyNumber,
+            conflictName: conflict.name,
+          })
         );
         return;
       }
@@ -491,7 +496,7 @@ export default function NewMatchScreen() {
       setStarters(starters.filter((id) => id !== playerId));
     } else {
       if (starters.length >= ROSTER_LIMITS.STARTERS) {
-        Alert.alert("5 majeur complet", MATCH_VALIDATION_MESSAGES.STARTERS_FULL);
+        Alert.alert(t("newMatchScreen.alerts.lineupFullTitle"), t("newMatchScreen.validation.startersFull"));
         return;
       }
       setStarters([...starters, playerId]);
@@ -617,7 +622,7 @@ export default function NewMatchScreen() {
       setOpponentStarters(opponentStarters.filter((id) => id !== playerId));
     } else {
       if (opponentStarters.length >= ROSTER_LIMITS.STARTERS) {
-        Alert.alert("5 majeur complet", MATCH_VALIDATION_MESSAGES.STARTERS_FULL);
+        Alert.alert(t("newMatchScreen.alerts.lineupFullTitle"), t("newMatchScreen.validation.startersFull"));
         return;
       }
       setOpponentStarters([...opponentStarters, playerId]);
@@ -634,7 +639,7 @@ export default function NewMatchScreen() {
   const handleStart = () => {
     // Validate home team
     if (selectedHomePlayers.length < ROSTER_LIMITS.MIN_PLAYERS) {
-      Alert.alert("Erreur", MATCH_VALIDATION_MESSAGES.MIN_PLAYERS);
+      Alert.alert(t("common.error"), t("newMatchScreen.validation.minPlayers"));
       return;
     }
 
@@ -643,8 +648,8 @@ export default function NewMatchScreen() {
     const homeDuplicates = homeNumbers.filter((num, index) => homeNumbers.indexOf(num) !== index);
     if (homeDuplicates.length > 0) {
       Alert.alert(
-        "Erreur",
-        `Des numéros de maillot sont en double dans votre équipe : ${[...new Set(homeDuplicates)].join(", ")}`
+        t("common.error"),
+        t("newMatchScreen.validation.duplicateHomeNumbers", { numbers: [...new Set(homeDuplicates)].join(", ") })
       );
       return;
     }
@@ -652,8 +657,8 @@ export default function NewMatchScreen() {
     const requiredStarters = Math.min(ROSTER_LIMITS.STARTERS, selectedHomePlayers.length);
     if (starters.length !== requiredStarters) {
       Alert.alert(
-        "Erreur",
-        MATCH_VALIDATION_MESSAGES.STARTERS_REQUIRED(requiredStarters)
+        t("common.error"),
+        t("newMatchScreen.validation.startersRequired", { count: requiredStarters })
       );
       return;
     }
@@ -661,7 +666,7 @@ export default function NewMatchScreen() {
     // Validate opponent roster if tracking stats
     if (trackOpponentStats) {
       if (opponentRoster.length < ROSTER_LIMITS.STARTERS) {
-        Alert.alert("Erreur", MATCH_VALIDATION_MESSAGES.OPPONENT_MIN_PLAYERS);
+        Alert.alert(t("common.error"), t("newMatchScreen.validation.opponentMinPlayers"));
         return;
       }
 
@@ -670,14 +675,14 @@ export default function NewMatchScreen() {
       const opponentDuplicates = opponentNumbers.filter((num, index) => opponentNumbers.indexOf(num) !== index);
       if (opponentDuplicates.length > 0) {
         Alert.alert(
-          "Erreur",
-          `Des numéros de maillot sont en double dans l'équipe adverse : ${[...new Set(opponentDuplicates)].join(", ")}`
+          t("common.error"),
+          t("newMatchScreen.validation.duplicateOpponentNumbers", { numbers: [...new Set(opponentDuplicates)].join(", ") })
         );
         return;
       }
 
       if (opponentStarters.length !== ROSTER_LIMITS.STARTERS) {
-        Alert.alert("Erreur", MATCH_VALIDATION_MESSAGES.OPPONENT_STARTERS_REQUIRED);
+        Alert.alert(t("common.error"), t("newMatchScreen.validation.opponentStartersRequired"));
         return;
       }
     }
@@ -697,7 +702,7 @@ export default function NewMatchScreen() {
     // Get club (from context for authenticated users, or create guest club)
     const club = user && currentClub ? currentClub : {
       id: GUEST_IDS.CLUB,
-      name: "Club Local",
+      name: t("newMatchScreen.localClubFallback"),
       acronym: "CL",
       code: "guest",
       ownerId: "guest",
@@ -714,7 +719,7 @@ export default function NewMatchScreen() {
 
     // Validate club exists
     if (!club || !club.id) {
-      Alert.alert("Erreur", MATCH_VALIDATION_MESSAGES.NO_CLUB);
+      Alert.alert(t("common.error"), t("newMatchScreen.validation.noClub"));
       return;
     }
 
@@ -838,11 +843,12 @@ export default function NewMatchScreen() {
   const selectedTeam = teams.find((t) => t.id === selectedTeamId) || null;
   const isStep1Valid = opponent && (user ? selectedTeamId : myTeamName);
 
-  const myName = !user ? myTeamName : (teams.find(t => t.id === selectedTeamId)?.name || "MonEquipe");
+  const myName = !user ? myTeamName : (teams.find(t => t.id === selectedTeamId)?.name || t("newMatchScreen.myTeamFallback"));
   const today = new Date().toISOString().split("T")[0];
+  const opponentFallback = opponent || t("newMatchScreen.opponentFallback");
   const defaultTemplateName = isHome
-    ? `${myName}_${opponent || "Adversaire"}_${today}`
-    : `${opponent || "Adversaire"}_${myName}_${today}`;
+    ? `${myName}_${opponentFallback}_${today}`
+    : `${opponentFallback}_${myName}_${today}`;
   const selectedHomePlayerIds = new Set(selectedHomePlayers.map((p) => p.id));
   const selectedPlayerNumberErrors = [...playerNumberErrors].filter((id) =>
     selectedHomePlayerIds.has(id)
@@ -907,8 +913,8 @@ export default function NewMatchScreen() {
           <HandicapSelector
             enabled={showHandicap}
             onToggle={handleHandicapToggle}
-            myTeamName={!user ? myTeamName : (teams.find(t => t.id === selectedTeamId)?.name || "Mon équipe")}
-            opponentName={opponent || "Adversaire"}
+            myTeamName={myName}
+            opponentName={opponentFallback}
             myTeamHandicap={myTeamHandicap}
             opponentHandicap={opponentHandicap}
             onMyTeamHandicapChange={setMyTeamHandicap}
@@ -943,7 +949,7 @@ export default function NewMatchScreen() {
             homeCount={selectedHomePlayers.length}
             opponentCount={opponentRoster.length}
             homeTeamName={myName}
-            opponentName={opponent || "Adversaire"}
+            opponentName={opponentFallback}
             isDark={isDark}
             colors={themeColors}
           />
@@ -1057,29 +1063,29 @@ export default function NewMatchScreen() {
         <View style={confirmStyles.wrapper}>
           <View style={[confirmStyles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
             <MaterialCommunityIcons name="basketball" size={30} color={colors.primary} />
-            <Text style={[confirmStyles.label, { color: colors.text.secondary }]}>DÉMARRER LE MATCH ?</Text>
+            <Text style={[confirmStyles.label, { color: colors.text.secondary }]}>{t("newMatchScreen.confirmModal.title")}</Text>
             <Text style={[confirmStyles.versus, { color: colors.text.primary }]}>
               {myName}
             </Text>
-            <Text style={[confirmStyles.vsLabel, { color: colors.text.tertiary }]}>vs</Text>
+            <Text style={[confirmStyles.vsLabel, { color: colors.text.tertiary }]}>{t("newMatchScreen.confirmModal.vs")}</Text>
             <Text style={[confirmStyles.versus, { color: colors.text.primary }]}>
-              {opponent || "Adversaire"}
+              {opponentFallback}
             </Text>
             <Text style={[confirmStyles.format, { color: colors.text.secondary }]}>
-              {periodCount === 2 ? "2 mi-temps" : `${periodCount} quarts`} · {periodDuration} min
+              {periodCount === 2 ? t("newMatchScreen.confirmModal.halves") : t("newMatchScreen.confirmModal.quarters", { count: periodCount })} · {periodDuration} min
             </Text>
             <View style={confirmStyles.buttons}>
               <TouchableOpacity
                 onPress={() => setShowConfirmModal(false)}
                 style={[confirmStyles.btn, confirmStyles.cancelBtn, { borderColor: colors.border }]}
               >
-                <Text style={[confirmStyles.btnText, { color: colors.text.secondary }]}>Annuler</Text>
+                <Text style={[confirmStyles.btnText, { color: colors.text.secondary }]}>{t("common.cancel")}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={handleConfirmStart}
                 style={[confirmStyles.btn, { backgroundColor: colors.primary }]}
               >
-                <Text style={[confirmStyles.btnText, { color: colors.onPrimary }]}>Démarrer</Text>
+                <Text style={[confirmStyles.btnText, { color: colors.onPrimary }]}>{t("newMatchScreen.confirmModal.start")}</Text>
               </TouchableOpacity>
             </View>
           </View>
