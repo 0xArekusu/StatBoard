@@ -20,6 +20,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../../src/contexts/ThemeContext";
 import { useResponsive } from "../../src/hooks/useResponsive";
 import { useSignedUrl } from "../../hooks/useSignedUrl";
+import { recordReviewPromptSignal } from "../../hooks/useReviewPrompt";
 import { PlayerStats } from "../../constants/matchDetailsConstants";
 import { ShootingBar, StatBox, MarkerType } from "./SharedComponents";
 import { Team } from "../../src/models/types";
@@ -169,6 +170,7 @@ export default function PlayerDetailModal({
         matchSponsors,
       });
       posthog?.capture(ANALYTICS_EVENTS.PDF_EXPORTED, { type: ANALYTICS_PDF_EXPORT_TYPE.PLAYER_MATCH });
+      recordReviewPromptSignal();
     } catch (e) {
       console.error("[PlayerDetailModal] Export PDF error:", e);
     } finally {

@@ -37,8 +37,10 @@ import { ANALYTICS_EVENTS } from "./constants/analyticsEvents";
 import { logInfo, logWarn, logError, logger } from "./utils/logger";
 import DebugCourtClick from "./DebugCourtClick";
 import { useAppUpdateCheck } from "./hooks/useAppUpdateCheck";
+import { useReviewPrompt } from "./hooks/useReviewPrompt";
 import ForceUpdateModal from "./components/ForceUpdateModal";
 import ChangelogModal from "./components/ChangelogModal";
+import ReviewPromptModal from "./components/ReviewPromptModal";
 
 
 // Initialize Sentry
@@ -86,6 +88,8 @@ function Navigation() {
   const { isForceUpdateRequired, onUpdatePress, changelog, dismissChangelog } = useAppUpdateCheck();
   const posthog = usePostHog();
   const routeNameRef = useRef<string | undefined>(undefined);
+  const [currentRouteName, setCurrentRouteName] = useState<string | undefined>(undefined);
+  const { visible: isReviewPromptVisible, onLike: onReviewPromptLike, onDislike: onReviewPromptDislike } = useReviewPrompt(currentRouteName);
 
   // Identify the PostHog user on login, reset on logout.
   // is_guest is registered as a super property so it's attached to every
@@ -259,6 +263,7 @@ function Navigation() {
         ref={navigationRef}
         onReady={() => {
           routeNameRef.current = navigationRef.getCurrentRoute()?.name;
+          setCurrentRouteName(routeNameRef.current);
         }}
         onStateChange={() => {
           const previousRouteName = routeNameRef.current;
@@ -267,6 +272,7 @@ function Navigation() {
             posthog?.screen(currentRouteName);
           }
           routeNameRef.current = currentRouteName;
+          setCurrentRouteName(currentRouteName);
         }}
       >
         <Stack.Navigator
@@ -303,6 +309,11 @@ function Navigation() {
         title={changelog?.title ?? null}
         items={changelog?.items ?? []}
         onClose={dismissChangelog}
+      />
+      <ReviewPromptModal
+        visible={isReviewPromptVisible}
+        onLike={onReviewPromptLike}
+        onDislike={onReviewPromptDislike}
       />
     </>
   );

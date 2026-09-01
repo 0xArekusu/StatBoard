@@ -20,6 +20,7 @@ import { ROUTES } from "../constants/routes";
 import { TeamId } from "../constants/liveMatchConstants";
 import { ANALYTICS_EVENTS } from "../constants/analyticsEvents";
 import { MatchSyncService } from "../src/services/api/MatchSyncService";
+import { recordReviewPromptSignal } from "./useReviewPrompt";
 
 interface UseMatchSyncProps {
   currentMatchId: string | null;
@@ -108,6 +109,7 @@ export function useMatchSync({
         total_periods_played: quarter,
         overtime_periods: overtimesPlayed,
       });
+      recordReviewPromptSignal();
 
       logInfo("useMatchSync", "✅ Match ended and compacted", {
         matchId: currentMatchId,

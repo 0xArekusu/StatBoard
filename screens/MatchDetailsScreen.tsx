@@ -60,6 +60,7 @@ import { ServiceFactory } from "../services/ServiceFactory";
 import { supabase } from "../src/config/supabase";
 import { getSignedUrl } from "../utils/storageHelper";
 import { useSignedUrl } from "../hooks/useSignedUrl";
+import { recordReviewPromptSignal } from "../hooks/useReviewPrompt";
 import { MatchSponsor, getSponsorUris, parseMatchSponsors } from "../src/services/SponsorService";
 import { StatsTab, CardsTab, CourtTab, EvolutionTab, TimelineTab, PlayerDetailModal } from "../components/MatchDetails";
 import type { PlayerStats, Tab, TeamFilter, ActionFilterType, SortBy, SortOrder } from "../constants/matchDetailsConstants";
@@ -282,6 +283,7 @@ export default function MatchDetailsScreen() {
       await PDFExportService.generateMatchPDF(pdfOptions);
       setIsExportingPDF(false);
       posthog?.capture(ANALYTICS_EVENTS.PDF_EXPORTED, { type: ANALYTICS_PDF_EXPORT_TYPE.MATCH });
+      recordReviewPromptSignal();
       Alert.alert("Succès", "Le PDF a été généré et partagé avec succès");
     } catch (error) {
       setIsExportingPDF(false);

@@ -62,6 +62,12 @@ jest.mock("../../utils/logger", () => ({
   logWarn: jest.fn(),
 }));
 
+// ─── useReviewPrompt mock (import indirect via useMatchSync) ──────────────────
+
+jest.mock("../../hooks/useReviewPrompt", () => ({
+  recordReviewPromptSignal: jest.fn(),
+}));
+
 // ─── Supabase mock (pour fetchAndNavigateToSyncedMatch) ───────────────────────
 
 const mockSupabaseSingle = jest.fn();

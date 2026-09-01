@@ -7,6 +7,7 @@ import { useTheme } from '../src/contexts/ThemeContext';
 import { useAuth } from '../src/contexts/AuthContext';
 import { useClub } from '../src/contexts/ClubContext';
 import { useResponsive } from '../src/hooks/useResponsive';
+import { recordReviewPromptSignal } from '../hooks/useReviewPrompt';
 import { supabase } from '../src/config/supabase';
 import { ServiceFactory } from '../services/ServiceFactory';
 import {
@@ -123,6 +124,7 @@ export default function PlayerProfileScreen() {
         period,
       });
       posthog?.capture(ANALYTICS_EVENTS.PDF_EXPORTED, { type: ANALYTICS_PDF_EXPORT_TYPE.PLAYER_SEASON });
+      recordReviewPromptSignal();
     } catch (e) {
       logError('PlayerProfileScreen', 'Erreur export PDF', { error: e });
     } finally {
