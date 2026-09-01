@@ -1,0 +1,79 @@
+{
+  "common": {
+    "cancel": "Cancel",
+    "ok": "OK",
+    "error": "Error",
+    "guest": "Guest",
+    "send": "Send",
+    "success": "Success",
+    "info": "Info",
+    "genericErrorRetry": "An error occurred. Please try again."
+  },
+  "dashboard": {
+    "greeting": "Hello,",
+    "subGreeting": "Ready for the match?",
+    "selectTeamPlaceholder": "Select a team",
+    "guestBanner": "Guest Mode: Matches are saved locally on this device.",
+    "newMatchButtonTitle": "New Match",
+    "newMatchButtonSubtitleGuest": "Guest Mode",
+    "newMatchButtonSubtitleTeam": "For {{team}}",
+    "ctaJoinOrCreateClub": "Join or create a club",
+    "ctaCreateFirstTeam": "Create your first team",
+    "ctaDescriptionNoClub": "To start tracking stats, you need to link your account to a team.",
+    "ctaDescriptionNoTeam": "You're part of a club — create a team now to start tracking your matches.",
+    "ctaStart": "Get Started",
+    "languageMenu": {
+      "title": "Language",
+      "options": {
+        "fr": "Français",
+        "en": "English"
+      }
+    },
+    "profileMenu": {
+      "exportLogs": "Export logs",
+      "testSentry": "Test Sentry",
+      "switchClub": "Switch club",
+      "deleteAccount": "Delete my account",
+      "deletingAccount": "Deleting..."
+    },
+    "clubSwitcher": {
+      "title": "Switch club",
+      "createNewClub": "Create a new club"
+    },
+    "alerts": {
+      "deleteAccount": {
+        "title": "Delete my account",
+        "message": "All your personal data will be permanently deleted. This action is irreversible.",
+        "continue": "Continue",
+        "confirmTitle": "Confirm deletion",
+        "confirmMessage": "Are you sure you want to permanently delete your account?",
+        "confirmButton": "Delete permanently",
+        "blockedTitle": "Deletion impossible",
+        "blockedMessage": "You are the owner of a club. Delete your club from the app first before deleting your account."
+      },
+      "abandonMatch": {
+        "title": "Abandon the match?",
+        "message": "This action is irreversible. All match data will be permanently deleted.",
+        "confirmButton": "Abandon",
+        "errorMessage": "Unable to abandon the match. Please try again."
+      },
+      "newMatchConfirm": {
+        "title": "New match",
+        "message": "A match is already in progress. Do you want to abandon it to create a new one?",
+        "confirmButton": "Abandon and create"
+      },
+      "upgrade": {
+        "message": "Upgrade feature coming soon"
+      },
+      "createClubBlocked": {
+        "title": "Create a new club",
+        "message": "Only club owners can create new clubs. You are currently a member of the club but not the owner."
+      },
+      "exportLogs": {
+        "title": "Export logs",
+        "message": "The last 2000 log messages will be sent to Sentry for analysis.",
+        "errorMessage": "Unable to send logs. Please try again."
+      }
+    }
+  }
+}

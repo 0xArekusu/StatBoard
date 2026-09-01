@@ -31,7 +31,9 @@ import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { AuthProvider, useAuth } from "./src/contexts/AuthContext";
 import { ClubProvider } from "./src/contexts/ClubContext";
 import { ThemeProvider } from "./src/contexts/ThemeContext";
+import { LanguageProvider } from "./src/contexts/LanguageContext";
 import { AdProvider } from "./src/contexts/AdContext";
+import "./src/i18n";
 import { ROUTES } from "./constants/routes";
 import { ANALYTICS_EVENTS } from "./constants/analyticsEvents";
 import { logInfo, logWarn, logError, logger } from "./utils/logger";
@@ -401,23 +403,25 @@ function App() {
       <SafeAreaProvider>
         <SafeAreaView style={{ flex: 1 }}>
           <ThemeProvider>
-            <AuthProvider>
-              <PostHogProvider
-                apiKey={process.env.EXPO_PUBLIC_POSTHOG_API_KEY ?? ""}
-                options={{
-                  host: process.env.EXPO_PUBLIC_POSTHOG_HOST,
-                  enableSessionReplay: false,
-                  disabled: !process.env.EXPO_PUBLIC_POSTHOG_API_KEY,
-                }}
-                autocapture={{ captureTouches: false, captureScreens: false }}
-              >
-                <ClubProvider>
-                  <AdProvider>
-                    <Navigation />
-                  </AdProvider>
-                </ClubProvider>
-              </PostHogProvider>
-            </AuthProvider>
+            <LanguageProvider>
+              <AuthProvider>
+                <PostHogProvider
+                  apiKey={process.env.EXPO_PUBLIC_POSTHOG_API_KEY ?? ""}
+                  options={{
+                    host: process.env.EXPO_PUBLIC_POSTHOG_HOST,
+                    enableSessionReplay: false,
+                    disabled: !process.env.EXPO_PUBLIC_POSTHOG_API_KEY,
+                  }}
+                  autocapture={{ captureTouches: false, captureScreens: false }}
+                >
+                  <ClubProvider>
+                    <AdProvider>
+                      <Navigation />
+                    </AdProvider>
+                  </ClubProvider>
+                </PostHogProvider>
+              </AuthProvider>
+            </LanguageProvider>
           </ThemeProvider>
         </SafeAreaView>
       </SafeAreaProvider>

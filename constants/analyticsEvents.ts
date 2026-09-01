@@ -18,6 +18,7 @@ export const ANALYTICS_EVENTS = {
   // Dashboard
   PROFILE_MENU_OPENED: "profile_menu_opened",
   THEME_TOGGLED: "theme_toggled",
+  LANGUAGE_CHANGED: "language_changed",
   TEAM_CHANGED: "team_changed",
 
   // Club

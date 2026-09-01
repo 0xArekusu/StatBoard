@@ -1,0 +1,79 @@
+{
+  "common": {
+    "cancel": "Annuler",
+    "ok": "OK",
+    "error": "Erreur",
+    "guest": "Invité",
+    "send": "Envoyer",
+    "success": "Succès",
+    "info": "Info",
+    "genericErrorRetry": "Une erreur est survenue. Veuillez réessayer."
+  },
+  "dashboard": {
+    "greeting": "Bonjour,",
+    "subGreeting": "Prêt pour le match ?",
+    "selectTeamPlaceholder": "Sélectionner une équipe",
+    "guestBanner": "Mode Invité : Les matchs sont sauvegardés en local sur cet appareil.",
+    "newMatchButtonTitle": "Nouveau Match",
+    "newMatchButtonSubtitleGuest": "Mode Invité",
+    "newMatchButtonSubtitleTeam": "Pour {{team}}",
+    "ctaJoinOrCreateClub": "Rejoignez ou créez un club",
+    "ctaCreateFirstTeam": "Créez votre première équipe",
+    "ctaDescriptionNoClub": "Pour commencer à suivre les statistiques, vous devez associer votre compte à une équipe.",
+    "ctaDescriptionNoTeam": "Vous faites partie d'un club, créez maintenant une équipe pour commencer à suivre vos matchs.",
+    "ctaStart": "Commencer",
+    "languageMenu": {
+      "title": "Langue",
+      "options": {
+        "fr": "Français",
+        "en": "English"
+      }
+    },
+    "profileMenu": {
+      "exportLogs": "Exporter les logs",
+      "testSentry": "Test Sentry",
+      "switchClub": "Changer de club",
+      "deleteAccount": "Supprimer mon compte",
+      "deletingAccount": "Suppression..."
+    },
+    "clubSwitcher": {
+      "title": "Changer de club",
+      "createNewClub": "Créer un nouveau club"
+    },
+    "alerts": {
+      "deleteAccount": {
+        "title": "Supprimer mon compte",
+        "message": "Toutes vos données personnelles seront définitivement supprimées. Cette action est irréversible.",
+        "continue": "Continuer",
+        "confirmTitle": "Confirmer la suppression",
+        "confirmMessage": "Êtes-vous sûr de vouloir supprimer définitivement votre compte ?",
+        "confirmButton": "Supprimer définitivement",
+        "blockedTitle": "Suppression impossible",
+        "blockedMessage": "Vous êtes propriétaire d'un club. Supprimez d'abord votre club depuis l'application avant de supprimer votre compte."
+      },
+      "abandonMatch": {
+        "title": "Abandonner le match ?",
+        "message": "Cette action est irréversible. Toutes les données du match seront supprimées définitivement.",
+        "confirmButton": "Abandonner",
+        "errorMessage": "Impossible d'abandonner le match. Veuillez réessayer."
+      },
+      "newMatchConfirm": {
+        "title": "Nouveau match",
+        "message": "Un match est déjà en cours. Voulez-vous l'abandonner pour en créer un nouveau ?",
+        "confirmButton": "Abandonner et créer"
+      },
+      "upgrade": {
+        "message": "Fonctionnalité d'upgrade à venir"
+      },
+      "createClubBlocked": {
+        "title": "Créer un nouveau club",
+        "message": "Seuls les propriétaires de club peuvent créer de nouveaux clubs. Vous êtes actuellement membre du club mais pas propriétaire."
+      },
+      "exportLogs": {
+        "title": "Exporter les logs",
+        "message": "Les 2000 derniers messages de log vont être envoyés à Sentry pour analyse.",
+        "errorMessage": "Impossible d'envoyer les logs. Veuillez réessayer."
+      }
+    }
+  }
+}
