@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import * as Clipboard from 'expo-clipboard';
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { useTranslation } from "react-i18next";
 import { useTheme } from "../../src/contexts/ThemeContext";
 import { Club } from "../../models/Club";
 import { Team } from "../../models/Team";
@@ -61,6 +62,7 @@ export default function ClubInfoView({
   currentTier,
   subscriptionName,
 }: ClubInfoViewProps) {
+  const { t } = useTranslation();
   const { colors } = useTheme();
   const { sp, font, sizes } = useResponsive();
 
@@ -70,9 +72,9 @@ export default function ClubInfoView({
   const handleCopyCode = async () => {
     try {
       await Clipboard.setStringAsync(club.code);
-      Alert.alert("Copié", `Code "${club.code}" copié dans le presse-papiers`);
+      Alert.alert(t("clubInfoView.copiedTitle"), t("clubInfoView.copiedMessage", { code: club.code }));
     } catch (error) {
-      Alert.alert("Erreur", "Impossible de copier le code");
+      Alert.alert(t("common.error"), t("clubInfoView.copyFailed"));
     }
   };
 
@@ -81,7 +83,7 @@ export default function ClubInfoView({
       <View style={styles.content}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={[styles.title, { color: colors.text.primary }]}>Mon Club</Text>
+          <Text style={[styles.title, { color: colors.text.primary }]}>{t("clubInfoView.title")}</Text>
           {isOwner && (
             <View style={styles.headerButtons}>
               <TouchableOpacity
@@ -137,7 +139,7 @@ export default function ClubInfoView({
                     },
                   ]}
                 >
-                  {subTab === CLUB_SUB_TAB.SUBSCRIPTION ? "Fermer" : "Offre"}
+                  {subTab === CLUB_SUB_TAB.SUBSCRIPTION ? t("clubInfoView.close") : t("clubInfoView.offer")}
                 </Text>
               </TouchableOpacity>
               )}
@@ -193,7 +195,7 @@ export default function ClubInfoView({
                   <Text
                     style={[styles.clubCodeLabel, { color: colors.text.secondary }]}
                   >
-                    CODE CLUB
+                    {t("clubInfoView.clubCode")}
                   </Text>
                   <View style={styles.clubCodeRow}>
                     <Text
@@ -220,7 +222,7 @@ export default function ClubInfoView({
                   <Text
                     style={[styles.usageBarLabel, { color: colors.text.secondary }]}
                   >
-                    Abonnement {subscriptionName || SUBSCRIPTION_TIER_LABELS[currentTier]}
+                    {t("clubInfoView.subscription", { name: subscriptionName || SUBSCRIPTION_TIER_LABELS[currentTier] })}
                   </Text>
                   <Text
                     style={[
@@ -230,8 +232,7 @@ export default function ClubInfoView({
                       },
                     ]}
                   >
-                    {currentTeamCount} / {maxTeams > 100 ? "∞" : maxTeams}{" "}
-                    Équipes
+                    {t("clubInfoView.teamsCount", { count: currentTeamCount, max: maxTeams > 100 ? "∞" : maxTeams })}
                   </Text>
                 </View>
                 <View
@@ -267,7 +268,7 @@ export default function ClubInfoView({
                         { color: colors.primary },
                       ]}
                     >
-                      Augmenter la limite
+                      {t("clubInfoView.increaseLimit")}
                     </Text>
                   </TouchableOpacity>
                 )}
@@ -280,7 +281,7 @@ export default function ClubInfoView({
                 <Text
                   style={[styles.teamsSectionTitle, { color: colors.text.primary }]}
                 >
-                  Nos Équipes
+                  {t("clubInfoView.ourTeams")}
                 </Text>
                 <TouchableOpacity
                   onPress={onAddTeam}
@@ -337,8 +338,8 @@ export default function ClubInfoView({
                     style={[styles.emptyTeamsText, { color: colors.text.secondary }]}
                   >
                     {isOwner
-                      ? "Aucune équipe créée."
-                      : "Aucune équipe assignée."}
+                      ? t("clubInfoView.noTeamsOwner")
+                      : t("clubInfoView.noTeamsMember")}
                   </Text>
                 </View>
               )}

@@ -7,8 +7,9 @@
 import React, { useState } from "react";
 import { View, Text, TextInput, TouchableOpacity, StyleSheet } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { useTranslation } from "react-i18next";
 import { BRAND_COLORS, COMMON_COLORS, OPACITY } from "../../src/theme";
-import { MATCH_CREATION_BUTTON_LABELS } from "../../constants";
+import { getMatchCreationButtonLabel } from "../../constants";
 import type { Player } from "../../models/Player";
 import { useResponsive } from "../../src/hooks/useResponsive";
 
@@ -61,6 +62,7 @@ export const AddPlayerForm: React.FC<AddPlayerFormProps> = ({
   isDark,
   colors,
 }) => {
+  const { t } = useTranslation();
   const [error, setError] = useState<string | null>(null);
 
   const handleNumberChange = (text: string) => {
@@ -75,7 +77,7 @@ export const AddPlayerForm: React.FC<AddPlayerFormProps> = ({
 
     // Validation
     if (isNaN(numValue) || numValue < 0 || numValue > 99) {
-      setError("Le numéro doit être entre 0 et 99.");
+      setError(t("teamRosterScreen.validation.numberRange"));
       return;
     }
 
@@ -86,7 +88,7 @@ export const AddPlayerForm: React.FC<AddPlayerFormProps> = ({
     );
 
     if (isDuplicateNumber) {
-      setError("Ce numéro de maillot est déjà utilisé.");
+      setError(t("teamRosterScreen.validation.duplicateNumber"));
       return;
     }
 
@@ -97,7 +99,7 @@ export const AddPlayerForm: React.FC<AddPlayerFormProps> = ({
     );
 
     if (isDuplicateName) {
-      setError("Un joueur avec ce nom existe déjà.");
+      setError(t("teamRosterScreen.validation.duplicateName"));
       return;
     }
 
@@ -115,11 +117,11 @@ export const AddPlayerForm: React.FC<AddPlayerFormProps> = ({
       ]}
     >
       <Text style={[styles.addPlayerTitle, { color: colors.textPrimary, fontSize: font.md, marginBottom: sp.sm + sp.xs }]}>
-        {MATCH_CREATION_BUTTON_LABELS.ADD_REINFORCEMENT}
+        {getMatchCreationButtonLabel("ADD_REINFORCEMENT")}
       </Text>
       <View style={[styles.addPlayerForm, { gap: sp.sm }]}>
         <TextInput
-          placeholder="Nom"
+          placeholder={t("addPlayerForm.namePlaceholder")}
           placeholderTextColor={colors.textSecondary}
           value={name}
           onChangeText={(text) => {
@@ -181,7 +183,7 @@ export const AddPlayerForm: React.FC<AddPlayerFormProps> = ({
         </TouchableOpacity>
       </View>
       <TextInput
-        placeholder="VTXXXXXX (Optionnel)"
+        placeholder={t("addPlayerForm.licensePlaceholder")}
         placeholderTextColor={colors.textSecondary}
         value={license}
         onChangeText={onLicenseChange}

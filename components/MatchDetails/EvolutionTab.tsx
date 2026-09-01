@@ -10,6 +10,7 @@ import React, { useMemo, useState } from "react";
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from "react-native";
 import Svg, { Path, Line } from "react-native-svg";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { useTranslation } from "react-i18next";
 import { ActionType, ShotSpecification } from "../../src/models/ActionTypes";
 import { Team } from "../../src/models/types";
 import { useResponsive } from "../../src/hooks/useResponsive";
@@ -64,6 +65,7 @@ export default function EvolutionTab({
   actions,
   colors,
 }: EvolutionTabProps) {
+  const { t } = useTranslation();
   const { sp, font, sizes } = useResponsive();
   const [selectedPoint, setSelectedPoint] = useState<number | null>(null);
 
@@ -256,7 +258,7 @@ export default function EvolutionTab({
           <View style={[styles.tableRow, { borderBottomColor: colors.border }]}>
             <View style={[styles.teamNameCell, { borderRightColor: colors.border }]}>
               <Text style={[styles.teamNameText, { color: match.is_home ? colors.text.primary : colors.text.secondary }]}>
-                {match.is_home ? (match.my_team_name || "Mon Équipe") : (match.opponent_name || "Adversaire")}
+                {match.is_home ? (match.my_team_name || t("liveMatchModals.myTeamFallback")) : (match.opponent_name || t("liveMatchModals.opponentFallback"))}
               </Text>
               {homeHandicap > 0 && (
                 <View style={[styles.hcpBadge, { backgroundColor: colors.primary + "22", borderColor: colors.primary + "55" }]}>
@@ -303,7 +305,7 @@ export default function EvolutionTab({
           <View style={styles.tableRow}>
             <View style={[styles.teamNameCell, { borderRightColor: colors.border }]}>
               <Text style={[styles.teamNameText, { color: match.is_home ? colors.text.secondary : colors.text.primary }]}>
-                {match.is_home ? (match.opponent_name || "Adversaire") : (match.my_team_name || "Mon Équipe")}
+                {match.is_home ? (match.opponent_name || t("liveMatchModals.opponentFallback")) : (match.my_team_name || t("liveMatchModals.myTeamFallback"))}
               </Text>
               {awayHandicap > 0 && (
                 <View style={[styles.hcpBadge, { backgroundColor: colors.primary + "22", borderColor: colors.primary + "55" }]}>
@@ -465,7 +467,7 @@ export default function EvolutionTab({
                   let opponentScoreChange = '';
 
                   if (i === 0) {
-                    label = 'Début du match';
+                    label = t('evolutionTab.matchStart');
                   } else if (point.period !== undefined && point.actionIndex !== undefined && evolution.scoringActions) {
                     const action = evolution.scoringActions[point.actionIndex];
                     const previousPoint = evolution.graphPoints[i - 1];
@@ -474,13 +476,13 @@ export default function EvolutionTab({
                     if (action) {
                       const pointsScored = action.points || 0;
                       const scorerTeam = action.team === Team.MY_TEAM
-                        ? (match.my_team_name || "Notre équipe")
-                        : (match.opponent_name || "Adversaire");
+                        ? (match.my_team_name || t("liveMatchModals.myTeamFallback"))
+                        : (match.opponent_name || t("liveMatchModals.opponentFallback"));
 
                       let shotType = '';
-                      if (pointsScored === 1) shotType = 'LF';
-                      else if (pointsScored === 2) shotType = '2pts';
-                      else if (pointsScored === 3) shotType = '3pts';
+                      if (pointsScored === 1) shotType = t("liveMatchModals.filter.freeThrows");
+                      else if (pointsScored === 2) shotType = t("liveMatchModals.filter.twoPts");
+                      else if (pointsScored === 3) shotType = t("liveMatchModals.filter.threePts");
 
                       label = periodLabel;
                       scoreInfo = `${scorerTeam} - ${shotType}`;
@@ -533,7 +535,7 @@ export default function EvolutionTab({
                               <View style={[styles.tooltipDot, { backgroundColor: colors.primary }]} />
                               <View style={styles.tooltipScoreColumn}>
                                 <Text style={[styles.tooltipTeamName, { color: colors.text.primary }]}>
-                                  {match.my_team_name || "Notre équipe"}
+                                  {match.my_team_name || t("liveMatchModals.myTeamFallback")}
                                 </Text>
                                 {myTeamScoreChange ? (
                                   <Text style={[styles.tooltipScoreChange, { color: colors.text.primary }]}>
@@ -550,7 +552,7 @@ export default function EvolutionTab({
                               <View style={[styles.tooltipDot, { backgroundColor: "#FF6B6B" }]} />
                               <View style={styles.tooltipScoreColumn}>
                                 <Text style={[styles.tooltipTeamName, { color: colors.text.secondary }]}>
-                                  {match.opponent_name || "Adversaire"}
+                                  {match.opponent_name || t("liveMatchModals.opponentFallback")}
                                 </Text>
                                 {opponentScoreChange ? (
                                   <Text style={[styles.tooltipScoreChange, { color: colors.text.primary }]}>
@@ -591,7 +593,7 @@ export default function EvolutionTab({
         ) : (
           <View style={styles.noDataContainer}>
             <Text style={[styles.noDataText, { color: colors.text.secondary }]}>
-              Données insuffisantes pour le graphique
+              {t('evolutionTab.insufficientData')}
             </Text>
           </View>
         )}
@@ -621,7 +623,7 @@ export default function EvolutionTab({
             <Text
               style={[styles.legendText, { color: colors.text.secondary }]}
             >
-              {match.opponent_name || "ADVERSAIRE"}
+              {match.opponent_name || t("liveMatchModals.opponentFallback").toUpperCase()}
             </Text>
           </View>
         </View>

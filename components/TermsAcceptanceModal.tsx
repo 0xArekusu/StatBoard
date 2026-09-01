@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, Modal, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '../src/contexts/ThemeContext';
 import { useResponsive } from '../src/hooks/useResponsive';
 import { SHADOW_COLOR, OPACITY } from '../src/theme';
@@ -16,6 +17,7 @@ export default function TermsAcceptanceModal({
   onAccept,
   onRefuse,
 }: TermsAcceptanceModalProps) {
+  const { t } = useTranslation();
   const { colors } = useTheme();
   const { sp, font } = useResponsive();
   const [loading, setLoading] = useState(false);
@@ -51,31 +53,31 @@ export default function TermsAcceptanceModal({
             <Text
               style={[styles.title, { color: colors.text.primary, fontSize: font.xl }]}
             >
-              Conditions d'utilisation
+              {t('termsAcceptanceModal.title')}
             </Text>
 
             <Text
               style={[styles.message, { color: colors.text.secondary, fontSize: font.md }]}
             >
-              Pour utiliser l'application, vous devez accepter nos{' '}
+              {t('termsAcceptanceModal.messagePrefix')}{' '}
               <Text
                 style={{ color: colors.primary, fontWeight: '600' }}
                 onPress={() => {
                   setPolicyUrl('https://coachassistant.fr/terms.html');
-                  setPolicyTitle("Conditions d'utilisation");
+                  setPolicyTitle(t('termsAcceptanceModal.title'));
                 }}
               >
-                Conditions d'utilisation
+                {t('termsAcceptanceModal.title')}
               </Text>
-              {' '}et notre{' '}
+              {' '}{t('termsAcceptanceModal.messageMiddle')}{' '}
               <Text
                 style={{ color: colors.primary, fontWeight: '600' }}
                 onPress={() => {
                   setPolicyUrl('https://coachassistant.fr/privacy.html');
-                  setPolicyTitle('Politique de confidentialité');
+                  setPolicyTitle(t('termsAcceptanceModal.privacyLink'));
                 }}
               >
-                Politique de confidentialité
+                {t('termsAcceptanceModal.privacyLink')}
               </Text>
               .
             </Text>
@@ -99,7 +101,7 @@ export default function TermsAcceptanceModal({
                   <ActivityIndicator color={colors.onPrimary} />
                 ) : (
                   <Text style={[styles.buttonText, { color: colors.onPrimary, fontSize: font.md }]}>
-                    Accepter
+                    {t('termsAcceptanceModal.acceptButton')}
                   </Text>
                 )}
               </TouchableOpacity>
@@ -120,7 +122,7 @@ export default function TermsAcceptanceModal({
                 activeOpacity={OPACITY.interaction.high}
               >
                 <Text style={[styles.buttonText, { color: colors.text.secondary, fontSize: font.md }]}>
-                  Refuser
+                  {t('termsAcceptanceModal.refuseButton')}
                 </Text>
               </TouchableOpacity>
             </View>

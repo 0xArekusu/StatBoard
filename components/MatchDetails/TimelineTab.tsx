@@ -13,6 +13,7 @@ import {
   SubstitutionSpecification,
   getActionColor,
 } from "../../src/models/ActionTypes";
+import { useTranslation } from "react-i18next";
 import { useTheme } from "../../src/contexts/ThemeContext";
 import { useResponsive } from "../../src/hooks/useResponsive";
 
@@ -134,6 +135,7 @@ function PlayerBadge({ num, teamAbbr, textColor, borderColor: bc }: {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function TimelineTab({ actions, match, playerNamesMap }: TimelineTabProps) {
+  const { t } = useTranslation();
   const { colors, isDark } = useTheme();
   const { sp, font } = useResponsive();
 
@@ -218,9 +220,9 @@ export default function TimelineTab({ actions, match, playerNamesMap }: Timeline
           const num = action.player_number ?? action.player ?? 9999;
           const playerName =
             num === -1
-              ? "Équipe"
+              ? t("timelineTab.teamFallback")
               : num === 9999
-              ? (match.opponent_name || "Adv.")
+              ? (match.opponent_name || t("timelineTab.opponentAbbrFallback"))
               : playerNamesMap.get(`${action.team}-${num}`) || `#${num}`;
 
           result.push({
@@ -256,7 +258,7 @@ export default function TimelineTab({ actions, match, playerNamesMap }: Timeline
       <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: bgColor }}>
         <ActivityIndicator size="large" color={colors.primary} />
         <Text style={{ color: textSecondary, fontSize: font.sm, marginTop: sp.md }}>
-          Chargement de la timeline…
+          {t("timelineTab.loading")}
         </Text>
       </View>
     );
@@ -270,7 +272,7 @@ export default function TimelineTab({ actions, match, playerNamesMap }: Timeline
         <View style={styles.chipsRow}>
           {[null, ...availablePeriods].map((p) => {
             const active = selectedPeriod === p;
-            const label = p === null ? "Tout" : getPeriodLabel(p, totalPeriods);
+            const label = p === null ? t("liveMatchModals.filter.all") : getPeriodLabel(p, totalPeriods);
             return (
               <TouchableOpacity
                 key={p ?? "all"}
@@ -295,11 +297,11 @@ export default function TimelineTab({ actions, match, playerNamesMap }: Timeline
         {/* Team names */}
         <View style={[styles.columnHeaders, { paddingHorizontal: sp.md }]}>
           <Text style={{ color: myTeamColor, flex: 1, textAlign: "right", fontSize: font.xs, fontWeight: "700" }} numberOfLines={1}>
-            {match.my_team_name || "Mon équipe"}
+            {match.my_team_name || t("liveMatchModals.myTeamFallback")}
           </Text>
           <View style={{ width: CENTER_COL_W }} />
           <Text style={{ color: opponentColor, flex: 1, textAlign: "left", fontSize: font.xs, fontWeight: "700" }} numberOfLines={1}>
-            {match.opponent_name || "Adversaire"}
+            {match.opponent_name || t("liveMatchModals.opponentFallback")}
           </Text>
         </View>
       </View>
@@ -313,7 +315,7 @@ export default function TimelineTab({ actions, match, playerNamesMap }: Timeline
         {/* Empty state */}
         {rows.length === 0 && (
           <Text style={{ color: textTertiary, textAlign: "center", marginTop: sp.xl, fontSize: font.sm }}>
-            Aucune action enregistrée
+            {t("timelineTab.noActions")}
           </Text>
         )}
 
@@ -332,7 +334,7 @@ export default function TimelineTab({ actions, match, playerNamesMap }: Timeline
                 <View style={styles.periodEndRow}>
                   <View style={{ flex: 1, height: StyleSheet.hairlineWidth, backgroundColor: borderColor }} />
                   <View style={[styles.periodEndBanner, { backgroundColor: periodEndBg }]}>
-                    <Text style={styles.periodEndLabel}>FIN {row.periodLabel}</Text>
+                    <Text style={styles.periodEndLabel}>{t("timelineTab.periodEnd", { period: row.periodLabel })}</Text>
                     <View style={[styles.periodEndSep, { backgroundColor: "rgba(255,255,255,0.25)" }]} />
                     <Text style={styles.periodEndScore}>{row.score.myTeam} – {row.score.opponent}</Text>
                   </View>

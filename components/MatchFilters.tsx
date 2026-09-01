@@ -21,6 +21,7 @@ import {
   StyleSheet,
 } from "react-native";
 import { ACTION_DEFINITIONS } from "../src/models/ActionTypes";
+import { useTranslation } from "react-i18next";
 import { useTheme } from "../src/contexts/ThemeContext";
 import { useResponsive } from "../src/hooks/useResponsive";
 import { Team } from "../src/models/types";
@@ -77,6 +78,7 @@ export default function MatchFilters({
   onActionTypesChange,
   onPeriodsChange,
 }: MatchFiltersProps) {
+  const { t } = useTranslation();
   const { colors } = useTheme();
   const { sp, font, sizes } = useResponsive();
   const totalPeriods = matchFormat === "2_halves" ? 2 : 4;
@@ -186,12 +188,12 @@ export default function MatchFilters({
       {/* Équipes */}
       <View style={[styles.filterCategory, { marginBottom: sp.md }]}>
         <View style={[styles.filterCategoryHeader, { marginBottom: sp.sm }]}>
-          <Text style={[styles.filterCategoryLabel, { color: colors.text.primary, fontSize: font.md }]}>Équipe</Text>
+          <Text style={[styles.filterCategoryLabel, { color: colors.text.primary, fontSize: font.md }]}>{t("matchFilters.team")}</Text>
           <TouchableOpacity
             onPress={selectAllTeams}
             style={styles.selectAllButton}
           >
-            <Text style={[styles.selectAllText, { color: colors.text.tertiary, fontSize: font.xs }]}>Tous</Text>
+            <Text style={[styles.selectAllText, { color: colors.text.tertiary, fontSize: font.xs }]}>{t("matchFilters.selectAll")}</Text>
           </TouchableOpacity>
         </View>
         <View style={[styles.filterCards, { gap: sp.sm }]}>
@@ -253,7 +255,7 @@ export default function MatchFilters({
 
       {/* Joueurs */}
       <View style={[styles.filterCategory, { marginBottom: sp.md }]}>
-        <Text style={[styles.filterCategoryLabel, { color: colors.text.primary, fontSize: font.md, marginBottom: sp.sm }]}>Joueurs</Text>
+        <Text style={[styles.filterCategoryLabel, { color: colors.text.primary, fontSize: font.md, marginBottom: sp.sm }]}>{t("matchFilters.players")}</Text>
 
         {/* Team A Players - Show if managing Team A or both */}
         {(selectedTeams.includes(Team.MY_TEAM) || teamMode === Team.MY_TEAM) && (
@@ -264,7 +266,7 @@ export default function MatchFilters({
                 onPress={selectAllPlayersTeamA}
                 style={styles.selectAllButton}
               >
-                <Text style={[styles.selectAllText, { color: colors.text.tertiary, fontSize: font.xs }]}>Tous</Text>
+                <Text style={[styles.selectAllText, { color: colors.text.tertiary, fontSize: font.xs }]}>{t("matchFilters.selectAll")}</Text>
               </TouchableOpacity>
             </View>
             <ScrollView
@@ -327,7 +329,7 @@ export default function MatchFilters({
                 onPress={selectAllPlayersTeamB}
                 style={styles.selectAllButton}
               >
-                <Text style={[styles.selectAllText, { color: colors.text.tertiary }]}>Tous</Text>
+                <Text style={[styles.selectAllText, { color: colors.text.tertiary }]}>{t("matchFilters.selectAll")}</Text>
               </TouchableOpacity>
             </View>
             <ScrollView
@@ -372,12 +374,12 @@ export default function MatchFilters({
       {/* Types d'actions */}
       <View style={styles.filterCategory}>
         <View style={styles.filterCategoryHeader}>
-          <Text style={[styles.filterCategoryLabel, { color: colors.text.primary }]}>Actions</Text>
+          <Text style={[styles.filterCategoryLabel, { color: colors.text.primary }]}>{t("matchFilters.actions")}</Text>
           <TouchableOpacity
             onPress={selectAllActionTypes}
             style={styles.selectAllButton}
           >
-            <Text style={[styles.selectAllText, { color: colors.text.tertiary }]}>Tous</Text>
+            <Text style={[styles.selectAllText, { color: colors.text.tertiary }]}>{t("matchFilters.selectAll")}</Text>
           </TouchableOpacity>
         </View>
         <ScrollView
@@ -419,7 +421,7 @@ export default function MatchFilters({
       <View style={styles.filterCategory}>
         <View style={styles.filterCategoryHeader}>
           <Text style={[styles.filterCategoryLabel, { color: colors.text.primary }]}>
-            Période
+            {t("matchFilters.period")}
           </Text>
         </View>
         <View style={styles.filterCards}>
@@ -439,7 +441,7 @@ export default function MatchFilters({
                   { color: colors.text.primary },
               ]}
             >
-              Tout
+              {t("liveMatchModals.filter.all")}
             </Text>
           </TouchableOpacity>
 

@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import Svg, { Circle, Line, Polygon } from "react-native-svg";
+import { useTranslation } from "react-i18next";
 import { BRAND_COLORS, COMMON_COLORS, STATUS_COLORS, Spacing, Typography } from "../src/theme";
 import { Player } from "../models/Player";
 import { MatchActionGrid, ActionData } from "./MatchActionGrid";
@@ -47,6 +48,7 @@ export const HistoryModal: React.FC<HistoryModalProps> = ({
   onDeleteEvent,
   match,
 }) => {
+  const { t } = useTranslation();
   const { colors } = useTheme();
   const { sp, font, sizes } = useResponsive();
   const surfaceColor = colors.surface;
@@ -108,8 +110,8 @@ export const HistoryModal: React.FC<HistoryModalProps> = ({
     );
     const teamStr =
       eventToDelete.teamId === TeamId.HOME
-        ? match.myTeamName || "Mon équipe"
-        : match.opponent || "Adversaire";
+        ? match.myTeamName || t("liveMatchModals.myTeamFallback")
+        : match.opponent || t("liveMatchModals.opponentFallback");
     return `${eventToDelete.description}\n${timeStr} • ${teamStr}`;
   };
 
@@ -252,7 +254,7 @@ export const HistoryModal: React.FC<HistoryModalProps> = ({
                   { color: textPrimary, fontSize: font.xl },
                 ]}
               >
-                Historique du match
+                {t("liveMatchModals.history.title")}
               </Text>
             </View>
             <TouchableOpacity
@@ -309,8 +311,8 @@ export const HistoryModal: React.FC<HistoryModalProps> = ({
                     >
                       {formatGameTime(evt.period_number, evt.time_in_period)} •{" "}
                       {evt.teamId === TeamId.HOME
-                        ? match.myTeamName || "Mon équipe"
-                        : match.opponent || "Adversaire"}
+                        ? match.myTeamName || t("liveMatchModals.myTeamFallback")
+                        : match.opponent || t("liveMatchModals.opponentFallback")}
                     </Text>
                   </View>
                   {evt.action_type !== ActionType.SUBSTITUTION && (
@@ -332,7 +334,7 @@ export const HistoryModal: React.FC<HistoryModalProps> = ({
                 <Text
                   style={[styles.historyEmptyText, { color: textSecondary }]}
                 >
-                  Aucun événement enregistré.
+                  {t("liveMatchModals.history.empty")}
                 </Text>
               </View>
             )}
@@ -362,13 +364,13 @@ export const HistoryModal: React.FC<HistoryModalProps> = ({
                         { color: textPrimary, fontSize: font.md },
                       ]}
                     >
-                      Handicap de départ
+                      {t("liveMatchModals.history.startingHandicap")}
                     </Text>
                   </View>
                   <Text style={[styles.historyItemMeta, { color: textSecondary }]}>
                     {[
-                      (match.myTeamHandicap || 0) > 0 && `${match.myTeamName || "Mon équipe"} +${match.myTeamHandicap}`,
-                      (match.opponentHandicap || 0) > 0 && `${match.opponent || "Adversaire"} +${match.opponentHandicap}`,
+                      (match.myTeamHandicap || 0) > 0 && `${match.myTeamName || t("liveMatchModals.myTeamFallback")} +${match.myTeamHandicap}`,
+                      (match.opponentHandicap || 0) > 0 && `${match.opponent || t("liveMatchModals.opponentFallback")} +${match.opponentHandicap}`,
                     ].filter(Boolean).join("  •  ")}
                   </Text>
                 </View>
@@ -480,6 +482,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
   selectedTeamFilter = TeamFilterMode.ALL,
   onTeamFilterChange,
 }) => {
+  const { t } = useTranslation();
   const { colors } = useTheme();
   const { sp, font, sizes, isMobileLandscape, isMobilePortrait, isPortrait, width, height } = useResponsive();
   const surfaceColor = colors.surface;
@@ -1038,7 +1041,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
             isMobileCompact && { fontSize: font.lg },
           ]}
         >
-          Filtres
+          {t("liveMatchModals.filter.title")}
         </Text>
       </View>
       <View
@@ -1081,7 +1084,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
               isMobileCompact && { fontSize: font.xxs },
             ]}
           >
-            Réinitialiser
+            {t("liveMatchModals.filter.reset")}
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -1128,7 +1131,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
       >
         {selectedPeriods.length > 0
           ? selectedPeriods.map(getPeriodLabel).join(" + ")
-          : "Tout le match"}
+          : t("liveMatchModals.filter.wholeMatch")}
       </Text>
       <View
         style={[
@@ -1145,7 +1148,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
             ]}
             numberOfLines={1}
           >
-            {myTeamName || "Mon équipe"}
+            {myTeamName || t("liveMatchModals.myTeamFallback")}
           </Text>
           {myTeamHandicap > 0 && (
             <View style={[styles.filterHcpBadge, { backgroundColor: colors.primary + "22", borderColor: colors.primary + "55" }]}>
@@ -1191,7 +1194,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
             ]}
             numberOfLines={1}
           >
-            {opponentName || "Adversaire"}
+            {opponentName || t("liveMatchModals.opponentFallback")}
           </Text>
           {opponentHandicap > 0 && (
             <View style={[styles.filterHcpBadge, { backgroundColor: colors.primary + "22", borderColor: colors.primary + "55" }]}>
@@ -1278,7 +1281,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                 <Text
                   style={[styles.filterSectionLabel, { color: textSecondary }]}
                 >
-                  TYPE D'ACTION
+                  {t("liveMatchModals.filter.actionType")}
                 </Text>
               </View>
 
@@ -1310,7 +1313,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                       },
                     ]}
                   >
-                    Tout
+                    {t("liveMatchModals.filter.all")}
                   </Text>
                 </TouchableOpacity>
 
@@ -1341,7 +1344,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                       },
                     ]}
                   >
-                    Tirs
+                    {t("liveMatchModals.filter.shots")}
                   </Text>
                 </TouchableOpacity>
 
@@ -1372,7 +1375,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                       },
                     ]}
                   >
-                    Rebonds
+                    {t("liveMatchModals.filter.rebounds")}
                   </Text>
                 </TouchableOpacity>
 
@@ -1403,7 +1406,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                       },
                     ]}
                   >
-                    Passes
+                    {t("liveMatchModals.filter.assists")}
                   </Text>
                 </TouchableOpacity>
 
@@ -1434,7 +1437,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                       },
                     ]}
                   >
-                    Fautes
+                    {t("liveMatchModals.filter.fouls")}
                   </Text>
                 </TouchableOpacity>
 
@@ -1465,7 +1468,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                       },
                     ]}
                   >
-                    Fautes provoquées
+                    {t("liveMatchModals.filter.foulsDrawn")}
                   </Text>
                 </TouchableOpacity>
 
@@ -1496,7 +1499,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                       },
                     ]}
                   >
-                    Pertes de balle
+                    {t("liveMatchModals.filter.turnovers")}
                   </Text>
                 </TouchableOpacity>
 
@@ -1527,7 +1530,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                       },
                     ]}
                   >
-                    Contres
+                    {t("liveMatchModals.filter.blocks")}
                   </Text>
                 </TouchableOpacity>
 
@@ -1558,7 +1561,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                       },
                     ]}
                   >
-                    Interceptions
+                    {t("liveMatchModals.filter.steals")}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -1574,7 +1577,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                       { color: textSecondary },
                     ]}
                   >
-                    ÉQUIPE
+                    {t("liveMatchModals.filter.team")}
                   </Text>
                 </View>
 
@@ -1609,7 +1612,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                         },
                       ]}
                     >
-                      Tout
+                      {t("liveMatchModals.filter.all")}
                     </Text>
                   </TouchableOpacity>
 
@@ -1643,7 +1646,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                         },
                       ]}
                     >
-                      {myTeamName || "Mon équipe"}
+                      {myTeamName || t("liveMatchModals.myTeamFallback")}
                     </Text>
                   </TouchableOpacity>
 
@@ -1677,7 +1680,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                         },
                       ]}
                     >
-                      {opponentName || "Adversaire"}
+                      {opponentName || t("liveMatchModals.opponentFallback")}
                     </Text>
                   </TouchableOpacity>
                 </View>
@@ -1694,7 +1697,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                       { color: textSecondary },
                     ]}
                   >
-                    PÉRIODE
+                    {t("liveMatchModals.filter.period")}
                   </Text>
                 </View>
 
@@ -1726,7 +1729,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                         },
                       ]}
                     >
-                      Tout
+                      {t("liveMatchModals.filter.all")}
                     </Text>
                   </TouchableOpacity>
 
@@ -1781,7 +1784,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                           { color: textSecondary },
                         ]}
                       >
-                        JOUEURS
+                        {t("liveMatchModals.filter.players")}
                       </Text>
                     </View>
 
@@ -1803,7 +1806,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                           { color: textSecondary },
                         ]}
                       >
-                        ADVERSAIRE
+                        {t("liveMatchModals.filter.opponentSection")}
                       </Text>
 
                       <View style={[styles.playerFilterGrid, isMobileCompact && { gap: sp.xs }]}>
@@ -1835,7 +1838,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                       isMobileCompact && { fontSize: font.xxs },
                     ]}
                   >
-                    RÉSUMÉ DE LA SÉLECTION
+                    {t("liveMatchModals.filter.summaryTitle")}
                   </Text>
                 </View>
 
@@ -1846,7 +1849,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                       {filteredSummary.pts}
                     </Text>
                     <Text style={[summaryLabelStyle, { color: textSecondary }]}>
-                      Points
+                      {t("liveMatchModals.filter.points")}
                     </Text>
                   </View>
                   <View style={styles.filterSummaryItemFlex}>
@@ -1854,7 +1857,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                       {filteredSummary.ptsStarters}
                     </Text>
                     <Text style={[summaryLabelStyle, { color: textSecondary }]}>
-                      5 Maj.
+                      {t("liveMatchModals.filter.starters")}
                     </Text>
                   </View>
                   <View style={styles.filterSummaryItemFlex}>
@@ -1862,7 +1865,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                       {filteredSummary.ptsBench}
                     </Text>
                     <Text style={[summaryLabelStyle, { color: textSecondary }]}>
-                      Banc
+                      {t("liveMatchModals.filter.bench")}
                     </Text>
                   </View>
                   <View style={styles.filterSummaryItemFlex} />
@@ -1880,11 +1883,11 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                   return (
                     <View style={[styles.filterSummaryRow, { marginTop: isMobileCompact ? sp.xs : 8 }]}>
                       {[
-                        { value: pmSummary.pmAvg, label: 'Moy. +/-' },
-                        { value: pmSummary.pmAvgStarters, label: '5 Maj.' },
-                        { value: pmSummary.pmAvgBench, label: 'Banc' },
-                      ].map(({ value, label }) => (
-                        <View key={label} style={styles.filterSummaryItemFlex}>
+                        { key: 'avg', value: pmSummary.pmAvg, label: t("liveMatchModals.filter.plusMinusAvg") },
+                        { key: 'starters', value: pmSummary.pmAvgStarters, label: t("liveMatchModals.filter.starters") },
+                        { key: 'bench', value: pmSummary.pmAvgBench, label: t("liveMatchModals.filter.bench") },
+                      ].map(({ key, value, label }) => (
+                        <View key={key} style={styles.filterSummaryItemFlex}>
                           <Text style={[summaryValueStyle, { color: col(value) }]}>
                             {fmt(value)}
                           </Text>
@@ -1905,7 +1908,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                       {filteredSummary.globalPct}%
                     </Text>
                     <Text style={[summaryLabelStyle, { color: textSecondary }]}>
-                      Global
+                      {t("liveMatchModals.filter.global")}
                     </Text>
                   </View>
                   <View style={styles.filterSummaryItemFlex}>
@@ -1918,7 +1921,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                       </Text>
                     </View>
                     <Text style={[summaryLabelStyle, { color: textSecondary }]}>
-                      2pts
+                      {t("liveMatchModals.filter.twoPts")}
                     </Text>
                   </View>
                   <View style={styles.filterSummaryItemFlex}>
@@ -1931,7 +1934,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                       </Text>
                     </View>
                     <Text style={[summaryLabelStyle, { color: textSecondary }]}>
-                      3pts
+                      {t("liveMatchModals.filter.threePts")}
                     </Text>
                   </View>
                   <View style={styles.filterSummaryItemFlex}>
@@ -1944,7 +1947,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                       </Text>
                     </View>
                     <Text style={[summaryLabelStyle, { color: textSecondary }]}>
-                      LF
+                      {t("liveMatchModals.filter.freeThrows")}
                     </Text>
                   </View>
                 </View>
@@ -1956,7 +1959,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                       {filteredSummary.reb}
                     </Text>
                     <Text style={[summaryLabelStyle, { color: textSecondary }]}>
-                      Rebonds
+                      {t("liveMatchModals.filter.rebounds")}
                     </Text>
                   </View>
                   <View style={styles.filterSummaryItemFlex}>
@@ -1964,7 +1967,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                       {filteredSummary.rebTeam}
                     </Text>
                     <Text style={[summaryLabelStyle, { color: textSecondary }]}>
-                      Reb. Éq.
+                      {t("liveMatchModals.filter.teamRebounds")}
                     </Text>
                   </View>
                   <View style={styles.filterSummaryItemFlex}>
@@ -1972,7 +1975,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                       {filteredSummary.rebOff}
                     </Text>
                     <Text style={[summaryLabelStyle, { color: textSecondary }]}>
-                      Reb. Off.
+                      {t("liveMatchModals.filter.offRebounds")}
                     </Text>
                   </View>
                   <View style={styles.filterSummaryItemFlex}>
@@ -1980,7 +1983,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                       {filteredSummary.rebDef}
                     </Text>
                     <Text style={[summaryLabelStyle, { color: textSecondary }]}>
-                      Reb. Déf.
+                      {t("liveMatchModals.filter.defRebounds")}
                     </Text>
                   </View>
                 </View>
@@ -2002,7 +2005,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                         { color: textSecondary },
                       ]}
                     >
-                      Interceptions
+                      {t("liveMatchModals.filter.steals")}
                     </Text>
                   </View>
                   <View style={styles.filterSummaryItemFlex}>
@@ -2020,7 +2023,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                         { color: textSecondary },
                       ]}
                     >
-                      Contres
+                      {t("liveMatchModals.filter.blocks")}
                     </Text>
                   </View>
                   <View style={styles.filterSummaryItemFlex}>
@@ -2038,7 +2041,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                         { color: textSecondary },
                       ]}
                     >
-                      Fautes
+                      {t("liveMatchModals.filter.fouls")}
                     </Text>
                   </View>
                   <View style={styles.filterSummaryItemFlex}>
@@ -2056,7 +2059,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                         { color: textSecondary },
                       ]}
                     >
-                      Pertes
+                      {t("liveMatchModals.filter.turnoversShort")}
                     </Text>
                   </View>
                 </View>
@@ -2092,6 +2095,7 @@ export const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
   playerSelectionTab,
   setPlayerSelectionTab,
 }) => {
+  const { t } = useTranslation();
   const { colors } = useTheme();
   const { sp, font, sizes, isCompact } = useResponsive();
   const surfaceColor = colors.surface;
@@ -2111,14 +2115,14 @@ export const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
           <View style={styles.playerModalHeader}>
             <View>
               <Text style={[styles.playerModalTitle, { color: textPrimary }]}>
-                QUI ?
+                {t("liveMatchModals.playerSelection.who")}
               </Text>
               <Text
                 style={[styles.playerModalSubtitle, { color: colors.primary }]}
               >
                 {pendingEvent?.type
-                  ? `Validation : ${pendingEvent.type.replace("_", " ")}`
-                  : "Sélectionnez le joueur"}
+                  ? t("liveMatchModals.playerSelection.validation", { type: pendingEvent.type.replace("_", " ") })
+                  : t("liveMatchModals.playerSelection.selectPlayer")}
               </Text>
             </View>
             <TouchableOpacity
@@ -2170,7 +2174,7 @@ export const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
                     },
                   ]}
                 >
-                  {String(match?.myTeamName || "NOUS").toUpperCase()}
+                  {String(match?.myTeamName || t("liveMatchModals.usFallback")).toUpperCase()}
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
@@ -2196,7 +2200,7 @@ export const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
                     },
                   ]}
                 >
-                  {String(match?.opponent || "EUX").toUpperCase()}
+                  {String(match?.opponent || t("liveMatchModals.themFallback")).toUpperCase()}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -2291,6 +2295,7 @@ export const CourtActionModal: React.FC<CourtActionModalProps> = ({
   onClose,
   onActionSelect,
 }) => {
+  const { t } = useTranslation();
   const { colors } = useTheme();
   const { sp: spResponsive, font: fontResponsive, sizes, isPortrait, width } = useResponsive();
   const surfaceColor = colors.surface;
@@ -2354,7 +2359,7 @@ export const CourtActionModal: React.FC<CourtActionModalProps> = ({
                   },
                 ]}
               >
-                ACTION
+                {t("liveMatchModals.courtAction.title")}
               </Text>
               <Text
                 style={[
@@ -2365,7 +2370,7 @@ export const CourtActionModal: React.FC<CourtActionModalProps> = ({
                   },
                 ]}
               >
-                Que s'est-il passé ici ?
+                {t("liveMatchModals.courtAction.subtitle")}
               </Text>
             </View>
             <TouchableOpacity
@@ -2423,6 +2428,7 @@ export const SubstitutionModal: React.FC<SubstitutionModalProps> = ({
   subTeamTab,
   setSubTeamTab,
 }) => {
+  const { t } = useTranslation();
   const { colors } = useTheme();
   const { sp, font, sizes, isCompact } = useResponsive();
   const surfaceColor = colors.surface;
@@ -2450,10 +2456,10 @@ export const SubstitutionModal: React.FC<SubstitutionModalProps> = ({
               />
               <View>
                 <Text style={[styles.subTitle, { color: textPrimary }]}>
-                  Changements
+                  {t("liveMatchModals.substitution.title")}
                 </Text>
                 <Text style={[styles.subSubtitle, { color: textSecondary }]}>
-                  Sélectionnez les sortants et les entrants
+                  {t("liveMatchModals.substitution.subtitle")}
                 </Text>
               </View>
             </View>
@@ -2506,7 +2512,7 @@ export const SubstitutionModal: React.FC<SubstitutionModalProps> = ({
                     },
                   ]}
                 >
-                  {String(match.myTeamName || "NOUS").toUpperCase()}
+                  {String(match.myTeamName || t("liveMatchModals.usFallback")).toUpperCase()}
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
@@ -2530,7 +2536,7 @@ export const SubstitutionModal: React.FC<SubstitutionModalProps> = ({
                     },
                   ]}
                 >
-                  {String(match.opponent || "EUX").toUpperCase()}
+                  {String(match.opponent || t("liveMatchModals.themFallback")).toUpperCase()}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -2549,10 +2555,10 @@ export const SubstitutionModal: React.FC<SubstitutionModalProps> = ({
             >
               <View style={styles.subSectionHeader}>
                 <Text style={[styles.subSectionTitle, { color: textPrimary }]}>
-                  SUR LE TERRAIN ({onCourt.length})
+                  {t("liveMatchModals.substitution.onCourt", { count: onCourt.length })}
                 </Text>
                 <Text style={[styles.subSectionHint, { color: textSecondary }]}>
-                  Appuyez pour sortir
+                  {t("liveMatchModals.substitution.tapToSubOut")}
                 </Text>
               </View>
               <View style={styles.subGrid}>
@@ -2650,10 +2656,10 @@ export const SubstitutionModal: React.FC<SubstitutionModalProps> = ({
             >
               <View style={styles.subSectionHeader}>
                 <Text style={[styles.subSectionTitle, { color: textPrimary }]}>
-                  BANC ({onBench.length})
+                  {t("liveMatchModals.substitution.onBench", { count: onBench.length })}
                 </Text>
                 <Text style={[styles.subSectionHint, { color: textSecondary }]}>
-                  Appuyez pour entrer
+                  {t("liveMatchModals.substitution.tapToSubIn")}
                 </Text>
               </View>
               <View style={styles.subGrid}>
@@ -2788,10 +2794,10 @@ export const SubstitutionModal: React.FC<SubstitutionModalProps> = ({
               >
                 {subSelection.in.length > 0 &&
                 subSelection.in.length !== subSelection.out.length
-                  ? `Sélectionnez ${Math.abs(
-                      subSelection.in.length - subSelection.out.length,
-                    )} autre(s)`
-                  : "Valider les changements"}
+                  ? t("liveMatchModals.substitution.selectMore", {
+                      count: Math.abs(subSelection.in.length - subSelection.out.length),
+                    })
+                  : t("liveMatchModals.substitution.confirmButton")}
               </Text>
             </TouchableOpacity>
           </View>
@@ -2813,6 +2819,7 @@ export const EndMatchModal: React.FC<EndMatchModalProps> = ({
   onClose,
   onConfirm,
 }) => {
+  const { t } = useTranslation();
   const { colors } = useTheme();
   const surfaceColor = colors.surface;
   const textPrimary = colors.text.primary;
@@ -2837,12 +2844,11 @@ export const EndMatchModal: React.FC<EndMatchModalProps> = ({
           </View>
 
           <Text style={[styles.endMatchTitle, { color: textPrimary }]}>
-            Terminer le match ?
+            {t("liveMatchModals.endMatch.title")}
           </Text>
 
           <Text style={[styles.endMatchDescription, { color: textSecondary }]}>
-            Le match sera archivé et vous ne pourrez plus modifier les
-            statistiques.
+            {t("liveMatchModals.endMatch.description")}
           </Text>
 
           <View style={styles.endMatchActions}>
@@ -2861,7 +2867,7 @@ export const EndMatchModal: React.FC<EndMatchModalProps> = ({
                   { color: textPrimary },
                 ]}
               >
-                Annuler
+                {t("common.cancel")}
               </Text>
             </TouchableOpacity>
 
@@ -2878,7 +2884,7 @@ export const EndMatchModal: React.FC<EndMatchModalProps> = ({
                   { color: colors.onPrimary },
                 ]}
               >
-                Terminer
+                {t("liveMatchModals.endMatch.confirmButton")}
               </Text>
             </TouchableOpacity>
           </View>
@@ -2912,6 +2918,7 @@ export const OvertimeModal: React.FC<OvertimeModalProps> = ({
   overtimeDuration,
   setOvertimeDuration,
 }) => {
+  const { t } = useTranslation();
   const { colors } = useTheme();
   const surfaceColor = colors.surface;
   const textPrimary = colors.text.primary;
@@ -2950,8 +2957,8 @@ export const OvertimeModal: React.FC<OvertimeModalProps> = ({
 
           <Text style={[styles.overtimeTitle, { color: textPrimary }]}>
             {quarter === maxPeriods
-              ? "Fin du temps réglementaire"
-              : "Fin de la prolongation"}
+              ? t("liveMatchModals.overtime.endOfRegulation")
+              : t("liveMatchModals.overtime.endOfOvertime")}
           </Text>
 
           <Text style={[styles.overtimeScore, { color: textPrimary }]}>
@@ -2959,8 +2966,7 @@ export const OvertimeModal: React.FC<OvertimeModalProps> = ({
           </Text>
 
           <Text style={[styles.overtimeDescription, { color: textSecondary }]}>
-            Le temps est écoulé. Voulez-vous terminer le match ou lancer une
-            prolongation ?
+            {t("liveMatchModals.overtime.description")}
           </Text>
 
           <View
@@ -2974,7 +2980,7 @@ export const OvertimeModal: React.FC<OvertimeModalProps> = ({
             <Text
               style={[styles.overtimeDurationLabel, { color: textSecondary }]}
             >
-              DURÉE DE LA PROLONGATION
+              {t("liveMatchModals.overtime.durationLabel")}
             </Text>
             <View style={styles.overtimeDurationInput}>
               <TouchableOpacity
@@ -3049,7 +3055,7 @@ export const OvertimeModal: React.FC<OvertimeModalProps> = ({
                   { color: colors.onPrimary },
                 ]}
               >
-                Terminer le match
+                {t("liveMatchModals.overtime.endMatchButton")}
               </Text>
             </TouchableOpacity>
 
@@ -3078,7 +3084,7 @@ export const OvertimeModal: React.FC<OvertimeModalProps> = ({
                   { color: textPrimary },
                 ]}
               >
-                Lancer la prolongation
+                {t("liveMatchModals.overtime.startOvertimeButton")}
               </Text>
             </TouchableOpacity>
           </View>
@@ -3104,6 +3110,7 @@ export const PeriodConfirmModal: React.FC<PeriodConfirmModalProps> = ({
   timer,
   formatTime,
 }) => {
+  const { t } = useTranslation();
   const { colors } = useTheme();
   const surfaceColor = colors.surface;
   const textPrimary = colors.text.primary;
@@ -3152,19 +3159,19 @@ export const PeriodConfirmModal: React.FC<PeriodConfirmModalProps> = ({
           </View>
 
           <Text style={[styles.periodConfirmTitle, { color: textPrimary }]}>
-            Attention
+            {t("liveMatchModals.periodConfirm.title")}
           </Text>
 
           <Text
             style={[styles.periodConfirmDescription, { color: textSecondary }]}
           >
-            Il reste{" "}
+            {t("liveMatchModals.periodConfirm.timeRemainingPrefix")}{" "}
             <Text style={{ fontWeight: "bold", color: textPrimary }}>
               {formatTime(timer)}
             </Text>{" "}
-            au chronomètre.
+            {t("liveMatchModals.periodConfirm.timeRemainingSuffix")}
             {"\n"}
-            Voulez-vous vraiment passer à la période suivante ?
+            {t("liveMatchModals.periodConfirm.confirmQuestion")}
           </Text>
 
           <View style={styles.periodConfirmActions}>
@@ -3181,7 +3188,7 @@ export const PeriodConfirmModal: React.FC<PeriodConfirmModalProps> = ({
                   { color: colors.onPrimary },
                 ]}
               >
-                Passer à la suivante
+                {t("liveMatchModals.periodConfirm.forceButton")}
               </Text>
             </TouchableOpacity>
 
@@ -3203,7 +3210,7 @@ export const PeriodConfirmModal: React.FC<PeriodConfirmModalProps> = ({
                   },
                 ]}
               >
-                Annuler
+                {t("common.cancel")}
               </Text>
             </TouchableOpacity>
           </View>
@@ -3227,6 +3234,7 @@ export const DeleteActionModal: React.FC<DeleteActionModalProps> = ({
   onConfirm,
   eventDescription,
 }) => {
+  const { t } = useTranslation();
   const { colors } = useTheme();
   const surfaceColor = colors.surface;
   const textPrimary = colors.text.primary;
@@ -3253,7 +3261,7 @@ export const DeleteActionModal: React.FC<DeleteActionModalProps> = ({
           </View>
 
           <Text style={[styles.deleteActionTitle, { color: textPrimary }]}>
-            Supprimer cette action ?
+            {t("liveMatchModals.deleteAction.title")}
           </Text>
 
           <View
@@ -3277,7 +3285,7 @@ export const DeleteActionModal: React.FC<DeleteActionModalProps> = ({
           </View>
 
           <Text style={[styles.deleteActionWarning, { color: textSecondary }]}>
-            Cette action sera définitivement supprimée de la base de données.
+            {t("liveMatchModals.deleteAction.warning")}
           </Text>
 
           <View style={styles.deleteActionActions}>
@@ -3296,7 +3304,7 @@ export const DeleteActionModal: React.FC<DeleteActionModalProps> = ({
                   { color: textPrimary },
                 ]}
               >
-                Annuler
+                {t("common.cancel")}
               </Text>
             </TouchableOpacity>
 
@@ -3313,7 +3321,7 @@ export const DeleteActionModal: React.FC<DeleteActionModalProps> = ({
                   { color: colors.onPrimary },
                 ]}
               >
-                Supprimer
+                {t("common.delete")}
               </Text>
             </TouchableOpacity>
           </View>
@@ -3329,6 +3337,7 @@ interface SyncModalProps {
 }
 
 export const SyncModal: React.FC<SyncModalProps> = ({ visible }) => {
+  const { t } = useTranslation();
   const { colors } = useTheme();
   const surfaceColor = colors.surface;
   const textPrimary = colors.text.primary;
@@ -3355,10 +3364,10 @@ export const SyncModal: React.FC<SyncModalProps> = ({ visible }) => {
           />
           <ActivityIndicator size="large" color={colors.primary} />
           <Text style={[styles.syncModalText, { color: textPrimary }]}>
-            Synchronisation avec le serveur...
+            {t("liveMatchModals.sync.syncing")}
           </Text>
           <Text style={[styles.syncModalSubtext, { color: textSecondary }]}>
-            Veuillez patienter
+            {t("liveMatchModals.sync.pleaseWait")}
           </Text>
         </View>
       </View>

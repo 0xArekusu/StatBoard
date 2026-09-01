@@ -1,3 +1,5 @@
+import i18n from '../src/i18n';
+
 export enum TeamStatus {
   PENDING = 'pending',
   APPROVED = 'approved',
@@ -16,11 +18,9 @@ export enum TeamGender {
 /**
  * Display labels for team genders
  */
-export const TEAM_GENDER_LABELS: Record<TeamGender, string> = {
-  [TeamGender.MALE]: 'Masculin',
-  [TeamGender.FEMALE]: 'Féminin',
-  [TeamGender.MIXED]: 'Mixte',
-};
+export function getTeamGenderLabel(gender: TeamGender): string {
+  return i18n.t(`teamGender.${gender}`);
+}
 
 export interface Team {
   id: string;

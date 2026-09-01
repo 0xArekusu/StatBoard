@@ -1,11 +1,12 @@
 import React, { useState } from "react";
 import { View, Text, TouchableOpacity, StyleSheet, Modal, TextInput, Alert } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { useTranslation } from "react-i18next";
 import { BRAND_COLORS, SLATE_COLORS, STATUS_COLORS, OPACITY } from "../../src/theme";
 import { AddOpponentForm } from "./AddOpponentForm";
 import {
-  MATCH_CREATION_INFO_MESSAGES,
-  MATCH_CREATION_BUTTON_LABELS,
+  getMatchCreationInfoMessage,
+  getMatchCreationButtonLabel,
   ROSTER_LIMITS,
 } from "../../constants";
 import { OpponentPlayerCard } from "./OpponentPlayerCard";
@@ -68,6 +69,7 @@ export const OpponentRosterView: React.FC<OpponentRosterViewProps> = ({
   isDark,
   colors,
 }) => {
+  const { t } = useTranslation();
   const { sp, font } = useResponsive();
   const [showTemplates, setShowTemplates] = useState(false);
   const [showSaveModal, setShowSaveModal] = useState(false);
@@ -85,12 +87,12 @@ export const OpponentRosterView: React.FC<OpponentRosterViewProps> = ({
     const exists = savedTemplates.some(t => t.name === name);
     if (exists) {
       Alert.alert(
-        "Sauvegarder la composition",
-        `"${name}" existe déjà. Écraser ?`,
+        t("opponentRosterView.saveModalTitle"),
+        t("opponentRosterView.overwriteConfirm", { name }),
         [
-          { text: "Annuler", style: "cancel" },
+          { text: t("common.cancel"), style: "cancel" },
           {
-            text: "Écraser",
+            text: t("opponentRosterView.overwrite"),
             style: "destructive",
             onPress: () => {
               setShowSaveModal(false);
@@ -121,14 +123,14 @@ export const OpponentRosterView: React.FC<OpponentRosterViewProps> = ({
         >
           <MaterialCommunityIcons name="chart-bar" size={sp.xxl} color={colors.textSecondary} style={{ opacity: 0.5 }} />
           <Text style={[styles.disabledOpponentTitle, { color: colors.textPrimary, fontSize: font.md, marginTop: sp.md }]}>
-            {MATCH_CREATION_INFO_MESSAGES.OPPONENT_STATS_DISABLED}
+            {getMatchCreationInfoMessage("OPPONENT_STATS_DISABLED")}
           </Text>
           <Text style={[styles.disabledOpponentText, { color: colors.textSecondary, fontSize: font.sm, marginTop: sp.sm }]}>
-            {MATCH_CREATION_INFO_MESSAGES.OPPONENT_STATS_DISABLED_DETAIL}
+            {getMatchCreationInfoMessage("OPPONENT_STATS_DISABLED_DETAIL")}
           </Text>
           <TouchableOpacity onPress={onGoToStep1}>
             <Text style={[styles.disabledOpponentLink, { color: BRAND_COLORS[600] }]}>
-              {MATCH_CREATION_BUTTON_LABELS.MODIFY_OPTIONS}
+              {getMatchCreationButtonLabel("MODIFY_OPTIONS")}
             </Text>
           </TouchableOpacity>
         </View>
@@ -153,7 +155,7 @@ export const OpponentRosterView: React.FC<OpponentRosterViewProps> = ({
       >
         <MaterialCommunityIcons name="information" size={16} color={BRAND_COLORS[600]} />
         <Text style={[styles.infoBoxText, { color: BRAND_COLORS[600] }]}>
-          {MATCH_CREATION_INFO_MESSAGES.OPPONENT_ROSTER_INSTRUCTIONS}
+          {getMatchCreationInfoMessage("OPPONENT_ROSTER_INSTRUCTIONS")}
         </Text>
         <View
           style={[
@@ -201,7 +203,7 @@ export const OpponentRosterView: React.FC<OpponentRosterViewProps> = ({
           >
             <MaterialCommunityIcons name="folder-open-outline" size={16} color={BRAND_COLORS[600]} />
             <Text style={[styles.templateSelectorLabel, { color: BRAND_COLORS[600], fontSize: font.sm }]}>
-              Charger une composition
+              {t("opponentRosterView.loadComposition")}
             </Text>
             {hasTemplates && (
               <MaterialCommunityIcons
@@ -255,7 +257,7 @@ export const OpponentRosterView: React.FC<OpponentRosterViewProps> = ({
                   {template.name}
                 </Text>
                 <Text style={[styles.templateItemCount, { color: colors.textSecondary, fontSize: font.xs }]}>
-                  {template.players.length} joueurs
+                  {t("opponentRosterView.playerCount", { count: template.players.length })}
                 </Text>
               </TouchableOpacity>
             ))}
@@ -298,7 +300,7 @@ export const OpponentRosterView: React.FC<OpponentRosterViewProps> = ({
         ) : (
           <View style={styles.emptyOpponentList}>
             <Text style={[styles.emptyOpponentText, { color: colors.textSecondary }]}>
-              {MATCH_CREATION_INFO_MESSAGES.NO_OPPONENT_PLAYERS}
+              {getMatchCreationInfoMessage("NO_OPPONENT_PLAYERS")}
             </Text>
           </View>
         )}
@@ -317,7 +319,7 @@ export const OpponentRosterView: React.FC<OpponentRosterViewProps> = ({
             ]}
           >
             <Text style={[styles.modalTitle, { color: colors.textPrimary, fontSize: font.md }]}>
-              Sauvegarder la composition
+              {t("opponentRosterView.saveModalTitle")}
             </Text>
             <TextInput
               value={saveNameInput}
@@ -340,7 +342,7 @@ export const OpponentRosterView: React.FC<OpponentRosterViewProps> = ({
                 style={[styles.modalButton, { borderColor: colors.borderColor }]}
               >
                 <Text style={[styles.modalButtonText, { color: colors.textSecondary, fontSize: font.sm }]}>
-                  Annuler
+                  {t("common.cancel")}
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
@@ -356,7 +358,7 @@ export const OpponentRosterView: React.FC<OpponentRosterViewProps> = ({
                 ]}
               >
                 <Text style={[styles.modalButtonText, { color: "white", fontSize: font.sm }]}>
-                  Enregistrer
+                  {t("opponentRosterView.saveButton")}
                 </Text>
               </TouchableOpacity>
             </View>

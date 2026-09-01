@@ -7,6 +7,7 @@ import {
   StyleSheet,
 } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { useTranslation } from "react-i18next";
 import { useTheme } from "../../src/contexts/ThemeContext";
 import { useResponsive } from "../../src/hooks/useResponsive";
 import { ACTION_COLORS, STATUS_COLORS } from "../../src/theme/colors";
@@ -41,6 +42,7 @@ export const ActionChainModal: React.FC<ActionChainModalProps> = ({
   onPlayerSelect,
   onIgnore,
 }) => {
+  const { t } = useTranslation();
   const { colors } = useTheme();
   const { sp, font, sizes } = useResponsive();
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
@@ -110,7 +112,7 @@ export const ActionChainModal: React.FC<ActionChainModalProps> = ({
           </Text>
 
           <Text style={[styles.title, { color: colors.text.primary, fontSize: font.xl }]}>
-            Action suivante ?
+            {t("actionChainModal.title")}
           </Text>
 
           <View style={{ gap: sp.lg }}>
@@ -150,8 +152,8 @@ export const ActionChainModal: React.FC<ActionChainModalProps> = ({
                   {isSelected && suggestion.teamOnly && !suggestion.autoTeamId && (
                     <View style={[styles.playerRow, { marginTop: sp.xs, gap: sp.xs }]}>
                       {([
-                        { label: myTeamName || "Mon équipe", teamId: myTeamId },
-                        { label: opponentName || "Adversaire", teamId: myTeamId === TeamId.HOME ? TeamId.AWAY : TeamId.HOME },
+                        { label: myTeamName || t("liveMatchModals.myTeamFallback"), teamId: myTeamId },
+                        { label: opponentName || t("liveMatchModals.opponentFallback"), teamId: myTeamId === TeamId.HOME ? TeamId.AWAY : TeamId.HOME },
                       ] as const).map(({ label, teamId }) => {
                         const isTeamSelected = selectedTeamId === teamId;
                         const color = ACTION_COLORS.rebound.base;
@@ -245,7 +247,7 @@ export const ActionChainModal: React.FC<ActionChainModalProps> = ({
             >
               <MaterialCommunityIcons name="check" size={sizes.iconMd} color="#fff" />
               <Text style={[styles.confirmText, { fontSize: font.md }]}>
-                Valider
+                {t("actionChainModal.confirmButton")}
               </Text>
             </TouchableOpacity>
           )}
@@ -256,7 +258,7 @@ export const ActionChainModal: React.FC<ActionChainModalProps> = ({
             activeOpacity={0.6}
           >
             <Text style={[styles.ignoreText, { color: colors.text.tertiary, fontSize: font.sm }]}>
-              Ignorer →
+              {t("actionChainModal.ignoreButton")}
             </Text>
           </TouchableOpacity>
         </View>

@@ -4,6 +4,10 @@
     "continue": "Continuer",
     "ok": "OK",
     "delete": "Supprimer",
+    "yes": "Oui",
+    "no": "Non",
+    "notApplicable": "N/A",
+    "confirm": "Confirmer",
     "error": "Erreur",
     "guest": "Invité",
     "send": "Envoyer",
@@ -378,5 +382,630 @@
     "myTeamFallback": "Mon Équipe",
     "opponentFallback": "Adversaire",
     "playerFallback": "Joueur"
+  },
+  "liveMatchModals": {
+    "myTeamFallback": "Mon équipe",
+    "opponentFallback": "Adversaire",
+    "usFallback": "NOUS",
+    "themFallback": "EUX",
+    "history": {
+      "title": "Historique du match",
+      "empty": "Aucun événement enregistré.",
+      "startingHandicap": "Handicap de départ"
+    },
+    "filter": {
+      "reset": "Réinitialiser",
+      "title": "Filtres",
+      "wholeMatch": "Tout le match",
+      "actionType": "TYPE D'ACTION",
+      "all": "Tout",
+      "shots": "Tirs",
+      "rebounds": "Rebonds",
+      "assists": "Passes",
+      "fouls": "Fautes",
+      "foulsDrawn": "Fautes provoquées",
+      "turnovers": "Pertes de balle",
+      "turnoversShort": "Pertes",
+      "blocks": "Contres",
+      "steals": "Interceptions",
+      "team": "ÉQUIPE",
+      "period": "PÉRIODE",
+      "players": "JOUEURS",
+      "opponentSection": "ADVERSAIRE",
+      "summaryTitle": "RÉSUMÉ DE LA SÉLECTION",
+      "points": "Points",
+      "starters": "5 Maj.",
+      "bench": "Banc",
+      "plusMinusAvg": "Moy. +/-",
+      "global": "Global",
+      "twoPts": "2pts",
+      "threePts": "3pts",
+      "freeThrows": "LF",
+      "teamRebounds": "Reb. Éq.",
+      "offRebounds": "Reb. Off.",
+      "defRebounds": "Reb. Déf."
+    },
+    "playerSelection": {
+      "who": "QUI ?",
+      "validation": "Validation : {{type}}",
+      "selectPlayer": "Sélectionnez le joueur"
+    },
+    "courtAction": {
+      "title": "ACTION",
+      "subtitle": "Que s'est-il passé ici ?"
+    },
+    "substitution": {
+      "title": "Changements",
+      "subtitle": "Sélectionnez les sortants et les entrants",
+      "onCourt": "SUR LE TERRAIN ({{count}})",
+      "tapToSubOut": "Appuyez pour sortir",
+      "onBench": "BANC ({{count}})",
+      "tapToSubIn": "Appuyez pour entrer",
+      "selectMore": "Sélectionnez {{count}} autre(s)",
+      "confirmButton": "Valider les changements"
+    },
+    "endMatch": {
+      "title": "Terminer le match ?",
+      "description": "Le match sera archivé et vous ne pourrez plus modifier les statistiques.",
+      "confirmButton": "Terminer"
+    },
+    "overtime": {
+      "endOfRegulation": "Fin du temps réglementaire",
+      "endOfOvertime": "Fin de la prolongation",
+      "description": "Le temps est écoulé. Voulez-vous terminer le match ou lancer une prolongation ?",
+      "durationLabel": "DURÉE DE LA PROLONGATION",
+      "endMatchButton": "Terminer le match",
+      "startOvertimeButton": "Lancer la prolongation"
+    },
+    "periodConfirm": {
+      "title": "Attention",
+      "timeRemainingPrefix": "Il reste",
+      "timeRemainingSuffix": "au chronomètre.",
+      "confirmQuestion": "Voulez-vous vraiment passer à la période suivante ?",
+      "forceButton": "Passer à la suivante"
+    },
+    "deleteAction": {
+      "title": "Supprimer cette action ?",
+      "warning": "Cette action sera définitivement supprimée de la base de données."
+    },
+    "sync": {
+      "syncing": "Synchronisation avec le serveur...",
+      "pleaseWait": "Veuillez patienter"
+    }
+  },
+  "subscriptionView": {
+    "currentBadge": "ACTUEL",
+    "unlimitedTeams": "Équipes illimitées",
+    "upToTeams": "Jusqu'à {{count}} équipes",
+    "free": "Gratuit",
+    "perMonth": "/ mois",
+    "planNotFound": "Offre introuvable",
+    "cannotCheckTeamCount": "Impossible de vérifier le nombre d'équipes",
+    "updateSuccess": "Abonnement mis à jour avec succès !",
+    "teamsReactivated": "{{count}} équipe(s) réactivée(s).",
+    "teamsSuspended": "{{count}} équipe(s) suspendue(s).",
+    "title": "Gérez votre offre",
+    "subtitle": "Passez au niveau supérieur pour ajouter plus d'équipes.",
+    "changeAlert": {
+      "title": "Changement d'offre",
+      "message": "Confirmer le passage à l'offre {{tier}} ?",
+      "confirmButton": "Confirmer"
+    }
+  },
+  "timelineTab": {
+    "loading": "Chargement de la timeline…",
+    "noActions": "Aucune action enregistrée",
+    "periodEnd": "FIN {{period}}",
+    "teamFallback": "Équipe",
+    "opponentAbbrFallback": "Adv."
+  },
+  "matchTutorialOverlay": {
+    "dontShowAgain": "Ne plus afficher",
+    "skip": "Passer",
+    "previous": "Précédent",
+    "finish": "Terminer",
+    "next": "Suivant",
+    "steps": {
+      "header": {
+        "title": "Chrono & Score",
+        "description": "Lancez ou mettez en pause le chrono, passez à la période suivante, visualisez le tableau des fautes, ajoutez des temps morts, effectuez des remplacements et marquez rapidement les points adverses.",
+        "descriptionShort": "Lancez ou mettez en pause le chrono, passez à la période suivante, visualisez le tableau des fautes, ajoutez des temps morts et effectuez des remplacements.",
+        "opponentPointsHint": "Marquez rapidement les points adverses depuis l'en-tête."
+      },
+      "toggle": {
+        "title": "Vue Terrain / Actions",
+        "description": "Basculez entre la vue terrain pour visualiser vos actions sur le parquet et la grille si vous souhaitez saisir les statistiques directement sans le terrain."
+      },
+      "grid": {
+        "title": "Grille d'actions",
+        "description": "Cliquez sur le terrain pour saisir une action : tirs réussis ou manqués, rebonds, fautes etc... Les actions chaînées vous proposent automatiquement les actions liées (ex: tir réussi → passe décisive, faute → lancers francs) pour un suivi plus fluide et rapide."
+      },
+      "toolbar": {
+        "title": "Barre d'outils",
+        "description": "Grâce à la barre d'action, vous pouvez annuler la dernière action, filtrer par type d'action et consulter les statistiques en temps réel, afficher ou masquer les marqueurs terrain et consulter l'historique complet."
+      }
+    }
+  },
+  "liveMatchHeader": {
+    "substituteAbbr": "CHANGT"
+  },
+  "foulChainModal": {
+    "headerCommitted": "Faute commise — #{{num}}",
+    "headerDrawn": "Faute provoquée — #{{num}}",
+    "foulTypeQuestion": "Type de faute ?",
+    "whoDrawQuestion": "Qui a provoqué la faute ?",
+    "whoCommittedQuestion": "Qui a commis la faute ?",
+    "basketScoredQuestion": "Panier marqué ?",
+    "points": "{{count}} pts",
+    "assistQuestion": "Passeur décisif ?",
+    "freeThrowsQuestion": "Lancers-francs ?",
+    "freeThrowCount": "{{count}} LF",
+    "freeThrowIndex": "LF {{index}}",
+    "made": "✓ Réussi",
+    "missed": "✗ Raté",
+    "confirm": "Valider",
+    "ignore": "Ignorer →"
+  },
+  "teamSelectionModal": {
+    "title": "Sélectionnez vos équipes",
+    "allowedCount_one": "L'offre {{tier}} permet {{count}} équipe.",
+    "allowedCount_other": "L'offre {{tier}} permet {{count}} équipes.",
+    "instructionExact_one": "Sélectionnez exactement {{count}} équipe à garder active.",
+    "instructionExact_other": "Sélectionnez exactement {{count}} équipes à garder actives.",
+    "instructionUpTo_one": "Sélectionnez jusqu'à {{count}} équipe à garder active.",
+    "instructionUpTo_other": "Sélectionnez jusqu'à {{count}} équipes à garder actives.",
+    "instructionNone": "Sélectionnez aucune équipe à garder active.",
+    "allTeamsSuspendedWarning": "⚠️ Toutes vos équipes seront suspendues.",
+    "selectionCount_one": "{{count}} / {{max}} sélectionné",
+    "selectionCount_other": "{{count}} / {{max}} sélectionnés",
+    "optional": "(optionnel)",
+    "limitReachedTitle": "Limite atteinte",
+    "limitReachedMessage": "Vous ne pouvez sélectionner que {{count}} équipe(s) avec l'offre {{tier}}.",
+    "incompleteSelectionTitle": "Sélection incomplète",
+    "incompleteSelectionMessage": "Veuillez sélectionner exactement {{count}} équipe(s).",
+    "tooManySelectedTitle": "Trop d'équipes sélectionnées",
+    "tooManySelectedMessage": "Vous ne pouvez sélectionner que {{count}} équipe(s) maximum."
+  },
+  "shotChainModal": {
+    "header": "Tir raté — #{{num}}",
+    "blockedQuestion": "Tir contré ?",
+    "rebound": "Rebond",
+    "defensive": "Défensif",
+    "offensive": "Offensif",
+    "team": "Équipe"
+  },
+  "matchActionGrid": {
+    "freeThrow": "Lancer",
+    "points": "Points",
+    "pointsN": "{{count}} Pts",
+    "missed": "Raté",
+    "rebDef": "REB DEF",
+    "rebOff": "REB OFF",
+    "assist": "PASSE D",
+    "assistSub": "Assist",
+    "steal": "INTERC",
+    "stealSub": "Vol",
+    "block": "CONTRE",
+    "foul": "FAUTE",
+    "turnover": "BALLE PERDUE",
+    "foulDrawn": "FTE PROV"
+  },
+  "matchFilters": {
+    "team": "Équipe",
+    "selectAll": "Tous",
+    "players": "Joueurs",
+    "actions": "Actions",
+    "period": "Période"
+  },
+  "clubInfoView": {
+    "title": "Mon Club",
+    "close": "Fermer",
+    "offer": "Offre",
+    "clubCode": "CODE CLUB",
+    "subscription": "Abonnement {{name}}",
+    "teamsCount": "{{count}} / {{max}} Équipes",
+    "increaseLimit": "Augmenter la limite",
+    "ourTeams": "Nos Équipes",
+    "noTeamsOwner": "Aucune équipe créée.",
+    "noTeamsMember": "Aucune équipe assignée.",
+    "copiedTitle": "Copié",
+    "copiedMessage": "Code \"{{code}}\" copié dans le presse-papiers",
+    "copyFailed": "Impossible de copier le code"
+  },
+  "addPlayerForm": {
+    "namePlaceholder": "Nom",
+    "licensePlaceholder": "VTXXXXXX (Optionnel)"
+  },
+  "playerDetailModal": {
+    "eff": "Éval",
+    "time": "Temps",
+    "shootingPerformance": "Performance aux tirs",
+    "threePoints": "3 Points",
+    "twoPoints": "2 Points",
+    "freeThrows": "Lancers",
+    "totalShots": "TOTAL TIRS",
+    "successRate": "RÉUSSITE",
+    "details": "Détails",
+    "actionMap": "Carte des actions",
+    "reb": "REB",
+    "off": "OFF",
+    "def": "DEF",
+    "ast": "AST",
+    "int": "INT",
+    "ctr": "CTR",
+    "bp": "BP",
+    "fte": "FTE",
+    "fp": "FP",
+    "pers": "PERS",
+    "tech": "TECH",
+    "ant": "ANT",
+    "disq": "DISQ",
+    "reboundsSub": "Rebonds: {{count}}",
+    "assistsSub": "Passes décisives",
+    "turnoversSub": "Balles perdues",
+    "foulsSub": "Fautes: {{count}}"
+  },
+  "evolutionTab": {
+    "matchStart": "Début du match",
+    "insufficientData": "Données insuffisantes pour le graphique"
+  },
+  "matchToolbar": {
+    "view": "Vue",
+    "test": "Test",
+    "history": "Historique",
+    "mockDataTitle": "Ajouter des données de test ?",
+    "mockDataMessage": "Cela va générer des actions fictives pour le match."
+  },
+  "playerSeasonStats": {
+    "avgTime": "Temps moy.",
+    "rebOffDef": "REB OFF/DEF",
+    "reboundsAvg": "Rebonds moy.",
+    "assistsAvg": "Passes moy.",
+    "stealsAvg": "Interceptions moy.",
+    "blocksAvg": "Contres moy.",
+    "turnoversAvg": "Balles perdues moy.",
+    "foulsAvg": "Fautes moy.",
+    "foulsDrawnAvg": "Fautes provoquées moy."
+  },
+  "statsLegendModal": {
+    "title": "LÉGENDE DES STATISTIQUES",
+    "min": "MIN",
+    "minutesPlayed": "Minutes jouées",
+    "pts": "PTS",
+    "tirs": "TIRS",
+    "shotsMadeAttempted": "Tirs réussis/tentés",
+    "twoPts": "2PTS",
+    "twoPointShots": "Tirs à 2 points",
+    "threePts": "3PTS",
+    "threePointShots": "Tirs à 3 points",
+    "freeThrowsFull": "Lancers francs",
+    "ro": "RO",
+    "offensiveRebounds": "Rebonds offensifs",
+    "rd": "RD",
+    "defensiveRebounds": "Rebonds défensifs",
+    "re": "RE",
+    "teamRebounds": "Rebonds d'équipe",
+    "ft": "FT",
+    "foulsTotalDescription": "Fautes (total : personnelles + techniques + antisportives + disqualifiantes)",
+    "plusMinusDescription": "Différentiel de points quand le joueur est sur le terrain",
+    "eval": "EVAL",
+    "evaluation": "Evaluation"
+  },
+  "matchLimitModal": {
+    "title": "Limite atteinte",
+    "messagePrefix": "Vous avez atteint la limite de",
+    "matchCount": "{{count}} matchs",
+    "messageSuffix": "en stockage local.",
+    "notConnectedInfo": "Connectez-vous pour accéder à un stockage illimité sur le cloud avec un abonnement premium.",
+    "connectedInfo": "Passez à un abonnement premium pour un stockage illimité sur le cloud.",
+    "viewSubscriptions": "Voir les abonnements"
+  },
+  "guestWelcomeModal": {
+    "title": "Mode Invité",
+    "welcomeMessage": "Bienvenue ! En mode invité, vous pouvez tester toutes les fonctionnalités.",
+    "storagePrefix": "Vos données sont stockées",
+    "storageBold": "localement",
+    "storageSuffix": "sur cet appareil. Si vous videz le cache, elles seront perdues.",
+    "limitPrefix": "Vous pouvez créer jusqu'à",
+    "limitCount_one": "{{count}} match",
+    "limitCount_other": "{{count}} matchs",
+    "limitSuffix": "gratuitement. Pour en faire plus, créez un compte !",
+    "confirmButton": "Compris, c'est parti !"
+  },
+  "playerCard": {
+    "nameRequired": "Le nom du joueur est requis",
+    "numberRange": "Le numéro doit être entre 0 et 99",
+    "starter": "Titulaire"
+  },
+  "syncErrorModal": {
+    "title": "Synchronisation impossible",
+    "notConnectedInfo": "Connectez-vous pour sauvegarder vos matchs sur le cloud et y accéder depuis n'importe quel appareil.",
+    "freemiumInfo": "Passez à un abonnement payant pour synchroniser automatiquement vos matchs et profiter d'un stockage illimité.",
+    "upgradeButton": "Passer à Premium"
+  },
+  "addOpponentForm": {
+    "title": "Ajouter un joueur",
+    "namePlaceholder": "Nom (Optionnel)"
+  },
+  "actionChainModal": {
+    "title": "Action suivante ?",
+    "confirmButton": "Valider",
+    "ignoreButton": "Ignorer →"
+  },
+  "actionChainRules": {
+    "defensiveRebound": "Reb. Défensif",
+    "offensiveRebound": "Reb. Offensif",
+    "teamRebound": "Reb. Équipe",
+    "assist": "Passe décisive",
+    "steal": "Interception",
+    "turnover": "Balle perdue",
+    "playerFallback": "Joueur",
+    "missedShotTrigger": "Tir raté — {{player}}",
+    "madeShotTrigger": "Panier — {{player}} ({{points}} pts)",
+    "turnoverTrigger": "Balle perdue — {{player}}",
+    "stealTrigger": "Interception — {{player}}",
+    "blockTrigger": "Contre — {{player}}"
+  },
+  "teamGender": {
+    "male": "Masculin",
+    "female": "Féminin",
+    "mixed": "Mixte"
+  },
+  "teamCard": {
+    "accessDeniedTitle": "Accès refusé",
+    "accessDeniedMessage": "Seul le propriétaire du club ou le coach de l'équipe peut la modifier.",
+    "statusPending": "EN ATTENTE",
+    "statusRejected": "REFUSÉ",
+    "statusSuspended": "SUSPENDUE",
+    "playerCount_one": "{{count}} Joueur",
+    "playerCount_other": "{{count}} Joueurs"
+  },
+  "createClubForm": {
+    "clubNameLabel": "NOM DU CLUB",
+    "clubNamePlaceholder": "Ex: Los Angeles Lakers",
+    "acronymLabel": "SIGLE",
+    "acronymPlaceholder": "LAL",
+    "colorsTitle": "Couleurs du Club",
+    "primaryColor": "Couleur principale",
+    "secondaryColor": "Couleur secondaire",
+    "courtCustomizationTitle": "Personnalisation du terrain",
+    "courtColor": "Couleur du parquet",
+    "linesColor": "Couleur des lignes"
+  },
+  "dashboardResumeMatchModal": {
+    "title": "Match en cours détecté !",
+    "descriptionPrefix": "Il semble que le match contre",
+    "descriptionSuffix": "ne soit pas terminé.",
+    "resumeButton": "Reprendre le match",
+    "newMatchButton": "Nouveau match",
+    "abandonButton": "Abandonner le match",
+    "ignoreButton": "Ignorer pour l'instant"
+  },
+  "dashboardRecentMatches": {
+    "title": "Derniers Matchs",
+    "viewAll": "Voir tout",
+    "vs": "vs",
+    "win": "VICTOIRE",
+    "loss": "DÉFAITE",
+    "emptyState": "Aucun match récent"
+  },
+  "opponentRosterView": {
+    "saveModalTitle": "Sauvegarder la composition",
+    "overwriteConfirm": "\"{{name}}\" existe déjà. Écraser ?",
+    "overwrite": "Écraser",
+    "loadComposition": "Charger une composition",
+    "playerCount_one": "{{count}} joueur",
+    "playerCount_other": "{{count}} joueurs",
+    "saveButton": "Enregistrer"
+  },
+  "filterBottomSheet": {
+    "title": "Filtrer les actions",
+    "reset": "Reset"
+  },
+  "teamSelector": {
+    "namePlaceholder": "Nom de votre équipe",
+    "teamNotFound": "Équipe non trouvée"
+  },
+  "forceUpdateModal": {
+    "title": "Mise à jour requise",
+    "message": "Une nouvelle version de Coach Assistant est disponible. Veuillez mettre à jour l'application pour continuer à l'utiliser.",
+    "button": "Mettre à jour"
+  },
+  "joinClubForm": {
+    "codeLabel": "CODE CLUB",
+    "codePlaceholder": "Ex: LION69",
+    "infoText": "En rejoignant un club existant, vous n'avez pas besoin de payer d'abonnement. C'est le propriétaire du club qui gère les quotas d'équipes."
+  },
+  "colorPickerModal": {
+    "presetColors": "Couleurs prédéfinies",
+    "customColor": "Couleur personnalisée"
+  },
+  "termsAcceptanceModal": {
+    "title": "Conditions d'utilisation",
+    "messagePrefix": "Pour utiliser l'application, vous devez accepter nos",
+    "messageMiddle": "et notre",
+    "privacyLink": "Politique de confidentialité",
+    "acceptButton": "Accepter",
+    "refuseButton": "Refuser"
+  },
+  "leaderCategorySublabels": {
+    "eff": "éval / match",
+    "pts": "pts / match",
+    "reb": "reb / match",
+    "reb_off": "reb offensifs / match",
+    "reb_def": "reb défensifs / match",
+    "ast": "ast / match",
+    "def": "INT+CTR / match",
+    "stl": "interceptions / match",
+    "blk": "contres / match",
+    "to": "balles perdues / match",
+    "pf": "fautes / match",
+    "fd": "fautes provoquées / match",
+    "fg_pct": "% réussite aux tirs",
+    "fg2_pct": "% réussite à 2 pts",
+    "fg3_pct": "% réussite à 3 pts",
+    "ft_pct": "% réussite aux lancers"
+  },
+  "statPeriodLabels": {
+    "season": "Saison",
+    "3_months": "3 mois",
+    "last_5": "5 matchs"
+  },
+  "leaderboardList": {
+    "noMatches": "Aucun match enregistré",
+    "noRosterPlayers": "Aucun joueur du roster pour cette période",
+    "noStats": "Aucune statistique pour cette période",
+    "matchCount_one": "{{count}} match",
+    "matchCount_other": "{{count}} matchs"
+  },
+  "leaderCategoryLabels": {
+    "eff": "ÉVAL",
+    "pts": "PTS",
+    "reb": "REB",
+    "reb_off": "REB OFF",
+    "reb_def": "REB DÉF",
+    "ast": "AST",
+    "def": "DÉFENSE",
+    "stl": "INT",
+    "blk": "CTR",
+    "to": "BP",
+    "pf": "FTE",
+    "fd": "FP",
+    "fg_pct": "% TIR",
+    "fg2_pct": "% 2PTS",
+    "fg3_pct": "% 3PTS",
+    "ft_pct": "% LF"
+  },
+  "leaderCategoryLegend": {
+    "rebound": "Rebonds offensifs + défensifs combinés",
+    "defense": "Interceptions (INT) + contres (CTR) combinés",
+    "fgPct": "% de réussite sur tous les tirs (2pts, 3pts et LF)"
+  },
+  "reviewPromptModal": {
+    "title": "Vous appréciez Coach Assistant ?",
+    "message": "Votre avis nous aide à améliorer l'application.",
+    "dislike": "Pas vraiment",
+    "like": "Oui !"
+  },
+  "handicapSelector": {
+    "title": "Handicap de départ",
+    "subtitle": "Attribuer des points initiaux sans joueur"
+  },
+  "courtTab": {
+    "periodLabel": "PÉRIODE",
+    "actionTypeLabel": "TYPE D'ACTION",
+    "specificationsLabel": "SPÉCIFICATIONS",
+    "playersLabel": "JOUEURS",
+    "all": "Tout",
+    "shots": "Tirs",
+    "rebounds": "Rebonds",
+    "assists": "Passes",
+    "steals": "Interceptions",
+    "blocks": "Contres",
+    "turnovers": "Pertes",
+    "fouls": "Fautes",
+    "foulsDrawn": "Fautes provoquées",
+    "noStats": "Aucune statistique disponible"
+  },
+  "opponentInput": {
+    "namePlaceholder": "Nom de l'équipe adverse"
+  },
+  "timeoutModal": {
+    "label": "TEMPS MORT",
+    "limitReached": "Limite de mi-temps atteinte"
+  },
+  "changelogModal": {
+    "title": "Nouveautés",
+    "gotIt": "J'ai compris"
+  },
+  "playerProfileHeader": {
+    "matchesPlayed_one": "{{count}} match joué",
+    "matchesPlayed_other": "{{count}} matchs joués",
+    "outOfTotal": "sur {{total}}"
+  },
+  "matchHistoryRow": {
+    "ptsAbbr": "pts",
+    "rebAbbr": "reb",
+    "astAbbr": "ast",
+    "didNotPlay": "N'a pas joué"
+  },
+  "statsTab": {
+    "player": "JOUEUR",
+    "lf": "LF",
+    "plusMinus": "+/-",
+    "starters": "5 DÉPART",
+    "bench": "BANC",
+    "total": "TOTAL",
+    "handicap": "+{{count}} HCP",
+    "noData": "Aucune donnée disponible"
+  },
+  "cardsTab": {
+    "sortBy": "TRIER PAR",
+    "name": "Nom",
+    "points": "Points",
+    "rebounds": "Rebonds",
+    "assists": "Passes",
+    "steals": "Interceptions",
+    "blocks": "Contres",
+    "evaluation": "Évaluation",
+    "evalAbbr": "ÉVAL",
+    "noStats": "Aucune statistique."
+  },
+  "matchFormatLabels": {
+    "halves": {
+      "singular": "mi-temps",
+      "plural": "mi-temps",
+      "short": "MT"
+    },
+    "quarters": {
+      "singular": "quart-temps",
+      "plural": "quart-temps",
+      "short": "QT"
+    }
+  },
+  "matchFormatPresets": {
+    "QUARTERS": {
+      "label": "4 Quarts-temps"
+    },
+    "HALVES": {
+      "label": "2 Mi-temps"
+    }
+  },
+  "matchConstants": {
+    "defaultOpponentPlayerName": "Joueur {{index}}"
+  },
+  "matchCreationStepLabels": {
+    "step1": "Configuration du match",
+    "step2": "Feuille de match"
+  },
+  "matchCreationButtonLabels": {
+    "NEXT": "Configurer les effectifs",
+    "START": "Coup d'envoi",
+    "ADD_REINFORCEMENT": "Ajouter un renfort",
+    "MODIFY_OPTIONS": "Modifier les options"
+  },
+  "matchCreationInfoMessages": {
+    "ROSTER_INSTRUCTIONS": "Sélectionnez les présents et le 5 de départ (étoile à droite).",
+    "OPPONENT_ROSTER_INSTRUCTIONS": "Sélectionnez le 5 de départ adverse (étoile à droite).",
+    "NO_TEAM_CREATED": "Pas d'équipe créée",
+    "OPPONENT_STATS_DISABLED": "Statistiques adverses désactivées",
+    "OPPONENT_STATS_DISABLED_DETAIL": "Activez l'option à l'étape précédente pour saisir l'effectif adverse.",
+    "NO_OPPONENT_PLAYERS": "Aucun joueur adverse ajouté.",
+    "OPPONENT_STATS_OPTION": "Saisir aussi les tirs/fautes adverses",
+    "OPPONENT_STATS_TITLE": "Stats Adversaires"
+  },
+  "matchCreationFormLabels": {
+    "MY_TEAM": "MON ÉQUIPE",
+    "OPPONENT": "ADVERSAIRE",
+    "MATCH_FORMAT": "FORMAT DU MATCH",
+    "LOCATION": "LIEU",
+    "PERIODS": "PÉRIODES",
+    "MINUTES_PER_PERIOD": "MINUTES / PÉRIODE",
+    "HOME": "Domicile",
+    "AWAY": "Extérieur"
+  },
+  "matchRosterTabLabels": {
+    "US": "NOUS",
+    "THEM": "EUX"
   }
 }

@@ -7,7 +7,7 @@
 import React from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { BRAND_COLORS, COMMON_COLORS } from "../../src/theme";
-import { MATCH_CREATION_FORM_LABELS } from "../../constants";
+import { getMatchCreationFormLabel } from "../../constants";
 import { useResponsive } from "../../src/hooks/useResponsive";
 
 interface LocationSelectorProps {
@@ -35,7 +35,7 @@ export const LocationSelector: React.FC<LocationSelectorProps> = ({
   return (
     <View style={[styles.formSection, { marginBottom: sp.lg }]}>
       <Text style={[styles.formLabel, { color: colors.textSecondary, fontSize: font.xs, marginBottom: sp.sm }]}>
-        {MATCH_CREATION_FORM_LABELS.LOCATION}
+        {getMatchCreationFormLabel("LOCATION")}
       </Text>
       <View style={[styles.locationButtons, { gap: sp.md }]}>
         <TouchableOpacity
@@ -61,7 +61,7 @@ export const LocationSelector: React.FC<LocationSelectorProps> = ({
               },
             ]}
           >
-            {MATCH_CREATION_FORM_LABELS.HOME}
+            {getMatchCreationFormLabel("HOME")}
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -87,7 +87,7 @@ export const LocationSelector: React.FC<LocationSelectorProps> = ({
               },
             ]}
           >
-            {MATCH_CREATION_FORM_LABELS.AWAY}
+            {getMatchCreationFormLabel("AWAY")}
           </Text>
         </TouchableOpacity>
       </View>

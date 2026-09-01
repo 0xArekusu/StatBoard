@@ -15,6 +15,7 @@ import {
   useWindowDimensions,
   Image,
 } from "react-native";
+import { useTranslation } from "react-i18next";
 import { useTheme } from "../../src/contexts/ThemeContext";
 import { useResponsive } from "../../src/hooks/useResponsive";
 import BasketballCourtSVG from "../BasketballCourtSVG";
@@ -74,6 +75,7 @@ export default function CourtTab({
   totalPeriods,
   sponsorUris,
 }: CourtTabProps) {
+  const { t } = useTranslation();
   const { colors } = useTheme();
   const { sp, font, sizes, isCompact } = useResponsive();
   const windowDimensions = useWindowDimensions();
@@ -204,7 +206,7 @@ export default function CourtTab({
       {/* Period Filters */}
       <View style={[styles.courtFiltersSection, { backgroundColor: bgColor, paddingVertical: sp.sm }]}>
         <Text style={[styles.courtFilterLabel, { color: textTertiary, fontSize: font.xs, marginBottom: sp.sm }]}>
-          PÉRIODE
+          {t("courtTab.periodLabel")}
         </Text>
         <ScrollView
           horizontal
@@ -239,7 +241,7 @@ export default function CourtTab({
                   },
                 ]}
               >
-                Tout
+                {t("courtTab.all")}
               </Text>
             </TouchableOpacity>
 
@@ -290,7 +292,7 @@ export default function CourtTab({
       {/* Action Type Filters */}
       <View style={[styles.courtFiltersSection, { backgroundColor: bgColor, paddingVertical: sp.sm }]}>
         <Text style={[styles.courtFilterLabel, { color: textTertiary, fontSize: font.xs, marginBottom: sp.sm }]}>
-          TYPE D'ACTION
+          {t("courtTab.actionTypeLabel")}
         </Text>
         <ScrollView
           horizontal
@@ -327,7 +329,7 @@ export default function CourtTab({
                   },
                 ]}
               >
-                Tout
+                {t("courtTab.all")}
               </Text>
             </TouchableOpacity>
 
@@ -374,7 +376,7 @@ export default function CourtTab({
                   },
                 ]}
               >
-                Tirs
+                {t("courtTab.shots")}
               </Text>
             </TouchableOpacity>
 
@@ -421,7 +423,7 @@ export default function CourtTab({
                   },
                 ]}
               >
-                Rebonds
+                {t("courtTab.rebounds")}
               </Text>
             </TouchableOpacity>
 
@@ -468,7 +470,7 @@ export default function CourtTab({
                   },
                 ]}
               >
-                Passes
+                {t("courtTab.assists")}
               </Text>
             </TouchableOpacity>
 
@@ -515,7 +517,7 @@ export default function CourtTab({
                   },
                 ]}
               >
-                Interceptions
+                {t("courtTab.steals")}
               </Text>
             </TouchableOpacity>
 
@@ -562,7 +564,7 @@ export default function CourtTab({
                   },
                 ]}
               >
-                Contres
+                {t("courtTab.blocks")}
               </Text>
             </TouchableOpacity>
 
@@ -609,7 +611,7 @@ export default function CourtTab({
                   },
                 ]}
               >
-                Pertes
+                {t("courtTab.turnovers")}
               </Text>
             </TouchableOpacity>
 
@@ -652,7 +654,7 @@ export default function CourtTab({
                   },
                 ]}
               >
-                Fautes
+                {t("courtTab.fouls")}
               </Text>
             </TouchableOpacity>
 
@@ -701,7 +703,7 @@ export default function CourtTab({
                   },
                 ]}
               >
-                Fautes provoquées
+                {t("courtTab.foulsDrawn")}
               </Text>
             </TouchableOpacity>
           </View>
@@ -714,7 +716,7 @@ export default function CourtTab({
           style={[styles.courtFiltersSection, { backgroundColor: bgColor, paddingVertical: sp.sm }]}
         >
           <Text style={[styles.courtFilterLabel, { color: textTertiary, fontSize: font.xs, marginBottom: sp.sm }]}>
-            SPÉCIFICATIONS
+            {t("courtTab.specificationsLabel")}
           </Text>
           <ScrollView
             horizontal
@@ -775,7 +777,7 @@ export default function CourtTab({
       {/* Player Filters */}
       <View style={[styles.courtFiltersSection, { backgroundColor: bgColor, paddingVertical: sp.sm }]}>
         <Text style={[styles.courtFilterLabel, { color: textTertiary, fontSize: font.xs, marginBottom: sp.sm }]}>
-          JOUEURS
+          {t("courtTab.playersLabel")}
         </Text>
         <ScrollView
           horizontal
@@ -846,7 +848,7 @@ export default function CourtTab({
       {stats.length === 0 ? (
         <View style={[styles.emptyState, { paddingVertical: sp.xxl }]}>
           <Text style={[styles.emptyStateText, { color: textTertiary, fontSize: font.sm }]}>
-            Aucune statistique disponible
+            {t("courtTab.noStats")}
           </Text>
         </View>
       ) : (

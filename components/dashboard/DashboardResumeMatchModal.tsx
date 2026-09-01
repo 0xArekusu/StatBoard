@@ -1,6 +1,7 @@
 import React from "react";
 import { View, Text, Modal, TouchableOpacity, StyleSheet } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { useTranslation } from "react-i18next";
 import { Match } from "../../src/models/types";
 import { SHADOW_COLOR, OPACITY, COMMON_COLORS } from "../../src/theme";
 import { ThemeColors } from "../../src/theme/colors";
@@ -36,6 +37,7 @@ export default function DashboardResumeMatchModal({
   onNewMatch,
   onClose,
 }: DashboardResumeMatchModalProps) {
+  const { t } = useTranslation();
   const { sp, font, sizes } = useResponsive();
   if (!match) return null;
 
@@ -73,16 +75,16 @@ export default function DashboardResumeMatchModal({
 
           {/* Title */}
           <Text style={[styles.modalTitle, { color: colors.text.primary }]}>
-            Match en cours détecté !
+            {t("dashboardResumeMatchModal.title")}
           </Text>
 
           {/* Description */}
           <Text style={[styles.modalDescription, { color: colors.text.secondary }]}>
-            Il semble que le match contre{" "}
+            {t("dashboardResumeMatchModal.descriptionPrefix")}{" "}
             <Text style={{ fontWeight: "bold" }}>
               {match.opponent_name}
             </Text>{" "}
-            ne soit pas terminé.
+            {t("dashboardResumeMatchModal.descriptionSuffix")}
           </Text>
 
           {/* Primary action: Resume match */}
@@ -104,7 +106,7 @@ export default function DashboardResumeMatchModal({
                 { color: COMMON_COLORS.white },
               ]}
             >
-              Reprendre le match
+              {t("dashboardResumeMatchModal.resumeButton")}
             </Text>
           </TouchableOpacity>
 
@@ -131,7 +133,7 @@ export default function DashboardResumeMatchModal({
                   { color: colors.primary },
                 ]}
               >
-                Nouveau match
+                {t("dashboardResumeMatchModal.newMatchButton")}
               </Text>
             </TouchableOpacity>
           ) : (
@@ -156,7 +158,7 @@ export default function DashboardResumeMatchModal({
                   { color: colors.error },
                 ]}
               >
-                Abandonner le match
+                {t("dashboardResumeMatchModal.abandonButton")}
               </Text>
             </TouchableOpacity>
           )}
@@ -178,7 +180,7 @@ export default function DashboardResumeMatchModal({
                 { color: colors.text.secondary },
               ]}
             >
-              Ignorer pour l'instant
+              {t("dashboardResumeMatchModal.ignoreButton")}
             </Text>
           </TouchableOpacity>
         </View>

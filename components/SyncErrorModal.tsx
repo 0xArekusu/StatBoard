@@ -2,6 +2,7 @@ import React from "react";
 import { Modal, View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
+import { useTranslation } from "react-i18next";
 import { useTheme } from "../src/contexts/ThemeContext";
 import { STATUS_COLORS, COMMON_COLORS, SHADOW_COLOR } from "../src/theme";
 import { useResponsive } from "../src/hooks/useResponsive";
@@ -25,6 +26,7 @@ export default function SyncErrorModal({
   onUpgrade,
   onLogin,
 }: SyncErrorModalProps) {
+  const { t } = useTranslation();
   const { colors } = useTheme();
   const { sp, font, sizes } = useResponsive();
 
@@ -42,7 +44,7 @@ export default function SyncErrorModal({
             />
           </View>
 
-          <Text style={[styles.title, { color: colors.text.primary, fontSize: font.xxl, marginBottom: sp.md }]}>Synchronisation impossible</Text>
+          <Text style={[styles.title, { color: colors.text.primary, fontSize: font.xxl, marginBottom: sp.md }]}>{t("syncErrorModal.title")}</Text>
 
           <Text style={[styles.message, { color: colors.text.secondary, fontSize: font.md, marginBottom: sp.lg }]}>{reason}</Text>
 
@@ -50,7 +52,7 @@ export default function SyncErrorModal({
             <View style={[styles.infoBox, { backgroundColor: infoBoxColor + "20", borderColor: infoBoxColor, borderRadius: sp.md, padding: sp.md, gap: sp.sm + sp.xs, marginBottom: sp.lg }]}>
               <Ionicons name="information-circle-outline" size={sizes.iconMd} color={infoBoxColor} />
               <Text style={[styles.infoText, { color: infoBoxColor, fontSize: font.md }]}>
-                Connectez-vous pour sauvegarder vos matchs sur le cloud et y accéder depuis n'importe quel appareil.
+                {t("syncErrorModal.notConnectedInfo")}
               </Text>
             </View>
           )}
@@ -59,7 +61,7 @@ export default function SyncErrorModal({
             <View style={[styles.infoBox, { backgroundColor: infoBoxColor + "20", borderColor: infoBoxColor, borderRadius: sp.md, padding: sp.md, gap: sp.sm + sp.xs, marginBottom: sp.lg }]}>
               <Ionicons name="rocket-outline" size={sizes.iconMd} color={infoBoxColor} />
               <Text style={[styles.infoText, { color: infoBoxColor, fontSize: font.md }]}>
-                Passez à un abonnement payant pour synchroniser automatiquement vos matchs et profiter d'un stockage illimité.
+                {t("syncErrorModal.freemiumInfo")}
               </Text>
             </View>
           )}
@@ -74,7 +76,7 @@ export default function SyncErrorModal({
                 }}
               >
                 <Ionicons name="log-in-outline" size={sizes.iconMd * 0.75} color={COMMON_COLORS.white} style={[styles.buttonIcon, { marginRight: sp.sm }]} />
-                <Text style={[styles.primaryButtonText, { color: COMMON_COLORS.white, fontSize: font.md }]}>Se connecter</Text>
+                <Text style={[styles.primaryButtonText, { color: COMMON_COLORS.white, fontSize: font.md }]}>{t("loginScreen.submitButton")}</Text>
               </TouchableOpacity>
             )}
 
@@ -87,7 +89,7 @@ export default function SyncErrorModal({
                 }}
               >
                 <Ionicons name="star" size={sizes.iconMd * 0.75} color={COMMON_COLORS.white} style={[styles.buttonIcon, { marginRight: sp.sm }]} />
-                <Text style={[styles.primaryButtonText, { color: COMMON_COLORS.white, fontSize: font.md }]}>Passer à Premium</Text>
+                <Text style={[styles.primaryButtonText, { color: COMMON_COLORS.white, fontSize: font.md }]}>{t("syncErrorModal.upgradeButton")}</Text>
               </TouchableOpacity>
             )}
 
@@ -95,7 +97,7 @@ export default function SyncErrorModal({
               style={[styles.button, styles.closeButton, { backgroundColor: colors.surfaceVariant, paddingVertical: sp.md, paddingHorizontal: sp.lg, borderRadius: sp.md }]}
               onPress={onClose}
             >
-              <Text style={[styles.closeButtonText, { color: colors.text.secondary, fontSize: font.md }]}>Fermer</Text>
+              <Text style={[styles.closeButtonText, { color: colors.text.secondary, fontSize: font.md }]}>{t("clubInfoView.close")}</Text>
             </TouchableOpacity>
           </View>
         </View>

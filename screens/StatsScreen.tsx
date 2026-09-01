@@ -16,7 +16,7 @@ import {
   PlayerSeasonData,
   MatchWithDetails,
 } from '../src/services/seasonStats';
-import { StatPeriod, LeaderCategory, STAT_PERIOD, LEADER_CATEGORY, LEADER_CATEGORY_LEGEND } from '../constants/statsConstants';
+import { StatPeriod, LeaderCategory, STAT_PERIOD, LEADER_CATEGORY, getLeaderCategoryLegend } from '../constants/statsConstants';
 import { ROUTES } from '../constants/routes';
 import { ANALYTICS_EVENTS } from '../constants/analyticsEvents';
 import { usePostHog } from 'posthog-react-native';
@@ -126,9 +126,9 @@ export default function StatsScreen() {
         <PeriodFilter selected={period} onChange={handlePeriodChange} />
 
         <CategoryTabs selected={category} onChange={handleCategoryChange} />
-        {LEADER_CATEGORY_LEGEND[category] ? (
+        {getLeaderCategoryLegend(category) ? (
           <Text style={[styles.legend, { fontSize: font.xs, color: colors.text.tertiary, paddingHorizontal: sp.md, paddingTop: sp.xs }]}>
-            ℹ︎ {LEADER_CATEGORY_LEGEND[category]}
+            ℹ︎ {getLeaderCategoryLegend(category)}
           </Text>
         ) : null}
 

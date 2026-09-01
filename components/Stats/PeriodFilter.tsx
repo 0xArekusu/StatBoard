@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useTheme } from '../../src/contexts/ThemeContext';
 import { useResponsive } from '../../src/hooks/useResponsive';
-import { StatPeriod, STAT_PERIOD, STAT_PERIOD_LABELS } from '../../constants/statsConstants';
+import { StatPeriod, STAT_PERIOD, getStatPeriodLabel } from '../../constants/statsConstants';
 
 interface PeriodFilterProps {
   selected: StatPeriod;
@@ -53,7 +53,7 @@ export default function PeriodFilter({ selected, onChange }: PeriodFilterProps) 
                 },
               ]}
             >
-              {STAT_PERIOD_LABELS[period]}
+              {getStatPeriodLabel(period)}
             </Text>
           </TouchableOpacity>
         );

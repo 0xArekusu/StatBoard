@@ -8,6 +8,7 @@ import {
   StyleSheet,
 } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { useTranslation } from "react-i18next";
 import { useTheme } from "../../src/contexts/ThemeContext";
 import { useResponsive } from "../../src/hooks/useResponsive";
 import { ACTION_COLORS, STATUS_COLORS } from "../../src/theme/colors";
@@ -58,6 +59,7 @@ export const FoulChainModal: React.FC<FoulChainModalProps> = ({
   onComplete,
   onIgnore,
 }) => {
+  const { t } = useTranslation();
   const { colors } = useTheme();
   const { sp, font, sizes } = useResponsive();
   const [foulType, setFoulType] = useState<FoulSpecification>(FoulSpecification.PERSONAL);
@@ -148,6 +150,8 @@ export const FoulChainModal: React.FC<FoulChainModalProps> = ({
     });
   };
 
+  const yesNoLabel = (label: "Non" | "Oui") => (label === "Oui" ? t("common.yes") : t("common.no"));
+
   const isFoulCommitted = context?.mode === "foul_committed";
   const isTechnical = foulType === FoulSpecification.TECHNICAL;
   const hideOpponentBenefitSections = isFoulCommitted && !trackOpponentStats;
@@ -202,14 +206,14 @@ export const FoulChainModal: React.FC<FoulChainModalProps> = ({
             {/* Header */}
             <Text style={[styles.header, { color: colors.text.secondary, fontSize: font.sm }]}>
               {isFoulCommitted
-                ? `Faute commise — #${context.foulDrawnPlayerNumber}`
-                : `Faute provoquée — #${context.foulDrawnPlayerNumber}`}
+                ? t("foulChainModal.headerCommitted", { num: context.foulDrawnPlayerNumber })
+                : t("foulChainModal.headerDrawn", { num: context.foulDrawnPlayerNumber })}
             </Text>
 
             {/* Type de faute */}
             <View style={{ gap: sp.sm }}>
               <Text style={[styles.sectionLabel, { color: colors.text.primary, fontSize: font.md }]}>
-                Type de faute ?
+                {t("foulChainModal.foulTypeQuestion")}
               </Text>
               <View style={[styles.playerRow, { gap: sp.xs }]}>
                 {FOUL_TYPE_ORDER.map((type) => {
@@ -248,7 +252,7 @@ export const FoulChainModal: React.FC<FoulChainModalProps> = ({
               <View style={{ height: 1, backgroundColor: colors.border }} />
               <View style={{ gap: sp.sm }}>
                 <Text style={[styles.sectionLabel, { color: colors.text.primary, fontSize: font.md }]}>
-                  {isFoulCommitted ? "Qui a provoqué la faute ?" : "Qui a commis la faute ?"}
+                  {isFoulCommitted ? t("foulChainModal.whoDrawQuestion") : t("foulChainModal.whoCommittedQuestion")}
                 </Text>
                 <View style={[styles.playerRow, { gap: sp.xs }]}>
                   {foulPlayerList
@@ -294,7 +298,7 @@ export const FoulChainModal: React.FC<FoulChainModalProps> = ({
             <View style={{ gap: sp.sm }}>
               <View style={styles.toggleRow}>
                 <Text style={[styles.sectionLabel, { color: colors.text.primary, fontSize: font.md }]}>
-                  Panier marqué ?
+                  {t("foulChainModal.basketScoredQuestion")}
                 </Text>
                 <View style={[styles.toggleBtns, { gap: sp.xs }]}>
                   {(["Non", "Oui"] as const).map((label) => {
@@ -317,7 +321,7 @@ export const FoulChainModal: React.FC<FoulChainModalProps> = ({
                         activeOpacity={0.7}
                       >
                         <Text style={{ color: isActive ? "#fff" : accentColor, fontSize: font.sm, fontWeight: "700" }}>
-                          {label}
+                          {yesNoLabel(label)}
                         </Text>
                       </TouchableOpacity>
                     );
@@ -345,7 +349,7 @@ export const FoulChainModal: React.FC<FoulChainModalProps> = ({
                         activeOpacity={0.7}
                       >
                         <Text style={{ color: isActive ? "#fff" : accentColor, fontSize: font.md, fontWeight: "700", textAlign: "center" }}>
-                          {pts} pts
+                          {t("foulChainModal.points", { count: pts })}
                         </Text>
                       </TouchableOpacity>
                     );
@@ -358,7 +362,7 @@ export const FoulChainModal: React.FC<FoulChainModalProps> = ({
                 <View style={{ gap: sp.sm }}>
                   <View style={styles.toggleRow}>
                     <Text style={[styles.sectionLabel, { color: colors.text.primary, fontSize: font.md }]}>
-                      Passeur décisif ?
+                      {t("foulChainModal.assistQuestion")}
                     </Text>
                     <View style={[styles.toggleBtns, { gap: sp.xs }]}>
                       {(["Non", "Oui"] as const).map((label) => {
@@ -384,7 +388,7 @@ export const FoulChainModal: React.FC<FoulChainModalProps> = ({
                             activeOpacity={0.7}
                           >
                             <Text style={{ color: isActive ? "#fff" : ACTION_COLORS.assist, fontSize: font.sm, fontWeight: "700" }}>
-                              {label}
+                              {yesNoLabel(label)}
                             </Text>
                           </TouchableOpacity>
                         );
@@ -441,7 +445,7 @@ export const FoulChainModal: React.FC<FoulChainModalProps> = ({
             <View style={{ gap: sp.md }}>
               <View style={styles.toggleRow}>
                 <Text style={[styles.sectionLabel, { color: colors.text.primary, fontSize: font.md }]}>
-                  Lancers-francs ?
+                  {t("foulChainModal.freeThrowsQuestion")}
                 </Text>
                 <View style={[styles.toggleBtns, { gap: sp.xs }]}>
                   {(["Non", "Oui"] as const).map((label) => {
@@ -471,7 +475,7 @@ export const FoulChainModal: React.FC<FoulChainModalProps> = ({
                         activeOpacity={isDisabled ? 1 : 0.7}
                       >
                         <Text style={{ color: isDisabled ? colors.text.disabled : isActive ? "#fff" : STATUS_COLORS.info, fontSize: font.sm, fontWeight: "700" }}>
-                          {label}
+                          {yesNoLabel(label)}
                         </Text>
                       </TouchableOpacity>
                     );
@@ -503,7 +507,7 @@ export const FoulChainModal: React.FC<FoulChainModalProps> = ({
                             activeOpacity={0.7}
                           >
                             <Text style={{ color: isActive ? "#fff" : STATUS_COLORS.info, fontSize: font.md, fontWeight: "700", textAlign: "center" }}>
-                              {count} LF
+                              {t("foulChainModal.freeThrowCount", { count })}
                             </Text>
                           </TouchableOpacity>
                         );
@@ -515,7 +519,7 @@ export const FoulChainModal: React.FC<FoulChainModalProps> = ({
                   {lfResults.map((result, i) => (
                     <View key={i} style={[styles.lfRow, { gap: sp.sm }]}>
                       <Text style={[styles.lfLabel, { color: colors.text.secondary, fontSize: font.sm, width: 36 }]}>
-                        LF {i + 1}
+                        {t("foulChainModal.freeThrowIndex", { index: i + 1 })}
                       </Text>
                       {(["made", "missed"] as const).map((val) => {
                         const isActive = result === val;
@@ -537,7 +541,7 @@ export const FoulChainModal: React.FC<FoulChainModalProps> = ({
                             activeOpacity={0.7}
                           >
                             <Text style={{ color: isActive ? "#fff" : btnColor, fontSize: font.sm, fontWeight: "700", textAlign: "center" }}>
-                              {val === "made" ? "✓ Réussi" : "✗ Raté"}
+                              {val === "made" ? t("foulChainModal.made") : t("foulChainModal.missed")}
                             </Text>
                           </TouchableOpacity>
                         );
@@ -570,13 +574,13 @@ export const FoulChainModal: React.FC<FoulChainModalProps> = ({
             >
               <MaterialCommunityIcons name="check" size={sizes.iconMd} color={isValid ? "#fff" : colors.text.disabled} />
               <Text style={[styles.confirmText, { color: isValid ? "#fff" : colors.text.disabled, fontSize: font.md }]}>
-                Valider
+                {t("foulChainModal.confirm")}
               </Text>
             </TouchableOpacity>
 
             <TouchableOpacity onPress={() => onIgnore(foulType)} style={styles.ignoreBtn} activeOpacity={0.6}>
               <Text style={[{ color: colors.text.tertiary, fontSize: font.sm, fontWeight: "500" }]}>
-                Ignorer →
+                {t("foulChainModal.ignore")}
               </Text>
             </TouchableOpacity>
           </View>

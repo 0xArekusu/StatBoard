@@ -12,6 +12,7 @@ import {
   ScrollView,
   TouchableOpacity,
 } from "react-native";
+import { useTranslation } from "react-i18next";
 import { useTheme } from "../../src/contexts/ThemeContext";
 import { useResponsive } from "../../src/hooks/useResponsive";
 import {
@@ -46,6 +47,7 @@ export default function CardsTab({
   handleSort,
   setViewPlayer,
 }: CardsTabProps) {
+  const { t } = useTranslation();
   const { colors, isDark } = useTheme();
   const { sp, font, sizes, isCompact } = useResponsive();
 
@@ -62,7 +64,7 @@ export default function CardsTab({
       {/* Sort Chips */}
       <View style={[styles.cardsSortSection, { marginBottom: sp.md }]}>
         <Text style={[styles.courtFilterLabel, { color: textTertiary, fontSize: font.xs, marginBottom: sp.sm }]}>
-          TRIER PAR
+          {t("cardsTab.sortBy")}
         </Text>
         <ScrollView
           horizontal
@@ -97,7 +99,7 @@ export default function CardsTab({
                   },
                 ]}
               >
-                Nom{" "}
+                {t("cardsTab.name")}{" "}
                 {sortBy === "name" && (sortOrder === "desc" ? "↓" : "↑")}
               </Text>
             </TouchableOpacity>
@@ -129,7 +131,7 @@ export default function CardsTab({
                   },
                 ]}
               >
-                Points{" "}
+                {t("cardsTab.points")}{" "}
                 {sortBy === "pts" && (sortOrder === "desc" ? "↓" : "↑")}
               </Text>
             </TouchableOpacity>
@@ -161,7 +163,7 @@ export default function CardsTab({
                   },
                 ]}
               >
-                Rebonds{" "}
+                {t("cardsTab.rebounds")}{" "}
                 {sortBy === "reb" && (sortOrder === "desc" ? "↓" : "↑")}
               </Text>
             </TouchableOpacity>
@@ -193,7 +195,7 @@ export default function CardsTab({
                   },
                 ]}
               >
-                Passes{" "}
+                {t("cardsTab.assists")}{" "}
                 {sortBy === "ast" && (sortOrder === "desc" ? "↓" : "↑")}
               </Text>
             </TouchableOpacity>
@@ -225,7 +227,7 @@ export default function CardsTab({
                   },
                 ]}
               >
-                Interceptions{" "}
+                {t("cardsTab.steals")}{" "}
                 {sortBy === "stl" && (sortOrder === "desc" ? "↓" : "↑")}
               </Text>
             </TouchableOpacity>
@@ -257,7 +259,7 @@ export default function CardsTab({
                   },
                 ]}
               >
-                Contres{" "}
+                {t("cardsTab.blocks")}{" "}
                 {sortBy === "blk" && (sortOrder === "desc" ? "↓" : "↑")}
               </Text>
             </TouchableOpacity>
@@ -289,7 +291,7 @@ export default function CardsTab({
                   },
                 ]}
               >
-                +/-{" "}
+                {t("statsTab.plusMinus")}{" "}
                 {sortBy === "pm" && (sortOrder === "desc" ? "↓" : "↑")}
               </Text>
             </TouchableOpacity>
@@ -321,7 +323,7 @@ export default function CardsTab({
                   },
                 ]}
               >
-                Évaluation{" "}
+                {t("cardsTab.evaluation")}{" "}
                 {sortBy === "eff" && (sortOrder === "desc" ? "↓" : "↑")}
               </Text>
             </TouchableOpacity>
@@ -353,7 +355,7 @@ export default function CardsTab({
                   },
                 ]}
               >
-                Tirs{" "}
+                {t("statsLegendModal.tirs")}{" "}
                 {sortBy === "fgm" && (sortOrder === "desc" ? "↓" : "↑")}
               </Text>
             </TouchableOpacity>
@@ -385,7 +387,7 @@ export default function CardsTab({
                   },
                 ]}
               >
-                2 Points{" "}
+                {t("playerDetailModal.twoPoints")}{" "}
                 {sortBy === "fg2m" && (sortOrder === "desc" ? "↓" : "↑")}
               </Text>
             </TouchableOpacity>
@@ -417,7 +419,7 @@ export default function CardsTab({
                   },
                 ]}
               >
-                3 Points{" "}
+                {t("playerDetailModal.threePoints")}{" "}
                 {sortBy === "fg3m" && (sortOrder === "desc" ? "↓" : "↑")}
               </Text>
             </TouchableOpacity>
@@ -449,7 +451,7 @@ export default function CardsTab({
                   },
                 ]}
               >
-                Lancers francs{" "}
+                {t("statsLegendModal.freeThrowsFull")}{" "}
                 {sortBy === "ftm" && (sortOrder === "desc" ? "↓" : "↑")}
               </Text>
             </TouchableOpacity>
@@ -521,7 +523,7 @@ export default function CardsTab({
                   { color: colors.primary },
                 ]}
               >
-                Points
+                {t("cardsTab.points")}
               </Text>
             </View>
           </View>
@@ -529,21 +531,21 @@ export default function CardsTab({
           {/* Shooting Bars */}
           <View style={styles.cardShootingBars}>
             <ShootingBar
-              label="3 PTS"
+              label={t("statsLegendModal.threePts")}
               made={player.fg3m}
               attempted={player.fg3a}
               color={SHOOTING_BAR_COLORS.threePoint}
               compact
             />
             <ShootingBar
-              label="2 PTS"
+              label={t("statsLegendModal.twoPts")}
               made={player.fg2m}
               attempted={player.fg2a}
               color={SHOOTING_BAR_COLORS.twoPoint}
               compact
             />
             <ShootingBar
-              label="Lancers"
+              label={t("playerDetailModal.freeThrows")}
               made={player.ftm}
               attempted={player.fta}
               color={SHOOTING_BAR_COLORS.freeThrow}
@@ -556,11 +558,11 @@ export default function CardsTab({
             {/* Ligne 1 */}
             <View style={styles.cardStatsRow}>
               {[
-                { label: "MIN",         value: player.min },
-                { label: "REB OFF/DEF", value: `${player.reb_off}/${player.reb_def}` },
-                { label: "AST",         value: player.ast },
-                { label: "INT",         value: player.stl },
-                { label: "CTR",         value: player.blk },
+                { label: t("statsLegendModal.min"),         value: player.min },
+                { label: t("playerSeasonStats.rebOffDef"), value: `${player.reb_off}/${player.reb_def}` },
+                { label: t("playerDetailModal.ast"),         value: player.ast },
+                { label: t("playerDetailModal.int"),         value: player.stl },
+                { label: t("playerDetailModal.ctr"),         value: player.blk },
               ].map(({ label, value }) => (
                 <View key={label} style={[styles.cardStatItem, { backgroundColor: isDark ? colors.surfaceVariant : colors.surface }]}>
                   <Text style={[styles.cardStatLabel, { color: textTertiary }]}>{label}</Text>
@@ -571,25 +573,25 @@ export default function CardsTab({
             {/* Ligne 2 */}
             <View style={styles.cardStatsRow}>
               <View style={[styles.cardStatItem, { backgroundColor: isDark ? colors.surfaceVariant : colors.surface }]}>
-                <Text style={[styles.cardStatLabel, { color: textTertiary }]}>BP</Text>
+                <Text style={[styles.cardStatLabel, { color: textTertiary }]}>{t("playerDetailModal.bp")}</Text>
                 <Text style={[styles.cardStatValue, { color: textPrimary }]}>{player.to}</Text>
               </View>
               <View style={[styles.cardStatItem, { backgroundColor: isDark ? colors.surfaceVariant : colors.surface }]}>
-                <Text style={[styles.cardStatLabel, { color: textTertiary }]}>FT</Text>
+                <Text style={[styles.cardStatLabel, { color: textTertiary }]}>{t("statsLegendModal.ft")}</Text>
                 <Text style={[styles.cardStatValue, { color: textPrimary }]}>{player.pf}</Text>
               </View>
               <View style={[styles.cardStatItem, { backgroundColor: isDark ? colors.surfaceVariant : colors.surface }]}>
-                <Text style={[styles.cardStatLabel, { color: textTertiary }]}>FP</Text>
+                <Text style={[styles.cardStatLabel, { color: textTertiary }]}>{t("playerDetailModal.fp")}</Text>
                 <Text style={[styles.cardStatValue, { color: textPrimary }]}>{player.fd}</Text>
               </View>
               <View style={[styles.cardStatItem, { backgroundColor: isDark ? colors.surfaceVariant : colors.surface }]}>
-                <Text style={[styles.cardStatLabel, { color: textTertiary }]}>+/-</Text>
+                <Text style={[styles.cardStatLabel, { color: textTertiary }]}>{t("statsTab.plusMinus")}</Text>
                 <Text style={[styles.cardStatValue, { color: player.pm === null ? textTertiary : player.pm > 0 ? "#4CAF50" : player.pm < 0 ? "#F44336" : textPrimary }]}>
                   {player.pm === null ? "—" : player.pm > 0 ? `+${player.pm}` : player.pm}
                 </Text>
               </View>
               <View style={[styles.cardStatItem, { backgroundColor: isDark ? colors.surfaceVariant : colors.surface }]}>
-                <Text style={[styles.cardStatLabel, { color: textTertiary }]}>ÉVAL</Text>
+                <Text style={[styles.cardStatLabel, { color: textTertiary }]}>{t("cardsTab.evalAbbr")}</Text>
                 <Text style={[styles.cardStatValue, { color: colors.primary }]}>{player.eff}</Text>
               </View>
             </View>
@@ -600,7 +602,7 @@ export default function CardsTab({
       {stats.length === 0 && (
         <View style={styles.emptyState}>
           <Text style={[styles.emptyStateText, { color: textTertiary }]}>
-            Aucune statistique.
+            {t("cardsTab.noStats")}
           </Text>
         </View>
       )}

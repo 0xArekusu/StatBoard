@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { useTranslation } from "react-i18next";
 import { useTheme } from "../../src/contexts/ThemeContext";
 import { SLATE_COLORS } from "../../src/theme/colors";
 import { formatTime, getPeriodLabel } from "../../utils/liveMatchHelpers";
@@ -61,6 +62,7 @@ export function MatchHeader({
   expanded,
   onExpandedChange,
 }: MatchHeaderProps) {
+  const { t } = useTranslation();
   const { colors } = useTheme();
   const { isCompact, isPortrait, sp, font, width, isMobileLandscape, isMobilePortrait } = useResponsive();
   const isNarrow = isPortrait && width < BREAKPOINTS.narrowPortraitMaxWidth;
@@ -121,8 +123,8 @@ export function MatchHeader({
       : match.scoreHome;
 
     const teamName = isMyTeam
-      ? match.myTeamName || "Mon équipe"
-      : match.opponent || "Adversaire";
+      ? match.myTeamName || t("liveMatchModals.myTeamFallback")
+      : match.opponent || t("liveMatchModals.opponentFallback");
 
     const handicap = isMyTeam
       ? (match.myTeamHandicap || 0)
@@ -176,7 +178,7 @@ export function MatchHeader({
               color={colors.primary}
             />
             <Text style={[styles.subButtonText, { color: colors.primary }]}>
-              CHANGT
+              {t("liveMatchHeader.substituteAbbr")}
             </Text>
           </TouchableOpacity>
         ) : !match.trackOpponentStats && onOpponentScoreSimple ? (
@@ -213,9 +215,9 @@ export function MatchHeader({
   if (canCollapse && !expanded) {
     return (
       <CollapsedMatchHeader
-        myTeamName={match.myTeamName || "Mon équipe"}
+        myTeamName={match.myTeamName || t("liveMatchModals.myTeamFallback")}
         myScore={amIHome ? match.scoreHome : match.scoreAway}
-        opponentTeamName={match.opponent || "Adversaire"}
+        opponentTeamName={match.opponent || t("liveMatchModals.opponentFallback")}
         opponentScore={amIHome ? match.scoreAway : match.scoreHome}
         timer={timer}
         isRunning={isRunning}
@@ -443,16 +445,16 @@ export function MatchHeader({
         trackOpponentStats={match.trackOpponentStats ?? false}
         myTeamId={myTeamId}
         currentPeriod={quarter}
-        myTeamName={match.myTeamName || "Mon équipe"}
-        opponentName={match.opponent || "Adversaire"}
+        myTeamName={match.myTeamName || t("liveMatchModals.myTeamFallback")}
+        opponentName={match.opponent || t("liveMatchModals.opponentFallback")}
       />
 
       <TimeoutModal
         visible={timeoutModalTeamId !== null}
         teamName={
           timeoutModalTeamId === myTeamId
-            ? match.myTeamName || "Mon équipe"
-            : match.opponent || "Adversaire"
+            ? match.myTeamName || t("liveMatchModals.myTeamFallback")
+            : match.opponent || t("liveMatchModals.opponentFallback")
         }
         limitReached={
           timeoutModalTeamId === "HOME" ? homeHalfLimitReached : awayHalfLimitReached

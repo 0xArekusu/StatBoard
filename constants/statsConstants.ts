@@ -1,3 +1,5 @@
+import i18n from '../src/i18n';
+
 export const STAT_PERIOD = {
   SEASON: 'season',
   THREE_MONTHS: '3_months',
@@ -6,11 +8,9 @@ export const STAT_PERIOD = {
 
 export type StatPeriod = typeof STAT_PERIOD[keyof typeof STAT_PERIOD];
 
-export const STAT_PERIOD_LABELS: Record<StatPeriod, string> = {
-  [STAT_PERIOD.SEASON]: 'Saison',
-  [STAT_PERIOD.THREE_MONTHS]: '3 mois',
-  [STAT_PERIOD.LAST_5]: '5 matchs',
-};
+export function getStatPeriodLabel(period: StatPeriod): string {
+  return i18n.t(`statPeriodLabels.${period}`);
+}
 
 export const LEADER_CATEGORY = {
   EFF: 'eff',
@@ -33,46 +33,21 @@ export const LEADER_CATEGORY = {
 
 export type LeaderCategory = typeof LEADER_CATEGORY[keyof typeof LEADER_CATEGORY];
 
-export const LEADER_CATEGORY_LABELS: Record<LeaderCategory, string> = {
-  [LEADER_CATEGORY.EFF]: 'ÉVAL',
-  [LEADER_CATEGORY.PTS]: 'PTS',
-  [LEADER_CATEGORY.REB]: 'REB',
-  [LEADER_CATEGORY.REB_OFF]: 'REB OFF',
-  [LEADER_CATEGORY.REB_DEF]: 'REB DÉF',
-  [LEADER_CATEGORY.AST]: 'AST',
-  [LEADER_CATEGORY.DEF]: 'DÉFENSE',
-  [LEADER_CATEGORY.STL]: 'INT',
-  [LEADER_CATEGORY.BLK]: 'CTR',
-  [LEADER_CATEGORY.TO]: 'BP',
-  [LEADER_CATEGORY.PF]: 'FTE',
-  [LEADER_CATEGORY.FD]: 'FP',
-  [LEADER_CATEGORY.FG_PCT]: '% TIR',
-  [LEADER_CATEGORY.FG2_PCT]: '% 2PTS',
-  [LEADER_CATEGORY.FG3_PCT]: '% 3PTS',
-  [LEADER_CATEGORY.FT_PCT]: '% LF',
+export function getLeaderCategoryLabel(category: LeaderCategory): string {
+  return i18n.t(`leaderCategoryLabels.${category}`);
+}
+
+const LEADER_CATEGORY_LEGEND_KEYS: Partial<Record<LeaderCategory, string>> = {
+  [LEADER_CATEGORY.REB]: 'rebound',
+  [LEADER_CATEGORY.DEF]: 'defense',
+  [LEADER_CATEGORY.FG_PCT]: 'fgPct',
 };
 
-export const LEADER_CATEGORY_LEGEND: Partial<Record<LeaderCategory, string>> = {
-  [LEADER_CATEGORY.REB]: 'Rebonds offensifs + défensifs combinés',
-  [LEADER_CATEGORY.DEF]: 'Interceptions (INT) + contres (CTR) combinés',
-  [LEADER_CATEGORY.FG_PCT]: '% de réussite sur tous les tirs (2pts, 3pts et LF)',
-};
+export function getLeaderCategoryLegend(category: LeaderCategory): string | undefined {
+  const key = LEADER_CATEGORY_LEGEND_KEYS[category];
+  return key ? i18n.t(`leaderCategoryLegend.${key}`) : undefined;
+}
 
-export const LEADER_CATEGORY_SUBLABELS: Record<LeaderCategory, string> = {
-  [LEADER_CATEGORY.EFF]: 'éval / match',
-  [LEADER_CATEGORY.PTS]: 'pts / match',
-  [LEADER_CATEGORY.REB]: 'reb / match',
-  [LEADER_CATEGORY.REB_OFF]: 'reb offensifs / match',
-  [LEADER_CATEGORY.REB_DEF]: 'reb défensifs / match',
-  [LEADER_CATEGORY.AST]: 'ast / match',
-  [LEADER_CATEGORY.DEF]: 'INT+CTR / match',
-  [LEADER_CATEGORY.STL]: 'interceptions / match',
-  [LEADER_CATEGORY.BLK]: 'contres / match',
-  [LEADER_CATEGORY.TO]: 'balles perdues / match',
-  [LEADER_CATEGORY.PF]: 'fautes / match',
-  [LEADER_CATEGORY.FD]: 'fautes provoquées / match',
-  [LEADER_CATEGORY.FG_PCT]: '% réussite aux tirs',
-  [LEADER_CATEGORY.FG2_PCT]: '% réussite à 2 pts',
-  [LEADER_CATEGORY.FG3_PCT]: '% réussite à 3 pts',
-  [LEADER_CATEGORY.FT_PCT]: '% réussite aux lancers',
-};
+export function getLeaderCategorySublabel(category: LeaderCategory): string {
+  return i18n.t(`leaderCategorySublabels.${category}`);
+}

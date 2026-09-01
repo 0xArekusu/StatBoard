@@ -6,8 +6,9 @@
 
 import React from "react";
 import { View, Text, TextInput, StyleSheet } from "react-native";
+import { useTranslation } from "react-i18next";
 import { STATUS_COLORS } from "../../src/theme";
-import { MATCH_CREATION_FORM_LABELS } from "../../constants";
+import { getMatchCreationFormLabel } from "../../constants";
 import { useResponsive } from "../../src/hooks/useResponsive";
 
 interface OpponentInputProps {
@@ -32,17 +33,18 @@ export const OpponentInput: React.FC<OpponentInputProps> = ({
   onChangeText,
   colors,
 }) => {
+  const { t } = useTranslation();
   const { sp, font } = useResponsive();
   return (
     <View style={[styles.formSection, { marginBottom: sp.lg }]}>
       <Text style={[styles.formLabel, { color: colors.textSecondary, fontSize: font.xs, marginBottom: sp.sm }]}>
-        {MATCH_CREATION_FORM_LABELS.OPPONENT}{" "}
+        {getMatchCreationFormLabel("OPPONENT")}{" "}
         <Text style={{ color: STATUS_COLORS.required }}>*</Text>
       </Text>
       <TextInput
         value={value}
         onChangeText={onChangeText}
-        placeholder="Nom de l'équipe adverse"
+        placeholder={t("opponentInput.namePlaceholder")}
         placeholderTextColor={colors.textSecondary}
         style={[
           styles.formInput,

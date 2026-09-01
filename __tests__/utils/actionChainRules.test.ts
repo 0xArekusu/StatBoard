@@ -113,10 +113,10 @@ describe("getChainContext — Tir raté → Rebond", () => {
       expect(ctx!.triggerDescription).toBe("Tir raté — #23");
     });
 
-    it("utilise 'player' si playerNumber absent", () => {
+    it("utilise 'Joueur' si playerNumber absent", () => {
       const event = makeEvent({ action_type: ActionType.SHOT, specification: ShotSpecification.MISSED, teamId: MY_TEAM });
       const ctx = getChainContext(event, true, MY_TEAM, MY_NAME, OPP_NAME);
-      expect(ctx!.triggerDescription).toBe("Tir raté — player");
+      expect(ctx!.triggerDescription).toBe("Tir raté — Joueur");
     });
   });
 

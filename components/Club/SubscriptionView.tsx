@@ -16,6 +16,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { MaterialCommunityIcons, Ionicons } from "@expo/vector-icons";
+import { useTranslation } from "react-i18next";
 import { useTheme } from "../../src/contexts/ThemeContext";
 import { SLATE_COLORS, BRAND_COLORS, COMMON_COLORS } from "../../src/theme";
 import { Club } from "../../models/Club";
@@ -71,6 +72,7 @@ function PricingCard({
   colors,
   onSelect,
 }: PricingCardProps) {
+  const { t } = useTranslation();
   // Check if this card represents the current subscription
   const isCurrent = tier === currentTier;
 
@@ -102,7 +104,7 @@ function PricingCard({
       {isCurrent && (
         <View style={[styles.currentBadge, { backgroundColor: colors.primary }]}>
           <Text style={[styles.currentBadgeText, { color: colors.onPrimary }]}>
-            ACTUEL
+            {t("subscriptionView.currentBadge")}
           </Text>
         </View>
       )}
@@ -123,18 +125,18 @@ function PricingCard({
               </Text>
             </View>
             <Text style={[styles.tierLimit, { color: colors.text.secondary }]}>
-              {limit > 100 ? "Équipes illimitées" : `Jusqu'à ${limit} équipes`}
+              {limit > 100 ? t("subscriptionView.unlimitedTeams") : t("subscriptionView.upToTeams", { count: limit })}
             </Text>
           </View>
         </View>
         {/* Right section: Price */}
         <View style={styles.pricingCardRight}>
           <Text style={[styles.priceValue, { color: colors.text.primary }]}>
-            {price > 0 ? `${price.toFixed(2)}€` : 'Gratuit'}
+            {price > 0 ? `${price.toFixed(2)}€` : t("subscriptionView.free")}
           </Text>
           {price > 0 && (
             <Text style={[styles.priceLabel, { color: colors.text.tertiary }]}>
-              / mois
+              {t("subscriptionView.perMonth")}
             </Text>
           )}
         </View>
@@ -154,6 +156,7 @@ export default function SubscriptionView({
   onClose,
   onSubscriptionUpdated,
 }: SubscriptionViewProps) {
+  const { t } = useTranslation();
   // Get theme context for dark/light mode support
   const { colors } = useTheme();
   const posthog = usePostHog();
@@ -208,7 +211,7 @@ export default function SubscriptionView({
     // Get the new tier's max teams limit
     const targetPlan = plans.find(p => p.tier === tier);
     if (!targetPlan) {
-      Alert.alert("Erreur", "Offre introuvable");
+      Alert.alert(t("common.error"), t("subscriptionView.planNotFound"));
       return;
     }
 
@@ -243,7 +246,7 @@ export default function SubscriptionView({
       }
     } catch (error) {
       console.error("Error checking team count:", error);
-      Alert.alert("Erreur", "Impossible de vérifier le nombre d'équipes");
+      Alert.alert(t("common.error"), t("subscriptionView.cannotCheckTeamCount"));
     }
   };
 
@@ -251,10 +254,10 @@ export default function SubscriptionView({
    * Confirm subscription change after team selection (if needed)
    */
   const confirmSubscriptionChange = (tier: SubscriptionTier, selectedTeamIds?: string[]) => {
-    Alert.alert("Changement d'offre", `Confirmer le passage à l'offre ${tier} ?`, [
-      { text: "Annuler", style: "cancel" },
+    Alert.alert(t("subscriptionView.changeAlert.title"), t("subscriptionView.changeAlert.message", { tier }), [
+      { text: t("common.cancel"), style: "cancel" },
       {
-        text: "Confirmer",
+        text: t("subscriptionView.changeAlert.confirmButton"),
         onPress: async () => {
           try {
             setLoading(true);
@@ -267,7 +270,7 @@ export default function SubscriptionView({
             if (result.success && result.club) {
               // Apply team limits and handle activation/suspension
               const targetPlan = plans.find(p => p.tier === tier);
-              let message = "Abonnement mis à jour avec succès !";
+              let message = t("subscriptionView.updateSuccess");
 
               if (targetPlan) {
                 const teamService = ServiceFactory.getTeamService(supabase);
@@ -280,10 +283,10 @@ export default function SubscriptionView({
                 // Build success message with team info
                 if (limitResult.success) {
                   if (limitResult.reactivatedCount && limitResult.reactivatedCount > 0) {
-                    message += `\n\n${limitResult.reactivatedCount} équipe(s) réactivée(s).`;
+                    message += `\n\n${t("subscriptionView.teamsReactivated", { count: limitResult.reactivatedCount })}`;
                   }
                   if (limitResult.suspendedCount && limitResult.suspendedCount > 0) {
-                    message += `\n\n${limitResult.suspendedCount} équipe(s) suspendue(s).`;
+                    message += `\n\n${t("subscriptionView.teamsSuspended", { count: limitResult.suspendedCount })}`;
                   }
                 }
               }
@@ -298,7 +301,7 @@ export default function SubscriptionView({
                 to_tier: tier,
               });
 
-              Alert.alert("Succès", message);
+              Alert.alert(t("common.success"), message);
               onClose();
             } else {
               showErrorAlert({
@@ -360,10 +363,10 @@ export default function SubscriptionView({
 
         {/* Header section */}
         <Text style={[styles.subscriptionTitle, { color: textPrimary }]}>
-          Gérez votre offre
+          {t("subscriptionView.title")}
         </Text>
         <Text style={[styles.subscriptionSubtitle, { color: textSecondary }]}>
-          Passez au niveau supérieur pour ajouter plus d'équipes.
+          {t("subscriptionView.subtitle")}
         </Text>
 
         {/* Pricing cards for available subscription tiers */}

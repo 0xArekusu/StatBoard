@@ -8,7 +8,7 @@ import React from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { BRAND_COLORS, SLATE_COLORS, COMMON_COLORS, OPACITY } from "../../src/theme";
-import { MATCH_CREATION_BUTTON_LABELS } from "../../constants";
+import { getMatchCreationButtonLabel } from "../../constants";
 import { useResponsive } from "../../src/hooks/useResponsive";
 
 interface MatchFooterProps {
@@ -74,7 +74,7 @@ export const MatchFooter: React.FC<MatchFooterProps> = ({
           <Text
             style={[styles.primaryButtonText, { color: COMMON_COLORS.white, fontSize: font.md }]}
           >
-            {MATCH_CREATION_BUTTON_LABELS.NEXT}
+            {getMatchCreationButtonLabel("NEXT")}
           </Text>
           <MaterialCommunityIcons
             name="arrow-right"
@@ -109,7 +109,7 @@ export const MatchFooter: React.FC<MatchFooterProps> = ({
           <Text
             style={[styles.primaryButtonText, { color: COMMON_COLORS.white, fontSize: font.md }]}
           >
-            {MATCH_CREATION_BUTTON_LABELS.START}
+            {getMatchCreationButtonLabel("START")}
           </Text>
         </TouchableOpacity>
       )}

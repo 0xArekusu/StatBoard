@@ -16,7 +16,7 @@ import { useAuth } from "../../src/contexts/AuthContext";
 import { CommonStyles } from "../../src/theme";
 import { useResponsive } from "../../src/hooks/useResponsive";
 import { ROUTES } from "../../constants/routes";
-import { TeamGender, TEAM_GENDER_LABELS } from "../../models/Team";
+import { TeamGender, getTeamGenderLabel } from "../../models/Team";
 import { CLUB_VALIDATION } from "../../constants/clubConstants";
 import { ServiceFactory } from "../../services/ServiceFactory";
 import { supabase } from "../../src/config/supabase";
@@ -39,9 +39,9 @@ export default function TeamInfoScreen() {
   const [gender, setGender] = useState<TeamGender>(teamData?.gender || TeamGender.MALE);
 
   const GENDERS: { value: TeamGender; label: string; color: string }[] = [
-    { value: TeamGender.MALE, label: TEAM_GENDER_LABELS[TeamGender.MALE], color: colors.primary },
-    { value: TeamGender.FEMALE, label: TEAM_GENDER_LABELS[TeamGender.FEMALE], color: colors.primary },
-    { value: TeamGender.MIXED, label: TEAM_GENDER_LABELS[TeamGender.MIXED], color: colors.primary },
+    { value: TeamGender.MALE, label: getTeamGenderLabel(TeamGender.MALE), color: colors.primary },
+    { value: TeamGender.FEMALE, label: getTeamGenderLabel(TeamGender.FEMALE), color: colors.primary },
+    { value: TeamGender.MIXED, label: getTeamGenderLabel(TeamGender.MIXED), color: colors.primary },
   ];
 
   const bgColor = colors.background;

@@ -1,6 +1,7 @@
 import React from "react";
 import { Modal, View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useTranslation } from "react-i18next";
 import { useTheme } from "../src/contexts/ThemeContext";
 import { useResponsive } from "../src/hooks/useResponsive";
 
@@ -11,6 +12,7 @@ interface ReviewPromptModalProps {
 }
 
 export default function ReviewPromptModal({ visible, onLike, onDislike }: ReviewPromptModalProps) {
+  const { t } = useTranslation();
   const { colors, isDark } = useTheme();
   const { sp, font, sizes } = useResponsive();
 
@@ -44,7 +46,7 @@ export default function ReviewPromptModal({ visible, onLike, onDislike }: Review
               { color: colors.text.primary, fontSize: font.xxl, marginBottom: sp.sm },
             ]}
           >
-            Vous appréciez Coach Assistant ?
+            {t("reviewPromptModal.title")}
           </Text>
 
           <Text
@@ -53,7 +55,7 @@ export default function ReviewPromptModal({ visible, onLike, onDislike }: Review
               { color: colors.text.secondary, fontSize: font.md, marginBottom: sp.lg },
             ]}
           >
-            Votre avis nous aide à améliorer l'application.
+            {t("reviewPromptModal.message")}
           </Text>
 
           <View style={[styles.row, { gap: sp.md }]}>
@@ -66,7 +68,7 @@ export default function ReviewPromptModal({ visible, onLike, onDislike }: Review
               onPress={onDislike}
             >
               <Text style={[styles.buttonText, { color: colors.text.primary, fontSize: font.md }]}>
-                👎 Pas vraiment
+                👎 {t("reviewPromptModal.dislike")}
               </Text>
             </TouchableOpacity>
 
@@ -78,7 +80,7 @@ export default function ReviewPromptModal({ visible, onLike, onDislike }: Review
               onPress={onLike}
             >
               <Text style={[styles.buttonText, { color: colors.onPrimary, fontSize: font.md }]}>
-                👍 Oui !
+                👍 {t("reviewPromptModal.like")}
               </Text>
             </TouchableOpacity>
           </View>

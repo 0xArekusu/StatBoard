@@ -1,6 +1,7 @@
 import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { useTranslation } from "react-i18next";
 import { useTheme } from "../../src/contexts/ThemeContext";
 import { FilterMode } from "../../constants/liveMatchConstants";
 import { useResponsive } from "../../src/hooks/useResponsive";
@@ -32,6 +33,7 @@ export function MatchToolbar({
   onGenerateMock,
   onOpenHistory,
 }: MatchToolbarProps) {
+  const { t } = useTranslation();
   const { colors } = useTheme();
   const { isMobileLandscape } = useResponsive();
   const surfaceColor = colors.surface;
@@ -92,7 +94,7 @@ export function MatchToolbar({
         />
         {!isMobileLandscape && (
           <Text style={[styles.toolbarButtonText, { color: textSecondary }]}>
-            Annuler
+            {t("common.cancel")}
           </Text>
         )}
       </TouchableOpacity>
@@ -112,7 +114,7 @@ export function MatchToolbar({
               },
             ]}
           >
-            Filtres
+            {t("liveMatchModals.filter.title")}
           </Text>
         )}
       </TouchableOpacity>
@@ -130,7 +132,7 @@ export function MatchToolbar({
               { color: showMarkers ? colors.primary : textSecondary },
             ]}
           >
-            Vue
+            {t("matchToolbar.view")}
           </Text>
         )}
       </TouchableOpacity>
@@ -139,11 +141,11 @@ export function MatchToolbar({
         <TouchableOpacity
           onPress={() => {
             Alert.alert(
-              "Ajouter des données de test ?",
-              "Cela va générer des actions fictives pour le match.",
+              t("matchToolbar.mockDataTitle"),
+              t("matchToolbar.mockDataMessage"),
               [
-                { text: "Annuler", style: "cancel" },
-                { text: "Confirmer", onPress: onGenerateMock },
+                { text: t("common.cancel"), style: "cancel" },
+                { text: t("common.confirm"), onPress: onGenerateMock },
               ],
             );
           }}
@@ -160,7 +162,7 @@ export function MatchToolbar({
           />
           {!isMobileLandscape && (
             <Text style={[styles.toolbarButtonText, { color: colors.primary }]}>
-              {isGeneratingMockData ? "..." : "Test"}
+              {isGeneratingMockData ? "..." : t("matchToolbar.test")}
             </Text>
           )}
         </TouchableOpacity>
@@ -174,7 +176,7 @@ export function MatchToolbar({
         />
         {!isMobileLandscape && (
           <Text style={[styles.toolbarButtonText, { color: textSecondary }]}>
-            Historique
+            {t("matchToolbar.history")}
           </Text>
         )}
       </TouchableOpacity>

@@ -1,6 +1,7 @@
 import React from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { useTranslation } from "react-i18next";
 import { BRAND_COLORS, SLATE_COLORS, COMMON_COLORS } from "../../src/theme";
 import { useResponsive } from "../../src/hooks/useResponsive";
 
@@ -34,6 +35,7 @@ export const HandicapSelector: React.FC<HandicapSelectorProps> = ({
   isDark,
   colors,
 }) => {
+  const { t } = useTranslation();
   const { sp, font, sizes } = useResponsive();
 
   const renderAdjuster = (
@@ -159,10 +161,10 @@ export const HandicapSelector: React.FC<HandicapSelectorProps> = ({
                 },
               ]}
             >
-              Handicap de départ
+              {t("handicapSelector.title")}
             </Text>
             <Text style={[styles.toggleSubtitle, { color: colors.textSecondary, fontSize: font.sm, marginTop: sp.xs }]}>
-              Attribuer des points initiaux sans joueur
+              {t("handicapSelector.subtitle")}
             </Text>
           </View>
         </View>
@@ -205,9 +207,9 @@ export const HandicapSelector: React.FC<HandicapSelectorProps> = ({
           ]}
         >
           <View style={styles.adjustersRow}>
-            {renderAdjuster(myTeamName || "Mon Équipe", myTeamHandicap, onMyTeamHandicapChange)}
+            {renderAdjuster(myTeamName || t("liveMatchModals.myTeamFallback"), myTeamHandicap, onMyTeamHandicapChange)}
             <View style={[styles.divider, { backgroundColor: colors.borderColor }]} />
-            {renderAdjuster(opponentName || "Adversaire", opponentHandicap, onOpponentHandicapChange)}
+            {renderAdjuster(opponentName || t("liveMatchModals.opponentFallback"), opponentHandicap, onOpponentHandicapChange)}
           </View>
         </View>
       )}
