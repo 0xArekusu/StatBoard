@@ -1,6 +1,13 @@
 import { getChainContext } from "../../utils/actionChainRules";
 import { ActionType, ShotSpecification, ReboundSpecification } from "../../src/models/ActionTypes";
 import { TeamId, MatchEvent } from "../../constants/liveMatchConstants";
+import i18n from "../../src/i18n";
+
+// These tests assert French copy directly, so pin the language regardless of
+// the device locale the test environment resolves (jest-expo mocks it to "en").
+beforeAll(async () => {
+  await i18n.changeLanguage("fr");
+});
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 

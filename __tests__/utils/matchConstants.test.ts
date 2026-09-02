@@ -8,6 +8,13 @@ import {
   DEFAULT_OPPONENT_PLAYERS_COUNT,
   getDefaultOpponentPlayerName,
 } from "../../constants/matchConstants";
+import i18n from "../../src/i18n";
+
+// These tests assert French copy directly, so pin the language regardless of
+// the device locale the test environment resolves (jest-expo mocks it to "en").
+beforeAll(async () => {
+  await i18n.changeLanguage("fr");
+});
 
 // ─── GUEST_IDS ────────────────────────────────────────────────────────────────
 
