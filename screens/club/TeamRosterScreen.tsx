@@ -207,7 +207,7 @@ export default function TeamRosterScreen() {
     } catch (error) {
       console.error("Error loading team data:", error);
       showErrorAlert({
-        action: "charger les données de l'équipe",
+        messageKey: "teamRosterScreen.errors.loadFailed",
         error,
         context: "TeamRosterScreen",
         onCancel: () => navigation.goBack(),
@@ -466,8 +466,8 @@ export default function TeamRosterScreen() {
           if (error) {
             setIsSubmitting(false);
             showErrorAlert({
-              action: "uploader la photo du coach",
-              error: new Error("Impossible d'uploader la photo du coach"),
+              messageKey: "teamRosterScreen.errors.uploadCoachPhotoFailed",
+              error: new Error(t("teamRosterScreen.errors.uploadCoachPhotoFailed")),
               context: "TeamRosterScreen",
             });
             return;
@@ -625,8 +625,8 @@ export default function TeamRosterScreen() {
         if (!result.success || !result.team) {
           setIsSubmitting(false);
           showErrorAlert({
-            action: "créer l'équipe",
-            error: new Error(result.error || "Impossible de créer l'équipe"),
+            messageKey: "teamRosterScreen.errors.createTeamFailed",
+            error: new Error(result.error || t("teamRosterScreen.errors.createTeamFailed")),
             context: "TeamRosterScreen",
           });
           return;
@@ -715,7 +715,7 @@ export default function TeamRosterScreen() {
       console.error("Error saving team:", error);
       setIsSubmitting(false);
       showErrorAlert({
-        action: "sauvegarder l'équipe",
+        messageKey: "teamRosterScreen.errors.saveTeamFailed",
         error,
         context: "TeamRosterScreen",
       });
@@ -815,7 +815,7 @@ export default function TeamRosterScreen() {
                       { color: colors.text.primary },
                     ]}
                   >
-                    Modifier le coach
+                    {t("teamRosterScreen.editCoachTitle")}
                   </Text>
                   <TouchableOpacity
                     onPress={() => setIsEditingCoach(false)}
@@ -989,7 +989,7 @@ export default function TeamRosterScreen() {
                   color: colors.primary,
                 }}
               >
-                Il manque encore {5 - roster.length} joueur(s) pour continuer.
+                {t("teamRosterScreen.missingPlayers", { count: 5 - roster.length })}
               </Text>
             </View>
           )}
@@ -1019,7 +1019,7 @@ export default function TeamRosterScreen() {
                   { color: colors.text.primary, fontSize: font.md },
                 ]}
               >
-                Ajouter un joueur
+                {t("teamRosterScreen.addPlayerTitle")}
               </Text>
             </View>
 

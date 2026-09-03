@@ -154,7 +154,7 @@ export default function HistoryScreen({ navigation }: HistoryScreenProps) {
     } catch (error) {
       console.error("Error loading history data:", error);
       showErrorAlert({
-        action: "charger l'historique des matchs",
+        messageKey: "historyScreen.errors.loadFailed",
         error,
         context: "HistoryScreen",
         showRetry: true,
@@ -191,7 +191,7 @@ export default function HistoryScreen({ navigation }: HistoryScreenProps) {
               await loadHistoryData();
             } catch (error) {
               showErrorAlert({
-                action: "supprimer le match",
+                messageKey: "historyScreen.errors.deleteFailed",
                 error,
                 context: "HistoryScreen",
               });

@@ -22,6 +22,12 @@ export const INTL_LOCALES: Record<SupportedLanguage, string> = {
   en: "en-US",
 };
 
+// Maps app language to a flag emoji, used by the language switcher UI
+export const LANGUAGE_FLAGS: Record<SupportedLanguage, string> = {
+  fr: "🇫🇷",
+  en: "🇬🇧",
+};
+
 function isSupportedLanguage(code: string | null | undefined): code is SupportedLanguage {
   return !!code && (SUPPORTED_LANGUAGES as readonly string[]).includes(code);
 }

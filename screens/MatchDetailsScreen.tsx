@@ -291,7 +291,7 @@ export default function MatchDetailsScreen() {
       setIsExportingPDF(false);
       console.error("Error exporting PDF:", error);
       showErrorAlert({
-        action: "générer le PDF",
+        messageKey: "matchDetailsScreen.errors.pdfGenerationFailed",
         error,
         context: "MatchDetailsScreen",
       });

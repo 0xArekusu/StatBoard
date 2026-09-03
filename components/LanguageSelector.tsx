@@ -5,20 +5,19 @@ import { usePostHog } from "posthog-react-native";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "../src/contexts/ThemeContext";
 import { useLanguage } from "../src/contexts/LanguageContext";
-import { SUPPORTED_LANGUAGES, SupportedLanguage } from "../src/i18n";
+import { SUPPORTED_LANGUAGES, SupportedLanguage, LANGUAGE_FLAGS } from "../src/i18n";
 import { ANALYTICS_EVENTS } from "../constants/analyticsEvents";
 
 interface LanguageSelectorProps {
-  /** Overrides the trigger button's default surface/border/text styling (e.g. to stay legible over a background image) */
+  /** Overrides the trigger button's default surface/border styling (e.g. to stay legible over a background image) */
   buttonStyle?: StyleProp<ViewStyle>;
-  textColor?: string;
 }
 
 /**
- * LanguageSelector - Compact "FR"/"EN" button that opens a dropdown to switch app language.
+ * LanguageSelector - Compact flag button that opens a dropdown to switch app language.
  * Self-contained: reads/writes language via LanguageContext, no props required.
  */
-export default function LanguageSelector({ buttonStyle, textColor }: LanguageSelectorProps) {
+export default function LanguageSelector({ buttonStyle }: LanguageSelectorProps) {
   const { t } = useTranslation();
   const { colors, isDark } = useTheme();
   const { language, setLanguage } = useLanguage();
@@ -42,9 +41,7 @@ export default function LanguageSelector({ buttonStyle, textColor }: LanguageSel
           buttonStyle,
         ]}
       >
-        <Text style={[styles.buttonText, { color: textColor ?? colors.text.primary }]}>
-          {language.toUpperCase()}
-        </Text>
+        <Text style={styles.buttonFlag}>{LANGUAGE_FLAGS[language]}</Text>
       </TouchableOpacity>
 
       <Modal visible={visible} transparent animationType="fade" onRequestClose={() => setVisible(false)}>
@@ -78,9 +75,12 @@ export default function LanguageSelector({ buttonStyle, textColor }: LanguageSel
                 ]}
                 onPress={() => handleChangeLanguage(lang)}
               >
-                <Text style={[styles.optionText, { color: colors.text.primary }]}>
-                  {t(`common.language.options.${lang}`)}
-                </Text>
+                <View style={styles.optionLabel}>
+                  <Text style={styles.optionFlag}>{LANGUAGE_FLAGS[lang]}</Text>
+                  <Text style={[styles.optionText, { color: colors.text.primary }]}>
+                    {t(`common.language.options.${lang}`)}
+                  </Text>
+                </View>
                 {language === lang && (
                   <MaterialCommunityIcons name="check-circle" size={20} color={colors.primary} />
                 )}
@@ -102,9 +102,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  buttonText: {
-    fontSize: 14,
-    fontWeight: "700",
+  buttonFlag: {
+    fontSize: 22,
   },
   overlay: {
     flex: 1,
@@ -130,6 +129,14 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 12,
     borderRadius: 10,
+  },
+  optionLabel: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  optionFlag: {
+    fontSize: 20,
   },
   optionText: {
     fontSize: 15,

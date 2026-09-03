@@ -1,6 +1,13 @@
 import { renderHook, act } from "@testing-library/react-native";
 import { Alert } from "react-native";
 import { useMatchSync } from "../../hooks/useMatchSync";
+import i18n from "../../src/i18n";
+
+// These tests assert French copy directly, so pin the language regardless of
+// the device locale the test environment resolves (jest-expo mocks it to "en").
+beforeAll(async () => {
+  await i18n.changeLanguage("fr");
+});
 
 // ─── Navigation mock ──────────────────────────────────────────────────────────
 

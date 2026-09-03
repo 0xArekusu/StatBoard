@@ -305,15 +305,15 @@ export default function SubscriptionView({
               onClose();
             } else {
               showErrorAlert({
-                action: "mettre à jour l'abonnement",
-                error: new Error(result.error || "Échec de la mise à jour de l'abonnement"),
+                messageKey: "subscriptionView.errors.updateFailed",
+                error: new Error(result.error || t("subscriptionView.errors.updateFailed")),
                 context: "SubscriptionView",
               });
             }
           } catch (error) {
             console.error("Error updating subscription:", error);
             showErrorAlert({
-              action: "mettre à jour l'abonnement",
+              messageKey: "subscriptionView.errors.updateFailed",
               error,
               context: "SubscriptionView",
             });

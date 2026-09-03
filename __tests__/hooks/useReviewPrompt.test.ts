@@ -3,6 +3,13 @@ import { Linking } from "react-native";
 import { useReviewPrompt, recordReviewPromptSignal } from "../../hooks/useReviewPrompt";
 import { ANALYTICS_EVENTS } from "../../constants/analyticsEvents";
 import { ROUTES } from "../../constants/routes";
+import i18n from "../../src/i18n";
+
+// This hook now uses useTranslation() (mailto subject) — import the real i18n
+// singleton so react-i18next doesn't warn about a missing instance.
+beforeAll(async () => {
+  await i18n.changeLanguage("fr");
+});
 
 // ─── AsyncStorage mock ─────────────────────────────────────────────────────────
 

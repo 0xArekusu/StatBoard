@@ -31,10 +31,7 @@ export {
   ReboundSpecification,
   FoulSpecification,
   GenericSpecification,
-  ACTION_TYPE_FR,
-  SHOT_SPECIFICATION_FR,
-  REBOUND_SPECIFICATION_FR,
-  FOUL_SPECIFICATION_FR,
+  getFoulSpecificationLabel,
   isShotMade,
 } from "../src/models/ActionTypes";
 

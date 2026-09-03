@@ -1,4 +1,11 @@
 {
+  "authContext": {
+    "rateLimitError": "For security reasons, you must wait {{seconds}} seconds before signing up again.",
+    "resendRateLimitError": "For security reasons, you must wait {{seconds}} seconds before resending an email."
+  },
+  "reviewPrompt": {
+    "feedbackEmailSubject": "Feedback about Coach Assistant"
+  },
   "common": {
     "cancel": "Cancel",
     "continue": "Continue",
@@ -80,6 +87,9 @@
         "message": "The last 2000 log messages will be sent to Sentry for analysis.",
         "errorMessage": "Unable to send logs. Please try again."
       }
+    },
+    "errors": {
+      "loadFailed": "Unable to load dashboard data. Check your connection and try again."
     }
   },
   "splashScreen": {
@@ -123,7 +133,9 @@
     "deleteButton": "Delete team",
     "nextButton": "Next",
     "errors": {
-      "nameRequired": "Team name is required"
+      "nameRequired": "Team name is required",
+      "loadFailed": "Unable to load team information. Check your connection and try again.",
+      "deleteTeamFailed": "An unexpected error occurred while deleting the team. Check your connection and try again."
     },
     "deleteAlert": {
       "title": "Delete team",
@@ -184,6 +196,11 @@
       "updateFailed": "Unable to update team",
       "updateSuccess": "Team updated successfully",
       "createSuccess": "Your team has been created and is awaiting approval from the club owner."
+    },
+    "errors": {
+      "createTeamFailed": "Team creation failed. Please try again.",
+      "teamIdMissing": "The team was created but its ID could not be found. Contact support if the problem persists.",
+      "saveTeamFailed": "Unable to save the team. Please try again."
     }
   },
   "registerScreen": {
@@ -262,6 +279,16 @@
       "joinFailed": "Unable to join the club",
       "joinedSuccess": "You have joined the club \"{{name}}\"!",
       "joinUnexpectedError": "An error occurred while trying to join the club"
+    },
+    "errors": {
+      "loadFailed": "Unable to load club data. Check your connection and try again.",
+      "approveTeamFailed": "Approving the team failed. Please try again.",
+      "rejectTeamFailed": "Rejecting the team failed. Please try again.",
+      "deleteTeamFailed": "Deleting the team failed. Please try again.",
+      "uploadLogoFailed": "Unable to upload the logo. Check the image format and try again.",
+      "updateClubFailed": "Updating the club failed. Please try again.",
+      "createClubFailed": "Creating the club failed. Please try again.",
+      "uploadClubLogoFailed": "The club was created but the logo upload failed. You can update it later."
     }
   },
   "historyScreen": {
@@ -299,6 +326,10 @@
       "synced": "SYNCED",
       "local": "LOCAL",
       "details": "Details"
+    },
+    "errors": {
+      "loadFailed": "Unable to load match history. Check your connection and try again.",
+      "deleteFailed": "Unable to delete this match. Please try again in a moment."
     }
   },
   "newMatchScreen": {
@@ -337,6 +368,10 @@
       "halves": "2 halves",
       "quarters": "{{count}} quarters",
       "start": "Start"
+    },
+    "errors": {
+      "loadTeamsFailed": "Unable to load your teams. Check your connection and try again.",
+      "loadRosterFailed": "Unable to load the team roster. Check your connection and try again."
     }
   },
   "matchDetailsScreen": {
@@ -346,14 +381,21 @@
     "pdfExportedSuccess": "The PDF was generated and shared successfully",
     "menu": "Menu",
     "myTeamFallback": "Our Team",
-    "opponentFallback": "Opponent"
+    "opponentFallback": "Opponent",
+    "errors": {
+      "pdfGenerationFailed": "PDF generation failed. Please try again."
+    }
   },
   "teamRosterScreen": {
     "coachNamePlaceholder": "Coach name",
     "coachNameFallback": "Coach Name",
+    "editCoachTitle": "Edit coach",
     "saveButton": "Save",
     "playerNamePlaceholder": "Player name",
     "addButton": "Add",
+    "addPlayerTitle": "Add a player",
+    "missingPlayers_one": "{{count}} more player needed to continue.",
+    "missingPlayers_other": "{{count}} more players needed to continue.",
     "saving": "Updating...",
     "creating": "Creating...",
     "updateTeamButton": "Update team",
@@ -376,12 +418,36 @@
       "createPlayerFailed": "Unable to create player {{playerName}}",
       "updateSuccess": "Team updated successfully!",
       "createSuccess": "Team created successfully!"
+    },
+    "errors": {
+      "loadFailed": "Unable to load team data. Check your connection and try again.",
+      "uploadCoachPhotoFailed": "Unable to upload the coach's photo. Check the image format and try again.",
+      "createTeamFailed": "Team creation failed. Please try again.",
+      "saveTeamFailed": "Unable to save the team. Please try again."
     }
   },
   "liveMatchScreen": {
+    "loadingMatch": "Loading match...",
     "myTeamFallback": "My Team",
     "opponentFallback": "Opponent",
-    "playerFallback": "Player"
+    "playerFallback": "Player",
+    "teamActionFallback": "Team",
+    "timeoutDescription": "Timeout",
+    "technicalFreeThrowMade": "Technical FT (+1)",
+    "technicalFreeThrowMissed": "Technical FT missed",
+    "substitutionCount_one": "Substitutions ({{team}}): {{count}} player",
+    "substitutionCount_other": "Substitutions ({{team}}): {{count}} players",
+    "actionLog": {
+      "shotMade": "Shot (+{{points}})",
+      "freeThrowMade": "FT (+1)",
+      "shotMissed": "Missed shot ({{points}}pts)",
+      "freeThrowMissed": "FT missed",
+      "reboundDefensive": "Defensive rebound",
+      "reboundOffensive": "Offensive rebound",
+      "teamRebound": "Team — Rebound",
+      "foulWithType": "Foul ({{type}})",
+      "turnover": "Turnover"
+    }
   },
   "liveMatchModals": {
     "myTeamFallback": "My team",
@@ -490,6 +556,9 @@
       "title": "Plan Change",
       "message": "Confirm switching to the {{tier}} plan?",
       "confirmButton": "Confirm"
+    },
+    "errors": {
+      "updateFailed": "Updating the subscription failed. Please try again."
     }
   },
   "timelineTab": {
@@ -497,7 +566,28 @@
     "noActions": "No actions recorded",
     "periodEnd": "END {{period}}",
     "teamFallback": "Team",
-    "opponentAbbrFallback": "Opp."
+    "opponentAbbrFallback": "Opp.",
+    "actionDesc": {
+      "shotMadeWithPoints": "Shot {{points}}pts ✓",
+      "shotMade": "Shot ✓",
+      "shotMissedWithPoints": "Shot {{points}}pts ✗",
+      "shotMissed": "Shot ✗",
+      "reboundOffensive": "Offensive rebound",
+      "reboundDefensive": "Defensive rebound",
+      "reboundTeam": "Team rebound",
+      "foulPersonal": "Personal foul",
+      "foulTechnical": "Technical foul",
+      "foulUnsportsmanlike": "Unsportsmanlike foul",
+      "foulDisqualifying": "Disqualifying foul",
+      "foul": "Foul",
+      "foulDrawn": "Foul drawn",
+      "assist": "Assist",
+      "steal": "Steal",
+      "block": "Block",
+      "turnover": "Turnover",
+      "substitutionIn": "↑ In",
+      "substitutionOut": "↓ Out"
+    }
   },
   "matchTutorialOverlay": {
     "dontShowAgain": "Don't show again",
@@ -929,6 +1019,10 @@
     "astAbbr": "ast",
     "didNotPlay": "Did not play"
   },
+  "matchHistoryList": {
+    "title": "Match history",
+    "empty": "No matches available"
+  },
   "statsTab": {
     "player": "PLAYER",
     "lf": "FT",
@@ -972,7 +1066,11 @@
     }
   },
   "matchConstants": {
-    "defaultOpponentPlayerName": "Player {{index}}"
+    "defaultOpponentPlayerName": "Player {{index}}",
+    "periodOrdinal_ordinal_one": "{{count}}st",
+    "periodOrdinal_ordinal_two": "{{count}}nd",
+    "periodOrdinal_ordinal_few": "{{count}}rd",
+    "periodOrdinal_ordinal_other": "{{count}}th"
   },
   "matchCreationStepLabels": {
     "step1": "Match Setup",
@@ -1007,5 +1105,194 @@
   "matchRosterTabLabels": {
     "US": "US",
     "THEM": "THEM"
+  },
+  "actionTypes": {
+    "shot": {
+      "label": "Shot",
+      "description": "Log a shot"
+    },
+    "rebound": {
+      "label": "Rebound",
+      "description": "Rebound action"
+    },
+    "foul": {
+      "label": "Foul",
+      "description": "Foul committed"
+    },
+    "foul_drawn": {
+      "label": "Foul drawn",
+      "description": "Foul drawn"
+    },
+    "assist": {
+      "label": "Assist",
+      "description": "Assist"
+    },
+    "steal": {
+      "label": "Steal",
+      "description": "Steal the ball"
+    },
+    "block": {
+      "label": "Block",
+      "description": "Block"
+    },
+    "turnover": {
+      "label": "Turnover",
+      "description": "Turnover"
+    },
+    "substitution": {
+      "label": "Substitution",
+      "description": "Player substitution"
+    },
+    "pointsOption_one": "{{count}} point",
+    "pointsOption_other": "{{count}} points"
+  },
+  "shotSpecification": {
+    "made": "Made",
+    "missed": "Missed"
+  },
+  "reboundSpecification": {
+    "offensive": "Offensive",
+    "defensive": "Defensive",
+    "team": "Team"
+  },
+  "foulSpecification": {
+    "personal": "Personal",
+    "technical": "Technical",
+    "penality": "Unsportsmanlike",
+    "disqualification": "Disqualifying"
+  },
+  "substitutionSpecification": {
+    "in": "In",
+    "out": "Out"
+  },
+  "errorAlert": {
+    "retryButton": "Retry",
+    "unknownError": "Unknown error",
+    "networkError": "Unable to connect to the server. Check your internet connection.",
+    "permissionError": "You don't have the necessary permissions to access this resource."
+  },
+  "pdfExportService": {
+    "individualStats": "Individual Statistics",
+    "playerColumn": "Player",
+    "matchSheetTitle": "MATCH SHEET - BASKETBALL",
+    "presentedBy": "Match presented by",
+    "finalScore": "FINAL SCORE",
+    "totalColumn": "Total",
+    "scoreEvolution": "Score Evolution",
+    "starterBadge": "★ STARTER",
+    "threePtsShort": "3 PT",
+    "twoPtsShort": "2 PT",
+    "noPlayerStats": "No statistics recorded for this player",
+    "totalShots": "Total shots",
+    "successRate": "Success rate",
+    "officialPartners": "Official Partners",
+    "generatedBy": "Generated by Coach Assistant • {{date}}",
+    "overview": "Overview",
+    "chartStart": "Start",
+    "chartPeriodEnd": "END",
+    "noShots": "No shots",
+    "noActions": "No actions",
+    "pctShotsAbbr": "%FG",
+    "averageStatsHeader_one": "Average Statistics • {{count}} match",
+    "averageStatsHeader_other": "Average Statistics • {{count}} matches",
+    "legend": {
+      "line1": "MIN: Minutes played | PTS: Points | FG: Total shots (made/attempted) | 2PT: 2-pointers (made/attempted) | 3PT: 3-pointers (made/attempted) | FT: Free throws (made/attempted)",
+      "line2": "REB: Total rebounds | OR: Offensive rebounds | DR: Defensive rebounds",
+      "line3": "AST: Assists | STL: Steals | BLK: Blocks | TO: Turnovers | PF: Total fouls | FD: Fouls drawn | +/-: Point differential while on court | EVAL: Efficiency",
+      "handicap": "HCP: Starting handicap (+{{handicap}} pts included in final score)"
+    }
+  },
+  "mainTabNavigator": {
+    "guestGuard": {
+      "title": "Login required",
+      "statsMessage": "You must be signed in to a team to access statistics.",
+      "clubMessage": "You must be signed in to access the Club section. Do you want to sign in now?",
+      "loginButton": "Sign in"
+    },
+    "tabs": {
+      "dashboard": "Dashboard",
+      "history": "History",
+      "stats": "Stats",
+      "club": "Club"
+    }
+  },
+  "useMatchSync": {
+    "syncErrorAlert": {
+      "title": "Sync error",
+      "syncFailedMessage": "Unable to sync the match with the server.\n\n{{error}}\n\nYour match has been saved locally.",
+      "unexpectedErrorMessage": "An unexpected error occurred during synchronization.\n\n{{error}}\n\nYour match has been saved locally."
+    }
+  },
+  "teamService": {
+    "nameRequired": "The team name is required",
+    "notClubMember": "You must be a club member to create a team",
+    "teamLimitReached": "Team limit reached for this club",
+    "perUserTeamLimitReached": "You cannot create more than {{max}} teams in this club",
+    "createFailed": "Error creating the team",
+    "notFound": "Team not found",
+    "updateFailed": "Error updating the team",
+    "statusUpdateFailed": "Error validating the team",
+    "toggleActiveFailed": "Error updating the team's status",
+    "noDeletePermission": "You don't have permission to delete this team",
+    "deleteFailed": "Error deleting the team",
+    "enforceLimitsFailed": "Error enforcing team limits"
+  },
+  "clubService": {
+    "nameRequired": "The club name is required",
+    "nameTooLong": "The club name cannot exceed {{max}} characters",
+    "acronymRequired": "The club acronym is required",
+    "acronymTooLong": "The acronym cannot exceed {{max}} characters",
+    "alreadyHasClub": "You have already created a club",
+    "createFailed": "Unable to create the club. Please try again.",
+    "nameEmpty": "The club name cannot be empty",
+    "acronymEmpty": "The club acronym cannot be empty",
+    "updateFailed": "Failed to update the club",
+    "subscriptionUpdateFailed": "Failed to update the subscription"
+  },
+  "clubMemberService": {
+    "alreadyMember": "You are already a member of this club",
+    "joinFailed": "Error joining the club",
+    "notMember": "You are not a member of this club",
+    "leaveFailed": "Error leaving the club"
+  },
+  "playerService": {
+    "nameRequired": "The player name is required",
+    "invalidJerseyNumber": "The number must be between 0 and 99",
+    "maxPlayersReached": "A team cannot have more than {{max}} players",
+    "createFailed": "Error creating the player",
+    "updateFailed": "Error updating the player",
+    "deleteFailed": "Error deleting the player"
+  },
+  "subscriptionService": {
+    "clubNotFound": "Club not found",
+    "teamCountError": "Error counting teams",
+    "limitReachedUpsell": "Limit reached for the {{tier}} subscription. Upgrade to a higher tier to create more teams.",
+    "checkLimitError": "Error checking limits"
+  },
+  "matchSyncService": {
+    "authRequired": "You must be signed in to sync a match",
+    "matchNotFound": "Match not found",
+    "notCompleted": "Only completed matches can be synced",
+    "alreadySynced": "This match has already been synced",
+    "cannotVerifySubscription": "Unable to verify the club's subscription",
+    "subscriptionDoesNotAllowSync": "Your subscription doesn't allow syncing. Upgrade to a paid subscription to enable this feature.",
+    "eligibilityCheckError": "Error checking permissions",
+    "syncNotAuthorized": "Sync not authorized",
+    "userNotAuthenticated": "User not authenticated",
+    "genericSyncError": "Error during synchronization",
+    "matchInsertError": "Error creating the match: {{message}}",
+    "noDataReturned": "No data returned by Supabase"
+  },
+  "loggerService": {
+    "shareDialogTitle": "Export logs",
+    "noLogFiles": "No log files found",
+    "sharingUnavailable": "Sharing is not available on this device",
+    "sharedSuccessfully": "Logs shared successfully",
+    "savedSuccessfully": "Logs saved successfully",
+    "permissionDenied": "Permission denied to save the file",
+    "exportErrorPrefix": "Export error: {{message}}",
+    "noLogsToSend": "No logs available to send",
+    "sentToSentrySuccessfully": "Logs sent to Sentry successfully",
+    "sendErrorPrefix": "Send error: {{message}}"
   }
 }

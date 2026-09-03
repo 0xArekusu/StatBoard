@@ -377,7 +377,7 @@ export default function NewMatchScreen() {
     } catch (error) {
       console.error("Error loading teams:", error);
       showErrorAlert({
-        action: "charger les équipes",
+        messageKey: "newMatchScreen.errors.loadTeamsFailed",
         error,
         context: "NewMatchScreen",
         showRetry: true,
@@ -407,7 +407,7 @@ export default function NewMatchScreen() {
     } catch (error) {
       console.error("Error loading team roster:", error);
       showErrorAlert({
-        action: "charger les joueurs de l'équipe",
+        messageKey: "newMatchScreen.errors.loadRosterFailed",
         error,
         context: "NewMatchScreen",
         showRetry: true,

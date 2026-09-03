@@ -81,7 +81,7 @@ export default function TeamInfoScreen() {
     } catch (error) {
       console.error("Error loading team data:", error);
       showErrorAlert({
-        action: "charger les informations de l'équipe",
+        messageKey: "teamInfoScreen.errors.loadFailed",
         error,
         context: "TeamInfoScreen",
         showRetry: true,
@@ -142,7 +142,7 @@ export default function TeamInfoScreen() {
             } catch (error) {
               console.error("Error deleting team:", error);
               showErrorAlert({
-                action: "supprimer l'équipe",
+                messageKey: "teamInfoScreen.errors.deleteTeamFailed",
                 error,
                 context: "TeamInfoScreen",
               });

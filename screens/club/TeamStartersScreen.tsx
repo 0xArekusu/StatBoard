@@ -185,8 +185,8 @@ export default function TeamStartersScreen() {
 
         if (!result.success) {
           showErrorAlert({
-            action: "créer l'équipe",
-            error: new Error(result.error || "Impossible de créer l'équipe"),
+            messageKey: "teamStartersScreen.errors.createTeamFailed",
+            error: new Error(result.error || t("teamStartersScreen.errors.createTeamFailed")),
             context: "TeamStartersScreen",
           });
           setSaving(false);
@@ -196,8 +196,8 @@ export default function TeamStartersScreen() {
         const newTeamId = result.team?.id;
         if (!newTeamId) {
           showErrorAlert({
-            action: "créer l'équipe",
-            error: new Error("Impossible de récupérer l'ID de l'équipe"),
+            messageKey: "teamStartersScreen.errors.teamIdMissing",
+            error: new Error(t("teamStartersScreen.errors.teamIdMissing")),
             context: "TeamStartersScreen",
           });
           setSaving(false);
@@ -231,7 +231,7 @@ export default function TeamStartersScreen() {
     } catch (error) {
       console.error("Error saving team:", error);
       showErrorAlert({
-        action: "sauvegarder l'équipe",
+        messageKey: "teamStartersScreen.errors.saveTeamFailed",
         error,
         context: "TeamStartersScreen",
       });

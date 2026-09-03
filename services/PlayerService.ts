@@ -1,5 +1,6 @@
 import type { IPlayerRepository } from "../repositories/IPlayerRepository";
 import type { CreatePlayerData, UpdatePlayerData } from "../models/Player";
+import i18n from "../src/i18n";
 
 const MIN_PLAYERS = 5;
 const MAX_PLAYERS = 20;
@@ -33,12 +34,12 @@ export class PlayerService {
   async createPlayer(data: CreatePlayerData) {
     // Validate player name
     if (!data.name || data.name.trim().length === 0) {
-      return { success: false, error: "Le nom du joueur est requis" };
+      return { success: false, error: i18n.t("playerService.nameRequired") };
     }
 
     // Validate jersey number
     if (data.jerseyNumber < 0 || data.jerseyNumber > 99) {
-      return { success: false, error: "Le numéro doit être entre 0 et 99" };
+      return { success: false, error: i18n.t("playerService.invalidJerseyNumber") };
     }
 
     // Check max players limit
@@ -46,13 +47,13 @@ export class PlayerService {
     if (playerCount >= MAX_PLAYERS) {
       return {
         success: false,
-        error: `Une équipe ne peut pas avoir plus de ${MAX_PLAYERS} joueurs`
+        error: i18n.t("playerService.maxPlayersReached", { max: MAX_PLAYERS }),
       };
     }
 
     const player = await this.playerRepository.create(data);
     if (!player) {
-      return { success: false, error: "Erreur lors de la création du joueur" };
+      return { success: false, error: i18n.t("playerService.createFailed") };
     }
 
     return { success: true, player };
@@ -69,12 +70,12 @@ export class PlayerService {
   async updatePlayer(id: string, data: UpdatePlayerData) {
     // Validate jersey number if provided
     if (data.jerseyNumber !== undefined && (data.jerseyNumber < 0 || data.jerseyNumber > 99)) {
-      return { success: false, error: "Le numéro doit être entre 0 et 99" };
+      return { success: false, error: i18n.t("playerService.invalidJerseyNumber") };
     }
 
     const player = await this.playerRepository.update(id, data);
     if (!player) {
-      return { success: false, error: "Erreur lors de la modification du joueur" };
+      return { success: false, error: i18n.t("playerService.updateFailed") };
     }
 
     return { success: true, player };
@@ -90,7 +91,7 @@ export class PlayerService {
   async deletePlayer(id: string, teamId: string) {
     const deleted = await this.playerRepository.delete(id);
     if (!deleted) {
-      return { success: false, error: "Erreur lors de la suppression du joueur" };
+      return { success: false, error: i18n.t("playerService.deleteFailed") };
     }
 
     return { success: true };

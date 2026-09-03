@@ -7,6 +7,7 @@
 import { useState } from "react";
 import { useNavigation } from "@react-navigation/native";
 import { Alert } from "react-native";
+import { useTranslation } from "react-i18next";
 import { usePostHog } from "posthog-react-native";
 import { useInterstitialAd } from "./useInterstitialAd";
 import { SupabaseClient } from "@supabase/supabase-js";
@@ -46,6 +47,7 @@ export function useMatchSync({
   user,
 }: UseMatchSyncProps) {
   const navigation = useNavigation<RootNavigationProp>();
+  const { t } = useTranslation();
   const posthog = usePostHog();
   const [isSyncing, setIsSyncing] = useState(false);
   const [showLocalSaveWarning, setShowLocalSaveWarning] = useState(false);
@@ -163,8 +165,10 @@ export function useMatchSync({
 
             // Show error alert to user and navigate to local match details
             Alert.alert(
-              "Erreur de synchronisation",
-              `Impossible de synchroniser le match avec le serveur.\n\n${syncResult.error || "Erreur inconnue"}\n\nVotre match a été sauvegardé localement.`,
+              t("useMatchSync.syncErrorAlert.title"),
+              t("useMatchSync.syncErrorAlert.syncFailedMessage", {
+                error: syncResult.error || t("errorAlert.unknownError"),
+              }),
               [
                 {
                   text: "OK",
@@ -206,8 +210,10 @@ export function useMatchSync({
 
         // Show error alert to user and navigate to local match details
         Alert.alert(
-          "Erreur de synchronisation",
-          `Une erreur inattendue s'est produite lors de la synchronisation.\n\n${syncError instanceof Error ? syncError.message : "Erreur inconnue"}\n\nVotre match a été sauvegardé localement.`,
+          t("useMatchSync.syncErrorAlert.title"),
+          t("useMatchSync.syncErrorAlert.unexpectedErrorMessage", {
+            error: syncError instanceof Error ? syncError.message : t("errorAlert.unknownError"),
+          }),
           [
             {
               text: "OK",

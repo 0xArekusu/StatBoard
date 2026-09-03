@@ -14,7 +14,7 @@ import { useResponsive } from "../../src/hooks/useResponsive";
 import { ACTION_COLORS, STATUS_COLORS } from "../../src/theme/colors";
 import { FoulChainContext, TeamId } from "../../constants/liveMatchConstants";
 import { Player } from "../../models/Player";
-import { FoulSpecification, FOUL_SPECIFICATION_FR } from "../../src/models/ActionTypes";
+import { FoulSpecification, getFoulSpecificationLabel } from "../../src/models/ActionTypes";
 
 const FOUL_TYPE_COLORS: Record<FoulSpecification, string> = {
   [FoulSpecification.PERSONAL]: ACTION_COLORS.foul.personal,
@@ -235,7 +235,7 @@ export const FoulChainModal: React.FC<FoulChainModalProps> = ({
                       activeOpacity={0.7}
                     >
                       <Text style={{ color: isSelected ? "#fff" : typeColor, fontSize: font.xs, fontWeight: "700", textAlign: "center" }}>
-                        {FOUL_SPECIFICATION_FR[type]}
+                        {getFoulSpecificationLabel(type)}
                       </Text>
                     </TouchableOpacity>
                   );

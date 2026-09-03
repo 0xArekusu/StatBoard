@@ -12,6 +12,7 @@ import * as FileSystem from "expo-file-system/legacy";
 import * as Sharing from "expo-sharing";
 import { Platform } from "react-native";
 import * as Sentry from "@sentry/react-native";
+import i18n from "../src/i18n";
 
 class LoggerService {
   private static instance: LoggerService;
@@ -214,7 +215,7 @@ class LoggerService {
 
       if (logFiles.length === 0) {
         console.warn("[LoggerService] ⚠️  No log files to share");
-        return { success: false, message: "Aucun fichier de log trouvé" };
+        return { success: false, message: i18n.t("loggerService.noLogFiles") };
       }
 
       // Read all log files and combine them
@@ -254,17 +255,17 @@ class LoggerService {
         const isAvailable = await Sharing.isAvailableAsync();
         if (!isAvailable) {
           console.error("[LoggerService] ❌ Sharing is not available on this device");
-          return { success: false, message: "Le partage n'est pas disponible sur cet appareil" };
+          return { success: false, message: i18n.t("loggerService.sharingUnavailable") };
         }
 
         await Sharing.shareAsync(tempFilePath, {
           mimeType: "text/plain",
-          dialogTitle: "Exporter les logs",
+          dialogTitle: i18n.t("loggerService.shareDialogTitle"),
           UTI: "public.plain-text",
         });
 
         console.log("[LoggerService] ✅ Logs shared via share sheet");
-        return { success: true, message: "Logs partagés avec succès" };
+        return { success: true, message: i18n.t("loggerService.sharedSuccessfully") };
       } else {
         // Android: Use Storage Access Framework to save to Downloads
         const permissions =
@@ -281,17 +282,19 @@ class LoggerService {
             encoding: FileSystem.EncodingType.UTF8,
           });
           console.log("[LoggerService] ✅ Logs saved to:", fileUri);
-          return { success: true, message: "Logs sauvegardés avec succès" };
+          return { success: true, message: i18n.t("loggerService.savedSuccessfully") };
         } else {
           console.warn("[LoggerService] ⚠️  Permission denied to save file");
-          return { success: false, message: "Permission refusée pour sauvegarder le fichier" };
+          return { success: false, message: i18n.t("loggerService.permissionDenied") };
         }
       }
     } catch (error) {
       console.error("[LoggerService] ❌ Error sharing logs:", error);
       return {
         success: false,
-        message: `Erreur lors de l'export: ${error instanceof Error ? error.message : 'Erreur inconnue'}`
+        message: i18n.t("loggerService.exportErrorPrefix", {
+          message: error instanceof Error ? error.message : i18n.t("errorAlert.unknownError"),
+        }),
       };
     }
   }
@@ -357,7 +360,7 @@ class LoggerService {
       const logs = await this.getLastLines(lineCount);
 
       if (logs === "No logs available" || logs.startsWith("Error reading logs")) {
-        return { success: false, message: "Aucun log disponible à envoyer" };
+        return { success: false, message: i18n.t("loggerService.noLogsToSend") };
       }
 
       // Send logs as a message to Sentry with context
@@ -376,14 +379,16 @@ class LoggerService {
       console.log("[LoggerService] ✅ Logs sent to Sentry, Event ID:", eventId);
       return {
         success: true,
-        message: `Logs envoyés à Sentry avec succès`,
+        message: i18n.t("loggerService.sentToSentrySuccessfully"),
         eventId: eventId
       };
     } catch (error) {
       console.error("[LoggerService] ❌ Error sending logs to Sentry:", error);
       return {
         success: false,
-        message: `Erreur lors de l'envoi: ${error instanceof Error ? error.message : 'Erreur inconnue'}`
+        message: i18n.t("loggerService.sendErrorPrefix", {
+          message: error instanceof Error ? error.message : i18n.t("errorAlert.unknownError"),
+        }),
       };
     }
   }

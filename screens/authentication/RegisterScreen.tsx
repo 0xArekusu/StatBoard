@@ -129,7 +129,7 @@ export default function RegisterScreen({ navigation }: any) {
       });
 
       // Détecter si c'est une erreur de rate limiting (email existant non confirmé qui tente de se réinscrire)
-      if (error.message && error.message.toLowerCase().includes('sécurité')) {
+      if (error.errorCode === 'rate_limit') {
         // C'est probablement un compte non confirmé existant
         Alert.alert(
           t('registerScreen.unconfirmedAccount.title'),

@@ -1,5 +1,12 @@
 import { MatchSyncService } from "../../src/services/api/MatchSyncService";
 import { ActionType, ShotSpecification } from "../../src/models/ActionTypes";
+import i18n from "../../src/i18n";
+
+// These tests assert French copy directly, so pin the language regardless of
+// the device locale the test environment resolves (jest-expo mocks it to "en").
+beforeAll(async () => {
+  await i18n.changeLanguage("fr");
+});
 
 // ─── Repository / Service mocks ───────────────────────────────────────────────
 

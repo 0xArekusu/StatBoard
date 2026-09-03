@@ -3,6 +3,7 @@ import { Linking } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as StoreReview from "expo-store-review";
 import { usePostHog } from "posthog-react-native";
+import { useTranslation } from "react-i18next";
 import { supabase } from "../src/config/supabase";
 import { logError, logWarn } from "../utils/logger";
 import { ANALYTICS_EVENTS } from "../constants/analyticsEvents";
@@ -42,6 +43,7 @@ export async function recordReviewPromptSignal() {
  */
 export function useReviewPrompt(currentRouteName: string | undefined) {
   const posthog = usePostHog();
+  const { t } = useTranslation();
   const [visible, setVisible] = useState(false);
   const [threshold, setThreshold] = useState(REVIEW_PROMPT_SCORE_THRESHOLD_DEFAULT);
   const checkInFlight = useRef(false);
@@ -124,7 +126,7 @@ export function useReviewPrompt(currentRouteName: string | undefined) {
     setVisible(false);
     posthog?.capture(ANALYTICS_EVENTS.REVIEW_PROMPT_DISLIKED);
     await markAnswered();
-    const mailUrl = `mailto:${REVIEW_PROMPT_SUPPORT_EMAIL}?subject=${encodeURIComponent("Retour sur Coach Assistant")}`;
+    const mailUrl = `mailto:${REVIEW_PROMPT_SUPPORT_EMAIL}?subject=${encodeURIComponent(t("reviewPrompt.feedbackEmailSubject"))}`;
     Linking.openURL(mailUrl).catch((err) =>
       logError("ReviewPrompt", "Error opening feedback email", { err })
     );

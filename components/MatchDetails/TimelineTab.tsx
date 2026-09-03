@@ -45,36 +45,43 @@ function getTeamAbbr(name: string | null | undefined): string {
     .slice(0, 3);
 }
 
-function getActionDesc(action: any): string {
+function getActionDesc(action: any, t: (key: string, options?: Record<string, unknown>) => string): string {
   const type = (action.action_type || action.type || "").toLowerCase();
   const spec = (action.specification || "").toLowerCase();
   const pts = action.points;
   switch (type) {
     case ActionType.SHOT:
-      if (spec === ShotSpecification.MADE) return pts ? `Tir ${pts}pts ✓` : "Tir ✓";
-      return pts ? `Tir ${pts}pts ✗` : "Tir ✗";
+      if (spec === ShotSpecification.MADE)
+        return pts
+          ? t("timelineTab.actionDesc.shotMadeWithPoints", { points: pts })
+          : t("timelineTab.actionDesc.shotMade");
+      return pts
+        ? t("timelineTab.actionDesc.shotMissedWithPoints", { points: pts })
+        : t("timelineTab.actionDesc.shotMissed");
     case ActionType.REBOUND:
-      if (spec === "offensive") return "Rebond offensif";
-      if (spec === "defensive") return "Rebond défensif";
-      return "Rebond équipe";
+      if (spec === "offensive") return t("timelineTab.actionDesc.reboundOffensive");
+      if (spec === "defensive") return t("timelineTab.actionDesc.reboundDefensive");
+      return t("timelineTab.actionDesc.reboundTeam");
     case ActionType.FOUL:
-      if (spec === "personal") return "Faute personnelle";
-      if (spec === "technical") return "Faute technique";
-      if (spec === "penality") return "Antisportive";
-      if (spec === "disqualificiation") return "Disqualifiante";
-      return "Faute";
+      if (spec === "personal") return t("timelineTab.actionDesc.foulPersonal");
+      if (spec === "technical") return t("timelineTab.actionDesc.foulTechnical");
+      if (spec === "penality") return t("timelineTab.actionDesc.foulUnsportsmanlike");
+      if (spec === "disqualificiation") return t("timelineTab.actionDesc.foulDisqualifying");
+      return t("timelineTab.actionDesc.foul");
     case ActionType.FOUL_DRAWN:
-      return "Faute provoquée";
+      return t("timelineTab.actionDesc.foulDrawn");
     case ActionType.ASSIST:
-      return "Passe décisive";
+      return t("timelineTab.actionDesc.assist");
     case ActionType.STEAL:
-      return "Interception";
+      return t("timelineTab.actionDesc.steal");
     case ActionType.BLOCK:
-      return "Contre";
+      return t("timelineTab.actionDesc.block");
     case ActionType.TURNOVER:
-      return "Balle perdue";
+      return t("timelineTab.actionDesc.turnover");
     case ActionType.SUBSTITUTION:
-      return spec === SubstitutionSpecification.IN ? "↑ Entrée" : "↓ Sortie";
+      return spec === SubstitutionSpecification.IN
+        ? t("timelineTab.actionDesc.substitutionIn")
+        : t("timelineTab.actionDesc.substitutionOut");
     default:
       return type;
   }
@@ -231,7 +238,7 @@ export default function TimelineTab({ actions, match, playerNamesMap }: Timeline
             playerNum: num,
             periodLabel: getPeriodLabel(periodNumber, totalPeriods),
             timeStr: formatTime(action.time_in_period ?? 0),
-            description: getActionDesc(action),
+            description: getActionDesc(action, t),
             playerName,
             isMyTeam: action.team === "MyTeam",
             isScoring,
@@ -251,7 +258,7 @@ export default function TimelineTab({ actions, match, playerNamesMap }: Timeline
       });
 
     return result;
-  }, [sortedWithScores, selectedPeriod, totalPeriods, playerNamesMap, match]);
+  }, [sortedWithScores, selectedPeriod, totalPeriods, playerNamesMap, match, t]);
 
   if (!isReady) {
     return (

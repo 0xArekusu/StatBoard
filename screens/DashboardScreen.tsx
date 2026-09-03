@@ -391,7 +391,7 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
     } catch (error) {
       logError("DashboardScreen", "❌ Error loading dashboard data", { error });
       showErrorAlert({
-        action: "charger les données du tableau de bord",
+        messageKey: "dashboard.errors.loadFailed",
         error,
         context: "DashboardScreen",
         showRetry: true,

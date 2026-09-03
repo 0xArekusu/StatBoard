@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
+import { INTL_LOCALES, SupportedLanguage } from '../../src/i18n';
 import { useTheme } from '../../src/contexts/ThemeContext';
 import { useResponsive } from '../../src/hooks/useResponsive';
 import { MatchHistoryEntry } from '../../src/services/seasonStats';
@@ -11,7 +12,7 @@ interface MatchHistoryRowProps {
 }
 
 export default function MatchHistoryRow({ entry, onPress }: MatchHistoryRowProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { colors } = useTheme();
   const { sp, font, sizes } = useResponsive();
   const { match, played, pts, reb, ast } = entry;
@@ -22,7 +23,10 @@ export default function MatchHistoryRow({ entry, onPress }: MatchHistoryRowProps
     : colors.text.disabled;
 
   const date = match.created_at
-    ? new Date(match.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })
+    ? new Date(match.created_at).toLocaleDateString(
+        INTL_LOCALES[i18n.language as SupportedLanguage] ?? INTL_LOCALES.fr,
+        { day: '2-digit', month: '2-digit' }
+      )
     : '—';
 
   return (

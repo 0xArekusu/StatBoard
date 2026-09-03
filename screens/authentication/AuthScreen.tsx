@@ -68,7 +68,6 @@ export default function AuthScreen() {
               backgroundColor: "rgba(0, 0, 0, 0.35)",
               borderColor: "rgba(255, 255, 255, 0.3)",
             }}
-            textColor={colors.onPrimary}
           />
         </View>
 

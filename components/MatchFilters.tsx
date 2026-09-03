@@ -20,7 +20,7 @@ import {
   ScrollView,
   StyleSheet,
 } from "react-native";
-import { ACTION_DEFINITIONS } from "../src/models/ActionTypes";
+import { getActionDefinitions } from "../src/models/ActionTypes";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "../src/contexts/ThemeContext";
 import { useResponsive } from "../src/hooks/useResponsive";
@@ -78,10 +78,13 @@ export default function MatchFilters({
   onActionTypesChange,
   onPeriodsChange,
 }: MatchFiltersProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { colors } = useTheme();
   const { sp, font, sizes } = useResponsive();
   const totalPeriods = matchFormat === "2_halves" ? 2 : 4;
+  // Recomputed on every render (and thus on language change, since `i18n.language`
+  // is read here) — ACTION_CONFIG's labels resolve live from the current i18n language.
+  const actionDefinitions = React.useMemo(() => getActionDefinitions(), [i18n.language]);
 
   // Find all periods including regular periods and any overtime periods that have been played
   const availablePeriods = React.useMemo(() => {
@@ -168,7 +171,7 @@ export default function MatchFilters({
   };
 
   const selectAllActionTypes = () => {
-    const newActionTypes = ACTION_DEFINITIONS.map((action) => action.id);
+    const newActionTypes = actionDefinitions.map((action) => action.id);
     onActionTypesChange(newActionTypes);
   };
 
@@ -387,7 +390,7 @@ export default function MatchFilters({
           showsHorizontalScrollIndicator={false}
           style={styles.filterCardsScroll}
         >
-          {ACTION_DEFINITIONS.map((action) => {
+          {actionDefinitions.map((action) => {
             const isSelected = selectedActionTypes.includes(action.id);
             return (
               <TouchableOpacity

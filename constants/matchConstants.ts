@@ -43,13 +43,26 @@ export function getMatchFormatLabels(format: MatchFormat): { singular: string; p
 }
 
 /**
- * Get period label (e.g., "1ère mi-temps", "2e quart-temps")
+ * Get period label (e.g., "1ère mi-temps", "2nd quarter")
+ *
+ * Uses i18next's ordinal pluralization (backed by Intl.PluralRules) instead of
+ * hardcoded French suffix logic, so the ordinal is correct in every supported
+ * language. "context" carries the grammatical gender needed for French
+ * ("1ère" vs "1er") — languages without gendered ordinals (English) simply
+ * ignore it and fall back to their plain ordinal_* keys.
+ *
  * @param format - Match format
  * @param periodNumber - Period number (1-based)
  */
 export const getPeriodLabel = (format: MatchFormat, periodNumber: number): string => {
   const labels = getMatchFormatLabels(format);
-  return `${periodNumber}${labels.short === 'MT' ? 'ère' : 'e'} ${labels.singular}`;
+  const gender = format === MATCH_FORMATS.TWO_HALVES ? 'feminine' : 'masculine';
+  const ordinal = i18n.t('matchConstants.periodOrdinal', {
+    count: periodNumber,
+    ordinal: true,
+    context: gender,
+  });
+  return `${ordinal} ${labels.singular}`;
 };
 
 // ===========================

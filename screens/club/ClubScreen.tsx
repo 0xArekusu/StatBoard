@@ -121,7 +121,7 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
     } catch (error) {
       console.error("Error loading club data:", error);
       showErrorAlert({
-        action: "charger les données du club",
+        messageKey: "clubScreen.errors.loadFailed",
         error,
         context: "ClubScreen",
         showRetry: true,
@@ -202,7 +202,7 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
             } catch (error) {
               console.error("Error approving team:", error);
               showErrorAlert({
-                action: "valider l'équipe",
+                messageKey: "clubScreen.errors.approveTeamFailed",
                 error,
                 context: "ClubScreen",
               });
@@ -245,7 +245,7 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
             } catch (error) {
               console.error("Error rejecting team:", error);
               showErrorAlert({
-                action: "refuser l'équipe",
+                messageKey: "clubScreen.errors.rejectTeamFailed",
                 error,
                 context: "ClubScreen",
               });
@@ -283,7 +283,7 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
             } catch (error) {
               console.error("Error deleting team:", error);
               showErrorAlert({
-                action: "supprimer l'équipe",
+                messageKey: "clubScreen.errors.deleteTeamFailed",
                 error,
                 context: "ClubScreen",
               });
@@ -354,8 +354,8 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
 
           if (error) {
             showErrorAlert({
-              action: "uploader le logo",
-              error: new Error("Impossible d'uploader le logo"),
+              messageKey: "clubScreen.errors.uploadLogoFailed",
+              error: new Error(t("clubScreen.errors.uploadLogoFailed")),
               context: "ClubScreen",
             });
             return;
@@ -385,7 +385,7 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
       } catch (error) {
         console.error("Error updating club:", error);
         showErrorAlert({
-          action: "modifier le club",
+          messageKey: "clubScreen.errors.updateClubFailed",
           error,
           context: "ClubScreen",
         });
@@ -418,8 +418,8 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
 
         if (!result.success || !result.club) {
           showErrorAlert({
-            action: "créer le club",
-            error: new Error(result.error || "Impossible de créer le club"),
+            messageKey: "clubScreen.errors.createClubFailed",
+            error: new Error(result.error || t("clubScreen.errors.createClubFailed")),
             context: "ClubScreen",
           });
           return;
@@ -435,8 +435,8 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
 
           if (error) {
             showErrorAlert({
-              action: "uploader le logo du club",
-              error: new Error("Club créé mais impossible d'uploader le logo"),
+              messageKey: "clubScreen.errors.uploadClubLogoFailed",
+              error: new Error(t("clubScreen.errors.uploadClubLogoFailed")),
               context: "ClubScreen",
             });
           } else if (path) {
@@ -458,7 +458,7 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
       } catch (error) {
         console.error("Error creating club:", error);
         showErrorAlert({
-          action: "créer le club",
+          messageKey: "clubScreen.errors.createClubFailed",
           error,
           context: "ClubScreen",
         });

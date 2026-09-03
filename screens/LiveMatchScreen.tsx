@@ -38,7 +38,7 @@ import {
   CreateActionData,
   Team,
 } from "../src/models/types";
-import { ActionType, ShotSpecification, ReboundSpecification, SubstitutionSpecification, FoulSpecification, FOUL_SPECIFICATION_FR } from "../src/models/ActionTypes";
+import { ActionType, ShotSpecification, ReboundSpecification, SubstitutionSpecification, FoulSpecification, getFoulSpecificationLabel } from "../src/models/ActionTypes";
 import { Player } from "../models/Player";
 import { useAuth } from "../src/contexts/AuthContext";
 import { useClub } from "../src/contexts/ClubContext";
@@ -1240,7 +1240,7 @@ export default function LiveMatchScreen() {
     const amIHome = match.location === TeamId.HOME;
     const isOurTeam = isHome === amIHome;
     const subTeamName = isOurTeam ? (match.myTeamName || t("liveMatchScreen.myTeamFallback")) : (match.opponent || t("liveMatchScreen.opponentFallback"));
-    const subDescription = `Changements (${subTeamName}): ${subSelection.in.length} joueur(s)`;
+    const subDescription = t("liveMatchScreen.substitutionCount", { team: subTeamName, count: subSelection.in.length });
 
     const newEvent: MatchEvent = {
       id: `evt-${Date.now()}`,
@@ -1537,7 +1537,7 @@ export default function LiveMatchScreen() {
         playerNumber: -1,
         teamId,
         timestamp: Date.now(),
-        description: "Équipe — Rebond",
+        description: t("liveMatchScreen.actionLog.teamRebound"),
         coordinates: normalizedCoords,
         period_number: quarter,
         time_in_period: periodDurationMin * 60 - timer,
@@ -1586,7 +1586,7 @@ export default function LiveMatchScreen() {
         playerNumber: foulDrawnPlayerNumber,
         teamId: foulDrawnTeamId,
         timestamp: Date.now(),
-        description: `#${foulDrawnPlayerNumber} ${foulDrawnPlayerName} — Faute (${FOUL_SPECIFICATION_FR[foulType]})`,
+        description: `#${foulDrawnPlayerNumber} ${foulDrawnPlayerName} — ${t("liveMatchScreen.actionLog.foulWithType", { type: getFoulSpecificationLabel(foulType) })}`,
         coordinates: normalizedCoords,
         period_number: quarter,
         time_in_period: periodDurationMin * 60 - timer,
@@ -1632,7 +1632,7 @@ export default function LiveMatchScreen() {
         playerNumber: result.blockerPlayer.jerseyNumber,
         teamId: blockerTeamId,
         timestamp: Date.now(),
-        description: `#${result.blockerPlayer.jerseyNumber} ${result.blockerPlayer.name} — Contre`,
+        description: `#${result.blockerPlayer.jerseyNumber} ${result.blockerPlayer.name} — ${t("actionTypes.block.label")}`,
         coordinates: normalizedCoords,
         period_number: quarter,
         time_in_period: periodDurationMin * 60 - timer,
@@ -1655,7 +1655,7 @@ export default function LiveMatchScreen() {
         playerNumber: -1,
         teamId: result.reboundTeamId,
         timestamp: Date.now(),
-        description: "Équipe — Rebond",
+        description: t("liveMatchScreen.actionLog.teamRebound"),
         coordinates: normalizedCoords,
         period_number: quarter,
         time_in_period: periodDurationMin * 60 - timer,
@@ -1680,7 +1680,7 @@ export default function LiveMatchScreen() {
         playerNumber: result.reboundPlayer.jerseyNumber,
         teamId: reboundTeamId,
         timestamp: Date.now(),
-        description: `#${result.reboundPlayer.jerseyNumber} ${result.reboundPlayer.name} — Rebond ${isDefensive ? "défensif" : "offensif"}`,
+        description: `#${result.reboundPlayer.jerseyNumber} ${result.reboundPlayer.name} — ${isDefensive ? t("liveMatchScreen.actionLog.reboundDefensive") : t("liveMatchScreen.actionLog.reboundOffensive")}`,
         coordinates: normalizedCoords,
         period_number: quarter,
         time_in_period: periodDurationMin * 60 - timer,
@@ -1754,7 +1754,7 @@ export default function LiveMatchScreen() {
         playerNumber: foulDrawnPlayerNumber,
         teamId: foulDrawnTeamId,
         timestamp: Date.now(),
-        description: `#${foulDrawnPlayerNumber} ${foulDrawnPlayerName} — Faute (${FOUL_SPECIFICATION_FR[result.foulType]})`,
+        description: `#${foulDrawnPlayerNumber} ${foulDrawnPlayerName} — ${t("liveMatchScreen.actionLog.foulWithType", { type: getFoulSpecificationLabel(result.foulType) })}`,
         coordinates: normalizedCoords,
         period_number: quarter,
         time_in_period: periodDurationMin * 60 - timer,
@@ -1775,7 +1775,7 @@ export default function LiveMatchScreen() {
           playerNumber: drawnPlayer.jerseyNumber,
           teamId: drawnTeamId,
           timestamp: Date.now(),
-          description: `#${drawnPlayer.jerseyNumber} ${drawnPlayer.name} — Faute provoquée`,
+          description: `#${drawnPlayer.jerseyNumber} ${drawnPlayer.name} — ${t("actionTypes.foul_drawn.label")}`,
           coordinates: normalizedCoords,
           period_number: quarter,
           time_in_period: periodDurationMin * 60 - timer,
@@ -1797,9 +1797,7 @@ export default function LiveMatchScreen() {
           playerNumber: drawnPlayer?.jerseyNumber ?? -1,
           teamId: drawnTeamId,
           timestamp: Date.now(),
-          description: drawnPlayer
-            ? `#${drawnPlayer.jerseyNumber} ${drawnPlayer.name} — Tir (+${result.basketPoints})`
-            : `Équipe — Tir (+${result.basketPoints})`,
+          description: `${drawnPlayer ? `#${drawnPlayer.jerseyNumber} ${drawnPlayer.name}` : t("liveMatchScreen.teamActionFallback")} — ${t("liveMatchScreen.actionLog.shotMade", { points: result.basketPoints })}`,
           coordinates: normalizedCoords,
           period_number: quarter,
           time_in_period: periodDurationMin * 60 - timer,
@@ -1821,7 +1819,7 @@ export default function LiveMatchScreen() {
             playerNumber: result.assistPlayer.jerseyNumber,
             teamId: drawnTeamId,
             timestamp: Date.now(),
-            description: `#${result.assistPlayer.jerseyNumber} ${result.assistPlayer.name} — Passe décisive`,
+            description: `#${result.assistPlayer.jerseyNumber} ${result.assistPlayer.name} — ${t("actionTypes.assist.label")}`,
             coordinates: normalizedCoords,
             period_number: quarter,
             time_in_period: periodDurationMin * 60 - timer,
@@ -1848,10 +1846,8 @@ export default function LiveMatchScreen() {
           teamId: drawnTeamId,
           timestamp: Date.now(),
           description: drawnPlayer
-            ? (spec === ShotSpecification.MADE
-                ? `#${drawnPlayer.jerseyNumber} ${drawnPlayer.name} — LF (+1)`
-                : `#${drawnPlayer.jerseyNumber} ${drawnPlayer.name} — LF raté`)
-            : (spec === ShotSpecification.MADE ? "Équipe — LF technique (+1)" : "Équipe — LF technique raté"),
+            ? `#${drawnPlayer.jerseyNumber} ${drawnPlayer.name} — ${spec === ShotSpecification.MADE ? t("liveMatchScreen.actionLog.freeThrowMade") : t("liveMatchScreen.actionLog.freeThrowMissed")}`
+            : (spec === ShotSpecification.MADE ? t("liveMatchScreen.technicalFreeThrowMade") : t("liveMatchScreen.technicalFreeThrowMissed")),
           period_number: quarter,
           time_in_period: periodDurationMin * 60 - timer,
         }, ...updatedMatch.events];
@@ -1915,9 +1911,7 @@ export default function LiveMatchScreen() {
         playerNumber: foulPlayerNumber,
         teamId: opponentTeamId,
         timestamp: Date.now(),
-        description: result.foulPlayer
-          ? `#${foulPlayerNumber} ${foulPlayerName} — Faute (${FOUL_SPECIFICATION_FR[result.foulType]})`
-          : `Équipe — Faute (${FOUL_SPECIFICATION_FR[result.foulType]})`,
+        description: `${result.foulPlayer ? `#${foulPlayerNumber} ${foulPlayerName}` : t("liveMatchScreen.teamActionFallback")} — ${t("liveMatchScreen.actionLog.foulWithType", { type: getFoulSpecificationLabel(result.foulType) })}`,
         coordinates: normalizedCoords,
         period_number: quarter,
         time_in_period: periodDurationMin * 60 - timer,
@@ -1961,7 +1955,7 @@ export default function LiveMatchScreen() {
           playerNumber: result.assistPlayer.jerseyNumber,
           teamId: foulDrawnTeamId,
           timestamp: Date.now(),
-          description: `#${result.assistPlayer.jerseyNumber} ${result.assistPlayer.name} — Passe décisive`,
+          description: `#${result.assistPlayer.jerseyNumber} ${result.assistPlayer.name} — ${t("actionTypes.assist.label")}`,
           coordinates: normalizedCoords,
           period_number: quarter,
           time_in_period: periodDurationMin * 60 - timer,
@@ -1988,9 +1982,7 @@ export default function LiveMatchScreen() {
         playerNumber: foulDrawnPlayerNumber,
         teamId: foulDrawnTeamId,
         timestamp: Date.now(),
-        description: spec === ShotSpecification.MADE
-          ? `#${foulDrawnPlayerNumber} ${foulDrawnPlayerName} — LF (+1)`
-          : `#${foulDrawnPlayerNumber} ${foulDrawnPlayerName} — LF raté`,
+        description: `#${foulDrawnPlayerNumber} ${foulDrawnPlayerName} — ${spec === ShotSpecification.MADE ? t("liveMatchScreen.actionLog.freeThrowMade") : t("liveMatchScreen.actionLog.freeThrowMissed")}`,
         period_number: quarter,
         time_in_period: periodDurationMin * 60 - timer,
       }, ...updatedMatch.events];
@@ -2156,7 +2148,7 @@ export default function LiveMatchScreen() {
       action_type: ActionType.TIMEOUT,
       teamId,
       timestamp: Date.now(),
-      description: "Temps mort",
+      description: t("liveMatchScreen.timeoutDescription"),
       period_number: quarter,
       time_in_period: periodDurationMin * 60 - timer,
     };
@@ -2229,7 +2221,7 @@ export default function LiveMatchScreen() {
         <Text
           style={[styles.loadingText, { color: textPrimary, marginTop: 16 }]}
         >
-          Chargement du match...
+          {t("liveMatchScreen.loadingMatch")}
         </Text>
       </View>
     );
