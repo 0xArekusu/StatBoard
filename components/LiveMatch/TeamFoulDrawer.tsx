@@ -7,6 +7,7 @@ import {
   TouchableWithoutFeedback,
   ScrollView,
 } from "react-native";
+import { useTranslation } from "react-i18next";
 import { useTheme } from "../../src/contexts/ThemeContext";
 import { MatchEvent } from "../../constants/liveMatchConstants";
 import { Player } from "../../models/Player";
@@ -94,6 +95,7 @@ export function TeamFoulDrawer({
   opponentName,
 }: TeamFoulDrawerProps) {
   const { colors } = useTheme();
+  const { t } = useTranslation();
 
   const opponentTeamId = myTeamId === "HOME" ? "AWAY" : "HOME";
 
@@ -182,7 +184,7 @@ export function TeamFoulDrawer({
       >
         <View style={[styles.handle, { backgroundColor: colors.border }]} />
         <Text style={[styles.drawerTitle, { color: colors.text.secondary }]}>
-          FAUTES D'ÉQUIPE
+          {t("teamFoulDrawer.title")}
         </Text>
         <View style={styles.content}>
           {myTeamId === "HOME" ? (

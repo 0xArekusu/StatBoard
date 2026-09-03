@@ -222,10 +222,14 @@ export default function HistoryScreen({ navigation }: HistoryScreenProps) {
       }
 
       if (result.failed > 0) {
-        // Analyze errors to determine if it's a connection or freemium issue
+        // Analyze errors to determine if it's a connection or freemium issue.
+        // MatchSyncService's error strings are i18n-translated, so compare against
+        // the current-language translation rather than hardcoded French substrings.
         const errorMessages = result.errors.join(" ");
-        const isNotConnected = errorMessages.includes("connecté") || errorMessages.includes("authentifié");
-        const isFreemium = errorMessages.includes("abonnement") || errorMessages.includes("payant");
+        const isNotConnected =
+          errorMessages.includes(t("matchSyncService.authRequired")) ||
+          errorMessages.includes(t("matchSyncService.userNotAuthenticated"));
+        const isFreemium = errorMessages.includes(t("matchSyncService.subscriptionDoesNotAllowSync"));
 
         setSyncError({
           visible: true,

@@ -25,7 +25,9 @@
       "title": "Langue",
       "options": {
         "fr": "Français",
-        "en": "English"
+        "en": "English",
+        "es": "Español",
+        "de": "Deutsch"
       }
     }
   },
@@ -619,6 +621,9 @@
   "liveMatchHeader": {
     "substituteAbbr": "CHANGT"
   },
+  "teamFoulDrawer": {
+    "title": "FAUTES D'ÉQUIPE"
+  },
   "foulChainModal": {
     "headerCommitted": "Faute commise — #{{num}}",
     "headerDrawn": "Faute provoquée — #{{num}}",
@@ -737,7 +742,11 @@
   },
   "evolutionTab": {
     "matchStart": "Début du match",
-    "insufficientData": "Données insuffisantes pour le graphique"
+    "insufficientData": "Données insuffisantes pour le graphique",
+    "periodTableTitle": "SCORES PAR PÉRIODE",
+    "graphTitle": "ÉVOLUTION DU SCORE",
+    "teamColumn": "Équipe",
+    "totalColumn": "TOT"
   },
   "matchToolbar": {
     "view": "Vue",

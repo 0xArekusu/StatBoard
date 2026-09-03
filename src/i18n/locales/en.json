@@ -25,7 +25,9 @@
       "title": "Language",
       "options": {
         "fr": "Français",
-        "en": "English"
+        "en": "English",
+        "es": "Español",
+        "de": "Deutsch"
       }
     }
   },
@@ -619,6 +621,9 @@
   "liveMatchHeader": {
     "substituteAbbr": "SUB"
   },
+  "teamFoulDrawer": {
+    "title": "TEAM FOULS"
+  },
   "foulChainModal": {
     "headerCommitted": "Foul committed — #{{num}}",
     "headerDrawn": "Foul drawn — #{{num}}",
@@ -737,7 +742,11 @@
   },
   "evolutionTab": {
     "matchStart": "Start of match",
-    "insufficientData": "Not enough data for the chart"
+    "insufficientData": "Not enough data for the chart",
+    "periodTableTitle": "SCORES BY PERIOD",
+    "graphTitle": "SCORE EVOLUTION",
+    "teamColumn": "Team",
+    "totalColumn": "TOT"
   },
   "matchToolbar": {
     "view": "View",

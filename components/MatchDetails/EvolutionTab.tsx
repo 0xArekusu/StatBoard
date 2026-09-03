@@ -230,7 +230,7 @@ export default function EvolutionTab({
             color={colors.primary}
           />
           <Text style={[styles.cardTitle, { color: colors.text.primary, fontSize: font.md }]}>
-            SCORES PAR PÉRIODE
+            {t("evolutionTab.periodTableTitle")}
           </Text>
         </View>
 
@@ -238,7 +238,7 @@ export default function EvolutionTab({
           {/* Table Header */}
           <View style={[styles.tableRow, styles.tableHeaderRow, { borderBottomColor: colors.border }]}>
             <Text style={[styles.tableHeaderCell, styles.teamCell, { color: colors.text.secondary, borderRightColor: colors.border }]}>
-              Équipe
+              {t("evolutionTab.teamColumn")}
             </Text>
             {evolution.periods.map((_, i) => {
               const periodNumber = i + 1;
@@ -250,7 +250,7 @@ export default function EvolutionTab({
               );
             })}
             <Text style={[styles.tableHeaderCell, styles.totalCell, { color: colors.text.secondary }]}>
-              TOT
+              {t("evolutionTab.totalColumn")}
             </Text>
           </View>
 
@@ -367,7 +367,7 @@ export default function EvolutionTab({
             color={colors.primary}
           />
           <Text style={[styles.cardTitle, { color: colors.text.primary }]}>
-            ÉVOLUTION DU SCORE
+            {t("evolutionTab.graphTitle")}
           </Text>
         </View>
 
@@ -610,7 +610,7 @@ export default function EvolutionTab({
             <Text
               style={[styles.legendText, { color: colors.text.secondary }]}
             >
-              {match.my_team_name || "MON ÉQUIPE"}
+              {match.my_team_name || t("liveMatchModals.myTeamFallback").toUpperCase()}
             </Text>
           </View>
           <View style={styles.legendItem}>
