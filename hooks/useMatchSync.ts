@@ -278,7 +278,7 @@ export function useMatchSync({
         const isTeamRebound = playerId.startsWith('team-rebound-');
         const playerNumber = isTeamRebound ? -1 : playerMap.get(playerId);
 
-        if (!isTeamRebound && !playerNumber) {
+        if (!isTeamRebound && playerNumber === undefined) {
           console.warn(`Player number not found for player_id: ${playerId}`);
           continue;
         }
