@@ -3,6 +3,7 @@ import { IClubRepository } from "../repositories/IClubRepository";
 import { AdminService } from "./AdminService";
 import { SubscriptionTier } from "../models/Subscription";
 import { CLUB_VALIDATION } from "../constants/clubConstants";
+import i18n from "../src/i18n";
 
 /**
  * Service Layer Pattern
@@ -27,22 +28,22 @@ export class ClubService {
     // Validation
     if (!data.name.trim()) {
       console.log('❌ [ClubService] Validation failed: Club name is required');
-      return { success: false, error: "Club name is required" };
+      return { success: false, error: i18n.t("clubService.nameRequired") };
     }
 
     if (data.name.length > CLUB_VALIDATION.NAME_MAX_LENGTH) {
       console.log('❌ [ClubService] Validation failed: Club name too long');
-      return { success: false, error: `Le nom du club ne peut pas dépasser ${CLUB_VALIDATION.NAME_MAX_LENGTH} caractères` };
+      return { success: false, error: i18n.t("clubService.nameTooLong", { max: CLUB_VALIDATION.NAME_MAX_LENGTH }) };
     }
 
     if (!data.acronym.trim()) {
       console.log('❌ [ClubService] Validation failed: Club acronym is required');
-      return { success: false, error: "Club acronym is required" };
+      return { success: false, error: i18n.t("clubService.acronymRequired") };
     }
 
     if (data.acronym.length > CLUB_VALIDATION.ACRONYM_MAX_LENGTH) {
       console.log('❌ [ClubService] Validation failed: Club acronym too long');
-      return { success: false, error: `Le sigle ne peut pas dépasser ${CLUB_VALIDATION.ACRONYM_MAX_LENGTH} caractères` };
+      return { success: false, error: i18n.t("clubService.acronymTooLong", { max: CLUB_VALIDATION.ACRONYM_MAX_LENGTH }) };
     }
 
     // Check if user already has a club (admins can create multiple clubs)
@@ -55,7 +56,7 @@ export class ClubService {
       console.log('📊 [ClubService] Existing clubs count:', existingClubs.length);
       if (existingClubs.length > 0) {
         console.log('❌ [ClubService] User already has a club');
-        return { success: false, error: "Vous avez déjà créé un club" };
+        return { success: false, error: i18n.t("clubService.alreadyHasClub") };
       }
     } else {
       console.log('✅ [ClubService] User is admin, can create multiple clubs');
@@ -68,7 +69,7 @@ export class ClubService {
 
     if (!club) {
       console.log('❌ [ClubService] Failed to create club - repository returned null');
-      return { success: false, error: "Impossible de créer le club. Veuillez réessayer." };
+      return { success: false, error: i18n.t("clubService.createFailed") };
     }
 
     return { success: true, club };
@@ -111,26 +112,26 @@ export class ClubService {
   ): Promise<{ success: boolean; club?: Club; error?: string }> {
     // Validation
     if (data.name !== undefined && !data.name.trim()) {
-      return { success: false, error: "Club name cannot be empty" };
+      return { success: false, error: i18n.t("clubService.nameEmpty") };
     }
 
     if (data.name !== undefined && data.name.length > CLUB_VALIDATION.NAME_MAX_LENGTH) {
-      return { success: false, error: `Le nom du club ne peut pas dépasser ${CLUB_VALIDATION.NAME_MAX_LENGTH} caractères` };
+      return { success: false, error: i18n.t("clubService.nameTooLong", { max: CLUB_VALIDATION.NAME_MAX_LENGTH }) };
     }
 
     if (data.acronym !== undefined && !data.acronym.trim()) {
-      return { success: false, error: "Club acronym cannot be empty" };
+      return { success: false, error: i18n.t("clubService.acronymEmpty") };
     }
 
     if (data.acronym !== undefined && data.acronym.length > CLUB_VALIDATION.ACRONYM_MAX_LENGTH) {
-      return { success: false, error: `Le sigle ne peut pas dépasser ${CLUB_VALIDATION.ACRONYM_MAX_LENGTH} caractères` };
+      return { success: false, error: i18n.t("clubService.acronymTooLong", { max: CLUB_VALIDATION.ACRONYM_MAX_LENGTH }) };
     }
 
     // Update club
     const club = await this.clubRepository.update(id, data);
 
     if (!club) {
-      return { success: false, error: "Failed to update club" };
+      return { success: false, error: i18n.t("clubService.updateFailed") };
     }
 
     return { success: true, club };
@@ -159,7 +160,7 @@ export class ClubService {
 
     if (!club) {
       console.log("❌ [ClubService] Failed to update subscription tier");
-      return { success: false, error: "Échec de la mise à jour de l'abonnement" };
+      return { success: false, error: i18n.t("clubService.subscriptionUpdateFailed") };
     }
 
     console.log("✅ [ClubService] Subscription tier updated successfully");

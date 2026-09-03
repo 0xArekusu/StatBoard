@@ -1,0 +1,1307 @@
+{
+  "authContext": {
+    "rateLimitError": "Pour des raisons de sécurité, vous devez attendre {{seconds}} secondes avant de pouvoir vous inscrire à nouveau.",
+    "resendRateLimitError": "Pour des raisons de sécurité, vous devez attendre {{seconds}} secondes avant de pouvoir renvoyer un email."
+  },
+  "reviewPrompt": {
+    "feedbackEmailSubject": "Retour sur Coach Assistant"
+  },
+  "common": {
+    "cancel": "Annuler",
+    "continue": "Continuer",
+    "ok": "OK",
+    "delete": "Supprimer",
+    "yes": "Oui",
+    "no": "Non",
+    "notApplicable": "N/A",
+    "confirm": "Confirmer",
+    "error": "Erreur",
+    "guest": "Invité",
+    "send": "Envoyer",
+    "success": "Succès",
+    "info": "Info",
+    "genericErrorRetry": "Une erreur est survenue. Veuillez réessayer.",
+    "language": {
+      "title": "Langue",
+      "options": {
+        "fr": "Français",
+        "en": "English",
+        "es": "Español",
+        "de": "Deutsch"
+      }
+    }
+  },
+  "dashboard": {
+    "greeting": "Bonjour,",
+    "subGreeting": "Prêt pour le match ?",
+    "selectTeamPlaceholder": "Sélectionner une équipe",
+    "guestBanner": "Mode Invité : Les matchs sont sauvegardés en local sur cet appareil.",
+    "newMatchButtonTitle": "Nouveau Match",
+    "newMatchButtonSubtitleGuest": "Mode Invité",
+    "newMatchButtonSubtitleTeam": "Pour {{team}}",
+    "ctaJoinOrCreateClub": "Rejoignez ou créez un club",
+    "ctaCreateFirstTeam": "Créez votre première équipe",
+    "ctaDescriptionNoClub": "Pour commencer à suivre les statistiques, vous devez associer votre compte à une équipe.",
+    "ctaDescriptionNoTeam": "Vous faites partie d'un club, créez maintenant une équipe pour commencer à suivre vos matchs.",
+    "ctaStart": "Commencer",
+    "profileMenu": {
+      "exportLogs": "Exporter les logs",
+      "testSentry": "Test Sentry",
+      "switchClub": "Changer de club",
+      "deleteAccount": "Supprimer mon compte",
+      "deletingAccount": "Suppression..."
+    },
+    "clubSwitcher": {
+      "title": "Changer de club",
+      "createNewClub": "Créer un nouveau club"
+    },
+    "alerts": {
+      "deleteAccount": {
+        "title": "Supprimer mon compte",
+        "message": "Toutes vos données personnelles seront définitivement supprimées. Cette action est irréversible.",
+        "continue": "Continuer",
+        "confirmTitle": "Confirmer la suppression",
+        "confirmMessage": "Êtes-vous sûr de vouloir supprimer définitivement votre compte ?",
+        "confirmButton": "Supprimer définitivement",
+        "blockedTitle": "Suppression impossible",
+        "blockedMessage": "Vous êtes propriétaire d'un club. Supprimez d'abord votre club depuis l'application avant de supprimer votre compte."
+      },
+      "abandonMatch": {
+        "title": "Abandonner le match ?",
+        "message": "Cette action est irréversible. Toutes les données du match seront supprimées définitivement.",
+        "confirmButton": "Abandonner",
+        "errorMessage": "Impossible d'abandonner le match. Veuillez réessayer."
+      },
+      "newMatchConfirm": {
+        "title": "Nouveau match",
+        "message": "Un match est déjà en cours. Voulez-vous l'abandonner pour en créer un nouveau ?",
+        "confirmButton": "Abandonner et créer"
+      },
+      "upgrade": {
+        "message": "Fonctionnalité d'upgrade à venir"
+      },
+      "createClubBlocked": {
+        "title": "Créer un nouveau club",
+        "message": "Seuls les propriétaires de club peuvent créer de nouveaux clubs. Vous êtes actuellement membre du club mais pas propriétaire."
+      },
+      "exportLogs": {
+        "title": "Exporter les logs",
+        "message": "Les 2000 derniers messages de log vont être envoyés à Sentry pour analyse.",
+        "errorMessage": "Impossible d'envoyer les logs. Veuillez réessayer."
+      }
+    },
+    "errors": {
+      "loadFailed": "Impossible de charger les données du tableau de bord. Vérifiez votre connexion et réessayez."
+    }
+  },
+  "splashScreen": {
+    "loading": "Chargement..."
+  },
+  "statsScreen": {
+    "title": "Stats Équipe",
+    "lockedMessage": "Rejoignez une équipe pour accéder aux statistiques de la saison.",
+    "showReinforcements": "Afficher les renforts"
+  },
+  "playerProfileScreen": {
+    "noStatsForPeriod": "Aucune statistique pour cette période."
+  },
+  "authScreen": {
+    "tagline": "Vos statistiques au rythme du match.",
+    "createAccount": "Créer un compte",
+    "login": "Se connecter",
+    "tryFreeGuest": "Essayer gratuitement (Invité)"
+  },
+  "resetPasswordScreen": {
+    "title": "Nouveau mot de passe",
+    "subtitle": "Choisissez un nouveau mot de passe sécurisé.",
+    "newPasswordLabel": "Nouveau mot de passe",
+    "confirmPasswordLabel": "Confirmer le mot de passe",
+    "submitButton": "Mettre à jour le mot de passe",
+    "errors": {
+      "fillAllFields": "Veuillez remplir tous les champs",
+      "passwordsDontMatch": "Les mots de passe ne correspondent pas",
+      "passwordTooShort": "Le mot de passe doit contenir au moins {{minLength}} caractères"
+    }
+  },
+  "teamInfoScreen": {
+    "headerTitleEdit": "Modification d'équipe",
+    "headerTitleCreate": "Création d'équipe",
+    "sectionTitle": "Informations de base",
+    "nameLabel": "Nom de l'équipe",
+    "namePlaceholder": "Ex: U15 Région",
+    "categoryLabel": "Catégorie / Niveau",
+    "categoryPlaceholder": "Ex: Départemental 1",
+    "genderLabel": "Genre",
+    "deleteButton": "Supprimer l'équipe",
+    "nextButton": "Suivant",
+    "errors": {
+      "nameRequired": "Le nom de l'équipe est obligatoire",
+      "loadFailed": "Impossible de charger les informations de l'équipe. Vérifiez votre connexion et réessayez.",
+      "deleteTeamFailed": "Une erreur inattendue est survenue lors de la suppression de l'équipe. Vérifiez votre connexion et réessayez."
+    },
+    "deleteAlert": {
+      "title": "Supprimer l'équipe",
+      "message": "Êtes-vous sûr de vouloir supprimer définitivement cette équipe ?\n\n⚠️ Attention : Cette action archivera l'équipe et toutes ses données associées.",
+      "confirmButton": "Supprimer",
+      "failureTitle": "Erreur de suppression",
+      "failureMessage": "Impossible de supprimer l'équipe. Vérifiez vos permissions.",
+      "successMessage": "Équipe supprimée"
+    }
+  },
+  "loginScreen": {
+    "title": "Bon retour !",
+    "subtitle": "Entrez vos identifiants pour continuer.",
+    "emailLabel": "Email",
+    "emailPlaceholder": "coach@exemple.com",
+    "passwordLabel": "Mot de passe",
+    "forgotPasswordLink": "Mot de passe oublié ?",
+    "submitButton": "Se connecter",
+    "orContinueWith": "Ou continuer avec",
+    "noAccountYet": "Pas encore de compte ?",
+    "signUpLink": "S'inscrire",
+    "supabaseErrors": {
+      "invalidCredentials": "Email ou mot de passe incorrect",
+      "emailNotConfirmed": "Veuillez confirmer votre email avant de vous connecter",
+      "userNotFound": "Aucun compte associé à cet email"
+    },
+    "errors": {
+      "fillAllFields": "Veuillez remplir tous les champs",
+      "loginErrorTitle": "Erreur de connexion",
+      "googleErrorTitle": "Erreur de connexion Google",
+      "appleErrorTitle": "Erreur de connexion Apple",
+      "emailRequiredTitle": "Email requis",
+      "emailRequiredMessage": "Veuillez entrer votre adresse email pour réinitialiser votre mot de passe"
+    },
+    "forgotPassword": {
+      "sentTitle": "Email envoyé",
+      "sentMessage": "Un email de réinitialisation a été envoyé à votre adresse email"
+    },
+    "banners": {
+      "emailConfirmed": "Email confirmé ! Vous pouvez maintenant vous connecter.",
+      "confirmationLinkInvalid": "Le lien de confirmation est invalide ou a expiré. Veuillez vous réinscrire.",
+      "passwordUpdated": "Mot de passe mis à jour ! Vous pouvez maintenant vous connecter."
+    }
+  },
+  "teamStartersScreen": {
+    "headerTitle": "Le 5 Majeur",
+    "title": "Sélectionnez le 5 Majeur",
+    "selectFiveStarters": "Sélectionnez 5 titulaires",
+    "lineupMustBeComplete": "Le 5 majeur doit être complet pour valider.",
+    "saving": "Sauvegarde...",
+    "creating": "Création...",
+    "validateButton": "Valider l'équipe",
+    "alerts": {
+      "lineupFullTitle": "5 Majeur complet",
+      "lineupFullMessage": "Le 5 majeur est complet ! Retirez un joueur avant d'en ajouter un autre.",
+      "needExactlyFive": "Vous devez sélectionner exactement 5 titulaires (actuellement: {{count}}).",
+      "mustBeLoggedIn": "Vous devez être connecté",
+      "updateFailed": "Impossible de modifier l'équipe",
+      "updateSuccess": "L'équipe a été modifiée avec succès",
+      "createSuccess": "Votre équipe a été créée et est en attente de validation par le responsable du club."
+    },
+    "errors": {
+      "createTeamFailed": "La création de l'équipe a échoué. Réessayez.",
+      "teamIdMissing": "L'équipe a été créée mais son identifiant est introuvable. Contactez le support si le problème persiste.",
+      "saveTeamFailed": "Impossible d'enregistrer l'équipe. Réessayez."
+    }
+  },
+  "registerScreen": {
+    "title": "Créer un compte",
+    "subtitle": "Rejoignez la communauté des coachs.",
+    "fullNameLabel": "Nom complet",
+    "fullNamePlaceholder": "Coach Carter",
+    "emailLabel": "Email",
+    "emailPlaceholder": "coach@exemple.com",
+    "passwordLabel": "Mot de passe",
+    "confirmPasswordLabel": "Confirmer le mot de passe",
+    "submitButton": "S'inscrire",
+    "orContinueWith": "Ou continuer avec",
+    "alreadyHaveAccount": "Déjà un compte ?",
+    "loginLink": "Se connecter",
+    "terms": {
+      "acceptPrefix": "J'accepte les",
+      "andThe": "et la",
+      "termsOfServiceLink": "Conditions d'utilisation",
+      "termsOfServiceTitle": "Conditions d'utilisation",
+      "privacyPolicyLink": "Politique de confidentialité",
+      "privacyPolicyTitle": "Politique de confidentialité"
+    },
+    "errors": {
+      "fillAllFields": "Veuillez remplir tous les champs",
+      "passwordsDontMatch": "Les mots de passe ne correspondent pas",
+      "passwordTooShort": "Le mot de passe doit contenir au moins {{minLength}} caractères",
+      "termsRequired": "Vous devez accepter les conditions d'utilisation et la politique de confidentialité pour créer un compte",
+      "registrationErrorTitle": "Erreur d'inscription",
+      "googleErrorTitle": "Erreur de connexion Google",
+      "appleErrorTitle": "Erreur de connexion Apple"
+    },
+    "unconfirmedAccount": {
+      "title": "Compte non confirmé",
+      "message": "Un compte existe déjà avec cet email mais n'a pas été confirmé.\n\n⚠️ Note importante : Le mot de passe pris en compte sera celui que vous avez défini la première fois, utilisez \"Mot de passe oublié\" après confirmation de l'email si besoin.",
+      "resendButton": "Renvoyer l'email",
+      "backToLoginButton": "Retour à la connexion"
+    },
+    "success": {
+      "title": "Inscription réussie",
+      "message": "Un email de confirmation a été envoyé à votre adresse. Veuillez vérifier votre boîte de réception (et les spams) et cliquer sur le lien de confirmation depuis cet appareil avant de vous connecter."
+    },
+    "resend": {
+      "errorMessage": "Impossible de renvoyer l'email. Veuillez réessayer plus tard.",
+      "sentTitle": "Email envoyé",
+      "sentMessage": "Un nouvel email de confirmation a été envoyé. Veuillez vérifier votre boîte de réception et vos spams."
+    }
+  },
+  "clubScreen": {
+    "spaceTitle": "Espace Club",
+    "createNewClubTitle": "Créer un nouveau club",
+    "editClubTitle": "Modifier mon club",
+    "createTab": "Créer",
+    "joinTab": "Rejoindre",
+    "editButton": "Modifier",
+    "createMyClubButton": "Créer mon club",
+    "alerts": {
+      "teamLimitReachedTitle": "Limite atteinte",
+      "teamLimitReachedMessage": "Votre abonnement {{tier}} est limité à {{maxTeams}} équipes. Veuillez mettre à jour votre offre.",
+      "approveTeamTitle": "Valider l'équipe",
+      "approveTeamMessage": "Confirmer la validation de cette équipe ?",
+      "approveButton": "Valider",
+      "teamApprovedSuccess": "Équipe validée",
+      "rejectTeamTitle": "Refuser l'équipe",
+      "rejectTeamMessage": "Confirmer le refus de cette équipe ? Elle apparaîtra comme refusée au créateur.",
+      "rejectButton": "Refuser",
+      "teamRejectedSuccess": "Équipe refusée",
+      "deleteTeamTitle": "Supprimer l'équipe",
+      "deleteTeamMessage": "Êtes-vous sûr de vouloir supprimer définitivement cette équipe ? Cette action est irréversible.",
+      "teamDeletedSuccess": "Équipe supprimée",
+      "clubUpdatedSuccess": "Club modifié avec succès !",
+      "nameAndAcronymRequired": "Veuillez renseigner le nom du club et le sigle",
+      "clubCreatedSuccess": "Club créé avec succès !",
+      "codeRequired": "Veuillez renseigner le code du club",
+      "clubNotFoundByCode": "Aucun club trouvé avec ce code",
+      "joinFailed": "Impossible de rejoindre le club",
+      "joinedSuccess": "Vous avez rejoint le club \"{{name}}\" !",
+      "joinUnexpectedError": "Une erreur est survenue lors de la tentative de rejoindre le club"
+    },
+    "errors": {
+      "loadFailed": "Impossible de charger les données du club. Vérifiez votre connexion et réessayez.",
+      "approveTeamFailed": "La validation de l'équipe a échoué. Réessayez.",
+      "rejectTeamFailed": "Le refus de l'équipe a échoué. Réessayez.",
+      "deleteTeamFailed": "La suppression de l'équipe a échoué. Réessayez.",
+      "uploadLogoFailed": "Impossible d'envoyer le logo. Vérifiez le format de l'image et réessayez.",
+      "updateClubFailed": "La modification du club a échoué. Réessayez.",
+      "createClubFailed": "La création du club a échoué. Réessayez.",
+      "uploadClubLogoFailed": "Le club a été créé mais l'envoi du logo a échoué. Vous pourrez le modifier plus tard."
+    }
+  },
+  "historyScreen": {
+    "title": "Historique des matchs",
+    "noMatches": "Aucun match enregistré.",
+    "syncNowCta": "SYNCHRONISER MAINTENANT",
+    "syncSuccessTitle": "Synchronisation réussie",
+    "syncSuccessMessage_one": "{{count}} match synchronisé avec succès.",
+    "syncSuccessMessage_other": "{{count}} matchs synchronisés avec succès.",
+    "syncErrorFallback": "Erreur lors de la synchronisation",
+    "syncUnexpectedError": "Une erreur est survenue lors de la synchronisation. Veuillez réessayer.",
+    "upgradeComingSoon": "Fonctionnalité d'upgrade à venir",
+    "matchCount_one": "{{count}} match",
+    "matchCount_other": "{{count}} matchs",
+    "unsyncedCount_one": "{{count}} match non synchronisé",
+    "unsyncedCount_other": "{{count}} matchs non synchronisés",
+    "deleteAlert": {
+      "title": "Supprimer le match",
+      "message": "Supprimer le match contre {{opponent}} ? Cette action est irréversible."
+    },
+    "syncModal": {
+      "title": "SYNCHRONISATION",
+      "descriptionPrefix": "Voulez-vous envoyer les statistiques de",
+      "descriptionSuffix": "sur le serveur du club ?",
+      "sending": "Envoi en cours...",
+      "confirm": "Confirmer"
+    },
+    "matchCard": {
+      "home": "Domicile",
+      "away": "Extérieur",
+      "usFallback": "NOUS",
+      "vs": "VS",
+      "win": "VICTOIRE",
+      "loss": "DÉFAITE",
+      "synced": "SYNC",
+      "local": "LOCAL",
+      "details": "Détails"
+    },
+    "errors": {
+      "loadFailed": "Impossible de charger l'historique des matchs. Vérifiez votre connexion et réessayez.",
+      "deleteFailed": "Impossible de supprimer ce match. Réessayez dans quelques instants."
+    }
+  },
+  "newMatchScreen": {
+    "myTeamFallback": "Mon Équipe",
+    "opponentFallback": "Adversaire",
+    "localClubFallback": "Club Local",
+    "validation": {
+      "noOpponent": "Veuillez saisir le nom de l'adversaire.",
+      "noTeamName": "Veuillez saisir le nom de votre équipe",
+      "noTeam": "Veuillez sélectionner une équipe.",
+      "startersFull": "Le 5 majeur est complet. Retirez un joueur avant d'en ajouter un.",
+      "minPlayers": "Il faut au moins 1 joueur dans votre équipe.",
+      "duplicateHomeNumbers": "Des numéros de maillot sont en double dans votre équipe : {{numbers}}",
+      "startersRequired": "Veuillez sélectionner {{count}} joueurs pour le 5 de départ.",
+      "opponentMinPlayers": "L'équipe adverse doit avoir au moins 5 joueurs.",
+      "duplicateOpponentNumbers": "Des numéros de maillot sont en double dans l'équipe adverse : {{numbers}}",
+      "opponentStartersRequired": "Veuillez sélectionner 5 joueurs de départ pour l'équipe adverse.",
+      "noClub": "Impossible de démarrer le match : aucun club sélectionné."
+    },
+    "alerts": {
+      "loadTemplateTitle": "Charger une composition",
+      "loadTemplateMessage": "Cela va écraser la composition actuelle. Continuer ?",
+      "templateSavedTitle": "Composition sauvegardée",
+      "templateSavedMessage": "\"{{name}}\" a été sauvegardée.",
+      "teamSuspendedTitle": "Équipe suspendue",
+      "teamSuspendedMessage": "Cette équipe a été suspendue suite au changement d'abonnement. Veuillez passer à une offre supérieure pour la réactiver.",
+      "noActiveTeamTitle": "Aucune équipe active",
+      "noActiveTeamMessage": "Vos équipes ont été suspendues suite au changement d'abonnement. Veuillez passer à une offre supérieure pour les réactiver.",
+      "duplicateNumberTitle": "Numéro en double",
+      "duplicateNumberMessage": "Le joueur {{playerName}} porte le #{{number}}, déjà utilisé par {{conflictName}}. Modifiez l'un des numéros avant de sélectionner ce joueur.",
+      "lineupFullTitle": "5 majeur complet"
+    },
+    "confirmModal": {
+      "title": "DÉMARRER LE MATCH ?",
+      "vs": "vs",
+      "halves": "2 mi-temps",
+      "quarters": "{{count}} quarts",
+      "start": "Démarrer"
+    },
+    "errors": {
+      "loadTeamsFailed": "Impossible de charger vos équipes. Vérifiez votre connexion et réessayez.",
+      "loadRosterFailed": "Impossible de charger l'effectif de l'équipe. Vérifiez votre connexion et réessayez."
+    }
+  },
+  "matchDetailsScreen": {
+    "loadError": "Impossible de charger les données du match. Veuillez réessayer.",
+    "loadingData": "Chargement des données du match...",
+    "generatingPdf": "Génération du PDF…",
+    "pdfExportedSuccess": "Le PDF a été généré et partagé avec succès",
+    "menu": "Menu",
+    "myTeamFallback": "Notre équipe",
+    "opponentFallback": "Adversaire",
+    "errors": {
+      "pdfGenerationFailed": "La génération du PDF a échoué. Réessayez."
+    }
+  },
+  "teamRosterScreen": {
+    "coachNamePlaceholder": "Nom du coach",
+    "coachNameFallback": "Nom du Coach",
+    "editCoachTitle": "Modifier le coach",
+    "saveButton": "Enregistrer",
+    "playerNamePlaceholder": "Nom du joueur",
+    "addButton": "Ajouter",
+    "addPlayerTitle": "Ajouter un joueur",
+    "missingPlayers_one": "Il manque encore {{count}} joueur pour continuer.",
+    "missingPlayers_other": "Il manque encore {{count}} joueurs pour continuer.",
+    "saving": "Modification...",
+    "creating": "Création...",
+    "updateTeamButton": "Modifier l'équipe",
+    "createTeamButton": "Créer l'équipe",
+    "validation": {
+      "duplicateName": "Un joueur avec ce nom existe déjà.",
+      "numberRange": "Le numéro doit être entre 0 et 99.",
+      "duplicateNumber": "Ce numéro de maillot est déjà utilisé.",
+      "maxRosterSize": "Limite maximale de 15 joueurs atteinte.",
+      "coachNameRequired": "Le nom du coach est obligatoire",
+      "minPlayers": "L'équipe doit comporter au moins 5 joueurs (Actuellement : {{count}})"
+    },
+    "deletePlayerAlert": {
+      "title": "Supprimer le joueur",
+      "message": "Êtes-vous sûr de vouloir supprimer {{playerName}} ?\n\n⚠️ Attention : Toutes les statistiques associées à ce joueur seront définitivement perdues."
+    },
+    "alerts": {
+      "updateErrorTitle": "Erreur de modification",
+      "updateErrorMessage": "Impossible de modifier l'équipe. Vous n'avez peut-être pas les permissions nécessaires.",
+      "createPlayerFailed": "Impossible de créer le joueur {{playerName}}",
+      "updateSuccess": "Équipe modifiée avec succès !",
+      "createSuccess": "Équipe créée avec succès !"
+    },
+    "errors": {
+      "loadFailed": "Impossible de charger les données de l'équipe. Vérifiez votre connexion et réessayez.",
+      "uploadCoachPhotoFailed": "Impossible d'envoyer la photo du coach. Vérifiez le format de l'image et réessayez.",
+      "createTeamFailed": "La création de l'équipe a échoué. Réessayez.",
+      "saveTeamFailed": "Impossible d'enregistrer l'équipe. Réessayez."
+    }
+  },
+  "liveMatchScreen": {
+    "loadingMatch": "Chargement du match...",
+    "myTeamFallback": "Mon Équipe",
+    "opponentFallback": "Adversaire",
+    "playerFallback": "Joueur",
+    "teamActionFallback": "Équipe",
+    "timeoutDescription": "Temps mort",
+    "technicalFreeThrowMade": "LF technique (+1)",
+    "technicalFreeThrowMissed": "LF technique raté",
+    "substitutionCount_one": "Changements ({{team}}) : {{count}} joueur",
+    "substitutionCount_other": "Changements ({{team}}) : {{count}} joueurs",
+    "actionLog": {
+      "shotMade": "Tir (+{{points}})",
+      "freeThrowMade": "LF (+1)",
+      "shotMissed": "Tir raté ({{points}}pts)",
+      "freeThrowMissed": "LF raté",
+      "reboundDefensive": "Rebond défensif",
+      "reboundOffensive": "Rebond offensif",
+      "teamRebound": "Équipe — Rebond",
+      "foulWithType": "Faute ({{type}})",
+      "turnover": "Perte de balle"
+    }
+  },
+  "liveMatchModals": {
+    "myTeamFallback": "Mon équipe",
+    "opponentFallback": "Adversaire",
+    "usFallback": "NOUS",
+    "themFallback": "EUX",
+    "history": {
+      "title": "Historique du match",
+      "empty": "Aucun événement enregistré.",
+      "startingHandicap": "Handicap de départ"
+    },
+    "filter": {
+      "reset": "Réinitialiser",
+      "title": "Filtres",
+      "wholeMatch": "Tout le match",
+      "actionType": "TYPE D'ACTION",
+      "all": "Tout",
+      "shots": "Tirs",
+      "rebounds": "Rebonds",
+      "assists": "Passes",
+      "fouls": "Fautes",
+      "foulsDrawn": "Fautes provoquées",
+      "turnovers": "Pertes de balle",
+      "turnoversShort": "Pertes",
+      "blocks": "Contres",
+      "steals": "Interceptions",
+      "team": "ÉQUIPE",
+      "period": "PÉRIODE",
+      "players": "JOUEURS",
+      "opponentSection": "ADVERSAIRE",
+      "summaryTitle": "RÉSUMÉ DE LA SÉLECTION",
+      "points": "Points",
+      "starters": "5 Maj.",
+      "bench": "Banc",
+      "plusMinusAvg": "Moy. +/-",
+      "global": "Global",
+      "twoPts": "2pts",
+      "threePts": "3pts",
+      "freeThrows": "LF",
+      "teamRebounds": "Reb. Éq.",
+      "offRebounds": "Reb. Off.",
+      "defRebounds": "Reb. Déf."
+    },
+    "playerSelection": {
+      "who": "QUI ?",
+      "validation": "Validation : {{type}}",
+      "selectPlayer": "Sélectionnez le joueur"
+    },
+    "courtAction": {
+      "title": "ACTION",
+      "subtitle": "Que s'est-il passé ici ?"
+    },
+    "substitution": {
+      "title": "Changements",
+      "subtitle": "Sélectionnez les sortants et les entrants",
+      "onCourt": "SUR LE TERRAIN ({{count}})",
+      "tapToSubOut": "Appuyez pour sortir",
+      "onBench": "BANC ({{count}})",
+      "tapToSubIn": "Appuyez pour entrer",
+      "selectMore": "Sélectionnez {{count}} autre(s)",
+      "confirmButton": "Valider les changements"
+    },
+    "endMatch": {
+      "title": "Terminer le match ?",
+      "description": "Le match sera archivé et vous ne pourrez plus modifier les statistiques.",
+      "confirmButton": "Terminer"
+    },
+    "overtime": {
+      "endOfRegulation": "Fin du temps réglementaire",
+      "endOfOvertime": "Fin de la prolongation",
+      "description": "Le temps est écoulé. Voulez-vous terminer le match ou lancer une prolongation ?",
+      "durationLabel": "DURÉE DE LA PROLONGATION",
+      "endMatchButton": "Terminer le match",
+      "startOvertimeButton": "Lancer la prolongation"
+    },
+    "periodConfirm": {
+      "title": "Attention",
+      "timeRemainingPrefix": "Il reste",
+      "timeRemainingSuffix": "au chronomètre.",
+      "confirmQuestion": "Voulez-vous vraiment passer à la période suivante ?",
+      "forceButton": "Passer à la suivante"
+    },
+    "deleteAction": {
+      "title": "Supprimer cette action ?",
+      "warning": "Cette action sera définitivement supprimée de la base de données."
+    },
+    "sync": {
+      "syncing": "Synchronisation avec le serveur...",
+      "pleaseWait": "Veuillez patienter"
+    }
+  },
+  "subscriptionView": {
+    "currentBadge": "ACTUEL",
+    "unlimitedTeams": "Équipes illimitées",
+    "upToTeams": "Jusqu'à {{count}} équipes",
+    "free": "Gratuit",
+    "perMonth": "/ mois",
+    "planNotFound": "Offre introuvable",
+    "cannotCheckTeamCount": "Impossible de vérifier le nombre d'équipes",
+    "updateSuccess": "Abonnement mis à jour avec succès !",
+    "teamsReactivated": "{{count}} équipe(s) réactivée(s).",
+    "teamsSuspended": "{{count}} équipe(s) suspendue(s).",
+    "title": "Gérez votre offre",
+    "subtitle": "Passez au niveau supérieur pour ajouter plus d'équipes.",
+    "changeAlert": {
+      "title": "Changement d'offre",
+      "message": "Confirmer le passage à l'offre {{tier}} ?",
+      "confirmButton": "Confirmer"
+    },
+    "errors": {
+      "updateFailed": "La mise à jour de l'abonnement a échoué. Réessayez."
+    }
+  },
+  "timelineTab": {
+    "loading": "Chargement de la timeline…",
+    "noActions": "Aucune action enregistrée",
+    "periodEnd": "FIN {{period}}",
+    "teamFallback": "Équipe",
+    "opponentAbbrFallback": "Adv.",
+    "actionDesc": {
+      "shotMadeWithPoints": "Tir {{points}}pts ✓",
+      "shotMade": "Tir ✓",
+      "shotMissedWithPoints": "Tir {{points}}pts ✗",
+      "shotMissed": "Tir ✗",
+      "reboundOffensive": "Rebond offensif",
+      "reboundDefensive": "Rebond défensif",
+      "reboundTeam": "Rebond équipe",
+      "foulPersonal": "Faute personnelle",
+      "foulTechnical": "Faute technique",
+      "foulUnsportsmanlike": "Antisportive",
+      "foulDisqualifying": "Disqualifiante",
+      "foul": "Faute",
+      "foulDrawn": "Faute provoquée",
+      "assist": "Passe décisive",
+      "steal": "Interception",
+      "block": "Contre",
+      "turnover": "Balle perdue",
+      "substitutionIn": "↑ Entrée",
+      "substitutionOut": "↓ Sortie"
+    }
+  },
+  "matchTutorialOverlay": {
+    "dontShowAgain": "Ne plus afficher",
+    "skip": "Passer",
+    "previous": "Précédent",
+    "finish": "Terminer",
+    "next": "Suivant",
+    "steps": {
+      "header": {
+        "title": "Chrono & Score",
+        "description": "Lancez ou mettez en pause le chrono, passez à la période suivante, visualisez le tableau des fautes, ajoutez des temps morts, effectuez des remplacements et marquez rapidement les points adverses.",
+        "descriptionShort": "Lancez ou mettez en pause le chrono, passez à la période suivante, visualisez le tableau des fautes, ajoutez des temps morts et effectuez des remplacements.",
+        "opponentPointsHint": "Marquez rapidement les points adverses depuis l'en-tête."
+      },
+      "toggle": {
+        "title": "Vue Terrain / Actions",
+        "description": "Basculez entre la vue terrain pour visualiser vos actions sur le parquet et la grille si vous souhaitez saisir les statistiques directement sans le terrain."
+      },
+      "grid": {
+        "title": "Grille d'actions",
+        "description": "Cliquez sur le terrain pour saisir une action : tirs réussis ou manqués, rebonds, fautes etc... Les actions chaînées vous proposent automatiquement les actions liées (ex: tir réussi → passe décisive, faute → lancers francs) pour un suivi plus fluide et rapide."
+      },
+      "toolbar": {
+        "title": "Barre d'outils",
+        "description": "Grâce à la barre d'action, vous pouvez annuler la dernière action, filtrer par type d'action et consulter les statistiques en temps réel, afficher ou masquer les marqueurs terrain et consulter l'historique complet."
+      }
+    }
+  },
+  "liveMatchHeader": {
+    "substituteAbbr": "CHANGT"
+  },
+  "teamFoulDrawer": {
+    "title": "FAUTES D'ÉQUIPE"
+  },
+  "foulChainModal": {
+    "headerCommitted": "Faute commise — #{{num}}",
+    "headerDrawn": "Faute provoquée — #{{num}}",
+    "foulTypeQuestion": "Type de faute ?",
+    "whoDrawQuestion": "Qui a provoqué la faute ?",
+    "whoCommittedQuestion": "Qui a commis la faute ?",
+    "basketScoredQuestion": "Panier marqué ?",
+    "points": "{{count}} pts",
+    "assistQuestion": "Passeur décisif ?",
+    "freeThrowsQuestion": "Lancers-francs ?",
+    "freeThrowCount": "{{count}} LF",
+    "freeThrowIndex": "LF {{index}}",
+    "made": "✓ Réussi",
+    "missed": "✗ Raté",
+    "confirm": "Valider",
+    "ignore": "Ignorer →"
+  },
+  "teamSelectionModal": {
+    "title": "Sélectionnez vos équipes",
+    "allowedCount_one": "L'offre {{tier}} permet {{count}} équipe.",
+    "allowedCount_other": "L'offre {{tier}} permet {{count}} équipes.",
+    "instructionExact_one": "Sélectionnez exactement {{count}} équipe à garder active.",
+    "instructionExact_other": "Sélectionnez exactement {{count}} équipes à garder actives.",
+    "instructionUpTo_one": "Sélectionnez jusqu'à {{count}} équipe à garder active.",
+    "instructionUpTo_other": "Sélectionnez jusqu'à {{count}} équipes à garder actives.",
+    "instructionNone": "Sélectionnez aucune équipe à garder active.",
+    "allTeamsSuspendedWarning": "⚠️ Toutes vos équipes seront suspendues.",
+    "selectionCount_one": "{{count}} / {{max}} sélectionné",
+    "selectionCount_other": "{{count}} / {{max}} sélectionnés",
+    "optional": "(optionnel)",
+    "limitReachedTitle": "Limite atteinte",
+    "limitReachedMessage": "Vous ne pouvez sélectionner que {{count}} équipe(s) avec l'offre {{tier}}.",
+    "incompleteSelectionTitle": "Sélection incomplète",
+    "incompleteSelectionMessage": "Veuillez sélectionner exactement {{count}} équipe(s).",
+    "tooManySelectedTitle": "Trop d'équipes sélectionnées",
+    "tooManySelectedMessage": "Vous ne pouvez sélectionner que {{count}} équipe(s) maximum."
+  },
+  "shotChainModal": {
+    "header": "Tir raté — #{{num}}",
+    "blockedQuestion": "Tir contré ?",
+    "rebound": "Rebond",
+    "defensive": "Défensif",
+    "offensive": "Offensif",
+    "team": "Équipe"
+  },
+  "matchActionGrid": {
+    "freeThrow": "Lancer",
+    "points": "Points",
+    "pointsN": "{{count}} Pts",
+    "missed": "Raté",
+    "rebDef": "REB DEF",
+    "rebOff": "REB OFF",
+    "assist": "PASSE D",
+    "assistSub": "Assist",
+    "steal": "INTERC",
+    "stealSub": "Vol",
+    "block": "CONTRE",
+    "foul": "FAUTE",
+    "turnover": "BALLE PERDUE",
+    "foulDrawn": "FTE PROV"
+  },
+  "matchFilters": {
+    "team": "Équipe",
+    "selectAll": "Tous",
+    "players": "Joueurs",
+    "actions": "Actions",
+    "period": "Période"
+  },
+  "clubInfoView": {
+    "title": "Mon Club",
+    "close": "Fermer",
+    "offer": "Offre",
+    "clubCode": "CODE CLUB",
+    "subscription": "Abonnement {{name}}",
+    "teamsCount": "{{count}} / {{max}} Équipes",
+    "increaseLimit": "Augmenter la limite",
+    "ourTeams": "Nos Équipes",
+    "noTeamsOwner": "Aucune équipe créée.",
+    "noTeamsMember": "Aucune équipe assignée.",
+    "copiedTitle": "Copié",
+    "copiedMessage": "Code \"{{code}}\" copié dans le presse-papiers",
+    "copyFailed": "Impossible de copier le code"
+  },
+  "addPlayerForm": {
+    "namePlaceholder": "Nom",
+    "licensePlaceholder": "VTXXXXXX (Optionnel)"
+  },
+  "playerDetailModal": {
+    "eff": "Éval",
+    "time": "Temps",
+    "shootingPerformance": "Performance aux tirs",
+    "threePoints": "3 Points",
+    "twoPoints": "2 Points",
+    "freeThrows": "Lancers",
+    "totalShots": "TOTAL TIRS",
+    "successRate": "RÉUSSITE",
+    "details": "Détails",
+    "actionMap": "Carte des actions",
+    "reb": "REB",
+    "off": "OFF",
+    "def": "DEF",
+    "ast": "AST",
+    "int": "INT",
+    "ctr": "CTR",
+    "bp": "BP",
+    "fte": "FTE",
+    "fp": "FP",
+    "pers": "PERS",
+    "tech": "TECH",
+    "ant": "ANT",
+    "disq": "DISQ",
+    "reboundsSub": "Rebonds: {{count}}",
+    "assistsSub": "Passes décisives",
+    "turnoversSub": "Balles perdues",
+    "foulsSub": "Fautes: {{count}}"
+  },
+  "evolutionTab": {
+    "matchStart": "Début du match",
+    "insufficientData": "Données insuffisantes pour le graphique",
+    "periodTableTitle": "SCORES PAR PÉRIODE",
+    "graphTitle": "ÉVOLUTION DU SCORE",
+    "teamColumn": "Équipe",
+    "totalColumn": "TOT"
+  },
+  "matchToolbar": {
+    "view": "Vue",
+    "test": "Test",
+    "history": "Historique",
+    "mockDataTitle": "Ajouter des données de test ?",
+    "mockDataMessage": "Cela va générer des actions fictives pour le match."
+  },
+  "playerSeasonStats": {
+    "avgTime": "Temps moy.",
+    "rebOffDef": "REB OFF/DEF",
+    "reboundsAvg": "Rebonds moy.",
+    "assistsAvg": "Passes moy.",
+    "stealsAvg": "Interceptions moy.",
+    "blocksAvg": "Contres moy.",
+    "turnoversAvg": "Balles perdues moy.",
+    "foulsAvg": "Fautes moy.",
+    "foulsDrawnAvg": "Fautes provoquées moy."
+  },
+  "statsLegendModal": {
+    "title": "LÉGENDE DES STATISTIQUES",
+    "min": "MIN",
+    "minutesPlayed": "Minutes jouées",
+    "pts": "PTS",
+    "tirs": "TIRS",
+    "shotsMadeAttempted": "Tirs réussis/tentés",
+    "twoPts": "2PTS",
+    "twoPointShots": "Tirs à 2 points",
+    "threePts": "3PTS",
+    "threePointShots": "Tirs à 3 points",
+    "freeThrowsFull": "Lancers francs",
+    "ro": "RO",
+    "offensiveRebounds": "Rebonds offensifs",
+    "rd": "RD",
+    "defensiveRebounds": "Rebonds défensifs",
+    "re": "RE",
+    "teamRebounds": "Rebonds d'équipe",
+    "ft": "FT",
+    "foulsTotalDescription": "Fautes (total : personnelles + techniques + antisportives + disqualifiantes)",
+    "plusMinusDescription": "Différentiel de points quand le joueur est sur le terrain",
+    "eval": "EVAL",
+    "evaluation": "Evaluation"
+  },
+  "matchLimitModal": {
+    "title": "Limite atteinte",
+    "messagePrefix": "Vous avez atteint la limite de",
+    "matchCount": "{{count}} matchs",
+    "messageSuffix": "en stockage local.",
+    "notConnectedInfo": "Connectez-vous pour accéder à un stockage illimité sur le cloud avec un abonnement premium.",
+    "connectedInfo": "Passez à un abonnement premium pour un stockage illimité sur le cloud.",
+    "viewSubscriptions": "Voir les abonnements"
+  },
+  "guestWelcomeModal": {
+    "title": "Mode Invité",
+    "welcomeMessage": "Bienvenue ! En mode invité, vous pouvez tester toutes les fonctionnalités.",
+    "storagePrefix": "Vos données sont stockées",
+    "storageBold": "localement",
+    "storageSuffix": "sur cet appareil. Si vous videz le cache, elles seront perdues.",
+    "limitPrefix": "Vous pouvez créer jusqu'à",
+    "limitCount_one": "{{count}} match",
+    "limitCount_other": "{{count}} matchs",
+    "limitSuffix": "gratuitement. Pour en faire plus, créez un compte !",
+    "confirmButton": "Compris, c'est parti !"
+  },
+  "playerCard": {
+    "nameRequired": "Le nom du joueur est requis",
+    "numberRange": "Le numéro doit être entre 0 et 99",
+    "starter": "Titulaire"
+  },
+  "syncErrorModal": {
+    "title": "Synchronisation impossible",
+    "notConnectedInfo": "Connectez-vous pour sauvegarder vos matchs sur le cloud et y accéder depuis n'importe quel appareil.",
+    "freemiumInfo": "Passez à un abonnement payant pour synchroniser automatiquement vos matchs et profiter d'un stockage illimité.",
+    "upgradeButton": "Passer à Premium"
+  },
+  "addOpponentForm": {
+    "title": "Ajouter un joueur",
+    "namePlaceholder": "Nom (Optionnel)"
+  },
+  "actionChainModal": {
+    "title": "Action suivante ?",
+    "confirmButton": "Valider",
+    "ignoreButton": "Ignorer →"
+  },
+  "actionChainRules": {
+    "defensiveRebound": "Reb. Défensif",
+    "offensiveRebound": "Reb. Offensif",
+    "teamRebound": "Reb. Équipe",
+    "assist": "Passe décisive",
+    "steal": "Interception",
+    "turnover": "Balle perdue",
+    "playerFallback": "Joueur",
+    "missedShotTrigger": "Tir raté — {{player}}",
+    "madeShotTrigger": "Panier — {{player}} ({{points}} pts)",
+    "turnoverTrigger": "Balle perdue — {{player}}",
+    "stealTrigger": "Interception — {{player}}",
+    "blockTrigger": "Contre — {{player}}"
+  },
+  "teamGender": {
+    "male": "Masculin",
+    "female": "Féminin",
+    "mixed": "Mixte"
+  },
+  "teamCard": {
+    "accessDeniedTitle": "Accès refusé",
+    "accessDeniedMessage": "Seul le propriétaire du club ou le coach de l'équipe peut la modifier.",
+    "statusPending": "EN ATTENTE",
+    "statusRejected": "REFUSÉ",
+    "statusSuspended": "SUSPENDUE",
+    "playerCount_one": "{{count}} Joueur",
+    "playerCount_other": "{{count}} Joueurs"
+  },
+  "createClubForm": {
+    "clubNameLabel": "NOM DU CLUB",
+    "clubNamePlaceholder": "Ex: Los Angeles Lakers",
+    "acronymLabel": "SIGLE",
+    "acronymPlaceholder": "LAL",
+    "colorsTitle": "Couleurs du Club",
+    "primaryColor": "Couleur principale",
+    "secondaryColor": "Couleur secondaire",
+    "courtCustomizationTitle": "Personnalisation du terrain",
+    "courtColor": "Couleur du parquet",
+    "linesColor": "Couleur des lignes"
+  },
+  "dashboardResumeMatchModal": {
+    "title": "Match en cours détecté !",
+    "descriptionPrefix": "Il semble que le match contre",
+    "descriptionSuffix": "ne soit pas terminé.",
+    "resumeButton": "Reprendre le match",
+    "newMatchButton": "Nouveau match",
+    "abandonButton": "Abandonner le match",
+    "ignoreButton": "Ignorer pour l'instant"
+  },
+  "dashboardRecentMatches": {
+    "title": "Derniers Matchs",
+    "viewAll": "Voir tout",
+    "vs": "vs",
+    "win": "VICTOIRE",
+    "loss": "DÉFAITE",
+    "emptyState": "Aucun match récent"
+  },
+  "opponentRosterView": {
+    "saveModalTitle": "Sauvegarder la composition",
+    "overwriteConfirm": "\"{{name}}\" existe déjà. Écraser ?",
+    "overwrite": "Écraser",
+    "loadComposition": "Charger une composition",
+    "playerCount_one": "{{count}} joueur",
+    "playerCount_other": "{{count}} joueurs",
+    "saveButton": "Enregistrer"
+  },
+  "filterBottomSheet": {
+    "title": "Filtrer les actions",
+    "reset": "Reset"
+  },
+  "teamSelector": {
+    "namePlaceholder": "Nom de votre équipe",
+    "teamNotFound": "Équipe non trouvée"
+  },
+  "forceUpdateModal": {
+    "title": "Mise à jour requise",
+    "message": "Une nouvelle version de Coach Assistant est disponible. Veuillez mettre à jour l'application pour continuer à l'utiliser.",
+    "button": "Mettre à jour"
+  },
+  "joinClubForm": {
+    "codeLabel": "CODE CLUB",
+    "codePlaceholder": "Ex: LION69",
+    "infoText": "En rejoignant un club existant, vous n'avez pas besoin de payer d'abonnement. C'est le propriétaire du club qui gère les quotas d'équipes."
+  },
+  "colorPickerModal": {
+    "presetColors": "Couleurs prédéfinies",
+    "customColor": "Couleur personnalisée"
+  },
+  "termsAcceptanceModal": {
+    "title": "Conditions d'utilisation",
+    "messagePrefix": "Pour utiliser l'application, vous devez accepter nos",
+    "messageMiddle": "et notre",
+    "privacyLink": "Politique de confidentialité",
+    "acceptButton": "Accepter",
+    "refuseButton": "Refuser"
+  },
+  "leaderCategorySublabels": {
+    "eff": "éval / match",
+    "pts": "pts / match",
+    "reb": "reb / match",
+    "reb_off": "reb offensifs / match",
+    "reb_def": "reb défensifs / match",
+    "ast": "ast / match",
+    "def": "INT+CTR / match",
+    "stl": "interceptions / match",
+    "blk": "contres / match",
+    "to": "balles perdues / match",
+    "pf": "fautes / match",
+    "fd": "fautes provoquées / match",
+    "fg_pct": "% réussite aux tirs",
+    "fg2_pct": "% réussite à 2 pts",
+    "fg3_pct": "% réussite à 3 pts",
+    "ft_pct": "% réussite aux lancers"
+  },
+  "statPeriodLabels": {
+    "season": "Saison",
+    "3_months": "3 mois",
+    "last_5": "5 matchs"
+  },
+  "leaderboardList": {
+    "noMatches": "Aucun match enregistré",
+    "noRosterPlayers": "Aucun joueur du roster pour cette période",
+    "noStats": "Aucune statistique pour cette période",
+    "matchCount_one": "{{count}} match",
+    "matchCount_other": "{{count}} matchs"
+  },
+  "leaderCategoryLabels": {
+    "eff": "ÉVAL",
+    "pts": "PTS",
+    "reb": "REB",
+    "reb_off": "REB OFF",
+    "reb_def": "REB DÉF",
+    "ast": "AST",
+    "def": "DÉFENSE",
+    "stl": "INT",
+    "blk": "CTR",
+    "to": "BP",
+    "pf": "FTE",
+    "fd": "FP",
+    "fg_pct": "% TIR",
+    "fg2_pct": "% 2PTS",
+    "fg3_pct": "% 3PTS",
+    "ft_pct": "% LF"
+  },
+  "leaderCategoryLegend": {
+    "rebound": "Rebonds offensifs + défensifs combinés",
+    "defense": "Interceptions (INT) + contres (CTR) combinés",
+    "fgPct": "% de réussite sur tous les tirs (2pts, 3pts et LF)"
+  },
+  "reviewPromptModal": {
+    "title": "Vous appréciez Coach Assistant ?",
+    "message": "Votre avis nous aide à améliorer l'application.",
+    "dislike": "Pas vraiment",
+    "like": "Oui !"
+  },
+  "handicapSelector": {
+    "title": "Handicap de départ",
+    "subtitle": "Attribuer des points initiaux sans joueur"
+  },
+  "courtTab": {
+    "periodLabel": "PÉRIODE",
+    "actionTypeLabel": "TYPE D'ACTION",
+    "specificationsLabel": "SPÉCIFICATIONS",
+    "playersLabel": "JOUEURS",
+    "all": "Tout",
+    "shots": "Tirs",
+    "rebounds": "Rebonds",
+    "assists": "Passes",
+    "steals": "Interceptions",
+    "blocks": "Contres",
+    "turnovers": "Pertes",
+    "fouls": "Fautes",
+    "foulsDrawn": "Fautes provoquées",
+    "noStats": "Aucune statistique disponible"
+  },
+  "opponentInput": {
+    "namePlaceholder": "Nom de l'équipe adverse"
+  },
+  "timeoutModal": {
+    "label": "TEMPS MORT",
+    "limitReached": "Limite de mi-temps atteinte"
+  },
+  "changelogModal": {
+    "title": "Nouveautés",
+    "gotIt": "J'ai compris"
+  },
+  "playerProfileHeader": {
+    "matchesPlayed_one": "{{count}} match joué",
+    "matchesPlayed_other": "{{count}} matchs joués",
+    "outOfTotal": "sur {{total}}"
+  },
+  "matchHistoryRow": {
+    "ptsAbbr": "pts",
+    "rebAbbr": "reb",
+    "astAbbr": "ast",
+    "didNotPlay": "N'a pas joué"
+  },
+  "matchHistoryList": {
+    "title": "Historique des matchs",
+    "empty": "Aucun match disponible"
+  },
+  "statsTab": {
+    "player": "JOUEUR",
+    "lf": "LF",
+    "plusMinus": "+/-",
+    "starters": "5 DÉPART",
+    "bench": "BANC",
+    "total": "TOTAL",
+    "handicap": "+{{count}} HCP",
+    "noData": "Aucune donnée disponible"
+  },
+  "cardsTab": {
+    "sortBy": "TRIER PAR",
+    "name": "Nom",
+    "points": "Points",
+    "rebounds": "Rebonds",
+    "assists": "Passes",
+    "steals": "Interceptions",
+    "blocks": "Contres",
+    "evaluation": "Évaluation",
+    "evalAbbr": "ÉVAL",
+    "noStats": "Aucune statistique."
+  },
+  "matchFormatLabels": {
+    "halves": {
+      "singular": "mi-temps",
+      "plural": "mi-temps",
+      "short": "MT"
+    },
+    "quarters": {
+      "singular": "quart-temps",
+      "plural": "quart-temps",
+      "short": "QT"
+    }
+  },
+  "matchFormatPresets": {
+    "QUARTERS": {
+      "label": "4 Quarts-temps"
+    },
+    "HALVES": {
+      "label": "2 Mi-temps"
+    }
+  },
+  "matchConstants": {
+    "defaultOpponentPlayerName": "Joueur {{index}}",
+    "periodOrdinal_feminine_ordinal_one": "{{count}}ère",
+    "periodOrdinal_feminine_ordinal_other": "{{count}}e",
+    "periodOrdinal_masculine_ordinal_one": "{{count}}er",
+    "periodOrdinal_masculine_ordinal_other": "{{count}}e"
+  },
+  "matchCreationStepLabels": {
+    "step1": "Configuration du match",
+    "step2": "Feuille de match"
+  },
+  "matchCreationButtonLabels": {
+    "NEXT": "Configurer les effectifs",
+    "START": "Coup d'envoi",
+    "ADD_REINFORCEMENT": "Ajouter un renfort",
+    "MODIFY_OPTIONS": "Modifier les options"
+  },
+  "matchCreationInfoMessages": {
+    "ROSTER_INSTRUCTIONS": "Sélectionnez les présents et le 5 de départ (étoile à droite).",
+    "OPPONENT_ROSTER_INSTRUCTIONS": "Sélectionnez le 5 de départ adverse (étoile à droite).",
+    "NO_TEAM_CREATED": "Pas d'équipe créée",
+    "OPPONENT_STATS_DISABLED": "Statistiques adverses désactivées",
+    "OPPONENT_STATS_DISABLED_DETAIL": "Activez l'option à l'étape précédente pour saisir l'effectif adverse.",
+    "NO_OPPONENT_PLAYERS": "Aucun joueur adverse ajouté.",
+    "OPPONENT_STATS_OPTION": "Saisir aussi les tirs/fautes adverses",
+    "OPPONENT_STATS_TITLE": "Stats Adversaires"
+  },
+  "matchCreationFormLabels": {
+    "MY_TEAM": "MON ÉQUIPE",
+    "OPPONENT": "ADVERSAIRE",
+    "MATCH_FORMAT": "FORMAT DU MATCH",
+    "LOCATION": "LIEU",
+    "PERIODS": "PÉRIODES",
+    "MINUTES_PER_PERIOD": "MINUTES / PÉRIODE",
+    "HOME": "Domicile",
+    "AWAY": "Extérieur"
+  },
+  "matchRosterTabLabels": {
+    "US": "NOUS",
+    "THEM": "EUX"
+  },
+  "actionTypes": {
+    "shot": {
+      "label": "Tir",
+      "description": "Enregistrer un tir"
+    },
+    "rebound": {
+      "label": "Rebond",
+      "description": "Action de rebond"
+    },
+    "foul": {
+      "label": "Faute",
+      "description": "Faute commise"
+    },
+    "foul_drawn": {
+      "label": "Faute provoquée",
+      "description": "Faute provoquée"
+    },
+    "assist": {
+      "label": "Passe décisive",
+      "description": "Passe décisive"
+    },
+    "steal": {
+      "label": "Interception",
+      "description": "Interception de balle"
+    },
+    "block": {
+      "label": "Contre",
+      "description": "Contre"
+    },
+    "turnover": {
+      "label": "Balle perdue",
+      "description": "Balle perdue"
+    },
+    "substitution": {
+      "label": "Changement",
+      "description": "Changement de joueur"
+    },
+    "pointsOption_one": "{{count}} point",
+    "pointsOption_other": "{{count}} points"
+  },
+  "shotSpecification": {
+    "made": "Réussi",
+    "missed": "Raté"
+  },
+  "reboundSpecification": {
+    "offensive": "Offensif",
+    "defensive": "Défensif",
+    "team": "Équipe"
+  },
+  "foulSpecification": {
+    "personal": "Personnelle",
+    "technical": "Technique",
+    "penality": "Antisportive",
+    "disqualification": "Disqualifiante"
+  },
+  "substitutionSpecification": {
+    "in": "Entre",
+    "out": "Sort"
+  },
+  "errorAlert": {
+    "retryButton": "Réessayer",
+    "unknownError": "Erreur inconnue",
+    "networkError": "Impossible de se connecter au serveur. Vérifiez votre connexion internet.",
+    "permissionError": "Vous n'avez pas les permissions nécessaires pour accéder à cette ressource."
+  },
+  "pdfExportService": {
+    "individualStats": "Statistiques individuelles",
+    "playerColumn": "Joueur",
+    "matchSheetTitle": "FEUILLE DE MATCH - BASKETBALL",
+    "presentedBy": "Match présenté par",
+    "finalScore": "SCORE FINAL",
+    "totalColumn": "Total",
+    "scoreEvolution": "Évolution du score",
+    "starterBadge": "★ TITULAIRE",
+    "threePtsShort": "3 PTS",
+    "twoPtsShort": "2 PTS",
+    "noPlayerStats": "Aucune statistique enregistrée pour ce joueur",
+    "totalShots": "Total tirs",
+    "successRate": "Réussite",
+    "officialPartners": "Partenaires officiels",
+    "generatedBy": "Généré par Coach Assistant • {{date}}",
+    "overview": "Vue d'ensemble",
+    "chartStart": "Début",
+    "chartPeriodEnd": "FIN",
+    "noShots": "Aucun tir",
+    "noActions": "Aucune action",
+    "pctShotsAbbr": "%TIR",
+    "averageStatsHeader_one": "Statistiques moyennes • {{count}} match",
+    "averageStatsHeader_other": "Statistiques moyennes • {{count}} matchs",
+    "legend": {
+      "line1": "MIN: Minutes jouées | PTS: Points | TIRS: Tirs totaux (marqués/tentés) | 2PTS: 2 points (marqués/tentés) | 3PTS: 3 points (marqués/tentés) | LF: Lancers francs (marqués/tentés)",
+      "line2": "REB: Rebonds totaux | RO: Rebonds offensifs | RD: Rebonds défensifs",
+      "line3": "AST: Passes décisives | INT: Interceptions | CTR: Contres | BP: Balles perdues | FT: Fautes totales | FP: Fautes provoquées | +/-: Différentiel de points sur le terrain | EVAL: Evaluation",
+      "handicap": "HCP: Handicap de départ (+{{handicap}} pts inclus dans le score final)"
+    }
+  },
+  "mainTabNavigator": {
+    "guestGuard": {
+      "title": "Connexion requise",
+      "statsMessage": "Vous devez être connecté à une équipe pour accéder aux statistiques.",
+      "clubMessage": "Vous devez être connecté pour accéder à la section Club. Voulez-vous vous connecter maintenant ?",
+      "loginButton": "Se connecter"
+    },
+    "tabs": {
+      "dashboard": "Tableau de bord",
+      "history": "Historique",
+      "stats": "Stats",
+      "club": "Club"
+    }
+  },
+  "useMatchSync": {
+    "syncErrorAlert": {
+      "title": "Erreur de synchronisation",
+      "syncFailedMessage": "Impossible de synchroniser le match avec le serveur.\n\n{{error}}\n\nVotre match a été sauvegardé localement.",
+      "unexpectedErrorMessage": "Une erreur inattendue s'est produite lors de la synchronisation.\n\n{{error}}\n\nVotre match a été sauvegardé localement."
+    }
+  },
+  "teamService": {
+    "nameRequired": "Le nom de l'équipe est requis",
+    "notClubMember": "Vous devez être membre du club pour créer une équipe",
+    "teamLimitReached": "Limite d'équipes atteinte pour ce club",
+    "perUserTeamLimitReached": "Vous ne pouvez pas créer plus de {{max}} équipes dans ce club",
+    "createFailed": "Erreur lors de la création de l'équipe",
+    "notFound": "Équipe introuvable",
+    "updateFailed": "Erreur lors de la modification de l'équipe",
+    "statusUpdateFailed": "Erreur lors de la validation de l'équipe",
+    "toggleActiveFailed": "Erreur lors de la modification du statut de l'équipe",
+    "noDeletePermission": "Vous n'avez pas la permission de supprimer cette équipe",
+    "deleteFailed": "Erreur lors de la suppression de l'équipe",
+    "enforceLimitsFailed": "Erreur lors de l'application des limites d'équipes"
+  },
+  "clubService": {
+    "nameRequired": "Le nom du club est requis",
+    "nameTooLong": "Le nom du club ne peut pas dépasser {{max}} caractères",
+    "acronymRequired": "Le sigle du club est requis",
+    "acronymTooLong": "Le sigle ne peut pas dépasser {{max}} caractères",
+    "alreadyHasClub": "Vous avez déjà créé un club",
+    "createFailed": "Impossible de créer le club. Veuillez réessayer.",
+    "nameEmpty": "Le nom du club ne peut pas être vide",
+    "acronymEmpty": "Le sigle du club ne peut pas être vide",
+    "updateFailed": "Échec de la modification du club",
+    "subscriptionUpdateFailed": "Échec de la mise à jour de l'abonnement"
+  },
+  "clubMemberService": {
+    "alreadyMember": "Vous êtes déjà membre de ce club",
+    "joinFailed": "Erreur lors de l'inscription au club",
+    "notMember": "Vous n'êtes pas membre de ce club",
+    "leaveFailed": "Erreur lors de la sortie du club"
+  },
+  "playerService": {
+    "nameRequired": "Le nom du joueur est requis",
+    "invalidJerseyNumber": "Le numéro doit être entre 0 et 99",
+    "maxPlayersReached": "Une équipe ne peut pas avoir plus de {{max}} joueurs",
+    "createFailed": "Erreur lors de la création du joueur",
+    "updateFailed": "Erreur lors de la modification du joueur",
+    "deleteFailed": "Erreur lors de la suppression du joueur"
+  },
+  "subscriptionService": {
+    "clubNotFound": "Club introuvable",
+    "teamCountError": "Erreur lors du comptage des équipes",
+    "limitReachedUpsell": "Limite atteinte pour l'abonnement {{tier}}. Passez à un abonnement supérieur pour créer plus d'équipes.",
+    "checkLimitError": "Erreur lors de la vérification des limites"
+  },
+  "matchSyncService": {
+    "authRequired": "Vous devez être connecté pour synchroniser un match",
+    "matchNotFound": "Match introuvable",
+    "notCompleted": "Seuls les matchs terminés peuvent être synchronisés",
+    "alreadySynced": "Ce match a déjà été synchronisé",
+    "cannotVerifySubscription": "Impossible de vérifier l'abonnement du club",
+    "subscriptionDoesNotAllowSync": "Votre abonnement ne permet pas la synchronisation. Passez à un abonnement payant pour activer cette fonctionnalité.",
+    "eligibilityCheckError": "Erreur lors de la vérification des permissions",
+    "syncNotAuthorized": "Synchronisation non autorisée",
+    "userNotAuthenticated": "Utilisateur non authentifié",
+    "genericSyncError": "Erreur lors de la synchronisation",
+    "matchInsertError": "Erreur lors de la création du match : {{message}}",
+    "noDataReturned": "Aucune donnée retournée par Supabase"
+  },
+  "loggerService": {
+    "shareDialogTitle": "Exporter les logs",
+    "noLogFiles": "Aucun fichier de log trouvé",
+    "sharingUnavailable": "Le partage n'est pas disponible sur cet appareil",
+    "sharedSuccessfully": "Logs partagés avec succès",
+    "savedSuccessfully": "Logs sauvegardés avec succès",
+    "permissionDenied": "Permission refusée pour sauvegarder le fichier",
+    "exportErrorPrefix": "Erreur lors de l'export : {{message}}",
+    "noLogsToSend": "Aucun log disponible à envoyer",
+    "sentToSentrySuccessfully": "Logs envoyés à Sentry avec succès",
+    "sendErrorPrefix": "Erreur lors de l'envoi : {{message}}"
+  }
+}

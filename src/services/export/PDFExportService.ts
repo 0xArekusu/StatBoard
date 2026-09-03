@@ -23,6 +23,11 @@ import {
 } from "../../../constants/courtConstants";
 import { calculateEfficiencyFromDB, calculatePlusMinus } from "../../utils/statsCalculator";
 import { AvatarService } from "../AvatarService";
+import i18n, { INTL_LOCALES, SupportedLanguage } from "../../i18n";
+
+function pdfLocale(): string {
+  return INTL_LOCALES[i18n.language as SupportedLanguage] ?? INTL_LOCALES.fr;
+}
 
 interface Player {
   id: number;
@@ -76,7 +81,7 @@ export class PDFExportService {
   }
 
   private static formatDateFile(date: Date): string {
-    const d = date.toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric" });
+    const d = date.toLocaleDateString(pdfLocale(), { day: "2-digit", month: "2-digit", year: "numeric" });
     return d.replace(/\//g, "-");
   }
 
@@ -173,7 +178,6 @@ export class PDFExportService {
     try {
       const response = await fetch(url);
       if (!response.ok) {
-        console.warn(`[PDF Export] Failed to fetch image: ${url}`);
         return null;
       }
       const blob = await response.blob();
@@ -184,10 +188,6 @@ export class PDFExportService {
         reader.readAsDataURL(blob);
       });
     } catch (error) {
-      console.warn(
-        `[PDF Export] Error converting image to base64: ${url}`,
-        error
-      );
       return null;
     }
   }
@@ -218,7 +218,6 @@ export class PDFExportService {
         reader.readAsDataURL(blob);
       });
     } catch (error) {
-      console.error(`[PDF Export] Error loading default logo:`, error);
       return null;
     }
   }
@@ -248,36 +247,6 @@ export class PDFExportService {
       matchSponsors = [],
     } = options;
 
-    console.log("[PDF Export] 🚀 Début generateMatchPDF");
-    console.log("[PDF Export] 📊 Nombre de joueurs reçus:", players.length);
-    console.log(
-      "[PDF Export] 👥 Liste des joueurs reçus:",
-      players.map((p) => ({
-        id: p.id,
-        num: p.num,
-        name: p.name,
-        team: p.team,
-      }))
-    );
-    console.log("[PDF Export] 🎬 Nombre d'actions:", actions.length);
-    console.log("[PDF Export] 📌 trackOpponentStats:", trackOpponentStats);
-
-    // Log quelques actions pour voir leur structure
-    if (actions.length > 0) {
-      console.log(
-        "[PDF Export] 📝 Échantillon de 5 premières actions:",
-        actions.slice(0, 5).map((a) => ({
-          player_number: a.player_number,
-          player: a.player,
-          type: a.type,
-          action_type: a.action_type,
-          team: a.team,
-          specification: a.specification,
-          points: a.points,
-        }))
-      );
-    }
-
     // Determine home and away teams based on isHome flag
     const homeTeamName = isHome ? myTeamName : opponentName;
     const awayTeamName = isHome ? opponentName : myTeamName;
@@ -301,27 +270,13 @@ export class PDFExportService {
     );
 
     // Convert club logo to base64 for PDF embedding
-    console.log(`[PDF Export] Club logo URL:`, clubLogoUrl);
     let clubLogoBase64: string | undefined = clubLogoUrl;
     if (clubLogoUrl && clubLogoUrl.startsWith("http")) {
-      console.log(`[PDF Export] Converting club logo to base64`);
       const base64Logo = await this.imageUrlToBase64(clubLogoUrl);
       clubLogoBase64 = base64Logo || clubLogoUrl;
-      console.log(
-        `[PDF Export] Club logo conversion complete, has base64:`,
-        !!base64Logo
-      );
     } else if (!clubLogoUrl) {
-      console.log(
-        `[PDF Export] No club logo, using default Coach Assistant logo`
-      );
       const defaultLogo = await this.loadDefaultLogo();
       clubLogoBase64 = defaultLogo || undefined;
-      console.log(`[PDF Export] Default logo loaded:`, !!defaultLogo);
-    } else {
-      console.log(
-        `[PDF Export] Club logo not converted (not http or undefined)`
-      );
     }
 
     const totalPeriods = matchFormat === "2_halves" ? 2 : 4;
@@ -340,33 +295,12 @@ export class PDFExportService {
     const { evolutionMyTeam, evolutionOpponent, evolutionPeriods } =
       this.calculateActionByActionEvolution(actions, totalPeriodsPlayed, myTeamHandicap, opponentHandicap);
 
-    // Calculate player stats - always include MY_TEAM, include OPPONENT only if tracking
-    console.log(
-      "[PDF Export] 🔍 Tous les joueurs reçus:",
-      playersWithBase64Photos.map((p) => ({
-        id: p.id,
-        num: p.num,
-        name: p.name,
-        team: p.team,
-        hasPhoto: !!p.photoUrl,
-      }))
-    );
-
     const playersMyTeam = playersWithBase64Photos.filter(
       (p) => p.team === Team.MY_TEAM
     );
     const playersOpponent = trackOpponentStats
       ? playersWithBase64Photos.filter((p) => p.team === Team.OPPONENT)
       : [];
-
-    console.log(
-      "[PDF Export] 👥 Joueurs MY_TEAM filtrés:",
-      playersMyTeam.length
-    );
-    console.log(
-      "[PDF Export] 👥 Joueurs OPPONENT filtrés:",
-      playersOpponent.length
-    );
 
     // Compute +/- for all players
     const allPlayersForPm = [...playersMyTeam, ...playersOpponent].map((p) => ({
@@ -377,12 +311,8 @@ export class PDFExportService {
     const pmMap = calculatePlusMinus(actions, allPlayersForPm);
 
     const statsMyTeam = playersMyTeam.map((player) => {
-      console.log(
-        `[PDF Export] ⚡ Calcul stats pour joueur MY_TEAM - ID: ${player.id}, Num: ${player.num}, Nom: ${player.name}`
-      );
       const stats = this.calculatePlayerStats(player.id, actions);
       stats.pm = pmMap.get(`${player.team}-${player.num}`) || 0;
-      console.log(`[PDF Export] 📊 Stats calculées:`, stats);
       return {
         ...player,
         stats,
@@ -390,12 +320,8 @@ export class PDFExportService {
     });
 
     const statsOpponent = playersOpponent.map((player) => {
-      console.log(
-        `[PDF Export] ⚡ Calcul stats pour joueur OPPONENT - ID: ${player.id}, Num: ${player.num}, Nom: ${player.name}`
-      );
       const stats = this.calculatePlayerStats(player.id, actions);
       stats.pm = pmMap.get(`${player.team}-${player.num}`) || 0;
-      console.log(`[PDF Export] 📊 Stats calculées:`, stats);
       return {
         ...player,
         stats,
@@ -605,32 +531,11 @@ export class PDFExportService {
    * Handles both database format (action_type, player_number) and app format (type, player)
    */
   private static calculatePlayerStats(playerId: number, actions: any[]) {
-    console.log(
-      `[PDF Export] 🎯 calculatePlayerStats appelé pour playerId: ${playerId}`
-    );
-    console.log(
-      `[PDF Export] 📋 Nombre total d'actions à analyser: ${actions.length}`
-    );
-
     // Filter actions for this player - handle both player_number (DB) and player (app) formats
     const playerActions = actions.filter((a) => {
       const playerNum = a.player_number || a.player;
       return playerNum === playerId;
     });
-
-    console.log(
-      `[PDF Export] ✅ Actions trouvées pour playerId ${playerId}: ${playerActions.length}`
-    );
-    if (playerActions.length > 0) {
-      console.log(`[PDF Export] 📝 Première action du joueur ${playerId}:`, {
-        player_number: playerActions[0].player_number,
-        player: playerActions[0].player,
-        type: playerActions[0].type,
-        action_type: playerActions[0].action_type,
-        specification: playerActions[0].specification,
-        points: playerActions[0].points,
-      });
-    }
 
     // Helper function to normalize action type
     // Note: Actions from MatchDataService use 'type', database uses 'action_type'
@@ -733,11 +638,14 @@ export class PDFExportService {
   }
 
   /**
-   * Stats legend constant
+   * Stats legend text, resolved live from i18n (not a frozen constant) so it
+   * reflects the current language each time a PDF is generated.
    */
-  private static readonly STATS_LEGEND = `MIN: Minutes jouées | PTS: Points | TIRS: Tirs totaux (marqués/tentés) | 2PTS: 2 points (marqués/tentés) | 3PTS: 3 points (marqués/tentés) | LF: Lancers francs (marqués/tentés)<br>
-      REB: Rebonds totaux | RO: Rebonds offensifs | RD: Rebonds défensifs<br>
-      AST: Passes décisives | INT: Interceptions | CTR: Contres | BP: Balles perdues | FT: Fautes totales | FP: Fautes provoquées | +/-: Différentiel de points sur le terrain | EVAL: Evaluation`;
+  private static get STATS_LEGEND(): string {
+    return `${i18n.t("pdfExportService.legend.line1")}<br>
+      ${i18n.t("pdfExportService.legend.line2")}<br>
+      ${i18n.t("pdfExportService.legend.line3")}`;
+  }
 
   /**
    * Get playing time formatted as MM:SS from actual tracked time
@@ -857,66 +765,40 @@ export class PDFExportService {
 
     return `
   <div class="stats-section ${teamClass}">
-    <h2>${teamName} - Statistiques individuelles</h2>
+    <h2>${teamName} - ${i18n.t("pdfExportService.individualStats")}</h2>
     <table class="stats-table">
       <thead>
         <tr>
           <th class="player-number">#</th>
-          <th class="player-name">Joueur</th>
-          <th>MIN</th>
-          <th>PTS</th>
-          <th>TIRS</th>
-          <th>2PTS</th>
-          <th>3PTS</th>
-          <th>LF</th>
-          <th>REB</th>
-          <th>RO</th>
-          <th>RD</th>
-          <th>AST</th>
-          <th>INT</th>
-          <th>CTR</th>
-          <th>BP</th>
-          <th>FT</th>
-          <th>FP</th>
-          <th>+/-</th>
-          <th>EVAL</th>
+          <th class="player-name">${i18n.t("pdfExportService.playerColumn")}</th>
+          <th>${i18n.t("statsLegendModal.min")}</th>
+          <th>${i18n.t("statsLegendModal.pts")}</th>
+          <th>${i18n.t("statsLegendModal.tirs")}</th>
+          <th>${i18n.t("statsLegendModal.twoPts")}</th>
+          <th>${i18n.t("statsLegendModal.threePts")}</th>
+          <th>${i18n.t("statsTab.lf")}</th>
+          <th>${i18n.t("playerDetailModal.reb")}</th>
+          <th>${i18n.t("statsLegendModal.ro")}</th>
+          <th>${i18n.t("statsLegendModal.rd")}</th>
+          <th>${i18n.t("playerDetailModal.ast")}</th>
+          <th>${i18n.t("playerDetailModal.int")}</th>
+          <th>${i18n.t("playerDetailModal.ctr")}</th>
+          <th>${i18n.t("playerDetailModal.bp")}</th>
+          <th>${i18n.t("statsLegendModal.ft")}</th>
+          <th>${i18n.t("playerDetailModal.fp")}</th>
+          <th>${i18n.t("statsTab.plusMinus")}</th>
+          <th>${i18n.t("statsLegendModal.eval")}</th>
         </tr>
       </thead>
       <tbody>
         ${stats
           .map((player) => {
-            console.log(`[PDF Export] 🏀 Génération HTML pour joueur:`, {
-              id: player.id,
-              num: player.num,
-              name: player.name,
-              team: player.team,
-              stats: player.stats,
-            });
-
             const totalFouls = this.calculateTotalFouls(player.stats);
             const totalRebounds = player.stats.orb + player.stats.drb;
             const totalFgm = player.stats.twopm + player.stats.threepm;
             const totalFga = player.stats.twopa + player.stats.threepa;
 
-            console.log(
-              `[PDF Export] 🔢 Calcul EVAL pour ${player.name} (#${player.num}):`,
-              {
-                points: player.stats.points,
-                rebounds: totalRebounds,
-                ast: player.stats.ast,
-                stl: player.stats.stl,
-                blk: player.stats.blk,
-                fgMissed:
-                  player.stats.twopa -
-                  player.stats.twopm +
-                  (player.stats.threepa - player.stats.threepm),
-                ftMissed: player.stats.fta - player.stats.ftm,
-                tov: player.stats.tov,
-              }
-            );
-
             const efficiency = calculateEfficiencyFromDB(player.stats);
-            console.log(`[PDF Export] ✅ EVAL calculée:`, efficiency);
 
             const playingTime = this.getPlayingTime(player.playingTimeSeconds);
 
@@ -970,13 +852,13 @@ export class PDFExportService {
           <td><strong>${tot.eff}</strong></td>
         </tr>`;
           return [
-            starters.length > 0 ? subtotalRow('5 DÉPART', PDFExportService.calculateTeamTotals(starters)) : '',
-            bench.length > 0 ? subtotalRow('BANC', PDFExportService.calculateTeamTotals(bench)) : '',
+            starters.length > 0 ? subtotalRow(i18n.t("statsTab.starters"), PDFExportService.calculateTeamTotals(starters)) : '',
+            bench.length > 0 ? subtotalRow(i18n.t("statsTab.bench"), PDFExportService.calculateTeamTotals(bench)) : '',
           ].join('');
         })()}
         ${teamTrbCount > 0 ? `
         <tr class="team-rebound-row">
-          <td colspan="2" style="text-align:left; font-style:italic; padding-left:8px;">Rebonds d'équipe</td>
+          <td colspan="2" style="text-align:left; font-style:italic; padding-left:8px;">${i18n.t("statsLegendModal.teamRebounds")}</td>
           <td>-</td>
           <td>-</td>
           <td>-</td>
@@ -996,7 +878,7 @@ export class PDFExportService {
           <td>-</td>
         </tr>` : ''}
         <tr class="totals-row">
-          <td colspan="2">TOTAL${handicap > 0 ? ` <span class="hcp-badge">+${handicap} HCP</span>` : ''}</td>
+          <td colspan="2">${i18n.t("statsTab.total")}${handicap > 0 ? ` <span class="hcp-badge">${i18n.t("statsTab.handicap", { count: handicap })}</span>` : ''}</td>
           <td>-</td>
           <td><strong>${totalsWithTeamReb.points}</strong></td>
           <td>${totalsWithTeamReb.fgm}/${totalsWithTeamReb.fga}</td>
@@ -1018,7 +900,7 @@ export class PDFExportService {
       </tbody>
     </table>
     <div class="legend">
-      ${this.STATS_LEGEND}${handicap > 0 ? `<br>HCP: Handicap de départ (+${handicap} pts inclus dans le score final)` : ''}
+      ${this.STATS_LEGEND}${handicap > 0 ? `<br>${i18n.t("pdfExportService.legend.handicap", { handicap })}` : ''}
     </div>
   </div>
   `;
@@ -1093,7 +975,7 @@ export class PDFExportService {
         if (i === 0) {
           return `<text x="${x}" y="${
             height - 10
-          }" text-anchor="middle" font-size="10">Début</text>`;
+          }" text-anchor="middle" font-size="10">${i18n.t("pdfExportService.chartStart")}</text>`;
         }
 
         // Determine label: regular period or OT
@@ -1108,7 +990,7 @@ export class PDFExportService {
         return `
         <text x="${x}" y="${
           height - 18
-        }" text-anchor="middle" font-size="9">FIN</text>
+        }" text-anchor="middle" font-size="9">${i18n.t("pdfExportService.chartPeriodEnd")}</text>
         <text x="${x}" y="${
           height - 8
         }" text-anchor="middle" font-size="10" font-weight="bold">${label}</text>
@@ -1601,7 +1483,7 @@ export class PDFExportService {
     );
 
     if (shotActions.length === 0) {
-      return `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg"><text x="125" y="232" text-anchor="middle" font-size="14" fill="${PDF_COLORS.court.noData}">Aucun tir</text></svg>`;
+      return `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg"><text x="125" y="232" text-anchor="middle" font-size="14" fill="${PDF_COLORS.court.noData}">${i18n.t("pdfExportService.noShots")}</text></svg>`;
     }
 
     const markers: CourtMarker[] = shotActions.map((action, index) => {
@@ -1644,7 +1526,7 @@ export class PDFExportService {
     );
 
     if (nonShotActions.length === 0) {
-      return `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg"><text x="125" y="232" text-anchor="middle" font-size="14" fill="${PDF_COLORS.court.noData}">Aucune action</text></svg>`;
+      return `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg"><text x="125" y="232" text-anchor="middle" font-size="14" fill="${PDF_COLORS.court.noData}">${i18n.t("pdfExportService.noActions")}</text></svg>`;
     }
 
     const markers: CourtMarker[] = nonShotActions.map((action, index) => {
@@ -1689,7 +1571,7 @@ export class PDFExportService {
     const playerActions = actions.filter((a) => a.player === playerId);
 
     if (playerActions.length === 0) {
-      return `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg"><text x="125" y="232" text-anchor="middle" font-size="14" fill="${PDF_COLORS.court.noData}">Aucune action</text></svg>`;
+      return `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg"><text x="125" y="232" text-anchor="middle" font-size="14" fill="${PDF_COLORS.court.noData}">${i18n.t("pdfExportService.noActions")}</text></svg>`;
     }
 
     const markers: CourtMarker[] = playerActions.map((action, index) => {
@@ -1848,7 +1730,7 @@ export class PDFExportService {
       totalPeriods // Pass base periods (2 or 4) to generate correct labels
     );
 
-    const dateStr = matchDate.toLocaleDateString("fr-FR", {
+    const dateStr = matchDate.toLocaleDateString(pdfLocale(), {
       day: "2-digit",
       month: "2-digit",
       year: "numeric",
@@ -2431,14 +2313,14 @@ export class PDFExportService {
         : ""
     }
     <img src="${AppLogoSVG}" alt="App" class="header-logo-right" />
-    <h1>FEUILLE DE MATCH - BASKETBALL</h1>
+    <h1>${i18n.t("pdfExportService.matchSheetTitle")}</h1>
     <div class="match-info">${homeTeamName} vs ${awayTeamName}</div>
     <div class="date">${dateStr}</div>
   </div>
 
   ${officialSponsors.length > 0 ? `
   <div class="sponsor-header-bar">
-    <span class="sponsor-header-label">Match présenté par</span>
+    <span class="sponsor-header-label">${i18n.t("pdfExportService.presentedBy")}</span>
     <div class="sponsor-header-logos">
       ${officialSponsors.sort((a, b) => a.priority - b.priority).map(s =>
         `<img src="${s.logo_url}" class="sponsor-header-logo" alt="${s.name}" title="${s.name}" />`
@@ -2447,7 +2329,7 @@ export class PDFExportService {
   </div>` : ''}
 
   <div class="score-summary">
-    <div>SCORE FINAL</div>
+    <div>${i18n.t("pdfExportService.finalScore")}</div>
     <div class="final-score">${homeTeamScore} - ${awayTeamScore}</div>
     ${(homeTeamHandicap > 0 || awayTeamHandicap > 0) ? `
     <div style="font-size:10px; color:${PDF_COLORS.table.textSecondary}; margin-top:4px;">
@@ -2461,14 +2343,14 @@ export class PDFExportService {
   <table class="period-scores">
     <thead>
       <tr>
-        <th>Équipe</th>
+        <th>${i18n.t("shotChainModal.team")}</th>
         ${Array.from({ length: totalPeriods })
           .map((_, i) => `<th>${periodLabel}${i + 1}</th>`)
           .join("")}
         ${Array.from({ length: overtimePeriods })
           .map((_, i) => `<th>OT${overtimePeriods > 1 ? i + 1 : ""}</th>`)
           .join("")}
-        <th>Total</th>
+        <th>${i18n.t("pdfExportService.totalColumn")}</th>
       </tr>
     </thead>
     <tbody>
@@ -2489,7 +2371,7 @@ export class PDFExportService {
 
   <!-- Score Evolution Chart -->
   <div style="text-align: center; margin: 30px 0;">
-    <h2 style="font-size: 14px; margin-bottom: 15px;">Évolution du score</h2>
+    <h2 style="font-size: 14px; margin-bottom: 15px;">${i18n.t("pdfExportService.scoreEvolution")}</h2>
     ${chartSVG}
   </div>
 
@@ -2547,15 +2429,6 @@ export class PDFExportService {
           playerStats.fta
         );
 
-        console.log(
-          `[PDF Export] 📊 Shooting percentages for player ${player.num}:`,
-          {
-            twoPoint: `${playerStats.twopm}/${playerStats.twopa} = ${twoPtPct}%`,
-            threePoint: `${playerStats.threepm}/${playerStats.threepa} = ${threePtPct}%`,
-            freeThrow: `${playerStats.ftm}/${playerStats.fta} = ${ftPct}%`,
-          }
-        );
-
         const hasStats =
           actions.filter((a) => a.player === player.id).length > 0;
         const teamName =
@@ -2592,19 +2465,19 @@ export class PDFExportService {
             <div class="player-info">
               <div class="player-name">${player.name}</div>
               <div class="player-number">#${player.num}</div>
-              ${!player.isSubstitute ? '<span class="starter-badge">★ TITULAIRE</span>' : ''}
+              ${!player.isSubstitute ? `<span class="starter-badge">${i18n.t("pdfExportService.starterBadge")}</span>` : ''}
             </div>
           </div>
           <div class="player-points-badge">
             <div class="player-points-value">${playerStats.points}</div>
-            <div class="player-points-label">Points</div>
+            <div class="player-points-label">${i18n.t("cardsTab.points")}</div>
           </div>
         </div>
 
         <!-- Shooting Bars -->
         <div class="shooting-bars">
           <div class="shooting-bar">
-            <div class="shooting-bar-label">3 PTS</div>
+            <div class="shooting-bar-label">${i18n.t("pdfExportService.threePtsShort")}</div>
             <div class="shooting-bar-track">
               <svg width="100%" height="12" style="display: block;">
                 <rect x="0" y="0" width="100%" height="12" fill="${
@@ -2623,7 +2496,7 @@ export class PDFExportService {
             </div>
           </div>
           <div class="shooting-bar">
-            <div class="shooting-bar-label">2 PTS</div>
+            <div class="shooting-bar-label">${i18n.t("pdfExportService.twoPtsShort")}</div>
             <div class="shooting-bar-track">
               <svg width="100%" height="12" style="display: block;">
                 <rect x="0" y="0" width="100%" height="12" fill="${
@@ -2642,7 +2515,7 @@ export class PDFExportService {
             </div>
           </div>
           <div class="shooting-bar">
-            <div class="shooting-bar-label">LF</div>
+            <div class="shooting-bar-label">${i18n.t("statsTab.lf")}</div>
             <div class="shooting-bar-track">
               <svg width="100%" height="12" style="display: block;">
                 <rect x="0" y="0" width="100%" height="12" fill="${
@@ -2665,94 +2538,94 @@ export class PDFExportService {
         <!-- Stats Grid -->
         <div class="stats-grid">
           <div class="stat-box">
-            <div class="stat-box-label">MIN</div>
+            <div class="stat-box-label">${i18n.t("statsLegendModal.min")}</div>
             <div class="stat-box-value-row">
               <div class="stat-box-value">${playingTime}</div>
             </div>
           </div>
           <div class="stat-box">
-            <div class="stat-box-label">REB</div>
+            <div class="stat-box-label">${i18n.t("playerDetailModal.reb")}</div>
             <div class="stat-box-quad-row">
               <div class="stat-box-quad-item">
                 <svg width="12" height="12" viewBox="0 0 16 16" style="flex-shrink:0"><polygon points="8,2 14,14 2,14" fill="${getActionColor(ActionType.REBOUND, ReboundSpecification.OFFENSIVE)}" stroke="#FFFFFF" stroke-width="1"/></svg>
-                <span class="stat-box-quad-value">${playerStats.orb} <span class="stat-box-quad-label">(OFF)</span></span>
+                <span class="stat-box-quad-value">${playerStats.orb} <span class="stat-box-quad-label">(${i18n.t("playerDetailModal.off")})</span></span>
               </div>
               <div class="stat-box-quad-item">
                 <svg width="12" height="12" viewBox="0 0 16 16" style="flex-shrink:0"><polygon points="8,2 14,14 2,14" fill="${getActionColor(ActionType.REBOUND, ReboundSpecification.DEFENSIVE)}" stroke="#FFFFFF" stroke-width="1"/></svg>
-                <span class="stat-box-quad-value">${playerStats.drb} <span class="stat-box-quad-label">(DEF)</span></span>
+                <span class="stat-box-quad-value">${playerStats.drb} <span class="stat-box-quad-label">(${i18n.t("playerDetailModal.def")})</span></span>
               </div>
             </div>
-            <div class="stat-box-sub">Rebonds: ${playerStats.orb + playerStats.drb}</div>
+            <div class="stat-box-sub">${i18n.t("playerDetailModal.reboundsSub", { count: playerStats.orb + playerStats.drb })}</div>
           </div>
           <div class="stat-box">
-            <div class="stat-box-label">AST</div>
+            <div class="stat-box-label">${i18n.t("playerDetailModal.ast")}</div>
             <div class="stat-box-value-row">
               <div class="stat-box-value">${playerStats.ast}</div>
               <svg width="16" height="16" viewBox="0 0 16 16" style="flex-shrink:0"><circle cx="8" cy="8" r="6" fill="${getActionColor(ActionType.ASSIST)}" stroke="#FFFFFF" stroke-width="2"/></svg>
             </div>
           </div>
           <div class="stat-box">
-            <div class="stat-box-label">INT</div>
+            <div class="stat-box-label">${i18n.t("playerDetailModal.int")}</div>
             <div class="stat-box-value-row">
               <div class="stat-box-value">${playerStats.stl}</div>
               <svg width="16" height="16" viewBox="0 0 16 16" style="flex-shrink:0"><circle cx="8" cy="8" r="6" fill="${getActionColor(ActionType.STEAL)}" stroke="#FFFFFF" stroke-width="2"/></svg>
             </div>
           </div>
           <div class="stat-box">
-            <div class="stat-box-label">CTR</div>
+            <div class="stat-box-label">${i18n.t("playerDetailModal.ctr")}</div>
             <div class="stat-box-value-row">
               <div class="stat-box-value">${playerStats.blk}</div>
               <svg width="16" height="16" viewBox="0 0 16 16" style="flex-shrink:0"><circle cx="8" cy="8" r="6" fill="${getActionColor(ActionType.BLOCK)}" stroke="#FFFFFF" stroke-width="2"/></svg>
             </div>
           </div>
           <div class="stat-box">
-            <div class="stat-box-label">BP</div>
+            <div class="stat-box-label">${i18n.t("playerDetailModal.bp")}</div>
             <div class="stat-box-value-row">
               <div class="stat-box-value">${playerStats.tov}</div>
               <svg width="16" height="16" viewBox="0 0 16 16" style="flex-shrink:0"><circle cx="8" cy="8" r="6" fill="${getActionColor(ActionType.TURNOVER)}" stroke="#FFFFFF" stroke-width="2"/></svg>
             </div>
           </div>
           <div class="stat-box">
-            <div class="stat-box-label">FTE</div>
+            <div class="stat-box-label">${i18n.t("playerDetailModal.fte")}</div>
             <div class="stat-box-quad">
               <div class="stat-box-quad-col">
                 <div class="stat-box-quad-item">
                   <svg width="12" height="12" viewBox="0 0 16 16" style="flex-shrink:0"><polygon points="8,2 14,8 8,14 2,8" fill="${getActionColor(ActionType.FOUL, FoulSpecification.PERSONAL)}" stroke="#FFFFFF" stroke-width="2"/></svg>
-                  <span class="stat-box-quad-value">${playerStats.pf} <span class="stat-box-quad-label">(PERS)</span></span>
+                  <span class="stat-box-quad-value">${playerStats.pf} <span class="stat-box-quad-label">(${i18n.t("playerDetailModal.pers")})</span></span>
                 </div>
                 <div class="stat-box-quad-item">
                   <svg width="12" height="12" viewBox="0 0 16 16" style="flex-shrink:0"><polygon points="8,2 14,8 8,14 2,8" fill="${getActionColor(ActionType.FOUL, FoulSpecification.TECHNICAL)}" stroke="#FFFFFF" stroke-width="2"/></svg>
-                  <span class="stat-box-quad-value">${playerStats.tf} <span class="stat-box-quad-label">(TECH)</span></span>
+                  <span class="stat-box-quad-value">${playerStats.tf} <span class="stat-box-quad-label">(${i18n.t("playerDetailModal.tech")})</span></span>
                 </div>
               </div>
               <div class="stat-box-quad-col">
                 <div class="stat-box-quad-item">
                   <svg width="12" height="12" viewBox="0 0 16 16" style="flex-shrink:0"><polygon points="8,2 14,8 8,14 2,8" fill="${getActionColor(ActionType.FOUL, FoulSpecification.PENALITY)}" stroke="#FFFFFF" stroke-width="2"/></svg>
-                  <span class="stat-box-quad-value">${playerStats.uf} <span class="stat-box-quad-label">(ANT)</span></span>
+                  <span class="stat-box-quad-value">${playerStats.uf} <span class="stat-box-quad-label">(${i18n.t("playerDetailModal.ant")})</span></span>
                 </div>
                 <div class="stat-box-quad-item">
                   <svg width="12" height="12" viewBox="0 0 16 16" style="flex-shrink:0"><polygon points="8,2 14,8 8,14 2,8" fill="${getActionColor(ActionType.FOUL, FoulSpecification.DISQUALIFICATION)}" stroke="#FFFFFF" stroke-width="2"/></svg>
-                  <span class="stat-box-quad-value">${playerStats.df} <span class="stat-box-quad-label">(DISQ)</span></span>
+                  <span class="stat-box-quad-value">${playerStats.df} <span class="stat-box-quad-label">(${i18n.t("playerDetailModal.disq")})</span></span>
                 </div>
               </div>
             </div>
-            <div class="stat-box-sub">Fautes: ${totalFouls}</div>
+            <div class="stat-box-sub">${i18n.t("playerDetailModal.foulsSub", { count: totalFouls })}</div>
           </div>
           <div class="stat-box">
-            <div class="stat-box-label">FP</div>
+            <div class="stat-box-label">${i18n.t("playerDetailModal.fp")}</div>
             <div class="stat-box-value-row">
               <div class="stat-box-value">${playerStats.fd}</div>
               <svg width="16" height="16" viewBox="0 0 16 16" style="flex-shrink:0"><polygon points="8,2 14,8 8,14 2,8" fill="${getActionColor(ActionType.FOUL_DRAWN)}" stroke="#FFFFFF" stroke-width="2"/></svg>
             </div>
           </div>
           <div class="stat-box">
-            <div class="stat-box-label">+/-</div>
+            <div class="stat-box-label">${i18n.t("statsTab.plusMinus")}</div>
             <div class="stat-box-value-row">
               <div class="stat-box-value" style="color:${playerPm > 0 ? '#4CAF50' : playerPm < 0 ? '#F44336' : 'inherit'}">${playerPm > 0 ? '+' + playerPm : playerPm}</div>
             </div>
           </div>
           <div class="stat-box highlight">
-            <div class="stat-box-label">ÉVAL</div>
+            <div class="stat-box-label">${i18n.t("cardsTab.evalAbbr")}</div>
             <div class="stat-box-value-row">
               <div class="stat-box-value highlight">${calculateEfficiencyFromDB(playerStats)}</div>
             </div>
@@ -2771,7 +2644,7 @@ export class PDFExportService {
       </div>
       `
           : `
-      <div class="no-stats">Aucune statistique enregistrée pour ce joueur</div>
+      <div class="no-stats">${i18n.t("pdfExportService.noPlayerStats")}</div>
       `
       }
       </div>
@@ -2922,7 +2795,7 @@ export class PDFExportService {
     const teamLabel =
       player.team === Team.MY_TEAM ? myTeamName : opponentName;
 
-    const dateStr = matchDate.toLocaleDateString("fr-FR", {
+    const dateStr = matchDate.toLocaleDateString(pdfLocale(), {
       day: "2-digit",
       month: "2-digit",
       year: "numeric",
@@ -3108,40 +2981,40 @@ export class PDFExportService {
       <div>
         <div class="player-name">${player.name} <span style="font-size:14px;font-weight:700;color:${PDF_COLORS.card.textSecondary}">- #${player.playerNumber}</span></div>
         <div class="player-sub">${teamLabel}</div>
-        ${!player.isSubstitute && !hideStarterBadge ? `<span class="starter-badge">★ TITULAIRE</span>` : ""}
+        ${!player.isSubstitute && !hideStarterBadge ? `<span class="starter-badge">${i18n.t("pdfExportService.starterBadge")}</span>` : ""}
       </div>
     </div>
     <div class="player-points-badge">
       <div class="player-points-value">${player.pts}</div>
-      <div class="player-points-label">Points</div>
+      <div class="player-points-label">${i18n.t("cardsTab.points")}</div>
     </div>
   </div>
 
   <div class="main-stats-grid">
     <div class="main-stat-card">
       <div class="main-stat-value">${player.min}</div>
-      <div class="main-stat-label">Temps</div>
+      <div class="main-stat-label">${i18n.t("playerDetailModal.time")}</div>
     </div>
     <div class="main-stat-card">
       <div class="main-stat-value">${player.pts}</div>
-      <div class="main-stat-label">Points</div>
+      <div class="main-stat-label">${i18n.t("cardsTab.points")}</div>
     </div>
     <div class="main-stat-card">
       <div class="main-stat-value" style="color:${pmColor}">${pmDisplay}</div>
-      <div class="main-stat-label">+/-</div>
+      <div class="main-stat-label">${i18n.t("statsTab.plusMinus")}</div>
     </div>
     <div class="main-stat-card highlight">
       <div class="main-stat-value highlight">${player.eff}</div>
-      <div class="main-stat-label">Éval</div>
+      <div class="main-stat-label">${i18n.t("playerDetailModal.eff")}</div>
     </div>
   </div>
 
   <div class="shooting-section">
-    <div class="section-title">Performance aux tirs</div>
+    <div class="section-title">${i18n.t("playerDetailModal.shootingPerformance")}</div>
     <div class="shooting-card">
       <div class="shooting-bars">
         <div class="shooting-bar">
-          <div class="shooting-bar-label">3 Points</div>
+          <div class="shooting-bar-label">${i18n.t("playerDetailModal.threePoints")}</div>
           <div class="shooting-bar-track">
             <svg width="100%" height="12" style="display:block;">
               <rect x="0" y="0" width="100%" height="12" fill="${PDF_COLORS.card.border}" rx="6"/>
@@ -3154,7 +3027,7 @@ export class PDFExportService {
           </div>
         </div>
         <div class="shooting-bar">
-          <div class="shooting-bar-label">2 Points</div>
+          <div class="shooting-bar-label">${i18n.t("playerDetailModal.twoPoints")}</div>
           <div class="shooting-bar-track">
             <svg width="100%" height="12" style="display:block;">
               <rect x="0" y="0" width="100%" height="12" fill="${PDF_COLORS.card.border}" rx="6"/>
@@ -3167,7 +3040,7 @@ export class PDFExportService {
           </div>
         </div>
         <div class="shooting-bar">
-          <div class="shooting-bar-label">Lancers</div>
+          <div class="shooting-bar-label">${i18n.t("playerDetailModal.freeThrows")}</div>
           <div class="shooting-bar-track">
             <svg width="100%" height="12" style="display:block;">
               <rect x="0" y="0" width="100%" height="12" fill="${PDF_COLORS.card.border}" rx="6"/>
@@ -3183,63 +3056,63 @@ export class PDFExportService {
       <div class="shooting-summary">
         <div class="shooting-summary-item">
           <div class="shooting-summary-value">${player.fgm}/${player.fga}</div>
-          <div class="shooting-summary-label">Total tirs</div>
+          <div class="shooting-summary-label">${i18n.t("pdfExportService.totalShots")}</div>
         </div>
         <div class="shooting-summary-item">
           <div class="shooting-summary-value">${totalFgPct}%</div>
-          <div class="shooting-summary-label">Réussite</div>
+          <div class="shooting-summary-label">${i18n.t("pdfExportService.successRate")}</div>
         </div>
       </div>
     </div>
   </div>
 
   <div class="details-section">
-    <div class="section-title">Détails</div>
+    <div class="section-title">${i18n.t("playerDetailModal.details")}</div>
     <div class="stats-grid">
       <div class="stat-box">
-        <div class="stat-box-label">REB</div>
+        <div class="stat-box-label">${i18n.t("playerDetailModal.reb")}</div>
         <div class="stat-box-quad-row">
           <div class="stat-box-quad-item">
             <svg width="12" height="12" viewBox="0 0 16 16"><polygon points="8,2 14,14 2,14" fill="${getActionColor(ActionType.REBOUND, ReboundSpecification.OFFENSIVE)}" stroke="#FFFFFF" stroke-width="1"/></svg>
-            <span class="stat-box-quad-value">${player.reb_off} <span class="stat-box-quad-label">(OFF)</span></span>
+            <span class="stat-box-quad-value">${player.reb_off} <span class="stat-box-quad-label">(${i18n.t("playerDetailModal.off")})</span></span>
           </div>
           <div class="stat-box-quad-item">
             <svg width="12" height="12" viewBox="0 0 16 16"><polygon points="8,2 14,14 2,14" fill="${getActionColor(ActionType.REBOUND, ReboundSpecification.DEFENSIVE)}" stroke="#FFFFFF" stroke-width="1"/></svg>
-            <span class="stat-box-quad-value">${player.reb_def} <span class="stat-box-quad-label">(DEF)</span></span>
+            <span class="stat-box-quad-value">${player.reb_def} <span class="stat-box-quad-label">(${i18n.t("playerDetailModal.def")})</span></span>
           </div>
         </div>
-        <div class="stat-box-sub">Rebonds: ${player.reb_off + player.reb_def}</div>
+        <div class="stat-box-sub">${i18n.t("playerDetailModal.reboundsSub", { count: player.reb_off + player.reb_def })}</div>
       </div>
       <div class="stat-box">
-        <div class="stat-box-label">AST</div>
+        <div class="stat-box-label">${i18n.t("playerDetailModal.ast")}</div>
         <div class="stat-box-value-row">
           <div class="stat-box-value">${player.ast}</div>
           <svg width="14" height="14" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" fill="${getActionColor(ActionType.ASSIST)}" stroke="#FFFFFF" stroke-width="2"/></svg>
         </div>
       </div>
       <div class="stat-box">
-        <div class="stat-box-label">INT</div>
+        <div class="stat-box-label">${i18n.t("playerDetailModal.int")}</div>
         <div class="stat-box-value-row">
           <div class="stat-box-value">${player.stl}</div>
           <svg width="14" height="14" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" fill="${getActionColor(ActionType.STEAL)}" stroke="#FFFFFF" stroke-width="2"/></svg>
         </div>
       </div>
       <div class="stat-box">
-        <div class="stat-box-label">CTR</div>
+        <div class="stat-box-label">${i18n.t("playerDetailModal.ctr")}</div>
         <div class="stat-box-value-row">
           <div class="stat-box-value">${player.blk}</div>
           <svg width="14" height="14" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" fill="${getActionColor(ActionType.BLOCK)}" stroke="#FFFFFF" stroke-width="2"/></svg>
         </div>
       </div>
       <div class="stat-box">
-        <div class="stat-box-label">BP</div>
+        <div class="stat-box-label">${i18n.t("playerDetailModal.bp")}</div>
         <div class="stat-box-value-row">
           <div class="stat-box-value">${player.to}</div>
           <svg width="14" height="14" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" fill="${getActionColor(ActionType.TURNOVER)}" stroke="#FFFFFF" stroke-width="2"/></svg>
         </div>
       </div>
       <div class="stat-box">
-        <div class="stat-box-label">FTE</div>
+        <div class="stat-box-label">${i18n.t("playerDetailModal.fte")}</div>
         ${
           hasFoulBreakdown
             ? `
@@ -3247,25 +3120,25 @@ export class PDFExportService {
           <div class="stat-box-quad-col">
             <div class="stat-box-quad-item">
               <svg width="12" height="12" viewBox="0 0 16 16"><polygon points="8,2 14,8 8,14 2,8" fill="${getActionColor(ActionType.FOUL, FoulSpecification.PERSONAL)}" stroke="#FFFFFF" stroke-width="2"/></svg>
-              <span class="stat-box-quad-value">${foulBreakdown.pers} <span class="stat-box-quad-label">(PERS)</span></span>
+              <span class="stat-box-quad-value">${foulBreakdown.pers} <span class="stat-box-quad-label">(${i18n.t("playerDetailModal.pers")})</span></span>
             </div>
             <div class="stat-box-quad-item">
               <svg width="12" height="12" viewBox="0 0 16 16"><polygon points="8,2 14,8 8,14 2,8" fill="${getActionColor(ActionType.FOUL, FoulSpecification.TECHNICAL)}" stroke="#FFFFFF" stroke-width="2"/></svg>
-              <span class="stat-box-quad-value">${foulBreakdown.tech} <span class="stat-box-quad-label">(TECH)</span></span>
+              <span class="stat-box-quad-value">${foulBreakdown.tech} <span class="stat-box-quad-label">(${i18n.t("playerDetailModal.tech")})</span></span>
             </div>
           </div>
           <div class="stat-box-quad-col">
             <div class="stat-box-quad-item">
               <svg width="12" height="12" viewBox="0 0 16 16"><polygon points="8,2 14,8 8,14 2,8" fill="${getActionColor(ActionType.FOUL, FoulSpecification.PENALITY)}" stroke="#FFFFFF" stroke-width="2"/></svg>
-              <span class="stat-box-quad-value">${foulBreakdown.ant} <span class="stat-box-quad-label">(ANT)</span></span>
+              <span class="stat-box-quad-value">${foulBreakdown.ant} <span class="stat-box-quad-label">(${i18n.t("playerDetailModal.ant")})</span></span>
             </div>
             <div class="stat-box-quad-item">
               <svg width="12" height="12" viewBox="0 0 16 16"><polygon points="8,2 14,8 8,14 2,8" fill="${getActionColor(ActionType.FOUL, FoulSpecification.DISQUALIFICATION)}" stroke="#FFFFFF" stroke-width="2"/></svg>
-              <span class="stat-box-quad-value">${foulBreakdown.disq} <span class="stat-box-quad-label">(DISQ)</span></span>
+              <span class="stat-box-quad-value">${foulBreakdown.disq} <span class="stat-box-quad-label">(${i18n.t("playerDetailModal.disq")})</span></span>
             </div>
           </div>
         </div>
-        <div class="stat-box-sub">Fautes: ${player.pf}</div>
+        <div class="stat-box-sub">${i18n.t("playerDetailModal.foulsSub", { count: player.pf })}</div>
         `
             : `
         <div class="stat-box-value-row">
@@ -3276,7 +3149,7 @@ export class PDFExportService {
         }
       </div>
       <div class="stat-box">
-        <div class="stat-box-label">FP</div>
+        <div class="stat-box-label">${i18n.t("playerDetailModal.fp")}</div>
         <div class="stat-box-value-row">
           <div class="stat-box-value">${player.fd}</div>
           <svg width="14" height="14" viewBox="0 0 16 16"><polygon points="8,2 14,8 8,14 2,8" fill="${getActionColor(ActionType.FOUL_DRAWN)}" stroke="#FFFFFF" stroke-width="2"/></svg>
@@ -3287,14 +3160,14 @@ export class PDFExportService {
 
   ${radarSVG ? `
   <div style="margin-top:20px;">
-    <div class="section-title">Vue d'ensemble</div>
+    <div class="section-title">${i18n.t("pdfExportService.overview")}</div>
     <div style="text-align:center;margin-top:10px;">${radarSVG}</div>
   </div>
   ` : ""}
 
   ${courtSVG ? `
   <div class="court-section">
-    <div class="section-title">Carte des actions</div>
+    <div class="section-title">${i18n.t("playerDetailModal.actionMap")}</div>
     <div class="court-wrapper">${courtSVG}</div>
   </div>
   ` : ""}
@@ -3303,12 +3176,12 @@ export class PDFExportService {
   <div class="footer">
     ${officialSponsors.length > 0 ? `
     <div class="sponsor-footer-bar">
-      <span class="sponsor-footer-label">Partenaires officiels</span>
+      <span class="sponsor-footer-label">${i18n.t("pdfExportService.officialPartners")}</span>
       ${officialSponsors.sort((a, b) => a.priority - b.priority).map(s =>
         `<img src="${s.logo_url}" class="sponsor-footer-logo" alt="${s.name}" title="${s.name}" />`
       ).join('')}
     </div>` : ''}
-    Généré par Coach Assistant • ${dateStr}
+    ${i18n.t("pdfExportService.generatedBy", { date: dateStr })}
   </div>
 </body>
 </html>`;
@@ -3334,7 +3207,7 @@ export class PDFExportService {
     avgPts: number; avgReb: number; avgAst: number; avgEff: number;
     stl: number; blk: number; fgm: number; fga: number; matchesPlayed: number;
   }, size: number = 220): string {
-    const AXES = ["PTS", "REB", "AST", "INT", "CTR", "ÉVAL", "%TIR"];
+    const AXES = [i18n.t("statsLegendModal.pts"), i18n.t("playerDetailModal.reb"), i18n.t("playerDetailModal.ast"), i18n.t("playerDetailModal.int"), i18n.t("playerDetailModal.ctr"), i18n.t("cardsTab.evalAbbr"), i18n.t("pdfExportService.pctShotsAbbr")];
     const N = AXES.length;
     const REFS = [30, 10, 10, 10, 10, 20, 1.0];
     const GRID_LEVELS = [0.2, 0.4, 0.6, 0.8, 1.0];
@@ -3478,7 +3351,7 @@ export class PDFExportService {
       actions: [],
       myTeamName: "",
       opponentName: "",
-      headerTitle: `Statistiques moyennes • ${player.matchesPlayed} match${player.matchesPlayed > 1 ? "s" : ""}`,
+      headerTitle: i18n.t("pdfExportService.averageStatsHeader", { count: player.matchesPlayed }),
       radarSVG,
       hideStarterBadge: true,
       fileName: seasonFileName,

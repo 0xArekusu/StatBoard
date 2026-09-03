@@ -1,5 +1,12 @@
 import { SubscriptionService } from "../../services/SubscriptionService";
 import { SUBSCRIPTION_LIMITS } from "../../models/Subscription";
+import i18n from "../../src/i18n";
+
+// These tests assert French copy directly, so pin the language regardless of
+// the device locale the test environment resolves (jest-expo mocks it to "en").
+beforeAll(async () => {
+  await i18n.changeLanguage("fr");
+});
 
 // ─── Per-table queryBuilders ──────────────────────────────────────────────────
 // canCreateTeam / getClubSubscriptionInfo query "clubs", "subscription_plans", and "teams"

@@ -1,6 +1,13 @@
 import { getChainContext } from "../../utils/actionChainRules";
 import { ActionType, ShotSpecification, ReboundSpecification } from "../../src/models/ActionTypes";
 import { TeamId, MatchEvent } from "../../constants/liveMatchConstants";
+import i18n from "../../src/i18n";
+
+// These tests assert French copy directly, so pin the language regardless of
+// the device locale the test environment resolves (jest-expo mocks it to "en").
+beforeAll(async () => {
+  await i18n.changeLanguage("fr");
+});
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -113,10 +120,10 @@ describe("getChainContext — Tir raté → Rebond", () => {
       expect(ctx!.triggerDescription).toBe("Tir raté — #23");
     });
 
-    it("utilise 'player' si playerNumber absent", () => {
+    it("utilise 'Joueur' si playerNumber absent", () => {
       const event = makeEvent({ action_type: ActionType.SHOT, specification: ShotSpecification.MISSED, teamId: MY_TEAM });
       const ctx = getChainContext(event, true, MY_TEAM, MY_NAME, OPP_NAME);
-      expect(ctx!.triggerDescription).toBe("Tir raté — player");
+      expect(ctx!.triggerDescription).toBe("Tir raté — Joueur");
     });
   });
 

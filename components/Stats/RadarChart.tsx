@@ -1,5 +1,6 @@
 import React from 'react';
 import Svg, { Polygon, Line, Text as SvgText, Circle } from 'react-native-svg';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../src/contexts/ThemeContext';
 import { PlayerSeasonData } from '../../src/services/seasonStats';
 
@@ -8,8 +9,8 @@ interface RadarChartProps {
   size?: number;
 }
 
-const AXES = ['PTS', 'REB', 'AST', 'INT', 'CTR', 'ÉVAL', '%TIR'];
-const N = AXES.length;
+const AXIS_KEYS = ['pts', 'reb', 'ast', 'stl', 'blk', 'eff', 'fg_pct'] as const;
+const N = AXIS_KEYS.length;
 const REFS = [30, 10, 10, 10, 10, 20, 1.0];
 const GRID_LEVELS = [0.2, 0.4, 0.6, 0.8, 1.0];
 
@@ -29,6 +30,8 @@ function getValues(player: PlayerSeasonData): number[] {
 
 export default function RadarChart({ player, size = 140 }: RadarChartProps) {
   const { colors } = useTheme();
+  const { t } = useTranslation();
+  const AXES = AXIS_KEYS.map((key) => t(`leaderCategoryLabels.${key}`));
 
   const cx = size / 2;
   const cy = size / 2;

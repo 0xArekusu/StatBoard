@@ -109,18 +109,6 @@ export const SUBSCRIPTION_TIER_LABELS: Record<SubscriptionTier, string> = {
 };
 
 /**
- * Display labels for user modes
- */
-export const USER_MODE_LABELS: Record<UserMode, string> = {
-  [UserMode.NOT_CONNECTED]: "Non connecté",
-  [UserMode.FREEMIUM]: "Free",
-  [UserMode.BASIC]: "Basic",
-  [UserMode.PREMIUM]: "Premium",
-  [UserMode.ULTIMATE]: "Ultimate",
-  [UserMode.SPONSOR]: "Sponsor",
-};
-
-/**
  * Subscription model combining tier and limits
  */
 export interface Subscription {

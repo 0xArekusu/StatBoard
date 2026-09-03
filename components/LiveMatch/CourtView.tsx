@@ -19,6 +19,8 @@ import { useTheme } from "../../src/contexts/ThemeContext";
 import {
   COURT_SVG_WIDTH_PORTRAIT,
   COURT_SVG_HEIGHT_PORTRAIT,
+  COURT_SVG_WIDTH_LANDSCAPE,
+  COURT_SVG_HEIGHT_LANDSCAPE,
 } from "../../constants";
 import { useResponsive } from "../../src/hooks/useResponsive";
 import { BREAKPOINTS } from "../../constants/breakpoints";
@@ -44,6 +46,7 @@ interface CourtViewProps {
   courtSponsorFourthUri?: string | null;
   sideSponsorLeftUri?: string | null;
   sideSponsorRightUri?: string | null;
+  hideSideSponsors?: boolean;
 }
 
 export const CourtView: React.FC<CourtViewProps> = ({
@@ -65,6 +68,7 @@ export const CourtView: React.FC<CourtViewProps> = ({
   courtSponsorFourthUri = null,
   sideSponsorLeftUri = null,
   sideSponsorRightUri = null,
+  hideSideSponsors = false,
 }) => {
   const { colors } = useTheme();
   const { width: screenWidth, height: screenHeight } = useResponsive();
@@ -223,17 +227,34 @@ export const CourtView: React.FC<CourtViewProps> = ({
 
   const isPortrait = courtDimensions.height > courtDimensions.width;
   const SIDE_WIDTH = 80;
+  const SIDE_BANNER_WIDTH = 44; // doit matcher styles.sideBanner.width
+
+  // Le SVG du terrain préserve son ratio d'aspect (preserveAspectRatio par défaut) et peut donc
+  // être "letterboxé" horizontalement dans son conteneur (surtout en paysage, où le conteneur est
+  // souvent plus large que le ratio du terrain). Sans ce calcul, les bannières latérales restent
+  // collées au bord du conteneur au lieu du bord réel du terrain dessiné, laissant un espace vide.
+  const SVG_WIDTH = isPortrait ? COURT_SVG_WIDTH_PORTRAIT : COURT_SVG_WIDTH_LANDSCAPE;
+  const SVG_HEIGHT = isPortrait ? COURT_SVG_HEIGHT_PORTRAIT : COURT_SVG_HEIGHT_LANDSCAPE;
+  const svgAspectRatio = SVG_WIDTH / SVG_HEIGHT;
+  const containerAspectRatio = courtDimensions.width / courtDimensions.height;
+  const courtEdgeOffset =
+    courtDimensions.height > 0 && containerAspectRatio > svgAspectRatio
+      ? (courtDimensions.width - courtDimensions.height * svgAspectRatio) / 2
+      : 0;
 
   const renderSideSponsor = (uri: string | null, side: SponsorSide) => {
-    if (!uri) return null;
+    if (!uri || hideSideSponsors) return null;
     const source = typeof uri === 'string' ? { uri } : (uri as any);
     const rotation = isPortrait
       ? side === SponsorSide.Left ? '-90deg' : '90deg'
       : side === SponsorSide.Left ? '-90deg' : '90deg';
+    // La bannière doit se terminer pile au bord du terrain (pas commencer dessus) :
+    // on recule donc sa position de sa propre largeur, plus une marge additionnelle sur tablette.
+    const sideMargin = Math.max(0, courtEdgeOffset - SIDE_BANNER_WIDTH - (isMobile ? 0 : 50));
     return (
       <View style={[
         styles.sideBanner,
-        side === SponsorSide.Left ? { left: isMobile ? 0 : 50 } : { right: isMobile ? 0 : 50 },
+        side === SponsorSide.Left ? { left: sideMargin } : { right: sideMargin },
       ]}>
         <Image
           source={source}

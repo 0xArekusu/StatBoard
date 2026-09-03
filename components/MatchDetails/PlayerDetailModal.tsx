@@ -17,9 +17,11 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useTranslation } from "react-i18next";
 import { useTheme } from "../../src/contexts/ThemeContext";
 import { useResponsive } from "../../src/hooks/useResponsive";
 import { useSignedUrl } from "../../hooks/useSignedUrl";
+import { recordReviewPromptSignal } from "../../hooks/useReviewPrompt";
 import { PlayerStats } from "../../constants/matchDetailsConstants";
 import { ShootingBar, StatBox, MarkerType } from "./SharedComponents";
 import { Team } from "../../src/models/types";
@@ -63,14 +65,17 @@ interface PlayerDetailModalProps {
 export default function PlayerDetailModal({
   player,
   onClose,
-  myTeamName = "Notre équipe",
-  opponentName = "Adversaire",
+  myTeamName,
+  opponentName,
   actions = [],
   club = null,
   matchDate,
   matchSponsors = [],
 }: PlayerDetailModalProps) {
+  const { t } = useTranslation();
   const { colors, isDark } = useTheme();
+  const resolvedMyTeamName = myTeamName || t("matchDetailsScreen.myTeamFallback");
+  const resolvedOpponentName = opponentName || t("matchDetailsScreen.opponentFallback");
   const { isCompact, sp, font, sizes } = useResponsive();
   const posthog = usePostHog();
   const [isExporting, setIsExporting] = useState(false);
@@ -160,8 +165,8 @@ export default function PlayerDetailModal({
       await PDFExportService.generatePlayerPDF({
         player,
         actions,
-        myTeamName,
-        opponentName,
+        myTeamName: resolvedMyTeamName,
+        opponentName: resolvedOpponentName,
         clubLogoUrl: clubLogoUri ?? undefined,
         courtBackgroundColor: club?.courtBackgroundColor,
         courtLineColor: club?.courtLineColor,
@@ -169,6 +174,7 @@ export default function PlayerDetailModal({
         matchSponsors,
       });
       posthog?.capture(ANALYTICS_EVENTS.PDF_EXPORTED, { type: ANALYTICS_PDF_EXPORT_TYPE.PLAYER_MATCH });
+      recordReviewPromptSignal();
     } catch (e) {
       console.error("[PlayerDetailModal] Export PDF error:", e);
     } finally {
@@ -308,7 +314,7 @@ export default function PlayerDetailModal({
                   { color: textSecondary, fontSize: font.md },
                 ]}
               >
-                {player.team === Team.MY_TEAM ? myTeamName : opponentName}
+                {player.team === Team.MY_TEAM ? resolvedMyTeamName : resolvedOpponentName}
               </Text>
             </View>
 
@@ -334,7 +340,7 @@ export default function PlayerDetailModal({
                   {player.min}
                 </Text>
                 <Text style={[styles.statCardLabel, { color: textSecondary }]}>
-                  Temps
+                  {t("playerDetailModal.time")}
                 </Text>
               </View>
               <View
@@ -352,7 +358,7 @@ export default function PlayerDetailModal({
                   {player.pts}
                 </Text>
                 <Text style={[styles.statCardLabel, { color: textSecondary }]}>
-                  Points
+                  {t("liveMatchModals.filter.points")}
                 </Text>
               </View>
               <View
@@ -402,7 +408,7 @@ export default function PlayerDetailModal({
                   {player.eff}
                 </Text>
                 <Text style={[styles.statCardLabel, { color: colors.primary }]}>
-                  Éval
+                  {t("playerDetailModal.eff")}
                 </Text>
               </View>
             </View>
@@ -420,7 +426,7 @@ export default function PlayerDetailModal({
                   { color: textPrimary, marginBottom: sp.md },
                 ]}
               >
-                Performance aux tirs
+                {t("playerDetailModal.shootingPerformance")}
               </Text>
               <View
                 style={[
@@ -433,19 +439,19 @@ export default function PlayerDetailModal({
                 ]}
               >
                 <ShootingBar
-                  label="3 Points"
+                  label={t("playerDetailModal.threePoints")}
                   made={player.fg3m}
                   attempted={player.fg3a}
                   color="#6366f1"
                 />
                 <ShootingBar
-                  label="2 Points"
+                  label={t("playerDetailModal.twoPoints")}
                   made={player.fg2m}
                   attempted={player.fg2a}
                   color="#3b82f6"
                 />
                 <ShootingBar
-                  label="Lancers"
+                  label={t("playerDetailModal.freeThrows")}
                   made={player.ftm}
                   attempted={player.fta}
                   color="#06b6d4"
@@ -472,7 +478,7 @@ export default function PlayerDetailModal({
                         { color: textTertiary },
                       ]}
                     >
-                      TOTAL TIRS
+                      {t("playerDetailModal.totalShots")}
                     </Text>
                   </View>
                   <View style={styles.shootingSummaryItem}>
@@ -493,7 +499,7 @@ export default function PlayerDetailModal({
                         { color: textTertiary },
                       ]}
                     >
-                      RÉUSSITE
+                      {t("playerDetailModal.successRate")}
                     </Text>
                   </View>
                 </View>
@@ -513,21 +519,21 @@ export default function PlayerDetailModal({
                   { color: textPrimary, marginBottom: sp.md },
                 ]}
               >
-                Détails
+                {t("playerDetailModal.details")}
               </Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.detailedStatsScrollView} contentContainerStyle={[styles.detailedStatsGrid, styles.detailedStatsGridCentered]}>
                 <StatBox
-                  label="REB"
-                  sub={`Rebonds: ${player.reb}`}
+                  label={t("playerDetailModal.reb")}
+                  sub={t("playerDetailModal.reboundsSub", { count: player.reb })}
                   quad={[
                     {
-                      label: "OFF",
+                      label: t("playerDetailModal.off"),
                       value: player.reb_off,
                       color: getActionColor(ActionType.REBOUND, ReboundSpecification.OFFENSIVE, 0),
                       markerType: MarkerType.TRIANGLE,
                     },
                     {
-                      label: "DEF",
+                      label: t("playerDetailModal.def"),
                       value: player.reb_def,
                       color: getActionColor(ActionType.REBOUND, ReboundSpecification.DEFENSIVE, 0),
                       markerType: MarkerType.TRIANGLE,
@@ -535,63 +541,63 @@ export default function PlayerDetailModal({
                   ]}
                 />
                 <StatBox
-                  label="AST"
+                  label={t("playerDetailModal.ast")}
                   value={player.ast}
-                  sub="Passes décisives"
+                  sub={t("playerDetailModal.assistsSub")}
                   markerType={MarkerType.CIRCLE}
                   markerColor={getActionColor(ActionType.ASSIST, "", 0)}
                 />
                 <StatBox
-                  label="INT"
+                  label={t("playerDetailModal.int")}
                   value={player.stl}
-                  sub="Interceptions"
+                  sub={t("liveMatchModals.filter.steals")}
                   markerType={MarkerType.CIRCLE}
                   markerColor={getActionColor(ActionType.STEAL, "", 0)}
                 />
                 <StatBox
-                  label="CTR"
+                  label={t("playerDetailModal.ctr")}
                   value={player.blk}
-                  sub="Contres"
+                  sub={t("liveMatchModals.filter.blocks")}
                   markerType={MarkerType.CIRCLE}
                   markerColor={getActionColor(ActionType.BLOCK, "", 0)}
                 />
                 <StatBox
-                  label="BP"
+                  label={t("playerDetailModal.bp")}
                   value={player.to}
-                  sub="Balles perdues"
+                  sub={t("playerDetailModal.turnoversSub")}
                   markerType={MarkerType.CIRCLE}
                   markerColor={getActionColor(ActionType.TURNOVER, "", 0)}
                 />
                 <StatBox
-                  label="FTE"
-                  sub={`Fautes: ${player.pf}`}
+                  label={t("playerDetailModal.fte")}
+                  sub={t("playerDetailModal.foulsSub", { count: player.pf })}
                   quad={[
                     {
-                      label: "PERS",
+                      label: t("playerDetailModal.pers"),
                       value: foulBreakdown[FoulSpecification.PERSONAL],
                       color: getActionColor(ActionType.FOUL, FoulSpecification.PERSONAL, 0),
                     },
                     {
-                      label: "TECH",
+                      label: t("playerDetailModal.tech"),
                       value: foulBreakdown[FoulSpecification.TECHNICAL],
                       color: getActionColor(ActionType.FOUL, FoulSpecification.TECHNICAL, 0),
                     },
                     {
-                      label: "ANT",
+                      label: t("playerDetailModal.ant"),
                       value: foulBreakdown[FoulSpecification.PENALITY],
                       color: getActionColor(ActionType.FOUL, FoulSpecification.PENALITY, 0),
                     },
                     {
-                      label: "DISQ",
+                      label: t("playerDetailModal.disq"),
                       value: foulBreakdown[FoulSpecification.DISQUALIFICATION],
                       color: getActionColor(ActionType.FOUL, FoulSpecification.DISQUALIFICATION, 0),
                     },
                   ]}
                 />
                 <StatBox
-                  label="FP"
+                  label={t("playerDetailModal.fp")}
                   value={player.fd}
-                  sub="Fautes provoquées"
+                  sub={t("liveMatchModals.filter.foulsDrawn")}
                   markerType={MarkerType.DIAMOND}
                   markerColor={getActionColor(ActionType.FOUL_DRAWN, "", 0)}
                 />
@@ -616,7 +622,7 @@ export default function PlayerDetailModal({
                     { color: textPrimary, marginBottom: sp.md },
                   ]}
                 >
-                  Carte des actions
+                  {t("playerDetailModal.actionMap")}
                 </Text>
                 <View
                   style={[

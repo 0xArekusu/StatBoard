@@ -8,8 +8,9 @@
 import React from "react";
 import { View, Text, StyleSheet, TextInput } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { useTranslation } from "react-i18next";
 import { STATUS_COLORS } from "../../src/theme";
-import { MATCH_CREATION_FORM_LABELS, MATCH_CREATION_INFO_MESSAGES } from "../../constants";
+import { getMatchCreationFormLabel, getMatchCreationInfoMessage } from "../../constants";
 import { useResponsive } from "../../src/hooks/useResponsive";
 import type { Team } from "../../models/Team";
 
@@ -44,12 +45,13 @@ export const TeamSelector: React.FC<TeamSelectorProps> = ({
   isGuest = false,
   colors,
 }) => {
+  const { t } = useTranslation();
   const { sp, font } = useResponsive();
 
   return (
     <View style={[styles.formSection, { marginBottom: sp.lg }]}>
       <Text style={[styles.formLabel, { color: colors.textSecondary, fontSize: font.xs, marginBottom: sp.sm }]}>
-        {MATCH_CREATION_FORM_LABELS.MY_TEAM}
+        {getMatchCreationFormLabel("MY_TEAM")}
       </Text>
       {isGuest ? (
         // Guest mode: editable text input
@@ -67,7 +69,7 @@ export const TeamSelector: React.FC<TeamSelectorProps> = ({
           ]}
           value={myTeamName}
           onChangeText={onMyTeamNameChange}
-          placeholder="Nom de votre équipe"
+          placeholder={t("teamSelector.namePlaceholder")}
           placeholderTextColor={colors.textSecondary}
         />
       ) : teams.length > 0 ? (
@@ -79,7 +81,7 @@ export const TeamSelector: React.FC<TeamSelectorProps> = ({
           ]}
         >
           <Text style={[styles.formInputText, { color: colors.textPrimary, fontSize: font.md }]}>
-            {team?.name || "Équipe non trouvée"}
+            {team?.name || t("teamSelector.teamNotFound")}
           </Text>
         </View>
       ) : (
@@ -101,7 +103,7 @@ export const TeamSelector: React.FC<TeamSelectorProps> = ({
             color={STATUS_COLORS.error}
           />
           <Text style={[styles.alertText, { color: STATUS_COLORS.errorLight, fontSize: font.md }]}>
-            {MATCH_CREATION_INFO_MESSAGES.NO_TEAM_CREATED}
+            {getMatchCreationInfoMessage("NO_TEAM_CREATED")}
           </Text>
         </View>
       )}

@@ -1,5 +1,6 @@
 import type { IClubMemberRepository } from "../repositories/IClubMemberRepository";
 import type { CreateClubMemberData } from "../models/ClubMember";
+import i18n from "../src/i18n";
 
 /**
  * Service Layer Pattern
@@ -28,12 +29,12 @@ export class ClubMemberService {
     // Check if user is already a member
     const existingMembership = await this.clubMemberRepository.findByClubAndUser(clubId, userId);
     if (existingMembership) {
-      return { success: false, error: "Vous êtes déjà membre de ce club" };
+      return { success: false, error: i18n.t("clubMemberService.alreadyMember") };
     }
 
     const member = await this.clubMemberRepository.create({ clubId, userId, email, displayName });
     if (!member) {
-      return { success: false, error: "Erreur lors de l'inscription au club" };
+      return { success: false, error: i18n.t("clubMemberService.joinFailed") };
     }
 
     return { success: true, member };
@@ -50,12 +51,12 @@ export class ClubMemberService {
   async leaveClub(clubId: string, userId: string) {
     const membership = await this.clubMemberRepository.findByClubAndUser(clubId, userId);
     if (!membership) {
-      return { success: false, error: "Vous n'êtes pas membre de ce club" };
+      return { success: false, error: i18n.t("clubMemberService.notMember") };
     }
 
     const deleted = await this.clubMemberRepository.delete(membership.id);
     if (!deleted) {
-      return { success: false, error: "Erreur lors de la sortie du club" };
+      return { success: false, error: i18n.t("clubMemberService.leaveFailed") };
     }
 
     return { success: true };

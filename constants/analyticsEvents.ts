@@ -18,6 +18,7 @@ export const ANALYTICS_EVENTS = {
   // Dashboard
   PROFILE_MENU_OPENED: "profile_menu_opened",
   THEME_TOGGLED: "theme_toggled",
+  LANGUAGE_CHANGED: "language_changed",
   TEAM_CHANGED: "team_changed",
 
   // Club
@@ -64,6 +65,12 @@ export const ANALYTICS_EVENTS = {
   FORCE_UPDATE_ABANDONED: "force_update_abandoned",
   CHANGELOG_SHOWN: "changelog_shown",
   CHANGELOG_DISMISSED: "changelog_dismissed",
+
+  // Review prompt
+  REVIEW_PROMPT_SHOWN: "review_prompt_shown",
+  REVIEW_PROMPT_LIKED: "review_prompt_liked",
+  REVIEW_PROMPT_DISLIKED: "review_prompt_disliked",
+  REVIEW_PROMPT_NATIVE_REQUESTED: "review_prompt_native_requested",
   // DEBUG TEMPORAIRE — à retirer après diagnostic du changelog
   UPDATE_CHECK_DEBUG: "update_check_debug",
 } as const;

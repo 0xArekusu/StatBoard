@@ -8,6 +8,13 @@ import {
   DEFAULT_OPPONENT_PLAYERS_COUNT,
   getDefaultOpponentPlayerName,
 } from "../../constants/matchConstants";
+import i18n from "../../src/i18n";
+
+// These tests assert French copy directly, so pin the language regardless of
+// the device locale the test environment resolves (jest-expo mocks it to "en").
+beforeAll(async () => {
+  await i18n.changeLanguage("fr");
+});
 
 // ─── GUEST_IDS ────────────────────────────────────────────────────────────────
 
@@ -29,18 +36,18 @@ describe("GUEST_IDS", () => {
 
 describe("getPeriodLabel (matchConstants)", () => {
   describe("format 2 mi-temps", () => {
-    it("retourne '1ère mi-temps' pour la 1ère période", () => {
+    it("retourne '1ère mi-temps' pour la 1ère période (accord féminin)", () => {
       expect(getPeriodLabel(MATCH_FORMATS.TWO_HALVES, 1)).toBe("1ère mi-temps");
     });
 
-    it("retourne '2ère mi-temps' pour la 2e période", () => {
-      expect(getPeriodLabel(MATCH_FORMATS.TWO_HALVES, 2)).toBe("2ère mi-temps");
+    it("retourne '2e mi-temps' pour la 2e période", () => {
+      expect(getPeriodLabel(MATCH_FORMATS.TWO_HALVES, 2)).toBe("2e mi-temps");
     });
   });
 
   describe("format 4 quart-temps", () => {
-    it("retourne '1e quart-temps' pour le 1er quart", () => {
-      expect(getPeriodLabel(MATCH_FORMATS.FOUR_QUARTERS, 1)).toBe("1e quart-temps");
+    it("retourne '1er quart-temps' pour le 1er quart (accord masculin)", () => {
+      expect(getPeriodLabel(MATCH_FORMATS.FOUR_QUARTERS, 1)).toBe("1er quart-temps");
     });
 
     it("retourne '2e quart-temps' pour le 2e quart", () => {
@@ -49,6 +56,31 @@ describe("getPeriodLabel (matchConstants)", () => {
 
     it("retourne '4e quart-temps' pour le 4e quart", () => {
       expect(getPeriodLabel(MATCH_FORMATS.FOUR_QUARTERS, 4)).toBe("4e quart-temps");
+    });
+  });
+
+  describe("support anglais (ordinaux via Intl.PluralRules, sans genre)", () => {
+    beforeAll(async () => {
+      await i18n.changeLanguage("en");
+    });
+    afterAll(async () => {
+      await i18n.changeLanguage("fr");
+    });
+
+    it("retourne '1st half' pour la 1ère période", () => {
+      expect(getPeriodLabel(MATCH_FORMATS.TWO_HALVES, 1)).toBe("1st half");
+    });
+
+    it("retourne '2nd quarter' pour le 2e quart", () => {
+      expect(getPeriodLabel(MATCH_FORMATS.FOUR_QUARTERS, 2)).toBe("2nd quarter");
+    });
+
+    it("retourne '3rd quarter' pour le 3e quart", () => {
+      expect(getPeriodLabel(MATCH_FORMATS.FOUR_QUARTERS, 3)).toBe("3rd quarter");
+    });
+
+    it("retourne '4th quarter' pour le 4e quart", () => {
+      expect(getPeriodLabel(MATCH_FORMATS.FOUR_QUARTERS, 4)).toBe("4th quarter");
     });
   });
 });

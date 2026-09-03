@@ -5,6 +5,8 @@
  * NOTE: Use MatchStatus and Team enums from '../src/models/types' instead of duplicating here.
  */
 
+import i18n from '../src/i18n';
+
 // ===========================
 // GUEST IDS
 // ===========================
@@ -29,30 +31,38 @@ export const MATCH_FORMATS = {
 export type MatchFormat = typeof MATCH_FORMATS[keyof typeof MATCH_FORMATS];
 
 /**
- * Match format labels in French
+ * Get localized labels for a match format
  */
-export const MATCH_FORMAT_LABELS = {
-  [MATCH_FORMATS.TWO_HALVES]: {
-    singular: 'mi-temps',
-    plural: 'mi-temps',
-    short: 'MT',
-  },
-  [MATCH_FORMATS.FOUR_QUARTERS]: {
-    singular: 'quart-temps',
-    plural: 'quart-temps',
-    short: 'QT',
-  },
-} as const;
+export function getMatchFormatLabels(format: MatchFormat): { singular: string; plural: string; short: string } {
+  const key = format === MATCH_FORMATS.TWO_HALVES ? 'halves' : 'quarters';
+  return {
+    singular: i18n.t(`matchFormatLabels.${key}.singular`),
+    plural: i18n.t(`matchFormatLabels.${key}.plural`),
+    short: i18n.t(`matchFormatLabels.${key}.short`),
+  };
+}
 
 /**
- * Get period label in French
+ * Get period label (e.g., "1ère mi-temps", "2nd quarter")
+ *
+ * Uses i18next's ordinal pluralization (backed by Intl.PluralRules) instead of
+ * hardcoded French suffix logic, so the ordinal is correct in every supported
+ * language. "context" carries the grammatical gender needed for French
+ * ("1ère" vs "1er") — languages without gendered ordinals (English) simply
+ * ignore it and fall back to their plain ordinal_* keys.
+ *
  * @param format - Match format
  * @param periodNumber - Period number (1-based)
- * @returns Localized period label (e.g., "1ère mi-temps", "2e quart-temps")
  */
 export const getPeriodLabel = (format: MatchFormat, periodNumber: number): string => {
-  const labels = MATCH_FORMAT_LABELS[format];
-  return `${periodNumber}${labels.short === 'MT' ? 'ère' : 'e'} ${labels.singular}`;
+  const labels = getMatchFormatLabels(format);
+  const gender = format === MATCH_FORMATS.TWO_HALVES ? 'feminine' : 'masculine';
+  const ordinal = i18n.t('matchConstants.periodOrdinal', {
+    count: periodNumber,
+    ordinal: true,
+    context: gender,
+  });
+  return `${ordinal} ${labels.singular}`;
 };
 
 // ===========================
@@ -72,14 +82,19 @@ export const MATCH_FORMAT_PRESETS = {
   QUARTERS: {
     totalPeriods: 4,
     periodDuration: 10, // minutes
-    label: "4 Quarts-temps"
   },
   HALVES: {
     totalPeriods: 2,
     periodDuration: 20, // minutes
-    label: "2 Mi-temps"
   }
 } as const;
+
+/**
+ * Get localized label for a match format preset
+ */
+export function getMatchFormatPresetLabel(preset: 'QUARTERS' | 'HALVES'): string {
+  return i18n.t(`matchFormatPresets.${preset}.label`);
+}
 
 /**
  * Default match format for new matches
@@ -117,78 +132,61 @@ export const DEFAULT_OPPONENT_PLAYERS_COUNT = 5;
  * @returns Default player name
  */
 export const getDefaultOpponentPlayerName = (index: number): string =>
-  `Joueur ${index}`;
+  i18n.t('matchConstants.defaultOpponentPlayerName', { index });
 
 /**
- * Step labels for the match creation flow
+ * Step label for the match creation flow
  */
-export const MATCH_CREATION_STEP_LABELS = {
-  1: "Configuration du match",
-  2: "Feuille de match"
-} as const;
+export function getMatchCreationStepLabel(step: MatchCreationStep): string {
+  return i18n.t(`matchCreationStepLabels.step${step}`);
+}
 
 /**
- * Error messages for match creation validation
+ * Button label for match creation
  */
-export const MATCH_VALIDATION_MESSAGES = {
-  NO_OPPONENT: "Veuillez saisir le nom de l'adversaire.",
-  NO_TEAM: "Veuillez sélectionner une équipe.",
-  MIN_PLAYERS: "Il faut au moins 1 joueur dans votre équipe.",
-  STARTERS_REQUIRED: (count: number) =>
-    `Veuillez sélectionner ${count} joueurs pour le 5 de départ.`,
-  STARTERS_FULL: "Le 5 majeur est complet. Retirez un joueur avant d'en ajouter un.",
-  OPPONENT_MIN_PLAYERS: "L'équipe adverse doit avoir au moins 5 joueurs.",
-  OPPONENT_STARTERS_REQUIRED:
-    "Veuillez sélectionner 5 joueurs de départ pour l'équipe adverse.",
-  NO_CLUB: "Impossible de démarrer le match : aucun club sélectionné."
-} as const;
+export function getMatchCreationButtonLabel(
+  key: 'NEXT' | 'START' | 'ADD_REINFORCEMENT' | 'MODIFY_OPTIONS'
+): string {
+  return i18n.t(`matchCreationButtonLabels.${key}`);
+}
 
 /**
- * Button labels for match creation
+ * Info message for match creation
  */
-export const MATCH_CREATION_BUTTON_LABELS = {
-  NEXT: "Configurer les effectifs",
-  START: "Coup d'envoi",
-  ADD_REINFORCEMENT: "Ajouter un renfort",
-  MODIFY_OPTIONS: "Modifier les options",
-  GENERATE_PLAYERS: (count: number) => `+${count} Joueurs`
-} as const;
+export function getMatchCreationInfoMessage(
+  key:
+    | 'ROSTER_INSTRUCTIONS'
+    | 'OPPONENT_ROSTER_INSTRUCTIONS'
+    | 'NO_TEAM_CREATED'
+    | 'OPPONENT_STATS_DISABLED'
+    | 'OPPONENT_STATS_DISABLED_DETAIL'
+    | 'NO_OPPONENT_PLAYERS'
+    | 'OPPONENT_STATS_OPTION'
+    | 'OPPONENT_STATS_TITLE'
+): string {
+  return i18n.t(`matchCreationInfoMessages.${key}`);
+}
 
 /**
- * Info messages for match creation
+ * Form label for match creation
  */
-export const MATCH_CREATION_INFO_MESSAGES = {
-  ROSTER_INSTRUCTIONS:
-    "Sélectionnez les présents et le 5 de départ (étoile à droite).",
-  OPPONENT_ROSTER_INSTRUCTIONS:
-    "Sélectionnez le 5 de départ adverse (étoile à droite).",
-  NO_TEAM_CREATED: "Pas d'équipe créée",
-  OPPONENT_STATS_DISABLED: "Statistiques adverses désactivées",
-  OPPONENT_STATS_DISABLED_DETAIL:
-    "Activez l'option à l'étape précédente pour saisir l'effectif adverse.",
-  NO_OPPONENT_PLAYERS: "Aucun joueur adverse ajouté.",
-  OPPONENT_STATS_OPTION: "Saisir aussi les tirs/fautes adverses",
-  OPPONENT_STATS_TITLE: "Stats Adversaires"
-} as const;
+export function getMatchCreationFormLabel(
+  key:
+    | 'MY_TEAM'
+    | 'OPPONENT'
+    | 'MATCH_FORMAT'
+    | 'LOCATION'
+    | 'PERIODS'
+    | 'MINUTES_PER_PERIOD'
+    | 'HOME'
+    | 'AWAY'
+): string {
+  return i18n.t(`matchCreationFormLabels.${key}`);
+}
 
 /**
- * Form labels for match creation
+ * Roster tab label for match creation
  */
-export const MATCH_CREATION_FORM_LABELS = {
-  MY_TEAM: "MON ÉQUIPE",
-  OPPONENT: "ADVERSAIRE",
-  MATCH_FORMAT: "FORMAT DU MATCH",
-  LOCATION: "LIEU",
-  PERIODS: "PÉRIODES",
-  MINUTES_PER_PERIOD: "MINUTES / PÉRIODE",
-  HOME: "Domicile",
-  AWAY: "Extérieur"
-} as const;
-
-/**
- * Roster tab labels for match creation
- */
-export const MATCH_ROSTER_TAB_LABELS = {
-  US: "NOUS",
-  THEM: "EUX"
-} as const;
+export function getMatchRosterTabLabel(key: 'US' | 'THEM'): string {
+  return i18n.t(`matchRosterTabLabels.${key}`);
+}

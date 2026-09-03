@@ -1,6 +1,8 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
+import { INTL_LOCALES, SupportedLanguage } from '../../src/i18n';
 import { useTheme } from '../../src/contexts/ThemeContext';
 import { useResponsive } from '../../src/hooks/useResponsive';
 import { MatchHistoryEntry } from '../../src/services/seasonStats';
@@ -10,6 +12,7 @@ interface MatchHistoryRowProps {
 }
 
 export default function MatchHistoryRow({ entry, onPress }: MatchHistoryRowProps) {
+  const { t, i18n } = useTranslation();
   const { colors } = useTheme();
   const { sp, font, sizes } = useResponsive();
   const { match, played, pts, reb, ast } = entry;
@@ -20,7 +23,10 @@ export default function MatchHistoryRow({ entry, onPress }: MatchHistoryRowProps
     : colors.text.disabled;
 
   const date = match.created_at
-    ? new Date(match.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })
+    ? new Date(match.created_at).toLocaleDateString(
+        INTL_LOCALES[i18n.language as SupportedLanguage] ?? INTL_LOCALES.fr,
+        { day: '2-digit', month: '2-digit' }
+      )
     : '—';
 
   return (
@@ -80,18 +86,18 @@ export default function MatchHistoryRow({ entry, onPress }: MatchHistoryRowProps
       {played ? (
         <View style={[styles.stats, { gap: sp.sm }]}>
           <Text style={[styles.stat, { fontSize: font.xs, color: colors.text.secondary }]}>
-            <Text style={{ fontWeight: '700', color: colors.text.primary }}>{pts}</Text>pts
+            <Text style={{ fontWeight: '700', color: colors.text.primary }}>{pts}</Text>{t('matchHistoryRow.ptsAbbr')}
           </Text>
           <Text style={[styles.stat, { fontSize: font.xs, color: colors.text.secondary }]}>
-            <Text style={{ fontWeight: '700', color: colors.text.primary }}>{reb}</Text>reb
+            <Text style={{ fontWeight: '700', color: colors.text.primary }}>{reb}</Text>{t('matchHistoryRow.rebAbbr')}
           </Text>
           <Text style={[styles.stat, { fontSize: font.xs, color: colors.text.secondary }]}>
-            <Text style={{ fontWeight: '700', color: colors.text.primary }}>{ast}</Text>ast
+            <Text style={{ fontWeight: '700', color: colors.text.primary }}>{ast}</Text>{t('matchHistoryRow.astAbbr')}
           </Text>
         </View>
       ) : (
         <Text style={[styles.didNotPlay, { fontSize: font.xs, color: colors.text.disabled }]}>
-          N'a pas joué
+          {t('matchHistoryRow.didNotPlay')}
         </Text>
       )}
 

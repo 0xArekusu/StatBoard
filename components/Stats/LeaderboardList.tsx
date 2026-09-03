@@ -1,9 +1,10 @@
 import React from 'react';
 import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../src/contexts/ThemeContext';
 import { useResponsive } from '../../src/hooks/useResponsive';
 import { PlayerSeasonData } from '../../src/services/seasonStats';
-import { LeaderCategory, LEADER_CATEGORY, LEADER_CATEGORY_SUBLABELS } from '../../constants/statsConstants';
+import { LeaderCategory, LEADER_CATEGORY, getLeaderCategorySublabel } from '../../constants/statsConstants';
 import LeaderboardRow from './LeaderboardRow';
 
 function getCategoryValue(player: PlayerSeasonData, category: LeaderCategory): number {
@@ -64,6 +65,7 @@ export default function LeaderboardList({
   showRenforts,
   onPlayerPress,
 }: LeaderboardListProps) {
+  const { t } = useTranslation();
   const { colors } = useTheme();
   const { sp, font } = useResponsive();
 
@@ -85,10 +87,10 @@ export default function LeaderboardList({
       <View style={styles.center}>
         <Text style={[styles.empty, { color: colors.text.tertiary, fontSize: font.md }]}>
           {matchCount === 0
-            ? 'Aucun match enregistré'
+            ? t('leaderboardList.noMatches')
             : !showRenforts && players.length > 0
-            ? 'Aucun joueur du roster pour cette période'
-            : 'Aucune statistique pour cette période'}
+            ? t('leaderboardList.noRosterPlayers')
+            : t('leaderboardList.noStats')}
         </Text>
       </View>
     );
@@ -110,7 +112,7 @@ export default function LeaderboardList({
           },
         ]}
       >
-        {LEADER_CATEGORY_SUBLABELS[category].toUpperCase()} · {matchCount} MATCH{matchCount > 1 ? 'S' : ''}
+        {getLeaderCategorySublabel(category).toUpperCase()} · {t('leaderboardList.matchCount', { count: matchCount }).toUpperCase()}
       </Text>
       {sorted.map((player, index) => (
         <LeaderboardRow

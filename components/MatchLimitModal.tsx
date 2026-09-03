@@ -1,6 +1,7 @@
 import React from "react";
 import { Modal, View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useTranslation } from "react-i18next";
 import { useTheme } from "../src/contexts/ThemeContext";
 import { STATUS_COLORS, COMMON_COLORS, SHADOW_COLOR } from "../src/theme";
 import { useResponsive } from "../src/hooks/useResponsive";
@@ -24,6 +25,7 @@ export default function MatchLimitModal({
   onLogin,
   onUpgrade,
 }: MatchLimitModalProps) {
+  const { t } = useTranslation();
   const { colors } = useTheme();
   const { sp, font, sizes } = useResponsive();
 
@@ -37,24 +39,24 @@ export default function MatchLimitModal({
             <Ionicons name="warning-outline" size={sp.xxl * 2.2} color={STATUS_COLORS.warning} />
           </View>
 
-          <Text style={[styles.title, { color: colors.text.primary, fontSize: font.xxl, marginBottom: sp.md }]}>Limite atteinte</Text>
+          <Text style={[styles.title, { color: colors.text.primary, fontSize: font.xxl, marginBottom: sp.md }]}>{t("matchLimitModal.title")}</Text>
 
           <Text style={[styles.message, { color: colors.text.secondary, fontSize: font.md, marginBottom: sp.lg }]}>
-            Vous avez atteint la limite de <Text style={[styles.bold, { color: STATUS_COLORS.warning }]}>{maxCount} matchs</Text> en stockage local.
+            {t("matchLimitModal.messagePrefix")} <Text style={[styles.bold, { color: STATUS_COLORS.warning }]}>{t("matchLimitModal.matchCount", { count: maxCount })}</Text> {t("matchLimitModal.messageSuffix")}
           </Text>
 
           {!isConnected ? (
             <View style={[styles.infoBox, { backgroundColor: infoBoxColor + "20", borderColor: infoBoxColor, borderRadius: sp.md, padding: sp.md, gap: sp.sm + sp.xs, marginBottom: sp.lg }]}>
               <Ionicons name="information-circle-outline" size={sizes.iconMd} color={infoBoxColor} />
               <Text style={[styles.infoText, { color: infoBoxColor, fontSize: font.md }]}>
-                Connectez-vous pour accéder à un stockage illimité sur le cloud avec un abonnement premium.
+                {t("matchLimitModal.notConnectedInfo")}
               </Text>
             </View>
           ) : (
             <View style={[styles.infoBox, { backgroundColor: infoBoxColor + "20", borderColor: infoBoxColor, borderRadius: sp.md, padding: sp.md, gap: sp.sm + sp.xs, marginBottom: sp.lg }]}>
               <Ionicons name="rocket-outline" size={sizes.iconMd} color={infoBoxColor} />
               <Text style={[styles.infoText, { color: infoBoxColor, fontSize: font.md }]}>
-                Passez à un abonnement premium pour un stockage illimité sur le cloud.
+                {t("matchLimitModal.connectedInfo")}
               </Text>
             </View>
           )}
@@ -69,7 +71,7 @@ export default function MatchLimitModal({
                 }}
               >
                 <Ionicons name="log-in-outline" size={sizes.iconMd * 0.75} color={COMMON_COLORS.white} style={[styles.buttonIcon, { marginRight: sp.sm }]} />
-                <Text style={[styles.primaryButtonText, { color: COMMON_COLORS.white, fontSize: font.md }]}>Se connecter</Text>
+                <Text style={[styles.primaryButtonText, { color: COMMON_COLORS.white, fontSize: font.md }]}>{t("loginScreen.submitButton")}</Text>
               </TouchableOpacity>
             )}
 
@@ -82,7 +84,7 @@ export default function MatchLimitModal({
                 }}
               >
                 <Ionicons name="star" size={sizes.iconMd * 0.75} color={COMMON_COLORS.white} style={[styles.buttonIcon, { marginRight: sp.sm }]} />
-                <Text style={[styles.primaryButtonText, { color: COMMON_COLORS.white, fontSize: font.md }]}>Voir les abonnements</Text>
+                <Text style={[styles.primaryButtonText, { color: COMMON_COLORS.white, fontSize: font.md }]}>{t("matchLimitModal.viewSubscriptions")}</Text>
               </TouchableOpacity>
             )}
 
@@ -90,7 +92,7 @@ export default function MatchLimitModal({
               style={[styles.button, styles.cancelButton, { backgroundColor: colors.surfaceVariant, paddingVertical: sp.md, paddingHorizontal: sp.lg, borderRadius: sp.md }]}
               onPress={onClose}
             >
-              <Text style={[styles.cancelButtonText, { color: colors.text.secondary, fontSize: font.md }]}>Fermer</Text>
+              <Text style={[styles.cancelButtonText, { color: colors.text.secondary, fontSize: font.md }]}>{t("clubInfoView.close")}</Text>
             </TouchableOpacity>
           </View>
         </View>

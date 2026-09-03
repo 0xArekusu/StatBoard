@@ -39,6 +39,7 @@ import {
   useFocusEffect,
 } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
+import { useTranslation } from "react-i18next";
 import { Match, Team } from "../src/models/types";
 import { Club } from "../models/Club";
 import {
@@ -60,6 +61,7 @@ import { ServiceFactory } from "../services/ServiceFactory";
 import { supabase } from "../src/config/supabase";
 import { getSignedUrl } from "../utils/storageHelper";
 import { useSignedUrl } from "../hooks/useSignedUrl";
+import { recordReviewPromptSignal } from "../hooks/useReviewPrompt";
 import { MatchSponsor, getSponsorUris, parseMatchSponsors } from "../src/services/SponsorService";
 import { StatsTab, CardsTab, CourtTab, EvolutionTab, TimelineTab, PlayerDetailModal } from "../components/MatchDetails";
 import type { PlayerStats, Tab, TeamFilter, ActionFilterType, SortBy, SortOrder } from "../constants/matchDetailsConstants";
@@ -73,6 +75,7 @@ export default function MatchDetailsScreen() {
   // ========================================
   // NAVIGATION & ROUTING
   // ========================================
+  const { t } = useTranslation();
   const navigation = useNavigation<RootNavigationProp>();
   const route = useRoute<MatchDetailsRouteProp>();
   const posthog = usePostHog();
@@ -133,8 +136,8 @@ export default function MatchDetailsScreen() {
       } catch (error) {
         console.error("Error loading match data:", error);
         Alert.alert(
-          "Erreur",
-          "Impossible de charger les données du match. Veuillez réessayer."
+          t("common.error"),
+          t("matchDetailsScreen.loadError")
         );
       } finally {
         setLoading(false);
@@ -245,17 +248,12 @@ export default function MatchDetailsScreen() {
   const handleExportPDF = async () => {
     try {
       setIsExportingPDF(true);
-      console.log('[MatchDetailsScreen] 📤 handleExportPDF - Début export');
-      console.log('[MatchDetailsScreen] 📊 État players actuel:', players.length);
-      console.log('[MatchDetailsScreen] 🎬 État actions actuel:', actions.length);
 
       // Determine if opponent stats are tracked by checking for opponent players
       // (excluding generic player 9999 used for opponent points without detailed tracking)
       const trackOpponentStats = players?.some(
         (p) => p.team === Team.OPPONENT && p.num !== 9999
       ) || false;
-
-      console.log('[MatchDetailsScreen] 🏀 trackOpponentStats:', trackOpponentStats);
 
       // Generate signed URL for club logo if available (for PDF embedding)
       let clubLogoUrl: string | undefined = undefined;
@@ -264,8 +262,8 @@ export default function MatchDetailsScreen() {
       }
 
       const pdfOptions = {
-        myTeamName: match.my_team_name || "Notre équipe",
-        opponentName: match.opponent_name || "Adversaire",
+        myTeamName: match.my_team_name || t("matchDetailsScreen.myTeamFallback"),
+        opponentName: match.opponent_name || t("matchDetailsScreen.opponentFallback"),
         myTeamScore: match.my_team_score || 0,
         opponentScore: match.opponent_score || 0,
         actions: actions || [], // Raw actions from database (with action_type, player_number, etc.)
@@ -284,22 +282,16 @@ export default function MatchDetailsScreen() {
         matchSponsors: parseMatchSponsors(match.match_sponsors),
       };
 
-      console.log('[MatchDetailsScreen] 📋 pdfOptions.players envoyé:', pdfOptions.players.map(p => ({
-        id: p.id,
-        num: p.num,
-        name: p.name,
-        team: p.team
-      })));
-
       await PDFExportService.generateMatchPDF(pdfOptions);
       setIsExportingPDF(false);
       posthog?.capture(ANALYTICS_EVENTS.PDF_EXPORTED, { type: ANALYTICS_PDF_EXPORT_TYPE.MATCH });
-      Alert.alert("Succès", "Le PDF a été généré et partagé avec succès");
+      recordReviewPromptSignal();
+      Alert.alert(t("common.success"), t("matchDetailsScreen.pdfExportedSuccess"));
     } catch (error) {
       setIsExportingPDF(false);
       console.error("Error exporting PDF:", error);
       showErrorAlert({
-        action: "générer le PDF",
+        messageKey: "matchDetailsScreen.errors.pdfGenerationFailed",
         error,
         context: "MatchDetailsScreen",
       });
@@ -375,11 +367,11 @@ export default function MatchDetailsScreen() {
         // Exclude generic player 9999 used for opponent points without tracking
         // Check both 'num' and 'player_number' fields for compatibility
         .filter((player) => {
-          const playerNum = player.num || player.player_number;
+          const playerNum = player.num ?? player.player_number;
           return playerNum !== 9999;
         })
         .forEach((player) => {
-          const playerNum = player.num || player.player_number;
+          const playerNum = player.num ?? player.player_number;
           const key = `${player.team}-${playerNum}`;
           // Use fallback if name is undefined, null, or empty string
           const playerName = (player.name || player.player_name) && (player.name || player.player_name).trim() !== ''
@@ -422,10 +414,10 @@ export default function MatchDetailsScreen() {
         .filter((action) => action.team === teamFilter)
         .forEach((action) => {
           // Handle both data formats (player_number from database, player from app)
-          const playerNum = action.player_number || action.player;
+          const playerNum = action.player_number ?? action.player;
 
           // Skip invalid player numbers (9999 = generic opponent, -1 = team rebound)
-          if (!playerNum || playerNum === 9999 || playerNum === -1) {
+          if (playerNum === undefined || playerNum === null || playerNum === 9999 || playerNum === -1) {
             return;
           }
 
@@ -535,11 +527,11 @@ export default function MatchDetailsScreen() {
     // STEP 4: Calculate +/- for all players in the map
     const allPlayersForPm = (players || [])
       .filter((p) => {
-        const num = p.num || p.player_number;
-        return num && num !== 9999 && num !== -1;
+        const num = p.num ?? p.player_number;
+        return num !== undefined && num !== null && num !== 9999 && num !== -1;
       })
       .map((p) => ({
-        player_number: p.num || p.player_number,
+        player_number: p.num ?? p.player_number,
         team: p.team as "MyTeam" | "Opponent",
         is_starter: !p.isSubstitute,
       }));
@@ -653,7 +645,7 @@ export default function MatchDetailsScreen() {
       <SafeAreaView style={[styles.container, { backgroundColor: bgColor, justifyContent: 'center', alignItems: 'center' }]}>
         <ActivityIndicator size="large" color={colors.primary} />
         <Text style={{ color: colors.text.secondary, marginTop: 16 }}>
-          Chargement des données du match...
+          {t("matchDetailsScreen.loadingData")}
         </Text>
       </SafeAreaView>
     );
@@ -668,7 +660,7 @@ export default function MatchDetailsScreen() {
       <PlayerDetailModal
         player={viewPlayer}
         onClose={() => setViewPlayer(null)}
-        myTeamName={match.my_team_name || "Notre équipe"}
+        myTeamName={match.my_team_name || t("matchDetailsScreen.myTeamFallback")}
         opponentName={match.opponent_name}
         actions={actions}
         club={club}
@@ -682,7 +674,7 @@ export default function MatchDetailsScreen() {
           <View style={[styles.pdfLoaderBox, { backgroundColor: colors.surface, borderColor: colors.border }]}>
             <ActivityIndicator size="large" color={colors.primary} />
             <Text style={[styles.pdfLoaderText, { color: colors.text.primary }]}>
-              Génération du PDF…
+              {t("matchDetailsScreen.generatingPdf")}
             </Text>
           </View>
         </View>
@@ -749,7 +741,7 @@ export default function MatchDetailsScreen() {
             >
               <Ionicons name="grid-outline" size={font.md} color={colors.primary} />
               <Text style={[styles.menuButtonText, { color: colors.primary, fontSize: font.xs }]}>
-                Menu
+                {t("matchDetailsScreen.menu")}
               </Text>
             </TouchableOpacity>
           </View>
@@ -759,7 +751,7 @@ export default function MatchDetailsScreen() {
           {/* LEFT SIDE - My team when home, opponent when away */}
           <View style={styles.teamScore}>
             <Text style={[styles.teamLabel, { color: textSecondary, fontSize: font.sm }]}>
-              {match.is_home ? (match.my_team_name || "Notre équipe") : match.opponent_name}
+              {match.is_home ? (match.my_team_name || t("matchDetailsScreen.myTeamFallback")) : match.opponent_name}
             </Text>
             <Text
               style={[
@@ -798,7 +790,7 @@ export default function MatchDetailsScreen() {
           {/* RIGHT SIDE - Opponent when home, my team when away */}
           <View style={styles.teamScore}>
             <Text style={[styles.teamLabel, { color: textSecondary, fontSize: font.sm }]}>
-              {match.is_home ? match.opponent_name : (match.my_team_name || "Notre équipe")}
+              {match.is_home ? match.opponent_name : (match.my_team_name || t("matchDetailsScreen.myTeamFallback"))}
             </Text>
             <Text
               style={[
@@ -872,7 +864,7 @@ export default function MatchDetailsScreen() {
                     },
                   ]}
                 >
-                  {match.my_team_name || "Mon équipe"}
+                  {match.my_team_name || t("matchDetailsScreen.myTeamFallback")}
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
@@ -901,7 +893,7 @@ export default function MatchDetailsScreen() {
                     },
                   ]}
                 >
-                  {match.opponent_name || "Adversaire"}
+                  {match.opponent_name || t("matchDetailsScreen.opponentFallback")}
                 </Text>
               </TouchableOpacity>
             </View>

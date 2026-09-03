@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import Svg, { Circle, Line, Polygon } from "react-native-svg";
+import { useTranslation } from "react-i18next";
 import { BRAND_COLORS, COMMON_COLORS, STATUS_COLORS, Spacing, Typography } from "../src/theme";
 import { Player } from "../models/Player";
 import { MatchActionGrid, ActionData } from "./MatchActionGrid";
@@ -29,6 +30,7 @@ import {
   getActionColor,
   getMarkerShapeType,
 } from "../src/models/ActionTypes";
+import { logInfo } from "../utils/logger";
 
 // History Modal
 interface HistoryModalProps {
@@ -46,6 +48,7 @@ export const HistoryModal: React.FC<HistoryModalProps> = ({
   onDeleteEvent,
   match,
 }) => {
+  const { t } = useTranslation();
   const { colors } = useTheme();
   const { sp, font, sizes } = useResponsive();
   const surfaceColor = colors.surface;
@@ -107,8 +110,8 @@ export const HistoryModal: React.FC<HistoryModalProps> = ({
     );
     const teamStr =
       eventToDelete.teamId === TeamId.HOME
-        ? match.myTeamName || "Mon équipe"
-        : match.opponent || "Adversaire";
+        ? match.myTeamName || t("liveMatchModals.myTeamFallback")
+        : match.opponent || t("liveMatchModals.opponentFallback");
     return `${eventToDelete.description}\n${timeStr} • ${teamStr}`;
   };
 
@@ -251,7 +254,7 @@ export const HistoryModal: React.FC<HistoryModalProps> = ({
                   { color: textPrimary, fontSize: font.xl },
                 ]}
               >
-                Historique du match
+                {t("liveMatchModals.history.title")}
               </Text>
             </View>
             <TouchableOpacity
@@ -308,8 +311,8 @@ export const HistoryModal: React.FC<HistoryModalProps> = ({
                     >
                       {formatGameTime(evt.period_number, evt.time_in_period)} •{" "}
                       {evt.teamId === TeamId.HOME
-                        ? match.myTeamName || "Mon équipe"
-                        : match.opponent || "Adversaire"}
+                        ? match.myTeamName || t("liveMatchModals.myTeamFallback")
+                        : match.opponent || t("liveMatchModals.opponentFallback")}
                     </Text>
                   </View>
                   {evt.action_type !== ActionType.SUBSTITUTION && (
@@ -331,7 +334,7 @@ export const HistoryModal: React.FC<HistoryModalProps> = ({
                 <Text
                   style={[styles.historyEmptyText, { color: textSecondary }]}
                 >
-                  Aucun événement enregistré.
+                  {t("liveMatchModals.history.empty")}
                 </Text>
               </View>
             )}
@@ -361,13 +364,13 @@ export const HistoryModal: React.FC<HistoryModalProps> = ({
                         { color: textPrimary, fontSize: font.md },
                       ]}
                     >
-                      Handicap de départ
+                      {t("liveMatchModals.history.startingHandicap")}
                     </Text>
                   </View>
                   <Text style={[styles.historyItemMeta, { color: textSecondary }]}>
                     {[
-                      (match.myTeamHandicap || 0) > 0 && `${match.myTeamName || "Mon équipe"} +${match.myTeamHandicap}`,
-                      (match.opponentHandicap || 0) > 0 && `${match.opponent || "Adversaire"} +${match.opponentHandicap}`,
+                      (match.myTeamHandicap || 0) > 0 && `${match.myTeamName || t("liveMatchModals.myTeamFallback")} +${match.myTeamHandicap}`,
+                      (match.opponentHandicap || 0) > 0 && `${match.opponent || t("liveMatchModals.opponentFallback")} +${match.opponentHandicap}`,
                     ].filter(Boolean).join("  •  ")}
                   </Text>
                 </View>
@@ -479,13 +482,24 @@ export const FilterModal: React.FC<FilterModalProps> = ({
   selectedTeamFilter = TeamFilterMode.ALL,
   onTeamFilterChange,
 }) => {
+  const { t } = useTranslation();
   const { colors } = useTheme();
-  const { sp, font, sizes } = useResponsive();
+  const { sp, font, sizes, isMobileLandscape, isMobilePortrait, isPortrait, width, height } = useResponsive();
   const surfaceColor = colors.surface;
   const textPrimary = colors.text.primary;
   const textSecondary = colors.text.secondary;
   const borderColor = colors.border;
   const bgColor = colors.surfaceVariant;
+
+  // Shrunk sizing applies on any phone-sized screen (landscape or portrait),
+  // never on tablet.
+  const isMobileCompact = isMobileLandscape || isMobilePortrait;
+
+  React.useEffect(() => {
+    if (visible) {
+      logInfo("FilterModal", "responsive state", { width, height, isPortrait, isMobileLandscape, isMobilePortrait });
+    }
+  }, [visible, width, height, isPortrait, isMobileLandscape, isMobilePortrait]);
 
   const totalPeriods = matchFormat === "2_halves" ? 2 : 4;
 
@@ -934,13 +948,21 @@ export const FilterModal: React.FC<FilterModalProps> = ({
               : colors.surfaceVariant,
             borderColor: isSelected ? colors.borderFocus : borderColor,
           },
+          isMobileCompact && {
+            paddingVertical: sp.xs,
+            paddingHorizontal: sp.sm,
+            gap: sp.xs,
+          },
         ]}
       >
         <View
           style={[
             styles.playerFilterBadge,
-            {
-              backgroundColor: isSelected ? colors.onPrimary : colors.surface,
+            { backgroundColor: isSelected ? colors.onPrimary : colors.surface },
+            isMobileCompact && {
+              width: sizes.iconMd,
+              height: sizes.iconMd,
+              borderRadius: sizes.iconMd / 2,
             },
           ]}
         >
@@ -977,6 +999,233 @@ export const FilterModal: React.FC<FilterModalProps> = ({
     );
   };
 
+  // Handle + header + score banner: fixed above the scroll area in portrait/tablet,
+  // but folded into the scroll itself in mobile landscape where vertical space is tight.
+  const filterHandle = (
+    <View
+      style={[
+        styles.sheetHandle,
+        {
+          backgroundColor: colors.border,
+          width: sizes.avatarSm,
+          height: sp.xs,
+          borderRadius: sp.xs,
+          marginBottom: isMobileCompact ? sp.xs : sp.md,
+        },
+      ]}
+    />
+  );
+
+  const filterHeader = (
+    <View
+      style={[
+        styles.filterSheetHeader,
+        isMobileCompact && { marginBottom: sp.xs },
+      ]}
+    >
+      <View
+        style={[
+          styles.filterHeaderLeft,
+          isMobileCompact && { gap: sp.xs },
+        ]}
+      >
+        <MaterialCommunityIcons
+          name="filter"
+          size={isMobileCompact ? sizes.iconSm : 24}
+          color={BRAND_COLORS[500]}
+        />
+        <Text
+          style={[
+            styles.filterSheetTitle,
+            { color: textPrimary },
+            isMobileCompact && { fontSize: font.lg },
+          ]}
+        >
+          {t("liveMatchModals.filter.title")}
+        </Text>
+      </View>
+      <View
+        style={[
+          styles.filterHeaderRight,
+          isMobileCompact && { gap: sp.xs },
+        ]}
+      >
+        <TouchableOpacity
+          onPress={() => {
+            setFilterMode(FilterMode.ALL);
+            if (onTeamFilterChange) {
+              onTeamFilterChange(TeamFilterMode.ALL);
+            }
+            if (onPlayerSelectionChange) {
+              onPlayerSelectionChange([]);
+            }
+            if (onPeriodSelectionChange) {
+              onPeriodSelectionChange([]);
+            }
+          }}
+          style={[
+            styles.resetButton,
+            isMobileCompact && {
+              paddingHorizontal: sp.xs,
+              paddingVertical: sp.xs,
+              gap: sp.xs,
+            },
+          ]}
+        >
+          <MaterialCommunityIcons
+            name="refresh"
+            size={isMobileCompact ? 12 : 14}
+            color={BRAND_COLORS[500]}
+          />
+          <Text
+            style={[
+              styles.resetButtonText,
+              { color: BRAND_COLORS[500] },
+              isMobileCompact && { fontSize: font.xxs },
+            ]}
+          >
+            {t("liveMatchModals.filter.reset")}
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={onClose}
+          style={[
+            styles.filterCloseButton,
+            { backgroundColor: colors.surfaceVariant },
+            isMobileCompact && {
+              width: sizes.avatarXs,
+              height: sizes.avatarXs,
+              borderRadius: sizes.avatarXs / 2,
+            },
+          ]}
+        >
+          <MaterialCommunityIcons
+            name="close"
+            size={isMobileCompact ? sizes.iconSm : 20}
+            color={textSecondary}
+          />
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+
+  const filterBanner = (
+    <View
+      style={[
+        styles.periodScoreBanner,
+        { borderColor, backgroundColor: colors.surfaceVariant },
+        isMobileCompact && {
+          paddingVertical: sp.xs,
+          paddingHorizontal: sp.sm,
+          marginBottom: sp.xs,
+          gap: sp.xs,
+        },
+      ]}
+    >
+      <Text
+        style={[
+          styles.periodScoreLabel,
+          { color: textSecondary },
+          isMobileCompact && { fontSize: font.xxs },
+        ]}
+      >
+        {selectedPeriods.length > 0
+          ? selectedPeriods.map(getPeriodLabel).join(" + ")
+          : t("liveMatchModals.filter.wholeMatch")}
+      </Text>
+      <View
+        style={[
+          styles.periodScoreRow,
+          isMobileCompact && { gap: sp.xs },
+        ]}
+      >
+        <View style={styles.periodScoreTeamCol}>
+          <Text
+            style={[
+              styles.periodScoreTeam,
+              { color: textSecondary },
+              isMobileCompact && { fontSize: font.xs },
+            ]}
+            numberOfLines={1}
+          >
+            {myTeamName || t("liveMatchModals.myTeamFallback")}
+          </Text>
+          {myTeamHandicap > 0 && (
+            <View style={[styles.filterHcpBadge, { backgroundColor: colors.primary + "22", borderColor: colors.primary + "55" }]}>
+              <Text style={[styles.filterHcpBadgeText, { color: colors.primary }]}>
+                +{myTeamHandicap} HCP
+              </Text>
+            </View>
+          )}
+        </View>
+        <Text
+          style={[
+            styles.periodScoreValue,
+            { color: textPrimary },
+            isMobileCompact && { fontSize: font.xxl },
+          ]}
+        >
+          {periodScore.myScore}
+        </Text>
+        <Text
+          style={[
+            styles.periodScoreDash,
+            { color: textSecondary },
+            isMobileCompact && { fontSize: font.lg },
+          ]}
+        >
+          —
+        </Text>
+        <Text
+          style={[
+            styles.periodScoreValue,
+            { color: textPrimary },
+            isMobileCompact && { fontSize: font.xxl },
+          ]}
+        >
+          {periodScore.theirScore}
+        </Text>
+        <View style={styles.periodScoreTeamCol}>
+          <Text
+            style={[
+              styles.periodScoreTeam,
+              { color: textSecondary },
+              isMobileCompact && { fontSize: font.xs },
+            ]}
+            numberOfLines={1}
+          >
+            {opponentName || t("liveMatchModals.opponentFallback")}
+          </Text>
+          {opponentHandicap > 0 && (
+            <View style={[styles.filterHcpBadge, { backgroundColor: colors.primary + "22", borderColor: colors.primary + "55" }]}>
+              <Text style={[styles.filterHcpBadgeText, { color: colors.primary }]}>
+                +{opponentHandicap} HCP
+              </Text>
+            </View>
+          )}
+        </View>
+      </View>
+    </View>
+  );
+
+  // Filter pill sizing: shrunk only in mobile landscape (tablet landscape and
+  // portrait keep the original styles.filterPill / filterPillText untouched).
+  const pillStyle = isMobileCompact
+    ? [styles.filterPill, { paddingHorizontal: sp.sm, paddingVertical: sp.xs }]
+    : styles.filterPill;
+  const pillTextStyle = isMobileCompact
+    ? [styles.filterPillText, { fontSize: font.xs }]
+    : styles.filterPillText;
+  const summaryValueStyle = isMobileCompact
+    ? [styles.filterSummaryValue, { fontSize: font.md, lineHeight: undefined }]
+    : styles.filterSummaryValue;
+  const summaryLabelStyle = isMobileCompact
+    ? [styles.filterSummaryLabel, { fontSize: font.xxs }]
+    : styles.filterSummaryLabel;
+  const summaryPercentStyle = isMobileCompact
+    ? [styles.filterSummaryPercentage, { fontSize: font.xxs, lineHeight: undefined }]
+    : styles.filterSummaryPercentage;
+
   return (
     <Modal visible={visible} transparent animationType="slide">
       <View style={styles.filterModalOverlay}>
@@ -997,154 +1246,50 @@ export const FilterModal: React.FC<FilterModalProps> = ({
               borderTopRightRadius: sp.lg,
               padding: sp.md,
             },
+            isMobileLandscape && { maxHeight: "96%" as const },
           ]}
         >
-          {/* Handle */}
-          <View
-            style={[
-              styles.sheetHandle,
-              {
-                backgroundColor: colors.border,
-                width: sizes.avatarSm,
-                height: sp.xs,
-                borderRadius: sp.xs,
-                marginBottom: sp.md,
-              },
-            ]}
-          />
-
-          {/* Header */}
-          <View style={styles.filterSheetHeader}>
-            <View style={styles.filterHeaderLeft}>
-              <MaterialCommunityIcons
-                name="filter"
-                size={24}
-                color={BRAND_COLORS[500]}
-              />
-              <Text style={[styles.filterSheetTitle, { color: textPrimary }]}>
-                Filtres
-              </Text>
-            </View>
-            <View style={styles.filterHeaderRight}>
-              <TouchableOpacity
-                onPress={() => {
-                  setFilterMode(FilterMode.ALL);
-                  if (onTeamFilterChange) {
-                    onTeamFilterChange(TeamFilterMode.ALL);
-                  }
-                  if (onPlayerSelectionChange) {
-                    onPlayerSelectionChange([]);
-                  }
-                  if (onPeriodSelectionChange) {
-                    onPeriodSelectionChange([]);
-                  }
-                }}
-                style={styles.resetButton}
-              >
-                <MaterialCommunityIcons
-                  name="refresh"
-                  size={14}
-                  color={BRAND_COLORS[500]}
-                />
-                <Text
-                  style={[styles.resetButtonText, { color: BRAND_COLORS[500] }]}
-                >
-                  Réinitialiser
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={onClose}
-                style={[
-                  styles.filterCloseButton,
-                  {
-                    backgroundColor: colors.surfaceVariant,
-                  },
-                ]}
-              >
-                <MaterialCommunityIcons
-                  name="close"
-                  size={20}
-                  color={textSecondary}
-                />
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          {/* Period Score Banner */}
-          <View
-            style={[
-              styles.periodScoreBanner,
-              { borderColor, backgroundColor: colors.surfaceVariant },
-            ]}
-          >
-            <Text style={[styles.periodScoreLabel, { color: textSecondary }]}>
-              {selectedPeriods.length > 0
-                ? selectedPeriods.map(getPeriodLabel).join(" + ")
-                : "Tout le match"}
-            </Text>
-            <View style={styles.periodScoreRow}>
-              <View style={styles.periodScoreTeamCol}>
-                <Text
-                  style={[styles.periodScoreTeam, { color: textSecondary }]}
-                  numberOfLines={1}
-                >
-                  {myTeamName || "Mon équipe"}
-                </Text>
-                {myTeamHandicap > 0 && (
-                  <View style={[styles.filterHcpBadge, { backgroundColor: colors.primary + "22", borderColor: colors.primary + "55" }]}>
-                    <Text style={[styles.filterHcpBadgeText, { color: colors.primary }]}>
-                      +{myTeamHandicap} HCP
-                    </Text>
-                  </View>
-                )}
-              </View>
-              <Text style={[styles.periodScoreValue, { color: textPrimary }]}>
-                {periodScore.myScore}
-              </Text>
-              <Text style={[styles.periodScoreDash, { color: textSecondary }]}>
-                —
-              </Text>
-              <Text style={[styles.periodScoreValue, { color: textPrimary }]}>
-                {periodScore.theirScore}
-              </Text>
-              <View style={styles.periodScoreTeamCol}>
-                <Text
-                  style={[styles.periodScoreTeam, { color: textSecondary }]}
-                  numberOfLines={1}
-                >
-                  {opponentName || "Adversaire"}
-                </Text>
-                {opponentHandicap > 0 && (
-                  <View style={[styles.filterHcpBadge, { backgroundColor: colors.primary + "22", borderColor: colors.primary + "55" }]}>
-                    <Text style={[styles.filterHcpBadgeText, { color: colors.primary }]}>
-                      +{opponentHandicap} HCP
-                    </Text>
-                  </View>
-                )}
-              </View>
-            </View>
-          </View>
+          {!isMobileLandscape && (
+            <>
+              {filterHandle}
+              {filterHeader}
+              {filterBanner}
+            </>
+          )}
 
           {/* Filter Options */}
           <ScrollView
             style={styles.filterSheetContent}
             showsVerticalScrollIndicator={false}
           >
+            {isMobileLandscape && (
+              <>
+                {filterHandle}
+                {filterHeader}
+                {filterBanner}
+              </>
+            )}
+
             {/* Type d'action */}
-            <View style={styles.filterSection}>
+            <View
+              style={[
+                styles.filterSection,
+                isMobileCompact && { marginBottom: sp.sm },
+              ]}
+            >
               <View style={styles.filterSectionHeader}>
                 <Text
                   style={[styles.filterSectionLabel, { color: textSecondary }]}
                 >
-                  TYPE D'ACTION
+                  {t("liveMatchModals.filter.actionType")}
                 </Text>
               </View>
 
-              <View style={styles.filterButtonsGrid}>
+              <View style={[styles.filterButtonsGrid, isMobileCompact && { gap: sp.xs }]}>
                 <TouchableOpacity
                   onPress={() => setFilterMode(FilterMode.ALL)}
                   style={[
-                    styles.filterPill,
+                    pillStyle,
                     {
                       backgroundColor:
                         filterMode === FilterMode.ALL
@@ -1159,7 +1304,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                 >
                   <Text
                     style={[
-                      styles.filterPillText,
+                      pillTextStyle,
                       {
                         color:
                           filterMode === FilterMode.ALL
@@ -1168,14 +1313,14 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                       },
                     ]}
                   >
-                    Tout
+                    {t("liveMatchModals.filter.all")}
                   </Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
                   onPress={() => setFilterMode(FilterMode.SHOOTING)}
                   style={[
-                    styles.filterPill,
+                    pillStyle,
                     {
                       backgroundColor:
                         filterMode === FilterMode.SHOOTING
@@ -1190,7 +1335,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                 >
                   <Text
                     style={[
-                      styles.filterPillText,
+                      pillTextStyle,
                       {
                         color:
                           filterMode === FilterMode.SHOOTING
@@ -1199,14 +1344,14 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                       },
                     ]}
                   >
-                    Tirs
+                    {t("liveMatchModals.filter.shots")}
                   </Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
                   onPress={() => setFilterMode(FilterMode.REBOUNDS)}
                   style={[
-                    styles.filterPill,
+                    pillStyle,
                     {
                       backgroundColor:
                         filterMode === FilterMode.REBOUNDS
@@ -1221,7 +1366,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                 >
                   <Text
                     style={[
-                      styles.filterPillText,
+                      pillTextStyle,
                       {
                         color:
                           filterMode === FilterMode.REBOUNDS
@@ -1230,14 +1375,14 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                       },
                     ]}
                   >
-                    Rebonds
+                    {t("liveMatchModals.filter.rebounds")}
                   </Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
                   onPress={() => setFilterMode(FilterMode.ASSISTS)}
                   style={[
-                    styles.filterPill,
+                    pillStyle,
                     {
                       backgroundColor:
                         filterMode === FilterMode.ASSISTS
@@ -1252,7 +1397,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                 >
                   <Text
                     style={[
-                      styles.filterPillText,
+                      pillTextStyle,
                       {
                         color:
                           filterMode === FilterMode.ASSISTS
@@ -1261,14 +1406,14 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                       },
                     ]}
                   >
-                    Passes
+                    {t("liveMatchModals.filter.assists")}
                   </Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
                   onPress={() => setFilterMode(FilterMode.FOULS)}
                   style={[
-                    styles.filterPill,
+                    pillStyle,
                     {
                       backgroundColor:
                         filterMode === FilterMode.FOULS
@@ -1283,7 +1428,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                 >
                   <Text
                     style={[
-                      styles.filterPillText,
+                      pillTextStyle,
                       {
                         color:
                           filterMode === FilterMode.FOULS
@@ -1292,14 +1437,14 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                       },
                     ]}
                   >
-                    Fautes
+                    {t("liveMatchModals.filter.fouls")}
                   </Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
                   onPress={() => setFilterMode(FilterMode.FOULS_DRAWN)}
                   style={[
-                    styles.filterPill,
+                    pillStyle,
                     {
                       backgroundColor:
                         filterMode === FilterMode.FOULS_DRAWN
@@ -1314,7 +1459,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                 >
                   <Text
                     style={[
-                      styles.filterPillText,
+                      pillTextStyle,
                       {
                         color:
                           filterMode === FilterMode.FOULS_DRAWN
@@ -1323,14 +1468,14 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                       },
                     ]}
                   >
-                    Fautes provoquées
+                    {t("liveMatchModals.filter.foulsDrawn")}
                   </Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
                   onPress={() => setFilterMode(FilterMode.TURNOVERS)}
                   style={[
-                    styles.filterPill,
+                    pillStyle,
                     {
                       backgroundColor:
                         filterMode === FilterMode.TURNOVERS
@@ -1345,7 +1490,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                 >
                   <Text
                     style={[
-                      styles.filterPillText,
+                      pillTextStyle,
                       {
                         color:
                           filterMode === FilterMode.TURNOVERS
@@ -1354,14 +1499,14 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                       },
                     ]}
                   >
-                    Pertes de balle
+                    {t("liveMatchModals.filter.turnovers")}
                   </Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
                   onPress={() => setFilterMode(FilterMode.BLOCKS)}
                   style={[
-                    styles.filterPill,
+                    pillStyle,
                     {
                       backgroundColor:
                         filterMode === FilterMode.BLOCKS
@@ -1376,7 +1521,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                 >
                   <Text
                     style={[
-                      styles.filterPillText,
+                      pillTextStyle,
                       {
                         color:
                           filterMode === FilterMode.BLOCKS
@@ -1385,14 +1530,14 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                       },
                     ]}
                   >
-                    Contres
+                    {t("liveMatchModals.filter.blocks")}
                   </Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
                   onPress={() => setFilterMode(FilterMode.STEALS)}
                   style={[
-                    styles.filterPill,
+                    pillStyle,
                     {
                       backgroundColor:
                         filterMode === FilterMode.STEALS
@@ -1407,7 +1552,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                 >
                   <Text
                     style={[
-                      styles.filterPillText,
+                      pillTextStyle,
                       {
                         color:
                           filterMode === FilterMode.STEALS
@@ -1416,7 +1561,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                       },
                     ]}
                   >
-                    Interceptions
+                    {t("liveMatchModals.filter.steals")}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -1424,7 +1569,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
 
             {/* Team filter section - only show if tracking opponent stats */}
             {trackOpponentStats && (
-              <View style={styles.filterSection}>
+              <View style={[styles.filterSection, isMobileCompact && { marginBottom: sp.sm }]}>
                 <View style={styles.filterSectionHeader}>
                   <Text
                     style={[
@@ -1432,18 +1577,18 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                       { color: textSecondary },
                     ]}
                   >
-                    ÉQUIPE
+                    {t("liveMatchModals.filter.team")}
                   </Text>
                 </View>
 
-                <View style={styles.filterButtonsGrid}>
+                <View style={[styles.filterButtonsGrid, isMobileCompact && { gap: sp.xs }]}>
                   <TouchableOpacity
                     onPress={() =>
                       onTeamFilterChange &&
                       onTeamFilterChange(TeamFilterMode.ALL)
                     }
                     style={[
-                      styles.filterPill,
+                      pillStyle,
                       {
                         backgroundColor:
                           teamFilter === TeamFilterMode.ALL
@@ -1458,7 +1603,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                   >
                     <Text
                       style={[
-                        styles.filterPillText,
+                        pillTextStyle,
                         {
                           color:
                             teamFilter === TeamFilterMode.ALL
@@ -1467,7 +1612,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                         },
                       ]}
                     >
-                      Tout
+                      {t("liveMatchModals.filter.all")}
                     </Text>
                   </TouchableOpacity>
 
@@ -1477,7 +1622,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                       onTeamFilterChange(TeamFilterMode.US)
                     }
                     style={[
-                      styles.filterPill,
+                      pillStyle,
                       {
                         backgroundColor:
                           teamFilter === TeamFilterMode.US
@@ -1492,7 +1637,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                   >
                     <Text
                       style={[
-                        styles.filterPillText,
+                        pillTextStyle,
                         {
                           color:
                             teamFilter === TeamFilterMode.US
@@ -1501,7 +1646,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                         },
                       ]}
                     >
-                      {myTeamName || "Mon équipe"}
+                      {myTeamName || t("liveMatchModals.myTeamFallback")}
                     </Text>
                   </TouchableOpacity>
 
@@ -1511,7 +1656,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                       onTeamFilterChange(TeamFilterMode.THEM)
                     }
                     style={[
-                      styles.filterPill,
+                      pillStyle,
                       {
                         backgroundColor:
                           teamFilter === TeamFilterMode.THEM
@@ -1526,7 +1671,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                   >
                     <Text
                       style={[
-                        styles.filterPillText,
+                        pillTextStyle,
                         {
                           color:
                             teamFilter === TeamFilterMode.THEM
@@ -1535,7 +1680,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                         },
                       ]}
                     >
-                      {opponentName || "Adversaire"}
+                      {opponentName || t("liveMatchModals.opponentFallback")}
                     </Text>
                   </TouchableOpacity>
                 </View>
@@ -1544,7 +1689,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
 
             {/* Period filter section */}
             {onPeriodSelectionChange && availablePeriods.length > 0 && (
-              <View style={styles.filterSection}>
+              <View style={[styles.filterSection, isMobileCompact && { marginBottom: sp.sm }]}>
                 <View style={styles.filterSectionHeader}>
                   <Text
                     style={[
@@ -1552,15 +1697,15 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                       { color: textSecondary },
                     ]}
                   >
-                    PÉRIODE
+                    {t("liveMatchModals.filter.period")}
                   </Text>
                 </View>
 
-                <View style={styles.filterButtonsGrid}>
+                <View style={[styles.filterButtonsGrid, isMobileCompact && { gap: sp.xs }]}>
                   <TouchableOpacity
                     onPress={clearPeriodSelection}
                     style={[
-                      styles.filterPill,
+                      pillStyle,
                       {
                         backgroundColor:
                           selectedPeriods.length === 0
@@ -1575,7 +1720,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                   >
                     <Text
                       style={[
-                        styles.filterPillText,
+                        pillTextStyle,
                         {
                           color:
                             selectedPeriods.length === 0
@@ -1584,7 +1729,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                         },
                       ]}
                     >
-                      Tout
+                      {t("liveMatchModals.filter.all")}
                     </Text>
                   </TouchableOpacity>
 
@@ -1595,7 +1740,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                         key={period}
                         onPress={() => togglePeriod(period)}
                         style={[
-                          styles.filterPill,
+                          pillStyle,
                           {
                             backgroundColor: isSelected
                               ? colors.primary
@@ -1608,7 +1753,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                       >
                         <Text
                           style={[
-                            styles.filterPillText,
+                            pillTextStyle,
                             {
                               color: isSelected
                                 ? COMMON_COLORS.white
@@ -1631,7 +1776,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                 {/* Home Team - only show if teamFilter is ALL or US */}
                 {(teamFilter === TeamFilterMode.ALL ||
                   teamFilter === TeamFilterMode.US) && (
-                  <View style={styles.filterSection}>
+                  <View style={[styles.filterSection, isMobileCompact && { marginBottom: sp.sm }]}>
                     <View style={styles.filterSectionHeader}>
                       <Text
                         style={[
@@ -1639,11 +1784,11 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                           { color: textSecondary },
                         ]}
                       >
-                        JOUEURS
+                        {t("liveMatchModals.filter.players")}
                       </Text>
                     </View>
 
-                    <View style={styles.playerFilterGrid}>
+                    <View style={[styles.playerFilterGrid, isMobileCompact && { gap: sp.xs }]}>
                       {homeRoster.map(renderPlayerButton)}
                     </View>
                   </View>
@@ -1654,17 +1799,17 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                   opponentRoster.length > 0 &&
                   (teamFilter === TeamFilterMode.ALL ||
                     teamFilter === TeamFilterMode.THEM) && (
-                    <View style={styles.filterSection}>
+                    <View style={[styles.filterSection, isMobileCompact && { marginBottom: sp.sm }]}>
                       <Text
                         style={[
                           styles.filterSectionLabel,
                           { color: textSecondary },
                         ]}
                       >
-                        ADVERSAIRE
+                        {t("liveMatchModals.filter.opponentSection")}
                       </Text>
 
-                      <View style={styles.playerFilterGrid}>
+                      <View style={[styles.playerFilterGrid, isMobileCompact && { gap: sp.xs }]}>
                         {opponentRoster.map(renderPlayerButton)}
                       </View>
                     </View>
@@ -1676,52 +1821,51 @@ export const FilterModal: React.FC<FilterModalProps> = ({
             <View
               style={[
                 styles.filterSummary,
-                {
-                  backgroundColor: colors.surfaceVariant,
-                  borderColor: colors.border,
-                },
+                { backgroundColor: colors.surfaceVariant, borderColor: colors.border },
+                isMobileCompact && { marginTop: sp.sm, padding: sp.sm },
               ]}
             >
                 <View style={styles.filterSummaryHeader}>
                   <MaterialCommunityIcons
                     name="trending-up"
-                    size={14}
+                    size={isMobileCompact ? 12 : 14}
                     color={BRAND_COLORS[500]}
                   />
                   <Text
                     style={[
                       styles.filterSummaryTitle,
                       { color: textSecondary },
+                      isMobileCompact && { fontSize: font.xxs },
                     ]}
                   >
-                    RÉSUMÉ DE LA SÉLECTION
+                    {t("liveMatchModals.filter.summaryTitle")}
                   </Text>
                 </View>
 
                 {/* Row 1: Points total | 5 Maj. | Banc */}
                 <View style={styles.filterSummaryRow}>
                   <View style={styles.filterSummaryItemFlex}>
-                    <Text style={[styles.filterSummaryValue, { color: textPrimary }]}>
+                    <Text style={[summaryValueStyle, { color: textPrimary }]}>
                       {filteredSummary.pts}
                     </Text>
-                    <Text style={[styles.filterSummaryLabel, { color: textSecondary }]}>
-                      Points
+                    <Text style={[summaryLabelStyle, { color: textSecondary }]}>
+                      {t("liveMatchModals.filter.points")}
                     </Text>
                   </View>
                   <View style={styles.filterSummaryItemFlex}>
-                    <Text style={[styles.filterSummaryValue, { color: textPrimary }]}>
+                    <Text style={[summaryValueStyle, { color: textPrimary }]}>
                       {filteredSummary.ptsStarters}
                     </Text>
-                    <Text style={[styles.filterSummaryLabel, { color: textSecondary }]}>
-                      5 Maj.
+                    <Text style={[summaryLabelStyle, { color: textSecondary }]}>
+                      {t("liveMatchModals.filter.starters")}
                     </Text>
                   </View>
                   <View style={styles.filterSummaryItemFlex}>
-                    <Text style={[styles.filterSummaryValue, { color: textPrimary }]}>
+                    <Text style={[summaryValueStyle, { color: textPrimary }]}>
                       {filteredSummary.ptsBench}
                     </Text>
-                    <Text style={[styles.filterSummaryLabel, { color: textSecondary }]}>
-                      Banc
+                    <Text style={[summaryLabelStyle, { color: textSecondary }]}>
+                      {t("liveMatchModals.filter.bench")}
                     </Text>
                   </View>
                   <View style={styles.filterSummaryItemFlex} />
@@ -1737,17 +1881,17 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                   const col = (v: number | null) =>
                     v === null ? textSecondary : v > 0 ? '#4CAF50' : v < 0 ? '#F44336' : textPrimary;
                   return (
-                    <View style={[styles.filterSummaryRow, { marginTop: 8 }]}>
+                    <View style={[styles.filterSummaryRow, { marginTop: isMobileCompact ? sp.xs : 8 }]}>
                       {[
-                        { value: pmSummary.pmAvg, label: 'Moy. +/-' },
-                        { value: pmSummary.pmAvgStarters, label: '5 Maj.' },
-                        { value: pmSummary.pmAvgBench, label: 'Banc' },
-                      ].map(({ value, label }) => (
-                        <View key={label} style={styles.filterSummaryItemFlex}>
-                          <Text style={[styles.filterSummaryValue, { color: col(value) }]}>
+                        { key: 'avg', value: pmSummary.pmAvg, label: t("liveMatchModals.filter.plusMinusAvg") },
+                        { key: 'starters', value: pmSummary.pmAvgStarters, label: t("liveMatchModals.filter.starters") },
+                        { key: 'bench', value: pmSummary.pmAvgBench, label: t("liveMatchModals.filter.bench") },
+                      ].map(({ key, value, label }) => (
+                        <View key={key} style={styles.filterSummaryItemFlex}>
+                          <Text style={[summaryValueStyle, { color: col(value) }]}>
                             {fmt(value)}
                           </Text>
-                          <Text style={[styles.filterSummaryLabel, { color: textSecondary }]}>
+                          <Text style={[summaryLabelStyle, { color: textSecondary }]}>
                             {label}
                           </Text>
                         </View>
@@ -1758,98 +1902,98 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                 })()}
 
                 {/* Row 2: Shooting — Global % first, then 2pts, 3pts, LF */}
-                <View style={[styles.filterSummaryRow, { marginTop: 12 }]}>
+                <View style={[styles.filterSummaryRow, { marginTop: isMobileCompact ? sp.xs : 12 }]}>
                   <View style={styles.filterSummaryItemFlex}>
-                    <Text style={[styles.filterSummaryValue, { color: textPrimary }]}>
+                    <Text style={[summaryValueStyle, { color: textPrimary }]}>
                       {filteredSummary.globalPct}%
                     </Text>
-                    <Text style={[styles.filterSummaryLabel, { color: textSecondary }]}>
-                      Global
+                    <Text style={[summaryLabelStyle, { color: textSecondary }]}>
+                      {t("liveMatchModals.filter.global")}
                     </Text>
                   </View>
                   <View style={styles.filterSummaryItemFlex}>
                     <View style={styles.filterSummaryValueRow}>
-                      <Text style={[styles.filterSummaryValue, { color: textPrimary }]}>
+                      <Text style={[summaryValueStyle, { color: textPrimary }]}>
                         {filteredSummary.twoM}/{filteredSummary.twoA}
                       </Text>
-                      <Text style={[styles.filterSummaryPercentage, { color: textSecondary }]}>
+                      <Text style={[summaryPercentStyle, { color: textSecondary }]}>
                         {filteredSummary.twoPct}%
                       </Text>
                     </View>
-                    <Text style={[styles.filterSummaryLabel, { color: textSecondary }]}>
-                      2pts
+                    <Text style={[summaryLabelStyle, { color: textSecondary }]}>
+                      {t("liveMatchModals.filter.twoPts")}
                     </Text>
                   </View>
                   <View style={styles.filterSummaryItemFlex}>
                     <View style={styles.filterSummaryValueRow}>
-                      <Text style={[styles.filterSummaryValue, { color: textPrimary }]}>
+                      <Text style={[summaryValueStyle, { color: textPrimary }]}>
                         {filteredSummary.threeM}/{filteredSummary.threeA}
                       </Text>
-                      <Text style={[styles.filterSummaryPercentage, { color: textSecondary }]}>
+                      <Text style={[summaryPercentStyle, { color: textSecondary }]}>
                         {filteredSummary.threePct}%
                       </Text>
                     </View>
-                    <Text style={[styles.filterSummaryLabel, { color: textSecondary }]}>
-                      3pts
+                    <Text style={[summaryLabelStyle, { color: textSecondary }]}>
+                      {t("liveMatchModals.filter.threePts")}
                     </Text>
                   </View>
                   <View style={styles.filterSummaryItemFlex}>
                     <View style={styles.filterSummaryValueRow}>
-                      <Text style={[styles.filterSummaryValue, { color: textPrimary }]}>
+                      <Text style={[summaryValueStyle, { color: textPrimary }]}>
                         {filteredSummary.ftm}/{filteredSummary.fta}
                       </Text>
-                      <Text style={[styles.filterSummaryPercentage, { color: textSecondary }]}>
+                      <Text style={[summaryPercentStyle, { color: textSecondary }]}>
                         {filteredSummary.ftPct}%
                       </Text>
                     </View>
-                    <Text style={[styles.filterSummaryLabel, { color: textSecondary }]}>
-                      LF
+                    <Text style={[summaryLabelStyle, { color: textSecondary }]}>
+                      {t("liveMatchModals.filter.freeThrows")}
                     </Text>
                   </View>
                 </View>
 
                 {/* Row 3: Rebounds — total, team, off, def */}
-                <View style={[styles.filterSummaryRow, { marginTop: 12 }]}>
+                <View style={[styles.filterSummaryRow, { marginTop: isMobileCompact ? sp.xs : 12 }]}>
                   <View style={styles.filterSummaryItemFlex}>
-                    <Text style={[styles.filterSummaryValue, { color: textPrimary }]}>
+                    <Text style={[summaryValueStyle, { color: textPrimary }]}>
                       {filteredSummary.reb}
                     </Text>
-                    <Text style={[styles.filterSummaryLabel, { color: textSecondary }]}>
-                      Rebonds
+                    <Text style={[summaryLabelStyle, { color: textSecondary }]}>
+                      {t("liveMatchModals.filter.rebounds")}
                     </Text>
                   </View>
                   <View style={styles.filterSummaryItemFlex}>
-                    <Text style={[styles.filterSummaryValue, { color: textPrimary }]}>
+                    <Text style={[summaryValueStyle, { color: textPrimary }]}>
                       {filteredSummary.rebTeam}
                     </Text>
-                    <Text style={[styles.filterSummaryLabel, { color: textSecondary }]}>
-                      Reb. Éq.
+                    <Text style={[summaryLabelStyle, { color: textSecondary }]}>
+                      {t("liveMatchModals.filter.teamRebounds")}
                     </Text>
                   </View>
                   <View style={styles.filterSummaryItemFlex}>
-                    <Text style={[styles.filterSummaryValue, { color: textPrimary }]}>
+                    <Text style={[summaryValueStyle, { color: textPrimary }]}>
                       {filteredSummary.rebOff}
                     </Text>
-                    <Text style={[styles.filterSummaryLabel, { color: textSecondary }]}>
-                      Reb. Off.
+                    <Text style={[summaryLabelStyle, { color: textSecondary }]}>
+                      {t("liveMatchModals.filter.offRebounds")}
                     </Text>
                   </View>
                   <View style={styles.filterSummaryItemFlex}>
-                    <Text style={[styles.filterSummaryValue, { color: textPrimary }]}>
+                    <Text style={[summaryValueStyle, { color: textPrimary }]}>
                       {filteredSummary.rebDef}
                     </Text>
-                    <Text style={[styles.filterSummaryLabel, { color: textSecondary }]}>
-                      Reb. Déf.
+                    <Text style={[summaryLabelStyle, { color: textSecondary }]}>
+                      {t("liveMatchModals.filter.defRebounds")}
                     </Text>
                   </View>
                 </View>
 
                 {/* Row 3: Other stats */}
-                <View style={[styles.filterSummaryRow, { marginTop: 12 }]}>
+                <View style={[styles.filterSummaryRow, { marginTop: isMobileCompact ? sp.xs : 12 }]}>
                   <View style={styles.filterSummaryItemFlex}>
                     <Text
                       style={[
-                        styles.filterSummaryValue,
+                        summaryValueStyle,
                         { color: textPrimary },
                       ]}
                     >
@@ -1857,17 +2001,17 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                     </Text>
                     <Text
                       style={[
-                        styles.filterSummaryLabel,
+                        summaryLabelStyle,
                         { color: textSecondary },
                       ]}
                     >
-                      Interceptions
+                      {t("liveMatchModals.filter.steals")}
                     </Text>
                   </View>
                   <View style={styles.filterSummaryItemFlex}>
                     <Text
                       style={[
-                        styles.filterSummaryValue,
+                        summaryValueStyle,
                         { color: textPrimary },
                       ]}
                     >
@@ -1875,17 +2019,17 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                     </Text>
                     <Text
                       style={[
-                        styles.filterSummaryLabel,
+                        summaryLabelStyle,
                         { color: textSecondary },
                       ]}
                     >
-                      Contres
+                      {t("liveMatchModals.filter.blocks")}
                     </Text>
                   </View>
                   <View style={styles.filterSummaryItemFlex}>
                     <Text
                       style={[
-                        styles.filterSummaryValue,
+                        summaryValueStyle,
                         { color: textPrimary },
                       ]}
                     >
@@ -1893,17 +2037,17 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                     </Text>
                     <Text
                       style={[
-                        styles.filterSummaryLabel,
+                        summaryLabelStyle,
                         { color: textSecondary },
                       ]}
                     >
-                      Fautes
+                      {t("liveMatchModals.filter.fouls")}
                     </Text>
                   </View>
                   <View style={styles.filterSummaryItemFlex}>
                     <Text
                       style={[
-                        styles.filterSummaryValue,
+                        summaryValueStyle,
                         { color: textPrimary },
                       ]}
                     >
@@ -1911,11 +2055,11 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                     </Text>
                     <Text
                       style={[
-                        styles.filterSummaryLabel,
+                        summaryLabelStyle,
                         { color: textSecondary },
                       ]}
                     >
-                      Pertes
+                      {t("liveMatchModals.filter.turnoversShort")}
                     </Text>
                   </View>
                 </View>
@@ -1951,6 +2095,7 @@ export const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
   playerSelectionTab,
   setPlayerSelectionTab,
 }) => {
+  const { t } = useTranslation();
   const { colors } = useTheme();
   const { sp, font, sizes, isCompact } = useResponsive();
   const surfaceColor = colors.surface;
@@ -1970,14 +2115,14 @@ export const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
           <View style={styles.playerModalHeader}>
             <View>
               <Text style={[styles.playerModalTitle, { color: textPrimary }]}>
-                QUI ?
+                {t("liveMatchModals.playerSelection.who")}
               </Text>
               <Text
                 style={[styles.playerModalSubtitle, { color: colors.primary }]}
               >
                 {pendingEvent?.type
-                  ? `Validation : ${pendingEvent.type.replace("_", " ")}`
-                  : "Sélectionnez le joueur"}
+                  ? t("liveMatchModals.playerSelection.validation", { type: pendingEvent.type.replace("_", " ") })
+                  : t("liveMatchModals.playerSelection.selectPlayer")}
               </Text>
             </View>
             <TouchableOpacity
@@ -2029,7 +2174,7 @@ export const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
                     },
                   ]}
                 >
-                  {String(match?.myTeamName || "NOUS").toUpperCase()}
+                  {String(match?.myTeamName || t("liveMatchModals.usFallback")).toUpperCase()}
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
@@ -2055,7 +2200,7 @@ export const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
                     },
                   ]}
                 >
-                  {String(match?.opponent || "EUX").toUpperCase()}
+                  {String(match?.opponent || t("liveMatchModals.themFallback")).toUpperCase()}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -2150,6 +2295,7 @@ export const CourtActionModal: React.FC<CourtActionModalProps> = ({
   onClose,
   onActionSelect,
 }) => {
+  const { t } = useTranslation();
   const { colors } = useTheme();
   const { sp: spResponsive, font: fontResponsive, sizes, isPortrait, width } = useResponsive();
   const surfaceColor = colors.surface;
@@ -2213,7 +2359,7 @@ export const CourtActionModal: React.FC<CourtActionModalProps> = ({
                   },
                 ]}
               >
-                ACTION
+                {t("liveMatchModals.courtAction.title")}
               </Text>
               <Text
                 style={[
@@ -2224,7 +2370,7 @@ export const CourtActionModal: React.FC<CourtActionModalProps> = ({
                   },
                 ]}
               >
-                Que s'est-il passé ici ?
+                {t("liveMatchModals.courtAction.subtitle")}
               </Text>
             </View>
             <TouchableOpacity
@@ -2282,6 +2428,7 @@ export const SubstitutionModal: React.FC<SubstitutionModalProps> = ({
   subTeamTab,
   setSubTeamTab,
 }) => {
+  const { t } = useTranslation();
   const { colors } = useTheme();
   const { sp, font, sizes, isCompact } = useResponsive();
   const surfaceColor = colors.surface;
@@ -2309,10 +2456,10 @@ export const SubstitutionModal: React.FC<SubstitutionModalProps> = ({
               />
               <View>
                 <Text style={[styles.subTitle, { color: textPrimary }]}>
-                  Changements
+                  {t("liveMatchModals.substitution.title")}
                 </Text>
                 <Text style={[styles.subSubtitle, { color: textSecondary }]}>
-                  Sélectionnez les sortants et les entrants
+                  {t("liveMatchModals.substitution.subtitle")}
                 </Text>
               </View>
             </View>
@@ -2365,7 +2512,7 @@ export const SubstitutionModal: React.FC<SubstitutionModalProps> = ({
                     },
                   ]}
                 >
-                  {String(match.myTeamName || "NOUS").toUpperCase()}
+                  {String(match.myTeamName || t("liveMatchModals.usFallback")).toUpperCase()}
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
@@ -2389,7 +2536,7 @@ export const SubstitutionModal: React.FC<SubstitutionModalProps> = ({
                     },
                   ]}
                 >
-                  {String(match.opponent || "EUX").toUpperCase()}
+                  {String(match.opponent || t("liveMatchModals.themFallback")).toUpperCase()}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -2408,10 +2555,10 @@ export const SubstitutionModal: React.FC<SubstitutionModalProps> = ({
             >
               <View style={styles.subSectionHeader}>
                 <Text style={[styles.subSectionTitle, { color: textPrimary }]}>
-                  SUR LE TERRAIN ({onCourt.length})
+                  {t("liveMatchModals.substitution.onCourt", { count: onCourt.length })}
                 </Text>
                 <Text style={[styles.subSectionHint, { color: textSecondary }]}>
-                  Appuyez pour sortir
+                  {t("liveMatchModals.substitution.tapToSubOut")}
                 </Text>
               </View>
               <View style={styles.subGrid}>
@@ -2509,10 +2656,10 @@ export const SubstitutionModal: React.FC<SubstitutionModalProps> = ({
             >
               <View style={styles.subSectionHeader}>
                 <Text style={[styles.subSectionTitle, { color: textPrimary }]}>
-                  BANC ({onBench.length})
+                  {t("liveMatchModals.substitution.onBench", { count: onBench.length })}
                 </Text>
                 <Text style={[styles.subSectionHint, { color: textSecondary }]}>
-                  Appuyez pour entrer
+                  {t("liveMatchModals.substitution.tapToSubIn")}
                 </Text>
               </View>
               <View style={styles.subGrid}>
@@ -2647,10 +2794,10 @@ export const SubstitutionModal: React.FC<SubstitutionModalProps> = ({
               >
                 {subSelection.in.length > 0 &&
                 subSelection.in.length !== subSelection.out.length
-                  ? `Sélectionnez ${Math.abs(
-                      subSelection.in.length - subSelection.out.length,
-                    )} autre(s)`
-                  : "Valider les changements"}
+                  ? t("liveMatchModals.substitution.selectMore", {
+                      count: Math.abs(subSelection.in.length - subSelection.out.length),
+                    })
+                  : t("liveMatchModals.substitution.confirmButton")}
               </Text>
             </TouchableOpacity>
           </View>
@@ -2672,6 +2819,7 @@ export const EndMatchModal: React.FC<EndMatchModalProps> = ({
   onClose,
   onConfirm,
 }) => {
+  const { t } = useTranslation();
   const { colors } = useTheme();
   const surfaceColor = colors.surface;
   const textPrimary = colors.text.primary;
@@ -2696,12 +2844,11 @@ export const EndMatchModal: React.FC<EndMatchModalProps> = ({
           </View>
 
           <Text style={[styles.endMatchTitle, { color: textPrimary }]}>
-            Terminer le match ?
+            {t("liveMatchModals.endMatch.title")}
           </Text>
 
           <Text style={[styles.endMatchDescription, { color: textSecondary }]}>
-            Le match sera archivé et vous ne pourrez plus modifier les
-            statistiques.
+            {t("liveMatchModals.endMatch.description")}
           </Text>
 
           <View style={styles.endMatchActions}>
@@ -2720,7 +2867,7 @@ export const EndMatchModal: React.FC<EndMatchModalProps> = ({
                   { color: textPrimary },
                 ]}
               >
-                Annuler
+                {t("common.cancel")}
               </Text>
             </TouchableOpacity>
 
@@ -2737,7 +2884,7 @@ export const EndMatchModal: React.FC<EndMatchModalProps> = ({
                   { color: colors.onPrimary },
                 ]}
               >
-                Terminer
+                {t("liveMatchModals.endMatch.confirmButton")}
               </Text>
             </TouchableOpacity>
           </View>
@@ -2771,6 +2918,7 @@ export const OvertimeModal: React.FC<OvertimeModalProps> = ({
   overtimeDuration,
   setOvertimeDuration,
 }) => {
+  const { t } = useTranslation();
   const { colors } = useTheme();
   const surfaceColor = colors.surface;
   const textPrimary = colors.text.primary;
@@ -2809,8 +2957,8 @@ export const OvertimeModal: React.FC<OvertimeModalProps> = ({
 
           <Text style={[styles.overtimeTitle, { color: textPrimary }]}>
             {quarter === maxPeriods
-              ? "Fin du temps réglementaire"
-              : "Fin de la prolongation"}
+              ? t("liveMatchModals.overtime.endOfRegulation")
+              : t("liveMatchModals.overtime.endOfOvertime")}
           </Text>
 
           <Text style={[styles.overtimeScore, { color: textPrimary }]}>
@@ -2818,8 +2966,7 @@ export const OvertimeModal: React.FC<OvertimeModalProps> = ({
           </Text>
 
           <Text style={[styles.overtimeDescription, { color: textSecondary }]}>
-            Le temps est écoulé. Voulez-vous terminer le match ou lancer une
-            prolongation ?
+            {t("liveMatchModals.overtime.description")}
           </Text>
 
           <View
@@ -2833,7 +2980,7 @@ export const OvertimeModal: React.FC<OvertimeModalProps> = ({
             <Text
               style={[styles.overtimeDurationLabel, { color: textSecondary }]}
             >
-              DURÉE DE LA PROLONGATION
+              {t("liveMatchModals.overtime.durationLabel")}
             </Text>
             <View style={styles.overtimeDurationInput}>
               <TouchableOpacity
@@ -2908,7 +3055,7 @@ export const OvertimeModal: React.FC<OvertimeModalProps> = ({
                   { color: colors.onPrimary },
                 ]}
               >
-                Terminer le match
+                {t("liveMatchModals.overtime.endMatchButton")}
               </Text>
             </TouchableOpacity>
 
@@ -2937,7 +3084,7 @@ export const OvertimeModal: React.FC<OvertimeModalProps> = ({
                   { color: textPrimary },
                 ]}
               >
-                Lancer la prolongation
+                {t("liveMatchModals.overtime.startOvertimeButton")}
               </Text>
             </TouchableOpacity>
           </View>
@@ -2963,6 +3110,7 @@ export const PeriodConfirmModal: React.FC<PeriodConfirmModalProps> = ({
   timer,
   formatTime,
 }) => {
+  const { t } = useTranslation();
   const { colors } = useTheme();
   const surfaceColor = colors.surface;
   const textPrimary = colors.text.primary;
@@ -3011,19 +3159,19 @@ export const PeriodConfirmModal: React.FC<PeriodConfirmModalProps> = ({
           </View>
 
           <Text style={[styles.periodConfirmTitle, { color: textPrimary }]}>
-            Attention
+            {t("liveMatchModals.periodConfirm.title")}
           </Text>
 
           <Text
             style={[styles.periodConfirmDescription, { color: textSecondary }]}
           >
-            Il reste{" "}
+            {t("liveMatchModals.periodConfirm.timeRemainingPrefix")}{" "}
             <Text style={{ fontWeight: "bold", color: textPrimary }}>
               {formatTime(timer)}
             </Text>{" "}
-            au chronomètre.
+            {t("liveMatchModals.periodConfirm.timeRemainingSuffix")}
             {"\n"}
-            Voulez-vous vraiment passer à la période suivante ?
+            {t("liveMatchModals.periodConfirm.confirmQuestion")}
           </Text>
 
           <View style={styles.periodConfirmActions}>
@@ -3040,7 +3188,7 @@ export const PeriodConfirmModal: React.FC<PeriodConfirmModalProps> = ({
                   { color: colors.onPrimary },
                 ]}
               >
-                Passer à la suivante
+                {t("liveMatchModals.periodConfirm.forceButton")}
               </Text>
             </TouchableOpacity>
 
@@ -3062,7 +3210,7 @@ export const PeriodConfirmModal: React.FC<PeriodConfirmModalProps> = ({
                   },
                 ]}
               >
-                Annuler
+                {t("common.cancel")}
               </Text>
             </TouchableOpacity>
           </View>
@@ -3086,6 +3234,7 @@ export const DeleteActionModal: React.FC<DeleteActionModalProps> = ({
   onConfirm,
   eventDescription,
 }) => {
+  const { t } = useTranslation();
   const { colors } = useTheme();
   const surfaceColor = colors.surface;
   const textPrimary = colors.text.primary;
@@ -3112,7 +3261,7 @@ export const DeleteActionModal: React.FC<DeleteActionModalProps> = ({
           </View>
 
           <Text style={[styles.deleteActionTitle, { color: textPrimary }]}>
-            Supprimer cette action ?
+            {t("liveMatchModals.deleteAction.title")}
           </Text>
 
           <View
@@ -3136,7 +3285,7 @@ export const DeleteActionModal: React.FC<DeleteActionModalProps> = ({
           </View>
 
           <Text style={[styles.deleteActionWarning, { color: textSecondary }]}>
-            Cette action sera définitivement supprimée de la base de données.
+            {t("liveMatchModals.deleteAction.warning")}
           </Text>
 
           <View style={styles.deleteActionActions}>
@@ -3155,7 +3304,7 @@ export const DeleteActionModal: React.FC<DeleteActionModalProps> = ({
                   { color: textPrimary },
                 ]}
               >
-                Annuler
+                {t("common.cancel")}
               </Text>
             </TouchableOpacity>
 
@@ -3172,7 +3321,7 @@ export const DeleteActionModal: React.FC<DeleteActionModalProps> = ({
                   { color: colors.onPrimary },
                 ]}
               >
-                Supprimer
+                {t("common.delete")}
               </Text>
             </TouchableOpacity>
           </View>
@@ -3188,6 +3337,7 @@ interface SyncModalProps {
 }
 
 export const SyncModal: React.FC<SyncModalProps> = ({ visible }) => {
+  const { t } = useTranslation();
   const { colors } = useTheme();
   const surfaceColor = colors.surface;
   const textPrimary = colors.text.primary;
@@ -3214,10 +3364,10 @@ export const SyncModal: React.FC<SyncModalProps> = ({ visible }) => {
           />
           <ActivityIndicator size="large" color={colors.primary} />
           <Text style={[styles.syncModalText, { color: textPrimary }]}>
-            Synchronisation avec le serveur...
+            {t("liveMatchModals.sync.syncing")}
           </Text>
           <Text style={[styles.syncModalSubtext, { color: textSecondary }]}>
-            Veuillez patienter
+            {t("liveMatchModals.sync.pleaseWait")}
           </Text>
         </View>
       </View>

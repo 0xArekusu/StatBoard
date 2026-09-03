@@ -1,6 +1,7 @@
 import React from "react";
 import { Modal, View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useTranslation } from "react-i18next";
 import { useTheme } from "../src/contexts/ThemeContext";
 import { useResponsive } from "../src/hooks/useResponsive";
 
@@ -15,6 +16,7 @@ export default function GuestWelcomeModal({
   onClose,
   maxLocalMatches,
 }: GuestWelcomeModalProps) {
+  const { t } = useTranslation();
   const { colors, isDark } = useTheme();
   const { sp, font, sizes } = useResponsive();
 
@@ -42,10 +44,10 @@ export default function GuestWelcomeModal({
             <Ionicons name="information-circle" size={sizes.avatarMd} color={colors.primary} />
           </View>
 
-          <Text style={[styles.title, { color: colors.text.primary, fontSize: font.xxl, marginBottom: sp.md }]}>Mode Invité</Text>
+          <Text style={[styles.title, { color: colors.text.primary, fontSize: font.xxl, marginBottom: sp.md }]}>{t("guestWelcomeModal.title")}</Text>
 
           <Text style={[styles.message, { color: colors.text.secondary, fontSize: font.md, marginBottom: sp.md }]}>
-            Bienvenue ! En mode invité, vous pouvez tester toutes les fonctionnalités.
+            {t("guestWelcomeModal.welcomeMessage")}
           </Text>
 
           <View style={[
@@ -59,7 +61,7 @@ export default function GuestWelcomeModal({
           ]}>
             <Ionicons name="save-outline" size={font.lg} color={colors.text.secondary} style={[styles.infoIcon, { marginRight: sp.sm }]} />
             <Text style={[styles.infoText, { color: colors.text.secondary, fontSize: font.sm }]}>
-              Vos données sont stockées <Text style={[styles.bold, { color: colors.text.primary }]}>localement</Text> sur cet appareil. Si vous videz le cache, elles seront perdues.
+              {t("guestWelcomeModal.storagePrefix")} <Text style={[styles.bold, { color: colors.text.primary }]}>{t("guestWelcomeModal.storageBold")}</Text> {t("guestWelcomeModal.storageSuffix")}
             </Text>
           </View>
 
@@ -74,7 +76,7 @@ export default function GuestWelcomeModal({
           ]}>
             <Ionicons name="shield-checkmark-outline" size={font.lg} color={colors.text.secondary} style={[styles.infoIcon, { marginRight: sp.sm }]} />
             <Text style={[styles.infoText, { color: colors.text.secondary, fontSize: font.sm }]}>
-              Vous pouvez créer jusqu'à <Text style={[styles.bold, { color: colors.text.primary }]}>{maxLocalMatches} match{maxLocalMatches > 1 ? "s" : ""}</Text> gratuitement. Pour en faire plus, créez un compte !
+              {t("guestWelcomeModal.limitPrefix")} <Text style={[styles.bold, { color: colors.text.primary }]}>{t("guestWelcomeModal.limitCount", { count: maxLocalMatches })}</Text> {t("guestWelcomeModal.limitSuffix")}
             </Text>
           </View>
 
@@ -89,7 +91,7 @@ export default function GuestWelcomeModal({
             ]}
             onPress={onClose}
           >
-            <Text style={[styles.buttonText, { color: colors.onPrimary, fontSize: font.md }]}>Compris, c'est parti !</Text>
+            <Text style={[styles.buttonText, { color: colors.onPrimary, fontSize: font.md }]}>{t("guestWelcomeModal.confirmButton")}</Text>
           </TouchableOpacity>
         </View>
       </View>

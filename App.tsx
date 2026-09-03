@@ -31,14 +31,18 @@ import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { AuthProvider, useAuth } from "./src/contexts/AuthContext";
 import { ClubProvider } from "./src/contexts/ClubContext";
 import { ThemeProvider } from "./src/contexts/ThemeContext";
+import { LanguageProvider } from "./src/contexts/LanguageContext";
 import { AdProvider } from "./src/contexts/AdContext";
+import "./src/i18n";
 import { ROUTES } from "./constants/routes";
 import { ANALYTICS_EVENTS } from "./constants/analyticsEvents";
 import { logInfo, logWarn, logError, logger } from "./utils/logger";
 import DebugCourtClick from "./DebugCourtClick";
 import { useAppUpdateCheck } from "./hooks/useAppUpdateCheck";
+import { useReviewPrompt } from "./hooks/useReviewPrompt";
 import ForceUpdateModal from "./components/ForceUpdateModal";
 import ChangelogModal from "./components/ChangelogModal";
+import ReviewPromptModal from "./components/ReviewPromptModal";
 
 
 // Initialize Sentry
@@ -86,6 +90,8 @@ function Navigation() {
   const { isForceUpdateRequired, onUpdatePress, changelog, dismissChangelog } = useAppUpdateCheck();
   const posthog = usePostHog();
   const routeNameRef = useRef<string | undefined>(undefined);
+  const [currentRouteName, setCurrentRouteName] = useState<string | undefined>(undefined);
+  const { visible: isReviewPromptVisible, onLike: onReviewPromptLike, onDislike: onReviewPromptDislike } = useReviewPrompt(currentRouteName);
 
   // Identify the PostHog user on login, reset on logout.
   // is_guest is registered as a super property so it's attached to every
@@ -259,6 +265,7 @@ function Navigation() {
         ref={navigationRef}
         onReady={() => {
           routeNameRef.current = navigationRef.getCurrentRoute()?.name;
+          setCurrentRouteName(routeNameRef.current);
         }}
         onStateChange={() => {
           const previousRouteName = routeNameRef.current;
@@ -267,6 +274,7 @@ function Navigation() {
             posthog?.screen(currentRouteName);
           }
           routeNameRef.current = currentRouteName;
+          setCurrentRouteName(currentRouteName);
         }}
       >
         <Stack.Navigator
@@ -303,6 +311,11 @@ function Navigation() {
         title={changelog?.title ?? null}
         items={changelog?.items ?? []}
         onClose={dismissChangelog}
+      />
+      <ReviewPromptModal
+        visible={isReviewPromptVisible}
+        onLike={onReviewPromptLike}
+        onDislike={onReviewPromptDislike}
       />
     </>
   );
@@ -390,23 +403,25 @@ function App() {
       <SafeAreaProvider>
         <SafeAreaView style={{ flex: 1 }}>
           <ThemeProvider>
-            <AuthProvider>
-              <PostHogProvider
-                apiKey={process.env.EXPO_PUBLIC_POSTHOG_API_KEY ?? ""}
-                options={{
-                  host: process.env.EXPO_PUBLIC_POSTHOG_HOST,
-                  enableSessionReplay: false,
-                  disabled: !process.env.EXPO_PUBLIC_POSTHOG_API_KEY,
-                }}
-                autocapture={{ captureTouches: false, captureScreens: false }}
-              >
-                <ClubProvider>
-                  <AdProvider>
-                    <Navigation />
-                  </AdProvider>
-                </ClubProvider>
-              </PostHogProvider>
-            </AuthProvider>
+            <LanguageProvider>
+              <AuthProvider>
+                <PostHogProvider
+                  apiKey={process.env.EXPO_PUBLIC_POSTHOG_API_KEY ?? ""}
+                  options={{
+                    host: process.env.EXPO_PUBLIC_POSTHOG_HOST,
+                    enableSessionReplay: false,
+                    disabled: !process.env.EXPO_PUBLIC_POSTHOG_API_KEY,
+                  }}
+                  autocapture={{ captureTouches: false, captureScreens: false }}
+                >
+                  <ClubProvider>
+                    <AdProvider>
+                      <Navigation />
+                    </AdProvider>
+                  </ClubProvider>
+                </PostHogProvider>
+              </AuthProvider>
+            </LanguageProvider>
           </ThemeProvider>
         </SafeAreaView>
       </SafeAreaProvider>

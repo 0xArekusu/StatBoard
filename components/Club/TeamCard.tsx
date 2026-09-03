@@ -1,9 +1,10 @@
 import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from "react-native";
 import { MaterialCommunityIcons, Ionicons } from "@expo/vector-icons";
+import { useTranslation } from "react-i18next";
 import { useTheme } from "../../src/contexts/ThemeContext";
 import { useResponsive } from "../../src/hooks/useResponsive";
-import { Team, TeamStatus, TEAM_GENDER_LABELS } from "../../models/Team";
+import { Team, TeamStatus, getTeamGenderLabel } from "../../models/Team";
 import { ROUTES } from "../../constants/routes";
 import JerseyIconSimple from "../icons/JerseySimpleIcon";
 
@@ -30,6 +31,7 @@ export default function TeamCard({
   onReject,
   onDelete,
 }: TeamCardProps) {
+  const { t } = useTranslation();
   const { colors, isDark } = useTheme();
   const { sp, font, sizes, isCompact } = useResponsive();
   const isClickable = team.status === TeamStatus.APPROVED && team.isActive;
@@ -54,9 +56,9 @@ export default function TeamCard({
         if (isClickable) {
           if (!canEdit) {
             Alert.alert(
-              "Accès refusé",
-              "Seul le propriétaire du club ou le coach de l'équipe peut la modifier.",
-              [{ text: "OK" }],
+              t("teamCard.accessDeniedTitle"),
+              t("teamCard.accessDeniedMessage"),
+              [{ text: t("common.ok") }],
             );
             return;
           }
@@ -69,19 +71,19 @@ export default function TeamCard({
       {team.status === TeamStatus.PENDING && (
         <View style={[styles.statusBadge, styles.statusPending]}>
           <Ionicons name="time-outline" size={10} color={colors.text.primary} />
-          <Text style={styles.statusBadgeText}>EN ATTENTE</Text>
+          <Text style={styles.statusBadgeText}>{t("teamCard.statusPending")}</Text>
         </View>
       )}
       {team.status === TeamStatus.REJECTED && (
         <View style={[styles.statusBadge, styles.statusRejected]}>
           <Ionicons name="close-circle" size={10} color={colors.text.primary} />
-          <Text style={styles.statusBadgeText}>REFUSÉ</Text>
+          <Text style={styles.statusBadgeText}>{t("teamCard.statusRejected")}</Text>
         </View>
       )}
       {team.status === TeamStatus.APPROVED && !team.isActive && (
         <View style={[styles.statusBadge, styles.statusSuspended]}>
           <Ionicons name="pause-circle" size={10} color="#fff" />
-          <Text style={styles.statusBadgeText}>SUSPENDUE</Text>
+          <Text style={styles.statusBadgeText}>{t("teamCard.statusSuspended")}</Text>
         </View>
       )}
 
@@ -125,9 +127,8 @@ export default function TeamCard({
               },
             ]}
           >
-            {team.gender ? TEAM_GENDER_LABELS[team.gender] : "N/A"} •{" "}
-            {team.playerCount ?? 0} Joueur
-            {(team.playerCount ?? 0) > 1 ? "s" : ""}
+            {team.gender ? getTeamGenderLabel(team.gender) : t("common.notApplicable")} •{" "}
+            {t("teamCard.playerCount", { count: team.playerCount ?? 0 })}
           </Text>
           {team.coachName && (
             <Text

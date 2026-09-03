@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { SubscriptionTier, SubscriptionLimits } from "../models/Subscription";
 import { SUBSCRIPTION_LIMITS } from "../models/Subscription";
+import i18n from "../src/i18n";
 
 export class SubscriptionService {
   private limitsCache: Map<SubscriptionTier, SubscriptionLimits> = new Map();
@@ -78,7 +79,7 @@ export class SubscriptionService {
           currentCount: 0,
           maxAllowed: 0,
           tier: "free",
-          error: "Club introuvable",
+          error: i18n.t("subscriptionService.clubNotFound"),
         };
       }
 
@@ -99,7 +100,7 @@ export class SubscriptionService {
           currentCount: 0,
           maxAllowed: limits.maxTeams,
           tier,
-          error: "Erreur lors du comptage des équipes",
+          error: i18n.t("subscriptionService.teamCountError"),
         };
       }
 
@@ -113,7 +114,7 @@ export class SubscriptionService {
         tier,
         error: allowed
           ? undefined
-          : `Limite atteinte pour l'abonnement ${tier}. Passez à un abonnement supérieur pour créer plus d'équipes.`,
+          : i18n.t("subscriptionService.limitReachedUpsell", { tier }),
       };
     } catch (error) {
       console.error("Error checking team creation limit:", error);
@@ -122,7 +123,7 @@ export class SubscriptionService {
         currentCount: 0,
         maxAllowed: 0,
         tier: "free",
-        error: "Erreur lors de la vérification des limites",
+        error: i18n.t("subscriptionService.checkLimitError"),
       };
     }
   }

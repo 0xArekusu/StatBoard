@@ -8,6 +8,7 @@ import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity, Modal, ScrollView } from "react-native";
 import Svg, { Circle, Polygon } from "react-native-svg";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { useTranslation } from "react-i18next";
 import { useTheme } from "../../src/contexts/ThemeContext";
 import {
   getActionColor,
@@ -26,6 +27,7 @@ export default function StatsLegendModal({
   visible,
   onClose,
 }: StatsLegendModalProps) {
+  const { t } = useTranslation();
   const { colors } = useTheme();
   const { sp, font, sizes } = useResponsive();
 
@@ -133,7 +135,7 @@ export default function StatsLegendModal({
               },
             ]}
           >
-            LÉGENDE DES STATISTIQUES
+            {t("statsLegendModal.title")}
           </Text>
 
           <ScrollView
@@ -144,58 +146,58 @@ export default function StatsLegendModal({
           <View style={styles.legendGrid}>
             <View style={styles.legendItem}>
               <Text style={[styles.legendLabel, { color: textSecondary }]}>
-                MIN
+                {t("statsLegendModal.min")}
               </Text>
               <Text style={[styles.legendValue, { color: textPrimary }]}>
-                Minutes jouées
+                {t("statsLegendModal.minutesPlayed")}
               </Text>
             </View>
             <View style={styles.legendItem}>
               <Text style={[styles.legendLabel, { color: textSecondary }]}>
-                PTS
+                {t("statsLegendModal.pts")}
               </Text>
               <Text style={[styles.legendValue, { color: textPrimary }]}>
-                Points
+                {t("liveMatchModals.filter.points")}
               </Text>
             </View>
             <View style={styles.legendItem}>
               <Text style={[styles.legendLabel, { color: textSecondary }]}>
-                TIRS
+                {t("statsLegendModal.tirs")}
               </Text>
               <Text style={[styles.legendValue, { color: textPrimary }]}>
-                Tirs réussis/tentés
+                {t("statsLegendModal.shotsMadeAttempted")}
               </Text>
             </View>
             <View style={styles.legendItem}>
               <Text style={[styles.legendLabel, { color: textSecondary }]}>
-                2PTS
+                {t("statsLegendModal.twoPts")}
               </Text>
               <Text style={[styles.legendValue, { color: textPrimary }]}>
-                Tirs à 2 points
+                {t("statsLegendModal.twoPointShots")}
               </Text>
             </View>
             <View style={styles.legendItem}>
               <Text style={[styles.legendLabel, { color: textSecondary }]}>
-                3PTS
+                {t("statsLegendModal.threePts")}
               </Text>
               <Text style={[styles.legendValue, { color: textPrimary }]}>
-                Tirs à 3 points
+                {t("statsLegendModal.threePointShots")}
               </Text>
             </View>
             <View style={styles.legendItem}>
               <Text style={[styles.legendLabel, { color: textSecondary }]}>
-                LF
+                {t("liveMatchModals.filter.freeThrows")}
               </Text>
               <Text style={[styles.legendValue, { color: textPrimary }]}>
-                Lancers francs
+                {t("statsLegendModal.freeThrowsFull")}
               </Text>
             </View>
             <View style={styles.legendItem}>
               <Text style={[styles.legendLabel, { color: textSecondary }]}>
-                REB
+                {t("playerDetailModal.reb")}
               </Text>
               <Text style={[styles.legendValue, { color: textPrimary }]}>
-                Rebonds
+                {t("liveMatchModals.filter.rebounds")}
               </Text>
               {renderMarker(
                 MarkerType.TRIANGLE,
@@ -204,10 +206,10 @@ export default function StatsLegendModal({
             </View>
             <View style={styles.legendItem}>
               <Text style={[styles.legendLabel, { color: textSecondary }]}>
-                RO
+                {t("statsLegendModal.ro")}
               </Text>
               <Text style={[styles.legendValue, { color: textPrimary }]}>
-                Rebonds offensifs
+                {t("statsLegendModal.offensiveRebounds")}
               </Text>
               {renderMarker(
                 MarkerType.TRIANGLE,
@@ -220,10 +222,10 @@ export default function StatsLegendModal({
             </View>
             <View style={styles.legendItem}>
               <Text style={[styles.legendLabel, { color: textSecondary }]}>
-                RD
+                {t("statsLegendModal.rd")}
               </Text>
               <Text style={[styles.legendValue, { color: textPrimary }]}>
-                Rebonds défensifs
+                {t("statsLegendModal.defensiveRebounds")}
               </Text>
               {renderMarker(
                 MarkerType.TRIANGLE,
@@ -236,10 +238,10 @@ export default function StatsLegendModal({
             </View>
             <View style={styles.legendItem}>
               <Text style={[styles.legendLabel, { color: textSecondary }]}>
-                RE
+                {t("statsLegendModal.re")}
               </Text>
               <Text style={[styles.legendValue, { color: textPrimary }]}>
-                Rebonds d'équipe
+                {t("statsLegendModal.teamRebounds")}
               </Text>
               {renderMarker(
                 MarkerType.TRIANGLE,
@@ -252,10 +254,10 @@ export default function StatsLegendModal({
             </View>
             <View style={styles.legendItem}>
               <Text style={[styles.legendLabel, { color: textSecondary }]}>
-                AST
+                {t("playerDetailModal.ast")}
               </Text>
               <Text style={[styles.legendValue, { color: textPrimary }]}>
-                Passes décisives
+                {t("playerDetailModal.assistsSub")}
               </Text>
               {renderMarker(
                 MarkerType.CIRCLE,
@@ -264,10 +266,10 @@ export default function StatsLegendModal({
             </View>
             <View style={styles.legendItem}>
               <Text style={[styles.legendLabel, { color: textSecondary }]}>
-                INT
+                {t("playerDetailModal.int")}
               </Text>
               <Text style={[styles.legendValue, { color: textPrimary }]}>
-                Interceptions
+                {t("liveMatchModals.filter.steals")}
               </Text>
               {renderMarker(
                 MarkerType.CIRCLE,
@@ -276,10 +278,10 @@ export default function StatsLegendModal({
             </View>
             <View style={styles.legendItem}>
               <Text style={[styles.legendLabel, { color: textSecondary }]}>
-                CTR
+                {t("playerDetailModal.ctr")}
               </Text>
               <Text style={[styles.legendValue, { color: textPrimary }]}>
-                Contres
+                {t("liveMatchModals.filter.blocks")}
               </Text>
               {renderMarker(
                 MarkerType.CIRCLE,
@@ -288,10 +290,10 @@ export default function StatsLegendModal({
             </View>
             <View style={styles.legendItem}>
               <Text style={[styles.legendLabel, { color: textSecondary }]}>
-                BP
+                {t("playerDetailModal.bp")}
               </Text>
               <Text style={[styles.legendValue, { color: textPrimary }]}>
-                Balles perdues
+                {t("playerDetailModal.turnoversSub")}
               </Text>
               {renderMarker(
                 MarkerType.CIRCLE,
@@ -300,10 +302,10 @@ export default function StatsLegendModal({
             </View>
             <View style={styles.legendItem}>
               <Text style={[styles.legendLabel, { color: textSecondary }]}>
-                FT
+                {t("statsLegendModal.ft")}
               </Text>
               <Text style={[styles.legendValue, { color: textPrimary }]}>
-                Fautes (total : personnelles + techniques + antisportives + disqualifiantes)
+                {t("statsLegendModal.foulsTotalDescription")}
               </Text>
               {renderMarker(
                 MarkerType.DIAMOND,
@@ -312,10 +314,10 @@ export default function StatsLegendModal({
             </View>
             <View style={styles.legendItem}>
               <Text style={[styles.legendLabel, { color: textSecondary }]}>
-                FP
+                {t("playerDetailModal.fp")}
               </Text>
               <Text style={[styles.legendValue, { color: textPrimary }]}>
-                Fautes provoquées
+                {t("liveMatchModals.filter.foulsDrawn")}
               </Text>
               {renderMarker(
                 MarkerType.DIAMOND,
@@ -327,15 +329,15 @@ export default function StatsLegendModal({
                 +/-
               </Text>
               <Text style={[styles.legendValue, { color: textPrimary }]}>
-                Différentiel de points quand le joueur est sur le terrain
+                {t("statsLegendModal.plusMinusDescription")}
               </Text>
             </View>
             <View style={styles.legendItem}>
               <Text style={[styles.legendLabel, { color: textSecondary }]}>
-                EVAL
+                {t("statsLegendModal.eval")}
               </Text>
               <Text style={[styles.legendValue, { color: textPrimary }]}>
-                Evaluation
+                {t("statsLegendModal.evaluation")}
               </Text>
             </View>
           </View>

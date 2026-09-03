@@ -11,11 +11,13 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import Constants from "expo-constants";
 import { useNavigation } from "@react-navigation/native";
 import { usePostHog } from "posthog-react-native";
+import { useTranslation } from "react-i18next";
 import { useTheme } from "../../src/contexts/ThemeContext";
 import { OPACITY, SHADOW_COLOR } from "../../src/theme";
 import { ROUTES } from "../../constants/routes";
 import { ANALYTICS_EVENTS } from "../../constants/analyticsEvents";
 import Logo from "../../components/icons/Logo";
+import LanguageSelector from "../../components/LanguageSelector";
 import { useResponsive } from "../../src/hooks/useResponsive";
 
 /**
@@ -27,6 +29,7 @@ import { useResponsive } from "../../src/hooks/useResponsive";
  * - Navigation to Register screen
  */
 export default function AuthScreen() {
+  const { t } = useTranslation();
   const { colors } = useTheme();
   const navigation = useNavigation();
   const posthog = usePostHog();
@@ -59,6 +62,15 @@ export default function AuthScreen() {
         ]}
         style={styles.overlay}
       >
+        <View style={[styles.languageSelectorContainer, { top: sp.xl, right: sp.xl }]}>
+          <LanguageSelector
+            buttonStyle={{
+              backgroundColor: "rgba(0, 0, 0, 0.35)",
+              borderColor: "rgba(255, 255, 255, 0.3)",
+            }}
+          />
+        </View>
+
         <View
           style={[
             styles.landingContainer,
@@ -94,7 +106,7 @@ export default function AuthScreen() {
                 },
               ]}
             >
-              Vos statistiques au rythme du match.
+              {t('authScreen.tagline')}
             </Text>
           </View>
 
@@ -122,7 +134,7 @@ export default function AuthScreen() {
                   { color: colors.onPrimary, fontSize: font.lg },
                 ]}
               >
-                Créer un compte
+                {t('authScreen.createAccount')}
               </Text>
               <MaterialCommunityIcons
                 name="arrow-right"
@@ -150,7 +162,7 @@ export default function AuthScreen() {
                   { color: colors.onPrimary, fontSize: font.lg },
                 ]}
               >
-                Se connecter
+                {t('authScreen.login')}
               </Text>
             </TouchableOpacity>
 
@@ -168,7 +180,7 @@ export default function AuthScreen() {
                   },
                 ]}
               >
-                Essayer gratuitement (Invité)
+                {t('authScreen.tryFreeGuest')}
               </Text>
             </TouchableOpacity>
           </View>
@@ -201,6 +213,10 @@ const styles = StyleSheet.create({
   },
   overlay: {
     flex: 1,
+  },
+  languageSelectorContainer: {
+    position: "absolute",
+    zIndex: 10,
   },
   landingContainer: {
     flex: 1,

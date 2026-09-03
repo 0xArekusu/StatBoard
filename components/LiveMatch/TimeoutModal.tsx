@@ -8,6 +8,7 @@ import {
   StyleSheet,
 } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { useTranslation } from "react-i18next";
 import { useTheme } from "../../src/contexts/ThemeContext";
 
 interface TimeoutModalProps {
@@ -19,6 +20,7 @@ interface TimeoutModalProps {
 }
 
 export function TimeoutModal({ visible, teamName, limitReached, onConfirm, onClose }: TimeoutModalProps) {
+  const { t } = useTranslation();
   const { colors } = useTheme();
 
   const handleConfirm = () => {
@@ -38,14 +40,14 @@ export function TimeoutModal({ visible, teamName, limitReached, onConfirm, onClo
             size={30}
             color={limitReached ? colors.error : colors.primary}
           />
-          <Text style={[styles.label, { color: colors.text.secondary }]}>TEMPS MORT</Text>
+          <Text style={[styles.label, { color: colors.text.secondary }]}>{t("timeoutModal.label")}</Text>
           <Text style={[styles.teamName, { color: colors.text.primary }]}>{teamName}</Text>
 
           {limitReached && (
             <View style={[styles.warningBanner, { backgroundColor: colors.error + "22", borderColor: colors.error + "55" }]}>
               <MaterialCommunityIcons name="alert-circle-outline" size={14} color={colors.error} />
               <Text style={[styles.warningText, { color: colors.error }]}>
-                Limite de mi-temps atteinte
+                {t("timeoutModal.limitReached")}
               </Text>
             </View>
           )}
@@ -55,14 +57,14 @@ export function TimeoutModal({ visible, teamName, limitReached, onConfirm, onClo
               onPress={onClose}
               style={[styles.btn, styles.cancelBtn, { borderColor: colors.border }]}
             >
-              <Text style={[styles.btnText, { color: colors.text.secondary }]}>Fermer</Text>
+              <Text style={[styles.btnText, { color: colors.text.secondary }]}>{t("clubInfoView.close")}</Text>
             </TouchableOpacity>
             {!limitReached && (
               <TouchableOpacity
                 onPress={handleConfirm}
                 style={[styles.btn, { backgroundColor: colors.primary }]}
               >
-                <Text style={[styles.btnText, { color: colors.onPrimary }]}>Confirmer</Text>
+                <Text style={[styles.btnText, { color: colors.onPrimary }]}>{t("common.confirm")}</Text>
               </TouchableOpacity>
             )}
           </View>

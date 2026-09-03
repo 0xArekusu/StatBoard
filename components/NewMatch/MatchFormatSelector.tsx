@@ -9,7 +9,8 @@ import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { BRAND_COLORS, SLATE_COLORS } from "../../src/theme";
 import {
-  MATCH_CREATION_FORM_LABELS,
+  getMatchCreationFormLabel,
+  getMatchFormatPresetLabel,
   MATCH_FORMAT_PRESETS,
   ROSTER_LIMITS,
 } from "../../constants";
@@ -61,7 +62,7 @@ export const MatchFormatSelector: React.FC<MatchFormatSelectorProps> = ({
   return (
     <View style={[styles.formSection, { marginBottom: sp.lg }]}>
       <Text style={[styles.formLabel, { color: colors.textSecondary, fontSize: font.xs, marginBottom: sp.sm }]}>
-        {MATCH_CREATION_FORM_LABELS.MATCH_FORMAT}
+        {getMatchCreationFormLabel("MATCH_FORMAT")}
       </Text>
 
       {/* Preset Buttons */}
@@ -92,7 +93,7 @@ export const MatchFormatSelector: React.FC<MatchFormatSelectorProps> = ({
               },
             ]}
           >
-            {MATCH_FORMAT_PRESETS.QUARTERS.label}
+            {getMatchFormatPresetLabel("QUARTERS")}
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -121,7 +122,7 @@ export const MatchFormatSelector: React.FC<MatchFormatSelectorProps> = ({
               },
             ]}
           >
-            {MATCH_FORMAT_PRESETS.HALVES.label}
+            {getMatchFormatPresetLabel("HALVES")}
           </Text>
         </TouchableOpacity>
       </View>
@@ -131,7 +132,7 @@ export const MatchFormatSelector: React.FC<MatchFormatSelectorProps> = ({
         {/* Period Count Adjuster */}
         <View style={styles.durationControl}>
           <Text style={[styles.durationLabel, { color: colors.textSecondary, fontSize: font.xs, marginBottom: sp.sm }]}>
-            {MATCH_CREATION_FORM_LABELS.PERIODS}
+            {getMatchCreationFormLabel("PERIODS")}
           </Text>
           <View style={[styles.durationAdjuster, { gap: sp.xs }]}>
             <TouchableOpacity
@@ -210,7 +211,7 @@ export const MatchFormatSelector: React.FC<MatchFormatSelectorProps> = ({
         {/* Duration Adjuster */}
         <View style={styles.durationControl}>
           <Text style={[styles.durationLabel, { color: colors.textSecondary, fontSize: font.xs, marginBottom: sp.sm }]}>
-            {MATCH_CREATION_FORM_LABELS.MINUTES_PER_PERIOD}
+            {getMatchCreationFormLabel("MINUTES_PER_PERIOD")}
           </Text>
           <View style={[styles.durationAdjuster, { gap: sp.xs }]}>
             <TouchableOpacity

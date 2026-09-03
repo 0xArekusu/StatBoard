@@ -14,6 +14,7 @@ import {
   TouchableOpacity,
 } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { useTranslation } from "react-i18next";
 import { useTheme } from "../../src/contexts/ThemeContext";
 import { useResponsive } from "../../src/hooks/useResponsive";
 import {
@@ -43,6 +44,7 @@ export default function StatsTab({
   teamRebounds,
   handicap = 0,
 }: StatsTabProps) {
+  const { t } = useTranslation();
   const { colors } = useTheme();
   const { sp, font } = useResponsive();
   const [showLegend, setShowLegend] = useState(false);
@@ -94,7 +96,7 @@ export default function StatsTab({
                   },
                 ]}
               >
-                JOUEUR {sortBy === "name" && (sortOrder === "desc" ? "↓" : "↑")}
+                {t("statsTab.player")} {sortBy === "name" && (sortOrder === "desc" ? "↓" : "↑")}
               </Text>
             </TouchableOpacity>
             <View style={styles.numberCell}>
@@ -121,7 +123,7 @@ export default function StatsTab({
                   },
                 ]}
               >
-                MIN {sortBy === "min" && (sortOrder === "desc" ? "↓" : "↑")}
+                {t("statsLegendModal.min")} {sortBy === "min" && (sortOrder === "desc" ? "↓" : "↑")}
               </Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={() => handleSort("pts")}>
@@ -134,7 +136,7 @@ export default function StatsTab({
                   },
                 ]}
               >
-                PTS {sortBy === "pts" && (sortOrder === "desc" ? "↓" : "↑")}
+                {t("statsLegendModal.pts")} {sortBy === "pts" && (sortOrder === "desc" ? "↓" : "↑")}
               </Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={() => handleSort("fgm")}>
@@ -147,7 +149,7 @@ export default function StatsTab({
                   },
                 ]}
               >
-                TIRS {sortBy === "fgm" && (sortOrder === "desc" ? "↓" : "↑")}
+                {t("statsLegendModal.tirs")} {sortBy === "fgm" && (sortOrder === "desc" ? "↓" : "↑")}
               </Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={() => handleSort("fg2m")}>
@@ -160,7 +162,7 @@ export default function StatsTab({
                   },
                 ]}
               >
-                2PTS {sortBy === "fg2m" && (sortOrder === "desc" ? "↓" : "↑")}
+                {t("statsLegendModal.twoPts")} {sortBy === "fg2m" && (sortOrder === "desc" ? "↓" : "↑")}
               </Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={() => handleSort("fg3m")}>
@@ -173,7 +175,7 @@ export default function StatsTab({
                   },
                 ]}
               >
-                3PTS {sortBy === "fg3m" && (sortOrder === "desc" ? "↓" : "↑")}
+                {t("statsLegendModal.threePts")} {sortBy === "fg3m" && (sortOrder === "desc" ? "↓" : "↑")}
               </Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={() => handleSort("ftm")}>
@@ -186,7 +188,7 @@ export default function StatsTab({
                   },
                 ]}
               >
-                LF {sortBy === "ftm" && (sortOrder === "desc" ? "↓" : "↑")}
+                {t("statsTab.lf")} {sortBy === "ftm" && (sortOrder === "desc" ? "↓" : "↑")}
               </Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={() => handleSort("reb")}>
@@ -199,7 +201,7 @@ export default function StatsTab({
                   },
                 ]}
               >
-                REB {sortBy === "reb" && (sortOrder === "desc" ? "↓" : "↑")}
+                {t("playerDetailModal.reb")} {sortBy === "reb" && (sortOrder === "desc" ? "↓" : "↑")}
               </Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={() => handleSort("reb_off" as SortBy)}>
@@ -213,7 +215,7 @@ export default function StatsTab({
                   },
                 ]}
               >
-                RO {sortBy === "reb_off" && (sortOrder === "desc" ? "↓" : "↑")}
+                {t("statsLegendModal.ro")} {sortBy === "reb_off" && (sortOrder === "desc" ? "↓" : "↑")}
               </Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={() => handleSort("reb_def" as SortBy)}>
@@ -227,11 +229,11 @@ export default function StatsTab({
                   },
                 ]}
               >
-                RD {sortBy === "reb_def" && (sortOrder === "desc" ? "↓" : "↑")}
+                {t("statsLegendModal.rd")} {sortBy === "reb_def" && (sortOrder === "desc" ? "↓" : "↑")}
               </Text>
             </TouchableOpacity>
             <Text style={[styles.tableHeaderCell, styles.statCell, { color: textSecondary }]}>
-              RE
+              {t("statsLegendModal.re")}
             </Text>
             <TouchableOpacity onPress={() => handleSort("ast")}>
               <Text
@@ -243,7 +245,7 @@ export default function StatsTab({
                   },
                 ]}
               >
-                AST {sortBy === "ast" && (sortOrder === "desc" ? "↓" : "↑")}
+                {t("playerDetailModal.ast")} {sortBy === "ast" && (sortOrder === "desc" ? "↓" : "↑")}
               </Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={() => handleSort("stl")}>
@@ -256,7 +258,7 @@ export default function StatsTab({
                   },
                 ]}
               >
-                INT {sortBy === "stl" && (sortOrder === "desc" ? "↓" : "↑")}
+                {t("playerDetailModal.int")} {sortBy === "stl" && (sortOrder === "desc" ? "↓" : "↑")}
               </Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={() => handleSort("blk")}>
@@ -269,7 +271,7 @@ export default function StatsTab({
                   },
                 ]}
               >
-                CTR {sortBy === "blk" && (sortOrder === "desc" ? "↓" : "↑")}
+                {t("playerDetailModal.ctr")} {sortBy === "blk" && (sortOrder === "desc" ? "↓" : "↑")}
               </Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={() => handleSort("to")}>
@@ -282,7 +284,7 @@ export default function StatsTab({
                   },
                 ]}
               >
-                BP {sortBy === "to" && (sortOrder === "desc" ? "↓" : "↑")}
+                {t("playerDetailModal.bp")} {sortBy === "to" && (sortOrder === "desc" ? "↓" : "↑")}
               </Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={() => handleSort("pf")}>
@@ -295,7 +297,7 @@ export default function StatsTab({
                   },
                 ]}
               >
-                FT {sortBy === "pf" && (sortOrder === "desc" ? "↓" : "↑")}
+                {t("statsLegendModal.ft")} {sortBy === "pf" && (sortOrder === "desc" ? "↓" : "↑")}
               </Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={() => handleSort("fd")}>
@@ -308,7 +310,7 @@ export default function StatsTab({
                   },
                 ]}
               >
-                FP {sortBy === "fd" && (sortOrder === "desc" ? "↓" : "↑")}
+                {t("playerDetailModal.fp")} {sortBy === "fd" && (sortOrder === "desc" ? "↓" : "↑")}
               </Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={() => handleSort("pm")}>
@@ -321,7 +323,7 @@ export default function StatsTab({
                   },
                 ]}
               >
-                +/- {sortBy === "pm" && (sortOrder === "desc" ? "↓" : "↑")}
+                {t("statsTab.plusMinus")} {sortBy === "pm" && (sortOrder === "desc" ? "↓" : "↑")}
               </Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={() => handleSort("eff")}>
@@ -334,7 +336,7 @@ export default function StatsTab({
                   },
                 ]}
               >
-                EVAL {sortBy === "eff" && (sortOrder === "desc" ? "↓" : "↑")}
+                {t("statsLegendModal.eval")} {sortBy === "eff" && (sortOrder === "desc" ? "↓" : "↑")}
               </Text>
             </TouchableOpacity>
           </View>
@@ -573,7 +575,7 @@ export default function StatsTab({
               <>
                 {starters.length > 0 && (
                   <View style={subtotalStyle}>
-                    <View style={styles.playerCell}><Text style={labelStyle}>5 DÉPART</Text></View>
+                    <View style={styles.playerCell}><Text style={labelStyle}>{t("statsTab.starters")}</Text></View>
                     <Text style={[styles.tableCell, styles.numberCell, { color: textTertiary }]}>-</Text>
                     <Text style={[styles.tableCell, styles.minCell, { color: textTertiary }]}>-</Text>
                     <Text style={cellStyle(true)}>{s.pts}</Text>
@@ -597,7 +599,7 @@ export default function StatsTab({
                 )}
                 {bench.length > 0 && (
                   <View style={subtotalStyle}>
-                    <View style={styles.playerCell}><Text style={labelStyle}>BANC</Text></View>
+                    <View style={styles.playerCell}><Text style={labelStyle}>{t("statsTab.bench")}</Text></View>
                     <Text style={[styles.tableCell, styles.numberCell, { color: textTertiary }]}>-</Text>
                     <Text style={[styles.tableCell, styles.minCell, { color: textTertiary }]}>-</Text>
                     <Text style={cellStyle(true)}>{b.pts}</Text>
@@ -643,11 +645,11 @@ export default function StatsTab({
                     { color: textPrimary },
                   ]}
                 >
-                  TOTAL
+                  {t("statsTab.total")}
                 </Text>
                 {handicap > 0 && (
                   <View style={[styles.hcpBadge, { backgroundColor: colors.primary + "22", borderColor: colors.primary + "55" }]}>
-                    <Text style={[styles.hcpBadgeText, { color: colors.primary }]}>+{handicap} HCP</Text>
+                    <Text style={[styles.hcpBadgeText, { color: colors.primary }]}>{t("statsTab.handicap", { count: handicap })}</Text>
                   </View>
                 )}
               </View>
@@ -835,7 +837,7 @@ export default function StatsTab({
           {stats.length === 0 && (
             <View style={styles.emptyState}>
               <Text style={[styles.emptyStateText, { color: textTertiary }]}>
-                Aucune donnée disponible
+                {t("statsTab.noData")}
               </Text>
             </View>
           )}

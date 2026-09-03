@@ -24,6 +24,10 @@ export interface ResponsiveValues {
   isPortrait: boolean;
   /** True when layout should be compact (landscape OR small screen) */
   isCompact: boolean;
+  /** True when landscape on a phone-sized screen (vs tablet landscape) */
+  isMobileLandscape: boolean;
+  /** True when portrait on a phone-sized screen (vs tablet portrait) */
+  isMobilePortrait: boolean;
   /** Current size scale */
   scale: SizeScale;
   /** Spacing values adapted to current scale */
@@ -72,6 +76,8 @@ export function useResponsive(): ResponsiveValues {
   const isMobile = shortSide < BREAKPOINTS.phoneMaxWidth;
   const isCompact =
     isMobile || !isPortrait || height < BREAKPOINTS.smallPortraitMaxHeight;
+  const isMobileLandscape = !isPortrait && width < BREAKPOINTS.mobileLandscapeMaxWidth;
+  const isMobilePortrait = isPortrait && width < BREAKPOINTS.phoneMaxWidth;
   const scale: SizeScale = isCompact ? "compact" : "normal";
 
   const sp = isCompact
@@ -142,5 +148,5 @@ export function useResponsive(): ResponsiveValues {
         colorSwatchRectH: 40,
       };
 
-  return { isPortrait, isCompact, scale, sp, font, sizes, width, height };
+  return { isPortrait, isCompact, isMobileLandscape, isMobilePortrait, scale, sp, font, sizes, width, height };
 }

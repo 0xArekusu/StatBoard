@@ -16,6 +16,8 @@ import { useFocusEffect } from "@react-navigation/native";
 import { Picker } from "@react-native-picker/picker";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useTranslation } from "react-i18next";
+import { INTL_LOCALES, SupportedLanguage } from "../src/i18n";
 import { useTheme } from "../src/contexts/ThemeContext";
 import { STATUS_COLORS } from "../src/theme";
 import { useResponsive } from "../src/hooks/useResponsive";
@@ -60,6 +62,7 @@ import DashboardResumeMatchModal from "../components/dashboard/DashboardResumeMa
 import DashboardRecentMatches from "../components/dashboard/DashboardRecentMatches";
 import GuestWelcomeModal from "../components/GuestWelcomeModal";
 import MatchLimitModal from "../components/MatchLimitModal";
+import LanguageSelector from "../components/LanguageSelector";
 import { ROUTES } from "../constants/routes";
 import { GUEST_IDS } from "../constants/matchConstants";
 import { ANALYTICS_EVENTS, ANALYTICS_MATCH_ABANDON_REASON } from "../constants/analyticsEvents";
@@ -97,6 +100,7 @@ interface DashboardScreenProps {
  * - Auto-reloads on screen focus and user changes
  */
 export default function DashboardScreen({ navigation }: DashboardScreenProps) {
+  const { t, i18n } = useTranslation();
   const { colors, isDark, setThemeMode } = useTheme();
   const { isCompact, sp, font } = useResponsive();
   const { user, signOut, deleteAccount } = useAuth();
@@ -122,7 +126,7 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
 
   const isGuest = !user;
   const userName =
-    user?.user_metadata?.full_name || user?.email?.split("@")[0] || "Invité";
+    user?.user_metadata?.full_name || user?.email?.split("@")[0] || t("common.guest");
 
   // Generate signed URL for club logo (2h expiration)
   const clubLogoUrl = useSignedUrl(currentClub?.logoUrl);
@@ -387,7 +391,7 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
     } catch (error) {
       logError("DashboardScreen", "❌ Error loading dashboard data", { error });
       showErrorAlert({
-        action: "charger les données du tableau de bord",
+        messageKey: "dashboard.errors.loadFailed",
         error,
         context: "DashboardScreen",
         showRetry: true,
@@ -410,21 +414,21 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
   const handleDeleteAccount = () => {
     setShowProfileMenu(false);
     Alert.alert(
-      "Supprimer mon compte",
-      "Toutes vos données personnelles seront définitivement supprimées. Cette action est irréversible.",
+      t("dashboard.alerts.deleteAccount.title"),
+      t("dashboard.alerts.deleteAccount.message"),
       [
-        { text: "Annuler", style: "cancel" },
+        { text: t("common.cancel"), style: "cancel" },
         {
-          text: "Continuer",
+          text: t("dashboard.alerts.deleteAccount.continue"),
           style: "destructive",
           onPress: () => {
             Alert.alert(
-              "Confirmer la suppression",
-              "Êtes-vous sûr de vouloir supprimer définitivement votre compte ?",
+              t("dashboard.alerts.deleteAccount.confirmTitle"),
+              t("dashboard.alerts.deleteAccount.confirmMessage"),
               [
-                { text: "Annuler", style: "cancel" },
+                { text: t("common.cancel"), style: "cancel" },
                 {
-                  text: "Supprimer définitivement",
+                  text: t("dashboard.alerts.deleteAccount.confirmButton"),
                   style: "destructive",
                   onPress: async () => {
                     setIsDeletingAccount(true);
@@ -435,13 +439,13 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
                       posthog?.capture(ANALYTICS_EVENTS.ACCOUNT_DELETION_BLOCKED, { error_code: errorCode ?? null });
                       if (errorCode === "club_owner") {
                         Alert.alert(
-                          "Suppression impossible",
-                          "Vous êtes propriétaire d'un club. Supprimez d'abord votre club depuis l'application avant de supprimer votre compte."
+                          t("dashboard.alerts.deleteAccount.blockedTitle"),
+                          t("dashboard.alerts.deleteAccount.blockedMessage")
                         );
                       } else {
                         Alert.alert(
-                          "Erreur",
-                          "Une erreur est survenue. Veuillez réessayer."
+                          t("common.error"),
+                          t("common.genericErrorRetry")
                         );
                       }
                       return;
@@ -481,15 +485,15 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
     if (!liveMatchToResume) return;
 
     Alert.alert(
-      "Abandonner le match ?",
-      "Cette action est irréversible. Toutes les données du match seront supprimées définitivement.",
+      t("dashboard.alerts.abandonMatch.title"),
+      t("dashboard.alerts.abandonMatch.message"),
       [
         {
-          text: "Annuler",
+          text: t("common.cancel"),
           style: "cancel",
         },
         {
-          text: "Abandonner",
+          text: t("dashboard.alerts.abandonMatch.confirmButton"),
           style: "destructive",
           onPress: async () => {
             try {
@@ -509,8 +513,8 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
             } catch (error) {
               logError("DashboardScreen", "❌ Failed to abandon match", { error });
               Alert.alert(
-                "Erreur",
-                "Impossible d'abandonner le match. Veuillez réessayer."
+                t("common.error"),
+                t("dashboard.alerts.abandonMatch.errorMessage")
               );
             }
           },
@@ -576,15 +580,15 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
     if (!liveMatchToResume) return;
 
     Alert.alert(
-      "Nouveau match",
-      "Un match est déjà en cours. Voulez-vous l'abandonner pour en créer un nouveau ?",
+      t("dashboard.alerts.newMatchConfirm.title"),
+      t("dashboard.alerts.newMatchConfirm.message"),
       [
         {
-          text: "Annuler",
+          text: t("common.cancel"),
           style: "cancel",
         },
         {
-          text: "Abandonner et créer",
+          text: t("dashboard.alerts.newMatchConfirm.confirmButton"),
           style: "destructive",
           onPress: async () => {
             try {
@@ -604,8 +608,8 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
             } catch (error) {
               logError("DashboardScreen", "❌ Failed to abandon match", { error });
               Alert.alert(
-                "Erreur",
-                "Impossible d'abandonner le match. Veuillez réessayer."
+                t("common.error"),
+                t("dashboard.alerts.abandonMatch.errorMessage")
               );
             }
           },
@@ -615,13 +619,13 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
   };
 
   /**
-   * Formats a date string to French locale (e.g., "15 janv. 2025")
+   * Formats a date string using the active app locale (e.g., "15 janv. 2025" / "Jan 15, 2025")
    * @param dateString - ISO date string
    * @returns Formatted date string
    */
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString("fr-FR", {
+    return date.toLocaleDateString(INTL_LOCALES[i18n.language as SupportedLanguage] ?? INTL_LOCALES.fr, {
       day: "2-digit",
       month: "short",
       year: "numeric",
@@ -679,35 +683,35 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
       setShowProfileMenu(false);
 
       Alert.alert(
-        "Exporter les logs",
-        "Les 2000 derniers messages de log vont être envoyés à Sentry pour analyse.",
+        t("dashboard.alerts.exportLogs.title"),
+        t("dashboard.alerts.exportLogs.message"),
         [
           {
-            text: "Annuler",
+            text: t("common.cancel"),
             style: "cancel",
           },
           {
-            text: "Envoyer",
+            text: t("common.send"),
             onPress: async () => {
               try {
                 const result = await sendLogsToSentry(2000);
 
                 if (result && result.success) {
                   Alert.alert(
-                    "Succès",
+                    t("common.success"),
                     `${result.message}\n\nEvent ID: ${result.eventId}`
                   );
                 } else {
                   Alert.alert(
-                    "Erreur",
-                    result?.message || "Impossible d'envoyer les logs. Veuillez réessayer."
+                    t("common.error"),
+                    result?.message || t("dashboard.alerts.exportLogs.errorMessage")
                   );
                 }
               } catch (error) {
                 logError("DashboardScreen", "❌ Error sending logs to Sentry", { error });
                 Alert.alert(
-                  "Erreur",
-                  "Impossible d'envoyer les logs. Veuillez réessayer."
+                  t("common.error"),
+                  t("dashboard.alerts.exportLogs.errorMessage")
                 );
               }
             },
@@ -752,9 +756,9 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
 
     if (!isOwner && currentClub) {
       Alert.alert(
-        "Créer un nouveau club",
-        "Seuls les propriétaires de club peuvent créer de nouveaux clubs. Vous êtes actuellement membre du club mais pas propriétaire.",
-        [{ text: "OK" }]
+        t("dashboard.alerts.createClubBlocked.title"),
+        t("dashboard.alerts.createClubBlocked.message"),
+        [{ text: t("common.ok") }]
       );
       return;
     }
@@ -819,7 +823,7 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
         onLogin={() => navigation.navigate(ROUTES.LOGIN)}
         onUpgrade={() => {
           // TODO: Navigate to subscription screen
-          Alert.alert("Info", "Fonctionnalité d'upgrade à venir");
+          Alert.alert(t("common.info"), t("dashboard.alerts.upgrade.message"));
         }}
       />
 
@@ -870,7 +874,7 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
                   color={colors.text.primary}
                 />
                 <Text style={[styles.profileMenuItemText, { color: colors.text.primary }]}>
-                  Exporter les logs
+                  {t("dashboard.profileMenu.exportLogs")}
                 </Text>
               </TouchableOpacity>
 
@@ -888,7 +892,7 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
                     color={colors.text.primary}
                   />
                   <Text style={[styles.profileMenuItemText, { color: colors.text.primary }]}>
-                    Test Sentry
+                    {t("dashboard.profileMenu.testSentry")}
                   </Text>
                 </TouchableOpacity>
               )}
@@ -904,7 +908,7 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
                     color={colors.text.primary}
                   />
                   <Text style={[styles.profileMenuItemText, { color: colors.text.primary }]}>
-                    Changer de club
+                    {t("dashboard.profileMenu.switchClub")}
                   </Text>
                 </TouchableOpacity>
               )}
@@ -923,7 +927,9 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
                       color={STATUS_COLORS.error}
                     />
                     <Text style={[styles.profileMenuItemText, { color: "#E53935" }]}>
-                      {isDeletingAccount ? "Suppression..." : "Supprimer mon compte"}
+                      {isDeletingAccount
+                        ? t("dashboard.profileMenu.deletingAccount")
+                        : t("dashboard.profileMenu.deleteAccount")}
                     </Text>
                   </TouchableOpacity>
                 </>
@@ -952,7 +958,7 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
           >
             <View style={styles.clubSwitcherHeader}>
               <Text style={[styles.clubSwitcherTitle, { color: colors.text.primary }]}>
-                Changer de club
+                {t("dashboard.clubSwitcher.title")}
               </Text>
               <TouchableOpacity onPress={() => setShowClubSwitcher(false)}>
                 <MaterialCommunityIcons
@@ -1036,7 +1042,7 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
                     { color: colors.text.primary },
                   ]}
                 >
-                  Créer un nouveau club
+                  {t("dashboard.clubSwitcher.createNewClub")}
                 </Text>
               </TouchableOpacity>
             </ScrollView>
@@ -1052,17 +1058,19 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
           <View style={[styles.header, { marginBottom: isCompact ? sp.lg : sp.xl }]}>
             <View style={styles.headerLeft}>
               <Text style={[styles.greeting, { color: colors.text.primary, fontSize: font.xxl }]}>
-                Bonjour, {"\n"}
+                {t("dashboard.greeting")} {"\n"}
                 <Text style={{ color: colors.primary }}>{userName}</Text>
               </Text>
               <Text
                 style={[styles.subGreeting, { color: colors.text.secondary, fontSize: font.md }]}
               >
-                Prêt pour le match ?
+                {t("dashboard.subGreeting")}
               </Text>
             </View>
 
             <View style={styles.headerRight}>
+              <LanguageSelector />
+
               <TouchableOpacity
                 onPress={handleToggleTheme}
                 style={[
@@ -1155,8 +1163,8 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
               </View>
               <Text style={[styles.ctaTitle, { color: colors.text.primary }]}>
                 {!currentClub
-                  ? "Rejoignez ou créez un club"
-                  : "Créez votre première équipe"}
+                  ? t("dashboard.ctaJoinOrCreateClub")
+                  : t("dashboard.ctaCreateFirstTeam")}
               </Text>
               <Text
                 style={[
@@ -1165,8 +1173,8 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
                 ]}
               >
                 {!currentClub
-                  ? "Pour commencer à suivre les statistiques, vous devez associer votre compte à une équipe."
-                  : "Vous faites partie d'un club, créez maintenant une équipe pour commencer à suivre vos matchs."}
+                  ? t("dashboard.ctaDescriptionNoClub")
+                  : t("dashboard.ctaDescriptionNoTeam")}
               </Text>
               <TouchableOpacity
                 style={[
@@ -1185,7 +1193,7 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
                     },
                   ]}
                 >
-                  Commencer
+                  {t("dashboard.ctaStart")}
                 </Text>
                 <MaterialCommunityIcons
                   name="chevron-right"
@@ -1215,7 +1223,7 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
                   </View>
                   {Platform.OS === 'ios' && (
                     <Text style={[styles.teamSelectorLabel, { color: colors.text.primary }]}>
-                      {teams.find(t => t.id === activeTeamId)?.name || 'Sélectionner une équipe'}
+                      {teams.find(team => team.id === activeTeamId)?.name || t("dashboard.selectTeamPlaceholder")}
                     </Text>
                   )}
                   <Picker
@@ -1266,8 +1274,7 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
                       },
                     ]}
                   >
-                    Mode Invité : Les matchs sont sauvegardés en local sur cet
-                    appareil.
+                    {t("dashboard.guestBanner")}
                   </Text>
                 </View>
               )}
@@ -1288,10 +1295,12 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
                 >
                   <View style={styles.newMatchButtonLeft}>
                     <Text style={[styles.newMatchButtonTitle, { fontSize: font.xl }]}>
-                      Nouveau Match
+                      {t("dashboard.newMatchButtonTitle")}
                     </Text>
                     <Text style={[styles.newMatchButtonSubtitle, { fontSize: font.md }]}>
-                      {isGuest ? "Mode Invité" : `Pour ${activeTeamName}`}
+                      {isGuest
+                        ? t("dashboard.newMatchButtonSubtitleGuest")
+                        : t("dashboard.newMatchButtonSubtitleTeam", { team: activeTeamName })}
                     </Text>
                   </View>
                   <View style={styles.newMatchButtonIcon}>

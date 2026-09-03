@@ -9,6 +9,7 @@ import {
   Image,
 } from "react-native";
 import { MaterialCommunityIcons, Ionicons } from "@expo/vector-icons";
+import { useTranslation } from "react-i18next";
 import { useTheme } from "../../src/contexts/ThemeContext";
 import { useResponsive } from "../../src/hooks/useResponsive";
 import {
@@ -37,6 +38,7 @@ export default function CreateClubForm({
   onSubmit,
   isEditMode,
 }: CreateClubFormProps) {
+  const { t } = useTranslation();
   const { colors, isDark } = useTheme();
   const { sp, font, sizes } = useResponsive();
 
@@ -88,10 +90,10 @@ export default function CreateClubForm({
               { color: colors.text.secondary, fontSize: font.xs },
             ]}
           >
-            NOM DU CLUB <Text style={{ color: colors.required }}>*</Text>
+            {t("createClubForm.clubNameLabel")} <Text style={{ color: colors.required }}>*</Text>
           </Text>
           <TextInput
-            placeholder="Ex: Los Angeles Lakers"
+            placeholder={t("createClubForm.clubNamePlaceholder")}
             placeholderTextColor={colors.text.secondary}
             value={formData.name}
             onChangeText={(value) => setFormData({ ...formData, name: value })}
@@ -119,10 +121,10 @@ export default function CreateClubForm({
               { color: colors.text.secondary, fontSize: font.xs },
             ]}
           >
-            SIGLE <Text style={{ color: colors.required }}>*</Text>
+            {t("createClubForm.acronymLabel")} <Text style={{ color: colors.required }}>*</Text>
           </Text>
           <TextInput
-            placeholder="LAL"
+            placeholder={t("createClubForm.acronymPlaceholder")}
             placeholderTextColor={colors.text.secondary}
             value={formData.acronym}
             onChangeText={(value) =>
@@ -166,7 +168,7 @@ export default function CreateClubForm({
               { color: colors.text.primary, fontSize: font.md },
             ]}
           >
-            Couleurs du Club
+            {t("createClubForm.colorsTitle")}
           </Text>
         </View>
 
@@ -177,7 +179,7 @@ export default function CreateClubForm({
             { color: colors.text.secondary, fontSize: font.md },
           ]}
         >
-          Couleur principale
+          {t("createClubForm.primaryColor")}
         </Text>
         <ScrollView
           horizontal
@@ -231,7 +233,7 @@ export default function CreateClubForm({
             { color: colors.text.secondary, fontSize: font.md },
           ]}
         >
-          Couleur secondaire
+          {t("createClubForm.secondaryColor")}
         </Text>
         <ScrollView
           horizontal
@@ -317,7 +319,7 @@ export default function CreateClubForm({
               { color: colors.text.primary, fontSize: font.md },
             ]}
           >
-            Personnalisation du terrain
+            {t("createClubForm.courtCustomizationTitle")}
           </Text>
         </View>
 
@@ -327,7 +329,7 @@ export default function CreateClubForm({
             { color: colors.text.secondary, fontSize: font.md },
           ]}
         >
-          Couleur du parquet
+          {t("createClubForm.courtColor")}
         </Text>
         <ScrollView
           horizontal
@@ -378,7 +380,7 @@ export default function CreateClubForm({
             { color: colors.text.secondary, fontSize: font.md },
           ]}
         >
-          Couleur des lignes
+          {t("createClubForm.linesColor")}
         </Text>
         <ScrollView
           horizontal
@@ -446,7 +448,7 @@ export default function CreateClubForm({
         }}
         currentColor={formData.primaryColor}
         presetColors={CLUB_COLOR_PALETTE}
-        title="Couleur principale"
+        title={t("createClubForm.primaryColor")}
       />
 
       <ColorPickerModal
@@ -457,7 +459,7 @@ export default function CreateClubForm({
         }}
         currentColor={formData.secondaryColor}
         presetColors={CLUB_COLOR_PALETTE}
-        title="Couleur secondaire"
+        title={t("createClubForm.secondaryColor")}
       />
 
       <ColorPickerModal
@@ -468,7 +470,7 @@ export default function CreateClubForm({
         }}
         currentColor={formData.courtColor}
         presetColors={COURT_COLOR_PALETTE}
-        title="Couleur du parquet"
+        title={t("createClubForm.courtColor")}
       />
 
       <ColorPickerModal
@@ -479,7 +481,7 @@ export default function CreateClubForm({
         }}
         currentColor={formData.courtLinesColor}
         presetColors={CLUB_COLOR_PALETTE}
-        title="Couleur des lignes"
+        title={t("createClubForm.linesColor")}
       />
     </View>
   );

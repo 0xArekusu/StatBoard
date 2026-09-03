@@ -7,7 +7,7 @@
 import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { MATCH_CREATION_STEP_LABELS, type MatchCreationStep } from "../../constants";
+import { getMatchCreationStepLabel, type MatchCreationStep } from "../../constants";
 import { useTheme } from "../../src/contexts/ThemeContext";
 import { useResponsive } from "../../src/hooks/useResponsive";
 
@@ -50,7 +50,7 @@ export const MatchHeader: React.FC<MatchHeaderProps> = ({
           />
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: colors.text.primary, fontSize: font.lg }]}>
-          {MATCH_CREATION_STEP_LABELS[step]}
+          {getMatchCreationStepLabel(step)}
         </Text>
         <View style={{ width: sizes.iconMd }} />
       </View>
