@@ -7,6 +7,7 @@ import { usePostHog } from "posthog-react-native";
 import { supabase } from "../src/config/supabase";
 import { logInfo, logWarn, logError } from "../utils/logger";
 import { ANALYTICS_EVENTS } from "../constants/analyticsEvents";
+import i18n, { DEFAULT_LANGUAGE } from "../src/i18n";
 
 const STORE_URLS = {
   ios: "itms-apps://itunes.apple.com/app/id6760178414",
@@ -27,14 +28,35 @@ export interface Changelog {
   items: ChangelogItem[];
 }
 
-function safeParseArray(value: string): unknown[] {
+// L'éditeur Supabase peut stocker un jsonb en string JSON (double-encodage) : on tolère les deux.
+function parseMaybeJson(value: unknown): unknown {
+  if (typeof value !== "string") return value;
+  const trimmed = value.trim();
+  if (!trimmed.startsWith("{") && !trimmed.startsWith("[")) return value;
   try {
-    const parsed = JSON.parse(value);
-    return Array.isArray(parsed) ? parsed : [];
+    return JSON.parse(trimmed);
   } catch {
-    return [];
+    return value;
   }
 }
+
+// title/items : soit une valeur simple (ancien format), soit un objet localisé { fr, en, de, es }.
+// Repli : langue active → fr → en → première clé disponible.
+function pickLocalized<T>(value: unknown, accept: (v: unknown) => v is T): T | null {
+  if (accept(value)) return value;
+  if (value && typeof value === "object") {
+    const dict = value as Record<string, unknown>;
+    const active = (i18n.language || DEFAULT_LANGUAGE).split("-")[0];
+    for (const key of [active, DEFAULT_LANGUAGE, "en", ...Object.keys(dict)]) {
+      const candidate = dict[key];
+      if (accept(candidate)) return candidate;
+    }
+  }
+  return null;
+}
+
+const isChangelogItemArray = (v: unknown): v is ChangelogItem[] => Array.isArray(v);
+const isString = (v: unknown): v is string => typeof v === "string";
 
 function isVersionLessThan(current: string, minimum: string): boolean {
   const parse = (v: string) => v.split(".").map(Number);
@@ -59,13 +81,6 @@ export function useAppUpdateCheck() {
   const didClickUpdateRef = useRef(false);
 
   useEffect(() => {
-    // DEBUG TEMPORAIRE — à retirer après diagnostic du changelog.
-    posthog?.capture(ANALYTICS_EVENTS.UPDATE_CHECK_DEBUG, {
-      channel: Updates.channel,
-      is_dev: __DEV__,
-      current_version: currentVersion,
-    });
-
     // production = utilisateurs finaux, preview = builds de test (QA).
     const isEnabled = !__DEV__ && ["production", "preview"].includes(Updates.channel ?? "");
     if (!isEnabled) {
@@ -125,20 +140,19 @@ export function useAppUpdateCheck() {
           return;
         }
 
-        // items est du jsonb array, mais l'éditeur Supabase peut le stocker en string JSON (double-encodage) : on tolère les deux.
-        const rawItems =
-          typeof data?.items === "string" ? safeParseArray(data.items) : data?.items;
-        const items: ChangelogItem[] = Array.isArray(rawItems)
-          ? rawItems.filter((it: ChangelogItem) => it?.title)
-          : [];
+        // title/items peuvent être localisés ({ fr, en, de, es }) ou dans l'ancien format simple.
+        const rawItems = pickLocalized(parseMaybeJson(data?.items), isChangelogItemArray);
+        const items: ChangelogItem[] = (rawItems ?? []).filter((it: ChangelogItem) => it?.title);
         if (!data || items.length === 0) {
           // Aucun changelog publié pour cette version → on marque vu pour éviter un refetch à chaque lancement.
           await AsyncStorage.setItem(CHANGELOG_SEEN_KEY, installedVersion);
           return;
         }
 
+        const title = pickLocalized(parseMaybeJson(data.title), isString);
+
         logInfo("UpdateCheck", "Changelog available", { version: installedVersion });
-        setChangelog({ version: data.version, title: data.title ?? null, items });
+        setChangelog({ version: data.version, title, items });
         posthog?.capture(ANALYTICS_EVENTS.CHANGELOG_SHOWN, { version: installedVersion });
         // On marque vu seulement à la fermeture (dismissChangelog) pour garantir que l'utilisateur le voit.
       } catch (err) {

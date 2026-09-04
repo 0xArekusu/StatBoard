@@ -71,8 +71,6 @@ export const ANALYTICS_EVENTS = {
   REVIEW_PROMPT_LIKED: "review_prompt_liked",
   REVIEW_PROMPT_DISLIKED: "review_prompt_disliked",
   REVIEW_PROMPT_NATIVE_REQUESTED: "review_prompt_native_requested",
-  // DEBUG TEMPORAIRE — à retirer après diagnostic du changelog
-  UPDATE_CHECK_DEBUG: "update_check_debug",
 } as const;
 
 export type AnalyticsEvent = (typeof ANALYTICS_EVENTS)[keyof typeof ANALYTICS_EVENTS];
