@@ -20,6 +20,7 @@ import ResetPasswordScreen from "./screens/authentication/ResetPasswordScreen";
 import MatchDetailsScreen from "./screens/MatchDetailsScreen";
 import PlayerProfileScreen from "./screens/PlayerProfileScreen";
 import SplashScreen from "./screens/SplashScreen";
+import ClubFormScreen from "./screens/club/ClubFormScreen";
 import TeamInfoScreen from "./screens/club/TeamInfoScreen";
 import TeamRosterScreen from "./screens/club/TeamRosterScreen";
 import TeamStartersScreen from "./screens/club/TeamStartersScreen";
@@ -294,6 +295,7 @@ function Navigation() {
             name={ROUTES.MATCH_DETAILS}
             component={MatchDetailsScreen}
           />
+          <Stack.Screen name={ROUTES.CLUB_FORM} component={ClubFormScreen} />
           <Stack.Screen name={ROUTES.TEAM_INFO} component={TeamInfoScreen} />
           <Stack.Screen name={ROUTES.TEAM_ROSTER} component={TeamRosterScreen} />
           <Stack.Screen

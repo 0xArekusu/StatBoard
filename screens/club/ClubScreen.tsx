@@ -8,7 +8,7 @@ import {
   TouchableOpacity, Alert,
   ActivityIndicator
 } from "react-native";
-import { MaterialCommunityIcons, Ionicons } from "@expo/vector-icons";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "../../src/contexts/ThemeContext";
@@ -40,7 +40,6 @@ import { usePostHog } from "posthog-react-native";
 
 interface ClubScreenProps {
   navigation: any;
-  route?: any;
 }
 
 /**
@@ -57,7 +56,7 @@ interface ClubScreenProps {
  * - Owner: Full access to club settings and team management
  * - Member: Can create teams but needs owner approval
  */
-export default function ClubScreen({ navigation, route }: ClubScreenProps) {
+export default function ClubScreen({ navigation }: ClubScreenProps) {
   const { t } = useTranslation();
   const { isDark, colors } = useTheme();
   const { user } = useAuth();
@@ -65,15 +64,11 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
   const { currentClub, refreshClubs } = useClub();
   const { sp, font, isCompact } = useResponsive();
 
-  const forceCreate = route?.params?.forceCreate || false;
-
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [teams, setTeams] = useState<Team[]>([]);
   const [activeTab, setActiveTab] = useState<ClubTab>(CLUB_TAB.CREATE);
   const [subTab, setSubTab] = useState<ClubSubTab>(CLUB_SUB_TAB.INFO);
-  const [isEditingClub, setIsEditingClub] = useState(false);
-  const [isCreatingNewClub, setIsCreatingNewClub] = useState(forceCreate);
   const [subscriptionName, setSubscriptionName] = useState<string>("");
 
   // Create Club Form
@@ -315,82 +310,15 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
   };
 
   /**
-   * Handles form submission for club operations
-   * Three modes based on context:
-   *
-   * 1. EDIT MODE (isEditingClub = true):
-   *    - Updates existing club's logo and color customization
-   *    - Only available to club owners
-   *
-   * 2. CREATE MODE (activeTab = CREATE):
-   *    - Validates required fields (name, acronym)
-   *    - Generates a unique club code (first 3 letters + random number)
-   *    - Creates new club with user as owner
-   *    - Sets custom colors and branding
-   *
-   * 3. JOIN MODE (activeTab = JOIN):
-   *    - Validates club code input
-   *    - Searches for club by code
-   *    - Adds user as a member of the found club
-   *
-   * @returns {Promise<void>} Reloads club data on success, shows alerts on errors
+   * Soumet le formulaire de l'état vide de l'onglet (aucun club) :
+   * - CREATE (activeTab = CREATE) : crée le 1er club, user = owner
+   * - JOIN (activeTab = JOIN) : rejoint un club via son code
+   * La création d'un club supplémentaire et l'édition passent par ClubFormScreen.
    */
   const handleSubmit = async () => {
     setSubmitting(true);
     try {
-    if (isEditingClub) {
-      // EDIT MODE
-      if (!currentClub || !user) return;
-      try {
-        let uploadedLogoUrl = formData.logoUri;
-
-        // Upload new logo if it's a local file (starts with file://)
-        if (formData.logoUri && formData.logoUri.startsWith('file://')) {
-          const clubStorageService = new ClubStorageService(supabase);
-          const { path, error } = await clubStorageService.uploadClubLogo(
-            formData.logoUri,
-            currentClub.id,
-          );
-
-          if (error) {
-            showErrorAlert({
-              messageKey: "clubScreen.errors.uploadLogoFailed",
-              error: new Error(t("clubScreen.errors.uploadLogoFailed")),
-              context: "ClubScreen",
-            });
-            return;
-          }
-
-          uploadedLogoUrl = path;
-        }
-
-        console.log('[ClubScreen] Uploading club with logoUrl:', uploadedLogoUrl);
-
-        const clubService = ServiceFactory.getClubService(supabase);
-        await clubService.updateClub(currentClub.id, {
-          logoUrl: uploadedLogoUrl || undefined,
-          primaryColor: formData.primaryColor,
-          secondaryColor: formData.secondaryColor,
-          courtBackgroundColor: formData.courtColor,
-          courtLineColor: formData.courtLinesColor,
-        });
-        await refreshClubs();
-        await loadClubData();
-
-        console.log('[ClubScreen] Club updated, new logoUrl:', currentClub.logoUrl);
-
-        setIsEditingClub(false);
-        posthog?.capture(ANALYTICS_EVENTS.CLUB_UPDATED);
-        Alert.alert(t("common.success"), t("clubScreen.alerts.clubUpdatedSuccess"));
-      } catch (error) {
-        console.error("Error updating club:", error);
-        showErrorAlert({
-          messageKey: "clubScreen.errors.updateClubFailed",
-          error,
-          context: "ClubScreen",
-        });
-      }
-    } else if (activeTab === CLUB_TAB.CREATE || isCreatingNewClub) {
+    if (activeTab === CLUB_TAB.CREATE) {
       // CREATE MODE - Validation
       if (!formData.name || !formData.acronym) {
         Alert.alert(t("common.error"), t("clubScreen.alerts.nameAndAcronymRequired"));
@@ -449,7 +377,6 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
         await refreshClubs();
 
         // Reset states
-        setIsCreatingNewClub(false);
         setFormData(INITIAL_CLUB_FORM_DATA);
         setActiveTab(CLUB_TAB.CREATE);
 
@@ -546,25 +473,10 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
   }
 
   // --- INSIDE A CLUB ---
-  if (currentClub && !isEditingClub && !isCreatingNewClub) {
-    /**
-     * Enters edit mode for the club
-     * - Populates the form with current club data (name, acronym, colors, logo)
-     * - Switches to edit mode view
-     * - Only accessible to club owners
-     */
+  if (currentClub) {
+    // Édition du club : écran dédié plein écran
     const handleEditClub = () => {
-      setFormData({
-        name: currentClub.name,
-        acronym: currentClub.acronym || "",
-        code: currentClub.code,
-        logoUri: currentClub.logoUrl || null,
-        primaryColor: currentClub.primaryColor || "#FF0000",
-        secondaryColor: currentClub.secondaryColor || "#0000FF",
-        courtColor: currentClub.courtBackgroundColor || "#c2410c",
-        courtLinesColor: currentClub.courtLineColor || "#ffffff",
-      });
-      setIsEditingClub(true);
+      navigation.navigate(ROUTES.CLUB_FORM, { mode: "edit" });
     };
 
     /**
@@ -620,42 +532,19 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
     );
   }
 
-  // --- JOIN OR CREATE SCREEN (or EDIT) ---
+  // --- JOIN OR CREATE FIRST CLUB (état vide de l'onglet) ---
   return (
     <View style={[styles.container, { backgroundColor: bgColor }]}>
       <ScrollView
         style={[styles.content, { padding: sp.lg, paddingTop: sp.md }]}
         contentContainerStyle={styles.scrollContent}
       >
-        {isEditingClub || isCreatingNewClub ? (
-          <View style={[styles.header, { marginBottom: sp.lg }]}>
-            <TouchableOpacity
-              onPress={() => {
-                if (isEditingClub) {
-                  setIsEditingClub(false);
-                } else if (isCreatingNewClub) {
-                  setIsCreatingNewClub(false);
-                  navigation.goBack();
-                }
-              }}
-              style={styles.backButton}
-            >
-              <Ionicons name="arrow-back" size={24} color={textPrimary} />
-            </TouchableOpacity>
-            <Text style={[styles.title, { color: textPrimary, fontSize: font.xxl, marginBottom: 0 }]}>
-              {isCreatingNewClub ? t("clubScreen.createNewClubTitle") : t("clubScreen.editClubTitle")}
-            </Text>
-            <View style={{ width: 24 }} />
-          </View>
-        ) : (
-          <Text style={[styles.title, { color: textPrimary, fontSize: font.xxl, marginBottom: sp.lg }]}>
-            {t("clubScreen.spaceTitle")}
-          </Text>
-        )}
+        <Text style={[styles.title, { color: textPrimary, fontSize: font.xxl, marginBottom: sp.lg }]}>
+          {t("clubScreen.spaceTitle")}
+        </Text>
 
-        {/* Tabs - Only show if not editing and not creating new club */}
-        {!isEditingClub && !isCreatingNewClub && (
-          <View
+        {/* Tabs */}
+        <View
             style={[
               styles.tabs,
               {
@@ -713,16 +602,15 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
                 {t("clubScreen.joinTab")}
               </Text>
             </TouchableOpacity>
-          </View>
-        )}
+        </View>
 
-        {activeTab === CLUB_TAB.CREATE || isEditingClub || isCreatingNewClub ? (
+        {activeTab === CLUB_TAB.CREATE ? (
           <CreateClubForm
             formData={formData}
             setFormData={setFormData}
             onPickImage={handlePickImage}
             onSubmit={handleSubmit}
-            isEditMode={isEditingClub}
+            isEditMode={false}
           />
         ) : (
           <JoinClubForm
@@ -756,13 +644,9 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
                 color={colors.text.primary}
               />
               <Text style={[styles.submitButtonText, { color: colors.text.primary, fontSize: font.lg }]}>
-                {isEditingClub
-                  ? t("clubScreen.editButton")
-                  : isCreatingNewClub
-                    ? t("clubScreen.createNewClubTitle")
-                    : activeTab === CLUB_TAB.CREATE
-                      ? t("clubScreen.createMyClubButton")
-                      : t("clubScreen.joinTab")}
+                {activeTab === CLUB_TAB.CREATE
+                  ? t("clubScreen.createMyClubButton")
+                  : t("clubScreen.joinTab")}
               </Text>
             </>
           )}

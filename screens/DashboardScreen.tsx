@@ -763,8 +763,8 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
       return;
     }
 
-    // Navigate to Club screen with forceCreate param
-    navigation.navigate("Club", { forceCreate: true });
+    // Écran dédié plein écran (hors tab bar)
+    navigation.navigate(ROUTES.CLUB_FORM, { mode: "create" });
   };
 
   /**
