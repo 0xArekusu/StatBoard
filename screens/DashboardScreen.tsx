@@ -9,11 +9,9 @@ import {
   Image,
   BackHandler,
   Alert,
-  Platform,
   Modal,
 } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
-import { Picker } from "@react-native-picker/picker";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useTranslation } from "react-i18next";
@@ -59,6 +57,7 @@ function ClubLogoImage({ logoUrl, style, placeholderStyle, iconColor, placeholde
 }
 import DashboardStatsCards from "../components/dashboard/DashboardStatsCards";
 import DashboardResumeMatchModal from "../components/dashboard/DashboardResumeMatchModal";
+import DashboardTeamSwitcherModal from "../components/dashboard/DashboardTeamSwitcherModal";
 import DashboardRecentMatches from "../components/dashboard/DashboardRecentMatches";
 import GuestWelcomeModal from "../components/GuestWelcomeModal";
 import MatchLimitModal from "../components/MatchLimitModal";
@@ -119,6 +118,7 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showGuestWelcome, setShowGuestWelcome] = useState(false);
   const [showClubSwitcher, setShowClubSwitcher] = useState(false);
+  const [showTeamSwitcher, setShowTeamSwitcher] = useState(false);
   const [showMatchLimitModal, setShowMatchLimitModal] = useState(false);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -842,6 +842,22 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
         }}
       />
 
+      {/* Team Switcher Modal */}
+      <DashboardTeamSwitcherModal
+        visible={showTeamSwitcher}
+        teams={teams}
+        activeTeamId={activeTeamId}
+        colors={colors}
+        onSelect={(teamId) => {
+          setShowTeamSwitcher(false);
+          if (teamId !== activeTeamId) {
+            posthog?.capture(ANALYTICS_EVENTS.TEAM_CHANGED, { team_id: teamId, club_id: currentClub?.id ?? null });
+            setActiveTeamId(teamId);
+          }
+        }}
+        onClose={() => setShowTeamSwitcher(false)}
+      />
+
       {/* Profile Menu Modal */}
       <Modal
         visible={showProfileMenu}
@@ -1209,7 +1225,7 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
             <>
               {/* Team Selector (Only if club exists) */}
               {currentClub && teams.length > 0 && (
-                <View
+                <TouchableOpacity
                   style={[
                     styles.teamSelector,
                     {
@@ -1217,33 +1233,23 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
                       borderColor: colors.border,
                     },
                   ]}
+                  disabled={teams.length < 2}
+                  onPress={() => setShowTeamSwitcher(true)}
                 >
                   <View style={styles.teamSelectorIcon}>
                     <JerseyIconSimple width={30} height={30} />
                   </View>
-                  {Platform.OS === 'ios' && (
-                    <Text style={[styles.teamSelectorLabel, { color: colors.text.primary }]}>
-                      {teams.find(team => team.id === activeTeamId)?.name || t("dashboard.selectTeamPlaceholder")}
-                    </Text>
+                  <Text style={[styles.teamSelectorLabel, { color: colors.text.primary }]}>
+                    {teams.find(team => team.id === activeTeamId)?.name || t("dashboard.selectTeamPlaceholder")}
+                  </Text>
+                  {teams.length > 1 && (
+                    <MaterialCommunityIcons
+                      name="chevron-down"
+                      size={24}
+                      color={colors.text.secondary}
+                    />
                   )}
-                  <Picker
-                    selectedValue={activeTeamId || ""}
-                    onValueChange={(value) => {
-                      posthog?.capture(ANALYTICS_EVENTS.TEAM_CHANGED, { team_id: value, club_id: currentClub?.id ?? null });
-                      setActiveTeamId(value);
-                    }}
-                    style={[styles.picker, { color: colors.text.primary }]}
-                    dropdownIconColor={colors.text.secondary}
-                  >
-                    {teams.map((team) => (
-                      <Picker.Item
-                        key={team.id}
-                        label={`${team.name}`}
-                        value={team.id}
-                      />
-                    ))}
-                  </Picker>
-                </View>
+                </TouchableOpacity>
               )}
 
               {/* Guest Label if no club */}
@@ -1417,27 +1423,18 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     paddingLeft: 12,
+    paddingRight: 12,
+    minHeight: 58,
     marginBottom: 16,
   },
   teamSelectorIcon: {
     marginRight: 8,
   },
   teamSelectorLabel: {
+    flex: 1,
     fontSize: 16,
     fontWeight: "600",
     marginRight: 8,
-  },
-  picker: {
-    ...Platform.select({
-      ios: {
-        height: 58,
-        width: '100%',
-      },
-      android: {
-        flex: 1,
-        height: 58,
-      },
-    }),
   },
   guestBanner: {
     flexDirection: "row",

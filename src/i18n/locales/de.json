@@ -35,6 +35,7 @@
     "greeting": "Hallo,",
     "subGreeting": "Bereit für das Spiel?",
     "selectTeamPlaceholder": "Team auswählen",
+    "teamSwitcherTitle": "Team wechseln",
     "guestBanner": "Gastmodus: Spiele werden lokal auf diesem Gerät gespeichert.",
     "newMatchButtonTitle": "Neues Spiel",
     "newMatchButtonSubtitleGuest": "Gastmodus",

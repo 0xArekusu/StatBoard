@@ -35,6 +35,7 @@
     "greeting": "Hola,",
     "subGreeting": "¿Listo para el partido?",
     "selectTeamPlaceholder": "Seleccionar un equipo",
+    "teamSwitcherTitle": "Cambiar de equipo",
     "guestBanner": "Modo Invitado: los partidos se guardan localmente en este dispositivo.",
     "newMatchButtonTitle": "Nuevo Partido",
     "newMatchButtonSubtitleGuest": "Modo Invitado",
