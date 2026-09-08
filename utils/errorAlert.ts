@@ -1,16 +1,22 @@
 /**
  * Error Alert Helper
  *
- * Standardized error alerts for user-facing errors across the app
+ * Standardized error alerts for user-facing errors across the app.
+ * Each call site provides a `messageKey` pointing to a complete, specific
+ * i18n message (not a fragment composed into a template), so every situation
+ * gets its own clear, localized sentence instead of a generic "Impossible de X.".
  */
 
 import { Alert } from "react-native";
 import * as Sentry from "@sentry/react-native";
 import { logError } from "./logger";
+import i18n from "../src/i18n";
 
 export interface ErrorAlertOptions {
-  /** The action that failed (e.g., "charger les matchs", "synchroniser") */
-  action: string;
+  /** i18n key for the complete, specific message shown to the user (e.g. "historyScreen.errors.deleteFailed") */
+  messageKey: string;
+  /** Optional interpolation params for messageKey */
+  messageParams?: Record<string, unknown>;
   /** The error object or message */
   error: unknown;
   /** Component/context where error occurred (for logging) */
@@ -32,7 +38,7 @@ export interface ErrorAlertOptions {
  *   await fetchMatches();
  * } catch (error) {
  *   showErrorAlert({
- *     action: "charger les matchs",
+ *     messageKey: "historyScreen.errors.loadFailed",
  *     error,
  *     context: "HistoryScreen",
  *     showRetry: true,
@@ -42,7 +48,8 @@ export interface ErrorAlertOptions {
  * ```
  */
 export function showErrorAlert({
-  action,
+  messageKey,
+  messageParams,
   error,
   context,
   onRetry,
@@ -50,20 +57,20 @@ export function showErrorAlert({
   showRetry = false,
 }: ErrorAlertOptions): void {
   // Log the error
-  logError(context, `Failed to ${action}`, {
+  logError(context, `Failed: ${messageKey}`, {
     error: error instanceof Error ? error.message : error,
   });
 
   // Capture in Sentry
   Sentry.captureException(error instanceof Error ? error : new Error(String(error)), {
-    tags: { context, action },
+    tags: { context, messageKey },
   });
 
   // Extract error message
-  const errorMessage = error instanceof Error ? error.message : "Erreur inconnue";
+  const errorMessage = error instanceof Error ? error.message : i18n.t("errorAlert.unknownError");
 
-  // Build alert message
-  const message = `Impossible de ${action}.\n\n${errorMessage}\n\nVérifiez votre connexion internet et réessayez.`;
+  // Build alert message: a complete, specific sentence + the raw technical detail
+  const message = `${i18n.t(messageKey, messageParams)}\n\n${errorMessage}`;
 
   // Build buttons
   const buttons: Array<{
@@ -74,19 +81,19 @@ export function showErrorAlert({
 
   if (showRetry && onRetry) {
     buttons.push({
-      text: "Réessayer",
+      text: i18n.t("errorAlert.retryButton"),
       onPress: onRetry,
     });
   }
 
   buttons.push({
-    text: showRetry ? "Annuler" : "OK",
+    text: showRetry ? i18n.t("common.cancel") : i18n.t("common.ok"),
     style: "cancel",
     onPress: onCancel,
   });
 
   // Show alert
-  Alert.alert("Erreur", message, buttons);
+  Alert.alert(i18n.t("common.error"), message, buttons);
 }
 
 /**
@@ -94,8 +101,8 @@ export function showErrorAlert({
  */
 export function showNetworkErrorAlert(context: string, onRetry?: () => void): void {
   showErrorAlert({
-    action: "se connecter au serveur",
-    error: new Error("Problème de connexion réseau"),
+    messageKey: "errorAlert.networkError",
+    error: new Error("Network connection unavailable"),
     context,
     showRetry: !!onRetry,
     onRetry,
@@ -107,8 +114,8 @@ export function showNetworkErrorAlert(context: string, onRetry?: () => void): vo
  */
 export function showPermissionErrorAlert(context: string): void {
   showErrorAlert({
-    action: "accéder à cette ressource",
-    error: new Error("Vous n'avez pas les permissions nécessaires"),
+    messageKey: "errorAlert.permissionError",
+    error: new Error("Missing required permissions"),
     context,
   });
 }

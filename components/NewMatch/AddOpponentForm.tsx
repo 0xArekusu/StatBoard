@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { View, Text, TextInput, TouchableOpacity, StyleSheet } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { useTranslation } from "react-i18next";
 import { BRAND_COLORS, COMMON_COLORS, OPACITY } from "../../src/theme";
 import { useResponsive } from "../../src/hooks/useResponsive";
 import type { Player } from "../../models/Player";
@@ -33,6 +34,7 @@ export const AddOpponentForm: React.FC<AddOpponentFormProps> = ({
   existingPlayers = [],
   colors,
 }) => {
+  const { t } = useTranslation();
   const [error, setError] = useState<string | null>(null);
   const { sp, font, sizes } = useResponsive();
 
@@ -46,7 +48,7 @@ export const AddOpponentForm: React.FC<AddOpponentFormProps> = ({
     const numValue = parseInt(playerNumber, 10);
     const isDuplicate = existingPlayers.some((p) => p.jerseyNumber === numValue);
     if (isDuplicate) {
-      setError("Ce numéro de maillot est déjà utilisé.");
+      setError(t("teamRosterScreen.validation.duplicateNumber"));
       return;
     }
     onAdd();
@@ -55,11 +57,11 @@ export const AddOpponentForm: React.FC<AddOpponentFormProps> = ({
   return (
     <View style={styles.wrapper}>
       <Text style={[styles.title, { color: colors.textPrimary, fontSize: font.md, marginBottom: sp.sm + sp.xs }]}>
-        Ajouter un joueur
+        {t("addOpponentForm.title")}
       </Text>
       <View style={[styles.row, { gap: sp.sm, marginBottom: sp.sm }]}>
         <TextInput
-          placeholder="Nom (Optionnel)"
+          placeholder={t("addOpponentForm.namePlaceholder")}
           placeholderTextColor={colors.textSecondary}
           value={playerName}
           onChangeText={(text) => { onNameChange(text); setError(null); }}
@@ -118,7 +120,7 @@ export const AddOpponentForm: React.FC<AddOpponentFormProps> = ({
         </TouchableOpacity>
       </View>
       <TextInput
-        placeholder="VTXXXXXX (Optionnel)"
+        placeholder={t("addPlayerForm.licensePlaceholder")}
         placeholderTextColor={colors.textSecondary}
         value={playerLicense}
         onChangeText={onLicenseChange}

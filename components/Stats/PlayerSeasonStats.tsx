@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, ScrollView, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../src/contexts/ThemeContext';
 import { useResponsive } from '../../src/hooks/useResponsive';
 import { PlayerSeasonData } from '../../src/services/seasonStats';
@@ -11,6 +12,7 @@ interface PlayerSeasonStatsProps {
 }
 
 export default function PlayerSeasonStats({ player }: PlayerSeasonStatsProps) {
+  const { t } = useTranslation();
   const { colors } = useTheme();
   const { sp, font } = useResponsive();
 
@@ -33,9 +35,9 @@ export default function PlayerSeasonStats({ player }: PlayerSeasonStatsProps) {
             value: player.matchesWithTrackedTime > 0
               ? formatTime(player.totalPlayingTimeSeconds, player.matchesWithTrackedTime)
               : '--:--',
-            label: 'Temps moy.',
+            label: t('playerSeasonStats.avgTime'),
           },
-          { value: player.avgPts.toFixed(1), label: 'Points' },
+          { value: player.avgPts.toFixed(1), label: t('liveMatchModals.filter.points') },
           { value: avgPm === 0 ? '—' : (avgPm > 0 ? `+${avgPm}` : `${avgPm}`), label: '+/-' },
         ].map(({ value, label }) => (
           <View
@@ -68,7 +70,7 @@ export default function PlayerSeasonStats({ player }: PlayerSeasonStatsProps) {
             {player.avgEff.toFixed(1)}
           </Text>
           <Text style={[styles.cardLabel, { fontSize: font.xs, color: colors.primary }]}>
-            Éval
+            {t('playerDetailModal.eff')}
           </Text>
         </View>
       </View>
@@ -78,7 +80,7 @@ export default function PlayerSeasonStats({ player }: PlayerSeasonStatsProps) {
         <Text
           style={[styles.sectionTitle, { fontSize: font.md, color: colors.text.primary, marginBottom: sp.sm }]}
         >
-          Performance aux tirs
+          {t('playerDetailModal.shootingPerformance')}
         </Text>
         <View
           style={[
@@ -86,16 +88,16 @@ export default function PlayerSeasonStats({ player }: PlayerSeasonStatsProps) {
             { backgroundColor: colors.surface, padding: sp.lg, borderRadius: sp.sm },
           ]}
         >
-          <ShootingBar label="3 Points" made={player.fg3m} attempted={player.fg3a} color="#6366f1" />
-          <ShootingBar label="2 Points" made={player.fg2m} attempted={player.fg2a} color="#3b82f6" />
-          <ShootingBar label="Lancers" made={player.ftm} attempted={player.fta} color="#06b6d4" />
+          <ShootingBar label={t('playerDetailModal.threePoints')} made={player.fg3m} attempted={player.fg3a} color="#6366f1" />
+          <ShootingBar label={t('playerDetailModal.twoPoints')} made={player.fg2m} attempted={player.fg2a} color="#3b82f6" />
+          <ShootingBar label={t('playerDetailModal.freeThrows')} made={player.ftm} attempted={player.fta} color="#06b6d4" />
           <View style={[styles.summary, { borderTopColor: colors.border, marginTop: sp.sm, paddingTop: sp.sm }]}>
             <View style={styles.summaryItem}>
               <Text style={[styles.summaryValue, { color: colors.text.primary, fontSize: font.md }]}>
                 {player.fgm}/{player.fga}
               </Text>
               <Text style={[styles.summaryLabel, { color: colors.text.tertiary, fontSize: font.xs }]}>
-                TOTAL TIRS
+                {t('playerDetailModal.totalShots')}
               </Text>
             </View>
             <View style={styles.summaryItem}>
@@ -103,7 +105,7 @@ export default function PlayerSeasonStats({ player }: PlayerSeasonStatsProps) {
                 {player.fga > 0 ? Math.round((player.fgm / player.fga) * 100) : 0}%
               </Text>
               <Text style={[styles.summaryLabel, { color: colors.text.tertiary, fontSize: font.xs }]}>
-                RÉUSSITE
+                {t('playerDetailModal.successRate')}
               </Text>
             </View>
           </View>
@@ -118,7 +120,7 @@ export default function PlayerSeasonStats({ player }: PlayerSeasonStatsProps) {
             { fontSize: font.md, color: colors.text.primary, marginBottom: sp.sm, paddingHorizontal: sp.md },
           ]}
         >
-          Détails
+          {t('playerDetailModal.details')}
         </Text>
         <ScrollView
           horizontal
@@ -126,20 +128,20 @@ export default function PlayerSeasonStats({ player }: PlayerSeasonStatsProps) {
           contentContainerStyle={[styles.boxesRow, { paddingHorizontal: sp.md, gap: sp.sm }]}
         >
           <StatBox
-            label="REB OFF/DEF"
+            label={t('playerSeasonStats.rebOffDef')}
             value={`${(player.reb_off / n).toFixed(1)}/${(player.reb_def / n).toFixed(1)}`}
-            sub="Rebonds moy."
+            sub={t('playerSeasonStats.reboundsAvg')}
             leftMarkerType={MarkerType.TRIANGLE}
             leftMarkerColor={getActionColor(ActionType.REBOUND, ReboundSpecification.OFFENSIVE, 0)}
             markerType={MarkerType.TRIANGLE}
             markerColor={getActionColor(ActionType.REBOUND, ReboundSpecification.DEFENSIVE, 0)}
           />
-          <StatBox label="AST" value={(player.ast / n).toFixed(1)} sub="Passes moy." markerType={MarkerType.CIRCLE} markerColor={getActionColor(ActionType.ASSIST, '', 0)} />
-          <StatBox label="INT" value={(player.stl / n).toFixed(1)} sub="Interceptions moy." markerType={MarkerType.CIRCLE} markerColor={getActionColor(ActionType.STEAL, '', 0)} />
-          <StatBox label="CTR" value={(player.blk / n).toFixed(1)} sub="Contres moy." markerType={MarkerType.CIRCLE} markerColor={getActionColor(ActionType.BLOCK, '', 0)} />
-          <StatBox label="BP" value={(player.to / n).toFixed(1)} sub="Balles perdues moy." markerType={MarkerType.CIRCLE} markerColor={getActionColor(ActionType.TURNOVER, '', 0)} />
-          <StatBox label="FTE" value={(player.pf / n).toFixed(1)} sub="Fautes moy." markerType={MarkerType.DIAMOND} markerColor={getActionColor(ActionType.FOUL, '', 0)} />
-          <StatBox label="FP" value={(player.fd / n).toFixed(1)} sub="Fautes provoquées moy." markerType={MarkerType.DIAMOND} markerColor={getActionColor(ActionType.FOUL_DRAWN, '', 0)} />
+          <StatBox label={t('playerDetailModal.ast')} value={(player.ast / n).toFixed(1)} sub={t('playerSeasonStats.assistsAvg')} markerType={MarkerType.CIRCLE} markerColor={getActionColor(ActionType.ASSIST, '', 0)} />
+          <StatBox label={t('playerDetailModal.int')} value={(player.stl / n).toFixed(1)} sub={t('playerSeasonStats.stealsAvg')} markerType={MarkerType.CIRCLE} markerColor={getActionColor(ActionType.STEAL, '', 0)} />
+          <StatBox label={t('playerDetailModal.ctr')} value={(player.blk / n).toFixed(1)} sub={t('playerSeasonStats.blocksAvg')} markerType={MarkerType.CIRCLE} markerColor={getActionColor(ActionType.BLOCK, '', 0)} />
+          <StatBox label={t('playerDetailModal.bp')} value={(player.to / n).toFixed(1)} sub={t('playerSeasonStats.turnoversAvg')} markerType={MarkerType.CIRCLE} markerColor={getActionColor(ActionType.TURNOVER, '', 0)} />
+          <StatBox label={t('playerDetailModal.fte')} value={(player.pf / n).toFixed(1)} sub={t('playerSeasonStats.foulsAvg')} markerType={MarkerType.DIAMOND} markerColor={getActionColor(ActionType.FOUL, '', 0)} />
+          <StatBox label={t('playerDetailModal.fp')} value={(player.fd / n).toFixed(1)} sub={t('playerSeasonStats.foulsDrawnAvg')} markerType={MarkerType.DIAMOND} markerColor={getActionColor(ActionType.FOUL_DRAWN, '', 0)} />
         </ScrollView>
       </View>
     </View>

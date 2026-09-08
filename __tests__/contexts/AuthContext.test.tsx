@@ -1,6 +1,13 @@
 import React from "react";
 import { renderHook, act, waitFor } from "@testing-library/react-native";
 import { AuthProvider, useAuth } from "../../src/contexts/AuthContext";
+import i18n from "../../src/i18n";
+
+// These tests assert French copy directly, so pin the language regardless of
+// the device locale the test environment resolves (jest-expo mocks it to "en").
+beforeAll(async () => {
+  await i18n.changeLanguage("fr");
+});
 
 // ─── Mocks ────────────────────────────────────────────────────────────────────
 

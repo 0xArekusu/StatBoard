@@ -14,6 +14,7 @@ import { GoogleSignin } from "@react-native-google-signin/google-signin";
 import * as AppleAuthentication from "expo-apple-authentication";
 import { logInfo, logError, logWarn } from "../../utils/logger";
 import * as Sentry from "@sentry/react-native";
+import i18n from "../i18n";
 
 interface AuthContextType {
   session: Session | null;
@@ -180,7 +181,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return {
           error: {
             ...error,
-            message: `Pour des raisons de sécurité, vous devez attendre ${seconds} secondes avant de pouvoir vous inscrire à nouveau.`,
+            errorCode: 'rate_limit',
+            message: i18n.t('authContext.rateLimitError', { seconds }),
           }
         };
       }
@@ -544,7 +546,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return {
           error: {
             ...error,
-            message: `Pour des raisons de sécurité, vous devez attendre ${seconds} secondes avant de pouvoir renvoyer un email.`,
+            errorCode: 'rate_limit',
+            message: i18n.t('authContext.resendRateLimitError', { seconds }),
           }
         };
       }

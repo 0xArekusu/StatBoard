@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { FilterMode } from "../constants/liveMatchConstants";
 import { BREAKPOINTS } from "../constants/breakpoints";
 import { ActionType, ShotSpecification, getActionColor } from "../src/models/ActionTypes";
+import { useTranslation } from "react-i18next";
 import { useTheme } from "../src/contexts/ThemeContext";
 import { useResponsive } from "../src/hooks/useResponsive";
 import { Spacing, Typography } from "../src/theme";
@@ -19,6 +20,7 @@ interface MatchActionGridProps {
 }
 
 export const MatchActionGrid: React.FC<MatchActionGridProps> = ({ onAction, filterMode = FilterMode.ALL }) => {
+  const { t } = useTranslation();
   const { colors } = useTheme();
   const { sp: spResponsive, font: fontResponsive, isPortrait, width } = useResponsive();
 
@@ -70,7 +72,7 @@ export const MatchActionGrid: React.FC<MatchActionGridProps> = ({ onAction, filt
         <ActionButton
           onPress={() => onAction({ action_type: ActionType.SHOT, specification: ShotSpecification.MADE, points: 1 })}
           label="+1"
-          sub="Lancer"
+          sub={t("matchActionGrid.freeThrow")}
           color={getActionColor(ActionType.SHOT, ShotSpecification.MADE, 1)}
           isMobileLandscape={isMobileLandscape}
           sp={sp}
@@ -79,7 +81,7 @@ export const MatchActionGrid: React.FC<MatchActionGridProps> = ({ onAction, filt
         <ActionButton
           onPress={() => onAction({ action_type: ActionType.SHOT, specification: ShotSpecification.MADE, points: 2 })}
           label="+2"
-          sub="Points"
+          sub={t("matchActionGrid.points")}
           color={getActionColor(ActionType.SHOT, ShotSpecification.MADE, 2)}
           isMobileLandscape={isMobileLandscape}
           sp={sp}
@@ -88,7 +90,7 @@ export const MatchActionGrid: React.FC<MatchActionGridProps> = ({ onAction, filt
         <ActionButton
           onPress={() => onAction({ action_type: ActionType.SHOT, specification: ShotSpecification.MADE, points: 3 })}
           label="+3"
-          sub="Points"
+          sub={t("matchActionGrid.points")}
           color={getActionColor(ActionType.SHOT, ShotSpecification.MADE, 3)}
           isMobileLandscape={isMobileLandscape}
           sp={sp}
@@ -102,8 +104,8 @@ export const MatchActionGrid: React.FC<MatchActionGridProps> = ({ onAction, filt
       <View style={[styles.actionRow, { height: rowHeightMedium, gap: sp.sm }]}>
         <ActionButton
           onPress={() => onAction({ action_type: ActionType.SHOT, specification: ShotSpecification.MISSED, points: 1 })}
-          label="Raté"
-          sub="Lancer"
+          label={t("matchActionGrid.missed")}
+          sub={t("matchActionGrid.freeThrow")}
           color={colors.surfaceVariant}
           textColor={getActionColor(ActionType.SHOT, ShotSpecification.MISSED, 1)}
           isMobileLandscape={isMobileLandscape}
@@ -112,8 +114,8 @@ export const MatchActionGrid: React.FC<MatchActionGridProps> = ({ onAction, filt
         />
         <ActionButton
           onPress={() => onAction({ action_type: ActionType.SHOT, specification: ShotSpecification.MISSED, points: 2 })}
-          label="Raté"
-          sub="2 Pts"
+          label={t("matchActionGrid.missed")}
+          sub={t("matchActionGrid.pointsN", { count: 2 })}
           color={colors.surfaceVariant}
           textColor={getActionColor(ActionType.SHOT, ShotSpecification.MISSED, 2)}
           isMobileLandscape={isMobileLandscape}
@@ -122,8 +124,8 @@ export const MatchActionGrid: React.FC<MatchActionGridProps> = ({ onAction, filt
         />
         <ActionButton
           onPress={() => onAction({ action_type: ActionType.SHOT, specification: ShotSpecification.MISSED, points: 3 })}
-          label="Raté"
-          sub="3 Pts"
+          label={t("matchActionGrid.missed")}
+          sub={t("matchActionGrid.pointsN", { count: 3 })}
           color={colors.surfaceVariant}
           textColor={getActionColor(ActionType.SHOT, ShotSpecification.MISSED, 3)}
           isMobileLandscape={isMobileLandscape}
@@ -138,8 +140,8 @@ export const MatchActionGrid: React.FC<MatchActionGridProps> = ({ onAction, filt
       <View style={[styles.actionRow, { height: rowHeightLarge, gap: sp.sm }]}>
         <ActionButton
           onPress={() => onAction({ action_type: ActionType.REBOUND, specification: "defensive" })}
-          label="REB DEF"
-          sub="Défensif"
+          label={t("matchActionGrid.rebDef")}
+          sub={t("shotChainModal.defensive")}
           color={getActionColor(ActionType.REBOUND, "defensive")}
           isMobileLandscape={isMobileLandscape}
           sp={sp}
@@ -147,8 +149,8 @@ export const MatchActionGrid: React.FC<MatchActionGridProps> = ({ onAction, filt
         />
         <ActionButton
           onPress={() => onAction({ action_type: ActionType.REBOUND, specification: "offensive" })}
-          label="REB OFF"
-          sub="Offensif"
+          label={t("matchActionGrid.rebOff")}
+          sub={t("shotChainModal.offensive")}
           color={getActionColor(ActionType.REBOUND, "offensive")}
           isMobileLandscape={isMobileLandscape}
           sp={sp}
@@ -162,8 +164,8 @@ export const MatchActionGrid: React.FC<MatchActionGridProps> = ({ onAction, filt
       {shouldShowAction(ActionType.ASSIST) && (
         <ActionButton
           onPress={() => onAction({ action_type: ActionType.ASSIST })}
-          label="PASSE D"
-          sub="Assist"
+          label={t("matchActionGrid.assist")}
+          sub={t("matchActionGrid.assistSub")}
           color={getActionColor(ActionType.ASSIST)}
           isMobileLandscape={isMobileLandscape}
           sp={sp}
@@ -173,8 +175,8 @@ export const MatchActionGrid: React.FC<MatchActionGridProps> = ({ onAction, filt
       {shouldShowAction(ActionType.STEAL) && (
         <ActionButton
           onPress={() => onAction({ action_type: ActionType.STEAL })}
-          label="INTERC"
-          sub="Vol"
+          label={t("matchActionGrid.steal")}
+          sub={t("matchActionGrid.stealSub")}
           color={getActionColor(ActionType.STEAL)}
           isMobileLandscape={isMobileLandscape}
           sp={sp}
@@ -185,7 +187,7 @@ export const MatchActionGrid: React.FC<MatchActionGridProps> = ({ onAction, filt
         {shouldShowAction(ActionType.BLOCK) && (
           <ActionButton
             onPress={() => onAction({ action_type: ActionType.BLOCK })}
-            label="CONTRE"
+            label={t("matchActionGrid.block")}
             color={getActionColor(ActionType.BLOCK)}
             textSize={isMobileLandscape ? font.xs : font.md}
             isMobileLandscape={isMobileLandscape}
@@ -196,7 +198,7 @@ export const MatchActionGrid: React.FC<MatchActionGridProps> = ({ onAction, filt
         {shouldShowAction(ActionType.FOUL) && (
           <ActionButton
             onPress={() => onAction({ action_type: ActionType.FOUL })}
-            label="FAUTE"
+            label={t("matchActionGrid.foul")}
             color={getActionColor(ActionType.FOUL)}
             textSize={isMobileLandscape ? font.xs : font.md}
             isMobileLandscape={isMobileLandscape}
@@ -212,7 +214,7 @@ export const MatchActionGrid: React.FC<MatchActionGridProps> = ({ onAction, filt
       {shouldShowAction(ActionType.TURNOVER) && (
         <ActionButton
           onPress={() => onAction({ action_type: ActionType.TURNOVER })}
-          label="BALLE PERDUE"
+          label={t("matchActionGrid.turnover")}
           color={getActionColor(ActionType.TURNOVER)}
           isMobileLandscape={isMobileLandscape}
           sp={sp}
@@ -222,8 +224,8 @@ export const MatchActionGrid: React.FC<MatchActionGridProps> = ({ onAction, filt
       {shouldShowAction(ActionType.FOUL_DRAWN) && (
         <ActionButton
           onPress={() => onAction({ action_type: ActionType.FOUL_DRAWN })}
-          label="FTE PROV"
-          sub="Faute provoquée"
+          label={t("matchActionGrid.foulDrawn")}
+          sub={t("liveMatchModals.filter.foulsDrawn")}
           color={getActionColor(ActionType.FOUL_DRAWN)}
           isMobileLandscape={isMobileLandscape}
           sp={sp}

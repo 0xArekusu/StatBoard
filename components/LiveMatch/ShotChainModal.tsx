@@ -8,6 +8,7 @@ import {
   StyleSheet,
 } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { useTranslation } from "react-i18next";
 import { useTheme } from "../../src/contexts/ThemeContext";
 import { useResponsive } from "../../src/hooks/useResponsive";
 import { ACTION_COLORS, STATUS_COLORS } from "../../src/theme/colors";
@@ -47,6 +48,7 @@ export const ShotChainModal: React.FC<ShotChainModalProps> = ({
   onComplete,
   onIgnore,
 }) => {
+  const { t } = useTranslation();
   const { colors } = useTheme();
   const { sp, font, sizes } = useResponsive();
 
@@ -119,6 +121,8 @@ export const ShotChainModal: React.FC<ShotChainModalProps> = ({
   const blockColor = ACTION_COLORS.block;
   const reboundColor = ACTION_COLORS.rebound.base;
 
+  const yesNoLabel = (label: "Non" | "Oui") => (label === "Oui" ? t("common.yes") : t("common.no"));
+
   return (
     <Modal visible={visible} transparent animationType="fade">
       <View style={styles.overlay}>
@@ -139,14 +143,14 @@ export const ShotChainModal: React.FC<ShotChainModalProps> = ({
           >
             {/* Header */}
             <Text style={[styles.header, { color: colors.text.secondary, fontSize: font.sm }]}>
-              Tir raté — #{context.shotPlayerNumber}
+              {t("shotChainModal.header", { num: context.shotPlayerNumber })}
             </Text>
 
             {/* Tir contré ? — caché si stats adverses non trackées (bloqueur = adverse) */}
             {trackOpponentStats && <View style={{ gap: sp.md }}>
               <View style={styles.toggleRow}>
                 <Text style={[styles.sectionLabel, { color: colors.text.primary, fontSize: font.md }]}>
-                  Tir contré ?
+                  {t("shotChainModal.blockedQuestion")}
                 </Text>
                 <View style={[styles.toggleBtns, { gap: sp.xs }]}>
                   {(["Non", "Oui"] as const).map((label) => {
@@ -169,7 +173,7 @@ export const ShotChainModal: React.FC<ShotChainModalProps> = ({
                         activeOpacity={0.7}
                       >
                         <Text style={{ color: isActive ? "#fff" : blockColor, fontSize: font.sm, fontWeight: "700" }}>
-                          {label}
+                          {yesNoLabel(label)}
                         </Text>
                       </TouchableOpacity>
                     );
@@ -219,15 +223,15 @@ export const ShotChainModal: React.FC<ShotChainModalProps> = ({
             {showReboundSection && (
               <View style={{ gap: sp.md }}>
                 <Text style={[styles.sectionLabel, { color: colors.text.primary, fontSize: font.md }]}>
-                  Rebond
+                  {t("shotChainModal.rebound")}
                 </Text>
 
                 {/* Défensif / Offensif / Équipe — Offensif caché si stats adverses non trackées */}
                 <View style={[styles.toggleBtns, { gap: sp.sm }]}>
                   {([
-                    { spec: ReboundSpecification.DEFENSIVE, label: "Défensif", color: ACTION_COLORS.rebound.defensive },
-                    { spec: ReboundSpecification.OFFENSIVE, label: "Offensif", color: ACTION_COLORS.rebound.offensive },
-                    { spec: ReboundSpecification.TEAM, label: "Équipe", color: ACTION_COLORS.rebound.base },
+                    { spec: ReboundSpecification.DEFENSIVE, label: t("shotChainModal.defensive"), color: ACTION_COLORS.rebound.defensive },
+                    { spec: ReboundSpecification.OFFENSIVE, label: t("shotChainModal.offensive"), color: ACTION_COLORS.rebound.offensive },
+                    { spec: ReboundSpecification.TEAM, label: t("shotChainModal.team"), color: ACTION_COLORS.rebound.base },
                   ] as const).filter(({ spec }) =>
                     trackOpponentStats || spec !== ReboundSpecification.DEFENSIVE
                   ).map(({ spec, label, color }) => {
@@ -260,8 +264,8 @@ export const ShotChainModal: React.FC<ShotChainModalProps> = ({
                 {reboundSpec === ReboundSpecification.TEAM && trackOpponentStats && (
                   <View style={[styles.toggleBtns, { gap: sp.sm }]}>
                     {([
-                      { label: myTeamName || "Mon équipe", teamId: myTeamId },
-                      { label: opponentName || "Adversaire", teamId: myTeamId === TeamId.HOME ? TeamId.AWAY : TeamId.HOME },
+                      { label: myTeamName || t("liveMatchModals.myTeamFallback"), teamId: myTeamId },
+                      { label: opponentName || t("liveMatchModals.opponentFallback"), teamId: myTeamId === TeamId.HOME ? TeamId.AWAY : TeamId.HOME },
                     ] as const).map(({ label, teamId }) => {
                       const isActive = reboundTeamId === teamId;
                       const color = ACTION_COLORS.rebound.base;
@@ -354,13 +358,13 @@ export const ShotChainModal: React.FC<ShotChainModalProps> = ({
             >
               <MaterialCommunityIcons name="check" size={sizes.iconMd} color={isValid ? "#fff" : colors.text.disabled} />
               <Text style={[styles.confirmText, { color: isValid ? "#fff" : colors.text.disabled, fontSize: font.md }]}>
-                Valider
+                {t("foulChainModal.confirm")}
               </Text>
             </TouchableOpacity>
 
             <TouchableOpacity onPress={onIgnore} style={styles.ignoreBtn} activeOpacity={0.6}>
               <Text style={{ color: colors.text.tertiary, fontSize: font.sm, fontWeight: "500" }}>
-                Ignorer →
+                {t("foulChainModal.ignore")}
               </Text>
             </TouchableOpacity>
           </View>

@@ -2,11 +2,13 @@ import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { View, Text, ScrollView, SafeAreaView, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { PDFExportService } from '../src/services/export/PDFExportService';
 import { useTheme } from '../src/contexts/ThemeContext';
 import { useAuth } from '../src/contexts/AuthContext';
 import { useClub } from '../src/contexts/ClubContext';
 import { useResponsive } from '../src/hooks/useResponsive';
+import { recordReviewPromptSignal } from '../hooks/useReviewPrompt';
 import { supabase } from '../src/config/supabase';
 import { ServiceFactory } from '../services/ServiceFactory';
 import {
@@ -49,6 +51,7 @@ const EMPTY_PLAYER = (
 });
 
 export default function PlayerProfileScreen() {
+  const { t } = useTranslation();
   const { colors } = useTheme();
   const { user } = useAuth();
   const { currentClub, activeTeamId } = useClub();
@@ -123,6 +126,7 @@ export default function PlayerProfileScreen() {
         period,
       });
       posthog?.capture(ANALYTICS_EVENTS.PDF_EXPORTED, { type: ANALYTICS_PDF_EXPORT_TYPE.PLAYER_SEASON });
+      recordReviewPromptSignal();
     } catch (e) {
       logError('PlayerProfileScreen', 'Erreur export PDF', { error: e });
     } finally {
@@ -183,7 +187,7 @@ export default function PlayerProfileScreen() {
           ) : (
             <View style={styles.noData}>
               <Text style={[styles.noDataText, { fontSize: font.md, color: colors.text.tertiary }]}>
-                Aucune statistique pour cette période.
+                {t('playerProfileScreen.noStatsForPeriod')}
               </Text>
             </View>
           )}

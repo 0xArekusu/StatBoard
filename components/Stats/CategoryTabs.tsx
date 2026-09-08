@@ -5,7 +5,7 @@ import { useResponsive } from '../../src/hooks/useResponsive';
 import {
   LeaderCategory,
   LEADER_CATEGORY,
-  LEADER_CATEGORY_LABELS,
+  getLeaderCategoryLabel,
 } from '../../constants/statsConstants';
 
 interface CategoryTabsProps {
@@ -70,7 +70,7 @@ export default function CategoryTabs({ selected, onChange }: CategoryTabsProps) 
                 },
               ]}
             >
-              {LEADER_CATEGORY_LABELS[cat]}
+              {getLeaderCategoryLabel(cat)}
             </Text>
           </TouchableOpacity>
         );

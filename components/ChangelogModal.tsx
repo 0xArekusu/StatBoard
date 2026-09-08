@@ -1,6 +1,7 @@
 import React from "react";
 import { Modal, View, Text, TouchableOpacity, StyleSheet, ScrollView } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useTranslation } from "react-i18next";
 import { useTheme } from "../src/contexts/ThemeContext";
 import { useResponsive } from "../src/hooks/useResponsive";
 import { ChangelogItem } from "../hooks/useAppUpdateCheck";
@@ -13,6 +14,7 @@ interface ChangelogModalProps {
 }
 
 export default function ChangelogModal({ visible, title, items, onClose }: ChangelogModalProps) {
+  const { t } = useTranslation();
   const { colors, isDark } = useTheme();
   const { sp, font, sizes } = useResponsive();
 
@@ -46,7 +48,7 @@ export default function ChangelogModal({ visible, title, items, onClose }: Chang
               { color: colors.text.primary, fontSize: font.xxl, marginBottom: sp.md },
             ]}
           >
-            {title ?? "Nouveautés"}
+            {title ?? t("changelogModal.title")}
           </Text>
 
           <ScrollView
@@ -97,7 +99,7 @@ export default function ChangelogModal({ visible, title, items, onClose }: Chang
             onPress={onClose}
           >
             <Text style={[styles.buttonText, { color: colors.onPrimary, fontSize: font.md }]}>
-              J'ai compris
+              {t("changelogModal.gotIt")}
             </Text>
           </TouchableOpacity>
         </View>

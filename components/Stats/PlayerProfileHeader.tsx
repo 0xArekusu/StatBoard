@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../src/contexts/ThemeContext';
 import { useResponsive } from '../../src/hooks/useResponsive';
 import { PlayerSeasonData } from '../../src/services/seasonStats';
@@ -12,6 +13,7 @@ interface PlayerProfileHeaderProps {
 }
 
 export default function PlayerProfileHeader({ player, matchesInPeriod }: PlayerProfileHeaderProps) {
+  const { t } = useTranslation();
   const { colors } = useTheme();
   const { sp, font, sizes, isCompact } = useResponsive();
 
@@ -58,8 +60,8 @@ export default function PlayerProfileHeader({ player, matchesInPeriod }: PlayerP
               </View>
             </View>
             <Text style={[styles.meta, { fontSize: font.sm, color: colors.text.secondary }]}>
-              {player.matchesPlayed} match{player.matchesPlayed > 1 ? 's' : ''} joué{player.matchesPlayed > 1 ? 's' : ''}
-              {matchesInPeriod > player.matchesPlayed ? ` sur ${matchesInPeriod}` : ''}
+              {t('playerProfileHeader.matchesPlayed', { count: player.matchesPlayed })}
+              {matchesInPeriod > player.matchesPlayed ? ` ${t('playerProfileHeader.outOfTotal', { total: matchesInPeriod })}` : ''}
             </Text>
           </View>
         </View>

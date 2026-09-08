@@ -1,5 +1,6 @@
 import React from "react";
 import { View, Text, TextInput, StyleSheet } from "react-native";
+import { useTranslation } from "react-i18next";
 import { useTheme } from "../../src/contexts/ThemeContext";
 import { useResponsive } from "../../src/hooks/useResponsive";
 import { SLATE_COLORS, COMMON_COLORS } from "../../src/theme";
@@ -16,6 +17,7 @@ export default function JoinClubForm({
   setClubCode,
   onSubmit,
 }: JoinClubFormProps) {
+  const { t } = useTranslation();
   const { isDark } = useTheme();
   const { sp, font } = useResponsive();
 
@@ -29,10 +31,10 @@ export default function JoinClubForm({
     <View style={[styles.formContainer, { gap: sp.lg }]}>
       <View style={[styles.formSection, { gap: sp.sm }]}>
         <Text style={[styles.formLabel, { color: textSecondary, fontSize: font.xs }]}>
-          CODE CLUB <Text style={{ color: requiredColor }}>*</Text>
+          {t("joinClubForm.codeLabel")} <Text style={{ color: requiredColor }}>*</Text>
         </Text>
         <TextInput
-          placeholder="Ex: LION69"
+          placeholder={t("joinClubForm.codePlaceholder")}
           placeholderTextColor={textSecondary}
           value={clubCode}
           onChangeText={(value) => setClubCode(value.toUpperCase())}
@@ -62,9 +64,7 @@ export default function JoinClubForm({
         ]}
       >
         <Text style={[styles.infoText, { color: textSecondary, fontSize: font.sm }]}>
-          En rejoignant un club existant, vous n'avez pas besoin de payer
-          d'abonnement. C'est le propriétaire du club qui gère les quotas
-          d'équipes.
+          {t("joinClubForm.infoText")}
         </Text>
       </View>
     </View>

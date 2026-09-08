@@ -1,6 +1,7 @@
 import React from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { useTranslation } from "react-i18next";
 import { Match } from "../../src/models/types";
 import { OPACITY } from "../../src/theme";
 import { ThemeColors } from "../../src/theme/colors";
@@ -25,6 +26,7 @@ export default function DashboardRecentMatches({
   onViewAllPress,
   formatDate,
 }: DashboardRecentMatchesProps) {
+  const { t } = useTranslation();
   const { isCompact, sp, font } = useResponsive();
 
   return (
@@ -32,11 +34,11 @@ export default function DashboardRecentMatches({
       {/* Header */}
       <View style={[styles.sectionHeader, { marginBottom: sp.md }]}>
         <Text style={[styles.sectionTitle, { color: colors.text.primary, fontSize: font.xl }]}>
-          Derniers Matchs
+          {t("dashboardRecentMatches.title")}
         </Text>
         <TouchableOpacity onPress={onViewAllPress}>
           <Text style={[styles.sectionLink, { color: colors.primary }]}>
-            Voir tout
+            {t("dashboardRecentMatches.viewAll")}
           </Text>
         </TouchableOpacity>
       </View>
@@ -53,8 +55,8 @@ export default function DashboardRecentMatches({
             // Home team always on the left
             const leftScore = match.is_home ? scoreA : scoreB;
             const rightScore = match.is_home ? scoreB : scoreA;
-            const leftTeam = match.is_home ? (match.my_team_name || "Mon équipe") : match.opponent_name;
-            const rightTeam = match.is_home ? match.opponent_name : (match.my_team_name || "Mon équipe");
+            const leftTeam = match.is_home ? (match.my_team_name || t("liveMatchModals.myTeamFallback")) : match.opponent_name;
+            const rightTeam = match.is_home ? match.opponent_name : (match.my_team_name || t("liveMatchModals.myTeamFallback"));
 
             return (
               <TouchableOpacity
@@ -94,7 +96,7 @@ export default function DashboardRecentMatches({
                       <Text
                         style={[styles.matchVs, { color: colors.text.tertiary }]}
                       >
-                        vs
+                        {t("dashboardRecentMatches.vs")}
                       </Text>
                       <Text
                         style={[styles.matchTeamRight, { color: colors.text.secondary }]}
@@ -125,7 +127,7 @@ export default function DashboardRecentMatches({
                         { color: isWin ? colors.success : colors.error },
                       ]}
                     >
-                      {isWin ? "VICTOIRE" : "DÉFAITE"}
+                      {isWin ? t("dashboardRecentMatches.win") : t("dashboardRecentMatches.loss")}
                     </Text>
                   </View>
                 </View>
@@ -149,7 +151,7 @@ export default function DashboardRecentMatches({
               style={{ opacity: OPACITY.disabled }}
             />
             <Text style={[styles.emptyStateText, { color: colors.text.secondary }]}>
-              Aucun match récent
+              {t("dashboardRecentMatches.emptyState")}
             </Text>
           </View>
         )}

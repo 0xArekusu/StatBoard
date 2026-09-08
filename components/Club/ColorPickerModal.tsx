@@ -8,6 +8,7 @@ import {
   ScrollView,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useTranslation } from "react-i18next";
 import ColorPicker, {
   Panel1,
   HueSlider,
@@ -33,6 +34,7 @@ export default function ColorPickerModal({
   presetColors,
   title,
 }: ColorPickerModalProps) {
+  const { t } = useTranslation();
   const { isDark } = useTheme();
 
   // Theme-aware colors
@@ -72,7 +74,7 @@ export default function ColorPickerModal({
           {/* Preset Colors Grid */}
           <View style={styles.presetSection}>
             <Text style={[styles.sectionLabel, { color: textSecondary }]}>
-              Couleurs prédéfinies
+              {t("colorPickerModal.presetColors")}
             </Text>
             <ScrollView
               horizontal
@@ -104,7 +106,7 @@ export default function ColorPickerModal({
           {/* Custom Color Picker */}
           <View style={styles.customSection}>
             <Text style={[styles.sectionLabel, { color: textSecondary }]}>
-              Couleur personnalisée
+              {t("colorPickerModal.customColor")}
             </Text>
             <ColorPicker value={currentColor} onCompleteJS={handleColorChange}>
               <Panel1 style={styles.colorPanel} />
@@ -120,7 +122,7 @@ export default function ColorPickerModal({
             ]}
             onPress={onClose}
           >
-            <Text style={styles.modalConfirmText}>Confirmer</Text>
+            <Text style={styles.modalConfirmText}>{t("common.confirm")}</Text>
           </TouchableOpacity>
         </View>
       </View>

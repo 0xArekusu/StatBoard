@@ -16,6 +16,7 @@ import {
   Alert,
 } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { useTranslation } from "react-i18next";
 import { useTheme } from "../../src/contexts/ThemeContext";
 import { Team } from "../../models/Team";
 
@@ -39,6 +40,7 @@ export default function TeamSelectionModal({
   onConfirm,
   onCancel,
 }: TeamSelectionModalProps) {
+  const { t } = useTranslation();
   const { colors } = useTheme();
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
@@ -50,8 +52,8 @@ export default function TeamSelectionModal({
         setSelectedIds([...selectedIds, teamId]);
       } else {
         Alert.alert(
-          "Limite atteinte",
-          `Vous ne pouvez sélectionner que ${maxSelection} équipe(s) avec l'offre ${tierName}.`
+          t("teamSelectionModal.limitReachedTitle"),
+          t("teamSelectionModal.limitReachedMessage", { count: maxSelection, tier: tierName })
         );
       }
     }
@@ -60,15 +62,15 @@ export default function TeamSelectionModal({
   const handleConfirm = () => {
     if (requireExactSelection && selectedIds.length !== maxSelection && maxSelection > 0) {
       Alert.alert(
-        "Sélection incomplète",
-        `Veuillez sélectionner exactement ${maxSelection} équipe(s).`
+        t("teamSelectionModal.incompleteSelectionTitle"),
+        t("teamSelectionModal.incompleteSelectionMessage", { count: maxSelection })
       );
       return;
     }
     if (!requireExactSelection && selectedIds.length > maxSelection) {
       Alert.alert(
-        "Trop d'équipes sélectionnées",
-        `Vous ne pouvez sélectionner que ${maxSelection} équipe(s) maximum.`
+        t("teamSelectionModal.tooManySelectedTitle"),
+        t("teamSelectionModal.tooManySelectedMessage", { count: maxSelection })
       );
       return;
     }
@@ -92,15 +94,20 @@ export default function TeamSelectionModal({
               color={colors.warning || colors.primary}
             />
             <Text style={[styles.title, { color: colors.text.primary }]}>
-              Sélectionnez vos équipes
+              {t("teamSelectionModal.title")}
             </Text>
             <Text style={[styles.subtitle, { color: colors.text.secondary }]}>
-              L'offre {tierName} permet {maxSelection} équipe{maxSelection > 1 ? "s" : ""}.
-              {"\n"}Sélectionnez {requireExactSelection ? "exactement" : "jusqu'à"} {maxSelection > 0 ? `${maxSelection} équipe(s)` : "aucune équipe"} à garder active{maxSelection > 1 ? "s" : ""}.
+              {t("teamSelectionModal.allowedCount", { count: maxSelection, tier: tierName })}
+              {"\n"}
+              {maxSelection === 0
+                ? t("teamSelectionModal.instructionNone")
+                : requireExactSelection
+                  ? t("teamSelectionModal.instructionExact", { count: maxSelection })
+                  : t("teamSelectionModal.instructionUpTo", { count: maxSelection })}
             </Text>
             {maxSelection === 0 && (
               <Text style={[styles.warningText, { color: colors.warning || colors.primary }]}>
-                ⚠️ Toutes vos équipes seront suspendues.
+                {t("teamSelectionModal.allTeamsSuspendedWarning")}
               </Text>
             )}
           </View>
@@ -161,8 +168,8 @@ export default function TeamSelectionModal({
           {/* Footer */}
           <View style={styles.footer}>
             <Text style={[styles.selectionCount, { color: colors.text.secondary }]}>
-              {selectedIds.length} / {maxSelection} sélectionné{selectedIds.length > 1 ? "s" : ""}
-              {!requireExactSelection && selectedIds.length < maxSelection && " (optionnel)"}
+              {t("teamSelectionModal.selectionCount", { count: selectedIds.length, max: maxSelection })}
+              {!requireExactSelection && selectedIds.length < maxSelection && ` ${t("teamSelectionModal.optional")}`}
             </Text>
             <View style={styles.buttons}>
               <TouchableOpacity
@@ -170,7 +177,7 @@ export default function TeamSelectionModal({
                 onPress={onCancel}
               >
                 <Text style={[styles.buttonText, { color: colors.text.primary }]}>
-                  Annuler
+                  {t("common.cancel")}
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
@@ -182,7 +189,7 @@ export default function TeamSelectionModal({
                 onPress={handleConfirm}
               >
                 <Text style={[styles.buttonText, { color: colors.onPrimary }]}>
-                  Confirmer
+                  {t("common.confirm")}
                 </Text>
               </TouchableOpacity>
             </View>

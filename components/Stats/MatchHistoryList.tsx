@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../src/contexts/ThemeContext';
 import { useResponsive } from '../../src/hooks/useResponsive';
 import { MatchHistoryEntry } from '../../src/services/seasonStats';
@@ -16,6 +17,7 @@ export default function MatchHistoryList({ entries }: MatchHistoryListProps) {
   const { colors } = useTheme();
   const { sp, font } = useResponsive();
   const navigation = useNavigation<RootNavigationProp>();
+  const { t } = useTranslation();
 
   const handleMatchPress = (entry: MatchHistoryEntry) => {
     navigation.navigate(ROUTES.MATCH_DETAILS as 'MatchDetails', { match: entry.match });
@@ -24,12 +26,12 @@ export default function MatchHistoryList({ entries }: MatchHistoryListProps) {
   return (
     <View style={{ paddingHorizontal: sp.md, gap: sp.sm }}>
       <Text style={[styles.title, { fontSize: font.md, color: colors.text.primary }]}>
-        Historique des matchs
+        {t('matchHistoryList.title')}
       </Text>
 
       {entries.length === 0 ? (
         <Text style={[styles.empty, { fontSize: font.sm, color: colors.text.tertiary }]}>
-          Aucun match disponible
+          {t('matchHistoryList.empty')}
         </Text>
       ) : (
         entries.map((entry) => (

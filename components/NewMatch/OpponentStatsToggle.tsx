@@ -8,7 +8,7 @@ import React from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { BRAND_COLORS, SLATE_COLORS, COMMON_COLORS } from "../../src/theme";
-import { MATCH_CREATION_INFO_MESSAGES } from "../../constants";
+import { getMatchCreationInfoMessage } from "../../constants";
 import { useResponsive } from "../../src/hooks/useResponsive";
 
 interface OpponentStatsToggleProps {
@@ -81,10 +81,10 @@ export const OpponentStatsToggle: React.FC<OpponentStatsToggleProps> = ({
               },
             ]}
           >
-            {MATCH_CREATION_INFO_MESSAGES.OPPONENT_STATS_TITLE}
+            {getMatchCreationInfoMessage("OPPONENT_STATS_TITLE")}
           </Text>
           <Text style={[styles.optionSubtitle, { color: colors.textSecondary, fontSize: font.sm, marginTop: sp.xs }]}>
-            {MATCH_CREATION_INFO_MESSAGES.OPPONENT_STATS_OPTION}
+            {getMatchCreationInfoMessage("OPPONENT_STATS_OPTION")}
           </Text>
         </View>
       </View>

@@ -7,7 +7,7 @@
 import React, { useRef } from "react";
 import { View, Text, TouchableOpacity, StyleSheet, Animated, Dimensions } from "react-native";
 import { BRAND_COLORS, SLATE_COLORS, COMMON_COLORS } from "../../src/theme";
-import { MATCH_ROSTER_TAB_LABELS } from "../../constants";
+import { getMatchRosterTabLabel } from "../../constants";
 import { useResponsive } from "../../src/hooks/useResponsive";
 
 type RosterTab = "HOME" | "AWAY";
@@ -132,7 +132,7 @@ export const RosterTabSwitch: React.FC<RosterTabSwitchProps> = ({
             numberOfLines={1}
             ellipsizeMode="tail"
           >
-            {homeTeamName || MATCH_ROSTER_TAB_LABELS.US} ({homeCount})
+            {homeTeamName || getMatchRosterTabLabel("US")} ({homeCount})
           </Text>
         </View>
         <View style={styles.toggleOption}>
@@ -151,7 +151,7 @@ export const RosterTabSwitch: React.FC<RosterTabSwitchProps> = ({
             numberOfLines={1}
             ellipsizeMode="tail"
           >
-            {opponentName || MATCH_ROSTER_TAB_LABELS.THEM} ({opponentCount})
+            {opponentName || getMatchRosterTabLabel("THEM")} ({opponentCount})
           </Text>
         </View>
       </TouchableOpacity>

@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
+import { useTranslation } from "react-i18next";
 import type { Player, PlayerPosition } from "../models/Player";
 import { useTheme } from "../src/contexts/ThemeContext";
 import { useResponsive } from "../src/hooks/useResponsive";
@@ -54,6 +55,7 @@ export default function PlayerCard({
   hidePosition = false,
   hideStarter = false,
 }: PlayerCardProps) {
+  const { t } = useTranslation();
   const { colors } = useTheme();
   const { sp, font, sizes } = useResponsive();
   const [name, setName] = useState(player?.name || "");
@@ -96,13 +98,13 @@ export default function PlayerCard({
 
   const handleSave = async () => {
     if (!name.trim()) {
-      Alert.alert("Erreur", "Le nom du joueur est requis");
+      Alert.alert(t("common.error"), t("playerCard.nameRequired"));
       return;
     }
 
     const number = parseInt(jerseyNumber);
     if (isNaN(number) || number < 0 || number > 99) {
-      Alert.alert("Erreur", "Le numéro doit être entre 0 et 99");
+      Alert.alert(t("common.error"), t("playerCard.numberRange"));
       return;
     }
 
@@ -174,7 +176,7 @@ export default function PlayerCard({
           }
         ]}>
           <Ionicons name="star" size={font.md} color="#FFD700" />
-          <Text style={[styles.starterText, { color: colors.text.primary, fontSize: font.xs }]}>Titulaire</Text>
+          <Text style={[styles.starterText, { color: colors.text.primary, fontSize: font.xs }]}>{t("playerCard.starter")}</Text>
         </View>
       )}
 
@@ -229,7 +231,7 @@ export default function PlayerCard({
                   fontSize: font.md,
                 }
               ]}
-              placeholder="Nom du joueur"
+              placeholder={t("teamRosterScreen.playerNamePlaceholder")}
               placeholderTextColor={colors.text.tertiary}
               value={name}
               onChangeText={setName}

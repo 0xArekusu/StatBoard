@@ -28,6 +28,7 @@ import {
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { usePostHog } from "posthog-react-native";
+import { useTranslation } from "react-i18next";
 import { useTheme } from "../src/contexts/ThemeContext";
 import { SLATE_COLORS } from "../src/theme/colors";
 import { RootStackParamList, RootNavigationProp } from "../types/navigation";
@@ -37,7 +38,7 @@ import {
   CreateActionData,
   Team,
 } from "../src/models/types";
-import { ActionType, ShotSpecification, ReboundSpecification, SubstitutionSpecification, FoulSpecification, FOUL_SPECIFICATION_FR } from "../src/models/ActionTypes";
+import { ActionType, ShotSpecification, ReboundSpecification, SubstitutionSpecification, FoulSpecification, getFoulSpecificationLabel } from "../src/models/ActionTypes";
 import { Player } from "../models/Player";
 import { useAuth } from "../src/contexts/AuthContext";
 import { useClub } from "../src/contexts/ClubContext";
@@ -71,6 +72,7 @@ import {
   ChainSuggestion,
   FoulChainContext,
   ShotChainContext,
+  MOBILE_LANDSCAPE_HEADER_RESERVED_HEIGHT,
 } from "../constants/liveMatchConstants";
 import { getChainContext } from "../utils/actionChainRules";
 import {
@@ -84,8 +86,8 @@ import { supabase } from "../src/config/supabase";
 import { MatchActionGrid, ActionData } from "../components/MatchActionGrid";
 import { CourtView, MatchHeader, MatchToolbar, ActionChainModal, FoulChainModal, FoulChainResult, ShotChainModal, ShotChainResult, MatchTutorialOverlay, TUTORIAL_SKIP_KEY } from "../components/LiveMatch";
 import { useMatchSync } from "../hooks/useMatchSync";
+import { useCollapsibleBar } from "../src/hooks/useCollapsibleBar";
 import { useResponsive } from "../src/hooks/useResponsive";
-import { BREAKPOINTS } from "../constants/breakpoints";
 import {
   HistoryModal,
   FilterModal,
@@ -102,11 +104,19 @@ import {
 type LiveMatchRouteProp = RouteProp<RootStackParamList, "LiveMatch">;
 
 export default function LiveMatchScreen() {
+  const { t } = useTranslation();
   const navigation = useNavigation<RootNavigationProp>();
   const route = useRoute<LiveMatchRouteProp>();
   const { colors, isDark } = useTheme();
-  const { isCompact, isPortrait, sp, font, width } = useResponsive();
-  const isMobileLandscape = !isPortrait && width < BREAKPOINTS.mobileLandscapeMaxWidth;
+  const { isCompact, isPortrait, sp, font, width, isMobileLandscape, isMobilePortrait } = useResponsive();
+  // État repliée/déployée de la barre de score, remonté ici (et non local à
+  // MatchHeader) car on en a aussi besoin pour masquer le switch TERRAIN/ACTIONS
+  // quand la mini-barre est active en portrait.
+  const [isHeaderExpanded, setIsHeaderExpanded] = useCollapsibleBar(isMobileLandscape, isMobilePortrait);
+  // Le terrain doit occuper toute la place dispo dès que la mini-barre de score
+  // est active : en paysage (toujours repliée par défaut), ou en portrait quand
+  // l'utilisateur l'a repliée lui-même.
+  const forceCourtOnlyView = isMobileLandscape || (isMobilePortrait && !isHeaderExpanded);
   const { user } = useAuth();
   const { currentClub } = useClub();
   const posthog = usePostHog();
@@ -136,8 +146,8 @@ export default function LiveMatchScreen() {
         id: matchData.id,
         clubId: matchData.clubId,
         teamId: matchData.teamId,
-        myTeamName: matchData.teamName || "Mon Équipe",
-        opponent: matchData.opponent || "Adversaire",
+        myTeamName: matchData.teamName || t("liveMatchScreen.myTeamFallback"),
+        opponent: matchData.opponent || t("liveMatchScreen.opponentFallback"),
         location: matchData.isHome ? TeamId.HOME : TeamId.AWAY,
         scoreHome: matchData.isHome
           ? (matchData.myTeamHandicap || 0)
@@ -164,8 +174,8 @@ export default function LiveMatchScreen() {
     // Fallback to mock data
     return {
       id: Date.now().toString(),
-      myTeamName: "Mon Équipe",
-      opponent: "Adversaire",
+      myTeamName: t("liveMatchScreen.myTeamFallback"),
+      opponent: t("liveMatchScreen.opponentFallback"),
       location: TeamId.HOME,
       scoreHome: 0,
       scoreAway: 0,
@@ -274,6 +284,16 @@ export default function LiveMatchScreen() {
   // UI STATE
   // ========================================
   const [viewMode, setViewMode] = useState<ViewMode>(ViewMode.COURT);
+
+  // Quand la mini-barre de score est active (paysage, ou portrait replié), le
+  // terrain doit occuper tout l'espace : on masque le switch TERRAIN/ACTIONS et
+  // on force la vue terrain (l'utilisateur déplie la barre ou repasse en
+  // portrait déployé s'il a besoin de la grille d'actions).
+  useEffect(() => {
+    if (forceCourtOnlyView) {
+      setViewMode(ViewMode.COURT);
+    }
+  }, [forceCourtOnlyView]);
 
   // Tutorial overlay
   const [showTutorial, setShowTutorial] = useState(false);
@@ -450,15 +470,15 @@ export default function LiveMatchScreen() {
           const matchEvents = convertActionsToMatchEvents(
             actions,
             players,
-            existingMatch.opponent_name || "Adversaire",
+            existingMatch.opponent_name || t("liveMatchScreen.opponentFallback"),
             isHome,
           );
 
           // Update match state with loaded data
           setMatch({
             ...match,
-            myTeamName: existingMatch.my_team_name || "Mon Équipe",
-            opponent: existingMatch.opponent_name || "Adversaire",
+            myTeamName: existingMatch.my_team_name || t("liveMatchScreen.myTeamFallback"),
+            opponent: existingMatch.opponent_name || t("liveMatchScreen.opponentFallback"),
             location: existingMatch.is_home ? TeamId.HOME : TeamId.AWAY,
             trackOpponentStats: existingMatch.track_opponent_stats,
             myTeamHandicap: existingMatch.my_team_handicap || 0,
@@ -552,7 +572,7 @@ export default function LiveMatchScreen() {
 
           const matchCreateData: CreateMatchData & { created_at: string } = {
             my_team_name: match.myTeamName || null,
-            opponent_name: match.opponent || "Adversaire",
+            opponent_name: match.opponent || t("liveMatchScreen.opponentFallback"),
             is_home: match.location === TeamId.HOME,
             track_opponent_stats: match.trackOpponentStats || false,
             total_periods: match.periodCount || 4,
@@ -619,7 +639,7 @@ export default function LiveMatchScreen() {
                   match_id: createdMatch.id,
                   player_id: null,
                   player_number: 9999,
-                  player_name: match.opponent || "Adversaire",
+                  player_name: match.opponent || t("liveMatchScreen.opponentFallback"),
                   team: "Opponent" as const,
                   photo_url: null,
                 },
@@ -965,7 +985,7 @@ export default function LiveMatchScreen() {
       const convertedEvents = convertActionsToMatchEvents(
         loadedActions,
         allPlayers,
-        match.opponent || "Adversaire",
+        match.opponent || t("liveMatchScreen.opponentFallback"),
         isHome,
       );
 
@@ -1219,8 +1239,8 @@ export default function LiveMatchScreen() {
 
     const amIHome = match.location === TeamId.HOME;
     const isOurTeam = isHome === amIHome;
-    const subTeamName = isOurTeam ? (match.myTeamName || "Mon équipe") : (match.opponent || "Adversaire");
-    const subDescription = `Changements (${subTeamName}): ${subSelection.in.length} joueur(s)`;
+    const subTeamName = isOurTeam ? (match.myTeamName || t("liveMatchScreen.myTeamFallback")) : (match.opponent || t("liveMatchScreen.opponentFallback"));
+    const subDescription = t("liveMatchScreen.substitutionCount", { team: subTeamName, count: subSelection.in.length });
 
     const newEvent: MatchEvent = {
       id: `evt-${Date.now()}`,
@@ -1375,7 +1395,7 @@ export default function LiveMatchScreen() {
       return;
     }
 
-    const pName = player?.name || "Joueur";
+    const pName = player?.name || t("liveMatchScreen.playerFallback");
 
     // Create temporary action object for description
     // When we are home (match.location === TeamId.HOME):
@@ -1517,7 +1537,7 @@ export default function LiveMatchScreen() {
         playerNumber: -1,
         teamId,
         timestamp: Date.now(),
-        description: "Équipe — Rebond",
+        description: t("liveMatchScreen.actionLog.teamRebound"),
         coordinates: normalizedCoords,
         period_number: quarter,
         time_in_period: periodDurationMin * 60 - timer,
@@ -1566,7 +1586,7 @@ export default function LiveMatchScreen() {
         playerNumber: foulDrawnPlayerNumber,
         teamId: foulDrawnTeamId,
         timestamp: Date.now(),
-        description: `#${foulDrawnPlayerNumber} ${foulDrawnPlayerName} — Faute (${FOUL_SPECIFICATION_FR[foulType]})`,
+        description: `#${foulDrawnPlayerNumber} ${foulDrawnPlayerName} — ${t("liveMatchScreen.actionLog.foulWithType", { type: getFoulSpecificationLabel(foulType) })}`,
         coordinates: normalizedCoords,
         period_number: quarter,
         time_in_period: periodDurationMin * 60 - timer,
@@ -1612,7 +1632,7 @@ export default function LiveMatchScreen() {
         playerNumber: result.blockerPlayer.jerseyNumber,
         teamId: blockerTeamId,
         timestamp: Date.now(),
-        description: `#${result.blockerPlayer.jerseyNumber} ${result.blockerPlayer.name} — Contre`,
+        description: `#${result.blockerPlayer.jerseyNumber} ${result.blockerPlayer.name} — ${t("actionTypes.block.label")}`,
         coordinates: normalizedCoords,
         period_number: quarter,
         time_in_period: periodDurationMin * 60 - timer,
@@ -1635,7 +1655,7 @@ export default function LiveMatchScreen() {
         playerNumber: -1,
         teamId: result.reboundTeamId,
         timestamp: Date.now(),
-        description: "Équipe — Rebond",
+        description: t("liveMatchScreen.actionLog.teamRebound"),
         coordinates: normalizedCoords,
         period_number: quarter,
         time_in_period: periodDurationMin * 60 - timer,
@@ -1660,7 +1680,7 @@ export default function LiveMatchScreen() {
         playerNumber: result.reboundPlayer.jerseyNumber,
         teamId: reboundTeamId,
         timestamp: Date.now(),
-        description: `#${result.reboundPlayer.jerseyNumber} ${result.reboundPlayer.name} — Rebond ${isDefensive ? "défensif" : "offensif"}`,
+        description: `#${result.reboundPlayer.jerseyNumber} ${result.reboundPlayer.name} — ${isDefensive ? t("liveMatchScreen.actionLog.reboundDefensive") : t("liveMatchScreen.actionLog.reboundOffensive")}`,
         coordinates: normalizedCoords,
         period_number: quarter,
         time_in_period: periodDurationMin * 60 - timer,
@@ -1734,7 +1754,7 @@ export default function LiveMatchScreen() {
         playerNumber: foulDrawnPlayerNumber,
         teamId: foulDrawnTeamId,
         timestamp: Date.now(),
-        description: `#${foulDrawnPlayerNumber} ${foulDrawnPlayerName} — Faute (${FOUL_SPECIFICATION_FR[result.foulType]})`,
+        description: `#${foulDrawnPlayerNumber} ${foulDrawnPlayerName} — ${t("liveMatchScreen.actionLog.foulWithType", { type: getFoulSpecificationLabel(result.foulType) })}`,
         coordinates: normalizedCoords,
         period_number: quarter,
         time_in_period: periodDurationMin * 60 - timer,
@@ -1755,7 +1775,7 @@ export default function LiveMatchScreen() {
           playerNumber: drawnPlayer.jerseyNumber,
           teamId: drawnTeamId,
           timestamp: Date.now(),
-          description: `#${drawnPlayer.jerseyNumber} ${drawnPlayer.name} — Faute provoquée`,
+          description: `#${drawnPlayer.jerseyNumber} ${drawnPlayer.name} — ${t("actionTypes.foul_drawn.label")}`,
           coordinates: normalizedCoords,
           period_number: quarter,
           time_in_period: periodDurationMin * 60 - timer,
@@ -1777,9 +1797,7 @@ export default function LiveMatchScreen() {
           playerNumber: drawnPlayer?.jerseyNumber ?? -1,
           teamId: drawnTeamId,
           timestamp: Date.now(),
-          description: drawnPlayer
-            ? `#${drawnPlayer.jerseyNumber} ${drawnPlayer.name} — Tir (+${result.basketPoints})`
-            : `Équipe — Tir (+${result.basketPoints})`,
+          description: `${drawnPlayer ? `#${drawnPlayer.jerseyNumber} ${drawnPlayer.name}` : t("liveMatchScreen.teamActionFallback")} — ${t("liveMatchScreen.actionLog.shotMade", { points: result.basketPoints })}`,
           coordinates: normalizedCoords,
           period_number: quarter,
           time_in_period: periodDurationMin * 60 - timer,
@@ -1801,7 +1819,7 @@ export default function LiveMatchScreen() {
             playerNumber: result.assistPlayer.jerseyNumber,
             teamId: drawnTeamId,
             timestamp: Date.now(),
-            description: `#${result.assistPlayer.jerseyNumber} ${result.assistPlayer.name} — Passe décisive`,
+            description: `#${result.assistPlayer.jerseyNumber} ${result.assistPlayer.name} — ${t("actionTypes.assist.label")}`,
             coordinates: normalizedCoords,
             period_number: quarter,
             time_in_period: periodDurationMin * 60 - timer,
@@ -1828,10 +1846,8 @@ export default function LiveMatchScreen() {
           teamId: drawnTeamId,
           timestamp: Date.now(),
           description: drawnPlayer
-            ? (spec === ShotSpecification.MADE
-                ? `#${drawnPlayer.jerseyNumber} ${drawnPlayer.name} — LF (+1)`
-                : `#${drawnPlayer.jerseyNumber} ${drawnPlayer.name} — LF raté`)
-            : (spec === ShotSpecification.MADE ? "Équipe — LF technique (+1)" : "Équipe — LF technique raté"),
+            ? `#${drawnPlayer.jerseyNumber} ${drawnPlayer.name} — ${spec === ShotSpecification.MADE ? t("liveMatchScreen.actionLog.freeThrowMade") : t("liveMatchScreen.actionLog.freeThrowMissed")}`
+            : (spec === ShotSpecification.MADE ? t("liveMatchScreen.technicalFreeThrowMade") : t("liveMatchScreen.technicalFreeThrowMissed")),
           period_number: quarter,
           time_in_period: periodDurationMin * 60 - timer,
         }, ...updatedMatch.events];
@@ -1895,9 +1911,7 @@ export default function LiveMatchScreen() {
         playerNumber: foulPlayerNumber,
         teamId: opponentTeamId,
         timestamp: Date.now(),
-        description: result.foulPlayer
-          ? `#${foulPlayerNumber} ${foulPlayerName} — Faute (${FOUL_SPECIFICATION_FR[result.foulType]})`
-          : `Équipe — Faute (${FOUL_SPECIFICATION_FR[result.foulType]})`,
+        description: `${result.foulPlayer ? `#${foulPlayerNumber} ${foulPlayerName}` : t("liveMatchScreen.teamActionFallback")} — ${t("liveMatchScreen.actionLog.foulWithType", { type: getFoulSpecificationLabel(result.foulType) })}`,
         coordinates: normalizedCoords,
         period_number: quarter,
         time_in_period: periodDurationMin * 60 - timer,
@@ -1941,7 +1955,7 @@ export default function LiveMatchScreen() {
           playerNumber: result.assistPlayer.jerseyNumber,
           teamId: foulDrawnTeamId,
           timestamp: Date.now(),
-          description: `#${result.assistPlayer.jerseyNumber} ${result.assistPlayer.name} — Passe décisive`,
+          description: `#${result.assistPlayer.jerseyNumber} ${result.assistPlayer.name} — ${t("actionTypes.assist.label")}`,
           coordinates: normalizedCoords,
           period_number: quarter,
           time_in_period: periodDurationMin * 60 - timer,
@@ -1968,9 +1982,7 @@ export default function LiveMatchScreen() {
         playerNumber: foulDrawnPlayerNumber,
         teamId: foulDrawnTeamId,
         timestamp: Date.now(),
-        description: spec === ShotSpecification.MADE
-          ? `#${foulDrawnPlayerNumber} ${foulDrawnPlayerName} — LF (+1)`
-          : `#${foulDrawnPlayerNumber} ${foulDrawnPlayerName} — LF raté`,
+        description: `#${foulDrawnPlayerNumber} ${foulDrawnPlayerName} — ${spec === ShotSpecification.MADE ? t("liveMatchScreen.actionLog.freeThrowMade") : t("liveMatchScreen.actionLog.freeThrowMissed")}`,
         period_number: quarter,
         time_in_period: periodDurationMin * 60 - timer,
       }, ...updatedMatch.events];
@@ -2110,7 +2122,7 @@ export default function LiveMatchScreen() {
       specification: ShotSpecification.MADE,
       teamId: match.location === TeamId.HOME ? TeamId.AWAY : TeamId.HOME,
       timestamp: Date.now(),
-      description: `${match.opponent || "Adversaire"} +${value}`,
+      description: `${match.opponent || t("liveMatchScreen.opponentFallback")} +${value}`,
       period_number: quarter,
       time_in_period: periodDurationMin * 60 - timer,
       points: value,
@@ -2136,7 +2148,7 @@ export default function LiveMatchScreen() {
       action_type: ActionType.TIMEOUT,
       teamId,
       timestamp: Date.now(),
-      description: "Temps mort",
+      description: t("liveMatchScreen.timeoutDescription"),
       period_number: quarter,
       time_in_period: periodDurationMin * 60 - timer,
     };
@@ -2209,7 +2221,7 @@ export default function LiveMatchScreen() {
         <Text
           style={[styles.loadingText, { color: textPrimary, marginTop: 16 }]}
         >
-          Chargement du match...
+          {t("liveMatchScreen.loadingMatch")}
         </Text>
       </View>
     );
@@ -2218,7 +2230,13 @@ export default function LiveMatchScreen() {
   return (
     <View style={[styles.container, { backgroundColor: bgColor }]}>
       {/* Header */}
-      <View onLayout={(e) => setTutorialHeaderHeight(e.nativeEvent.layout.height)}>
+      {/* En paysage téléphone, hauteur fixe réservée (celle de la mini barre) : le */}
+      {/* terrain ne doit jamais se redimensionner quand on déplie/replie la barre, */}
+      {/* qui s'affiche alors en overlay par-dessus au lieu de pousser le contenu. */}
+      <View
+        style={isMobileLandscape ? { height: MOBILE_LANDSCAPE_HEADER_RESERVED_HEIGHT } : undefined}
+        onLayout={(e) => setTutorialHeaderHeight(e.nativeEvent.layout.height)}
+      >
       <MatchHeader
         match={match}
         timer={timer}
@@ -2233,10 +2251,13 @@ export default function LiveMatchScreen() {
         onOpenSubstitution={openSubstitution}
         onOpponentScoreSimple={handleOpponentScoreSimple}
         onTimeout={handleTimeout}
+        expanded={isHeaderExpanded}
+        onExpandedChange={setIsHeaderExpanded}
       />
       </View>
 
-      {/* View Mode Toggle */}
+      {/* View Mode Toggle (masqué quand la mini-barre de score est active : le terrain prend toute la place) */}
+      {!forceCourtOnlyView && (
       <View
         onLayout={(e) => setTutorialToggleHeight(e.nativeEvent.layout.height)}
         style={[
@@ -2319,9 +2340,10 @@ export default function LiveMatchScreen() {
           </Text>
         </TouchableOpacity>
       </View>
+      )}
 
       {/* Main Content */}
-      <View style={[styles.mainContent, { paddingBottom: isMobileLandscape ? 44 : 64 }]}>
+      <View style={[styles.mainContent, { paddingBottom: isMobileLandscape ? 0 : 64 }]}>
         {viewMode === ViewMode.GRID && (
           <ScrollView
             style={styles.gridScroll}
@@ -2356,6 +2378,7 @@ export default function LiveMatchScreen() {
               courtSponsorFourthUri={sponsorFourth}
               sideSponsorLeftUri={sponsorSideLeft}
               sideSponsorRightUri={sponsorSideRight}
+              hideSideSponsors={isMobilePortrait && !isHeaderExpanded}
             />
           );
         })()}

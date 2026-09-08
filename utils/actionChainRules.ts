@@ -17,6 +17,7 @@ import {
   ChainContext,
   ChainSuggestion,
 } from "../constants/liveMatchConstants";
+import i18n from "../src/i18n";
 
 /**
  * Given a finalized event, returns a ChainContext if a follow-up action
@@ -40,7 +41,7 @@ export function getChainContext(
   ) {
     const playerLabel = event.playerNumber
       ? `#${event.playerNumber}`
-      : "player";
+      : i18n.t("actionChainRules.playerFallback");
     const isMyTeam = event.teamId === myTeamId;
 
     const suggestions: ChainSuggestion[] = [];
@@ -49,7 +50,7 @@ export function getChainContext(
       // My team missed → defensive rebound (opponent) first, then offensive
       if (trackOpponentStats) {
         suggestions.push({
-          label: "Reb. Défensif",
+          label: i18n.t("actionChainRules.defensiveRebound"),
           action_type: ActionType.REBOUND,
           specification: ReboundSpecification.DEFENSIVE,
           teamTab: opponentTeamId,
@@ -57,7 +58,7 @@ export function getChainContext(
         });
       }
       suggestions.push({
-        label: "Reb. Offensif",
+        label: i18n.t("actionChainRules.offensiveRebound"),
         action_type: ActionType.REBOUND,
         specification: ReboundSpecification.OFFENSIVE,
         teamTab: myTeamId,
@@ -66,7 +67,7 @@ export function getChainContext(
     } else {
       // Opponent missed → defensive rebound (my team) first, then offensive
       suggestions.push({
-        label: "Reb. Défensif",
+        label: i18n.t("actionChainRules.defensiveRebound"),
         action_type: ActionType.REBOUND,
         specification: ReboundSpecification.DEFENSIVE,
         teamTab: myTeamId,
@@ -74,7 +75,7 @@ export function getChainContext(
       });
       if (trackOpponentStats) {
         suggestions.push({
-          label: "Reb. Offensif",
+          label: i18n.t("actionChainRules.offensiveRebound"),
           action_type: ActionType.REBOUND,
           specification: ReboundSpecification.OFFENSIVE,
           teamTab: opponentTeamId,
@@ -83,7 +84,7 @@ export function getChainContext(
       }
     }
     suggestions.push({
-      label: "Reb. Équipe",
+      label: i18n.t("actionChainRules.teamRebound"),
       action_type: ActionType.REBOUND,
       specification: ReboundSpecification.TEAM,
       teamTab: myTeamId,
@@ -93,7 +94,7 @@ export function getChainContext(
     });
 
     return {
-      triggerDescription: `Tir raté — ${playerLabel}`,
+      triggerDescription: i18n.t("actionChainRules.missedShotTrigger", { player: playerLabel }),
       suggestions,
       inheritCoords: event.coordinates,
     };
@@ -113,13 +114,13 @@ export function getChainContext(
 
     const teamTab = event.teamId as TeamId;
     const teamLabel = isMyTeam ? myTeamName : opponentName;
-    const playerLabel = event.playerNumber ? `#${event.playerNumber}` : "player";
+    const playerLabel = event.playerNumber ? `#${event.playerNumber}` : i18n.t("actionChainRules.playerFallback");
 
     return {
-      triggerDescription: `Panier — ${playerLabel} (${event.points} pts)`,
+      triggerDescription: i18n.t("actionChainRules.madeShotTrigger", { player: playerLabel, points: event.points }),
       suggestions: [
         {
-          label: "Passe décisive",
+          label: i18n.t("actionChainRules.assist"),
           action_type: ActionType.ASSIST,
           specification: undefined,
           teamTab,
@@ -143,14 +144,14 @@ export function getChainContext(
 
     const stealTeamTab = isMyTeam ? opponentTeamId : myTeamId;
     const stealTeamLabel = isMyTeam ? opponentName : myTeamName;
-    const playerLabel = event.playerNumber ? `#${event.playerNumber}` : "player";
+    const playerLabel = event.playerNumber ? `#${event.playerNumber}` : i18n.t("actionChainRules.playerFallback");
 
     return {
-      triggerDescription: `Balle perdue — ${playerLabel}`,
+      triggerDescription: i18n.t("actionChainRules.turnoverTrigger", { player: playerLabel }),
       triggerActionType: ActionType.TURNOVER,
       suggestions: [
         {
-          label: "Interception",
+          label: i18n.t("actionChainRules.steal"),
           action_type: ActionType.STEAL,
           specification: undefined,
           teamTab: stealTeamTab,
@@ -173,14 +174,14 @@ export function getChainContext(
 
     const turnoverTeamTab = isMyTeam ? opponentTeamId : myTeamId;
     const turnoverTeamLabel = isMyTeam ? opponentName : myTeamName;
-    const playerLabel = event.playerNumber ? `#${event.playerNumber}` : "player";
+    const playerLabel = event.playerNumber ? `#${event.playerNumber}` : i18n.t("actionChainRules.playerFallback");
 
     return {
-      triggerDescription: `Interception — ${playerLabel}`,
+      triggerDescription: i18n.t("actionChainRules.stealTrigger", { player: playerLabel }),
       triggerActionType: ActionType.STEAL,
       suggestions: [
         {
-          label: "Balle perdue",
+          label: i18n.t("actionChainRules.turnover"),
           action_type: ActionType.TURNOVER,
           specification: undefined,
           teamTab: turnoverTeamTab,
@@ -195,7 +196,7 @@ export function getChainContext(
   if (event.action_type === ActionType.BLOCK) {
     const playerLabel = event.playerNumber
       ? `#${event.playerNumber}`
-      : "player";
+      : i18n.t("actionChainRules.playerFallback");
     const isMyTeam = event.teamId === myTeamId;
 
     const suggestions: ChainSuggestion[] = [];
@@ -203,7 +204,7 @@ export function getChainContext(
     if (isMyTeam) {
       // My team blocked → defensive rebound (my team) first, then offensive (opponent)
       suggestions.push({
-        label: "Reb. Défensif",
+        label: i18n.t("actionChainRules.defensiveRebound"),
         action_type: ActionType.REBOUND,
         specification: ReboundSpecification.DEFENSIVE,
         teamTab: myTeamId,
@@ -211,7 +212,7 @@ export function getChainContext(
       });
       if (trackOpponentStats) {
         suggestions.push({
-          label: "Reb. Offensif",
+          label: i18n.t("actionChainRules.offensiveRebound"),
           action_type: ActionType.REBOUND,
           specification: ReboundSpecification.OFFENSIVE,
           teamTab: opponentTeamId,
@@ -222,7 +223,7 @@ export function getChainContext(
       // Opponent blocked → defensive rebound (opponent) first, then offensive (my team)
       if (trackOpponentStats) {
         suggestions.push({
-          label: "Reb. Défensif",
+          label: i18n.t("actionChainRules.defensiveRebound"),
           action_type: ActionType.REBOUND,
           specification: ReboundSpecification.DEFENSIVE,
           teamTab: opponentTeamId,
@@ -230,7 +231,7 @@ export function getChainContext(
         });
       }
       suggestions.push({
-        label: "Reb. Offensif",
+        label: i18n.t("actionChainRules.offensiveRebound"),
         action_type: ActionType.REBOUND,
         specification: ReboundSpecification.OFFENSIVE,
         teamTab: myTeamId,
@@ -238,7 +239,7 @@ export function getChainContext(
       });
     }
     suggestions.push({
-      label: "Reb. Équipe",
+      label: i18n.t("actionChainRules.teamRebound"),
       action_type: ActionType.REBOUND,
       specification: ReboundSpecification.TEAM,
       teamTab: myTeamId,
@@ -248,7 +249,7 @@ export function getChainContext(
     });
 
     return {
-      triggerDescription: `Contre — ${playerLabel}`,
+      triggerDescription: i18n.t("actionChainRules.blockTrigger", { player: playerLabel }),
       suggestions,
       inheritCoords: event.coordinates,
     };

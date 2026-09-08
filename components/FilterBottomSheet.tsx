@@ -20,6 +20,7 @@ import {
   StyleSheet,
   ScrollView,
 } from "react-native";
+import { useTranslation } from "react-i18next";
 import { ActionData } from "./ActionSystemModal";
 import MatchFilters from "./MatchFilters";
 import { useTheme } from "../src/contexts/ThemeContext";
@@ -60,6 +61,7 @@ export default function FilterBottomSheet({
   appliedFilters,
   isPortrait,
 }: FilterBottomSheetProps) {
+  const { t } = useTranslation();
   const { colors } = useTheme();
   const { sp, font, sizes } = useResponsive();
   const [selectedTeams, setSelectedTeams] = useState<Team[]>([Team.MY_TEAM, Team.OPPONENT]);
@@ -139,7 +141,7 @@ export default function FilterBottomSheet({
               fontSize: font.xl,
               marginBottom: sp.md,
             }
-          ]}>Filtrer les actions</Text>
+          ]}>{t("filterBottomSheet.title")}</Text>
 
           <ScrollView
             style={styles.scrollContainer}
@@ -198,10 +200,10 @@ export default function FilterBottomSheet({
           {/* Boutons d'action */}
           <View style={styles.actionButtons}>
             <TouchableOpacity style={[styles.resetButton, { backgroundColor: colors.error + "20", borderColor: colors.error }]} onPress={resetFilters}>
-              <Text style={[styles.resetButtonText, { color: colors.error }]}>Reset</Text>
+              <Text style={[styles.resetButtonText, { color: colors.error }]}>{t("filterBottomSheet.reset")}</Text>
             </TouchableOpacity>
             <TouchableOpacity style={[styles.closeButton, { backgroundColor: colors.surfaceVariant }]} onPress={onClose}>
-              <Text style={[styles.closeButtonText, { color: colors.text.secondary }]}>Fermer</Text>
+              <Text style={[styles.closeButtonText, { color: colors.text.secondary }]}>{t("clubInfoView.close")}</Text>
             </TouchableOpacity>
           </View>
         </View>

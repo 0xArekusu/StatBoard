@@ -13,6 +13,7 @@ import {
   TextInput,
 } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { useTranslation } from "react-i18next";
 import type { Player } from "../../models/Player";
 import { useTheme } from "../../src/contexts/ThemeContext";
 import PlayerAvatar from "../PlayerAvatar";
@@ -53,6 +54,7 @@ export const PlayerRosterCard: React.FC<PlayerRosterCardProps> = ({
   selectedPlayers,
   onNumberError,
 }) => {
+  const { t } = useTranslation();
   const { colors, isDark } = useTheme();
   const { sp, font, sizes, isCompact } = useResponsive();
   const [isEditingNumber, setIsEditingNumber] = useState(false);
@@ -70,7 +72,7 @@ export const PlayerRosterCard: React.FC<PlayerRosterCardProps> = ({
 
     // Validation
     if (isNaN(newNumber) || newNumber < 0 || newNumber > 99) {
-      setNumberError("Le numéro doit être entre 0 et 99.");
+      setNumberError(t("teamRosterScreen.validation.numberRange"));
       if (onNumberError) {
         onNumberError(player.id, true);
       }
@@ -84,7 +86,7 @@ export const PlayerRosterCard: React.FC<PlayerRosterCardProps> = ({
     );
 
     if (isDuplicateNumber) {
-      setNumberError("Ce numéro de maillot est déjà utilisé.");
+      setNumberError(t("teamRosterScreen.validation.duplicateNumber"));
       if (onNumberError) {
         onNumberError(player.id, true);
       }

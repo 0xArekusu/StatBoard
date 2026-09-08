@@ -3,6 +3,7 @@ import { Alert } from "react-native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
+import { useTranslation } from "react-i18next";
 import { useTheme } from "../src/contexts/ThemeContext";
 import { useAuth } from "../src/contexts/AuthContext";
 import {
@@ -21,6 +22,7 @@ import PlaybookScreen from "../screens/PlaybookScreen";
 const Tab = createBottomTabNavigator();
 
 export default function MainTabNavigator() {
+  const { t } = useTranslation();
   const { isDark } = useTheme();
   const { user, signOut } = useAuth();
   const navigation = useNavigation();
@@ -31,12 +33,12 @@ export default function MainTabNavigator() {
     if (isGuest) {
       e.preventDefault();
       Alert.alert(
-        "Connexion requise",
-        "Vous devez être connecté à une équipe pour accéder aux statistiques.",
+        t("mainTabNavigator.guestGuard.title"),
+        t("mainTabNavigator.guestGuard.statsMessage"),
         [
-          { text: "Annuler", style: "cancel" },
+          { text: t("common.cancel"), style: "cancel" },
           {
-            text: "Se connecter",
+            text: t("mainTabNavigator.guestGuard.loginButton"),
             onPress: async () => {
               await signOut();
               navigation.navigate(ROUTES.AUTH as never);
@@ -51,12 +53,12 @@ export default function MainTabNavigator() {
     if (isGuest) {
       e.preventDefault();
       Alert.alert(
-        "Connexion requise",
-        "Vous devez être connecté pour accéder à la section Club. Voulez-vous vous connecter maintenant ?",
+        t("mainTabNavigator.guestGuard.title"),
+        t("mainTabNavigator.guestGuard.clubMessage"),
         [
-          { text: "Annuler", style: "cancel" },
+          { text: t("common.cancel"), style: "cancel" },
           {
-            text: "Se connecter",
+            text: t("mainTabNavigator.guestGuard.loginButton"),
             onPress: async () => {
               // Sign out guest session and navigate to Auth screen
               await signOut();
@@ -92,7 +94,7 @@ export default function MainTabNavigator() {
         name="Dashboard"
         component={DashboardScreen}
         options={{
-          tabBarLabel: "Tableau de bord",
+          tabBarLabel: t("mainTabNavigator.tabs.dashboard"),
           tabBarIcon: ({ color, size }) => (
             <MaterialCommunityIcons
               name="view-dashboard-outline"
@@ -106,7 +108,7 @@ export default function MainTabNavigator() {
         name="History"
         component={HistoryScreen}
         options={{
-          tabBarLabel: "Historique",
+          tabBarLabel: t("mainTabNavigator.tabs.history"),
           tabBarIcon: ({ color, size }) => (
             <MaterialCommunityIcons name="history" size={size} color={color} />
           ),
@@ -116,7 +118,7 @@ export default function MainTabNavigator() {
         name={ROUTES.STATS}
         component={StatsScreen}
         options={{
-          tabBarLabel: "Stats",
+          tabBarLabel: t("mainTabNavigator.tabs.stats"),
           tabBarIcon: ({ color, size }) => (
             <MaterialCommunityIcons
               name="chart-bar"
@@ -133,7 +135,7 @@ export default function MainTabNavigator() {
         name="Club"
         component={ClubScreen}
         options={{
-          tabBarLabel: "Club",
+          tabBarLabel: t("mainTabNavigator.tabs.club"),
           tabBarIcon: ({ color, size }) => (
             <MaterialCommunityIcons
               name="account-group-outline"

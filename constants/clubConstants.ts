@@ -116,19 +116,3 @@ export const CLUB_VALIDATION = {
   ACRONYM_MAX_LENGTH: 6,
   CODE_LENGTH: 6,
 } as const;
-
-/**
- * Error messages
- */
-export const CLUB_ERROR_MESSAGES = {
-  NAME_REQUIRED: "Le nom du club est requis",
-  NAME_TOO_SHORT: `Le nom doit contenir au moins ${CLUB_VALIDATION.NAME_MIN_LENGTH} caractères`,
-  ACRONYM_REQUIRED: "Le sigle est requis",
-  ACRONYM_TOO_SHORT: `Le sigle doit contenir au moins ${CLUB_VALIDATION.ACRONYM_MIN_LENGTH} caractères`,
-  ACRONYM_TOO_LONG: `Le sigle ne peut pas dépasser ${CLUB_VALIDATION.ACRONYM_MAX_LENGTH} caractères`,
-  CODE_INVALID: `Le code doit contenir exactement ${CLUB_VALIDATION.CODE_LENGTH} caractères`,
-  LOGO_UPLOAD_FAILED: "Échec du téléchargement du logo",
-  CREATION_FAILED: "Échec de la création du club",
-  UPDATE_FAILED: "Échec de la modification du club",
-  JOIN_FAILED: "Échec de la demande de rejoindre le club",
-} as const;

@@ -8,8 +8,9 @@ import {
   TouchableOpacity, Alert,
   ActivityIndicator
 } from "react-native";
-import { MaterialCommunityIcons, Ionicons } from "@expo/vector-icons";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
+import { useTranslation } from "react-i18next";
 import { useTheme } from "../../src/contexts/ThemeContext";
 import { useAuth } from "../../src/contexts/AuthContext";
 import { useClub } from "../../src/contexts/ClubContext";
@@ -39,7 +40,6 @@ import { usePostHog } from "posthog-react-native";
 
 interface ClubScreenProps {
   navigation: any;
-  route?: any;
 }
 
 /**
@@ -56,22 +56,19 @@ interface ClubScreenProps {
  * - Owner: Full access to club settings and team management
  * - Member: Can create teams but needs owner approval
  */
-export default function ClubScreen({ navigation, route }: ClubScreenProps) {
+export default function ClubScreen({ navigation }: ClubScreenProps) {
+  const { t } = useTranslation();
   const { isDark, colors } = useTheme();
   const { user } = useAuth();
   const posthog = usePostHog();
   const { currentClub, refreshClubs } = useClub();
   const { sp, font, isCompact } = useResponsive();
 
-  const forceCreate = route?.params?.forceCreate || false;
-
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [teams, setTeams] = useState<Team[]>([]);
   const [activeTab, setActiveTab] = useState<ClubTab>(CLUB_TAB.CREATE);
   const [subTab, setSubTab] = useState<ClubSubTab>(CLUB_SUB_TAB.INFO);
-  const [isEditingClub, setIsEditingClub] = useState(false);
-  const [isCreatingNewClub, setIsCreatingNewClub] = useState(forceCreate);
   const [subscriptionName, setSubscriptionName] = useState<string>("");
 
   // Create Club Form
@@ -119,7 +116,7 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
     } catch (error) {
       console.error("Error loading club data:", error);
       showErrorAlert({
-        action: "charger les données du club",
+        messageKey: "clubScreen.errors.loadFailed",
         error,
         context: "ClubScreen",
         showRetry: true,
@@ -161,8 +158,8 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
         max_teams: maxTeams,
       });
       Alert.alert(
-        "Limite atteinte",
-        `Votre abonnement ${currentTier} est limité à ${maxTeams} équipes. Veuillez mettre à jour votre offre.`,
+        t("clubScreen.alerts.teamLimitReachedTitle"),
+        t("clubScreen.alerts.teamLimitReachedMessage", { tier: currentTier, maxTeams }),
       );
       return;
     }
@@ -180,12 +177,12 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
   const handleApproveTeam = async (teamId: string) => {
     if (!currentClub || !isOwner || !user) return;
     Alert.alert(
-      "Valider l'équipe",
-      "Confirmer la validation de cette équipe ?",
+      t("clubScreen.alerts.approveTeamTitle"),
+      t("clubScreen.alerts.approveTeamMessage"),
       [
-        { text: "Annuler", style: "cancel" },
+        { text: t("common.cancel"), style: "cancel" },
         {
-          text: "Valider",
+          text: t("clubScreen.alerts.approveButton"),
           onPress: async () => {
             try {
               const teamService = ServiceFactory.getTeamService(supabase);
@@ -196,11 +193,11 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
               );
               await loadClubData();
               posthog?.capture(ANALYTICS_EVENTS.TEAM_STATUS_UPDATED, { status: TeamStatus.APPROVED });
-              Alert.alert("Succès", "Équipe validée");
+              Alert.alert(t("common.success"), t("clubScreen.alerts.teamApprovedSuccess"));
             } catch (error) {
               console.error("Error approving team:", error);
               showErrorAlert({
-                action: "valider l'équipe",
+                messageKey: "clubScreen.errors.approveTeamFailed",
                 error,
                 context: "ClubScreen",
               });
@@ -222,12 +219,12 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
   const handleRejectTeam = async (teamId: string) => {
     if (!currentClub || !isOwner || !user) return;
     Alert.alert(
-      "Refuser l'équipe",
-      "Confirmer le refus de cette équipe ? Elle apparaîtra comme refusée au créateur.",
+      t("clubScreen.alerts.rejectTeamTitle"),
+      t("clubScreen.alerts.rejectTeamMessage"),
       [
-        { text: "Annuler", style: "cancel" },
+        { text: t("common.cancel"), style: "cancel" },
         {
-          text: "Refuser",
+          text: t("clubScreen.alerts.rejectButton"),
           style: "destructive",
           onPress: async () => {
             try {
@@ -239,11 +236,11 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
               );
               await loadClubData();
               posthog?.capture(ANALYTICS_EVENTS.TEAM_STATUS_UPDATED, { status: TeamStatus.REJECTED });
-              Alert.alert("Équipe refusée");
+              Alert.alert(t("clubScreen.alerts.teamRejectedSuccess"));
             } catch (error) {
               console.error("Error rejecting team:", error);
               showErrorAlert({
-                action: "refuser l'équipe",
+                messageKey: "clubScreen.errors.rejectTeamFailed",
                 error,
                 context: "ClubScreen",
               });
@@ -265,23 +262,23 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
   const handleDeleteTeam = async (teamId: string) => {
     if (!currentClub || !isOwner || !user) return;
     Alert.alert(
-      "Supprimer l'équipe",
-      "Êtes-vous sûr de vouloir supprimer définitivement cette équipe ? Cette action est irréversible.",
+      t("clubScreen.alerts.deleteTeamTitle"),
+      t("clubScreen.alerts.deleteTeamMessage"),
       [
-        { text: "Annuler", style: "cancel" },
+        { text: t("common.cancel"), style: "cancel" },
         {
-          text: "Supprimer",
+          text: t("common.delete"),
           style: "destructive",
           onPress: async () => {
             try {
               const teamService = ServiceFactory.getTeamService(supabase);
               await teamService.deleteTeam(teamId, user.id);
               await loadClubData();
-              Alert.alert("Équipe supprimée");
+              Alert.alert(t("clubScreen.alerts.teamDeletedSuccess"));
             } catch (error) {
               console.error("Error deleting team:", error);
               showErrorAlert({
-                action: "supprimer l'équipe",
+                messageKey: "clubScreen.errors.deleteTeamFailed",
                 error,
                 context: "ClubScreen",
               });
@@ -313,85 +310,18 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
   };
 
   /**
-   * Handles form submission for club operations
-   * Three modes based on context:
-   *
-   * 1. EDIT MODE (isEditingClub = true):
-   *    - Updates existing club's logo and color customization
-   *    - Only available to club owners
-   *
-   * 2. CREATE MODE (activeTab = CREATE):
-   *    - Validates required fields (name, acronym)
-   *    - Generates a unique club code (first 3 letters + random number)
-   *    - Creates new club with user as owner
-   *    - Sets custom colors and branding
-   *
-   * 3. JOIN MODE (activeTab = JOIN):
-   *    - Validates club code input
-   *    - Searches for club by code
-   *    - Adds user as a member of the found club
-   *
-   * @returns {Promise<void>} Reloads club data on success, shows alerts on errors
+   * Soumet le formulaire de l'état vide de l'onglet (aucun club) :
+   * - CREATE (activeTab = CREATE) : crée le 1er club, user = owner
+   * - JOIN (activeTab = JOIN) : rejoint un club via son code
+   * La création d'un club supplémentaire et l'édition passent par ClubFormScreen.
    */
   const handleSubmit = async () => {
     setSubmitting(true);
     try {
-    if (isEditingClub) {
-      // EDIT MODE
-      if (!currentClub || !user) return;
-      try {
-        let uploadedLogoUrl = formData.logoUri;
-
-        // Upload new logo if it's a local file (starts with file://)
-        if (formData.logoUri && formData.logoUri.startsWith('file://')) {
-          const clubStorageService = new ClubStorageService(supabase);
-          const { path, error } = await clubStorageService.uploadClubLogo(
-            formData.logoUri,
-            currentClub.id,
-          );
-
-          if (error) {
-            showErrorAlert({
-              action: "uploader le logo",
-              error: new Error("Impossible d'uploader le logo"),
-              context: "ClubScreen",
-            });
-            return;
-          }
-
-          uploadedLogoUrl = path;
-        }
-
-        console.log('[ClubScreen] Uploading club with logoUrl:', uploadedLogoUrl);
-
-        const clubService = ServiceFactory.getClubService(supabase);
-        await clubService.updateClub(currentClub.id, {
-          logoUrl: uploadedLogoUrl || undefined,
-          primaryColor: formData.primaryColor,
-          secondaryColor: formData.secondaryColor,
-          courtBackgroundColor: formData.courtColor,
-          courtLineColor: formData.courtLinesColor,
-        });
-        await refreshClubs();
-        await loadClubData();
-
-        console.log('[ClubScreen] Club updated, new logoUrl:', currentClub.logoUrl);
-
-        setIsEditingClub(false);
-        posthog?.capture(ANALYTICS_EVENTS.CLUB_UPDATED);
-        Alert.alert("Succès", "Club modifié avec succès !");
-      } catch (error) {
-        console.error("Error updating club:", error);
-        showErrorAlert({
-          action: "modifier le club",
-          error,
-          context: "ClubScreen",
-        });
-      }
-    } else if (activeTab === CLUB_TAB.CREATE || isCreatingNewClub) {
+    if (activeTab === CLUB_TAB.CREATE) {
       // CREATE MODE - Validation
       if (!formData.name || !formData.acronym) {
-        Alert.alert("Erreur", "Veuillez renseigner le nom du club et le sigle");
+        Alert.alert(t("common.error"), t("clubScreen.alerts.nameAndAcronymRequired"));
         return;
       }
       if (!user) return;
@@ -416,8 +346,8 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
 
         if (!result.success || !result.club) {
           showErrorAlert({
-            action: "créer le club",
-            error: new Error(result.error || "Impossible de créer le club"),
+            messageKey: "clubScreen.errors.createClubFailed",
+            error: new Error(result.error || t("clubScreen.errors.createClubFailed")),
             context: "ClubScreen",
           });
           return;
@@ -433,8 +363,8 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
 
           if (error) {
             showErrorAlert({
-              action: "uploader le logo du club",
-              error: new Error("Club créé mais impossible d'uploader le logo"),
+              messageKey: "clubScreen.errors.uploadClubLogoFailed",
+              error: new Error(t("clubScreen.errors.uploadClubLogoFailed")),
               context: "ClubScreen",
             });
           } else if (path) {
@@ -447,16 +377,15 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
         await refreshClubs();
 
         // Reset states
-        setIsCreatingNewClub(false);
         setFormData(INITIAL_CLUB_FORM_DATA);
         setActiveTab(CLUB_TAB.CREATE);
 
         posthog?.capture(ANALYTICS_EVENTS.CLUB_CREATED);
-        Alert.alert("Succès", "Club créé avec succès !");
+        Alert.alert(t("common.success"), t("clubScreen.alerts.clubCreatedSuccess"));
       } catch (error) {
         console.error("Error creating club:", error);
         showErrorAlert({
-          action: "créer le club",
+          messageKey: "clubScreen.errors.createClubFailed",
           error,
           context: "ClubScreen",
         });
@@ -464,7 +393,7 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
     } else {
       // Join logic - Validation
       if (!formData.code) {
-        Alert.alert("Erreur", "Veuillez renseigner le code du club");
+        Alert.alert(t("common.error"), t("clubScreen.alerts.codeRequired"));
         return;
       }
       if (!user) return;
@@ -475,7 +404,7 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
         const clubToJoin = await clubService.getClubByCode(formData.code);
 
         if (!clubToJoin) {
-          Alert.alert("Erreur", "Aucun club trouvé avec ce code");
+          Alert.alert(t("common.error"), t("clubScreen.alerts.clubNotFoundByCode"));
           return;
         }
 
@@ -490,8 +419,8 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
 
         if (!result.success) {
           Alert.alert(
-            "Erreur",
-            result.error || "Impossible de rejoindre le club",
+            t("common.error"),
+            result.error || t("clubScreen.alerts.joinFailed"),
           );
           return;
         }
@@ -505,14 +434,14 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
 
         posthog?.capture(ANALYTICS_EVENTS.CLUB_JOINED);
         Alert.alert(
-          "Succès",
-          `Vous avez rejoint le club "${clubToJoin.name}" !`,
+          t("common.success"),
+          t("clubScreen.alerts.joinedSuccess", { name: clubToJoin.name }),
         );
       } catch (error) {
         console.error("Error joining club:", error);
         Alert.alert(
-          "Erreur",
-          "Une erreur est survenue lors de la tentative de rejoindre le club",
+          t("common.error"),
+          t("clubScreen.alerts.joinUnexpectedError"),
         );
       }
     }
@@ -544,25 +473,10 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
   }
 
   // --- INSIDE A CLUB ---
-  if (currentClub && !isEditingClub && !isCreatingNewClub) {
-    /**
-     * Enters edit mode for the club
-     * - Populates the form with current club data (name, acronym, colors, logo)
-     * - Switches to edit mode view
-     * - Only accessible to club owners
-     */
+  if (currentClub) {
+    // Édition du club : écran dédié plein écran
     const handleEditClub = () => {
-      setFormData({
-        name: currentClub.name,
-        acronym: currentClub.acronym || "",
-        code: currentClub.code,
-        logoUri: currentClub.logoUrl || null,
-        primaryColor: currentClub.primaryColor || "#FF0000",
-        secondaryColor: currentClub.secondaryColor || "#0000FF",
-        courtColor: currentClub.courtBackgroundColor || "#c2410c",
-        courtLinesColor: currentClub.courtLineColor || "#ffffff",
-      });
-      setIsEditingClub(true);
+      navigation.navigate(ROUTES.CLUB_FORM, { mode: "edit" });
     };
 
     /**
@@ -618,42 +532,19 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
     );
   }
 
-  // --- JOIN OR CREATE SCREEN (or EDIT) ---
+  // --- JOIN OR CREATE FIRST CLUB (état vide de l'onglet) ---
   return (
     <View style={[styles.container, { backgroundColor: bgColor }]}>
       <ScrollView
         style={[styles.content, { padding: sp.lg, paddingTop: sp.md }]}
         contentContainerStyle={styles.scrollContent}
       >
-        {isEditingClub || isCreatingNewClub ? (
-          <View style={[styles.header, { marginBottom: sp.lg }]}>
-            <TouchableOpacity
-              onPress={() => {
-                if (isEditingClub) {
-                  setIsEditingClub(false);
-                } else if (isCreatingNewClub) {
-                  setIsCreatingNewClub(false);
-                  navigation.goBack();
-                }
-              }}
-              style={styles.backButton}
-            >
-              <Ionicons name="arrow-back" size={24} color={textPrimary} />
-            </TouchableOpacity>
-            <Text style={[styles.title, { color: textPrimary, fontSize: font.xxl, marginBottom: 0 }]}>
-              {isCreatingNewClub ? "Créer un nouveau club" : "Modifier mon club"}
-            </Text>
-            <View style={{ width: 24 }} />
-          </View>
-        ) : (
-          <Text style={[styles.title, { color: textPrimary, fontSize: font.xxl, marginBottom: sp.lg }]}>
-            Espace Club
-          </Text>
-        )}
+        <Text style={[styles.title, { color: textPrimary, fontSize: font.xxl, marginBottom: sp.lg }]}>
+          {t("clubScreen.spaceTitle")}
+        </Text>
 
-        {/* Tabs - Only show if not editing and not creating new club */}
-        {!isEditingClub && !isCreatingNewClub && (
-          <View
+        {/* Tabs */}
+        <View
             style={[
               styles.tabs,
               {
@@ -685,7 +576,7 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
                   },
                 ]}
               >
-                Créer
+                {t("clubScreen.createTab")}
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -708,19 +599,18 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
                   },
                 ]}
               >
-                Rejoindre
+                {t("clubScreen.joinTab")}
               </Text>
             </TouchableOpacity>
-          </View>
-        )}
+        </View>
 
-        {activeTab === CLUB_TAB.CREATE || isEditingClub || isCreatingNewClub ? (
+        {activeTab === CLUB_TAB.CREATE ? (
           <CreateClubForm
             formData={formData}
             setFormData={setFormData}
             onPickImage={handlePickImage}
             onSubmit={handleSubmit}
-            isEditMode={isEditingClub}
+            isEditMode={false}
           />
         ) : (
           <JoinClubForm
@@ -754,13 +644,9 @@ export default function ClubScreen({ navigation, route }: ClubScreenProps) {
                 color={colors.text.primary}
               />
               <Text style={[styles.submitButtonText, { color: colors.text.primary, fontSize: font.lg }]}>
-                {isEditingClub
-                  ? "Modifier"
-                  : isCreatingNewClub
-                    ? "Créer un nouveau club"
-                    : activeTab === CLUB_TAB.CREATE
-                      ? "Créer mon club"
-                      : "Rejoindre"}
+                {activeTab === CLUB_TAB.CREATE
+                  ? t("clubScreen.createMyClubButton")
+                  : t("clubScreen.joinTab")}
               </Text>
             </>
           )}

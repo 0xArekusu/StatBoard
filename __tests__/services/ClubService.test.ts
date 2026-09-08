@@ -1,5 +1,12 @@
 import { ClubService } from "../../services/ClubService";
 import { AdminService } from "../../services/AdminService";
+import i18n from "../../src/i18n";
+
+// These tests assert French copy directly, so pin the language regardless of
+// the device locale the test environment resolves (jest-expo mocks it to "en").
+beforeAll(async () => {
+  await i18n.changeLanguage("fr");
+});
 
 // ─── Mock AdminService ────────────────────────────────────────────────────────
 // jest.mock is hoisted before variable declarations, so mockIsAdmin must be
@@ -60,7 +67,7 @@ describe("ClubService", () => {
   describe("createClub — validation", () => {
     it("échoue si le nom est vide", async () => {
       const result = await service.createClub({ name: "", acronym: "MC" } as any, "u");
-      expect(result).toEqual({ success: false, error: "Club name is required" });
+      expect(result).toEqual({ success: false, error: "Le nom du club est requis" });
     });
 
     it("échoue si le nom dépasse 60 caractères", async () => {
@@ -76,7 +83,7 @@ describe("ClubService", () => {
 
     it("échoue si l'acronyme est vide", async () => {
       const result = await service.createClub({ name: "Mon Club", acronym: "" } as any, "u");
-      expect(result).toEqual({ success: false, error: "Club acronym is required" });
+      expect(result).toEqual({ success: false, error: "Le sigle du club est requis" });
     });
 
     it("échoue si l'acronyme dépasse 6 caractères", async () => {
@@ -141,7 +148,7 @@ describe("ClubService", () => {
   describe("updateClub — validation", () => {
     it("échoue si le nom fourni est vide", async () => {
       const result = await service.updateClub("club-1", { name: "" });
-      expect(result).toEqual({ success: false, error: "Club name cannot be empty" });
+      expect(result).toEqual({ success: false, error: "Le nom du club ne peut pas être vide" });
     });
 
     it("échoue si le nom dépasse 30 caractères", async () => {
@@ -151,7 +158,7 @@ describe("ClubService", () => {
 
     it("échoue si l'acronyme fourni est vide", async () => {
       const result = await service.updateClub("club-1", { acronym: "" });
-      expect(result).toEqual({ success: false, error: "Club acronym cannot be empty" });
+      expect(result).toEqual({ success: false, error: "Le sigle du club ne peut pas être vide" });
     });
 
     it("échoue si l'acronyme dépasse 5 caractères", async () => {
@@ -162,7 +169,7 @@ describe("ClubService", () => {
     it("échoue si le repo retourne null", async () => {
       mockRepo.update.mockResolvedValue(null);
       const result = await service.updateClub("club-1", { name: "Nouveau Nom" });
-      expect(result).toEqual({ success: false, error: "Failed to update club" });
+      expect(result).toEqual({ success: false, error: "Échec de la modification du club" });
     });
 
     it("retourne le club mis à jour", async () => {

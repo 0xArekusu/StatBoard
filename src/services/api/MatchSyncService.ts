@@ -38,6 +38,7 @@ import type {
 import type { Match, Action } from "../../models/types";
 import type { MatchPlayer } from "../database/MatchPlayerRepository";
 import { logInfo, logError, logWarn } from "../../../utils/logger";
+import i18n from "../../i18n";
 import {
   ActionType,
   ShotSpecification,
@@ -88,7 +89,7 @@ export class MatchSyncService {
         logWarn('MatchSyncService', '⚠️ User not authenticated', { matchId });
         return {
           canSync: false,
-          reason: "Vous devez être connecté pour synchroniser un match",
+          reason: i18n.t("matchSyncService.authRequired"),
         };
       }
 
@@ -99,7 +100,7 @@ export class MatchSyncService {
         logWarn('MatchSyncService', '⚠️ Match not found for sync eligibility check', { matchId });
         return {
           canSync: false,
-          reason: "Match introuvable",
+          reason: i18n.t("matchSyncService.matchNotFound"),
         };
       }
 
@@ -111,7 +112,7 @@ export class MatchSyncService {
         });
         return {
           canSync: false,
-          reason: "Seuls les matchs terminés peuvent être synchronisés",
+          reason: i18n.t("matchSyncService.notCompleted"),
         };
       }
 
@@ -120,7 +121,7 @@ export class MatchSyncService {
         logWarn('MatchSyncService', '⚠️ Match already synced', { matchId });
         return {
           canSync: false,
-          reason: "Ce match a déjà été synchronisé",
+          reason: i18n.t("matchSyncService.alreadySynced"),
         };
       }
 
@@ -136,7 +137,7 @@ export class MatchSyncService {
           });
           return {
             canSync: false,
-            reason: "Impossible de vérifier l'abonnement du club",
+            reason: i18n.t("matchSyncService.cannotVerifySubscription"),
           };
         }
 
@@ -148,8 +149,7 @@ export class MatchSyncService {
           });
           return {
             canSync: false,
-            reason:
-              "Votre abonnement ne permet pas la synchronisation. Passez à un abonnement payant pour activer cette fonctionnalité.",
+            reason: i18n.t("matchSyncService.subscriptionDoesNotAllowSync"),
           };
         }
       } else {
@@ -173,7 +173,7 @@ export class MatchSyncService {
       });
       return {
         canSync: false,
-        reason: "Erreur lors de la vérification des permissions",
+        reason: i18n.t("matchSyncService.eligibilityCheckError"),
       };
     }
   }
@@ -202,7 +202,7 @@ export class MatchSyncService {
         });
         return {
           success: false,
-          error: eligibility.reason || "Synchronisation non autorisée",
+          error: eligibility.reason || i18n.t("matchSyncService.syncNotAuthorized"),
         };
       }
 
@@ -215,7 +215,7 @@ export class MatchSyncService {
         logError('MatchSyncService', '❌ User not authenticated during sync', { matchId });
         return {
           success: false,
-          error: "Utilisateur non authentifié",
+          error: i18n.t("matchSyncService.userNotAuthenticated"),
         };
       }
 
@@ -226,7 +226,7 @@ export class MatchSyncService {
         logError('MatchSyncService', '❌ Match not found during sync', { matchId });
         return {
           success: false,
-          error: "Match introuvable",
+          error: i18n.t("matchSyncService.matchNotFound"),
         };
       }
 
@@ -281,7 +281,7 @@ export class MatchSyncService {
       return {
         success: false,
         error:
-          error instanceof Error ? error.message : "Erreur lors de la synchronisation",
+          error instanceof Error ? error.message : i18n.t("matchSyncService.genericSyncError"),
       };
     }
   }
@@ -551,12 +551,12 @@ export class MatchSyncService {
             opponentName: syncData.match.opponent_name,
           }
         });
-        throw new Error(`Erreur lors de la création du match: ${matchError.message}`);
+        throw new Error(i18n.t("matchSyncService.matchInsertError", { message: matchError.message }));
       }
 
       if (!matchData) {
         logError('MatchSyncService', '❌ No data returned from Supabase insert');
-        throw new Error('Aucune donnée retournée par Supabase');
+        throw new Error(i18n.t("matchSyncService.noDataReturned"));
       }
 
       const matchId = matchData.id;
@@ -625,7 +625,7 @@ export class MatchSyncService {
         synced: 0,
         failed: 0,
         errors: [
-          error instanceof Error ? error.message : "Erreur inconnue",
+          error instanceof Error ? error.message : i18n.t("errorAlert.unknownError"),
         ],
       };
     }

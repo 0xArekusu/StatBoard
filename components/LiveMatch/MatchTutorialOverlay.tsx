@@ -12,6 +12,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { usePostHog } from "posthog-react-native";
+import { useTranslation } from "react-i18next";
 import { useTheme } from "../../src/contexts/ThemeContext";
 import { useResponsive } from "../../src/hooks/useResponsive";
 import { ANALYTICS_EVENTS } from "../../constants/analyticsEvents";
@@ -27,41 +28,6 @@ interface TutorialStep {
   description: string;
   tooltipPosition: "below" | "center" | "above";
 }
-
-const STEPS: TutorialStep[] = [
-  {
-    zone: "header",
-    icon: "timer-outline",
-    title: "Chrono & Score",
-    description:
-      "Lancez ou mettez en pause le chrono, passez à la période suivante, visualisez le tableau des fautes, ajoutez des temps morts, effectuez des remplacements et marquez rapidement les points adverses.",
-    tooltipPosition: "below",
-  },
-  {
-    zone: "toggle",
-    icon: "swap-horizontal",
-    title: "Vue Terrain / Actions",
-    description:
-      "Basculez entre la vue terrain pour visualiser vos actions sur le parquet et la grille si vous souhaitez saisir les statistiques directement sans le terrain.",
-    tooltipPosition: "below",
-  },
-  {
-    zone: "grid",
-    icon: "basketball",
-    title: "Grille d'actions",
-    description:
-      "Cliquez sur le terrain pour saisir une action : tirs réussis ou manqués, rebonds, fautes etc... Les actions chaînées vous proposent automatiquement les actions liées (ex: tir réussi → passe décisive, faute → lancers francs) pour un suivi plus fluide et rapide.",
-    tooltipPosition: "center",
-  },
-  {
-    zone: "toolbar",
-    icon: "toolbox-outline",
-    title: "Barre d'outils",
-    description:
-      "Grâce à la barre d'action, vous pouvez annuler la dernière action, filtrer par type d'action et consulter les statistiques en temps réel, afficher ou masquer les marqueurs terrain et consulter l'historique complet.",
-    tooltipPosition: "above",
-  },
-];
 
 interface MatchTutorialOverlayProps {
   visible: boolean;
@@ -80,6 +46,7 @@ export function MatchTutorialOverlay({
   toolbarHeight,
   trackOpponentStats,
 }: MatchTutorialOverlayProps) {
+  const { t } = useTranslation();
   const { colors } = useTheme();
   const { sp, font } = useResponsive();
   const posthog = usePostHog();
@@ -88,12 +55,43 @@ export function MatchTutorialOverlay({
   const [stepIndex, setStepIndex] = useState(0);
   const [dontShowAgain, setDontShowAgain] = useState(false);
 
+  const STEPS: TutorialStep[] = [
+    {
+      zone: "header",
+      icon: "timer-outline",
+      title: t("matchTutorialOverlay.steps.header.title"),
+      description: t("matchTutorialOverlay.steps.header.description"),
+      tooltipPosition: "below",
+    },
+    {
+      zone: "toggle",
+      icon: "swap-horizontal",
+      title: t("matchTutorialOverlay.steps.toggle.title"),
+      description: t("matchTutorialOverlay.steps.toggle.description"),
+      tooltipPosition: "below",
+    },
+    {
+      zone: "grid",
+      icon: "basketball",
+      title: t("matchTutorialOverlay.steps.grid.title"),
+      description: t("matchTutorialOverlay.steps.grid.description"),
+      tooltipPosition: "center",
+    },
+    {
+      zone: "toolbar",
+      icon: "toolbox-outline",
+      title: t("matchTutorialOverlay.steps.toolbar.title"),
+      description: t("matchTutorialOverlay.steps.toolbar.description"),
+      tooltipPosition: "above",
+    },
+  ];
+
   const step = STEPS[stepIndex];
   const stepDescription =
     step.zone === "header"
-      ? `Lancez ou mettez en pause le chrono, passez à la période suivante, visualisez le tableau des fautes, ajoutez des temps morts et effectuez des remplacements.${
+      ? `${t("matchTutorialOverlay.steps.header.descriptionShort")}${
           !trackOpponentStats
-            ? " Marquez rapidement les points adverses depuis l'en-tête."
+            ? ` ${t("matchTutorialOverlay.steps.header.opponentPointsHint")}`
             : ""
         }`
       : step.description;
@@ -328,7 +326,7 @@ export function MatchTutorialOverlay({
                   { color: colors.text.secondary, fontSize: font.xs },
                 ]}
               >
-                Ne plus afficher
+                {t("matchTutorialOverlay.dontShowAgain")}
               </Text>
             </TouchableOpacity>
 
@@ -347,7 +345,7 @@ export function MatchTutorialOverlay({
                       { color: colors.error, fontSize: font.sm },
                     ]}
                   >
-                    Passer
+                    {t("matchTutorialOverlay.skip")}
                   </Text>
                 </TouchableOpacity>
               )}
@@ -366,7 +364,7 @@ export function MatchTutorialOverlay({
                         { color: colors.text.secondary, fontSize: font.sm },
                       ]}
                     >
-                      Précédent
+                      {t("matchTutorialOverlay.previous")}
                     </Text>
                   </TouchableOpacity>
                 )}
@@ -388,7 +386,7 @@ export function MatchTutorialOverlay({
                       { color: colors.onPrimary, fontSize: font.sm },
                     ]}
                   >
-                    {isLast ? "Terminer" : "Suivant"}
+                    {isLast ? t("matchTutorialOverlay.finish") : t("matchTutorialOverlay.next")}
                   </Text>
                 </TouchableOpacity>
               </View>

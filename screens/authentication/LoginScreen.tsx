@@ -12,6 +12,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { ROUTES, PlatformOS, ANALYTICS_EVENTS, ANALYTICS_LOGIN_METHOD } from '../../constants';
 import { useTheme } from '../../src/contexts/ThemeContext';
@@ -32,6 +33,7 @@ import { usePostHog } from 'posthog-react-native';
  * - Navigation to registration screen
  */
 export default function LoginScreen({ navigation, route }: any) {
+  const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -49,10 +51,10 @@ export default function LoginScreen({ navigation, route }: any) {
    */
   const translateError = (errorMessage: string): string => {
     const errorMap: { [key: string]: string } = {
-      'Invalid login credentials': 'Email ou mot de passe incorrect',
-      'Invalid credentials': 'Email ou mot de passe incorrect',
-      'Email not confirmed': 'Veuillez confirmer votre email avant de vous connecter',
-      'User not found': 'Aucun compte associé à cet email',
+      'Invalid login credentials': t('loginScreen.supabaseErrors.invalidCredentials'),
+      'Invalid credentials': t('loginScreen.supabaseErrors.invalidCredentials'),
+      'Email not confirmed': t('loginScreen.supabaseErrors.emailNotConfirmed'),
+      'User not found': t('loginScreen.supabaseErrors.userNotFound'),
     };
 
     // Check if the error message matches any known error
@@ -71,7 +73,7 @@ export default function LoginScreen({ navigation, route }: any) {
    */
   const handleLogin = async () => {
     if (!email || !password) {
-      Alert.alert('Erreur', 'Veuillez remplir tous les champs');
+      Alert.alert(t('common.error'), t('loginScreen.errors.fillAllFields'));
       return;
     }
 
@@ -81,7 +83,7 @@ export default function LoginScreen({ navigation, route }: any) {
 
     if (error) {
       const translatedError = translateError(error.message);
-      Alert.alert('Erreur de connexion', translatedError);
+      Alert.alert(t('loginScreen.errors.loginErrorTitle'), translatedError);
       posthog?.capture(ANALYTICS_EVENTS.LOGIN_FAILED, { method: ANALYTICS_LOGIN_METHOD.PASSWORD, error_message: error.message ?? null });
     } else if (needsTermsAcceptance) {
       setShowTermsModal(true);
@@ -100,7 +102,7 @@ export default function LoginScreen({ navigation, route }: any) {
     setLoading(false);
 
     if (error) {
-      Alert.alert('Erreur de connexion Google', error.message);
+      Alert.alert(t('loginScreen.errors.googleErrorTitle'), error.message);
       posthog?.capture(ANALYTICS_EVENTS.LOGIN_FAILED, { method: ANALYTICS_LOGIN_METHOD.GOOGLE, error_message: error.message ?? null });
     } else if (needsTermsAcceptance) {
       setShowTermsModal(true);
@@ -131,7 +133,7 @@ export default function LoginScreen({ navigation, route }: any) {
     setLoading(false);
 
     if (error) {
-      Alert.alert('Erreur de connexion Apple', error.message);
+      Alert.alert(t('loginScreen.errors.appleErrorTitle'), error.message);
       posthog?.capture(ANALYTICS_EVENTS.LOGIN_FAILED, { method: ANALYTICS_LOGIN_METHOD.APPLE, error_message: error.message ?? null });
     } else if (needsTermsAcceptance) {
       setShowTermsModal(true);
@@ -147,8 +149,8 @@ export default function LoginScreen({ navigation, route }: any) {
   const handleForgotPassword = async () => {
     if (!email) {
       Alert.alert(
-        'Email requis',
-        'Veuillez entrer votre adresse email pour réinitialiser votre mot de passe'
+        t('loginScreen.errors.emailRequiredTitle'),
+        t('loginScreen.errors.emailRequiredMessage')
       );
       return;
     }
@@ -158,11 +160,11 @@ export default function LoginScreen({ navigation, route }: any) {
     setLoading(false);
 
     if (error) {
-      Alert.alert('Erreur', error.message);
+      Alert.alert(t('common.error'), error.message);
     } else {
       Alert.alert(
-        'Email envoyé',
-        'Un email de réinitialisation a été envoyé à votre adresse email'
+        t('loginScreen.forgotPassword.sentTitle'),
+        t('loginScreen.forgotPassword.sentMessage')
       );
     }
   };
@@ -185,7 +187,7 @@ export default function LoginScreen({ navigation, route }: any) {
             <View style={styles.confirmedBanner}>
               <MaterialCommunityIcons name="check-circle" size={20} color="#fff" />
               <Text style={styles.confirmedBannerText}>
-                Email confirmé ! Vous pouvez maintenant vous connecter.
+                {t('loginScreen.banners.emailConfirmed')}
               </Text>
             </View>
           )}
@@ -195,7 +197,7 @@ export default function LoginScreen({ navigation, route }: any) {
             <View style={styles.errorBanner}>
               <MaterialCommunityIcons name="alert-circle" size={20} color={STATUS_COLORS.errorLight} />
               <Text style={styles.errorBannerText}>
-                Le lien de confirmation est invalide ou a expiré. Veuillez vous réinscrire.
+                {t('loginScreen.banners.confirmationLinkInvalid')}
               </Text>
             </View>
           )}
@@ -205,7 +207,7 @@ export default function LoginScreen({ navigation, route }: any) {
             <View style={styles.confirmedBanner}>
               <MaterialCommunityIcons name="check-circle" size={20} color={STATUS_COLORS.successLight} />
               <Text style={styles.confirmedBannerText}>
-                Mot de passe mis à jour ! Vous pouvez maintenant vous connecter.
+                {t('loginScreen.banners.passwordUpdated')}
               </Text>
             </View>
           )}
@@ -228,10 +230,10 @@ export default function LoginScreen({ navigation, route }: any) {
           {/* Header */}
           <View style={[styles.formHeader, { marginBottom: sp.xl }]}>
             <Text style={[styles.formTitle, { color: colors.text.primary, fontSize: font.xxxl, marginBottom: sp.sm }]}>
-              Bon retour !
+              {t('loginScreen.title')}
             </Text>
             <Text style={[styles.formSubtitle, { color: colors.text.secondary, fontSize: font.lg }]}>
-              Entrez vos identifiants pour continuer.
+              {t('loginScreen.subtitle')}
             </Text>
           </View>
 
@@ -239,7 +241,7 @@ export default function LoginScreen({ navigation, route }: any) {
           <View style={[styles.formFields, { gap: sp.lg, marginBottom: sp.xl }]}>
             <View style={[styles.inputGroup, { gap: sp.sm }]}>
               <Text style={[styles.label, { color: colors.text.secondary, fontSize: font.md }]}>
-                Email
+                {t('loginScreen.emailLabel')}
               </Text>
               <View
                 style={[
@@ -258,7 +260,7 @@ export default function LoginScreen({ navigation, route }: any) {
                   style={[styles.inputIcon, { marginRight: sp.md }]}
                 />
                 <TextInput
-                  placeholder="coach@exemple.com"
+                  placeholder={t('loginScreen.emailPlaceholder')}
                   placeholderTextColor={colors.text.disabled}
                   style={[styles.input, { color: colors.text.primary, fontSize: font.lg, paddingVertical: sp.sm }]}
                   keyboardType="email-address"
@@ -272,7 +274,7 @@ export default function LoginScreen({ navigation, route }: any) {
 
             <View style={[styles.inputGroup, { gap: sp.sm }]}>
               <Text style={[styles.label, { color: colors.text.secondary, fontSize: font.md }]}>
-                Mot de passe
+                {t('loginScreen.passwordLabel')}
               </Text>
               <View
                 style={[
@@ -310,7 +312,7 @@ export default function LoginScreen({ navigation, route }: any) {
             style={[styles.forgotPasswordButton, { marginBottom: sp.md }]}
           >
             <Text style={[styles.forgotPasswordText, { color: colors.primary, fontSize: font.md }]}>
-              Mot de passe oublié ?
+              {t('loginScreen.forgotPasswordLink')}
             </Text>
           </TouchableOpacity>
 
@@ -334,7 +336,7 @@ export default function LoginScreen({ navigation, route }: any) {
               <ActivityIndicator color={colors.onPrimary} />
             ) : (
               <Text style={[styles.submitButtonText, { color: colors.onPrimary, fontSize: font.lg }]}>
-                Se connecter
+                {t('loginScreen.submitButton')}
               </Text>
             )}
           </TouchableOpacity>
@@ -353,7 +355,7 @@ export default function LoginScreen({ navigation, route }: any) {
                 },
               ]}
             >
-              Ou continuer avec
+              {t('loginScreen.orContinueWith')}
             </Text>
             <View style={[styles.dividerLine, { backgroundColor: colors.input.border }]} />
           </View>
@@ -428,9 +430,9 @@ export default function LoginScreen({ navigation, route }: any) {
             disabled={loading}
           >
             <Text style={[styles.linkText, { color: colors.text.secondary, fontSize: font.md }]}>
-              Pas encore de compte ?{' '}
+              {t('loginScreen.noAccountYet')}{' '}
               <Text style={{ color: colors.primary, fontWeight: '600' }}>
-                S'inscrire
+                {t('loginScreen.signUpLink')}
               </Text>
             </Text>
           </TouchableOpacity>

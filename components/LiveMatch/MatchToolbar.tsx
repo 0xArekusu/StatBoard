@@ -1,10 +1,12 @@
 import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { useTranslation } from "react-i18next";
 import { useTheme } from "../../src/contexts/ThemeContext";
 import { FilterMode } from "../../constants/liveMatchConstants";
 import { useResponsive } from "../../src/hooks/useResponsive";
-import { BREAKPOINTS } from "../../constants/breakpoints";
+import { useCollapsibleBar } from "../../src/hooks/useCollapsibleBar";
+import { LandscapeToggleButton } from "./LandscapeToggleButton";
 
 interface MatchToolbarProps {
   filterMode: FilterMode;
@@ -31,17 +33,33 @@ export function MatchToolbar({
   onGenerateMock,
   onOpenHistory,
 }: MatchToolbarProps) {
+  const { t } = useTranslation();
   const { colors } = useTheme();
-  const { isPortrait, width } = useResponsive();
-  const isLandscape = !isPortrait;
-  const isMobileLandscape =
-    isLandscape && width < BREAKPOINTS.mobileLandscapeMaxWidth;
+  const { isMobileLandscape } = useResponsive();
   const surfaceColor = colors.surface;
   const textSecondary = colors.text.secondary;
   const borderColor = colors.border;
 
   const iconSize = isMobileLandscape ? 18 : 22;
   const toolbarHeight = isMobileLandscape ? 44 : 64;
+
+  const [expanded, setExpanded] = useCollapsibleBar(isMobileLandscape);
+
+  // Paysage téléphone + repliée : un simple onglet flottant pour déplier la barre
+  if (isMobileLandscape && !expanded) {
+    return (
+      <LandscapeToggleButton
+        icon={hasActiveFilters ? "filter" : "filter-outline"}
+        onPress={() => setExpanded(true)}
+        color={colors.primary}
+        backgroundColor={surfaceColor}
+        borderColor={borderColor}
+        style={styles.toggleButtonCollapsed}
+        size={36}
+        iconSize={20}
+      />
+    );
+  }
 
   return (
     <View
@@ -51,9 +69,23 @@ export function MatchToolbar({
           backgroundColor: surfaceColor,
           borderTopColor: borderColor,
           height: toolbarHeight,
+          paddingRight: isMobileLandscape ? 44 : 8,
         },
       ]}
     >
+      {isMobileLandscape && (
+        <LandscapeToggleButton
+          icon="chevron-down"
+          onPress={() => setExpanded(false)}
+          color={colors.primary}
+          backgroundColor={surfaceColor}
+          borderColor={borderColor}
+          style={styles.toggleButtonInBar}
+          size={36}
+          iconSize={18}
+        />
+      )}
+
       <TouchableOpacity onPress={onUndo} style={styles.toolbarButton}>
         <MaterialCommunityIcons
           name="undo"
@@ -62,7 +94,7 @@ export function MatchToolbar({
         />
         {!isMobileLandscape && (
           <Text style={[styles.toolbarButtonText, { color: textSecondary }]}>
-            Annuler
+            {t("common.cancel")}
           </Text>
         )}
       </TouchableOpacity>
@@ -82,7 +114,7 @@ export function MatchToolbar({
               },
             ]}
           >
-            Filtres
+            {t("liveMatchModals.filter.title")}
           </Text>
         )}
       </TouchableOpacity>
@@ -100,7 +132,7 @@ export function MatchToolbar({
               { color: showMarkers ? colors.primary : textSecondary },
             ]}
           >
-            Vue
+            {t("matchToolbar.view")}
           </Text>
         )}
       </TouchableOpacity>
@@ -109,11 +141,11 @@ export function MatchToolbar({
         <TouchableOpacity
           onPress={() => {
             Alert.alert(
-              "Ajouter des données de test ?",
-              "Cela va générer des actions fictives pour le match.",
+              t("matchToolbar.mockDataTitle"),
+              t("matchToolbar.mockDataMessage"),
               [
-                { text: "Annuler", style: "cancel" },
-                { text: "Confirmer", onPress: onGenerateMock },
+                { text: t("common.cancel"), style: "cancel" },
+                { text: t("common.confirm"), onPress: onGenerateMock },
               ],
             );
           }}
@@ -130,7 +162,7 @@ export function MatchToolbar({
           />
           {!isMobileLandscape && (
             <Text style={[styles.toolbarButtonText, { color: colors.primary }]}>
-              {isGeneratingMockData ? "..." : "Test"}
+              {isGeneratingMockData ? "..." : t("matchToolbar.test")}
             </Text>
           )}
         </TouchableOpacity>
@@ -144,7 +176,7 @@ export function MatchToolbar({
         />
         {!isMobileLandscape && (
           <Text style={[styles.toolbarButtonText, { color: textSecondary }]}>
-            Historique
+            {t("matchToolbar.history")}
           </Text>
         )}
       </TouchableOpacity>
@@ -173,5 +205,13 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: "500",
     marginTop: 4,
+  },
+  toggleButtonCollapsed: {
+    bottom: 6,
+    right: 6,
+  },
+  toggleButtonInBar: {
+    top: 4,
+    right: 6,
   },
 });

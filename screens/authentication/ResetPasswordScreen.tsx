@@ -11,6 +11,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { ROUTES, PlatformOS } from '../../constants';
 import { useTheme } from '../../src/contexts/ThemeContext';
@@ -30,6 +31,7 @@ import { logInfo, logError } from '../../utils/logger';
  * - Navigates to LoginScreen with a success banner on completion
  */
 export default function ResetPasswordScreen({ navigation }: any) {
+  const { t } = useTranslation();
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -45,17 +47,17 @@ export default function ResetPasswordScreen({ navigation }: any) {
     setError(null);
 
     if (!password || !confirmPassword) {
-      setError('Veuillez remplir tous les champs');
+      setError(t('resetPasswordScreen.errors.fillAllFields'));
       return;
     }
 
     if (password !== confirmPassword) {
-      setError('Les mots de passe ne correspondent pas');
+      setError(t('resetPasswordScreen.errors.passwordsDontMatch'));
       return;
     }
 
     if (password.length < PASSWORD_VALIDATION.minLength) {
-      setError(`Le mot de passe doit contenir au moins ${PASSWORD_VALIDATION.minLength} caractères`);
+      setError(t('resetPasswordScreen.errors.passwordTooShort', { minLength: PASSWORD_VALIDATION.minLength }));
       return;
     }
 
@@ -96,10 +98,10 @@ export default function ResetPasswordScreen({ navigation }: any) {
               />
             </View>
             <Text style={[styles.formTitle, { color: colors.text.primary, fontSize: font.xxxl, marginBottom: sp.sm }]}>
-              Nouveau mot de passe
+              {t('resetPasswordScreen.title')}
             </Text>
             <Text style={[styles.formSubtitle, { color: colors.text.secondary, fontSize: font.lg }]}>
-              Choisissez un nouveau mot de passe sécurisé.
+              {t('resetPasswordScreen.subtitle')}
             </Text>
           </View>
 
@@ -117,7 +119,7 @@ export default function ResetPasswordScreen({ navigation }: any) {
           <View style={[styles.formFields, { gap: sp.lg, marginBottom: sp.xl }]}>
             <View style={[styles.inputGroup, { gap: sp.sm }]}>
               <Text style={[styles.label, { color: colors.text.secondary, fontSize: font.md }]}>
-                Nouveau mot de passe
+                {t('resetPasswordScreen.newPasswordLabel')}
               </Text>
               <View
                 style={[
@@ -149,7 +151,7 @@ export default function ResetPasswordScreen({ navigation }: any) {
 
             <View style={[styles.inputGroup, { gap: sp.sm }]}>
               <Text style={[styles.label, { color: colors.text.secondary, fontSize: font.md }]}>
-                Confirmer le mot de passe
+                {t('resetPasswordScreen.confirmPasswordLabel')}
               </Text>
               <View
                 style={[
@@ -199,7 +201,7 @@ export default function ResetPasswordScreen({ navigation }: any) {
               <ActivityIndicator color={colors.onPrimary} />
             ) : (
               <Text style={[styles.submitButtonText, { color: colors.onPrimary, fontSize: font.lg }]}>
-                Mettre à jour le mot de passe
+                {t('resetPasswordScreen.submitButton')}
               </Text>
             )}
           </TouchableOpacity>

@@ -12,6 +12,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { ROUTES, PlatformOS, ANALYTICS_EVENTS } from '../../constants';
 import { useTheme } from '../../src/contexts/ThemeContext';
@@ -35,6 +36,7 @@ import { usePostHog } from 'posthog-react-native';
  * - Navigation to login screen
  */
 export default function RegisterScreen({ navigation }: any) {
+  const { t } = useTranslation();
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -69,13 +71,13 @@ export default function RegisterScreen({ navigation }: any) {
         hasPassword: !!password,
         hasConfirmPassword: !!confirmPassword,
       });
-      Alert.alert('Erreur', 'Veuillez remplir tous les champs');
+      Alert.alert(t('common.error'), t('registerScreen.errors.fillAllFields'));
       return;
     }
 
     if (password !== confirmPassword) {
       logError('RegisterScreen', '❌ Validation failed: Passwords do not match');
-      Alert.alert('Erreur', 'Les mots de passe ne correspondent pas');
+      Alert.alert(t('common.error'), t('registerScreen.errors.passwordsDontMatch'));
       return;
     }
 
@@ -85,8 +87,8 @@ export default function RegisterScreen({ navigation }: any) {
         minLength: PASSWORD_VALIDATION.minLength,
       });
       Alert.alert(
-        'Erreur',
-        `Le mot de passe doit contenir au moins ${PASSWORD_VALIDATION.minLength} caractères`
+        t('common.error'),
+        t('registerScreen.errors.passwordTooShort', { minLength: PASSWORD_VALIDATION.minLength })
       );
       return;
     }
@@ -94,8 +96,8 @@ export default function RegisterScreen({ navigation }: any) {
     if (!termsAccepted) {
       logError('RegisterScreen', '❌ Validation failed: Terms not accepted');
       Alert.alert(
-        'Erreur',
-        'Vous devez accepter les conditions d\'utilisation et la politique de confidentialité pour créer un compte'
+        t('common.error'),
+        t('registerScreen.errors.termsRequired')
       );
       return;
     }
@@ -127,36 +129,36 @@ export default function RegisterScreen({ navigation }: any) {
       });
 
       // Détecter si c'est une erreur de rate limiting (email existant non confirmé qui tente de se réinscrire)
-      if (error.message && error.message.toLowerCase().includes('sécurité')) {
+      if (error.errorCode === 'rate_limit') {
         // C'est probablement un compte non confirmé existant
         Alert.alert(
-          'Compte non confirmé',
-          'Un compte existe déjà avec cet email mais n\'a pas été confirmé.\n\n⚠️ Note importante : Le mot de passe pris en compte sera celui que vous avez défini la première fois, utilisez "Mot de passe oublié" après confirmation de l\'email si besoin.',
+          t('registerScreen.unconfirmedAccount.title'),
+          t('registerScreen.unconfirmedAccount.message'),
           [
             {
-              text: 'Renvoyer l\'email',
+              text: t('registerScreen.unconfirmedAccount.resendButton'),
               onPress: () => handleResendConfirmation(email),
             },
             {
-              text: 'Retour à la connexion',
+              text: t('registerScreen.unconfirmedAccount.backToLoginButton'),
               onPress: () => navigation.navigate(ROUTES.LOGIN),
               style: 'cancel',
             },
           ]
         );
       } else {
-        Alert.alert('Erreur d\'inscription', error.message);
+        Alert.alert(t('registerScreen.errors.registrationErrorTitle'), error.message);
       }
     } else {
       logInfo('RegisterScreen', '✅ Registration successful - showing confirmation dialog', {
         email,
       });
       Alert.alert(
-        'Inscription réussie',
-        'Un email de confirmation a été envoyé à votre adresse. Veuillez vérifier votre boîte de réception (et les spams) et cliquer sur le lien de confirmation depuis cet appareil avant de vous connecter.',
+        t('registerScreen.success.title'),
+        t('registerScreen.success.message'),
         [
           {
-            text: 'OK',
+            text: t('common.ok'),
             onPress: () => {
               logInfo('RegisterScreen', '🔄 Navigating to login screen');
               navigation.navigate(ROUTES.LOGIN);
@@ -182,15 +184,15 @@ export default function RegisterScreen({ navigation }: any) {
       logError('RegisterScreen', '❌ Failed to resend confirmation email', {
         error: error.message,
       });
-      Alert.alert('Erreur', error.message || 'Impossible de renvoyer l\'email. Veuillez réessayer plus tard.');
+      Alert.alert(t('common.error'), error.message || t('registerScreen.resend.errorMessage'));
     } else {
       logInfo('RegisterScreen', '✅ Confirmation email resent successfully');
       Alert.alert(
-        'Email envoyé',
-        'Un nouvel email de confirmation a été envoyé. Veuillez vérifier votre boîte de réception et vos spams.',
+        t('registerScreen.resend.sentTitle'),
+        t('registerScreen.resend.sentMessage'),
         [
           {
-            text: 'OK',
+            text: t('common.ok'),
             onPress: () => navigation.navigate(ROUTES.LOGIN),
           },
         ]
@@ -207,7 +209,7 @@ export default function RegisterScreen({ navigation }: any) {
     setLoading(false);
 
     if (error) {
-      Alert.alert('Erreur de connexion Google', error.message);
+      Alert.alert(t('registerScreen.errors.googleErrorTitle'), error.message);
     } else if (needsTermsAcceptance) {
       setShowTermsModal(true);
     } else {
@@ -235,7 +237,7 @@ export default function RegisterScreen({ navigation }: any) {
     setLoading(false);
 
     if (error) {
-      Alert.alert('Erreur de connexion Apple', error.message);
+      Alert.alert(t('registerScreen.errors.appleErrorTitle'), error.message);
     } else if (needsTermsAcceptance) {
       setShowTermsModal(true);
     } else if (error === null) {
@@ -274,10 +276,10 @@ export default function RegisterScreen({ navigation }: any) {
           {/* Header */}
           <View style={[styles.formHeader, { marginBottom: sp.xl }]}>
             <Text style={[styles.formTitle, { color: colors.text.primary, fontSize: font.xxxl, marginBottom: sp.sm }]}>
-              Créer un compte
+              {t('registerScreen.title')}
             </Text>
             <Text style={[styles.formSubtitle, { color: colors.text.secondary, fontSize: font.lg }]}>
-              Rejoignez la communauté des coachs.
+              {t('registerScreen.subtitle')}
             </Text>
           </View>
 
@@ -285,7 +287,7 @@ export default function RegisterScreen({ navigation }: any) {
           <View style={[styles.formFields, { gap: sp.lg, marginBottom: sp.xl }]}>
             <View style={[styles.inputGroup, { gap: sp.sm }]}>
               <Text style={[styles.label, { color: colors.text.secondary, fontSize: font.md }]}>
-                Nom complet
+                {t('registerScreen.fullNameLabel')}
               </Text>
               <View
                 style={[
@@ -304,7 +306,7 @@ export default function RegisterScreen({ navigation }: any) {
                   style={[styles.inputIcon, { marginRight: sp.md }]}
                 />
                 <TextInput
-                  placeholder="Coach Carter"
+                  placeholder={t('registerScreen.fullNamePlaceholder')}
                   placeholderTextColor={colors.text.disabled}
                   style={[styles.input, { color: colors.text.primary, fontSize: font.lg, paddingVertical: sp.sm }]}
                   value={fullName}
@@ -316,7 +318,7 @@ export default function RegisterScreen({ navigation }: any) {
 
             <View style={[styles.inputGroup, { gap: sp.sm }]}>
               <Text style={[styles.label, { color: colors.text.secondary, fontSize: font.md }]}>
-                Email
+                {t('registerScreen.emailLabel')}
               </Text>
               <View
                 style={[
@@ -335,7 +337,7 @@ export default function RegisterScreen({ navigation }: any) {
                   style={[styles.inputIcon, { marginRight: sp.md }]}
                 />
                 <TextInput
-                  placeholder="coach@exemple.com"
+                  placeholder={t('registerScreen.emailPlaceholder')}
                   placeholderTextColor={colors.text.disabled}
                   style={[styles.input, { color: colors.text.primary, fontSize: font.lg, paddingVertical: sp.sm }]}
                   keyboardType="email-address"
@@ -349,7 +351,7 @@ export default function RegisterScreen({ navigation }: any) {
 
             <View style={[styles.inputGroup, { gap: sp.sm }]}>
               <Text style={[styles.label, { color: colors.text.secondary, fontSize: font.md }]}>
-                Mot de passe
+                {t('registerScreen.passwordLabel')}
               </Text>
               <View
                 style={[
@@ -381,7 +383,7 @@ export default function RegisterScreen({ navigation }: any) {
 
             <View style={[styles.inputGroup, { gap: sp.sm }]}>
               <Text style={[styles.label, { color: colors.text.secondary, fontSize: font.md }]}>
-                Confirmer le mot de passe
+                {t('registerScreen.confirmPasswordLabel')}
               </Text>
               <View
                 style={[
@@ -436,27 +438,27 @@ export default function RegisterScreen({ navigation }: any) {
                 )}
               </View>
               <Text style={[styles.checkboxText, { color: colors.text.secondary, fontSize: font.sm, flex: 1 }]}>
-                J'accepte les{' '}
+                {t('registerScreen.terms.acceptPrefix')}{' '}
                 <Text
                   style={{ color: colors.primary, fontWeight: '600' }}
                   onPress={(e) => {
                     e.stopPropagation();
                     setPolicyUrl('https://coachassistant.fr/terms.html');
-                    setPolicyTitle('Conditions d\'utilisation');
+                    setPolicyTitle(t('registerScreen.terms.termsOfServiceTitle'));
                   }}
                 >
-                  Conditions d'utilisation
+                  {t('registerScreen.terms.termsOfServiceLink')}
                 </Text>
-                {' '}et la{' '}
+                {' '}{t('registerScreen.terms.andThe')}{' '}
                 <Text
                   style={{ color: colors.primary, fontWeight: '600' }}
                   onPress={(e) => {
                     e.stopPropagation();
                     setPolicyUrl('https://coachassistant.fr/privacy.html');
-                    setPolicyTitle('Politique de confidentialité');
+                    setPolicyTitle(t('registerScreen.terms.privacyPolicyTitle'));
                   }}
                 >
-                  Politique de confidentialité
+                  {t('registerScreen.terms.privacyPolicyLink')}
                 </Text>
               </Text>
             </TouchableOpacity>
@@ -482,7 +484,7 @@ export default function RegisterScreen({ navigation }: any) {
               <ActivityIndicator color={colors.onPrimary} />
             ) : (
               <Text style={[styles.submitButtonText, { color: colors.onPrimary, fontSize: font.lg }]}>
-                S'inscrire
+                {t('registerScreen.submitButton')}
               </Text>
             )}
           </TouchableOpacity>
@@ -501,7 +503,7 @@ export default function RegisterScreen({ navigation }: any) {
                 },
               ]}
             >
-              Ou continuer avec
+              {t('registerScreen.orContinueWith')}
             </Text>
             <View style={[styles.dividerLine, { backgroundColor: colors.input.border }]} />
           </View>
@@ -576,9 +578,9 @@ export default function RegisterScreen({ navigation }: any) {
             disabled={loading}
           >
             <Text style={[styles.linkText, { color: colors.text.secondary, fontSize: font.md }]}>
-              Déjà un compte ?{' '}
+              {t('registerScreen.alreadyHaveAccount')}{' '}
               <Text style={{ color: colors.primary, fontWeight: '600' }}>
-                Se connecter
+                {t('registerScreen.loginLink')}
               </Text>
             </Text>
           </TouchableOpacity>

@@ -8,7 +8,7 @@ import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { BRAND_COLORS, STATUS_COLORS } from "../../src/theme";
-import { MATCH_CREATION_INFO_MESSAGES, ROSTER_LIMITS } from "../../constants";
+import { getMatchCreationInfoMessage, ROSTER_LIMITS } from "../../constants";
 import { PlayerRosterCard } from "./PlayerRosterCard";
 import { AddPlayerForm } from "./AddPlayerForm";
 import type { Player } from "../../models/Player";
@@ -103,7 +103,7 @@ export const HomeRosterView: React.FC<HomeRosterViewProps> = ({
           color={BRAND_COLORS[600]}
         />
         <Text style={[styles.infoBoxText, { color: BRAND_COLORS[600] }]}>
-          {MATCH_CREATION_INFO_MESSAGES.ROSTER_INSTRUCTIONS}
+          {getMatchCreationInfoMessage("ROSTER_INSTRUCTIONS")}
         </Text>
         <View
           style={[

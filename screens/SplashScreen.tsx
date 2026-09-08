@@ -9,12 +9,14 @@
 import { StyleSheet, Text, View, ActivityIndicator } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { logInfo } from "../utils/logger";
 import Logo from "../components/icons/Logo";
 import { useTheme } from "../src/contexts/ThemeContext";
 import { useResponsive } from "../src/hooks/useResponsive";
 
 export default function SplashScreen() {
+  const { t } = useTranslation();
   const { colors, isDark } = useTheme();
   const { sp, font, sizes } = useResponsive();
 
@@ -40,7 +42,7 @@ export default function SplashScreen() {
         style={[styles.loader, { marginTop: sp.xxl }]}
       />
       <Text style={[styles.loadingText, { color: colors.text.secondary, fontSize: font.lg, marginTop: sp.md }]}>
-        Chargement...
+        {t("splashScreen.loading")}
       </Text>
       <StatusBar style={isDark ? "light" : "dark"} />
     </View>

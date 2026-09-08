@@ -13,6 +13,7 @@ import {
   SubstitutionSpecification,
   getActionColor,
 } from "../../src/models/ActionTypes";
+import { useTranslation } from "react-i18next";
 import { useTheme } from "../../src/contexts/ThemeContext";
 import { useResponsive } from "../../src/hooks/useResponsive";
 
@@ -44,36 +45,43 @@ function getTeamAbbr(name: string | null | undefined): string {
     .slice(0, 3);
 }
 
-function getActionDesc(action: any): string {
+function getActionDesc(action: any, t: (key: string, options?: Record<string, unknown>) => string): string {
   const type = (action.action_type || action.type || "").toLowerCase();
   const spec = (action.specification || "").toLowerCase();
   const pts = action.points;
   switch (type) {
     case ActionType.SHOT:
-      if (spec === ShotSpecification.MADE) return pts ? `Tir ${pts}pts ✓` : "Tir ✓";
-      return pts ? `Tir ${pts}pts ✗` : "Tir ✗";
+      if (spec === ShotSpecification.MADE)
+        return pts
+          ? t("timelineTab.actionDesc.shotMadeWithPoints", { points: pts })
+          : t("timelineTab.actionDesc.shotMade");
+      return pts
+        ? t("timelineTab.actionDesc.shotMissedWithPoints", { points: pts })
+        : t("timelineTab.actionDesc.shotMissed");
     case ActionType.REBOUND:
-      if (spec === "offensive") return "Rebond offensif";
-      if (spec === "defensive") return "Rebond défensif";
-      return "Rebond équipe";
+      if (spec === "offensive") return t("timelineTab.actionDesc.reboundOffensive");
+      if (spec === "defensive") return t("timelineTab.actionDesc.reboundDefensive");
+      return t("timelineTab.actionDesc.reboundTeam");
     case ActionType.FOUL:
-      if (spec === "personal") return "Faute personnelle";
-      if (spec === "technical") return "Faute technique";
-      if (spec === "penality") return "Antisportive";
-      if (spec === "disqualificiation") return "Disqualifiante";
-      return "Faute";
+      if (spec === "personal") return t("timelineTab.actionDesc.foulPersonal");
+      if (spec === "technical") return t("timelineTab.actionDesc.foulTechnical");
+      if (spec === "penality") return t("timelineTab.actionDesc.foulUnsportsmanlike");
+      if (spec === "disqualificiation") return t("timelineTab.actionDesc.foulDisqualifying");
+      return t("timelineTab.actionDesc.foul");
     case ActionType.FOUL_DRAWN:
-      return "Faute provoquée";
+      return t("timelineTab.actionDesc.foulDrawn");
     case ActionType.ASSIST:
-      return "Passe décisive";
+      return t("timelineTab.actionDesc.assist");
     case ActionType.STEAL:
-      return "Interception";
+      return t("timelineTab.actionDesc.steal");
     case ActionType.BLOCK:
-      return "Contre";
+      return t("timelineTab.actionDesc.block");
     case ActionType.TURNOVER:
-      return "Balle perdue";
+      return t("timelineTab.actionDesc.turnover");
     case ActionType.SUBSTITUTION:
-      return spec === SubstitutionSpecification.IN ? "↑ Entrée" : "↓ Sortie";
+      return spec === SubstitutionSpecification.IN
+        ? t("timelineTab.actionDesc.substitutionIn")
+        : t("timelineTab.actionDesc.substitutionOut");
     default:
       return type;
   }
@@ -134,6 +142,7 @@ function PlayerBadge({ num, teamAbbr, textColor, borderColor: bc }: {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function TimelineTab({ actions, match, playerNamesMap }: TimelineTabProps) {
+  const { t } = useTranslation();
   const { colors, isDark } = useTheme();
   const { sp, font } = useResponsive();
 
@@ -218,9 +227,9 @@ export default function TimelineTab({ actions, match, playerNamesMap }: Timeline
           const num = action.player_number ?? action.player ?? 9999;
           const playerName =
             num === -1
-              ? "Équipe"
+              ? t("timelineTab.teamFallback")
               : num === 9999
-              ? (match.opponent_name || "Adv.")
+              ? (match.opponent_name || t("timelineTab.opponentAbbrFallback"))
               : playerNamesMap.get(`${action.team}-${num}`) || `#${num}`;
 
           result.push({
@@ -229,7 +238,7 @@ export default function TimelineTab({ actions, match, playerNamesMap }: Timeline
             playerNum: num,
             periodLabel: getPeriodLabel(periodNumber, totalPeriods),
             timeStr: formatTime(action.time_in_period ?? 0),
-            description: getActionDesc(action),
+            description: getActionDesc(action, t),
             playerName,
             isMyTeam: action.team === "MyTeam",
             isScoring,
@@ -249,14 +258,14 @@ export default function TimelineTab({ actions, match, playerNamesMap }: Timeline
       });
 
     return result;
-  }, [sortedWithScores, selectedPeriod, totalPeriods, playerNamesMap, match]);
+  }, [sortedWithScores, selectedPeriod, totalPeriods, playerNamesMap, match, t]);
 
   if (!isReady) {
     return (
       <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: bgColor }}>
         <ActivityIndicator size="large" color={colors.primary} />
         <Text style={{ color: textSecondary, fontSize: font.sm, marginTop: sp.md }}>
-          Chargement de la timeline…
+          {t("timelineTab.loading")}
         </Text>
       </View>
     );
@@ -270,7 +279,7 @@ export default function TimelineTab({ actions, match, playerNamesMap }: Timeline
         <View style={styles.chipsRow}>
           {[null, ...availablePeriods].map((p) => {
             const active = selectedPeriod === p;
-            const label = p === null ? "Tout" : getPeriodLabel(p, totalPeriods);
+            const label = p === null ? t("liveMatchModals.filter.all") : getPeriodLabel(p, totalPeriods);
             return (
               <TouchableOpacity
                 key={p ?? "all"}
@@ -295,11 +304,11 @@ export default function TimelineTab({ actions, match, playerNamesMap }: Timeline
         {/* Team names */}
         <View style={[styles.columnHeaders, { paddingHorizontal: sp.md }]}>
           <Text style={{ color: myTeamColor, flex: 1, textAlign: "right", fontSize: font.xs, fontWeight: "700" }} numberOfLines={1}>
-            {match.my_team_name || "Mon équipe"}
+            {match.my_team_name || t("liveMatchModals.myTeamFallback")}
           </Text>
           <View style={{ width: CENTER_COL_W }} />
           <Text style={{ color: opponentColor, flex: 1, textAlign: "left", fontSize: font.xs, fontWeight: "700" }} numberOfLines={1}>
-            {match.opponent_name || "Adversaire"}
+            {match.opponent_name || t("liveMatchModals.opponentFallback")}
           </Text>
         </View>
       </View>
@@ -313,7 +322,7 @@ export default function TimelineTab({ actions, match, playerNamesMap }: Timeline
         {/* Empty state */}
         {rows.length === 0 && (
           <Text style={{ color: textTertiary, textAlign: "center", marginTop: sp.xl, fontSize: font.sm }}>
-            Aucune action enregistrée
+            {t("timelineTab.noActions")}
           </Text>
         )}
 
@@ -332,7 +341,7 @@ export default function TimelineTab({ actions, match, playerNamesMap }: Timeline
                 <View style={styles.periodEndRow}>
                   <View style={{ flex: 1, height: StyleSheet.hairlineWidth, backgroundColor: borderColor }} />
                   <View style={[styles.periodEndBanner, { backgroundColor: periodEndBg }]}>
-                    <Text style={styles.periodEndLabel}>FIN {row.periodLabel}</Text>
+                    <Text style={styles.periodEndLabel}>{t("timelineTab.periodEnd", { period: row.periodLabel })}</Text>
                     <View style={[styles.periodEndSep, { backgroundColor: "rgba(255,255,255,0.25)" }]} />
                     <Text style={styles.periodEndScore}>{row.score.myTeam} – {row.score.opponent}</Text>
                   </View>

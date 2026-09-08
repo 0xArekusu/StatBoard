@@ -1,11 +1,12 @@
 /**
  * Action Types and Specifications
  *
- * Enums for basketball actions with French translations for UI display.
- * Internal code uses English enums, but user-facing text remains in French.
+ * Enums for basketball actions. Internal code uses English enums;
+ * user-facing labels are resolved through i18n at access time.
  */
 
 import { ACTION_COLORS } from "../theme/colors";
+import i18n from "../i18n";
 
 /**
  * Main action types
@@ -50,39 +51,22 @@ export enum FoulSpecification {
   DISQUALIFICATION = "disqualificiation",
 }
 
+const FOUL_SPECIFICATION_KEYS: Record<FoulSpecification, string> = {
+  [FoulSpecification.PERSONAL]: "personal",
+  [FoulSpecification.TECHNICAL]: "technical",
+  [FoulSpecification.PENALITY]: "penality",
+  [FoulSpecification.DISQUALIFICATION]: "disqualification",
+};
+
 /**
- * French translations for UI display
+ * Localized label for a foul specification (Personal, Technical, Unsportsmanlike, Disqualifying).
+ * Returns undefined for an unrecognized specification, mirroring the old
+ * `FOUL_SPECIFICATION_FR[spec]` object-indexing behavior so callers can fall back gracefully.
  */
-export const ACTION_TYPE_FR: Record<ActionType, string> = {
-  [ActionType.SHOT]: "Tir",
-  [ActionType.REBOUND]: "Rebond",
-  [ActionType.FOUL]: "Faute",
-  [ActionType.FOUL_DRAWN]: "Faute provoquée",
-  [ActionType.ASSIST]: "Passe décisive",
-  [ActionType.STEAL]: "Interception",
-  [ActionType.BLOCK]: "Contre",
-  [ActionType.TURNOVER]: "Balle perdue",
-  [ActionType.SUBSTITUTION]: "Changement",
-  [ActionType.TIMEOUT]: "Temps mort",
-};
-
-export const SHOT_SPECIFICATION_FR: Record<ShotSpecification, string> = {
-  [ShotSpecification.MADE]: "Réussi",
-  [ShotSpecification.MISSED]: "Raté",
-};
-
-export const REBOUND_SPECIFICATION_FR: Record<ReboundSpecification, string> = {
-  [ReboundSpecification.OFFENSIVE]: "Offensif",
-  [ReboundSpecification.DEFENSIVE]: "Défensif",
-  [ReboundSpecification.TEAM]: "Équipe",
-};
-
-export const FOUL_SPECIFICATION_FR: Record<FoulSpecification, string> = {
-  [FoulSpecification.PERSONAL]: "Personnelle",
-  [FoulSpecification.TECHNICAL]: "Technique",
-  [FoulSpecification.PENALITY]: "Antisportive",
-  [FoulSpecification.DISQUALIFICATION]: "Disqualifiante",
-};
+export function getFoulSpecificationLabel(spec: FoulSpecification): string | undefined {
+  const key = FOUL_SPECIFICATION_KEYS[spec];
+  return key ? i18n.t(`foulSpecification.${key}`) : undefined;
+}
 
 /**
  * Substitution specifications
@@ -135,134 +119,142 @@ export interface ActionConfig {
 export const ACTION_CONFIG: Record<string, ActionConfig> = {
   [ActionType.SHOT]: {
     id: ActionType.SHOT,
-    label: "Tir",
+    get label() { return i18n.t("actionTypes.shot.label"); },
     color: ACTION_COLORS.shot.base,
-    description: "Enregistrer un tir",
+    get description() { return i18n.t("actionTypes.shot.description"); },
     hasPointsSelection: true,
     pointsOptions: [
       {
         id: 1,
-        label: "1 point",
+        get label() { return i18n.t("actionTypes.pointsOption", { count: 1 }); },
         color: ACTION_COLORS.shot.points.one,
       },
       {
         id: 2,
-        label: "2 points",
+        get label() { return i18n.t("actionTypes.pointsOption", { count: 2 }); },
         color: ACTION_COLORS.shot.points.two,
       },
       {
         id: 3,
-        label: "3 points",
+        get label() { return i18n.t("actionTypes.pointsOption", { count: 3 }); },
         color: ACTION_COLORS.shot.points.three,
       },
     ],
     specifications: [
       {
         id: ShotSpecification.MADE,
-        label: "Réussi",
+        get label() { return i18n.t("shotSpecification.made"); },
         color: ACTION_COLORS.shot.made,
       },
       {
         id: ShotSpecification.MISSED,
-        label: "Raté",
+        get label() { return i18n.t("shotSpecification.missed"); },
         color: ACTION_COLORS.shot.missed,
       },
     ],
   },
   [ActionType.REBOUND]: {
     id: ActionType.REBOUND,
-    label: "Rebond",
+    get label() { return i18n.t("actionTypes.rebound.label"); },
     color: ACTION_COLORS.rebound.base,
-    description: "Action de rebond",
+    get description() { return i18n.t("actionTypes.rebound.description"); },
     specifications: [
       {
         id: ReboundSpecification.OFFENSIVE,
-        label: "Offensif",
+        get label() { return i18n.t("reboundSpecification.offensive"); },
         color: ACTION_COLORS.rebound.offensive,
       },
       {
         id: ReboundSpecification.DEFENSIVE,
-        label: "Défensif",
+        get label() { return i18n.t("reboundSpecification.defensive"); },
         color: ACTION_COLORS.rebound.defensive,
       },
       {
         id: ReboundSpecification.TEAM,
-        label: "Équipe",
+        get label() { return i18n.t("reboundSpecification.team"); },
         color: ACTION_COLORS.rebound.base,
       },
     ],
   },
   [ActionType.FOUL]: {
     id: ActionType.FOUL,
-    label: "Faute",
+    get label() { return i18n.t("actionTypes.foul.label"); },
     color: ACTION_COLORS.foul.base,
-    description: "Faute commise",
+    get description() { return i18n.t("actionTypes.foul.description"); },
     specifications: [
       {
         id: FoulSpecification.PERSONAL,
-        label: "Personnelle",
+        get label() { return getFoulSpecificationLabel(FoulSpecification.PERSONAL)!; },
         color: ACTION_COLORS.foul.personal,
       },
       {
         id: FoulSpecification.PENALITY,
-        label: "Antisportive",
+        get label() { return getFoulSpecificationLabel(FoulSpecification.PENALITY)!; },
         color: ACTION_COLORS.foul.penality,
       },
       {
         id: FoulSpecification.TECHNICAL,
-        label: "Technique",
+        get label() { return getFoulSpecificationLabel(FoulSpecification.TECHNICAL)!; },
         color: ACTION_COLORS.foul.technical,
       },
       {
         id: FoulSpecification.DISQUALIFICATION,
-        label: "Disqualifiante",
+        get label() { return getFoulSpecificationLabel(FoulSpecification.DISQUALIFICATION)!; },
         color: ACTION_COLORS.foul.disqualification,
       },
     ],
   },
   [ActionType.ASSIST]: {
     id: ActionType.ASSIST,
-    label: "Passe décisive",
+    get label() { return i18n.t("actionTypes.assist.label"); },
     color: ACTION_COLORS.assist,
-    description: "Passe décisive",
+    get description() { return i18n.t("actionTypes.assist.description"); },
     specifications: [],
   },
   [ActionType.STEAL]: {
     id: ActionType.STEAL,
-    label: "Interception",
+    get label() { return i18n.t("actionTypes.steal.label"); },
     color: ACTION_COLORS.steal,
-    description: "Interception de balle",
+    get description() { return i18n.t("actionTypes.steal.description"); },
     specifications: [],
   },
   [ActionType.BLOCK]: {
     id: ActionType.BLOCK,
-    label: "Contre",
+    get label() { return i18n.t("actionTypes.block.label"); },
     color: ACTION_COLORS.block,
-    description: "Contre",
+    get description() { return i18n.t("actionTypes.block.description"); },
     specifications: [],
   },
   [ActionType.TURNOVER]: {
     id: ActionType.TURNOVER,
-    label: "Balle perdue",
+    get label() { return i18n.t("actionTypes.turnover.label"); },
     color: ACTION_COLORS.turnover,
-    description: "Balle perdue",
+    get description() { return i18n.t("actionTypes.turnover.description"); },
     specifications: [],
   },
   [ActionType.FOUL_DRAWN]: {
     id: ActionType.FOUL_DRAWN,
-    label: "Faute provoquée",
+    get label() { return i18n.t("actionTypes.foul_drawn.label"); },
     color: ACTION_COLORS.foulDrawn,
-    description: "Faute provoquée",
+    get description() { return i18n.t("actionTypes.foul_drawn.description"); },
     specifications: [],
   },
   [ActionType.SUBSTITUTION]: {
     id: ActionType.SUBSTITUTION,
-    label: "Changement",
+    get label() { return i18n.t("actionTypes.substitution.label"); },
     color: "#26A69A",
-    description: "Changement de joueur",
+    get description() { return i18n.t("actionTypes.substitution.description"); },
     specifications: [
-      { id: SubstitutionSpecification.IN, label: "Entre", color: "#4CAF50" },
-      { id: SubstitutionSpecification.OUT, label: "Sort", color: "#FF7043" },
+      {
+        id: SubstitutionSpecification.IN,
+        get label() { return i18n.t("substitutionSpecification.in"); },
+        color: "#4CAF50",
+      },
+      {
+        id: SubstitutionSpecification.OUT,
+        get label() { return i18n.t("substitutionSpecification.out"); },
+        color: "#FF7043",
+      },
     ],
   },
 };
@@ -338,10 +330,13 @@ export function getAllActionTypes(): ActionConfig[] {
 }
 
 /**
- * Export as array for ActionModal and other components
+ * Build the action definitions array for ActionModal and other components.
+ * A function (not a static constant) because ACTION_CONFIG's labels are
+ * resolved live from i18n — a one-time `.map()` at import time would freeze
+ * whichever language was active on first import.
  */
-export const ACTION_DEFINITIONS = Object.values(ACTION_CONFIG).map(
-  (config) => ({
+export function getActionDefinitions() {
+  return Object.values(ACTION_CONFIG).map((config) => ({
     id: config.id,
     icon: "",
     label: config.label,
@@ -361,8 +356,8 @@ export const ACTION_DEFINITIONS = Object.values(ACTION_CONFIG).map(
       icon: "",
       color: spec.color,
     })),
-  })
-);
+  }));
+}
 
 /**
  * Marker rendering utilities for basketball court visualizations
