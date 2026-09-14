@@ -1,86 +1,88 @@
 import React from "react";
-import Svg, { Rect, Path, Line, Circle, G, Text as SvgText, Defs, Marker } from "react-native-svg";
-import { useTheme } from "../../src/contexts/ThemeContext";
-import { SLATE_COLORS } from "../../src/theme";
-import { PlayScene, DrawingStroke } from "../../src/models/PlayTypes";
+import { View } from "react-native";
+import Svg, { Line, Circle, G, Text as SvgText, Defs, Marker, Path } from "react-native-svg";
+import { useClub } from "../../src/contexts/ClubContext";
+import { DEFAULT_COURT_COLORS } from "../../src/theme/colors";
+import { PlayScene, DrawingStroke, CourtMode } from "../../src/models/PlayTypes";
+import { getPlaybookViewBox } from "../../constants/courtConstants";
+import BasketballCourtSVG from "../BasketballCourtSVG";
 
 interface Props {
   scene: PlayScene;
+  mode: CourtMode;
   width: number;
   height: number;
 }
 
-export default function PlayThumbnail({ scene, width, height }: Props) {
-  const { isDark } = useTheme();
+export default function PlayThumbnail({ scene, mode, width, height }: Props) {
+  const { currentClub } = useClub();
 
-  const bg   = isDark ? SLATE_COLORS[900] : "#2d5a3d";
-  const line = isDark ? SLATE_COLORS[600] : "rgba(255,255,255,0.45)";
-  const hoop = "#f97316";
+  const bg   = currentClub?.courtBackgroundColor ?? DEFAULT_COURT_COLORS.background;
+  const line = currentClub?.courtLineColor ?? DEFAULT_COURT_COLORS.line;
 
+  const { vbW, vbH } = getPlaybookViewBox(mode);
   const strokeColors = Array.from(new Set(scene.drawings.map((s) => s.color)));
 
   return (
-    <Svg width={width} height={height} viewBox="0 0 100 85">
-      <Defs>
-        {strokeColors.map((c) => (
-          <Marker
-            key={c}
-            id={`th-${c.replace("#", "")}`}
-            viewBox="0 0 10 10"
-            refX="4" refY="5"
-            markerWidth="4" markerHeight="4"
-            orient="auto"
-          >
-            <Path d="M 0 1 L 9 5 L 0 9 Z" fill={c} />
-          </Marker>
-        ))}
-      </Defs>
+    <View style={{ width, height }}>
+      <BasketballCourtSVG
+        width={width}
+        height={height}
+        mode={mode}
+        backgroundColor={bg}
+        lineColor={line}
+        logoUri={currentClub?.logoUrl ?? null}
+      />
 
-      {/* Court background */}
-      <Rect x="0" y="0" width="100" height="85" fill={bg} />
-      <Rect x="0.5" y="0.5" width="99" height="84" fill="none" stroke={line} strokeWidth="1.2" />
-
-      {/* 3-point arc */}
-      <Line x1="8" y1="0" x2="8" y2="14" stroke={line} strokeWidth="1.2" />
-      <Line x1="92" y1="0" x2="92" y2="14" stroke={line} strokeWidth="1.2" />
-      <Path d="M 8 14 A 42 42 0 0 0 92 14" fill="none" stroke={line} strokeWidth="1.2" />
-
-      {/* Key */}
-      <Rect x="36" y="0" width="28" height="32" fill="none" stroke={line} strokeWidth="1" />
-      <Path d="M 36 32 A 14 14 0 0 0 64 32" fill="none" stroke={line} strokeWidth="1" />
-
-      {/* Hoop */}
-      <Circle cx="50" cy="15" r="2.8" fill="none" stroke={hoop} strokeWidth="1.4" />
-
-      {/* Drawings */}
-      {scene.drawings.map((stroke) => renderStroke(stroke))}
-
-      {/* Tokens */}
-      {Object.entries(scene.positions).map(([key, pos]) => {
-        if (key === "BALL") {
-          return <Circle key={key} cx={pos.x} cy={pos.y} r="3.2" fill="#f97316" />;
-        }
-        const isDef = key.startsWith("D");
-        const num   = key.replace("A", "").replace("D", "");
-        return (
-          <G key={key}>
-            <Circle
-              cx={pos.x} cy={pos.y} r="5.5"
-              fill={isDef ? "#dc2626" : "#4f46e5"}
-              stroke={isDef ? "#f87171" : "#818cf8"}
-              strokeWidth="1"
-            />
-            <SvgText
-              x={pos.x} y={pos.y + 2.5}
-              fontSize="5" fontWeight="bold"
-              fill="white" textAnchor="middle"
+      <Svg
+        width={width}
+        height={height}
+        viewBox={`0 0 ${vbW} ${vbH}`}
+        style={{ position: "absolute", top: 0, left: 0 }}
+      >
+        <Defs>
+          {strokeColors.map((c) => (
+            <Marker
+              key={c}
+              id={`th-${c.replace("#", "")}`}
+              viewBox="0 0 10 10"
+              refX="4" refY="5"
+              markerWidth="4" markerHeight="4"
+              orient="auto"
             >
-              {isDef ? `D${num}` : num}
-            </SvgText>
-          </G>
-        );
-      })}
-    </Svg>
+              <Path d="M 0 1 L 9 5 L 0 9 Z" fill={c} />
+            </Marker>
+          ))}
+        </Defs>
+
+        {scene.drawings.map((stroke) => renderStroke(stroke))}
+
+        {Object.entries(scene.positions).map(([key, pos]) => {
+          if (key === "BALL") {
+            return <Circle key={key} cx={pos.x} cy={pos.y} r="3.2" fill="#f97316" />;
+          }
+          const isDef = key.startsWith("D");
+          const num   = key.replace("A", "").replace("D", "");
+          return (
+            <G key={key}>
+              <Circle
+                cx={pos.x} cy={pos.y} r="5.5"
+                fill={isDef ? "#dc2626" : "#4f46e5"}
+                stroke={isDef ? "#f87171" : "#818cf8"}
+                strokeWidth="1"
+              />
+              <SvgText
+                x={pos.x} y={pos.y + 2.5}
+                fontSize="5" fontWeight="bold"
+                fill="white" textAnchor="middle"
+              >
+                {isDef ? `D${num}` : num}
+              </SvgText>
+            </G>
+          );
+        })}
+      </Svg>
+    </View>
   );
 }
 

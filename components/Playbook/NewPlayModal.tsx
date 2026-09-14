@@ -14,7 +14,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useTheme } from "../../src/contexts/ThemeContext";
 import { STATUS_COLORS } from "../../src/theme";
-import { PlayCategory } from "../../src/models/PlayTypes";
+import { PlayCategory, CourtMode } from "../../src/models/PlayTypes";
 
 const CATEGORIES: { key: PlayCategory; label: string; icon: string }[] = [
   { key: "OFFENSE",       label: "Attaque",  icon: "arrow-up-bold" },
@@ -27,8 +27,14 @@ const CATEGORIES: { key: PlayCategory; label: string; icon: string }[] = [
 export interface NewPlayData {
   name: string;
   category: PlayCategory;
+  courtMode: CourtMode;
   description: string;
 }
+
+const COURT_MODES: { key: CourtMode; label: string; sub: string; icon: string }[] = [
+  { key: "half", label: "Demi-terrain", sub: "Attaque / défense placée", icon: "basketball-hoop-outline" },
+  { key: "full", label: "Plein terrain", sub: "Presse, transition, remise en jeu", icon: "basketball-hoop" },
+];
 
 interface NewPlayModalProps {
   visible: boolean;
@@ -41,6 +47,7 @@ export default function NewPlayModal({ visible, onClose, onCreate }: NewPlayModa
 
   const [name, setName]           = useState("");
   const [category, setCategory]   = useState<PlayCategory>("OFFENSE");
+  const [courtMode, setCourtMode] = useState<CourtMode>("half");
   const [description, setDescription] = useState("");
 
   const nameRef = useRef<TextInput>(null);
@@ -49,6 +56,7 @@ export default function NewPlayModal({ visible, onClose, onCreate }: NewPlayModa
     if (visible) {
       setName("");
       setCategory("OFFENSE");
+      setCourtMode("half");
       setDescription("");
       setTimeout(() => nameRef.current?.focus(), 350);
     }
@@ -58,7 +66,7 @@ export default function NewPlayModal({ visible, onClose, onCreate }: NewPlayModa
 
   const handleCreate = () => {
     if (!canCreate) return;
-    onCreate({ name: name.trim(), category, description: description.trim() });
+    onCreate({ name: name.trim(), category, courtMode, description: description.trim() });
   };
 
   return (
@@ -107,6 +115,45 @@ export default function NewPlayModal({ visible, onClose, onCreate }: NewPlayModa
                 returnKeyType="next"
                 maxLength={60}
               />
+            </View>
+
+            {/* Court mode — figé après création */}
+            <View style={styles.field}>
+              <Text style={[styles.label, { color: colors.text.secondary }]}>TERRAIN</Text>
+              <View style={styles.courtModeRow}>
+                {COURT_MODES.map(({ key, label, sub, icon }) => {
+                  const active = courtMode === key;
+                  return (
+                    <TouchableOpacity
+                      key={key}
+                      onPress={() => setCourtMode(key)}
+                      style={[
+                        styles.courtModeCard,
+                        {
+                          backgroundColor: active ? `${colors.primary}18` : colors.surfaceVariant,
+                          borderColor: active ? colors.primary : colors.border,
+                          borderWidth: active ? 1.5 : 1,
+                        },
+                      ]}
+                    >
+                      <MaterialCommunityIcons
+                        name={icon as any}
+                        size={22}
+                        color={active ? colors.primary : colors.text.secondary}
+                      />
+                      <Text style={[styles.courtModeLabel, { color: active ? colors.primary : colors.text.primary }]}>
+                        {label}
+                      </Text>
+                      <Text style={[styles.courtModeSub, { color: colors.text.secondary }]}>
+                        {sub}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+              <Text style={[styles.courtModeHint, { color: colors.text.disabled }]}>
+                Ce choix ne pourra pas être modifié ensuite.
+              </Text>
             </View>
 
             {/* Category */}
@@ -208,6 +255,19 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "700",
   },
+
+  courtModeRow: { flexDirection: "row", gap: 10 },
+  courtModeCard: {
+    flex: 1,
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 14,
+    gap: 4,
+    alignItems: "flex-start",
+  },
+  courtModeLabel: { fontSize: 13, fontWeight: "800", marginTop: 2 },
+  courtModeSub: { fontSize: 10, fontWeight: "500", lineHeight: 14 },
+  courtModeHint: { fontSize: 10, fontWeight: "600", fontStyle: "italic" },
 
   categoryGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   categoryPill: {

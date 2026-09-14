@@ -13,10 +13,17 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useTheme } from "../src/contexts/ThemeContext";
 import { STATUS_COLORS } from "../src/theme";
 import { PlaybookItem, PlayCategory } from "../src/models/PlayTypes";
-import { MOCK_PLAYS, STORAGE_KEY_PLAYBOOK, DEFAULT_POSITIONS } from "../constants/mockPlays";
+import { MOCK_PLAYS, STORAGE_KEY_PLAYBOOK, DEFAULT_POSITIONS_HALF, DEFAULT_POSITIONS_FULL } from "../constants/mockPlays";
+import { getPlaybookViewBox } from "../constants/courtConstants";
 import PlayEditorModal from "./PlayEditorModal";
 import NewPlayModal, { NewPlayData } from "../components/Playbook/NewPlayModal";
 import PlayThumbnail from "../components/Playbook/PlayThumbnail";
+
+// Systèmes créés avant l'ajout du mode terrain : demi-terrain par défaut.
+const normalizePlay = (p: PlaybookItem): PlaybookItem => ({
+  ...p,
+  courtMode: p.courtMode ?? "half",
+});
 
 const CATEGORY_LABELS: Record<PlayCategory | "ALL", string> = {
   ALL: "Tous",
@@ -44,14 +51,14 @@ export default function PlaybookScreen() {
     AsyncStorage.getItem(STORAGE_KEY_PLAYBOOK)
       .then((raw) => {
         if (raw) {
-          try { setPlays(JSON.parse(raw)); }
-          catch { setPlays(MOCK_PLAYS); }
+          try { setPlays((JSON.parse(raw) as PlaybookItem[]).map(normalizePlay)); }
+          catch { setPlays(MOCK_PLAYS.map(normalizePlay)); }
         } else {
-          setPlays(MOCK_PLAYS);
+          setPlays(MOCK_PLAYS.map(normalizePlay));
           AsyncStorage.setItem(STORAGE_KEY_PLAYBOOK, JSON.stringify(MOCK_PLAYS));
         }
       })
-      .catch(() => setPlays(MOCK_PLAYS))
+      .catch(() => setPlays(MOCK_PLAYS.map(normalizePlay)))
       .finally(() => setLoading(false));
   }, []);
 
@@ -61,17 +68,20 @@ export default function PlaybookScreen() {
   };
 
   const handleCreate = (data: NewPlayData) => {
+    const defaultPositions =
+      data.courtMode === "full" ? DEFAULT_POSITIONS_FULL : DEFAULT_POSITIONS_HALF;
     const newPlay: PlaybookItem = {
       id: `play-${Date.now()}`,
       name: data.name,
       category: data.category,
+      courtMode: data.courtMode,
       description: data.description,
       createdAt: new Date().toISOString(),
       scenes: [{
         id: `scene-${Date.now()}`,
         title: "Positionnement initial",
         description: "",
-        positions: { ...DEFAULT_POSITIONS } as any,
+        positions: { ...defaultPositions } as any,
         drawings: [],
       }],
     };
@@ -212,9 +222,6 @@ interface PlayCardProps {
   onDelete: () => void;
 }
 
-const THUMB_W = 100;
-const THUMB_H = Math.round((THUMB_W * 85) / 100);
-
 function PlayCard({ play, onPress, onDelete }: PlayCardProps) {
   const { colors } = useTheme();
 
@@ -222,6 +229,10 @@ function PlayCard({ play, onPress, onDelete }: PlayCardProps) {
   const badgeColor = isDefense ? STATUS_COLORS.errorLight : colors.primary;
   const badgeBg    = `${badgeColor}20`;
   const firstScene = play.scenes[0];
+
+  const { vbW, vbH } = getPlaybookViewBox(play.courtMode);
+  const thumbW = play.courtMode === "full" ? 132 : 100;
+  const thumbH = Math.round((thumbW * vbH) / vbW);
 
   return (
     <TouchableOpacity
@@ -261,7 +272,7 @@ function PlayCard({ play, onPress, onDelete }: PlayCardProps) {
 
         {firstScene && (
           <View style={[styles.thumbWrapper, { borderColor: colors.border }]}>
-            <PlayThumbnail scene={firstScene} width={THUMB_W} height={THUMB_H} />
+            <PlayThumbnail scene={firstScene} mode={play.courtMode} width={thumbW} height={thumbH} />
           </View>
         )}
       </View>

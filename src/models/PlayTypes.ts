@@ -13,6 +13,10 @@ export type PlayCategory =
   | 'PRESS_BREAK'
   | 'OTHER';
 
+// Terrain du système : choisi à la création, jamais modifié ensuite
+// (les coordonnées d'un système vivent dans un seul repère).
+export type CourtMode = 'full' | 'half';
+
 // Player keys: A1–A5 (attackers), D1–D5 (defenders), BALL
 export type PlayerKey =
   | 'A1' | 'A2' | 'A3' | 'A4' | 'A5'
@@ -56,6 +60,7 @@ export interface PlaybookItem {
   id: string;
   name: string;
   category: PlayCategory;
+  courtMode: CourtMode;
   description: string;
   scenes: PlayScene[];
   createdAt: string;

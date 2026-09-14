@@ -5,6 +5,7 @@ import { COACH_ASSISTANT_LOGO_MARGIN } from "../src/utils/logoHelper";
 import {
   COURT_SVG_WIDTH_PORTRAIT,
   COURT_SVG_HEIGHT_PORTRAIT,
+  COURT_SVG_HEIGHT_PORTRAIT_HALF,
   COURT_SVG_WIDTH_LANDSCAPE,
   COURT_SVG_HEIGHT_LANDSCAPE,
 } from "../constants";
@@ -29,6 +30,12 @@ export interface CourtMarker {
 interface BasketballCourtSVGProps {
   width: number;
   height: number;
+  // Force l'orientation / le cadrage du terrain. Par défaut : déduit de width/height.
+  //  - 'half' → demi-terrain (moitié haute du portrait)
+  //  - 'full' → plein terrain paysage
+  mode?: "full" | "half";
+  // Masque le logo central (utile pour le tableau tactique).
+  showCenterLogo?: boolean;
   onCourtPress?: (
     svgX: number,
     svgY: number,
@@ -48,6 +55,8 @@ interface BasketballCourtSVGProps {
 export default function BasketballCourtSVG({
   width,
   height,
+  mode,
+  showCenterLogo = true,
   onCourtPress,
   backgroundColor = DEFAULT_COURT_COLORS.background,
   lineColor = DEFAULT_COURT_COLORS.line,
@@ -63,12 +72,18 @@ export default function BasketballCourtSVG({
   // Use default Coach Assistant logo if no logo is provided
   const finalLogoUri = logoUri || COACH_ASSISTANT_LOGO_MARGIN;
 
-  // Calculate court elements proportionally
-  const isPortrait = height > width;
+  // Calculate court elements proportionally.
+  // `mode` force l'orientation ; sinon on la déduit du ratio du conteneur.
+  const isHalf = mode === "half";
+  const isPortrait = mode === "half" ? true : mode === "full" ? false : height > width;
 
   // SVG viewBox dimensions for different orientations
   const SVG_WIDTH = isPortrait ? COURT_SVG_WIDTH_PORTRAIT : COURT_SVG_WIDTH_LANDSCAPE;
-  const SVG_HEIGHT = isPortrait ? COURT_SVG_HEIGHT_PORTRAIT : COURT_SVG_HEIGHT_LANDSCAPE;
+  const SVG_HEIGHT = isHalf
+    ? COURT_SVG_HEIGHT_PORTRAIT_HALF
+    : isPortrait
+    ? COURT_SVG_HEIGHT_PORTRAIT
+    : COURT_SVG_HEIGHT_LANDSCAPE;
 
   /**
    * Handle press events on the basketball court SVG
@@ -451,12 +466,37 @@ export default function BasketballCourtSVG({
    * Center circle radius: 76 (152/2 from clipPath size)
    */
   const renderCenterLogo = () => {
-    if (!finalLogoUri) return null;
+    if (!showCenterLogo || !finalLogoUri) return null;
 
     const radius = 76; // Match the filled circle radius (152/2)
     const logoSize = radius * 2;
 
-    if (isPortrait) {
+    if (isHalf) {
+      // Demi-terrain : au centre du terrain le logo serait coupé par le bord
+      // (ligne médiane) → on le place dans le rond des lancers-francs.
+      const centerX = 307.457;
+      const centerY = 236.28;
+      const halfRadius = 72;
+      const halfSize = halfRadius * 2;
+      return (
+        <G>
+          <Defs>
+            <ClipPath id="logoClipHalf">
+              <Circle cx={centerX} cy={centerY} r={halfRadius} />
+            </ClipPath>
+          </Defs>
+          <Image
+            href={finalLogoUri}
+            x={centerX - halfSize / 2}
+            y={centerY - halfSize / 2}
+            width={halfSize}
+            height={halfSize}
+            preserveAspectRatio="xMidYMid slice"
+            clipPath="url(#logoClipHalf)"
+          />
+        </G>
+      );
+    } else if (isPortrait) {
       // Portrait mode: center at (231+76, 497+76) = (307, 573)
       const centerX = 307;
       const centerY = 573;
@@ -506,12 +546,12 @@ export default function BasketballCourtSVG({
   return isPortrait ? (
     <Svg
       width="100%"
-      viewBox={`0 0 ${COURT_SVG_WIDTH_PORTRAIT} ${COURT_SVG_HEIGHT_PORTRAIT}`}
+      viewBox={`0 0 ${COURT_SVG_WIDTH_PORTRAIT} ${SVG_HEIGHT}`}
       height="100%"
       onPress={onCourtPress ? handlePress : undefined}
     >
       {/* Court background */}
-      <Path fill={backgroundColor} d={`M0 0h${COURT_SVG_WIDTH_PORTRAIT}v${COURT_SVG_HEIGHT_PORTRAIT}H0z`} />
+      <Path fill={backgroundColor} d={`M0 0h${COURT_SVG_WIDTH_PORTRAIT}v${SVG_HEIGHT}H0z`} />
 
       <Defs>
         <ClipPath id="a">

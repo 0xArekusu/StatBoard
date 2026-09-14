@@ -17,16 +17,17 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useTheme } from "../src/contexts/ThemeContext";
+import { useClub } from "../src/contexts/ClubContext";
 import { STATUS_COLORS, COMMON_COLORS } from "../src/theme";
-import { PlaybookItem, PlayScene, DrawingPoint, DrawingStroke, DrawingTool, PlayerMove } from "../src/models/PlayTypes";
-import TacticalCourtSVG from "../components/Playbook/TacticalCourtSVG";
+import { DEFAULT_COURT_COLORS } from "../src/theme/colors";
+import { PlaybookItem, PlayScene, DrawingPoint, DrawingStroke, DrawingTool, PlayerMove, CourtMode } from "../src/models/PlayTypes";
+import { getPlaybookViewBox } from "../constants/courtConstants";
+import BasketballCourtSVG from "../components/BasketballCourtSVG";
 import DrawingOverlaySVG from "../components/Playbook/DrawingOverlaySVG";
 import PlayerToken from "../components/Playbook/PlayerToken";
 import PlaybackControls from "../components/Playbook/PlaybackControls";
 import StrokeManagerSheet from "../components/Playbook/StrokeManagerSheet";
 
-const COURT_VB_W = 100;
-const COURT_VB_H = 85;
 const DRAG_THRESHOLD = 10;
 const ALL_TOKEN_KEYS = ["A1","A2","A3","A4","A5","D1","D2","D3","D4","D5","BALL"] as const;
 const ATTACKER_KEYS = ["A1","A2","A3","A4","A5"] as const;
@@ -86,6 +87,8 @@ function buildPathAnimation(
   courtW: number,
   courtH: number,
   animMap: Record<string, Animated.ValueXY>,
+  vbW: number,
+  vbH: number,
 ): Animated.CompositeAnimation | null {
   const anim = animMap[key];
   if (!anim || rawPoints.length < 2) return null;
@@ -116,8 +119,8 @@ function buildPathAnimation(
     const segLen = cum[lo + 1] - cum[lo];
     const t = segLen > 0 ? (arc - cum[lo]) / segLen : 0;
     anim.setValue({
-      x: ((points[lo].x + t * (points[lo+1].x - points[lo].x)) / COURT_VB_W) * courtW - offset,
-      y: ((points[lo].y + t * (points[lo+1].y - points[lo].y)) / COURT_VB_H) * courtH - offset,
+      x: ((points[lo].x + t * (points[lo+1].x - points[lo].x)) / vbW) * courtW - offset,
+      y: ((points[lo].y + t * (points[lo+1].y - points[lo].y)) / vbH) * courtH - offset,
     });
   });
 
@@ -145,14 +148,16 @@ function buildLinearAnimation(
   courtW: number,
   courtH: number,
   animMap: Record<string, Animated.ValueXY>,
+  vbW: number,
+  vbH: number,
 ): Animated.CompositeAnimation | null {
   const anim = animMap[key];
   if (!anim) return null;
   const offset = key === "BALL" ? 10 : 14;
   return Animated.timing(anim, {
     toValue: {
-      x: (target.x / COURT_VB_W) * courtW - offset,
-      y: (target.y / COURT_VB_H) * courtH - offset,
+      x: (target.x / vbW) * courtW - offset,
+      y: (target.y / vbH) * courtH - offset,
     },
     duration,
     easing: Easing.out(Easing.cubic),
@@ -213,9 +218,21 @@ interface PlayEditorModalProps {
 
 export default function PlayEditorModal({ play, visible, onClose, onUpdate }: PlayEditorModalProps) {
   const { colors } = useTheme();
+  const { currentClub } = useClub();
   const { width: screenW } = useWindowDimensions();
 
-  const courtW = Math.min(screenW - 32, 480);
+  // Le terrain (plein / demi) est figé à la création : un système n'a qu'un repère.
+  const courtMode: CourtMode = play?.courtMode ?? "half";
+  const { vbW: COURT_VB_W, vbH: COURT_VB_H } = getPlaybookViewBox(courtMode);
+  const courtVbRef = useRef({ w: COURT_VB_W, h: COURT_VB_H });
+  useEffect(() => { courtVbRef.current = { w: COURT_VB_W, h: COURT_VB_H }; }, [COURT_VB_W, COURT_VB_H]);
+
+  // Terrain aux couleurs du club (comme l'écran de match), logo au centre.
+  const courtBg   = currentClub?.courtBackgroundColor ?? DEFAULT_COURT_COLORS.background;
+  const courtLine = currentClub?.courtLineColor ?? DEFAULT_COURT_COLORS.line;
+  const courtLogo = currentClub?.logoUrl ?? null;
+
+  const courtW = Math.min(screenW - 32, courtMode === "full" ? 560 : 480);
   const courtH = Math.round((courtW * COURT_VB_H) / COURT_VB_W);
   const courtWRef = useRef(courtW);
   const courtHRef = useRef(courtH);
@@ -266,8 +283,8 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
       if (!anim) continue;
       const offset = key === "BALL" ? 10 : 14;
       anim.setValue({
-        x: (p.x / COURT_VB_W) * courtWRef.current - offset,
-        y: (p.y / COURT_VB_H) * courtHRef.current - offset,
+        x: (p.x / courtVbRef.current.w) * courtWRef.current - offset,
+        y: (p.y / courtVbRef.current.h) * courtHRef.current - offset,
       });
     }
   }, []);
@@ -494,6 +511,8 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
     const duration = speedRef.current;
     const cW = courtWRef.current;
     const cH = courtHRef.current;
+    const vbW = courtVbRef.current.w;
+    const vbH = courtVbRef.current.h;
     const animMap = animatedPositions.current;
 
     // Associe chaque jeton à la liste ordonnée de ses tracés (plusieurs tracés
@@ -539,14 +558,14 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
     for (const [key, strokes] of keyStrokes) {
       handled.add(key);
       const points = strokes.flatMap((s) => s.points);
-      const a = buildPathAnimation(key, points, duration, cW, cH, animMap);
+      const a = buildPathAnimation(key, points, duration, cW, cH, animMap, vbW, vbH);
       if (a) anims.push(a);
     }
 
     // Animation linéaire pour les jetons sans tracé
     for (const [key, target] of Object.entries(nextPos)) {
       if (handled.has(key)) continue;
-      const a = buildLinearAnimation(key, target, duration, cW, cH, animMap);
+      const a = buildLinearAnimation(key, target, duration, cW, cH, animMap, vbW, vbH);
       if (a) anims.push(a);
     }
 
@@ -639,9 +658,10 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
         // On ne peut pas envelopper dans measure() car c'est async → draggingKey serait null
         // lors des premiers onPanResponderMove → positionsRef jamais mis à jour.
         const { x, y } = courtAbsPos.current;
+        const vb = courtVbRef.current;
         const pt = {
-          x: Math.max(1, Math.min(99, ((gs.x0 - x) / courtW) * COURT_VB_W)),
-          y: Math.max(1, Math.min(84, ((gs.y0 - y) / courtH) * COURT_VB_H)),
+          x: Math.max(1, Math.min(vb.w - 1, ((gs.x0 - x) / courtWRef.current) * vb.w)),
+          y: Math.max(1, Math.min(vb.h - 1, ((gs.y0 - y) / courtHRef.current) * vb.h)),
         };
         if (activeToolRef.current === DrawingTool.Move) {
           let best: string | null = null, bestDist = DRAG_THRESHOLD;
@@ -689,8 +709,9 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
 
       onPanResponderMove: (_evt, gs) => {
         const { x, y } = courtAbsPos.current;
-        const cx = Math.max(1, Math.min(99, ((gs.moveX - x) / courtW) * COURT_VB_W));
-        const cy = Math.max(1, Math.min(84, ((gs.moveY - y) / courtH) * COURT_VB_H));
+        const vb = courtVbRef.current;
+        const cx = Math.max(1, Math.min(vb.w - 1, ((gs.moveX - x) / courtWRef.current) * vb.w));
+        const cy = Math.max(1, Math.min(vb.h - 1, ((gs.moveY - y) / courtHRef.current) * vb.h));
 
         if (activeToolRef.current === DrawingTool.Move) {
           const key = draggingKey.current;
@@ -698,8 +719,8 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
           positionsRef.current = { ...positionsRef.current, [key]: { x: cx, y: cy } };
           const offset = key === "BALL" ? 10 : 14;
           animatedPositions.current[key]?.setValue({
-            x: (cx / COURT_VB_W) * courtWRef.current - offset,
-            y: (cy / COURT_VB_H) * courtHRef.current - offset,
+            x: (cx / vb.w) * courtWRef.current - offset,
+            y: (cy / vb.h) * courtHRef.current - offset,
           });
         } else {
           const prev = livePointsRef.current;
@@ -943,12 +964,20 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
           <View
             ref={courtRef}
             onLayout={measureCourt}
-            style={{ width: courtW, height: courtH, borderRadius: 16, overflow: "hidden" }}
+            style={{ width: courtW, height: courtH, overflow: "hidden" }}
             {...panResponder.panHandlers}
           >
-            <TacticalCourtSVG width={courtW} height={courtH} />
+            <BasketballCourtSVG
+              width={courtW}
+              height={courtH}
+              mode={courtMode}
+              backgroundColor={courtBg}
+              lineColor={courtLine}
+              logoUri={courtLogo}
+            />
             <DrawingOverlaySVG
               width={courtW} height={courtH}
+              vbW={COURT_VB_W} vbH={COURT_VB_H}
               drawings={drawings}
               livePoints={livePoints}
               liveTool={activeTool === DrawingTool.Move ? DrawingTool.Pencil : activeTool}

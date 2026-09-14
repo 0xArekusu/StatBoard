@@ -5,6 +5,9 @@ import { DrawingStroke, DrawingPoint, DrawingTool } from "../../src/models/PlayT
 interface Props {
   width: number;
   height: number;
+  // Repère de coordonnées des tracés (dépend du mode terrain plein / demi).
+  vbW: number;
+  vbH: number;
   drawings: DrawingStroke[];
   livePoints: DrawingPoint[];
   liveTool: Exclude<DrawingTool, "move">;
@@ -13,7 +16,7 @@ interface Props {
 }
 
 export default function DrawingOverlaySVG({
-  width, height, drawings, livePoints, liveTool, liveColor, hideDrawings,
+  width, height, vbW, vbH, drawings, livePoints, liveTool, liveColor, hideDrawings,
 }: Props) {
   const liveStroke: DrawingStroke | null =
     livePoints.length >= 2
@@ -24,7 +27,7 @@ export default function DrawingOverlaySVG({
     <Svg
       width={width}
       height={height}
-      viewBox="0 0 100 85"
+      viewBox={`0 0 ${vbW} ${vbH}`}
       style={{ position: "absolute", top: 0, left: 0 }}
       pointerEvents="none"
     >

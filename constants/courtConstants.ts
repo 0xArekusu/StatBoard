@@ -14,6 +14,12 @@ export const COURT_SVG_WIDTH_PORTRAIT = 615.75;
 export const COURT_SVG_HEIGHT_PORTRAIT = 1146.75;
 
 /**
+ * Demi-terrain : moitié haute du viewBox portrait (panier en haut,
+ * ligne médiane en bord bas). Utilisé par le tableau tactique / Playbook.
+ */
+export const COURT_SVG_HEIGHT_PORTRAIT_HALF = COURT_SVG_HEIGHT_PORTRAIT / 2;
+
+/**
  * Court SVG dimensions in landscape orientation
  * Landscape viewBox: 0 0 1146.75 615.75 (wide and short)
  */
@@ -28,3 +34,22 @@ export const COURT_DISPLAY_WIDTH_PORTRAIT_MAX = 400;
 export const COURT_DISPLAY_HEIGHT_PORTRAIT_MAX = 640;
 export const COURT_DISPLAY_WIDTH_LANDSCAPE_MAX = 655;
 export const COURT_DISPLAY_HEIGHT_LANDSCAPE_MAX = 352;
+
+/**
+ * Repère de coordonnées interne du Playbook selon le mode terrain.
+ * X est normalisé, l'autre axe est dérivé du ratio réel du terrain SVG :
+ *  - half → 100 × 93.1  (demi-terrain portrait)
+ *  - full → 186.2 × 100  (plein terrain paysage)
+ */
+export function getPlaybookViewBox(mode: "full" | "half"): { vbW: number; vbH: number } {
+  if (mode === "full") {
+    return {
+      vbW: 100 * (COURT_SVG_WIDTH_LANDSCAPE / COURT_SVG_HEIGHT_LANDSCAPE),
+      vbH: 100,
+    };
+  }
+  return {
+    vbW: 100,
+    vbH: 100 * (COURT_SVG_HEIGHT_PORTRAIT_HALF / COURT_SVG_WIDTH_PORTRAIT),
+  };
+}
