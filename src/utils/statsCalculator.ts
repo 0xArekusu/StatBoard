@@ -7,6 +7,59 @@
 import { ActionType, SubstitutionSpecification, ShotSpecification } from "../models/ActionTypes";
 
 /**
+ * Shooting counters mutated by {@link accumulateShot}.
+ */
+export interface ShotStats {
+  pts: number;
+  ftm: number;
+  fta: number;
+  fg2m: number;
+  fg2a: number;
+  fg3m: number;
+  fg3a: number;
+  fgm: number;
+  fga: number;
+}
+
+/**
+ * Apply a single SHOT action to a player's shooting counters.
+ *
+ * Free throws are tracked in ftm/fta ONLY: per the FIBA Statisticians Manual
+ * (ch. 2 Field Goals vs ch. 3 Free Throws), a field goal excludes free throws,
+ * so fgm/fga always equal the 2pt + 3pt totals. Counting a free throw in both
+ * pairs is what inflated the season and match shooting lines.
+ *
+ * @param stats Counters to increment in place
+ * @param points Point value of the shot (1 = free throw, 2, 3)
+ * @param made Whether the shot was converted
+ */
+export function accumulateShot(
+  stats: ShotStats,
+  points: number | undefined,
+  made: boolean
+): void {
+  if (points === 1) {
+    stats.fta += 1;
+    if (made) {
+      stats.ftm += 1;
+      stats.pts += 1;
+    }
+    return;
+  }
+
+  stats.fga += 1;
+  if (points === 2) stats.fg2a += 1;
+  else if (points === 3) stats.fg3a += 1;
+
+  if (!made) return;
+
+  stats.fgm += 1;
+  stats.pts += points ?? 0;
+  if (points === 2) stats.fg2m += 1;
+  else if (points === 3) stats.fg3m += 1;
+}
+
+/**
  * Calculate player efficiency (EVAL) using the standard formula:
  * EVAL = (Points + Rebounds + Assists + Steals + Blocks + Fouls Drawn)
  *       - (Field Goals Missed + Free Throws Missed + Turnovers)

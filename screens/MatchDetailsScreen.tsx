@@ -67,7 +67,7 @@ import { StatsTab, CardsTab, CourtTab, EvolutionTab, TimelineTab, PlayerDetailMo
 import type { PlayerStats, Tab, TeamFilter, ActionFilterType, SortBy, SortOrder } from "../constants/matchDetailsConstants";
 import { TAB, ACTION_FILTER } from "../constants";
 import { RootStackParamList, RootNavigationProp } from "../types/navigation";
-import { calculateEfficiency, calculatePlusMinus } from "../src/utils/statsCalculator";
+import { calculateEfficiency, calculatePlusMinus, accumulateShot } from "../src/utils/statsCalculator";
 
 type MatchDetailsRouteProp = RouteProp<RootStackParamList, "MatchDetails">;
 
@@ -478,19 +478,7 @@ export default function MatchDetailsScreen() {
 
         // COUNT SHOTS AND POINTS
         if (actionType === ActionType.SHOT.toUpperCase()) {
-          if (specification === ShotSpecification.MADE) {
-            stats.pts += action.points || 0;
-            stats.fgm += 1;
-
-            if (action.points === 1) stats.ftm += 1;
-            else if (action.points === 2) stats.fg2m += 1;
-            else if (action.points === 3) stats.fg3m += 1;
-          }
-
-          stats.fga += 1;
-          if (action.points === 1) stats.fta += 1;
-          else if (action.points === 2) stats.fg2a += 1;
-          else if (action.points === 3) stats.fg3a += 1;
+          accumulateShot(stats, action.points, specification === ShotSpecification.MADE);
         }
 
         // COUNT REBOUNDS

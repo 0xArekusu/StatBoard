@@ -90,7 +90,7 @@ export default function PlayerDetailModal({
   const playerActions = useMemo(() => {
     if (!actions || actions.length === 0 || !player) return [];
     return actions.filter((action) => {
-      const playerNum = action.player_number || action.player;
+      const playerNum = action.player_number ?? action.player;
       return action.team === player.team && playerNum === player.playerNumber;
     });
   }, [actions, player]);
@@ -132,7 +132,7 @@ export default function PlayerDetailModal({
         const markerColor = getActionColor(actionType, specification, points);
 
         return {
-          id: `${action.team}-${action.player || action.player_number}-${
+          id: `${action.team}-${action.player ?? action.player_number}-${
             action.timestamp || index
           }-${index}`,
           svgX,

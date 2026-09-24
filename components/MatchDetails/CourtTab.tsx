@@ -1005,14 +1005,14 @@ export default function CourtTab({
 
                     return {
                       id: `${action.team}-${
-                        action.player || action.player_number
+                        action.player ?? action.player_number
                       }-${action.timestamp || index}-${index}`,
                       svgX,
                       svgY,
                       color: markerColor,
                       actionType: actionType,
                       specification: specification,
-                      playerNumber: action.player_number || action.player,
+                      playerNumber: action.player_number ?? action.player,
                     };
                   }) || []
                 }

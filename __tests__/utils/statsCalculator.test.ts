@@ -2,7 +2,65 @@ import {
   calculateEfficiency,
   calculateEfficiencyFromDB,
   calculatePlusMinus,
+  accumulateShot,
+  ShotStats,
 } from "../../src/utils/statsCalculator";
+
+// ─── accumulateShot ───────────────────────────────────────────────────────────
+
+describe("accumulateShot", () => {
+  const emptyShotStats = (): ShotStats => ({
+    pts: 0,
+    ftm: 0,
+    fta: 0,
+    fg2m: 0,
+    fg2a: 0,
+    fg3m: 0,
+    fg3a: 0,
+    fgm: 0,
+    fga: 0,
+  });
+
+  it("n'compte pas un lancer franc réussi dans les tirs", () => {
+    const s = emptyShotStats();
+    accumulateShot(s, 1, true);
+    expect(s).toMatchObject({ ftm: 1, fta: 1, fgm: 0, fga: 0, pts: 1 });
+  });
+
+  it("n'compte pas un lancer franc raté dans les tirs", () => {
+    const s = emptyShotStats();
+    accumulateShot(s, 1, false);
+    expect(s).toMatchObject({ ftm: 0, fta: 1, fgm: 0, fga: 0, pts: 0 });
+  });
+
+  it("compte un 2 points réussi dans fgm et fg2m", () => {
+    const s = emptyShotStats();
+    accumulateShot(s, 2, true);
+    expect(s).toMatchObject({ fgm: 1, fga: 1, fg2m: 1, fg2a: 1, pts: 2 });
+  });
+
+  it("compte un 3 points raté dans fga et fg3a seulement", () => {
+    const s = emptyShotStats();
+    accumulateShot(s, 3, false);
+    expect(s).toMatchObject({ fgm: 0, fga: 1, fg3m: 0, fg3a: 1, pts: 0 });
+  });
+
+  it("garantit fgm = fg2m + fg3m et fga = fg2a + fg3a (invariant FIBA)", () => {
+    // Ligne de Kays HAGGUI : 9/12 à 2pts, 3/10 à 3pts, 6/8 aux LF
+    const s = emptyShotStats();
+    for (let i = 0; i < 9; i++) accumulateShot(s, 2, true);
+    for (let i = 0; i < 3; i++) accumulateShot(s, 2, false);
+    for (let i = 0; i < 3; i++) accumulateShot(s, 3, true);
+    for (let i = 0; i < 7; i++) accumulateShot(s, 3, false);
+    for (let i = 0; i < 6; i++) accumulateShot(s, 1, true);
+    for (let i = 0; i < 2; i++) accumulateShot(s, 1, false);
+
+    expect(s.fgm).toBe(s.fg2m + s.fg3m);
+    expect(s.fga).toBe(s.fg2a + s.fg3a);
+    expect(s).toMatchObject({ fgm: 12, fga: 22, ftm: 6, fta: 8 });
+    expect(s.pts).toBe(9 * 2 + 3 * 3 + 6);
+  });
+});
 
 // ─── calculateEfficiency ──────────────────────────────────────────────────────
 

@@ -533,7 +533,7 @@ export class PDFExportService {
   private static calculatePlayerStats(playerId: number, actions: any[]) {
     // Filter actions for this player - handle both player_number (DB) and player (app) formats
     const playerActions = actions.filter((a) => {
-      const playerNum = a.player_number || a.player;
+      const playerNum = a.player_number ?? a.player;
       return playerNum === playerId;
     });
 

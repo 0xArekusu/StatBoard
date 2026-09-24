@@ -4,7 +4,7 @@ import { ActionType, ShotSpecification, ReboundSpecification } from '../models/A
 import { MatchDataService, PlayerData, ActionData } from '../../services/MatchDataService';
 import { ActionRepository } from './database/ActionRepository';
 import { MatchPlayerRepository } from './database/MatchPlayerRepository';
-import { calculateEfficiency } from '../utils/statsCalculator';
+import { calculateEfficiency, accumulateShot } from '../utils/statsCalculator';
 import { StatPeriod, STAT_PERIOD } from '../../constants/statsConstants';
 
 export interface PlayerSeasonData {
@@ -101,17 +101,7 @@ function computeStatsForPlayer(
     const specification = (action.specification || '').toLowerCase();
 
     if (actionType === ActionType.SHOT.toUpperCase()) {
-      if (specification === ShotSpecification.MADE) {
-        s.pts += action.points || 0;
-        s.fgm += 1;
-        if (action.points === 1) s.ftm += 1;
-        else if (action.points === 2) s.fg2m += 1;
-        else if (action.points === 3) s.fg3m += 1;
-      }
-      s.fga += 1;
-      if (action.points === 1) s.fta += 1;
-      else if (action.points === 2) s.fg2a += 1;
-      else if (action.points === 3) s.fg3a += 1;
+      accumulateShot(s, action.points, specification === ShotSpecification.MADE);
     }
     if (actionType === ActionType.REBOUND.toUpperCase()) {
       s.reb += 1;
