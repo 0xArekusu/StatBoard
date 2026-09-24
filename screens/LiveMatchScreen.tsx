@@ -1238,7 +1238,14 @@ export default function LiveMatchScreen() {
     const newActivePlayers = [...remainingPlayers, ...subSelection.in];
 
     const amIHome = match.location === TeamId.HOME;
-    const isOurTeam = isHome === amIHome;
+    // The substitution tabs are TEAM tabs, not venue tabs: TeamId.HOME is always
+    // my team and TeamId.AWAY the opponent (see getSubModalPlayers, which fills
+    // the modal from homeRoster/opponentRoster on exactly that basis).
+    // Deriving this from match.location made subRoster below resolve against the
+    // opposite roster on every away match, so `find` missed, the `continue`
+    // skipped the action silently, and those matches archived with zero
+    // substitutions — leaving +/- computed on a frozen starting five.
+    const isOurTeam = isHome;
     const subTeamName = isOurTeam ? (match.myTeamName || t("liveMatchScreen.myTeamFallback")) : (match.opponent || t("liveMatchScreen.opponentFallback"));
     const subDescription = t("liveMatchScreen.substitutionCount", { team: subTeamName, count: subSelection.in.length });
 
@@ -1247,7 +1254,9 @@ export default function LiveMatchScreen() {
       action_type: "substitution",
       timestamp: Date.now(),
       description: subDescription,
-      teamId: isHome ? TeamId.HOME : TeamId.AWAY,
+      // teamId is read in venue space elsewhere (`event.teamId === match.location`),
+      // so map from the team axis rather than reusing the tab value directly.
+      teamId: isOurTeam ? match.location : amIHome ? TeamId.AWAY : TeamId.HOME,
       period_number: quarter,
       time_in_period: periodDurationMin * 60 - timer,
       subPlayersOut: subSelection.out,

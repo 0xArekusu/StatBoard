@@ -21,7 +21,7 @@ import {
   COURT_SVG_WIDTH_LANDSCAPE,
   COURT_SVG_HEIGHT_LANDSCAPE,
 } from "../../../constants/courtConstants";
-import { calculateEfficiencyFromDB, calculatePlusMinus } from "../../utils/statsCalculator";
+import { calculateEfficiencyFromDB, calculatePlusMinus, hasSubstitutionTracking } from "../../utils/statsCalculator";
 import { AvatarService } from "../AvatarService";
 import i18n, { INTL_LOCALES, SupportedLanguage } from "../../i18n";
 
@@ -309,10 +309,15 @@ export class PDFExportService {
       is_starter: !p.isSubstitute,
     }));
     const pmMap = calculatePlusMinus(actions, allPlayersForPm);
+    // Same guard the app applies: without substitution actions the lineup can't
+    // be replayed, so +/- is unknown rather than 0.
+    const subTracked = hasSubstitutionTracking(actions);
+    const pmFor = (team: string, num: number): number | null =>
+      subTracked ? pmMap.get(`${team}-${num}`) ?? null : null;
 
     const statsMyTeam = playersMyTeam.map((player) => {
       const stats = this.calculatePlayerStats(player.id, actions);
-      stats.pm = pmMap.get(`${player.team}-${player.num}`) || 0;
+      stats.pm = pmFor(player.team, player.num);
       return {
         ...player,
         stats,
@@ -321,7 +326,7 @@ export class PDFExportService {
 
     const statsOpponent = playersOpponent.map((player) => {
       const stats = this.calculatePlayerStats(player.id, actions);
-      stats.pm = pmMap.get(`${player.team}-${player.num}`) || 0;
+      stats.pm = pmFor(player.team, player.num);
       return {
         ...player,
         stats,
@@ -633,8 +638,22 @@ export class PDFExportService {
       blk: blocks,
       tov: turnovers,
       fd: foulsDrawn,
-      pm: 0,
+      pm: 0 as number | null,
     };
+  }
+
+  /**
+   * Render a +/- value, or an em dash when the match has no substitution
+   * tracking and the value is therefore unknown rather than neutral.
+   */
+  private static formatPlusMinus(pm: number | null | undefined): string {
+    if (pm === null || pm === undefined) return "—";
+    return pm > 0 ? `+${pm}` : `${pm}`;
+  }
+
+  private static plusMinusColor(pm: number | null | undefined): string {
+    if (pm === null || pm === undefined) return "inherit";
+    return pm > 0 ? "#4CAF50" : pm < 0 ? "#F44336" : "inherit";
   }
 
   /**
@@ -679,7 +698,10 @@ export class PDFExportService {
     const blk = stats.reduce((sum, p) => sum + p.stats.blk, 0);
     const tov = stats.reduce((sum, p) => sum + p.stats.tov, 0);
     const fd = stats.reduce((sum, p) => sum + (p.stats.fd || 0), 0);
-    const pm = stats.reduce((sum, p) => sum + (p.stats.pm || 0), 0);
+    // Mirrors StatsTab: a subtotal is only meaningful if every member has a value.
+    const pm = stats.some((p) => p.stats.pm === null || p.stats.pm === undefined)
+      ? null
+      : stats.reduce((sum, p) => sum + (p.stats.pm ?? 0), 0);
     const fouls = stats.reduce(
       (sum, p) => sum + this.calculateTotalFouls(p.stats),
       0
@@ -821,7 +843,7 @@ export class PDFExportService {
           <td>${player.stats.tov}</td>
           <td>${totalFouls}</td>
           <td>${player.stats.fd}</td>
-          <td><strong style="color:${player.stats.pm > 0 ? '#4CAF50' : player.stats.pm < 0 ? '#F44336' : 'inherit'}">${player.stats.pm > 0 ? '+' + player.stats.pm : player.stats.pm}</strong></td>
+          <td><strong style="color:${PDFExportService.plusMinusColor(player.stats.pm)}">${PDFExportService.formatPlusMinus(player.stats.pm)}</strong></td>
           <td><strong>${efficiency}</strong></td>
         </tr>
         `;
@@ -848,7 +870,7 @@ export class PDFExportService {
           <td>${tot.tov}</td>
           <td>${tot.fouls}</td>
           <td>${tot.fd}</td>
-          <td>${tot.pm > 0 ? '+' + tot.pm : tot.pm}</td>
+          <td>${PDFExportService.formatPlusMinus(tot.pm)}</td>
           <td><strong>${tot.eff}</strong></td>
         </tr>`;
           return [
@@ -894,7 +916,7 @@ export class PDFExportService {
           <td>${totalsWithTeamReb.tov}</td>
           <td>${totalsWithTeamReb.fouls}</td>
           <td>${totalsWithTeamReb.fd}</td>
-          <td>${totalsWithTeamReb.pm > 0 ? '+' + totalsWithTeamReb.pm : totalsWithTeamReb.pm}</td>
+          <td>${PDFExportService.formatPlusMinus(totalsWithTeamReb.pm)}</td>
           <td><strong>${totalsWithTeamReb.eff}</strong></td>
         </tr>
       </tbody>
@@ -2386,9 +2408,9 @@ export class PDFExportService {
   <!-- Individual Player Stats Section -->
   <div class="individual-stats-section">
     ${(() => {
-      const pmLookup = new Map<string, number>();
+      const pmLookup = new Map<string, number | null>();
       [...statsMyTeam, ...statsOpponent].forEach((p: any) => {
-        pmLookup.set(`${p.team}-${p.num}`, p.stats.pm || 0);
+        pmLookup.set(`${p.team}-${p.num}`, p.stats.pm ?? null);
       });
       return players
       .filter(
@@ -2402,7 +2424,7 @@ export class PDFExportService {
       })
       .map((player) => {
         const playerStats = this.calculatePlayerStats(player.id, actions);
-        const playerPm = pmLookup.get(`${player.team}-${player.num}`) || 0;
+        const playerPm = pmLookup.get(`${player.team}-${player.num}`) ?? null;
         const allActionsCourtSVG = this.wrapCourtWithSideBanners(
           this.generatePlayerAllActionsCourt(
             actions,
@@ -2621,7 +2643,7 @@ export class PDFExportService {
           <div class="stat-box">
             <div class="stat-box-label">${i18n.t("statsTab.plusMinus")}</div>
             <div class="stat-box-value-row">
-              <div class="stat-box-value" style="color:${playerPm > 0 ? '#4CAF50' : playerPm < 0 ? '#F44336' : 'inherit'}">${playerPm > 0 ? '+' + playerPm : playerPm}</div>
+              <div class="stat-box-value" style="color:${PDFExportService.plusMinusColor(playerPm)}">${PDFExportService.formatPlusMinus(playerPm)}</div>
             </div>
           </div>
           <div class="stat-box highlight">

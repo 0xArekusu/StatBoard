@@ -4,7 +4,40 @@ import {
   calculatePlusMinus,
   accumulateShot,
   ShotStats,
+  hasSubstitutionTracking,
 } from "../../src/utils/statsCalculator";
+
+// ─── hasSubstitutionTracking ──────────────────────────────────────────────────
+
+describe("hasSubstitutionTracking", () => {
+  it("false quand aucune action n'est une substitution", () => {
+    expect(
+      hasSubstitutionTracking([
+        { action_type: "shot" },
+        { action_type: "rebound" },
+        { action_type: "foul" },
+      ])
+    ).toBe(false);
+  });
+
+  it("false sur une liste vide", () => {
+    expect(hasSubstitutionTracking([])).toBe(false);
+  });
+
+  it("true dès qu'une substitution est présente", () => {
+    expect(
+      hasSubstitutionTracking([{ action_type: "shot" }, { action_type: "substitution" }])
+    ).toBe(true);
+  });
+
+  it("accepte le champ 'type' du format app et la casse DB", () => {
+    expect(hasSubstitutionTracking([{ type: "SUBSTITUTION" }])).toBe(true);
+  });
+
+  it("ne plante pas si le type est absent", () => {
+    expect(() => hasSubstitutionTracking([{}, { action_type: undefined }])).not.toThrow();
+  });
+});
 
 // ─── accumulateShot ───────────────────────────────────────────────────────────
 

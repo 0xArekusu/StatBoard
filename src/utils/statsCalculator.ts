@@ -105,6 +105,27 @@ export function calculateEfficiency(stats: {
  * @returns Efficiency rating
  */
 /**
+ * Whether a match actually recorded substitution events.
+ *
+ * +/- is only meaningful when the on-court lineup can be replayed. Without
+ * substitution actions {@link calculatePlusMinus} keeps the starting five on
+ * court for the whole game, so every starter ends up with the full team
+ * differential and every substitute with 0.
+ *
+ * This is derived from the actions rather than read from matches.has_sub_tracking,
+ * which is written as a constant at match creation and therefore says nothing
+ * about whether substitutions were tracked. Deriving it also gives the right
+ * answer for matches already archived.
+ */
+export function hasSubstitutionTracking(
+  actions: { action_type?: string; type?: string }[]
+): boolean {
+  return actions.some(
+    (a) => ((a.action_type || a.type) ?? "").toLowerCase() === ActionType.SUBSTITUTION
+  );
+}
+
+/**
  * Calculate +/- (plus/minus) for all players in a match.
  *
  * Returns a Map with key "team-playerNumber" → plusMinus value.

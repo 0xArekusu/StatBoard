@@ -67,7 +67,7 @@ import { StatsTab, CardsTab, CourtTab, EvolutionTab, TimelineTab, PlayerDetailMo
 import type { PlayerStats, Tab, TeamFilter, ActionFilterType, SortBy, SortOrder } from "../constants/matchDetailsConstants";
 import { TAB, ACTION_FILTER } from "../constants";
 import { RootStackParamList, RootNavigationProp } from "../types/navigation";
-import { calculateEfficiency, calculatePlusMinus, accumulateShot } from "../src/utils/statsCalculator";
+import { calculateEfficiency, calculatePlusMinus, accumulateShot, hasSubstitutionTracking } from "../src/utils/statsCalculator";
 
 type MatchDetailsRouteProp = RouteProp<RootStackParamList, "MatchDetails">;
 
@@ -525,9 +525,10 @@ export default function MatchDetailsScreen() {
       }));
 
     const pmMap = calculatePlusMinus(actions || [], allPlayersForPm);
+    const subTracked = hasSubstitutionTracking(actions || []);
 
     playerStatsMap.forEach((stats, key) => {
-      stats.pm = match.has_sub_tracking ? (pmMap.get(key) ?? null) : null;
+      stats.pm = subTracked ? (pmMap.get(key) ?? null) : null;
     });
 
     // Convert map to array and sort by points (default sort)
