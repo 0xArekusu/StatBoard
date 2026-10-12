@@ -2,6 +2,7 @@ import React from "react";
 import { View } from "react-native";
 import Svg, { Line, Circle, G, Text as SvgText, Defs, Marker, Path } from "react-native-svg";
 import { useClub } from "../../src/contexts/ClubContext";
+import { useSignedUrl } from "../../hooks/useSignedUrl";
 import { DEFAULT_COURT_COLORS } from "../../src/theme/colors";
 import { PlayScene, DrawingStroke, CourtMode } from "../../src/models/PlayTypes";
 import { getPlaybookViewBox } from "../../constants/courtConstants";
@@ -21,6 +22,9 @@ export default function PlayThumbnail({ scene, mode, width, height }: Props) {
   const line = currentClub?.courtLineColor ?? DEFAULT_COURT_COLORS.line;
 
   const { vbW, vbH } = getPlaybookViewBox(mode);
+  // Chemin de stockage privé → doit être signé avant affichage.
+  const clubLogo = useSignedUrl(currentClub?.logoUrl);
+
   const strokeColors = Array.from(new Set(scene.drawings.map((s) => s.color)));
 
   return (
@@ -31,7 +35,7 @@ export default function PlayThumbnail({ scene, mode, width, height }: Props) {
         mode={mode}
         backgroundColor={bg}
         lineColor={line}
-        logoUri={currentClub?.logoUrl ?? null}
+        logoUri={clubLogo}
       />
 
       <Svg

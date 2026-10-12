@@ -18,6 +18,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useTheme } from "../src/contexts/ThemeContext";
 import { useClub } from "../src/contexts/ClubContext";
+import { useSignedUrl } from "../hooks/useSignedUrl";
 import { STATUS_COLORS, COMMON_COLORS } from "../src/theme";
 import { DEFAULT_COURT_COLORS } from "../src/theme/colors";
 import { PlaybookItem, PlayScene, DrawingPoint, DrawingStroke, DrawingTool, PlayerMove, CourtMode } from "../src/models/PlayTypes";
@@ -230,7 +231,8 @@ export default function PlayEditorModal({ play, visible, onClose, onUpdate }: Pl
   // Terrain aux couleurs du club (comme l'écran de match), logo au centre.
   const courtBg   = currentClub?.courtBackgroundColor ?? DEFAULT_COURT_COLORS.background;
   const courtLine = currentClub?.courtLineColor ?? DEFAULT_COURT_COLORS.line;
-  const courtLogo = currentClub?.logoUrl ?? null;
+  // Le logo du club est un chemin de stockage privé : il doit être signé avant affichage.
+  const courtLogo = useSignedUrl(currentClub?.logoUrl);
 
   const courtW = Math.min(screenW - 32, courtMode === "full" ? 560 : 480);
   const courtH = Math.round((courtW * COURT_VB_H) / COURT_VB_W);

@@ -17,6 +17,7 @@ import { MOCK_PLAYS, STORAGE_KEY_PLAYBOOK, DEFAULT_POSITIONS_HALF, DEFAULT_POSIT
 import { getPlaybookViewBox } from "../constants/courtConstants";
 import PlayEditorModal from "./PlayEditorModal";
 import NewPlayModal, { NewPlayData } from "../components/Playbook/NewPlayModal";
+import EditPlayModal, { EditPlayData } from "../components/Playbook/EditPlayModal";
 import PlayThumbnail from "../components/Playbook/PlayThumbnail";
 
 // Systèmes créés avant l'ajout du mode terrain : demi-terrain par défaut.
@@ -44,6 +45,7 @@ export default function PlaybookScreen() {
   const [plays, setPlays] = useState<PlaybookItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedPlay, setSelectedPlay]     = useState<PlaybookItem | null>(null);
+  const [editingPlay, setEditingPlay]       = useState<PlaybookItem | null>(null);
   const [showNewPlayModal, setShowNewPlayModal] = useState(false);
   const [activeCategory, setActiveCategory] = useState<PlayCategory | "ALL">("ALL");
 
@@ -97,6 +99,14 @@ export default function PlaybookScreen() {
       return next;
     });
     setSelectedPlay(updated);
+  };
+
+  const handleEditSave = (data: EditPlayData) => {
+    if (!editingPlay) return;
+    const updated: PlaybookItem = { ...editingPlay, name: data.name, description: data.description };
+    persist(plays.map((p) => (p.id === updated.id ? updated : p)));
+    if (selectedPlay?.id === updated.id) setSelectedPlay(updated);
+    setEditingPlay(null);
   };
 
   const handleDelete = (play: PlaybookItem) => {
@@ -192,6 +202,7 @@ export default function PlaybookScreen() {
               key={play.id}
               play={play}
               onPress={() => setSelectedPlay(play)}
+              onEdit={() => setEditingPlay(play)}
               onDelete={() => handleDelete(play)}
             />
           ))
@@ -210,6 +221,13 @@ export default function PlaybookScreen() {
         onClose={() => setShowNewPlayModal(false)}
         onCreate={handleCreate}
       />
+
+      <EditPlayModal
+        play={editingPlay}
+        visible={editingPlay !== null}
+        onClose={() => setEditingPlay(null)}
+        onSave={handleEditSave}
+      />
     </SafeAreaView>
   );
 }
@@ -219,10 +237,11 @@ export default function PlaybookScreen() {
 interface PlayCardProps {
   play: PlaybookItem;
   onPress: () => void;
+  onEdit: () => void;
   onDelete: () => void;
 }
 
-function PlayCard({ play, onPress, onDelete }: PlayCardProps) {
+function PlayCard({ play, onPress, onEdit, onDelete }: PlayCardProps) {
   const { colors } = useTheme();
 
   const isDefense  = play.category === "DEFENSE";
@@ -248,9 +267,14 @@ function PlayCard({ play, onPress, onDelete }: PlayCardProps) {
                 {CATEGORY_LABELS[play.category]}
               </Text>
             </View>
-            <TouchableOpacity onPress={onDelete} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-              <MaterialCommunityIcons name="trash-can-outline" size={15} color={colors.text.secondary} />
-            </TouchableOpacity>
+            <View style={styles.cardActions}>
+              <TouchableOpacity onPress={onEdit} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                <MaterialCommunityIcons name="pencil-outline" size={15} color={colors.text.secondary} />
+              </TouchableOpacity>
+              <TouchableOpacity onPress={onDelete} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                <MaterialCommunityIcons name="trash-can-outline" size={15} color={colors.text.secondary} />
+              </TouchableOpacity>
+            </View>
           </View>
 
           <Text style={[styles.cardTitle, { color: colors.text.primary }]} numberOfLines={2}>
@@ -330,6 +354,7 @@ const styles = StyleSheet.create({
   cardInner: { flexDirection: "row", gap: 12, alignItems: "center" },
   cardLeft: { flex: 1, gap: 5 },
   cardHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  cardActions: { flexDirection: "row", alignItems: "center", gap: 14 },
   categoryBadge: { paddingHorizontal: 10, paddingVertical: 3, borderRadius: 20 },
   categoryBadgeText: { fontSize: 10, fontWeight: "900", letterSpacing: 0.5, textTransform: "uppercase" },
   scenesChip: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 2 },
