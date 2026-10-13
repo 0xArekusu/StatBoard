@@ -391,37 +391,6 @@ export class MatchPlayerRepository implements IMatchPlayerRepository {
   }
 
   /**
-   * Add playing time to players who are currently on court
-   * Called periodically (every 5 seconds) when the game clock is running
-   */
-  async addPlayingTime(matchId: string, secondsToAdd: number): Promise<void> {
-    try {
-      const players = await this.getPlayersJson(matchId);
-
-      // Update players who are on court
-      for (const player of players) {
-        if (player.on_court === 1) {
-          player.playing_time_seconds = (player.playing_time_seconds || 0) + secondsToAdd;
-        }
-      }
-
-      await this.savePlayersJson(matchId, players);
-
-      logInfo('MatchPlayerRepository', '⏱️ Added playing time', {
-        matchId,
-        secondsAdded: secondsToAdd
-      });
-    } catch (error) {
-      logError('MatchPlayerRepository', '❌ Error adding playing time', {
-        matchId,
-        secondsToAdd,
-        error: error instanceof Error ? error.message : error
-      });
-      throw error;
-    }
-  }
-
-  /**
    * Initialize on_court status for starters at match start
    * Sets on_court = 1 for all starters
    */

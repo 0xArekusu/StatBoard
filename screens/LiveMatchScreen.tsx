@@ -745,7 +745,7 @@ export default function LiveMatchScreen() {
     user,
   });
 
-  // Save match state and playing time periodically (every 5 seconds when running)
+  // Save match state periodically (every 5 seconds when running)
   useEffect(() => {
     if (!currentMatchId || !isRunning) return;
 
@@ -753,9 +753,12 @@ export default function LiveMatchScreen() {
       // Save match state (timer, period)
       await saveMatchState();
 
-      // Add 5 seconds to playing time for all players on court
-      const playerRepo = new MatchPlayerRepository();
-      await playerRepo.addPlayingTime(currentMatchId, 5);
+      // Playing time is deliberately NOT accumulated here anymore. The old
+      // +5s-per-5s counter over-counted during the breaks between periods (it
+      // kept crediting every player flagged on_court, including those never
+      // substituted) and stopped short of each period's end. Playing time is
+      // now derived from the substitution events when match details are read,
+      // see calculatePlayingTime in src/utils/statsCalculator.
     }, 5000); // Save every 5 seconds
 
     return () => clearInterval(saveInterval);

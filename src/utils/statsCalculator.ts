@@ -200,12 +200,12 @@ export function calculatePlusMinus(
  *
  * Returns a Map with key "team-playerNumber" → seconds played.
  *
- * Why this exists: the live counter (`MatchPlayerRepository.addPlayingTime`)
- * adds a fixed +5s per 5s tick while the game clock is flagged as running.
- * That over-counts, because `on_court` stays 1 for players who never get
+ * Why this exists: playing time used to be accumulated by a live counter that
+ * added a fixed +5s per 5s tick to every player flagged as on court. That
+ * over-counted, because `on_court` stays 1 for players who never get
  * substituted (typically the opponent, whose rotation is not tracked), so time
- * keeps accruing during the breaks between periods. It also under-counts the
- * end of every period: it stops at the last recorded action, whereas a period
+ * kept accruing during the breaks between periods. It also under-counted the
+ * end of every period: it stopped at the last recorded action, whereas a period
  * is a fixed amount of playing time (10:00 for FIBA 4x10). Deriving playing
  * time from the substitution events replayed on the game clock is
  * deterministic and exact, and matches how `calculatePlusMinus` already works.
