@@ -121,7 +121,11 @@ export class MatchDataService {
         team: player.team,
         is_starter: !player.isSubstitute,
       })),
-      match.period_duration || 600
+      {
+        periodDurationSeconds: match.period_duration || 600,
+        regulationPeriods: match.total_periods || 4,
+        overtimeDurationSeconds: match.overtime_duration || 300,
+      }
     );
 
     if (playingTime.size === 0) {

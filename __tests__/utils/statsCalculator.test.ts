@@ -567,6 +567,27 @@ describe("calculatePlayingTime", () => {
     expect(pt(result, "MyTeam", 1)).toBe(1920);
   });
 
+  it("crédite une prolongation de sa durée réelle (5:00), pas 10:00", () => {
+    const players = [starter("MyTeam", 1)];
+    const actions = [1, 2, 3, 4, 5].map((p) => shot("MyTeam", 1, 2, p, 30, p));
+    const result = calculatePlayingTime(actions, players, {
+      periodDurationSeconds: 600,
+      regulationPeriods: 4,
+      overtimeDurationSeconds: 300,
+    });
+    expect(pt(result, "MyTeam", 1)).toBe(4 * 600 + 300); // 40:00 + 5:00 = 45:00
+  });
+
+  it("sans config de prolongation, les périodes au-delà sont comptées en durée réglementaire", () => {
+    // Documente le piège : c'est pourquoi les appelants doivent passer
+    // regulationPeriods + overtimeDurationSeconds quand le match peut aller en
+    // prolongation.
+    const players = [starter("MyTeam", 1)];
+    const actions = [1, 2, 3, 4, 5].map((p) => shot("MyTeam", 1, 2, p, 30, p));
+    const result = calculatePlayingTime(actions, players, 600);
+    expect(pt(result, "MyTeam", 1)).toBe(5 * 600);
+  });
+
   it("retourne une map vide quand il n'y a aucune action à rejouer", () => {
     const result = calculatePlayingTime([], [starter("MyTeam", 1)], 600);
     expect(result.size).toBe(0);

@@ -342,7 +342,11 @@ export class MatchSyncService {
         team: player.team as "MyTeam" | "Opponent",
         is_starter: !!player.is_starter,
       })),
-      match.period_duration || 600
+      {
+        periodDurationSeconds: match.period_duration || 600,
+        regulationPeriods: match.total_periods || 4,
+        overtimeDurationSeconds: match.overtime_duration || 300,
+      }
     );
 
     // Build players array (light info)

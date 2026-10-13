@@ -196,6 +196,19 @@ export function calculatePlusMinus(
 }
 
 /**
+ * Options for {@link calculatePlayingTime}.
+ */
+export interface PlayingTimeConfig {
+  /** Length of a regulation period in seconds (600 for FIBA 4x10, 480 for 4x8). */
+  periodDurationSeconds?: number;
+  /** Number of regulation periods. Periods beyond this one are overtimes.
+   *  Defaults to Infinity, i.e. every played period counts as regulation. */
+  regulationPeriods?: number;
+  /** Length of an overtime period in seconds (300 for FIBA 5:00). */
+  overtimeDurationSeconds?: number;
+}
+
+/**
  * Calculate playing time (in seconds) for every player of a match.
  *
  * Returns a Map with key "team-playerNumber" → seconds played.
@@ -214,18 +227,27 @@ export function calculatePlusMinus(
  * - Starters begin the match on court
  * - Walk each period timeline: credit the elapsed interval to whoever is on
  *   court (both teams), then apply the substitution
- * - Credit the remainder of the period up to `periodDurationSeconds`, so a
- *   player who never leaves ends on the full period duration (4 x 600s = 40:00
- *   for a 4 x 10min game), and one who never enters stays at 0
+ * - Credit the remainder of the period up to its full length, so a player who
+ *   never leaves ends on the full match duration (4 x 600s = 40:00 for a 4x10
+ *   game) and one who never enters stays at 0
  *
- * @param periodDurationSeconds Official length of one period in seconds
- *        (600 for FIBA 4x10, 480 for 4x8 youth formats).
+ * @param config Either the regulation period length in seconds (shorthand for
+ *        the common case), or a full {@link PlayingTimeConfig}. Pass
+ *        `regulationPeriods` + `overtimeDurationSeconds` whenever the match may
+ *        go to overtime, otherwise extra periods would be credited a full
+ *        regulation length (600s) instead of an overtime one (300s).
  */
 export function calculatePlayingTime(
   actions: { action_type?: string; type?: string; specification: string; team: string; player_number?: number; player?: number; period_number: number; time_in_period: number; action_order?: number }[],
   players: { player_number: number; team: "MyTeam" | "Opponent"; is_starter: boolean }[],
-  periodDurationSeconds: number = 600
+  config: number | PlayingTimeConfig = {}
 ): Map<string, number> {
+  const {
+    periodDurationSeconds = 600,
+    regulationPeriods = Number.POSITIVE_INFINITY,
+    overtimeDurationSeconds = 300,
+  } = typeof config === "number" ? { periodDurationSeconds: config } : config;
+
   const playingTime = new Map<string, number>();
 
   // Without a single recorded action there is nothing to replay: return an
@@ -233,6 +255,10 @@ export function calculatePlayingTime(
   if (actions.length === 0 || periodDurationSeconds <= 0) {
     return playingTime;
   }
+
+  // Periods past the regulation ones are overtimes and run shorter.
+  const periodLength = (period: number) =>
+    period > regulationPeriods ? overtimeDurationSeconds : periodDurationSeconds;
 
   for (const p of players) {
     playingTime.set(`${p.team}-${p.player_number}`, 0);
@@ -261,6 +287,8 @@ export function calculatePlayingTime(
   );
 
   for (let period = 1; period <= lastPeriod; period++) {
+    const length = periodLength(period);
+
     const events = substitutions
       .filter(s => (s.period_number || 1) === period)
       .sort((a, b) => {
@@ -273,10 +301,7 @@ export function calculatePlayingTime(
     let cursor = 0;
 
     for (const event of events) {
-      const at = Math.min(
-        Math.max(event.time_in_period ?? 0, 0),
-        periodDurationSeconds
-      );
+      const at = Math.min(Math.max(event.time_in_period ?? 0, 0), length);
       const elapsed = at - cursor;
 
       if (elapsed > 0) {
@@ -298,7 +323,7 @@ export function calculatePlayingTime(
 
     // A period is a fixed amount of playing time: credit what remains even if
     // no action was recorded in the closing seconds.
-    const remainder = periodDurationSeconds - cursor;
+    const remainder = length - cursor;
     if (remainder > 0) {
       credit("MyTeam", remainder);
       credit("Opponent", remainder);
