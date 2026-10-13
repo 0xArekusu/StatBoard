@@ -195,6 +195,119 @@ export function calculatePlusMinus(
   return pmMap;
 }
 
+/**
+ * Calculate playing time (in seconds) for every player of a match.
+ *
+ * Returns a Map with key "team-playerNumber" → seconds played.
+ *
+ * Why this exists: the live counter (`MatchPlayerRepository.addPlayingTime`)
+ * adds a fixed +5s per 5s tick while the game clock is flagged as running.
+ * That over-counts, because `on_court` stays 1 for players who never get
+ * substituted (typically the opponent, whose rotation is not tracked), so time
+ * keeps accruing during the breaks between periods. It also under-counts the
+ * end of every period: it stops at the last recorded action, whereas a period
+ * is a fixed amount of playing time (10:00 for FIBA 4x10). Deriving playing
+ * time from the substitution events replayed on the game clock is
+ * deterministic and exact, and matches how `calculatePlusMinus` already works.
+ *
+ * Algorithm:
+ * - Starters begin the match on court
+ * - Walk each period timeline: credit the elapsed interval to whoever is on
+ *   court (both teams), then apply the substitution
+ * - Credit the remainder of the period up to `periodDurationSeconds`, so a
+ *   player who never leaves ends on the full period duration (4 x 600s = 40:00
+ *   for a 4 x 10min game), and one who never enters stays at 0
+ *
+ * @param periodDurationSeconds Official length of one period in seconds
+ *        (600 for FIBA 4x10, 480 for 4x8 youth formats).
+ */
+export function calculatePlayingTime(
+  actions: { action_type?: string; type?: string; specification: string; team: string; player_number?: number; player?: number; period_number: number; time_in_period: number; action_order?: number }[],
+  players: { player_number: number; team: "MyTeam" | "Opponent"; is_starter: boolean }[],
+  periodDurationSeconds: number = 600
+): Map<string, number> {
+  const playingTime = new Map<string, number>();
+
+  // Without a single recorded action there is nothing to replay: return an
+  // empty map so callers can keep the value they already hold.
+  if (actions.length === 0 || periodDurationSeconds <= 0) {
+    return playingTime;
+  }
+
+  for (const p of players) {
+    playingTime.set(`${p.team}-${p.player_number}`, 0);
+  }
+
+  // Who is on court, per team (starters open the match)
+  const onCourt: Record<"MyTeam" | "Opponent", Set<number>> = {
+    MyTeam: new Set(players.filter(p => p.team === "MyTeam" && p.is_starter).map(p => p.player_number)),
+    Opponent: new Set(players.filter(p => p.team === "Opponent" && p.is_starter).map(p => p.player_number)),
+  };
+
+  const credit = (team: "MyTeam" | "Opponent", seconds: number) => {
+    if (seconds <= 0) return;
+    for (const num of onCourt[team]) {
+      const key = `${team}-${num}`;
+      playingTime.set(key, (playingTime.get(key) ?? 0) + seconds);
+    }
+  };
+
+  const substitutions = actions.filter(
+    a => ((a.action_type || a.type) ?? "").toLowerCase() === ActionType.SUBSTITUTION
+  );
+  const lastPeriod = actions.reduce(
+    (max, a) => Math.max(max, a.period_number || 1),
+    1
+  );
+
+  for (let period = 1; period <= lastPeriod; period++) {
+    const events = substitutions
+      .filter(s => (s.period_number || 1) === period)
+      .sort((a, b) => {
+        if (a.time_in_period !== b.time_in_period) {
+          return a.time_in_period - b.time_in_period;
+        }
+        return (a.action_order ?? 0) - (b.action_order ?? 0);
+      });
+
+    let cursor = 0;
+
+    for (const event of events) {
+      const at = Math.min(
+        Math.max(event.time_in_period ?? 0, 0),
+        periodDurationSeconds
+      );
+      const elapsed = at - cursor;
+
+      if (elapsed > 0) {
+        credit("MyTeam", elapsed);
+        credit("Opponent", elapsed);
+        cursor = at;
+      }
+
+      const team = event.team as "MyTeam" | "Opponent";
+      const num = event.player_number ?? event.player ?? 0;
+      const spec = (event.specification ?? "").toLowerCase();
+
+      if (spec === SubstitutionSpecification.OUT) {
+        onCourt[team]?.delete(num);
+      } else if (spec === SubstitutionSpecification.IN) {
+        onCourt[team]?.add(num);
+      }
+    }
+
+    // A period is a fixed amount of playing time: credit what remains even if
+    // no action was recorded in the closing seconds.
+    const remainder = periodDurationSeconds - cursor;
+    if (remainder > 0) {
+      credit("MyTeam", remainder);
+      credit("Opponent", remainder);
+    }
+  }
+
+  return playingTime;
+}
+
 export function calculateEfficiencyFromDB(stats: {
   points: number;
   orb: number;

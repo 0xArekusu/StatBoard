@@ -2,6 +2,7 @@ import {
   calculateEfficiency,
   calculateEfficiencyFromDB,
   calculatePlusMinus,
+  calculatePlayingTime,
   accumulateShot,
   ShotStats,
   hasSubstitutionTracking,
@@ -470,5 +471,113 @@ describe("calculatePlusMinus", () => {
     expect(result.has("MyTeam-1")).toBe(true);
     expect(result.has("MyTeam-2")).toBe(true);
     expect(pm(result, "MyTeam", 1)).toBe(0);
+  });
+});
+
+// ─── calculatePlayingTime ────────────────────────────────────────────────────
+
+describe("calculatePlayingTime", () => {
+  const pt = (map: Map<string, number>, team: "MyTeam" | "Opponent", num: number) =>
+    map.get(`${team}-${num}`) ?? 0;
+
+  it("un titulaire jamais remplacé cumule la durée complète (4x10 = 40:00)", () => {
+    const players = [starter("MyTeam", 7)];
+    const actions = [1, 2, 3, 4].map((p) => shot("MyTeam", 7, 2, p, 30, p));
+    const result = calculatePlayingTime(actions, players, 600);
+    expect(pt(result, "MyTeam", 7)).toBe(2400);
+  });
+
+  it("atteint la fin de période même si la dernière action est notée avant", () => {
+    // Régression : l'ancien cumul par ticks s'arrêtait à la dernière action
+    // (P1 = 598s, P3 = 587s → 39:45 au lieu de 40:00)
+    const players = [starter("MyTeam", 1)];
+    const actions = [
+      shot("MyTeam", 1, 2, 1, 598, 1),
+      shot("MyTeam", 1, 2, 2, 600, 2),
+      shot("MyTeam", 1, 2, 3, 587, 3),
+      shot("MyTeam", 1, 2, 4, 600, 4),
+    ];
+    const result = calculatePlayingTime(actions, players, 600);
+    expect(pt(result, "MyTeam", 1)).toBe(2400);
+  });
+
+  it("le cas Nanterre : 5 adversaires jamais remplacés finissent à 40:00", () => {
+    // Régression du bug remonté par un coach : les 5 joueurs adverses
+    // affichaient 45:40 parce que le compteur tournait pendant les pauses
+    const players = [
+      starter("MyTeam", 1), starter("MyTeam", 2), starter("MyTeam", 3),
+      starter("MyTeam", 4), starter("MyTeam", 5),
+      starter("Opponent", 1), starter("Opponent", 2), starter("Opponent", 3),
+      starter("Opponent", 4), starter("Opponent", 5),
+    ];
+    const actions = [1, 2, 3, 4].map((p) => shot("MyTeam", 1, 2, p, 60, p));
+    const result = calculatePlayingTime(actions, players, 600);
+    for (let n = 1; n <= 5; n++) {
+      expect(pt(result, "Opponent", n)).toBe(2400);
+    }
+    expect(pt(result, "MyTeam", 1)).toBe(2400);
+  });
+
+  it("crédite exactement le temps passé sur le terrain", () => {
+    const players = [starter("MyTeam", 1), bench("MyTeam", 9)];
+    const actions = [
+      sub("MyTeam", 9, "in", 1, 300, 1),
+      sub("MyTeam", 1, "out", 1, 300, 2),
+      shot("MyTeam", 9, 2, 2, 10, 3),
+    ];
+    const result = calculatePlayingTime(actions, players, 600);
+    expect(pt(result, "MyTeam", 1)).toBe(300);        // sorti à 5:00 en P1
+    expect(pt(result, "MyTeam", 9)).toBe(300 + 600);  // entré en P1, présent en P2
+  });
+
+  it("cumule plusieurs passages sur le terrain", () => {
+    const players = [starter("MyTeam", 1), bench("MyTeam", 9)];
+    const actions = [
+      sub("MyTeam", 9, "in", 1, 120, 1),
+      sub("MyTeam", 1, "out", 1, 120, 2),
+      sub("MyTeam", 1, "in", 1, 300, 3),
+      sub("MyTeam", 9, "out", 1, 300, 4),
+      shot("MyTeam", 1, 2, 2, 10, 5),
+    ];
+    const result = calculatePlayingTime(actions, players, 600);
+    expect(pt(result, "MyTeam", 1)).toBe(120 + 300 + 600); // P1: 0→2:00 puis 5:00→10:00
+    expect(pt(result, "MyTeam", 9)).toBe(180);             // P1: 2:00→5:00
+  });
+
+  it("un remplaçant qui n'entre jamais reste à 0", () => {
+    const players = [starter("MyTeam", 1), bench("MyTeam", 12)];
+    const actions = [1, 2, 3, 4].map((p) => shot("MyTeam", 1, 2, p, 10, p));
+    const result = calculatePlayingTime(actions, players, 600);
+    expect(pt(result, "MyTeam", 1)).toBe(2400);
+    expect(pt(result, "MyTeam", 12)).toBe(0);
+  });
+
+  it("le temps court pour les deux équipes en parallèle", () => {
+    const players = [starter("MyTeam", 1), starter("Opponent", 1)];
+    const actions = [shot("MyTeam", 1, 2, 1, 10, 1)];
+    const result = calculatePlayingTime(actions, players, 600);
+    expect(pt(result, "MyTeam", 1)).toBe(600);
+    expect(pt(result, "Opponent", 1)).toBe(600);
+  });
+
+  it("respecte la durée de période passée (4x8 = 32:00)", () => {
+    const players = [starter("MyTeam", 1)];
+    const actions = [1, 2, 3, 4].map((p) => shot("MyTeam", 1, 2, p, 10, p));
+    const result = calculatePlayingTime(actions, players, 480);
+    expect(pt(result, "MyTeam", 1)).toBe(1920);
+  });
+
+  it("retourne une map vide quand il n'y a aucune action à rejouer", () => {
+    const result = calculatePlayingTime([], [starter("MyTeam", 1)], 600);
+    expect(result.size).toBe(0);
+  });
+
+  it("ne plante pas sur des actions incomplètes", () => {
+    const players = [starter("MyTeam", 1)];
+    const badActions = [
+      { action_type: undefined as any, specification: "in" as any, team: "MyTeam", period_number: 1, time_in_period: 10, action_order: 1 },
+      { action_type: "substitution", specification: undefined as any, team: "MyTeam", player_number: 1, period_number: 1, time_in_period: 20, action_order: 2 },
+    ];
+    expect(() => calculatePlayingTime(badActions as any, players, 600)).not.toThrow();
   });
 });

@@ -43,6 +43,7 @@ import {
   ActionType,
   ShotSpecification,
 } from "../../models/ActionTypes";
+import { calculatePlayingTime } from "../../utils/statsCalculator";
 
 export interface SyncResult {
   success: boolean;
@@ -329,6 +330,21 @@ export class MatchSyncService {
       }
     }
 
+    // Derive playing time from the substitution events rather than trusting the
+    // live tick counter, which over-counts during the breaks between periods
+    // and stops short of each period's end. See calculatePlayingTime for the
+    // full rationale. An empty map means "nothing to replay" → keep the stored
+    // value.
+    const playingTimeByPlayer = calculatePlayingTime(
+      actions,
+      matchPlayers.map((player) => ({
+        player_number: player.player_number,
+        team: player.team as "MyTeam" | "Opponent",
+        is_starter: !!player.is_starter,
+      })),
+      match.period_duration || 600
+    );
+
     // Build players array (light info)
     const playersArray = matchPlayers.map((player) => ({
       player_id: player.player_id || null,
@@ -338,7 +354,10 @@ export class MatchSyncService {
       is_starter: player.is_starter,
       photo_url: player.photo_url || null,
       on_court: player.on_court || 0,
-      playing_time_seconds: player.playing_time_seconds || 0,
+      playing_time_seconds:
+        playingTimeByPlayer.get(`${player.team}-${player.player_number}`) ??
+        player.playing_time_seconds ??
+        0,
     }));
 
     // Build player_stats object: { [player_id]: { actions: [...] } }

@@ -248,5 +248,50 @@ describe("MatchDataService", () => {
 
       expect(result.actions).toHaveLength(0);
     });
+
+    it("recalcule le temps de jeu d'un match terminé (bug 45:40 → 40:00)", async () => {
+      // Régression : le compteur live gonflait le temps de jeu (45:40 = 2740s
+      // pour un joueur qui n'est jamais sorti) parce qu'il continuait de
+      // tourner pendant les pauses entre périodes. Le recalcul depuis les
+      // actions doit rendre la durée réelle de la période jouée.
+      const supabaseMatch = {
+        players: [
+          { player_id: "p1", player_number: 7, player_name: "A", team: Team.MY_TEAM, is_starter: true, photo_url: null, playing_time_seconds: 2740 },
+          { player_id: "p2", player_number: 8, player_name: "B", team: Team.OPPONENT, is_starter: true, photo_url: null, playing_time_seconds: 2740 },
+        ],
+        player_stats: {
+          p1: {
+            actions: [{ action_type: "2pt_made", specification: "layup", points: 2, team: Team.MY_TEAM, timestamp: "2024-01-01T00:00:30Z", period_number: 1, time_in_period: 30, semantic_x: 0, semantic_y: 0 }],
+          },
+        },
+      };
+      mockSingle.mockResolvedValue({ data: supabaseMatch, error: null });
+
+      const match = makeSyncedMatch({ status: "completed", period_duration: 600 });
+      const result = await service.loadMatchDetails(match as any);
+
+      // Une seule période jouée → 600s, pas 2740s
+      expect(result.players[0].playingTimeSeconds).toBe(600);
+      expect(result.players[1].playingTimeSeconds).toBe(600);
+    });
+
+    it("ne recalcule pas un match non terminé", async () => {
+      const supabaseMatch = {
+        players: [
+          { player_id: "p1", player_number: 7, player_name: "A", team: Team.MY_TEAM, is_starter: true, photo_url: null, playing_time_seconds: 123 },
+        ],
+        player_stats: {
+          p1: {
+            actions: [{ action_type: "2pt_made", specification: "layup", points: 2, team: Team.MY_TEAM, timestamp: "2024-01-01T00:00:30Z", period_number: 1, time_in_period: 30, semantic_x: 0, semantic_y: 0 }],
+          },
+        },
+      };
+      mockSingle.mockResolvedValue({ data: supabaseMatch, error: null });
+
+      const match = makeSyncedMatch({ status: "in_progress", period_duration: 600 });
+      const result = await service.loadMatchDetails(match as any);
+
+      expect(result.players[0].playingTimeSeconds).toBe(123);
+    });
   });
 });

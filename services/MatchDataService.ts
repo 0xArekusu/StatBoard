@@ -1,6 +1,7 @@
-import { Match, Team } from "../src/models/types";
+import { Match, MatchStatus, Team } from "../src/models/types";
 import { ActionRepository } from "../src/services/database/ActionRepository";
 import { MatchPlayerRepository } from "../src/services/database/MatchPlayerRepository";
+import { calculatePlayingTime } from "../src/utils/statsCalculator";
 import { SupabaseClient } from "@supabase/supabase-js";
 
 /**
@@ -75,10 +76,68 @@ export class MatchDataService {
     const isSynced = Boolean(match.synced_to_server);
 
     if (hasSupabaseId && isSynced) {
-      return this.loadFromSupabase((match as any).supabase_id);
+      const data = await this.loadFromSupabase((match as any).supabase_id);
+      return this.withComputedPlayingTime(data, match);
     } else {
-      return this.loadFromLocal(matchId);
+      const data = await this.loadFromLocal(matchId);
+      return this.withComputedPlayingTime(data, match);
     }
+  }
+
+  /**
+   * Replace the stored playing time with a value derived from the substitution
+   * events replayed on the game clock.
+   *
+   * The stored `playing_time_seconds` is produced by a live tick counter that
+   * adds a fixed +5s per 5s tick: it over-counts (players who are never
+   * substituted keep accruing time during the breaks between periods) and it
+   * stops short of each period's end. Recomputing on read fixes both the
+   * matches being displayed now and the ones already recorded.
+   *
+   * Only completed matches are recomputed, and only when there is something to
+   * replay; otherwise the stored value is returned untouched.
+   */
+  private withComputedPlayingTime(
+    data: MatchDetailsData,
+    match: Match
+  ): MatchDetailsData {
+    const isCompleted = String(match.status) === MatchStatus.COMPLETED;
+
+    if (!isCompleted || data.actions.length === 0 || data.players.length === 0) {
+      return data;
+    }
+
+    const playingTime = calculatePlayingTime(
+      data.actions.map((action) => ({
+        type: action.type,
+        specification: action.specification ?? "",
+        team: action.team,
+        player: action.player,
+        period_number: action.period_number,
+        time_in_period: action.time_in_period,
+      })),
+      data.players.map((player) => ({
+        player_number: player.num,
+        team: player.team,
+        is_starter: !player.isSubstitute,
+      })),
+      match.period_duration || 600
+    );
+
+    if (playingTime.size === 0) {
+      return data;
+    }
+
+    return {
+      ...data,
+      players: data.players.map((player) => ({
+        ...player,
+        playingTimeSeconds:
+          playingTime.get(`${player.team}-${player.num}`) ??
+          player.playingTimeSeconds ??
+          0,
+      })),
+    };
   }
 
   /**
