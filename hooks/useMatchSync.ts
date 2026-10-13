@@ -21,6 +21,7 @@ import { ROUTES } from "../constants/routes";
 import { TeamId } from "../constants/liveMatchConstants";
 import { ANALYTICS_EVENTS } from "../constants/analyticsEvents";
 import { MatchSyncService } from "../src/services/api/MatchSyncService";
+import { calculatePlayingTime } from "../src/utils/statsCalculator";
 import { recordReviewPromptSignal } from "./useReviewPrompt";
 
 interface UseMatchSyncProps {
@@ -234,6 +235,56 @@ export function useMatchSync({
     }
   };
 
+  /**
+   * Hand the details screen a playing time derived from the substitution
+   * events instead of the stored value.
+   *
+   * The details screen recomputes it anyway, but passing the right figure
+   * straight away avoids displaying a wrong one during the transition. The
+   * stored value used to come from a counter that over-counted during the
+   * breaks between periods (see calculatePlayingTime).
+   */
+  const withComputedPlayingTime = (
+    matchLike: { period_duration?: number; total_periods?: number; overtime_duration?: number },
+    players: any[],
+    actions: any[]
+  ): any[] => {
+    if (players.length === 0 || actions.length === 0) {
+      return players;
+    }
+
+    const computed = calculatePlayingTime(
+      actions.map((action: any) => ({
+        type: action.type ?? action.action_type,
+        specification: action.specification ?? "",
+        team: action.team,
+        player: action.player ?? action.player_number,
+        period_number: action.period_number,
+        time_in_period: action.time_in_period,
+      })),
+      players.map((player: any) => ({
+        player_number: player.num,
+        team: player.team,
+        is_starter: !player.isSubstitute,
+      })),
+      {
+        periodDurationSeconds: matchLike?.period_duration || 600,
+        regulationPeriods: matchLike?.total_periods || 4,
+        overtimeDurationSeconds: matchLike?.overtime_duration || 300,
+      }
+    );
+
+    if (computed.size === 0) {
+      return players;
+    }
+
+    return players.map((player: any) => ({
+      ...player,
+      playingTimeSeconds:
+        computed.get(`${player.team}-${player.num}`) ?? player.playingTimeSeconds,
+    }));
+  };
+
   const fetchAndNavigateToSyncedMatch = async (matchId: string) => {
     try {
       // Fetch match with embedded players and stats
@@ -312,7 +363,7 @@ export function useMatchSync({
       navigation.navigate(ROUTES.MATCH_DETAILS, {
         match: supabaseMatch,
         actions: actionDataList,
-        players: players,
+        players: withComputedPlayingTime(supabaseMatch, players, actionDataList),
         fromLiveMatch: true,
       });
     } catch (fetchError) {
@@ -383,7 +434,7 @@ export function useMatchSync({
       navigation.navigate(ROUTES.MATCH_DETAILS, {
         match: localMatch,
         actions: actions,
-        players: players,
+        players: withComputedPlayingTime(localMatch, players, actions),
         fromLiveMatch: true,
         isLocalMatch: true,
       });
