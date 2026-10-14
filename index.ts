@@ -1,5 +1,10 @@
 import { registerRootComponent } from 'expo';
 
+// Polyfill `Alert` pour le web : react-native-web n'implémente pas Alert,
+// les erreurs seraient donc invisibles (voir utils/webAlert.ts).
+// À importer AVANT tout composant utilisant Alert.
+import './utils/webAlert';
+
 import App from './App';
 
 // registerRootComponent calls AppRegistry.registerComponent('main', () => App);
