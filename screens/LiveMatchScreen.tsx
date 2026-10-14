@@ -317,6 +317,19 @@ export default function LiveMatchScreen() {
   const [eventToDelete, setEventToDelete] = useState<MatchEvent | null>(null);
 
   // ========================================
+  // GAME CLOCK HELPERS
+  // ========================================
+  // La durée d'une période dépend de la période : au-delà des périodes
+  // réglementaires on est en prolongation, qui a sa propre durée.
+  const getPeriodDurationSeconds = (period: number) =>
+    period > maxPeriods ? overtimeDuration * 60 : periodDurationMin * 60;
+
+  // Temps écoulé dans la période, tel qu'il est stocké sur chaque action.
+  // Toujours passer par cette fonction : `periodDurationMin * 60 - timer`
+  // décalait les actions de prolongation d'une durée de période entière.
+  const getTimeInPeriod = () => getPeriodDurationSeconds(quarter) - timer;
+
+  // ========================================
   // ACTION WORKFLOW STATE
   // ========================================
   // Toolbar filters and view settings
@@ -508,9 +521,21 @@ export default function LiveMatchScreen() {
           }
 
           // Restore timer and period state
-          setQuarter(existingMatch.current_period || 1);
-          // Timer represents time REMAINING in period, not elapsed
-          const periodDurationSeconds = existingMatch.period_duration || 600;
+          const restoredPeriod = existingMatch.current_period || 1;
+          const restoredOvertimeSeconds =
+            existingMatch.overtime_duration || 300;
+          setQuarter(restoredPeriod);
+          // La durée de prolongation est éditable avant de la lancer : il faut
+          // la relire, sinon getPeriodDurationSeconds retomberait sur le défaut.
+          setOvertimeDuration(restoredOvertimeSeconds / 60);
+          // Timer represents time REMAINING in period, not elapsed.
+          // `time_elapsed` est relatif à la période en cours : en prolongation
+          // c'est la durée de prolongation qui fait référence, pas celle d'une
+          // période réglementaire.
+          const periodDurationSeconds =
+            restoredPeriod > (existingMatch.total_periods || 4)
+              ? restoredOvertimeSeconds
+              : existingMatch.period_duration || 600;
           const timeElapsed = existingMatch.time_elapsed || 0;
           const timeRemaining = Math.max(
             0,
@@ -704,7 +729,9 @@ export default function LiveMatchScreen() {
     if (!currentMatchIdRef.current) return;
 
     try {
-      const periodDurationSeconds = (match.periodDuration || 10) * 60;
+      const periodDurationSeconds = getPeriodDurationSeconds(
+        quarterRef.current,
+      );
       const timeElapsed = periodDurationSeconds - timerRef.current;
 
       await matchManager.updateMatchState(
@@ -723,6 +750,14 @@ export default function LiveMatchScreen() {
       logError("LiveMatchScreen", "❌ Failed to save match state", error);
     }
   };
+
+  // Le handler de démontage ne tourne qu'une fois (deps []) : il ne peut donc
+  // pas lire `quarter` ni la durée de prolongation de la dernière frame. On
+  // passe par une ref pour qu'il appelle toujours la version à jour.
+  const saveMatchStateRef = useRef(saveMatchState);
+  useEffect(() => {
+    saveMatchStateRef.current = saveMatchState;
+  });
 
   // ========================================
   // MATCH SYNC HOOK
@@ -768,23 +803,14 @@ export default function LiveMatchScreen() {
   useEffect(() => {
     return () => {
       // Save on unmount
-      if (currentMatchIdRef.current) {
-        const periodDurationSeconds = (match.periodDuration || 10) * 60;
-        const timeElapsed = periodDurationSeconds - timerRef.current;
-
-        matchManager
-          .updateMatchState(
-            currentMatchIdRef.current,
-            quarterRef.current,
-            timeElapsed,
-          )
-          .then(() => {
-            logInfo("LiveMatchScreen", "💾 Match state saved on unmount");
-          })
-          .catch((error) => {
-            logError("LiveMatchScreen", "❌ Failed to save on unmount", error);
-          });
-      }
+      saveMatchStateRef
+        .current()
+        .then(() => {
+          logInfo("LiveMatchScreen", "💾 Match state saved on unmount");
+        })
+        .catch((error) => {
+          logError("LiveMatchScreen", "❌ Failed to save on unmount", error);
+        });
     };
   }, []); // Empty deps - only run on unmount
 
@@ -1261,7 +1287,7 @@ export default function LiveMatchScreen() {
       // so map from the team axis rather than reusing the tab value directly.
       teamId: isOurTeam ? match.location : amIHome ? TeamId.AWAY : TeamId.HOME,
       period_number: quarter,
-      time_in_period: periodDurationMin * 60 - timer,
+      time_in_period: getTimeInPeriod(),
       subPlayersOut: subSelection.out,
       subPlayersIn: subSelection.in,
     };
@@ -1303,7 +1329,7 @@ export default function LiveMatchScreen() {
       const actionRepo = new ActionRepository();
       const subTeam = isOurTeam ? Team.MY_TEAM : Team.OPPONENT;
       const subRoster = isOurTeam ? homeRoster : opponentRoster;
-      const timeInPeriod = periodDurationMin * 60 - timer;
+      const timeInPeriod = getTimeInPeriod();
       let orderOffset = 0;
 
       for (const playerId of subSelection.out) {
@@ -1457,7 +1483,7 @@ export default function LiveMatchScreen() {
       description: desc,
       coordinates: normalizedCoords,
       period_number: quarter,
-      time_in_period: periodDurationMin * 60 - timer,
+      time_in_period: getTimeInPeriod(),
     };
 
     const updatedMatch = { ...match };
@@ -1552,7 +1578,7 @@ export default function LiveMatchScreen() {
         description: t("liveMatchScreen.actionLog.teamRebound"),
         coordinates: normalizedCoords,
         period_number: quarter,
-        time_in_period: periodDurationMin * 60 - timer,
+        time_in_period: getTimeInPeriod(),
       }, ...updatedMatch.events];
       setMatch(updatedMatch);
       setChainContext(null);
@@ -1601,7 +1627,7 @@ export default function LiveMatchScreen() {
         description: `#${foulDrawnPlayerNumber} ${foulDrawnPlayerName} — ${t("liveMatchScreen.actionLog.foulWithType", { type: getFoulSpecificationLabel(foulType) })}`,
         coordinates: normalizedCoords,
         period_number: quarter,
-        time_in_period: periodDurationMin * 60 - timer,
+        time_in_period: getTimeInPeriod(),
       }, ...updatedMatch.events];
       setMatch(updatedMatch);
     }
@@ -1647,7 +1673,7 @@ export default function LiveMatchScreen() {
         description: `#${result.blockerPlayer.jerseyNumber} ${result.blockerPlayer.name} — ${t("actionTypes.block.label")}`,
         coordinates: normalizedCoords,
         period_number: quarter,
-        time_in_period: periodDurationMin * 60 - timer,
+        time_in_period: getTimeInPeriod(),
       }, ...updatedMatch.events];
     }
 
@@ -1670,7 +1696,7 @@ export default function LiveMatchScreen() {
         description: t("liveMatchScreen.actionLog.teamRebound"),
         coordinates: normalizedCoords,
         period_number: quarter,
-        time_in_period: periodDurationMin * 60 - timer,
+        time_in_period: getTimeInPeriod(),
       }, ...updatedMatch.events];
     } else if (result.reboundSpec && result.reboundPlayer) {
       const isDefensive = result.reboundSpec === "defensive";
@@ -1695,7 +1721,7 @@ export default function LiveMatchScreen() {
         description: `#${result.reboundPlayer.jerseyNumber} ${result.reboundPlayer.name} — ${isDefensive ? t("liveMatchScreen.actionLog.reboundDefensive") : t("liveMatchScreen.actionLog.reboundOffensive")}`,
         coordinates: normalizedCoords,
         period_number: quarter,
-        time_in_period: periodDurationMin * 60 - timer,
+        time_in_period: getTimeInPeriod(),
       }, ...updatedMatch.events];
     }
 
@@ -1716,7 +1742,7 @@ export default function LiveMatchScreen() {
         description: "",
         coordinates: normalizedCoords,
         period_number: quarter,
-        time_in_period: periodDurationMin * 60 - timer,
+        time_in_period: getTimeInPeriod(),
       };
       const chain = getChainContext(
         syntheticEvent, match.trackOpponentStats, match.location,
@@ -1769,7 +1795,7 @@ export default function LiveMatchScreen() {
         description: `#${foulDrawnPlayerNumber} ${foulDrawnPlayerName} — ${t("liveMatchScreen.actionLog.foulWithType", { type: getFoulSpecificationLabel(result.foulType) })}`,
         coordinates: normalizedCoords,
         period_number: quarter,
-        time_in_period: periodDurationMin * 60 - timer,
+        time_in_period: getTimeInPeriod(),
       }, ...updatedMatch.events];
 
       // 1. Sauvegarde le FOUL_DRAWN — absent pour une Technique (pas de drawnPlayer)
@@ -1790,7 +1816,7 @@ export default function LiveMatchScreen() {
           description: `#${drawnPlayer.jerseyNumber} ${drawnPlayer.name} — ${t("actionTypes.foul_drawn.label")}`,
           coordinates: normalizedCoords,
           period_number: quarter,
-          time_in_period: periodDurationMin * 60 - timer,
+          time_in_period: getTimeInPeriod(),
         }, ...updatedMatch.events];
       }
 
@@ -1812,7 +1838,7 @@ export default function LiveMatchScreen() {
           description: `${drawnPlayer ? `#${drawnPlayer.jerseyNumber} ${drawnPlayer.name}` : t("liveMatchScreen.teamActionFallback")} — ${t("liveMatchScreen.actionLog.shotMade", { points: result.basketPoints })}`,
           coordinates: normalizedCoords,
           period_number: quarter,
-          time_in_period: periodDurationMin * 60 - timer,
+          time_in_period: getTimeInPeriod(),
         }, ...updatedMatch.events];
         if (drawnTeamId === TeamId.HOME) updatedMatch.scoreHome += result.basketPoints;
         else updatedMatch.scoreAway += result.basketPoints;
@@ -1834,7 +1860,7 @@ export default function LiveMatchScreen() {
             description: `#${result.assistPlayer.jerseyNumber} ${result.assistPlayer.name} — ${t("actionTypes.assist.label")}`,
             coordinates: normalizedCoords,
             period_number: quarter,
-            time_in_period: periodDurationMin * 60 - timer,
+            time_in_period: getTimeInPeriod(),
           }, ...updatedMatch.events];
         }
       }
@@ -1861,7 +1887,7 @@ export default function LiveMatchScreen() {
             ? `#${drawnPlayer.jerseyNumber} ${drawnPlayer.name} — ${spec === ShotSpecification.MADE ? t("liveMatchScreen.actionLog.freeThrowMade") : t("liveMatchScreen.actionLog.freeThrowMissed")}`
             : (spec === ShotSpecification.MADE ? t("liveMatchScreen.technicalFreeThrowMade") : t("liveMatchScreen.technicalFreeThrowMissed")),
           period_number: quarter,
-          time_in_period: periodDurationMin * 60 - timer,
+          time_in_period: getTimeInPeriod(),
         }, ...updatedMatch.events];
         if (spec === ShotSpecification.MADE) {
           if (drawnTeamId === TeamId.HOME) updatedMatch.scoreHome += 1;
@@ -1886,7 +1912,7 @@ export default function LiveMatchScreen() {
           description: "",
           coordinates: normalizedCoords,
           period_number: quarter,
-          time_in_period: periodDurationMin * 60 - timer,
+          time_in_period: getTimeInPeriod(),
         };
         const chain = getChainContext(
           syntheticEvent, match.trackOpponentStats, match.location,
@@ -1926,7 +1952,7 @@ export default function LiveMatchScreen() {
         description: `${result.foulPlayer ? `#${foulPlayerNumber} ${foulPlayerName}` : t("liveMatchScreen.teamActionFallback")} — ${t("liveMatchScreen.actionLog.foulWithType", { type: getFoulSpecificationLabel(result.foulType) })}`,
         coordinates: normalizedCoords,
         period_number: quarter,
-        time_in_period: periodDurationMin * 60 - timer,
+        time_in_period: getTimeInPeriod(),
       }, ...updatedMatch.events];
     }
 
@@ -1948,7 +1974,7 @@ export default function LiveMatchScreen() {
         description: `#${foulDrawnPlayerNumber} ${foulDrawnPlayerName} — Tir (+${result.basketPoints})`,
         coordinates: normalizedCoords,
         period_number: quarter,
-        time_in_period: periodDurationMin * 60 - timer,
+        time_in_period: getTimeInPeriod(),
       }, ...updatedMatch.events];
       if (foulDrawnTeamId === TeamId.HOME) updatedMatch.scoreHome += result.basketPoints;
       else updatedMatch.scoreAway += result.basketPoints;
@@ -1970,7 +1996,7 @@ export default function LiveMatchScreen() {
           description: `#${result.assistPlayer.jerseyNumber} ${result.assistPlayer.name} — ${t("actionTypes.assist.label")}`,
           coordinates: normalizedCoords,
           period_number: quarter,
-          time_in_period: periodDurationMin * 60 - timer,
+          time_in_period: getTimeInPeriod(),
         }, ...updatedMatch.events];
       }
     }
@@ -1996,7 +2022,7 @@ export default function LiveMatchScreen() {
         timestamp: Date.now(),
         description: `#${foulDrawnPlayerNumber} ${foulDrawnPlayerName} — ${spec === ShotSpecification.MADE ? t("liveMatchScreen.actionLog.freeThrowMade") : t("liveMatchScreen.actionLog.freeThrowMissed")}`,
         period_number: quarter,
-        time_in_period: periodDurationMin * 60 - timer,
+        time_in_period: getTimeInPeriod(),
       }, ...updatedMatch.events];
       if (spec === ShotSpecification.MADE) {
         if (foulDrawnTeamId === TeamId.HOME) updatedMatch.scoreHome += 1;
@@ -2021,7 +2047,7 @@ export default function LiveMatchScreen() {
         description: "",
         coordinates: normalizedCoords,
         period_number: quarter,
-        time_in_period: periodDurationMin * 60 - timer,
+        time_in_period: getTimeInPeriod(),
       };
       const chain = getChainContext(
         syntheticEvent,
@@ -2068,7 +2094,7 @@ export default function LiveMatchScreen() {
       semantic_y: normalizedY,
       action_order: actionCounter,
       period_number: quarter,
-      time_in_period: periodDurationMin * 60 - timer,
+      time_in_period: getTimeInPeriod(),
     };
 
     // Save immediately to database to get UUID
@@ -2136,7 +2162,7 @@ export default function LiveMatchScreen() {
       timestamp: Date.now(),
       description: `${match.opponent || t("liveMatchScreen.opponentFallback")} +${value}`,
       period_number: quarter,
-      time_in_period: periodDurationMin * 60 - timer,
+      time_in_period: getTimeInPeriod(),
       points: value,
     };
     if (!updatedMatch.events) updatedMatch.events = [];
@@ -2162,7 +2188,7 @@ export default function LiveMatchScreen() {
       timestamp: Date.now(),
       description: t("liveMatchScreen.timeoutDescription"),
       period_number: quarter,
-      time_in_period: periodDurationMin * 60 - timer,
+      time_in_period: getTimeInPeriod(),
     };
 
     const updatedMatch = { ...match };

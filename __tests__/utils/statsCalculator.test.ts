@@ -588,6 +588,29 @@ describe("calculatePlayingTime", () => {
     expect(pt(result, "MyTeam", 1)).toBe(5 * 600);
   });
 
+  it("honore un changement en cours de prolongation", () => {
+    // Régression : `time_in_period` était calculé avec la durée réglementaire
+    // même en prolongation, donc les changements d'une OT arrivaient estampillés
+    // dans [300, 600] et `Math.min(at, length)` les clampait tous à 300, soit la
+    // fin de la période. Le remplaçant restait à 0:00 et le titulaire encaissait
+    // toute la prolongation. Ici les timestamps sont relatifs à la prolongation.
+    const players = [starter("MyTeam", 1), bench("MyTeam", 9)];
+    const config = {
+      periodDurationSeconds: 600,
+      regulationPeriods: 4,
+      overtimeDurationSeconds: 300,
+    };
+    const actions = [
+      ...[1, 2, 3, 4].map((p) => shot("MyTeam", 1, 2, p, 30, p)),
+      sub("MyTeam", 1, "out", 5, 120, 5),
+      sub("MyTeam", 9, "in", 5, 120, 6),
+      shot("MyTeam", 9, 2, 5, 200, 7),
+    ];
+    const result = calculatePlayingTime(actions, players, config);
+    expect(pt(result, "MyTeam", 1)).toBe(4 * 600 + 120); // 40:00 + 2:00 d'OT
+    expect(pt(result, "MyTeam", 9)).toBe(180); // les 3:00 restantes de l'OT
+  });
+
   it("retourne une map vide quand il n'y a aucune action à rejouer", () => {
     const result = calculatePlayingTime([], [starter("MyTeam", 1)], 600);
     expect(result.size).toBe(0);
