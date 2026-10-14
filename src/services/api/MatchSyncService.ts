@@ -43,7 +43,7 @@ import {
   ActionType,
   ShotSpecification,
 } from "../../models/ActionTypes";
-import { calculatePlayingTime } from "../../utils/statsCalculator";
+import { computePlayingTimeByPlayer } from "../../utils/playingTime";
 
 export interface SyncResult {
   success: boolean;
@@ -335,18 +335,14 @@ export class MatchSyncService {
     // and stops short of each period's end. See calculatePlayingTime for the
     // full rationale. An empty map means "nothing to replay" → keep the stored
     // value.
-    const playingTimeByPlayer = calculatePlayingTime(
-      actions,
+    const playingTimeByPlayer = computePlayingTimeByPlayer(
+      match,
       matchPlayers.map((player) => ({
         player_number: player.player_number,
         team: player.team as "MyTeam" | "Opponent",
         is_starter: !!player.is_starter,
       })),
-      {
-        periodDurationSeconds: match.period_duration || 600,
-        regulationPeriods: match.total_periods || 4,
-        overtimeDurationSeconds: match.overtime_duration || 300,
-      }
+      actions
     );
 
     // Build players array (light info)

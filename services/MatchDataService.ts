@@ -1,7 +1,7 @@
 import { Match, MatchStatus, Team } from "../src/models/types";
 import { ActionRepository } from "../src/services/database/ActionRepository";
 import { MatchPlayerRepository } from "../src/services/database/MatchPlayerRepository";
-import { calculatePlayingTime } from "../src/utils/statsCalculator";
+import { withComputedPlayingTime } from "../src/utils/playingTime";
 import { SupabaseClient } from "@supabase/supabase-js";
 
 /**
@@ -75,72 +75,47 @@ export class MatchDataService {
     const hasSupabaseId = (match as any).supabase_id !== undefined && (match as any).supabase_id !== null;
     const isSynced = Boolean(match.synced_to_server);
 
-    if (hasSupabaseId && isSynced) {
-      const data = await this.loadFromSupabase((match as any).supabase_id);
-      return this.withComputedPlayingTime(data, match);
-    } else {
-      const data = await this.loadFromLocal(matchId);
-      return this.withComputedPlayingTime(data, match);
-    }
+    const data =
+      hasSupabaseId && isSynced
+        ? await this.loadFromSupabase((match as any).supabase_id)
+        : await this.loadFromLocal(matchId);
+
+    return this.applyComputedPlayingTime(data, match);
   }
 
   /**
    * Replace the stored playing time with a value derived from the substitution
    * events replayed on the game clock.
    *
-   * The stored `playing_time_seconds` is produced by a live tick counter that
-   * adds a fixed +5s per 5s tick: it over-counts (players who are never
-   * substituted keep accruing time during the breaks between periods) and it
-   * stops short of each period's end. Recomputing on read fixes both the
-   * matches being displayed now and the ones already recorded.
+   * The stored `playing_time_seconds` came from a live tick counter that added a
+   * fixed +5s per 5s tick: it over-counted (players who are never substituted
+   * keep accruing time during the breaks between periods) and stopped short of
+   * each period's end. Recomputing on read fixes both the matches being
+   * displayed now and the ones already recorded.
    *
-   * Only completed matches are recomputed, and only when there is something to
-   * replay; otherwise the stored value is returned untouched.
+   * Only completed matches are recomputed (an in-progress match has no final
+   * playing time yet); otherwise the stored value is returned untouched.
    */
-  private withComputedPlayingTime(
+  private applyComputedPlayingTime(
     data: MatchDetailsData,
     match: Match
   ): MatchDetailsData {
-    const isCompleted = String(match.status) === MatchStatus.COMPLETED;
-
-    if (!isCompleted || data.actions.length === 0 || data.players.length === 0) {
-      return data;
-    }
-
-    const playingTime = calculatePlayingTime(
-      data.actions.map((action) => ({
-        type: action.type,
-        specification: action.specification ?? "",
-        team: action.team,
-        player: action.player,
-        period_number: action.period_number,
-        time_in_period: action.time_in_period,
-      })),
-      data.players.map((player) => ({
-        player_number: player.num,
-        team: player.team,
-        is_starter: !player.isSubstitute,
-      })),
-      {
-        periodDurationSeconds: match.period_duration || 600,
-        regulationPeriods: match.total_periods || 4,
-        overtimeDurationSeconds: match.overtime_duration || 300,
-      }
-    );
-
-    if (playingTime.size === 0) {
+    if (String(match.status) !== MatchStatus.COMPLETED) {
       return data;
     }
 
     return {
       ...data,
-      players: data.players.map((player) => ({
-        ...player,
-        playingTimeSeconds:
-          playingTime.get(`${player.team}-${player.num}`) ??
-          player.playingTimeSeconds ??
-          0,
-      })),
+      players: withComputedPlayingTime(
+        match,
+        data.players,
+        data.actions,
+        (player) => ({
+          player_number: player.num,
+          team: player.team as "MyTeam" | "Opponent",
+          is_starter: !player.isSubstitute,
+        })
+      ),
     };
   }
 

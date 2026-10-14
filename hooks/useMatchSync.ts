@@ -21,7 +21,7 @@ import { ROUTES } from "../constants/routes";
 import { TeamId } from "../constants/liveMatchConstants";
 import { ANALYTICS_EVENTS } from "../constants/analyticsEvents";
 import { MatchSyncService } from "../src/services/api/MatchSyncService";
-import { calculatePlayingTime } from "../src/utils/statsCalculator";
+import { withComputedPlayingTime } from "../src/utils/playingTime";
 import { recordReviewPromptSignal } from "./useReviewPrompt";
 
 interface UseMatchSyncProps {
@@ -236,54 +236,14 @@ export function useMatchSync({
   };
 
   /**
-   * Hand the details screen a playing time derived from the substitution
-   * events instead of the stored value.
-   *
-   * The details screen recomputes it anyway, but passing the right figure
-   * straight away avoids displaying a wrong one during the transition. The
-   * stored value used to come from a counter that over-counted during the
-   * breaks between periods (see calculatePlayingTime).
+   * Projette un joueur du hook vers la forme attendue par le calcul du temps de
+   * jeu (voir withComputedPlayingTime).
    */
-  const withComputedPlayingTime = (
-    matchLike: { period_duration?: number; total_periods?: number; overtime_duration?: number },
-    players: any[],
-    actions: any[]
-  ): any[] => {
-    if (players.length === 0 || actions.length === 0) {
-      return players;
-    }
-
-    const computed = calculatePlayingTime(
-      actions.map((action: any) => ({
-        type: action.type ?? action.action_type,
-        specification: action.specification ?? "",
-        team: action.team,
-        player: action.player ?? action.player_number,
-        period_number: action.period_number,
-        time_in_period: action.time_in_period,
-      })),
-      players.map((player: any) => ({
-        player_number: player.num,
-        team: player.team,
-        is_starter: !player.isSubstitute,
-      })),
-      {
-        periodDurationSeconds: matchLike?.period_duration || 600,
-        regulationPeriods: matchLike?.total_periods || 4,
-        overtimeDurationSeconds: matchLike?.overtime_duration || 300,
-      }
-    );
-
-    if (computed.size === 0) {
-      return players;
-    }
-
-    return players.map((player: any) => ({
-      ...player,
-      playingTimeSeconds:
-        computed.get(`${player.team}-${player.num}`) ?? player.playingTimeSeconds,
-    }));
-  };
+  const toPlayingTimePlayer = (player: any) => ({
+    player_number: player.num,
+    team: player.team as "MyTeam" | "Opponent",
+    is_starter: !player.isSubstitute,
+  });
 
   const fetchAndNavigateToSyncedMatch = async (matchId: string) => {
     try {
@@ -360,10 +320,18 @@ export function useMatchSync({
 
       // Show interstitial at the natural transition point (end of match → details)
       await showInterstitial();
+      // Derive the playing time from the substitution events rather than pass
+      // the stored value along. The details screen recomputes it anyway, but
+      // handing over the right figure avoids showing a wrong one for a moment.
       navigation.navigate(ROUTES.MATCH_DETAILS, {
         match: supabaseMatch,
         actions: actionDataList,
-        players: withComputedPlayingTime(supabaseMatch, players, actionDataList),
+        players: withComputedPlayingTime(
+          supabaseMatch,
+          players,
+          actionDataList,
+          toPlayingTimePlayer
+        ),
         fromLiveMatch: true,
       });
     } catch (fetchError) {
@@ -431,10 +399,17 @@ export function useMatchSync({
 
       // Show interstitial at the natural transition point (end of match → details)
       await showInterstitial();
+      // Same as the synced path above: hand over a playing time derived from the
+      // substitution events, not the stored one.
       navigation.navigate(ROUTES.MATCH_DETAILS, {
         match: localMatch,
         actions: actions,
-        players: withComputedPlayingTime(localMatch, players, actions),
+        players: withComputedPlayingTime(
+          localMatch,
+          players,
+          actions,
+          toPlayingTimePlayer
+        ),
         fromLiveMatch: true,
         isLocalMatch: true,
       });
