@@ -6,18 +6,35 @@ export interface IStorageAdapter {
   transaction(fn: (tx: SQLite.SQLiteDatabase) => Promise<void>): Promise<void>;
 }
 
+/**
+ * Adaptateur SQLite — version ASYNCHRONE.
+ *
+ * POURQUOI : les API synchrones (`openDatabaseSync`, `execSync`, `getAllSync`,
+ * `runSync`) bloquent le thread principal. Sur le web, `expo-sqlite` exécute
+ * SQLite dans un Web Worker créé paresseusement : si le premier appel est
+ * synchrone, le thread principal se bloque en attendant un worker qui ne peut
+ * pas démarrer → deadlock (« Sync operation timeout »).
+ *
+ * COMMENT : le constructeur reste synchrone (aucun appelant à modifier), mais
+ * l'initialisation devient interne et asynchrone. Chaque méthode attend la
+ * promesse `ready` avant d'agir.
+ */
 export class SQLiteAdapter implements IStorageAdapter {
-  private db: SQLite.SQLiteDatabase;
+  private db!: SQLite.SQLiteDatabase;
+  private ready: Promise<void>;
 
   constructor(databaseName: string = "coachassistant.db") {
-    this.db = SQLite.openDatabaseSync(databaseName);
-    //this.resetDatabase();
-    this.initializeTables();
+    this.ready = this.initialize(databaseName);
   }
 
-  private initializeTables(): void {
+  private async initialize(databaseName: string): Promise<void> {
+    this.db = await SQLite.openDatabaseAsync(databaseName);
+    await this.initializeTables();
+  }
+
+  private async initializeTables(): Promise<void> {
     // Create matches table with UUID primary key
-    this.db.execSync(`
+    await this.db.execAsync(`
       CREATE TABLE IF NOT EXISTS matches (
         id TEXT PRIMARY KEY,
 
@@ -73,7 +90,7 @@ export class SQLiteAdapter implements IStorageAdapter {
     `);
 
     // Create match_actions table with UUID primary key
-    this.db.execSync(`
+    await this.db.execAsync(`
       CREATE TABLE IF NOT EXISTS match_actions (
         id TEXT PRIMARY KEY,
         match_id TEXT NOT NULL,
@@ -93,13 +110,22 @@ export class SQLiteAdapter implements IStorageAdapter {
     `);
 
     // Migrations: add columns if they don't exist yet
-    try { this.db.execSync(`ALTER TABLE matches ADD COLUMN my_team_handicap INTEGER NOT NULL DEFAULT 0`); } catch (_) {}
-    try { this.db.execSync(`ALTER TABLE matches ADD COLUMN opponent_handicap INTEGER NOT NULL DEFAULT 0`); } catch (_) {}
-    try { this.db.execSync(`ALTER TABLE matches ADD COLUMN has_sub_tracking INTEGER NOT NULL DEFAULT 0`); } catch (_) {}
-    try { this.db.execSync(`ALTER TABLE matches ADD COLUMN match_sponsors TEXT`); } catch (_) {}
+    const migrations = [
+      `ALTER TABLE matches ADD COLUMN my_team_handicap INTEGER NOT NULL DEFAULT 0`,
+      `ALTER TABLE matches ADD COLUMN opponent_handicap INTEGER NOT NULL DEFAULT 0`,
+      `ALTER TABLE matches ADD COLUMN has_sub_tracking INTEGER NOT NULL DEFAULT 0`,
+      `ALTER TABLE matches ADD COLUMN match_sponsors TEXT`,
+    ];
+    for (const migration of migrations) {
+      try {
+        await this.db.execAsync(migration);
+      } catch (_) {
+        // Colonne déjà présente — ignoré
+      }
+    }
 
     // Create opponent_templates table
-    this.db.execSync(`
+    await this.db.execAsync(`
       CREATE TABLE IF NOT EXISTS opponent_templates (
         id TEXT PRIMARY KEY,
         name TEXT NOT NULL,
@@ -110,19 +136,19 @@ export class SQLiteAdapter implements IStorageAdapter {
     `);
 
     // Create indexes
-    this.db.execSync(`
+    await this.db.execAsync(`
       CREATE INDEX IF NOT EXISTS idx_match_actions_match_id ON match_actions(match_id);
     `);
 
-    this.db.execSync(`
+    await this.db.execAsync(`
       CREATE INDEX IF NOT EXISTS idx_match_actions_timestamp ON match_actions(timestamp);
     `);
   }
 
   async query(sql: string, params: any[] = []): Promise<any[]> {
+    await this.ready;
     try {
-      const result = this.db.getAllSync(sql, params);
-      return result;
+      return await this.db.getAllAsync(sql, params);
     } catch (error) {
       console.error("SQLite query error:", error);
       throw error;
@@ -130,8 +156,9 @@ export class SQLiteAdapter implements IStorageAdapter {
   }
 
   async execute(sql: string, params: any[] = []): Promise<void> {
+    await this.ready;
     try {
-      this.db.runSync(sql, params);
+      await this.db.runAsync(sql, params);
     } catch (error) {
       console.error("SQLite execute error:", error);
       throw error;
@@ -141,6 +168,7 @@ export class SQLiteAdapter implements IStorageAdapter {
   async transaction(
     fn: (tx: SQLite.SQLiteDatabase) => Promise<void>
   ): Promise<void> {
+    await this.ready;
     try {
       await fn(this.db);
     } catch (error) {
@@ -149,7 +177,8 @@ export class SQLiteAdapter implements IStorageAdapter {
     }
   }
 
-  getDatabase(): SQLite.SQLiteDatabase {
+  async getDatabase(): Promise<SQLite.SQLiteDatabase> {
+    await this.ready;
     return this.db;
   }
 
@@ -158,17 +187,18 @@ export class SQLiteAdapter implements IStorageAdapter {
    * Useful for development and testing
    */
   async resetDatabase(): Promise<void> {
+    await this.ready;
     try {
       console.log("🔄 Resetting database...");
 
       // Drop tables in reverse order (respect foreign keys)
-      this.db.execSync("DROP TABLE IF EXISTS match_actions");
-      this.db.execSync("DROP TABLE IF EXISTS matches");
+      await this.db.execAsync("DROP TABLE IF EXISTS match_actions");
+      await this.db.execAsync("DROP TABLE IF EXISTS matches");
 
       console.log("✅ Tables dropped");
 
       // Recreate tables
-      this.initializeTables();
+      await this.initializeTables();
 
       console.log("✅ Database reset complete");
     } catch (error) {
