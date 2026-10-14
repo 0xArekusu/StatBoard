@@ -4,7 +4,7 @@ import { ActionType, ShotSpecification, ReboundSpecification } from '../models/A
 import { MatchDataService, PlayerData, ActionData } from '../../services/MatchDataService';
 import { ActionRepository } from './database/ActionRepository';
 import { MatchPlayerRepository } from './database/MatchPlayerRepository';
-import { calculateEfficiency, accumulateShot } from '../utils/statsCalculator';
+import { calculateEfficiency, accumulateShot, hasSubstitutionTracking } from '../utils/statsCalculator';
 import { StatPeriod, STAT_PERIOD } from '../../constants/statsConstants';
 
 export interface PlayerSeasonData {
@@ -190,7 +190,11 @@ export function computeSeasonStats(
 
   for (const { actions, players, match } of details) {
     const myTeam = players.filter((p) => p.team === Team.MY_TEAM && p.num !== 9999);
-    const matchHasTracking = myTeam.some((p) => (p.playingTimeSeconds ?? 0) > 0);
+    // Un temps de jeu non nul ne prouve plus que les changements ont été
+    // suivis : il est désormais recalculé en rejouant les substitutions, et
+    // sans aucune substitution les titulaires reçoivent la durée complète du
+    // match. On teste donc la présence réelle d'événements de changement.
+    const matchHasTracking = hasSubstitutionTracking(actions);
 
     for (const player of myTeam) {
       const key = playerKey(player, match.id);
@@ -218,8 +222,13 @@ export function computeSeasonStats(
       const data = playerMap.get(key)!;
 
       data.matchesPlayed += 1;
-      data.totalPlayingTimeSeconds += player.playingTimeSeconds ?? 0;
-      if (matchHasTracking) data.matchesWithTrackedTime += 1;
+      // La moyenne affichée est totalPlayingTimeSeconds / matchesWithTrackedTime :
+      // les deux termes doivent être alimentés par les mêmes matchs, sinon un
+      // match sans changements suivis gonfle le numérateur sans le dénominateur.
+      if (matchHasTracking) {
+        data.totalPlayingTimeSeconds += player.playingTimeSeconds ?? 0;
+        data.matchesWithTrackedTime += 1;
+      }
 
       const matchStats = computeStatsForPlayer(actions, player.num);
       data.pts += matchStats.pts;
