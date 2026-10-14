@@ -2103,10 +2103,12 @@ export default function LiveMatchScreen() {
       const createdAction = await actionRepo.create(actionForDB);
       setActionCounter((prev) => prev + 1);
 
-      // Save match state immediately after action to persist timer/period
-      const periodDurationSeconds = (periodDurationMin || 10) * 60;
-      const timeElapsed = periodDurationSeconds - timer;
-      await matchManager.updateMatchState(currentMatchId, quarter, timeElapsed);
+      // Save match state immediately after action to persist timer/period.
+      // Route it through saveMatchState so the period length is the right one:
+      // the inline `periodDurationMin * 60` always used the regulation length,
+      // so during an overtime the persisted time remaining was off by a whole
+      // period and resuming the match landed on a 0:00 clock.
+      await saveMatchStateRef.current();
 
       logInfo("LiveMatchScreen", "✅ Action saved to database", {
         actionId: createdAction.id,
