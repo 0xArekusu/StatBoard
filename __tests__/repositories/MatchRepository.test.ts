@@ -361,6 +361,21 @@ describe("MatchRepository", () => {
     });
   });
 
+  // ─── updateOvertimeDuration ───────────────────────────────────────────────
+
+  describe("updateOvertimeDuration", () => {
+    it("enregistre la durée de prolongation choisie par le coach", async () => {
+      mockExecute.mockResolvedValue(undefined);
+
+      await repo.updateOvertimeDuration("match-1", 180);
+
+      expect(mockExecute).toHaveBeenCalledWith(
+        expect.stringContaining("overtime_duration"),
+        expect.arrayContaining([180, "match-1"])
+      );
+    });
+  });
+
   // ─── updateSyncStatus ────────────────────────────────────────────────────
 
   describe("updateSyncStatus", () => {

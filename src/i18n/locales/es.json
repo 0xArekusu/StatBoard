@@ -523,6 +523,7 @@
       "endOfOvertime": "Fin de la prórroga",
       "description": "El tiempo se ha agotado. ¿Quieres terminar el partido o iniciar una prórroga?",
       "durationLabel": "DURACIÓN DE LA PRÓRROGA",
+      "durationLockedNote": "Igual para todas las prórrogas",
       "endMatchButton": "Terminar el partido",
       "startOvertimeButton": "Iniciar prórroga"
     },

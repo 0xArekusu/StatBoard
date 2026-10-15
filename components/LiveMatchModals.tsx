@@ -2905,6 +2905,12 @@ interface OvertimeModalProps {
   maxPeriods: number;
   overtimeDuration: number;
   setOvertimeDuration: (value: number) => void;
+  /**
+   * Après la première prolongation, la durée est figée : toutes les prolongations
+   * d'un match durent la même chose (règles FIBA), et l'app ne stocke qu'une
+   * seule durée par match.
+   */
+  overtimeLocked?: boolean;
 }
 
 export const OvertimeModal: React.FC<OvertimeModalProps> = ({
@@ -2917,6 +2923,7 @@ export const OvertimeModal: React.FC<OvertimeModalProps> = ({
   maxPeriods,
   overtimeDuration,
   setOvertimeDuration,
+  overtimeLocked = false,
 }) => {
   const { t } = useTranslation();
   const { colors } = useTheme();
@@ -2989,10 +2996,12 @@ export const OvertimeModal: React.FC<OvertimeModalProps> = ({
                   setDuration(newValue.toString());
                   setOvertimeDuration(newValue);
                 }}
+                disabled={overtimeLocked}
                 style={[
                   styles.overtimeDurationButton,
                   {
                     backgroundColor: colors.surfaceVariant,
+                    opacity: overtimeLocked ? 0.35 : 1,
                   },
                 ]}
               >
@@ -3020,10 +3029,12 @@ export const OvertimeModal: React.FC<OvertimeModalProps> = ({
                   setDuration(newValue.toString());
                   setOvertimeDuration(newValue);
                 }}
+                disabled={overtimeLocked}
                 style={[
                   styles.overtimeDurationButton,
                   {
                     backgroundColor: colors.surfaceVariant,
+                    opacity: overtimeLocked ? 0.35 : 1,
                   },
                 ]}
               >
@@ -3034,6 +3045,16 @@ export const OvertimeModal: React.FC<OvertimeModalProps> = ({
                 />
               </TouchableOpacity>
             </View>
+            {overtimeLocked && (
+              <Text
+                style={[
+                  styles.overtimeDescription,
+                  { color: textSecondary, marginTop: 8, marginBottom: 0 },
+                ]}
+              >
+                {t("liveMatchModals.overtime.durationLockedNote")}
+              </Text>
+            )}
           </View>
 
           <View style={styles.overtimeActions}>

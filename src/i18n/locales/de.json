@@ -523,6 +523,7 @@
       "endOfOvertime": "Ende der Verlängerung",
       "description": "Die Zeit ist abgelaufen. Möchtest du das Spiel beenden oder eine Verlängerung starten?",
       "durationLabel": "DAUER DER VERLÄNGERUNG",
+      "durationLockedNote": "Gleich für alle Verlängerungen",
       "endMatchButton": "Spiel beenden",
       "startOvertimeButton": "Verlängerung starten"
     },

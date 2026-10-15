@@ -75,6 +75,7 @@ import {
   MOBILE_LANDSCAPE_HEADER_RESERVED_HEIGHT,
 } from "../constants/liveMatchConstants";
 import { getChainContext } from "../utils/actionChainRules";
+import { DEFAULT_OVERTIME_DURATION_SECONDS } from "../src/utils/playingTime";
 import {
   COURT_SVG_WIDTH_PORTRAIT,
   COURT_SVG_HEIGHT_PORTRAIT,
@@ -312,7 +313,22 @@ export default function LiveMatchScreen() {
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [showOvertimeModal, setShowOvertimeModal] = useState(false);
   const [showPeriodConfirm, setShowPeriodConfirm] = useState(false);
-  const [overtimeDuration, setOvertimeDuration] = useState(5);
+  // Durée d'une prolongation, en minutes. Une seule valeur pour tout le match
+  // (règles FIBA) : choisie avant la première prolongation, puis appliquée à toutes.
+  const [overtimeDuration, setOvertimeDuration] = useState(
+    DEFAULT_OVERTIME_DURATION_SECONDS / 60,
+  );
+
+  // Clé de la session de jeu en cours (reprise ou nouveau match). L'écran peut
+  // être réutilisé d'un match à l'autre sans être démonté : sans cette remise au
+  // défaut, le match suivant hérite de la durée de prolongation du précédent, et
+  // c'est cette valeur héritée qui part en base à sa création.
+  const matchSessionKey = resumeMatchId || matchData?.id || null;
+  useEffect(() => {
+    // Une reprise relit la durée stockée du match, on ne l'écrase pas ici.
+    if (!matchSessionKey || resumeMatchId) return;
+    setOvertimeDuration(DEFAULT_OVERTIME_DURATION_SECONDS / 60);
+  }, [matchSessionKey, resumeMatchId]);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [eventToDelete, setEventToDelete] = useState<MatchEvent | null>(null);
 
@@ -906,6 +922,11 @@ export default function LiveMatchScreen() {
    * the playing time on the same value.
    */
   const changeOvertimeDuration = (minutes: number) => {
+    // Une fois la première prolongation lancée, la durée est figée : toutes les
+    // prolongations d'un match ont la même longueur (règles FIBA). L'app ne
+    // stocke qu'une durée par match, en changer une seule fausserait le calcul.
+    if (quarter > maxPeriods) return;
+
     setOvertimeDuration(minutes);
 
     if (!currentMatchId) return;
@@ -2488,6 +2509,7 @@ export default function LiveMatchScreen() {
         maxPeriods={maxPeriods}
         overtimeDuration={overtimeDuration}
         setOvertimeDuration={changeOvertimeDuration}
+        overtimeLocked={quarter > maxPeriods}
       />
 
       <HistoryModal

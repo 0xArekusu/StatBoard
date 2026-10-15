@@ -523,6 +523,7 @@
       "endOfOvertime": "Fin de la prolongation",
       "description": "Le temps est écoulé. Voulez-vous terminer le match ou lancer une prolongation ?",
       "durationLabel": "DURÉE DE LA PROLONGATION",
+      "durationLockedNote": "Identique pour toutes les prolongations",
       "endMatchButton": "Terminer le match",
       "startOvertimeButton": "Lancer la prolongation"
     },

@@ -523,6 +523,7 @@
       "endOfOvertime": "End of overtime",
       "description": "Time is up. Do you want to end the match or start overtime?",
       "durationLabel": "OVERTIME DURATION",
+      "durationLockedNote": "Same duration for every overtime",
       "endMatchButton": "End match",
       "startOvertimeButton": "Start overtime"
     },
