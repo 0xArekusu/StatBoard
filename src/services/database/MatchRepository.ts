@@ -36,6 +36,7 @@ export interface IMatchRepository {
   updateMatchState(id: string, currentPeriod: number, timeElapsed: number): Promise<void>;
   updateFinalScores(id: string, myTeamScore: number, opponentScore: number, manuallyAdjusted?: boolean): Promise<void>;
   updateOvertimePeriods(id: string, overtimePeriods: number): Promise<void>;
+  updateOvertimeDuration(id: string, seconds: number): Promise<void>;
   updateSyncStatus(id: string, synced: boolean): Promise<void>;
   findUnsyncedCompletedMatches(): Promise<Match[]>;
   delete(id: string): Promise<void>;
@@ -497,6 +498,31 @@ export class MatchRepository implements IMatchRepository {
       logError('MatchRepository', '❌ Error updating overtime periods', {
         matchId: id,
         overtimePeriods,
+        error: error instanceof Error ? error.message : error
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Update the overtime duration (in seconds)
+   *
+   * The coach picks the length of an overtime while the match is running, so it
+   * cannot be part of the row written at creation. Without this the value stored
+   * at creation (the 5:00 default) stayed in the database while the on-screen
+   * clock used the coach's value, and the playing time was replayed against the
+   * wrong overtime length.
+   */
+  async updateOvertimeDuration(id: string, seconds: number): Promise<void> {
+    try {
+      await this.db.execute(
+        'UPDATE matches SET overtime_duration = ? WHERE id = ?',
+        [seconds, id]
+      );
+    } catch (error) {
+      logError('MatchRepository', '❌ Error updating overtime duration', {
+        matchId: id,
+        seconds,
         error: error instanceof Error ? error.message : error
       });
       throw error;

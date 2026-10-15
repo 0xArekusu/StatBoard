@@ -896,6 +896,27 @@ export default function LiveMatchScreen() {
     setTimeout(() => saveMatchState(), 100);
   };
 
+  /**
+   * Change the overtime length and persist it.
+   *
+   * The coach picks this while the match is already running, so it cannot be
+   * part of the row written at creation: the stored value used to stay at the
+   * 5:00 default while the clock ran on the chosen length, which also skewed the
+   * replayed playing time. Persisting here keeps the clock, the resume path and
+   * the playing time on the same value.
+   */
+  const changeOvertimeDuration = (minutes: number) => {
+    setOvertimeDuration(minutes);
+
+    if (!currentMatchId) return;
+
+    matchManager
+      .updateOvertimeDuration(currentMatchId, minutes * 60)
+      .catch((error) =>
+        logError("LiveMatchScreen", "❌ Failed to save overtime duration", error)
+      );
+  };
+
   // --- TOOLBAR ACTIONS ---
 
   const undoLastAction = () => {
@@ -2466,7 +2487,7 @@ export default function LiveMatchScreen() {
         quarter={quarter}
         maxPeriods={maxPeriods}
         overtimeDuration={overtimeDuration}
-        setOvertimeDuration={setOvertimeDuration}
+        setOvertimeDuration={changeOvertimeDuration}
       />
 
       <HistoryModal

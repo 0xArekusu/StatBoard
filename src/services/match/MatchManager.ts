@@ -245,4 +245,23 @@ export class MatchManager {
       throw error;
     }
   }
+
+  /**
+   * Update the overtime duration (in seconds)
+   *
+   * Called when the coach changes the length of an overtime, so the stored
+   * value matches the clock the match is actually played with.
+   */
+  async updateOvertimeDuration(matchId: string, seconds: number): Promise<void> {
+    try {
+      await this.matchRepository.updateOvertimeDuration(matchId, seconds);
+    } catch (error) {
+      logError('MatchManager', '❌ Error updating overtime duration', {
+        matchId,
+        seconds,
+        error: error instanceof Error ? error.message : error
+      });
+      throw error;
+    }
+  }
 }
