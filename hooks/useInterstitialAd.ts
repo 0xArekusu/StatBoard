@@ -17,6 +17,8 @@ import { useAds } from "../src/contexts/AdContext";
 import { useAdEligibility } from "./useAdEligibility";
 import { INTERSTITIAL_AD_UNIT_ID } from "../constants/adUnits";
 
+const SHOW_TIMEOUT_MS = 60000;
+
 export function useInterstitialAd() {
   const { adsReady } = useAds();
   const isEligible = useAdEligibility();
@@ -66,23 +68,26 @@ export function useInterstitialAd() {
     if (!ad || !isLoadedRef.current) return Promise.resolve();
 
     return new Promise((resolve) => {
-      const unsubscribeClosed = ad.addAdEventListener(
-        AdEventType.CLOSED,
-        () => {
-          unsubscribeClosed();
-          isLoadedRef.current = false;
-          // Preload next ad for the following transition
-          loadAd();
-          resolve();
-        }
-      );
-
-      const unsubscribeError = ad.addAdEventListener(AdEventType.ERROR, () => {
+      let settled = false;
+      const finish = () => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(safetyTimeout);
+        unsubscribeClosed();
         unsubscribeError();
+        isLoadedRef.current = false;
+        // Preload next ad for the following transition
+        loadAd();
         resolve();
-      });
+      };
 
-      ad.show();
+      const unsubscribeClosed = ad.addAdEventListener(AdEventType.CLOSED, finish);
+      const unsubscribeError = ad.addAdEventListener(AdEventType.ERROR, finish);
+      // Filet de sécurité : ne jamais bloquer la navigation si CLOSED n'arrive pas
+      const safetyTimeout = setTimeout(finish, SHOW_TIMEOUT_MS);
+
+      // show() peut être rejeté sans émettre d'événement ERROR (nil-vc, not-ready)
+      ad.show().catch(finish);
     });
   }, [loadAd]);
 

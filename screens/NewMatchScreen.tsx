@@ -6,7 +6,7 @@
  * - Step 2: Roster selection (home team and opponent players)
  */
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { View, StyleSheet, ScrollView, Alert, ActivityIndicator, KeyboardAvoidingView, Platform, Modal, TouchableWithoutFeedback, Text, TouchableOpacity } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
@@ -130,6 +130,7 @@ export default function NewMatchScreen() {
   const [savedTemplates, setSavedTemplates] = useState<OpponentTemplate[]>([]);
   const [loadedTemplateName, setLoadedTemplateName] = useState<string | null>(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const pendingStartRef = useRef(false);
 
   // ===========================
   // EFFECTS
@@ -693,9 +694,24 @@ export default function NewMatchScreen() {
   /**
    * Start match after confirmation
    */
-  const handleConfirmStart = async () => {
+  const handleConfirmStart = () => {
     setShowConfirmModal(false);
+    // iOS : la pub doit attendre la fermeture native de la modale, sinon elle
+    // s'ouvre par-dessus et la modale reste figée devant l'écran (tout bloqué)
+    if (Platform.OS === "ios") {
+      pendingStartRef.current = true;
+    } else {
+      startMatch();
+    }
+  };
 
+  const handleConfirmModalDismiss = () => {
+    if (!pendingStartRef.current) return;
+    pendingStartRef.current = false;
+    startMatch();
+  };
+
+  const startMatch = async () => {
     const team = teams.find((t) => t.id === selectedTeamId);
     if (!team) return;
 
@@ -1056,7 +1072,7 @@ export default function NewMatchScreen() {
       )}
 
       {/* Confirmation modal */}
-      <Modal visible={showConfirmModal} transparent animationType="fade" onRequestClose={() => setShowConfirmModal(false)}>
+      <Modal visible={showConfirmModal} transparent animationType="fade" onRequestClose={() => setShowConfirmModal(false)} onDismiss={handleConfirmModalDismiss}>
         <TouchableWithoutFeedback onPress={() => setShowConfirmModal(false)}>
           <View style={confirmStyles.backdrop} />
         </TouchableWithoutFeedback>
