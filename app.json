@@ -69,6 +69,7 @@
         }
       ],
       "./plugins/withModularHeaders",
+      "./plugins/withPodsDeploymentTarget",
       [
         "expo-splash-screen",
         {
