@@ -37,7 +37,33 @@ const AdsConsentStatus = {
 // Composants de pub : ne rendent rien en web
 const BannerAd = () => null;
 const NativeAd = () => null;
-const InterstitialAd = { createForAdRequest: () => ({ load: noop, show: noop }) };
+
+/**
+ * Événements du SDK. Le stub doit exposer les mêmes clés que le vrai module :
+ * `useInterstitialAd` lit `AdEventType.LOADED` / `.ERROR` / `.CLOSED` au chargement
+ * de l'écran. Sans cet export, `AdEventType` est undefined et l'app web plante
+ * sur `Cannot read properties of undefined (reading 'LOADED')` dès qu'un écran
+ * utilise le hook (bouton « New Match », fin de match...).
+ */
+const AdEventType = {
+  LOADED: "loaded",
+  ERROR: "error",
+  OPENED: "opened",
+  CLOSED: "closed",
+  CLICKED: "clicked",
+  IMPRESSION: "impression",
+};
+
+// Interstitiel inerte : load() ne charge rien, show() résout tout de suite et
+// addAdEventListener renvoie un désabonnement inoffensif (le hook appelle
+// systématiquement la fonction retournée pour nettoyer).
+const InterstitialAd = {
+  createForAdRequest: () => ({
+    load: noop,
+    show: async () => {},
+    addAdEventListener: () => () => {},
+  }),
+};
 
 const BannerAdSize = {
   BANNER: "BANNER",
@@ -60,5 +86,6 @@ module.exports.AdsConsentStatus = AdsConsentStatus;
 module.exports.BannerAd = BannerAd;
 module.exports.NativeAd = NativeAd;
 module.exports.InterstitialAd = InterstitialAd;
+module.exports.AdEventType = AdEventType;
 module.exports.BannerAdSize = BannerAdSize;
 module.exports.TestIds = TestIds;
