@@ -24,6 +24,8 @@
     "install-fix": "npx expo install --fix",
     "info": "npx react-native info",
     "web": "expo start --web",
+    "demo:web": "EXPO_PUBLIC_APP_ENTRY=demo expo start --web",
+    "demo:export": "EXPO_PUBLIC_APP_ENTRY=demo expo export --platform web --output-dir dist/demo",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

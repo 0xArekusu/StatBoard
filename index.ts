@@ -5,9 +5,18 @@ import { registerRootComponent } from 'expo';
 // À importer AVANT tout composant utilisant Alert.
 import './utils/webAlert';
 
-import App from './App';
+import type { ComponentType } from 'react';
+import { DEMO_APP_ENTRY } from './demo/constants/demoConstants';
 
-// registerRootComponent calls AppRegistry.registerComponent('main', () => App);
+// EXPO_PUBLIC_APP_ENTRY=demo mounts the landing page demo instead of the app.
+// Roots are required lazily so only the selected one runs its module side
+// effects (the app root initializes Sentry, update checks, etc.).
+const Root: ComponentType =
+  process.env.EXPO_PUBLIC_APP_ENTRY === DEMO_APP_ENTRY
+    ? require('./demo/DemoApp').default
+    : require('./App').default;
+
+// registerRootComponent calls AppRegistry.registerComponent('main', () => Root);
 // It also ensures that whether you load the app in Expo Go or in a native build,
 // the environment is set up appropriately
-registerRootComponent(App);
+registerRootComponent(Root);
