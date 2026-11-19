@@ -316,7 +316,7 @@ export class PDFExportService {
       subTracked ? pmMap.get(`${team}-${num}`) ?? null : null;
 
     const statsMyTeam = playersMyTeam.map((player) => {
-      const stats = this.calculatePlayerStats(player.id, actions);
+      const stats = this.calculatePlayerStats(player.id, actions, player.team);
       stats.pm = pmFor(player.team, player.num);
       return {
         ...player,
@@ -325,7 +325,7 @@ export class PDFExportService {
     });
 
     const statsOpponent = playersOpponent.map((player) => {
-      const stats = this.calculatePlayerStats(player.id, actions);
+      const stats = this.calculatePlayerStats(player.id, actions, player.team);
       stats.pm = pmFor(player.team, player.num);
       return {
         ...player,
@@ -532,15 +532,42 @@ export class PDFExportService {
   }
 
   /**
+   * Cette action appartient-elle bien à ce joueur ?
+   *
+   * Le numéro de maillot ne suffit pas : les deux équipes peuvent aligner un #6,
+   * et les actions ne portent pas toujours le même nom de champ (`player` côté
+   * app, `player_number` côté base). Sans le filtre d'équipe, la carte de tir
+   * d'un joueur affichait aussi les tirs de son homologue adverse, et ses stats
+   * additionnaient la production des deux.
+   */
+  private static isActionOfPlayer(
+    action: any,
+    playerId: number,
+    team?: string,
+  ): boolean {
+    const num = action.player_number ?? action.player;
+    if (num !== playerId) return false;
+    if (!team || !action.team) return true;
+    return action.team === team;
+  }
+
+  /**
    * Calculate individual player stats
    * Handles both database format (action_type, player_number) and app format (type, player)
    */
-  private static calculatePlayerStats(playerId: number, actions: any[]) {
-    // Filter actions for this player - handle both player_number (DB) and player (app) formats
-    const playerActions = actions.filter((a) => {
-      const playerNum = a.player_number ?? a.player;
-      return playerNum === playerId;
-    });
+  private static calculatePlayerStats(
+    playerId: number,
+    actions: any[],
+    team?: string,
+  ) {
+    // Filter actions for this player - handle both player_number (DB) and player (app) formats.
+    // The team matters as much as the number: both teams can field a #5, and
+    // matching on the number alone merged their actions, so the PDF credited
+    // each player with the other team's production (and the team totals with
+    // both teams' points).
+    const playerActions = actions.filter((a) =>
+      this.isActionOfPlayer(a, playerId, team),
+    );
 
     // Helper function to normalize action type
     // Note: Actions from MatchDataService use 'type', database uses 'action_type'
@@ -1496,12 +1523,14 @@ export class PDFExportService {
     backgroundColor: string = PDF_COLORS.court.background,
     lineColor: string = PDF_COLORS.court.line,
     logoUrl?: string | null,
-    sponsors?: PDFSponsor[]
+    sponsors?: PDFSponsor[],
+    team?: string
   ): string {
     const width = 465;
     const height = 250;
     const shotActions = actions.filter(
-      (a) => a.type === ActionType.SHOT && a.player === playerId
+      (a) =>
+        a.type === ActionType.SHOT && this.isActionOfPlayer(a, playerId, team)
     );
 
     if (shotActions.length === 0) {
@@ -1539,12 +1568,14 @@ export class PDFExportService {
     backgroundColor: string = PDF_COLORS.court.background,
     lineColor: string = PDF_COLORS.court.line,
     logoUrl?: string | null,
-    sponsors?: PDFSponsor[]
+    sponsors?: PDFSponsor[],
+    team?: string
   ): string {
     const width = 465;
     const height = 250;
     const nonShotActions = actions.filter(
-      (a) => a.player === playerId && a.type !== ActionType.SHOT
+      (a) =>
+        a.type !== ActionType.SHOT && this.isActionOfPlayer(a, playerId, team)
     );
 
     if (nonShotActions.length === 0) {
@@ -1586,11 +1617,14 @@ export class PDFExportService {
     backgroundColor: string = PDF_COLORS.court.background,
     lineColor: string = PDF_COLORS.court.line,
     logoUrl?: string | null,
-    sponsors?: PDFSponsor[]
+    sponsors?: PDFSponsor[],
+    team?: string
   ): string {
     const width = 465;
     const height = 250;
-    const playerActions = actions.filter((a) => a.player === playerId);
+    const playerActions = actions.filter((a) =>
+      this.isActionOfPlayer(a, playerId, team)
+    );
 
     if (playerActions.length === 0) {
       return `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg"><text x="125" y="232" text-anchor="middle" font-size="14" fill="${PDF_COLORS.court.noData}">${i18n.t("pdfExportService.noActions")}</text></svg>`;
@@ -2423,7 +2457,7 @@ export class PDFExportService {
         return a.team === Team.MY_TEAM ? -1 : 1;
       })
       .map((player) => {
-        const playerStats = this.calculatePlayerStats(player.id, actions);
+        const playerStats = this.calculatePlayerStats(player.id, actions, player.team);
         const playerPm = pmLookup.get(`${player.team}-${player.num}`) ?? null;
         const allActionsCourtSVG = this.wrapCourtWithSideBanners(
           this.generatePlayerAllActionsCourt(
@@ -2432,7 +2466,8 @@ export class PDFExportService {
             courtBackgroundColor,
             courtLineColor,
             clubLogoUrl,
-            matchSponsors
+            matchSponsors,
+            player.team
           ),
           matchSponsors
         );
@@ -2451,8 +2486,9 @@ export class PDFExportService {
           playerStats.fta
         );
 
-        const hasStats =
-          actions.filter((a) => a.player === player.id).length > 0;
+        const hasStats = actions.some((a) =>
+          this.isActionOfPlayer(a, player.id, player.team)
+        );
         const teamName =
           player.team === Team.MY_TEAM ? myTeamName : opponentName;
         const totalFouls = this.calculateTotalFouls(playerStats);
