@@ -316,7 +316,7 @@ export class PDFExportService {
       subTracked ? pmMap.get(`${team}-${num}`) ?? null : null;
 
     const statsMyTeam = playersMyTeam.map((player) => {
-      const stats = this.calculatePlayerStats(player.id, actions);
+      const stats = this.calculatePlayerStats(player.id, actions, player.team);
       stats.pm = pmFor(player.team, player.num);
       return {
         ...player,
@@ -325,7 +325,7 @@ export class PDFExportService {
     });
 
     const statsOpponent = playersOpponent.map((player) => {
-      const stats = this.calculatePlayerStats(player.id, actions);
+      const stats = this.calculatePlayerStats(player.id, actions, player.team);
       stats.pm = pmFor(player.team, player.num);
       return {
         ...player,
@@ -535,11 +535,21 @@ export class PDFExportService {
    * Calculate individual player stats
    * Handles both database format (action_type, player_number) and app format (type, player)
    */
-  private static calculatePlayerStats(playerId: number, actions: any[]) {
-    // Filter actions for this player - handle both player_number (DB) and player (app) formats
+  private static calculatePlayerStats(
+    playerId: number,
+    actions: any[],
+    team?: string,
+  ) {
+    // Filter actions for this player - handle both player_number (DB) and player (app) formats.
+    // The team matters as much as the number: both teams can field a #5, and
+    // matching on the number alone merged their actions, so the PDF credited
+    // each player with the other team's production (and the team totals with
+    // both teams' points).
     const playerActions = actions.filter((a) => {
       const playerNum = a.player_number ?? a.player;
-      return playerNum === playerId;
+      if (playerNum !== playerId) return false;
+      if (!team || !a.team) return true;
+      return a.team === team;
     });
 
     // Helper function to normalize action type
@@ -2423,7 +2433,7 @@ export class PDFExportService {
         return a.team === Team.MY_TEAM ? -1 : 1;
       })
       .map((player) => {
-        const playerStats = this.calculatePlayerStats(player.id, actions);
+        const playerStats = this.calculatePlayerStats(player.id, actions, player.team);
         const playerPm = pmLookup.get(`${player.team}-${player.num}`) ?? null;
         const allActionsCourtSVG = this.wrapCourtWithSideBanners(
           this.generatePlayerAllActionsCourt(
