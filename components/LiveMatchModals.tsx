@@ -31,6 +31,7 @@ import {
   getMarkerShapeType,
 } from "../src/models/ActionTypes";
 import { logInfo } from "../utils/logger";
+import { computeLiveMatchScore } from "../src/utils/liveMatchScore";
 
 // History Modal
 interface HistoryModalProps {
@@ -615,28 +616,12 @@ export const FilterModal: React.FC<FilterModalProps> = ({
     }
   };
 
-  // Calculate score for selected periods
-  const periodScore = React.useMemo(() => {
-    const periodsToFilter = selectedPeriods.length > 0 ? selectedPeriods : null;
-    let homeScore = 0;
-    let awayScore = 0;
-
-    if (actions && actions.length > 0) {
-      actions.forEach((action: any) => {
-        if (action.action_type === ActionType.SHOT && action.points > 0) {
-          if (periodsToFilter === null || periodsToFilter.includes(action.period_number)) {
-            if (action.teamId === TeamId.HOME) homeScore += action.points;
-            else if (action.teamId === TeamId.AWAY) awayScore += action.points;
-          }
-        }
-      });
-    }
-
-    return {
-      myScore: isHome ? homeScore : awayScore,
-      theirScore: isHome ? awayScore : homeScore,
-    };
-  }, [actions, selectedPeriods, isHome]);
+  // Score des périodes sélectionnées (tirs réussis uniquement, les deux équipes).
+  // Logique isolée dans src/utils/liveMatchScore.ts pour être testable.
+  const periodScore = React.useMemo(
+    () => computeLiveMatchScore(actions, selectedPeriods, isHome),
+    [actions, selectedPeriods, isHome]
+  );
 
   // Per-player +/- map (keyed by player ID, home team only)
   const playerPmMap = React.useMemo(() => {
