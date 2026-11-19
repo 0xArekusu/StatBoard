@@ -53,4 +53,16 @@ describe("PDFExportService.calculatePlayerStats", () => {
   it("sans équipe fournie, conserve le comportement d'origine (rétrocompatibilité)", () => {
     expect(stats(6).points).toBe(7);
   });
+
+  it("isActionOfPlayer distingue bien les deux équipes", () => {
+    const iso = (PDFExportService as any).isActionOfPlayer;
+    expect(iso({ player: 6, team: "MyTeam" }, 6, "MyTeam")).toBe(true);
+    expect(iso({ player: 6, team: "Opponent" }, 6, "MyTeam")).toBe(false);
+    expect(iso({ player_number: 6, team: "Opponent" }, 6, "Opponent")).toBe(true);
+    // Une action sans équipe (ancien format) reste acceptée : mieux vaut compter
+    // que perdre la stat.
+    expect(iso({ player_number: 6 }, 6, "MyTeam")).toBe(true);
+    // Un autre numéro ne passe jamais.
+    expect(iso({ player_number: 7, team: "MyTeam" }, 6, "MyTeam")).toBe(false);
+  });
 });
