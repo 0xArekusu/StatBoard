@@ -24,7 +24,8 @@
     "install-fix": "npx expo install --fix",
     "info": "npx react-native info",
     "web": "expo start --web",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "postinstall": "patch-package"
   },
   "dependencies": {
     "@babel/runtime": "^7.28.4",
@@ -87,6 +88,7 @@
     "@types/react": "~19.1.10",
     "@types/react-native-vector-icons": "^6.4.18",
     "jest-expo": "~54.0.17",
+    "patch-package": "^8.0.1",
     "react-test-renderer": "19.1.0",
     "typescript": "~5.9.2"
   },

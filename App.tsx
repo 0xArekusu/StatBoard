@@ -5,7 +5,7 @@
  * Manages the initial loading state and renders the navigation stack once ready.
  */
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, type ReactNode } from "react";
 import { NavigationContainer, createNavigationContainerRef } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { AppState, AppStateStatus, Linking } from "react-native";
@@ -31,7 +31,8 @@ import MainTabNavigator from "./navigation/MainTabNavigator";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { AuthProvider, useAuth } from "./src/contexts/AuthContext";
 import { ClubProvider } from "./src/contexts/ClubContext";
-import { ThemeProvider } from "./src/contexts/ThemeContext";
+import { ThemeProvider, useTheme } from "./src/contexts/ThemeContext";
+import { StatusBar } from "expo-status-bar";
 import { LanguageProvider } from "./src/contexts/LanguageContext";
 import { AdProvider } from "./src/contexts/AdContext";
 import "./src/i18n";
@@ -403,8 +404,8 @@ function App() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
-        <SafeAreaView style={{ flex: 1 }}>
-          <ThemeProvider>
+        <ThemeProvider>
+          <ThemedSafeArea>
             <LanguageProvider>
               <AuthProvider>
                 <PostHogProvider
@@ -424,12 +425,24 @@ function App() {
                 </PostHogProvider>
               </AuthProvider>
             </LanguageProvider>
-          </ThemeProvider>
-        </SafeAreaView>
+          </ThemedSafeArea>
+        </ThemeProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );
 }
 
 // Wrap App with Sentry for error tracking
+// Root safe area painted with the theme background, so the status bar and home
+// indicator strips follow light/dark mode instead of showing the white window behind.
+function ThemedSafeArea({ children }: { children: ReactNode }) {
+  const { colors, isDark } = useTheme();
+  return (
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
+      <StatusBar style={isDark ? "light" : "dark"} />
+      {children}
+    </SafeAreaView>
+  );
+}
+
 export default Sentry.wrap(App);
