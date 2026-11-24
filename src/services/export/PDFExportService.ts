@@ -2494,7 +2494,7 @@ export class PDFExportService {
         const totalFouls = this.calculateTotalFouls(playerStats);
         const playingTime = this.getPlayingTime(player.playingTimeSeconds);
 
-        const avatarUrl = AvatarService.getAvatarUrl(
+        const avatarUrl = AvatarService.getHtmlImageSource(
           player.name,
           player.photoUrl
         );

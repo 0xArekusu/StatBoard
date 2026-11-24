@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { View, Image, StyleSheet, ViewStyle } from 'react-native';
+import { View, Image, StyleSheet, Text, ViewStyle } from 'react-native';
+import { INITIALS_AVATAR } from '../constants/avatarConstants';
 import { AvatarService } from '../src/services/AvatarService';
+import { useTheme } from '../src/contexts/ThemeContext';
 import { useSignedUrl } from '../hooks/useSignedUrl';
 
 interface PlayerAvatarProps {
@@ -26,14 +28,14 @@ export default function PlayerAvatar({
   borderWidth = 2,
   style,
 }: PlayerAvatarProps) {
+  const { colors } = useTheme();
   const [imageError, setImageError] = useState(false);
 
   const signedPhotoUrl = useSignedUrl(photoUrl);
-  const avatarUrl = AvatarService.getAvatarUrl(playerName, signedPhotoUrl);
 
   useEffect(() => {
     setImageError(false);
-  }, [avatarUrl]);
+  }, [signedPhotoUrl]);
 
   const containerStyle: ViewStyle = {
     width: size,
@@ -47,19 +49,31 @@ export default function PlayerAvatar({
     overflow: 'hidden',
   };
 
-  if (imageError) {
-    return <View style={[containerStyle, style]} />;
+  if (imageError || !AvatarService.hasPhoto(signedPhotoUrl)) {
+    return (
+      <View style={[containerStyle, style, { backgroundColor: colors.surfaceVariant }]}>
+        <Text
+          allowFontScaling={false}
+          style={[
+            styles.initials,
+            { color: colors.text.primary, fontSize: size * INITIALS_AVATAR.fontSizeRatio },
+          ]}
+        >
+          {AvatarService.getInitials(playerName)}
+        </Text>
+      </View>
+    );
   }
 
   return (
     <View style={[containerStyle, style]}>
       <Image
-        source={{ uri: avatarUrl }}
+        source={{ uri: signedPhotoUrl }}
         style={{ width: size, height: size, borderRadius: size / 2 }}
         onError={(e) => {
           console.warn('[PlayerAvatar] load error', {
             player: playerName,
-            url: avatarUrl,
+            url: signedPhotoUrl,
             error: e.nativeEvent,
           });
           setImageError(true);
@@ -69,4 +83,8 @@ export default function PlayerAvatar({
   );
 }
 
-const styles = StyleSheet.create({});
+const styles = StyleSheet.create({
+  initials: {
+    fontWeight: INITIALS_AVATAR.fontWeight,
+  },
+});

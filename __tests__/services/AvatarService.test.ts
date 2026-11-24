@@ -1,73 +1,58 @@
 import { AvatarService } from "../../src/services/AvatarService";
 
+const PHOTO_URL = "https://cdn.example.com/player.jpg";
+const NO_PHOTO_VALUES = [undefined, null, "", "   "];
+
 describe("AvatarService", () => {
-  // ─── getAvatarUrl ──────────────────────────────────────────────────────────
+  // ─── hasPhoto ──────────────────────────────────────────────────────────────
 
-  describe("getAvatarUrl", () => {
-    it("retourne la photoUrl si elle est fournie et non vide", () => {
-      const url = "https://cdn.example.com/player.jpg";
-      expect(AvatarService.getAvatarUrl("John", url)).toBe(url);
+  describe("hasPhoto", () => {
+    it("retourne true pour une URL de photo", () => {
+      expect(AvatarService.hasPhoto(PHOTO_URL)).toBe(true);
     });
 
-    it("génère un avatar ui-avatars si aucune photo n'est fournie", () => {
-      const result = AvatarService.getAvatarUrl("John Doe");
-      expect(result).toContain("ui-avatars.com");
-      expect(result).toContain(encodeURIComponent("John Doe"));
-    });
-
-    it("génère un avatar si photoUrl est null", () => {
-      const result = AvatarService.getAvatarUrl("Marie", null);
-      expect(result).toContain("ui-avatars.com");
-    });
-
-    it("génère un avatar si photoUrl est undefined", () => {
-      const result = AvatarService.getAvatarUrl("Pierre");
-      expect(result).toContain("ui-avatars.com");
-    });
-
-    it("génère un avatar si photoUrl est une chaîne vide", () => {
-      const result = AvatarService.getAvatarUrl("Ali", "");
-      expect(result).toContain("ui-avatars.com");
-    });
-
-    it("génère un avatar si photoUrl ne contient que des espaces", () => {
-      const result = AvatarService.getAvatarUrl("Ali", "   ");
-      expect(result).toContain("ui-avatars.com");
-    });
-
-    it("encode correctement les noms avec espaces", () => {
-      const result = AvatarService.getAvatarUrl("Joueur 4");
-      expect(result).toContain(encodeURIComponent("Joueur 4"));
-    });
-
-    it("l'URL générée contient rounded=true et size=128", () => {
-      const result = AvatarService.getAvatarUrl("Test");
-      expect(result).toContain("rounded=true");
-      expect(result).toContain("size=128");
+    it.each(NO_PHOTO_VALUES)("retourne false sans photo (%p)", (photoUrl) => {
+      expect(AvatarService.hasPhoto(photoUrl)).toBe(false);
     });
   });
 
-  // ─── isPlayerPhoto ─────────────────────────────────────────────────────────
+  // ─── getInitials ───────────────────────────────────────────────────────────
 
-  describe("isPlayerPhoto", () => {
-    it("retourne true pour une URL de photo réelle", () => {
-      expect(AvatarService.isPlayerPhoto("https://cdn.example.com/player.jpg")).toBe(true);
+  describe("getInitials", () => {
+    it.each([
+      ["John Doe", "JD"],
+      ["Marie", "MA"],
+      ["Joueur 4", "J4"],
+      ["Jean Paul Durand", "JD"],
+      ["  lucas   martin ", "LM"],
+      ["Élodie Œuvrard", "ÉŒ"],
+      ["O'Neal", "ON"],
+      ["A", "A"],
+      ["<b> & \"c\"", "BC"],
+      ["", ""],
+      ["---", ""],
+    ])("%p donne %p", (name, initials) => {
+      expect(AvatarService.getInitials(name)).toBe(initials);
+    });
+  });
+
+  // ─── getHtmlImageSource ────────────────────────────────────────────────────
+
+  describe("getHtmlImageSource", () => {
+    it("retourne la photo si elle est fournie", () => {
+      expect(AvatarService.getHtmlImageSource("John", PHOTO_URL)).toBe(PHOTO_URL);
     });
 
-    it("retourne false pour une URL ui-avatars.com", () => {
-      expect(
-        AvatarService.isPlayerPhoto(
-          "https://ui-avatars.com/api/?name=John&rounded=true"
-        )
-      ).toBe(false);
+    it.each(NO_PHOTO_VALUES)("dessine les initiales localement sans photo (%p)", (photoUrl) => {
+      const source = AvatarService.getHtmlImageSource("Élodie Doe", photoUrl);
+      expect(source).toMatch(/^data:image\/svg\+xml/);
+      expect(decodeURIComponent(source)).toContain(">ÉD</text>");
     });
 
-    it("retourne true pour une URL Supabase Storage", () => {
-      expect(
-        AvatarService.isPlayerPhoto(
-          "https://xyz.supabase.co/storage/v1/object/sign/clubs/player.jpg"
-        )
-      ).toBe(true);
+    it("n'envoie ni le nom ni une requête à un service externe", () => {
+      const source = AvatarService.getHtmlImageSource("John Doe");
+      expect(source).not.toMatch(/^https?:/);
+      expect(decodeURIComponent(source)).not.toContain("John");
     });
   });
 });
