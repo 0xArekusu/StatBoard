@@ -14,6 +14,7 @@ import {
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../src/contexts/AuthContext';
+import { getAuthErrorMessage } from '../../src/utils/authErrors';
 import { ROUTES, PlatformOS, ANALYTICS_EVENTS } from '../../constants';
 import { useTheme } from '../../src/contexts/ThemeContext';
 import { SHADOW_COLOR, OPACITY, PASSWORD_VALIDATION } from '../../src/theme';
@@ -147,7 +148,7 @@ export default function RegisterScreen({ navigation }: any) {
           ]
         );
       } else {
-        Alert.alert(t('registerScreen.errors.registrationErrorTitle'), error.message);
+        Alert.alert(t('registerScreen.errors.registrationErrorTitle'), getAuthErrorMessage(error, t));
       }
     } else {
       logInfo('RegisterScreen', '✅ Registration successful - showing confirmation dialog', {
@@ -184,7 +185,7 @@ export default function RegisterScreen({ navigation }: any) {
       logError('RegisterScreen', '❌ Failed to resend confirmation email', {
         error: error.message,
       });
-      Alert.alert(t('common.error'), error.message || t('registerScreen.resend.errorMessage'));
+      Alert.alert(t('common.error'), getAuthErrorMessage(error, t));
     } else {
       logInfo('RegisterScreen', '✅ Confirmation email resent successfully');
       Alert.alert(
@@ -209,7 +210,7 @@ export default function RegisterScreen({ navigation }: any) {
     setLoading(false);
 
     if (error) {
-      Alert.alert(t('registerScreen.errors.googleErrorTitle'), error.message);
+      Alert.alert(t('registerScreen.errors.googleErrorTitle'), getAuthErrorMessage(error, t, 'google'));
     } else if (needsTermsAcceptance) {
       setShowTermsModal(true);
     } else {
@@ -237,7 +238,7 @@ export default function RegisterScreen({ navigation }: any) {
     setLoading(false);
 
     if (error) {
-      Alert.alert(t('registerScreen.errors.appleErrorTitle'), error.message);
+      Alert.alert(t('registerScreen.errors.appleErrorTitle'), getAuthErrorMessage(error, t, 'apple'));
     } else if (needsTermsAcceptance) {
       setShowTermsModal(true);
     } else if (error === null) {

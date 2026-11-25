@@ -1305,5 +1305,19 @@
     "noLogsToSend": "Aucun log disponible à envoyer",
     "sentToSentrySuccessfully": "Logs envoyés à Sentry avec succès",
     "sendErrorPrefix": "Erreur lors de l'envoi : {{message}}"
+  },
+  "authErrors": {
+    "cancelled": "Connexion annulée",
+    "emailNotConfirmed": "Confirmez votre adresse email avant de vous connecter",
+    "network": "Pas de connexion internet. Vérifiez votre réseau et réessayez.",
+    "invalidCredentials": "Email ou mot de passe incorrect",
+    "userNotFound": "Aucun compte n'est associé à cet email",
+    "userExists": "Un compte existe déjà avec cet email",
+    "weakPassword": "Le mot de passe est trop faible. Choisissez-en un plus robuste.",
+    "tooManyAttempts": "Trop de tentatives. Réessayez dans quelques minutes.",
+    "invalidEmail": "Cette adresse email n'est pas valide",
+    "googleUnavailable": "La connexion avec Google n'a pas abouti. Réessayez, ou utilisez votre email et votre mot de passe.",
+    "appleUnavailable": "La connexion avec Apple n'a pas abouti. Réessayez, ou utilisez votre email et votre mot de passe.",
+    "generic": "La connexion a échoué. Réessayez."
   }
 }

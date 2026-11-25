@@ -1305,5 +1305,19 @@
     "noLogsToSend": "No logs available to send",
     "sentToSentrySuccessfully": "Logs sent to Sentry successfully",
     "sendErrorPrefix": "Send error: {{message}}"
+  },
+  "authErrors": {
+    "cancelled": "Sign-in cancelled",
+    "emailNotConfirmed": "Confirm your email address before signing in",
+    "network": "No internet connection. Check your network and try again.",
+    "invalidCredentials": "Incorrect email or password",
+    "userNotFound": "No account is linked to this email",
+    "userExists": "An account already exists with this email",
+    "weakPassword": "This password is too weak. Choose a stronger one.",
+    "tooManyAttempts": "Too many attempts. Try again in a few minutes.",
+    "invalidEmail": "This email address is not valid",
+    "googleUnavailable": "Google sign-in could not complete. Try again, or use your email and password.",
+    "appleUnavailable": "Apple sign-in could not complete. Try again, or use your email and password.",
+    "generic": "Sign-in failed. Please try again."
   }
 }
