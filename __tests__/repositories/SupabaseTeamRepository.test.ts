@@ -117,21 +117,21 @@ describe("SupabaseTeamRepository", () => {
   // ─── create ─────────────────────────────────────────────────────────────────
 
   describe("create", () => {
-    it("crée une équipe avec le statut pending", async () => {
-      mockSingle.mockResolvedValue({ data: makeRow({ status: "pending" }), error: null });
+    it("crée une équipe déjà approuvée", async () => {
+      mockSingle.mockResolvedValue({ data: makeRow({ status: "approved" }), error: null });
 
       const result = await repo.create(
         { name: "Les Lions", clubId: "club-1", gender: "male", category: "U18" },
         "user-1"
       );
 
-      expect(result?.status).toBe("pending");
+      expect(result?.status).toBe("approved");
       expect(queryBuilder.insert).toHaveBeenCalledWith(
         expect.objectContaining({
           name: "Les Lions",
           club_id: "club-1",
           owner_id: "user-1",
-          status: "pending",
+          status: "approved",
           gender: "male",
         })
       );
