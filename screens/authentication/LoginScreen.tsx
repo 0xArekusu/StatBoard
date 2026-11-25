@@ -14,7 +14,7 @@ import {
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../src/contexts/AuthContext';
-import { isEmailNotConfirmedError } from '../../src/utils/authErrors';
+import { getAuthErrorMessage, isEmailNotConfirmedError } from '../../src/utils/authErrors';
 import { ROUTES, PlatformOS, ANALYTICS_EVENTS, ANALYTICS_LOGIN_METHOD } from '../../constants';
 import { useTheme } from '../../src/contexts/ThemeContext';
 import { SHADOW_COLOR, OPACITY, STATUS_COLORS } from '../../src/theme';
@@ -50,24 +50,7 @@ export default function LoginScreen({ navigation, route }: any) {
   /**
    * Translates common Supabase error messages to French
    */
-  const translateError = (errorMessage: string): string => {
-    const errorMap: { [key: string]: string } = {
-      'Invalid login credentials': t('loginScreen.supabaseErrors.invalidCredentials'),
-      'Invalid credentials': t('loginScreen.supabaseErrors.invalidCredentials'),
-      'Email not confirmed': t('loginScreen.supabaseErrors.emailNotConfirmed'),
-      'User not found': t('loginScreen.supabaseErrors.userNotFound'),
-    };
-
-    // Check if the error message matches any known error
-    for (const [key, value] of Object.entries(errorMap)) {
-      if (errorMessage.includes(key)) {
-        return value;
-      }
-    }
-
-    // Return original message if no translation found
-    return errorMessage;
-  };
+;
 
   /**
    * Renvoie l'email de confirmation depuis l'écran de connexion.
@@ -133,7 +116,7 @@ export default function LoginScreen({ navigation, route }: any) {
 
       Alert.alert(
         t('loginScreen.errors.loginErrorTitle'),
-        translateError(errorMessage)
+        getAuthErrorMessage(error, t)
       );
     } else if (needsTermsAcceptance) {
       setShowTermsModal(true);
@@ -152,7 +135,7 @@ export default function LoginScreen({ navigation, route }: any) {
     setLoading(false);
 
     if (error) {
-      Alert.alert(t('loginScreen.errors.googleErrorTitle'), error.message);
+      Alert.alert(t('loginScreen.errors.googleErrorTitle'), getAuthErrorMessage(error, t, 'google'));
       posthog?.capture(ANALYTICS_EVENTS.LOGIN_FAILED, { method: ANALYTICS_LOGIN_METHOD.GOOGLE, error_message: error.message ?? null, error_code: error.code ?? null });
     } else if (needsTermsAcceptance) {
       setShowTermsModal(true);
@@ -183,7 +166,7 @@ export default function LoginScreen({ navigation, route }: any) {
     setLoading(false);
 
     if (error) {
-      Alert.alert(t('loginScreen.errors.appleErrorTitle'), error.message);
+      Alert.alert(t('loginScreen.errors.appleErrorTitle'), getAuthErrorMessage(error, t, 'apple'));
       posthog?.capture(ANALYTICS_EVENTS.LOGIN_FAILED, { method: ANALYTICS_LOGIN_METHOD.APPLE, error_message: error.message ?? null, error_code: error.code ?? null });
     } else if (needsTermsAcceptance) {
       setShowTermsModal(true);
@@ -210,7 +193,7 @@ export default function LoginScreen({ navigation, route }: any) {
     setLoading(false);
 
     if (error) {
-      Alert.alert(t('common.error'), error.message);
+      Alert.alert(t('common.error'), getAuthErrorMessage(error, t));
     } else {
       Alert.alert(
         t('loginScreen.forgotPassword.sentTitle'),

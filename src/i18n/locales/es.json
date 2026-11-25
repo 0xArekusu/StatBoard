@@ -1303,5 +1303,19 @@
     "noLogsToSend": "No hay ningún registro disponible para enviar",
     "sentToSentrySuccessfully": "Registros enviados a Sentry correctamente",
     "sendErrorPrefix": "Error al enviar: {{message}}"
+  },
+  "authErrors": {
+    "cancelled": "Inicio de sesión cancelado",
+    "emailNotConfirmed": "Confirma tu correo electrónico antes de iniciar sesión",
+    "network": "Sin conexión a internet. Comprueba tu red e inténtalo de nuevo.",
+    "invalidCredentials": "Correo o contraseña incorrectos",
+    "userNotFound": "No hay ninguna cuenta asociada a este correo",
+    "userExists": "Ya existe una cuenta con este correo",
+    "weakPassword": "La contraseña es demasiado débil. Elige una más segura.",
+    "tooManyAttempts": "Demasiados intentos. Inténtalo de nuevo en unos minutos.",
+    "invalidEmail": "Esta dirección de correo no es válida",
+    "googleUnavailable": "No se pudo completar el inicio de sesión con Google. Inténtalo de nuevo o usa tu correo y contraseña.",
+    "appleUnavailable": "No se pudo completar el inicio de sesión con Apple. Inténtalo de nuevo o usa tu correo y contraseña.",
+    "generic": "El inicio de sesión ha fallado. Inténtalo de nuevo."
   }
 }
