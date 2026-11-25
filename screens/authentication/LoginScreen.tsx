@@ -14,6 +14,7 @@ import {
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../src/contexts/AuthContext';
+import { isEmailNotConfirmedError } from '../../src/utils/authErrors';
 import { ROUTES, PlatformOS, ANALYTICS_EVENTS, ANALYTICS_LOGIN_METHOD } from '../../constants';
 import { useTheme } from '../../src/contexts/ThemeContext';
 import { SHADOW_COLOR, OPACITY, STATUS_COLORS } from '../../src/theme';
@@ -41,7 +42,7 @@ export default function LoginScreen({ navigation, route }: any) {
   const emailConfirmed = route?.params?.emailConfirmed === true;
   const emailError = route?.params?.emailError === true;
   const passwordReset = route?.params?.passwordReset === true;
-  const { signIn, signInWithGoogle, signInWithApple, acceptTerms, signOut, resetPassword } = useAuth();
+  const { signIn, signInWithGoogle, signInWithApple, acceptTerms, signOut, resetPassword, resendConfirmationEmail } = useAuth();
   const posthog = usePostHog();
   const { colors } = useTheme();
   const { sp, font, sizes, isCompact } = useResponsive();
@@ -69,6 +70,28 @@ export default function LoginScreen({ navigation, route }: any) {
   };
 
   /**
+   * Renvoie l'email de confirmation depuis l'écran de connexion.
+   *
+   * Sans ce raccourci, un compte non confirmé restait bloqué ici : le message
+   * d'erreur s'affichait, mais le seul endroit pour renvoyer l'email était
+   * l'écran d'inscription, que le coach n'a aucune raison de rouvrir.
+   */
+  const handleResendConfirmation = async (emailToResend: string) => {
+    const { error: resendError } = await resendConfirmationEmail(emailToResend);
+    if (resendError) {
+      Alert.alert(
+        t('common.error'),
+        resendError.message || t('registerScreen.resend.errorMessage')
+      );
+    } else {
+      Alert.alert(
+        t('registerScreen.resend.sentTitle'),
+        t('registerScreen.resend.sentMessage')
+      );
+    }
+  };
+
+  /**
    * Handles email/password login with validation
    */
   const handleLogin = async () => {
@@ -82,9 +105,36 @@ export default function LoginScreen({ navigation, route }: any) {
     setLoading(false);
 
     if (error) {
-      const translatedError = translateError(error.message);
-      Alert.alert(t('loginScreen.errors.loginErrorTitle'), translatedError);
-      posthog?.capture(ANALYTICS_EVENTS.LOGIN_FAILED, { method: ANALYTICS_LOGIN_METHOD.PASSWORD, error_message: error.message ?? null });
+      const errorMessage: string = error.message ?? '';
+      // Supabase renvoie un `code` stable ("email_not_confirmed") qu'on préfère
+      // au message, susceptible de changer de langue ou de formulation.
+      const isEmailNotConfirmed = isEmailNotConfirmedError(error);
+
+      posthog?.capture(ANALYTICS_EVENTS.LOGIN_FAILED, {
+        method: ANALYTICS_LOGIN_METHOD.PASSWORD,
+        error_message: error.message ?? null,
+        error_code: error.code ?? null,
+      });
+
+      if (isEmailNotConfirmed) {
+        Alert.alert(
+          t('registerScreen.unconfirmedAccount.title'),
+          t('registerScreen.unconfirmedAccount.message'),
+          [
+            { text: t('common.cancel'), style: 'cancel' },
+            {
+              text: t('registerScreen.unconfirmedAccount.resendButton'),
+              onPress: () => handleResendConfirmation(email),
+            },
+          ]
+        );
+        return;
+      }
+
+      Alert.alert(
+        t('loginScreen.errors.loginErrorTitle'),
+        translateError(errorMessage)
+      );
     } else if (needsTermsAcceptance) {
       setShowTermsModal(true);
     } else {
@@ -103,7 +153,7 @@ export default function LoginScreen({ navigation, route }: any) {
 
     if (error) {
       Alert.alert(t('loginScreen.errors.googleErrorTitle'), error.message);
-      posthog?.capture(ANALYTICS_EVENTS.LOGIN_FAILED, { method: ANALYTICS_LOGIN_METHOD.GOOGLE, error_message: error.message ?? null });
+      posthog?.capture(ANALYTICS_EVENTS.LOGIN_FAILED, { method: ANALYTICS_LOGIN_METHOD.GOOGLE, error_message: error.message ?? null, error_code: error.code ?? null });
     } else if (needsTermsAcceptance) {
       setShowTermsModal(true);
     } else {
@@ -134,7 +184,7 @@ export default function LoginScreen({ navigation, route }: any) {
 
     if (error) {
       Alert.alert(t('loginScreen.errors.appleErrorTitle'), error.message);
-      posthog?.capture(ANALYTICS_EVENTS.LOGIN_FAILED, { method: ANALYTICS_LOGIN_METHOD.APPLE, error_message: error.message ?? null });
+      posthog?.capture(ANALYTICS_EVENTS.LOGIN_FAILED, { method: ANALYTICS_LOGIN_METHOD.APPLE, error_message: error.message ?? null, error_code: error.code ?? null });
     } else if (needsTermsAcceptance) {
       setShowTermsModal(true);
     } else if (error === null) {
