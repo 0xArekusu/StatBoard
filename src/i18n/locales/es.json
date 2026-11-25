@@ -1317,5 +1317,8 @@
     "googleUnavailable": "No se pudo completar el inicio de sesión con Google. Inténtalo de nuevo o usa tu correo y contraseña.",
     "appleUnavailable": "No se pudo completar el inicio de sesión con Apple. Inténtalo de nuevo o usa tu correo y contraseña.",
     "generic": "El inicio de sesión ha fallado. Inténtalo de nuevo."
+  },
+  "filterModal": {
+    "onCourt": "En pista"
   }
 }

@@ -2537,6 +2537,9 @@ export default function LiveMatchScreen() {
         isHome={match.location === TeamId.HOME}
         starters={match.starters}
         activePlayers={activePlayers}
+        periodDurationSeconds={periodDurationMin * 60}
+        regulationPeriods={maxPeriods}
+        overtimeDurationSeconds={overtimeDuration * 60}
         myTeamName={match.myTeamName}
         opponentName={match.opponent}
         myTeamHandicap={match.myTeamHandicap || 0}

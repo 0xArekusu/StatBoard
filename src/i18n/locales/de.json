@@ -1317,5 +1317,8 @@
     "googleUnavailable": "Die Anmeldung mit Google ist fehlgeschlagen. Versuche es erneut oder nutze E-Mail und Passwort.",
     "appleUnavailable": "Die Anmeldung mit Apple ist fehlgeschlagen. Versuche es erneut oder nutze E-Mail und Passwort.",
     "generic": "Die Anmeldung ist fehlgeschlagen. Versuche es erneut."
+  },
+  "filterModal": {
+    "onCourt": "Auf dem Feld"
   }
 }
