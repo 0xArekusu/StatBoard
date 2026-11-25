@@ -1319,5 +1319,8 @@
     "googleUnavailable": "La connexion avec Google n'a pas abouti. Réessayez, ou utilisez votre email et votre mot de passe.",
     "appleUnavailable": "La connexion avec Apple n'a pas abouti. Réessayez, ou utilisez votre email et votre mot de passe.",
     "generic": "La connexion a échoué. Réessayez."
+  },
+  "filterModal": {
+    "onCourt": "Sur le terrain"
   }
 }

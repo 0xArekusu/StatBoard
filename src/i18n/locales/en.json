@@ -1319,5 +1319,8 @@
     "googleUnavailable": "Google sign-in could not complete. Try again, or use your email and password.",
     "appleUnavailable": "Apple sign-in could not complete. Try again, or use your email and password.",
     "generic": "Sign-in failed. Please try again."
+  },
+  "filterModal": {
+    "onCourt": "On court"
   }
 }
