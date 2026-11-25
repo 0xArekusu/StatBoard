@@ -68,7 +68,12 @@ export class SupabaseTeamRepository implements ITeamRepository {
         gender: data.gender,
         coach_name: data.coachName || 'Coach',
         coach_photo_url: data.coachPhotoUrl,
-        status: 'pending',
+        // A new team is approved on creation. Requiring the club owner to
+        // validate it left 8 teams stuck in `pending` (4 of them created by the
+        // club owner himself, the oldest since April 2026) with no way forward
+        // for the coach. Validation will come back later with a proper
+        // notification flow; see the release notes.
+        status: 'approved',
       })
       .select()
       .single();
