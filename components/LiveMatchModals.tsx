@@ -23,6 +23,8 @@ import {
 import { BREAKPOINTS } from "../constants/breakpoints";
 import { useTheme } from "../src/contexts/ThemeContext";
 import { useResponsive } from "../src/hooks/useResponsive";
+import { computePlayingTimeByPlayer } from "../src/utils/playingTime";
+import { formatTime as formatPlayingTime } from "../utils/liveMatchHelpers";
 import {
   ActionType,
   ShotSpecification,
@@ -416,6 +418,10 @@ interface FilterModalProps {
   starters?: string[];
   // Current on-court players (for deriving initial lineup in +/- calc)
   activePlayers?: string[];
+  // Match durations in seconds, used to show playing time next to the +/-
+  periodDurationSeconds?: number;
+  regulationPeriods?: number;
+  overtimeDurationSeconds?: number;
   // Team names for filter labels
   myTeamName?: string;
   opponentName?: string;
@@ -476,6 +482,9 @@ export const FilterModal: React.FC<FilterModalProps> = ({
   isHome = true,
   starters = [],
   activePlayers,
+  periodDurationSeconds,
+  regulationPeriods,
+  overtimeDurationSeconds,
   myTeamName,
   opponentName,
   myTeamHandicap = 0,
@@ -624,6 +633,38 @@ export const FilterModal: React.FC<FilterModalProps> = ({
   );
 
   // Per-player +/- map (keyed by player ID, home team only)
+  // Temps de jeu cumulé par joueur, pour lire le +/- correctement : un +12 en
+  // 8 minutes et un +12 en 32 minutes ne racontent pas la même histoire.
+  // Recalculé depuis les actions, comme partout ailleurs (src/utils/playingTime).
+  const playingTimeByPlayer = React.useMemo(() => {
+    if (homeRoster.length === 0 || !actions || actions.length === 0) {
+      return new Map<string, number>();
+    }
+    const players = homeRoster.map((player) => ({
+      player_number: player.jerseyNumber,
+      team: "MyTeam" as const,
+      is_starter: starters.includes(player.id),
+    }));
+    return computePlayingTimeByPlayer(
+      {
+        period_duration: periodDurationSeconds,
+        total_periods: regulationPeriods,
+        overtime_duration: overtimeDurationSeconds,
+      },
+      players,
+      // ActionData porte les champs attendus (action_type, period_number,
+      // time_in_period, player_number, team...) mais avec des types plus larges.
+      actions as unknown as Parameters<typeof computePlayingTimeByPlayer>[2]
+    );
+  }, [
+    homeRoster,
+    starters,
+    actions,
+    periodDurationSeconds,
+    regulationPeriods,
+    overtimeDurationSeconds,
+  ]);
+
   const playerPmMap = React.useMemo(() => {
     const map = new Map<string, number>();
     homeRoster.forEach(p => map.set(p.id, 0));
@@ -921,6 +962,11 @@ export const FilterModal: React.FC<FilterModalProps> = ({
     const pm = playerPmMap.get(player.id) ?? 0;
     const pmLabel = pm > 0 ? `+${pm}` : `${pm}`;
     const pmColor = pm > 0 ? '#4CAF50' : pm < 0 ? '#F44336' : (isSelected ? colors.onPrimary + '99' : textSecondary);
+    // `activePlayers` est vide hors match en cours (consultation d'un match
+    // termine), auquel cas on n'affiche aucune pastille plutot que de mentir.
+    const onCourtPlayerIds = activePlayers ?? [];
+    const isOnCourt = onCourtPlayerIds.length > 0 && onCourtPlayerIds.includes(player.id);
+    const playingTimeSeconds = playingTimeByPlayer.get(`MyTeam-${player.jerseyNumber}`);
     return (
       <TouchableOpacity
         key={player.id}
@@ -964,20 +1010,30 @@ export const FilterModal: React.FC<FilterModalProps> = ({
           </Text>
         </View>
         <View style={{ flexDirection: 'column', flexShrink: 1 }}>
-          <Text
-            style={[
-              styles.playerFilterName,
-              {
-                color: isSelected ? colors.onPrimary : textPrimary,
-                fontSize: font.xs,
-              },
-            ]}
-            numberOfLines={1}
-          >
-            {player.name}
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+            {isOnCourt && (
+              <View
+                accessibilityLabel={t('filterModal.onCourt')}
+                style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#4CAF50' }}
+              />
+            )}
+            <Text
+              style={[
+                styles.playerFilterName,
+                {
+                  color: isSelected ? colors.onPrimary : textPrimary,
+                  fontSize: font.xs,
+                  fontWeight: isOnCourt ? '700' : '400',
+                },
+              ]}
+              numberOfLines={1}
+            >
+              {player.name}
+            </Text>
+          </View>
           <Text style={{ color: pmColor, fontSize: font.xs - 1, fontWeight: '700' }}>
             +/- {pmLabel}
+            {playingTimeSeconds !== undefined ? `  ·  ${formatPlayingTime(playingTimeSeconds)}` : ''}
           </Text>
         </View>
       </TouchableOpacity>

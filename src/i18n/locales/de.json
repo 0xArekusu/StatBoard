@@ -1303,5 +1303,22 @@
     "noLogsToSend": "Keine Protokolle zum Senden verfügbar",
     "sentToSentrySuccessfully": "Protokolle erfolgreich an Sentry gesendet",
     "sendErrorPrefix": "Fehler beim Senden: {{message}}"
+  },
+  "authErrors": {
+    "cancelled": "Anmeldung abgebrochen",
+    "emailNotConfirmed": "Bestätige deine E-Mail-Adresse, bevor du dich anmeldest",
+    "network": "Keine Internetverbindung. Prüfe dein Netzwerk und versuche es erneut.",
+    "invalidCredentials": "E-Mail oder Passwort ist falsch",
+    "userNotFound": "Mit dieser E-Mail ist kein Konto verknüpft",
+    "userExists": "Mit dieser E-Mail existiert bereits ein Konto",
+    "weakPassword": "Das Passwort ist zu schwach. Wähle ein stärkeres.",
+    "tooManyAttempts": "Zu viele Versuche. Versuche es in einigen Minuten erneut.",
+    "invalidEmail": "Diese E-Mail-Adresse ist ungültig",
+    "googleUnavailable": "Die Anmeldung mit Google ist fehlgeschlagen. Versuche es erneut oder nutze E-Mail und Passwort.",
+    "appleUnavailable": "Die Anmeldung mit Apple ist fehlgeschlagen. Versuche es erneut oder nutze E-Mail und Passwort.",
+    "generic": "Die Anmeldung ist fehlgeschlagen. Versuche es erneut."
+  },
+  "filterModal": {
+    "onCourt": "Auf dem Feld"
   }
 }
