@@ -5,12 +5,18 @@ import { MatchStatus } from "../../src/models/types";
 
 const mockQuery = jest.fn();
 const mockExecute = jest.fn();
+// `transaction(fn)` exécute le callback avec un handle qui délègue à mockExecute,
+// ce qui permet de vérifier l'ordre des requêtes dans la transaction.
+const mockTransaction = jest.fn(async (fn: (tx: any) => Promise<void>) =>
+  fn({ execute: mockExecute })
+);
 
 jest.mock("../../src/services/database/DatabaseService", () => ({
   DatabaseService: {
     getInstance: jest.fn(() => ({
-      query: (...args: any[]) => mockQuery(...args),
-      execute: (...args: any[]) => mockExecute(...args),
+      query: mockQuery,
+      execute: mockExecute,
+      transaction: mockTransaction,
     })),
   },
 }));
@@ -416,15 +422,27 @@ describe("MatchRepository", () => {
   // ─── delete ──────────────────────────────────────────────────────────────
 
   describe("delete", () => {
-    it("exécute DELETE avec l'id du match", async () => {
+    it("supprime les actions du match AVANT le match, dans une transaction", async () => {
       mockExecute.mockResolvedValue(undefined);
 
       await repo.delete("match-1");
 
-      expect(mockExecute).toHaveBeenCalledWith(
+      // `match_actions` déclare `ON DELETE CASCADE`, mais SQLite a les clés
+      // étrangères désactivées par défaut et l'app n'exécute jamais
+      // `PRAGMA foreign_keys = ON`. Le cascade ne part donc jamais : les actions
+      // doivent être supprimées explicitement, sinon un match abandonné laisse
+      // une ligne orpheline par action.
+      expect(mockExecute).toHaveBeenNthCalledWith(
+        1,
+        expect.stringContaining("DELETE FROM match_actions WHERE match_id = ?"),
+        ["match-1"]
+      );
+      expect(mockExecute).toHaveBeenNthCalledWith(
+        2,
         expect.stringContaining("DELETE FROM matches WHERE id = ?"),
         ["match-1"]
       );
+      expect(mockTransaction).toHaveBeenCalledTimes(1);
     });
   });
 });
