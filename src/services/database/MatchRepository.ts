@@ -595,12 +595,17 @@ export class MatchRepository implements IMatchRepository {
     try {
       logInfo('MatchRepository', '🗑️ Deleting match from SQLite', { matchId: id });
 
-      await this.db.execute(
-        'DELETE FROM matches WHERE id = ?',
-        [id]
-      );
+      // `match_actions` declares `ON DELETE CASCADE`, but SQLite has foreign
+      // keys disabled by default and the app never runs `PRAGMA foreign_keys =
+      // ON`. The cascade therefore never fires: an abandoned match used to leave
+      // one orphan row per action behind, inflating the local database forever.
+      // Delete both explicitly, in a single transaction.
+      await this.db.transaction(async (tx) => {
+        await tx.execute('DELETE FROM match_actions WHERE match_id = ?', [id]);
+        await tx.execute('DELETE FROM matches WHERE id = ?', [id]);
+      });
 
-      logInfo('MatchRepository', '✅ Match deleted successfully', { matchId: id });
+      logInfo('MatchRepository', '✅ Match and its actions deleted successfully', { matchId: id });
     } catch (error) {
       logError('MatchRepository', '❌ Error deleting match', {
         matchId: id,
